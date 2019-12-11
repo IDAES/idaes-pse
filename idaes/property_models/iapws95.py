@@ -393,18 +393,21 @@ class _StateBlock(StateBlock):
                             v.pressure.fixed)
 
                 if state_args is not None:
-                    try:
-                        v.flow_mol.value = state_args["flow_mol"]
-                    except KeyError:
-                        pass
-                    try:
-                        v.enth_mol.value = state_args["enth_mol"]
-                    except KeyError:
-                        pass
-                    try:
-                        v.pressure.value = state_args["pressure"]
-                    except KeyError:
-                        pass
+                    if not v.flow_mol.fixed:
+                        try:
+                            v.flow_mol.value = state_args["flow_mol"]
+                        except KeyError:
+                            pass
+                    if not v.enth_mol.fixed:
+                        try:
+                            v.enth_mol.value = state_args["enth_mol"]
+                        except KeyError:
+                            pass
+                    if not v.pressure.fixed:
+                        try:
+                            v.pressure.value = state_args["pressure"]
+                        except KeyError:
+                            pass
 
                 if hold_state:
                     v.flow_mol.fix()
@@ -420,22 +423,26 @@ class _StateBlock(StateBlock):
                                 v.vapor_frac.fixed)
 
                     if state_args is not None:
-                        try:
-                            v.flow_mol.value = state_args["flow_mol"]
-                        except KeyError:
-                            pass
-                        try:
-                            v.temperature.value = state_args["temperature"]
-                        except KeyError:
-                            pass
-                        try:
-                            v.pressure.value = state_args["pressure"]
-                        except KeyError:
-                            pass
-                        try:
-                            v.vapor_frac.value = state_args["vapor_frac"]
-                        except KeyError:
-                            pass
+                        if not v.flow_mol.fixed:
+                            try:
+                                v.flow_mol.value = state_args["flow_mol"]
+                            except KeyError:
+                                pass
+                        if not v.temperature.fixed:
+                            try:
+                                v.temperature.value = state_args["temperature"]
+                            except KeyError:
+                                pass
+                        if not v.pressure.fixed:
+                            try:
+                                v.pressure.value = state_args["pressure"]
+                            except KeyError:
+                                pass
+                        if not v.vapor_frac.fixed:
+                            try:
+                                v.vapor_frac.value = state_args["vapor_frac"]
+                            except KeyError:
+                                pass
 
                     if hold_state:
                         v.flow_mol.fix()
@@ -448,18 +455,21 @@ class _StateBlock(StateBlock):
                                 v.pressure.fixed)
 
                     if state_args is not None:
-                        try:
-                            v.flow_mol.value = state_args["flow_mol"]
-                        except KeyError:
-                            pass
-                        try:
-                            v.temperature.value = state_args["temperature"]
-                        except KeyError:
-                            pass
-                        try:
-                            v.pressure.value = state_args["pressure"]
-                        except KeyError:
-                            pass
+                        if not v.flow_mol.fixed:
+                            try:
+                                v.flow_mol.value = state_args["flow_mol"]
+                            except KeyError:
+                                pass
+                        if not v.temperature.fixed:
+                            try:
+                                v.temperature.value = state_args["temperature"]
+                            except KeyError:
+                                pass
+                        if not v.pressure.fixed:
+                            try:
+                                v.pressure.value = state_args["pressure"]
+                            except KeyError:
+                                pass
 
                     if hold_state:
                         v.flow_mol.fix()

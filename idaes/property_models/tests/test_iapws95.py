@@ -327,6 +327,35 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].enth_mol.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "enth_mol": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestLGPh(object):
@@ -554,6 +583,35 @@ class TestLGPh(object):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
+
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].enth_mol.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "enth_mol": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -783,6 +841,35 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].enth_mol.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "enth_mol": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestGPh(object):
@@ -1011,6 +1098,35 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].enth_mol.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "enth_mol": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].enth_mol.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestMixTpx(object):
@@ -1153,14 +1269,14 @@ class TestMixTpx(object):
         assert model.prop[1].flow_mol.value == 20
         assert model.prop[1].temperature.value == 200
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         model.prop.release_state(flags)
 
         assert model.prop[1].flow_mol.value == 20
         assert model.prop[1].temperature.value == 200
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1185,14 +1301,14 @@ class TestMixTpx(object):
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 200
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         model.prop.release_state(flags)
 
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 200
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1217,14 +1333,14 @@ class TestMixTpx(object):
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         model.prop.release_state(flags)
 
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 2000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1249,29 +1365,30 @@ class TestMixTpx(object):
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 3000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         model.prop.release_state(flags)
 
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 3000
-        assert model.prop[1].vapor_frac.value == 0.2
+        assert model.prop[1].vapor_frac.value == 0.0
 
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
-    def test_initialize_w_partial_state_4(self, model):
-        assert not model.prop[1].flow_mol.fixed
-        assert not model.prop[1].temperature.fixed
-        assert not model.prop[1].pressure.fixed
-        assert model.prop[1].vapor_frac.fixed
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].temperature.fixed = True
+        model.prop[1].pressure.fixed = True
 
         flags = model.prop.initialize(
                 hold_state=True,
-                state_args={"vapor_frac": 0.3})
+                state_args={"flow_mol": 20,
+                            "temperature": 200,
+                            "pressure": 2000})
 
         assert model.prop[1].flow_mol.fixed
         assert model.prop[1].temperature.fixed
@@ -1281,18 +1398,18 @@ class TestMixTpx(object):
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 3000
-        assert model.prop[1].vapor_frac.value == 0.3
+        assert model.prop[1].vapor_frac.value == 0.0
 
         model.prop.release_state(flags)
 
         assert model.prop[1].flow_mol.value == 30
         assert model.prop[1].temperature.value == 300
         assert model.prop[1].pressure.value == 3000
-        assert model.prop[1].vapor_frac.value == 0.3
+        assert model.prop[1].vapor_frac.value == 0.0
 
-        assert not model.prop[1].flow_mol.fixed
-        assert not model.prop[1].temperature.fixed
-        assert not model.prop[1].pressure.fixed
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
 
@@ -1542,6 +1659,35 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].temperature.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "temperature": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestLTpx(object):
@@ -1789,6 +1935,37 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].temperature.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "temperature": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
+        assert model.prop[1].vapor_frac.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
+        assert model.prop[1].vapor_frac.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestGTpx(object):
@@ -2034,6 +2211,37 @@ class TestGTpx(object):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
         assert not model.prop[1].pressure.fixed
+        assert model.prop[1].vapor_frac.fixed
+
+    def test_initialize_w_state_ignore_fixed(self, model):
+        model.prop[1].flow_mol.fixed = True
+        model.prop[1].temperature.fixed = True
+        model.prop[1].pressure.fixed = True
+
+        flags = model.prop.initialize(
+                hold_state=True,
+                state_args={"flow_mol": 20,
+                            "temperature": 200,
+                            "pressure": 2000})
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
+        assert model.prop[1].vapor_frac.fixed
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        model.prop.release_state(flags)
+
+        assert model.prop[1].flow_mol.value == 30
+        assert model.prop[1].temperature.value == 300
+        assert model.prop[1].pressure.value == 3000
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].temperature.fixed
+        assert model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
 
