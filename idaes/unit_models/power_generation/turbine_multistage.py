@@ -19,7 +19,9 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 import copy
 
-from pyomo.environ import RangeSet, Set, TransformationFactory, Var, value
+from pyomo.environ import (
+    RangeSet, Set, TransformationFactory, Var, value, SolverFactory
+)
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -35,6 +37,9 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as _set_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+
+_log = getIdaesLogger(__name__)
 
 def _define_turbine_multistage_config(config):
     config.declare("dynamic", ConfigValue(
@@ -462,57 +467,16 @@ class TurbineMultistageData(UnitModelBlockData):
         """
         Initialize
         """
-        stee = True if outlvl >= 3 else False
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
+        init_log = getInitLogger(self.name, outlvl)
+
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
-
-
         ni = self.config.num_parallel_inlet_stages
-
-        # Initialize Splitter
-        # Fix n - 1 split fractions
-        self.inlet_split.split_fraction[0,"outlet_1"].value = 1.0/ni
-        for i in self.inlet_stage_idx:
-            if i == 1: #fix rest of splits at leaving first one free
-                continue
-            self.inlet_split.split_fraction[0, "outlet_{}".format(i)].fix(1.0/ni)
-        # fix inlet and free outlet
-        self.inlet_split.inlet.fix()
-        for i in self.inlet_stage_idx:
-            ol = getattr(self.inlet_split, "outlet_{}".format(i))
-            ol.unfix()
-        self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # free split fractions
-        for i in self.inlet_stage_idx:
-            self.inlet_split.split_fraction[0, "outlet_{}".format(i)].unfix()
-
-        # Initialize valves
-        for i in self.inlet_stage_idx:
-            _set_port(self.throttle_valve[i].inlet,
-                      getattr(self.inlet_split, "outlet_{}".format(i)))
-            self.throttle_valve[i].initialize(outlvl=outlvl, solver=solver,
-                optarg=optarg)
-
-        # Initialize turbine
-        for i in self.inlet_stage_idx:
-            _set_port(self.inlet_stage[i].inlet, self.throttle_valve[i].outlet)
-            self.inlet_stage[i].initialize(outlvl=outlvl, solver=solver,
-                optarg=optarg)
-
-        # Initialize Mixer
-        self.inlet_mix.use_minimum_inlet_pressure_constraint()
-        for i in self.inlet_stage_idx:
-            _set_port(getattr(self.inlet_mix, "inlet_{}".format(i)),
-                      self.inlet_stage[i].outlet)
-            getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-        self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        for i in self.inlet_stage_idx:
-            getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
-        self.inlet_mix.use_equal_pressure_constraint()
+        flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         def init_section(stages, splits, disconnects, prev_port):
             if 0 in splits:
@@ -532,19 +496,77 @@ class TurbineMultistageData(UnitModelBlockData):
                     prev_port = splits[i].outlet_1
             return prev_port
 
-        prev_port = self.inlet_mix.outlet
-        prev_port = init_section(
-            self.hp_stages, self.hp_split, self.config.hp_disconnect, prev_port)
-        if len(self.hp_stages) in self.config.hp_disconnect:
-            prev_port = self.ip_stages[1].inlet
-        prev_port = init_section(
-            self.ip_stages, self.ip_split, self.config.ip_disconnect, prev_port)
-        if len(self.ip_stages) in self.config.ip_disconnect:
-            prev_port = self.lp_stages[1].inlet
-        prev_port = init_section(
-            self.lp_stages, self.lp_split, self.config.lp_disconnect, prev_port)
+        for k in [1,2]:
+            # Initialize Splitter
+            # Fix n - 1 split fractions
+            self.inlet_split.split_fraction[0,"outlet_1"].value = 1.0/ni
+            for i in self.inlet_stage_idx:
+                if i == 1: #fix rest of splits at leaving first one free
+                    continue
+                self.inlet_split.split_fraction[0, "outlet_{}".format(i)].fix(1.0/ni)
+            # fix inlet and free outlet
+            self.inlet_split.inlet.fix()
+            for i in self.inlet_stage_idx:
+                ol = getattr(self.inlet_split, "outlet_{}".format(i))
+                ol.unfix()
+            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            # free split fractions
+            for i in self.inlet_stage_idx:
+                self.inlet_split.split_fraction[0, "outlet_{}".format(i)].unfix()
 
-        _set_port(self.outlet_stage.inlet, prev_port)
-        self.outlet_stage.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            # Initialize valves
+            for i in self.inlet_stage_idx:
+                _set_port(self.throttle_valve[i].inlet,
+                          getattr(self.inlet_split, "outlet_{}".format(i)))
+                self.throttle_valve[i].initialize(outlvl=outlvl, solver=solver,
+                    optarg=optarg)
+
+            # Initialize turbine
+            for i in self.inlet_stage_idx:
+                _set_port(self.inlet_stage[i].inlet, self.throttle_valve[i].outlet)
+                self.inlet_stage[i].initialize(outlvl=outlvl, solver=solver,
+                    optarg=optarg)
+
+            # Initialize Mixer
+            self.inlet_mix.use_minimum_inlet_pressure_constraint()
+            for i in self.inlet_stage_idx:
+                _set_port(getattr(self.inlet_mix, "inlet_{}".format(i)),
+                          self.inlet_stage[i].outlet)
+                getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
+            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            for i in self.inlet_stage_idx:
+                getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
+            self.inlet_mix.use_equal_pressure_constraint()
+
+            prev_port = self.inlet_mix.outlet
+            prev_port = init_section(
+                self.hp_stages, self.hp_split, self.config.hp_disconnect, prev_port)
+            if len(self.hp_stages) in self.config.hp_disconnect:
+                prev_port = self.ip_stages[1].inlet
+            prev_port = init_section(
+                self.ip_stages, self.ip_split, self.config.ip_disconnect, prev_port)
+            if len(self.ip_stages) in self.config.ip_disconnect:
+                prev_port = self.lp_stages[1].inlet
+            prev_port = init_section(
+                self.lp_stages, self.lp_split, self.config.lp_disconnect, prev_port)
+
+            _set_port(self.outlet_stage.inlet, prev_port)
+            self.outlet_stage.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            for t in self.flowsheet().time:
+                self.inlet_split.inlet.flow_mol[t].value = self.outlet_stage.inlet.flow_mol[t].value
+
+
+        slvr = SolverFactory(solver)
+        slvr.options = optarg
+        init_log.log(4, "Solve full multistage turbine")
+        self.inlet_split.inlet.flow_mol.unfix()
+        res = slvr.solve(self, tee=True) #init_tee(init_log))
+
+        init_log.log(3, "Flow guess: {}, Initialized Flow: {}".format(
+                flow_guess,
+                self.outlet_stage.inlet.flow_mol[0].value
+            )
+        )
+        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
 
         from_json(self, sd=istate, wts=sp)
