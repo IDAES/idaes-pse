@@ -190,7 +190,7 @@ class TurbineOutletStageData(PressureChangerData):
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             prdp = value((self.deltaP[t] - Pin)/Pin)
-            if value(Pout/Pin) > 0.9 or value(Pout/Pin) < 0.01:
+            if value(Pout/Pin) > 0.95 or value(Pout/Pin) < 0.003:
                 if value(self.ratioP[t]) < 0.9 and value(self.ratioP[t]) > 0.01:
                     Pout.fix(value(Pin*self.ratioP))
                 elif prdp < 0.9 and prdp > 0.01:
@@ -220,7 +220,7 @@ class TurbineOutletStageData(PressureChangerData):
         try:
             assert(dof == 0)
         except:
-            _log.exception("degrees_of_freedom = {}".format(dof))
+            init_log.log(5, "Error: Degrees_of_freedom = {}".format(dof))
             raise
 
         # one bad thing about reusing this is that the log messages aren't
@@ -230,7 +230,8 @@ class TurbineOutletStageData(PressureChangerData):
 
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
-        self.outlet.pressure.unfix()
+        self.outlet.pressure.fix()
+        self.inlet.flow_mol.unfix()
         self.stodola_equation.activate()
         self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
