@@ -39,11 +39,12 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # Diffusion terms need to be added
@@ -1695,20 +1696,24 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=0, optarg=None,
+    def initialize(blk, state_args=None, outlvl=6, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for 1D control volume (default solver ipopt)
+        Initialization routine for 1D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine. **Valid
-                     values:** **0** - no output (default), **1** - return
-                     solver state for each step in routine, **2** - include
-                     solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -1727,6 +1732,7 @@ argument)."""))
             triggered.
         '''
         # Get inlet state if not provided
+        init_log = getInitLogger(blk.name, outlvl)
         if state_args is None:
             state_args = {}
             state_dict = (
@@ -1783,20 +1789,19 @@ argument)."""))
         # fixed here. If CV1D initialize is triggered, this is always True.
 
         # Initialize state blocks
-        blk.properties.initialize(outlvl=outlvl - 1,
+        blk.properties.initialize(outlvl=outlvl + 1,
                                   optarg=optarg,
                                   solver=solver,
                                   state_vars_fixed=True)
 
         try:
-            blk.reactions.initialize(outlvl=outlvl - 1,
+            blk.reactions.initialize(outlvl=outlvl + 1,
                                      optarg=optarg,
                                      solver=solver)
         except AttributeError:
             pass
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete'.format(blk.name))
+        init_log.log(5, 'Initialization Complete')
 
         # Unfix the state vars fixed for discretized blocks other than inlet
         for k in blk.properties.keys():
@@ -1822,9 +1827,9 @@ argument)."""))
         else:
             blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

@@ -18,7 +18,7 @@ import click
 import idaes.solvers
 from idaes.commands import cb
 
-@cb.command(help="Get IDAES Versions of Solvers")
+@cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--url",
     help="URL to download solver",

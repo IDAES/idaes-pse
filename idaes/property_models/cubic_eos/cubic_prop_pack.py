@@ -29,7 +29,6 @@ from __future__ import division
 
 # Import Python libraries
 import math
-import logging
 import os
 from enum import Enum
 
@@ -59,11 +58,16 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes import lib_directory
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
-_so = os.path.join(os.path.dirname(__file__), "../cubic_eos/cubic_roots.so")
+_log = getIdaesLogger(__name__)
+
+
+# Set path to root finder .so file
+_so = os.path.join(lib_directory, "cubic_roots.so")
 
 
 def cubic_roots_available():
@@ -176,10 +180,10 @@ class _CubicStateBlock(StateBlock):
     """
 
     def initialize(blk, state_args=None, state_vars_fixed=False,
-                   hold_state=False, outlvl=1,
+                   hold_state=False, outlvl=5,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -191,11 +195,14 @@ class _CubicStateBlock(StateBlock):
                          * mole_frac_comp (dict with components as keys)
                          * pressure
                          * temperature
-
-            outlvl : sets output level of initialisation routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
@@ -222,8 +229,9 @@ class _CubicStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
+        init_log = getInitLogger(blk.name, outlvl)
 
-        _log.info('Starting {} initialisation'.format(blk.name))
+        init_log.info(5, 'Starting initialization')
 
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
@@ -293,11 +301,6 @@ class _CubicStateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
         # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
         if optarg is None:
             sopt = {'tol': 1e-8}
         else:
@@ -449,16 +452,8 @@ class _CubicStateBlock(StateBlock):
                                         "_sum_mole_frac_pdew"):
                     c.deactivate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Dew and bubble points initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Dew and bubble points initialization for "
-                             "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Dew and bubble point init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
@@ -469,10 +464,7 @@ class _CubicStateBlock(StateBlock):
                                        blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
                                         blk[k].temperature_dew.value)
-
-        if outlvl > 0:
-            _log.info("Equilibrium temperature initialization for "
-                      "{} completed".format(blk.name))
+        init_log.log(4, "Equilibrium temperature init complete.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -546,16 +538,9 @@ class _CubicStateBlock(StateBlock):
                                     "_teq_constraint"):
                     c.activate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Phase equilibrium init: {}.".format(condition(results)))
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Phase equilibrium initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Phase equilibrium initialization for "
-                             "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -565,14 +550,8 @@ class _CubicStateBlock(StateBlock):
                 if c.local_name not in ("sum_mole_frac_out"):
                     c.activate()
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Property initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Property initialization for "
-                             "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Property init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Return state to initial conditions
@@ -586,12 +565,12 @@ class _CubicStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        if outlvl > 0:
-            _log.info("Initialisation completed for {}".format(blk.name))
+        init_log.log(5, "Initialization complete.")
 
-    def release_state(blk, flags, outlvl=0):
+
+    def release_state(blk, flags, outlvl=6):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -601,6 +580,8 @@ class _CubicStateBlock(StateBlock):
         '''
         if flags is None:
             return
+
+        init_log = getInitLogger(blk.name, outlvl)
 
         # Unfix state variables
         for k in blk.keys():
@@ -614,9 +595,7 @@ class _CubicStateBlock(StateBlock):
             if flags['Tflag'][k] is False:
                 blk[k].temperature.unfix()
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} states released.'.format(blk.name))
+        init_log.info(5, '{} states released.'.format(blk.name))
 
 @declare_process_block_class("CubicStateBlock",
                              block_class=_CubicStateBlock)

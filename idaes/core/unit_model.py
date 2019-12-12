@@ -14,8 +14,6 @@
 Base class for unit models
 """
 
-import logging
-
 from pyomo.environ import Reference, SolverFactory
 from pyomo.network import Port
 from pyomo.opt import TerminationCondition
@@ -30,6 +28,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -37,7 +36,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("UnitModelBlock")
@@ -484,7 +483,7 @@ Must be True if dynamic = True,
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-    def initialize(blk, state_args=None, outlvl=0,
+    def initialize(blk, state_args=None, outlvl=6,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a general purpose initialization routine for simple unit
@@ -500,13 +499,14 @@ Must be True if dynamic = True,
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
                            property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -515,44 +515,27 @@ Must be True if dynamic = True,
             None
         '''
         # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
-
+        init_log = getInitLogger(blk.name, outlvl)
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.control_volume.initialize(outlvl=outlvl-1,
+        flags = blk.control_volume.initialize(outlvl=outlvl+1,
                                               optarg=optarg,
                                               solver=solver,
                                               state_args=state_args)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
+        init_log.log(4, 'Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
-        try:
-            results = opt.solve(blk, tee=stee)
-        except ValueError:
-            results = None
+        results = opt.solve(blk, tee=init_tee(init_log))
 
-        if outlvl > 0:
-            if (results is not None and
-                    results.solver.termination_condition ==
-                    TerminationCondition.optimal):
-                _log.info('{} Initialisation Step 2 Complete.'
-                          .format(blk.name))
-            else:
-                _log.warning('{} Initialisation Step 2 Failed.'
-                             .format(blk.name))
+        init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl-1)
+        blk.control_volume.release_state(flags, outlvl+1)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+        init_log.log(5, 'Initialization Complete: {}'.format(condition(results)))

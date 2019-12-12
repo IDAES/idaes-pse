@@ -272,10 +272,10 @@ class _IdealStateBlock(StateBlock):
         optarg={"tol": 1e-8},
     ):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
             state_args: Initial guess for state variables.
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
@@ -306,7 +306,7 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
 
-        _log.info("Starting {} initialisation".format(blk.name))
+        _log.info("Starting {} initialization".format(blk.name))
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -456,11 +456,11 @@ class _IdealStateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            _log.info("Initialisation completed for {}".format(blk.name))
+            _log.info("Initialization completed for {}".format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

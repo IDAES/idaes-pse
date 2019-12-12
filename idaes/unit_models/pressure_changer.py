@@ -16,7 +16,6 @@ Standard IDAES pressure changer model.
 """
 
 # Import Python libraries
-import logging
 from enum import Enum
 
 # Import Pyomo libraries
@@ -35,9 +34,10 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
-logger = logging.getLogger('idaes.unit_model')
+_log = getIdaesLogger(__name__)
 
 
 class ThermodynamicAssumption(Enum):
@@ -453,24 +453,24 @@ see property package for documentation.}"""))
             if any(blk.deltaP[t].fixed and
                     (value(blk.deltaP[t]) < 0.0)
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Compressor set with negative deltaP.'
+                _log.warning('{} Compressor set with negative deltaP.'
                                .format(blk.name))
             if any(blk.ratioP[t].fixed and
                     (value(blk.ratioP[t]) < 1.0)
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Compressor set with ratioP less than 1.'
+                _log.warning('{} Compressor set with ratioP less than 1.'
                                .format(blk.name))
             if any(blk.control_volume.properties_out[t].pressure.fixed and
                     (value(blk.control_volume.properties_in[t].pressure) >
                      value(blk.control_volume.properties_out[t].pressure))
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Compressor set with pressure decrease.'
+                _log.warning('{} Compressor set with pressure decrease.'
                                .format(blk.name))
             # Check that work is not negative
             if any(blk.work_mechanical[t].fixed and
                    (value(blk.work_mechanical[t]) < 0.0)
                    for t in blk.flowsheet().config.time):
-                logger.warning('{} Compressor maybe set with negative work.'
+                _log.warning('{} Compressor maybe set with negative work.'
                                .format(blk.name))
         else:
             # Expander
@@ -478,24 +478,24 @@ see property package for documentation.}"""))
             if any(blk.deltaP[t].fixed and
                     (value(blk.deltaP[t]) > 0.0)
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Expander/turbine set with positive deltaP.'
+                _log.warning('{} Expander/turbine set with positive deltaP.'
                                .format(blk.name))
             if any(blk.ratioP[t].fixed and
                     (value(blk.ratioP[t]) > 1.0)
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Expander/turbine set with ratioP greater '
+                _log.warning('{} Expander/turbine set with ratioP greater '
                                'than 1.'.format(blk.name))
             if any(blk.control_volume.properties_out[t].pressure.fixed and
                     (value(blk.control_volume.properties_in[t].pressure) <
                      value(blk.control_volume.properties_out[t].pressure))
                     for t in blk.flowsheet().config.time):
-                logger.warning('{} Expander/turbine maybe set with pressure ',
+                _log.warning('{} Expander/turbine maybe set with pressure ',
                                'increase.'.format(blk.name))
             # Check that work is not positive
             if any(blk.work_mechanical[t].fixed and
                    (value(blk.work_mechanical[t]) > 0.0)
                    for t in blk.flowsheet().config.time):
-                logger.warning('{} Expander/turbine set with positive work.'
+                _log.warning('{} Expander/turbine set with positive work.'
                                .format(blk.name))
 
         # Run holdup block model checks
@@ -508,10 +508,10 @@ see property package for documentation.}"""))
         except AttributeError:
             pass
 
-    def initialize(blk, state_args=None, routine=None, outlvl=0,
+    def initialize(blk, state_args=None, routine=None, outlvl=6,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
-        General wrapper for pressure changer initialisation routines
+        General wrapper for pressure changer initialization routines
 
         Keyword Arguments:
             routine : str stating which initialization routine to execute
@@ -522,13 +522,14 @@ see property package for documentation.}"""))
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -540,7 +541,7 @@ see property package for documentation.}"""))
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
 
-        # Call initialisation routine
+        # Call initialization routine
         if routine is ThermodynamicAssumption.isentropic:
             blk.init_isentropic(state_args=state_args,
                                 outlvl=outlvl,
@@ -555,20 +556,21 @@ see property package for documentation.}"""))
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         '''
-        Initialisation routine for unit (default solver ipopt)
+        Initialization routine for unit (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -576,25 +578,18 @@ see property package for documentation.}"""))
         Returns:
             None
         '''
+        init_log = getInitLogger(blk.name, outlvl)
         # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
-
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize holdup block
-        flags = blk.control_volume.initialize(outlvl=outlvl - 1,
+        flags = blk.control_volume.initialize(outlvl=outlvl + 1,
                                               optarg=optarg,
                                               solver=solver,
                                               state_args=state_args)
-
-        if outlvl > 0:
-            logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))
-
+        init_log.log(4, "Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize Isentropic block
 
@@ -620,8 +615,8 @@ see property package for documentation.}"""))
             solver=solver,
             state_args=state_args)
 
-        if outlvl > 0:
-            logger.info('{} Initialisation Step 2 Complete.'.format(blk.name))
+        init_log.log(4, "Initialization Step 2 Complete.")
+
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
@@ -629,15 +624,8 @@ see property package for documentation.}"""))
                       flowsheet().config.time.first()].temperature, Var):
             blk.properties_isentropic[:].temperature.fix()
         blk.isentropic.deactivate()
-        results = opt.solve(blk, tee=stee)
-        if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                logger.info('{} Initialisation Step 3 Complete.'
-                            .format(blk.name))
-            else:
-                logger.warning('{} Initialisation Step 3 Failed.'
-                               .format(blk.name))
+        results = opt.solve(blk, tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
 
         if isinstance(blk.properties_isentropic[blk.
                       flowsheet().config.time.first()].temperature, Var):
@@ -646,23 +634,14 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(blk, tee=stee)
-
-        if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                logger.info('{} Initialisation Step 4 Complete.'
-                            .format(blk.name))
-            else:
-                logger.warning('{} Initialisation Step 4 Failed.'
-                               .format(blk.name))
+        results = opt.solve(blk, tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 4 {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl - 1)
+        blk.control_volume.release_state(flags, outlvl + 1)
+        init_log.log(5, "Initialization Complete.")
 
-        if outlvl > 0:
-            logger.info('{} Initialisation Complete.'.format(blk.name))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
