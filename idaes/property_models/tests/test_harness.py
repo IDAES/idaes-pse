@@ -24,6 +24,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MaterialFlowBasis)
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 class PropertyTestHarness(object):
@@ -36,8 +37,9 @@ class PropertyTestHarness(object):
 
         self.configure()
 
-        # Need to attach this to m for later use
+        # Need to attach these to m for later use
         m.has_density_terms = self.has_density_terms
+        m.prop_args = self.prop_args
 
     def configure(self):
         # Placeholder method to allow user to setup test harness
@@ -88,7 +90,9 @@ class PropertyTestHarness(object):
 
     def test_state_block_construction(self, frame):
         frame.fs.props = frame.fs.params.state_block_class(
-                [1], default={"parameters": frame.fs.params})
+                [1], default={"parameters": frame.fs.params,
+                              "defined_state": True,
+                              **frame.prop_args})
 
         if not isinstance(frame.fs.props[1], StateBlockData):
             raise TypeError(
@@ -216,6 +220,34 @@ class PropertyTestHarness(object):
                 raise TypeError(
                     "Invlaid entry in define_state_Vars, {}. All members must "
                     "be Pyomo Vars.".format(v))
+
+    def test_initialize(self, frame):
+        frame._init_dof = degrees_of_freedom(frame.fs.props[1])
+
+        if not hasattr(frame.fs.props, "initialize") or \
+                not callable(frame.fs.props.initialize):
+            raise AttributeError(
+                "State Block has not implemented an initialize method.")
+
+        frame._flags = frame.fs.props.initialize(hold_state=True)
+
+        if degrees_of_freedom(frame.fs.props[1]) != 0:
+            raise Exception(
+                "initialize did not result in a State BLock with 0 "
+                "degrees of freedom.")
+
+    def test_release_state(self, frame):
+        if not hasattr(frame.fs.props, "release_state") or \
+                not callable(frame.fs.props.release_state):
+            raise AttributeError(
+                "State Block has not implemented a release_state method.")
+
+        frame.fs.props.release_state(frame._flags)
+
+        if degrees_of_freedom(frame.fs.props[1]) != frame._init_dof:
+            raise Exception(
+                "release state did not restore State BLock to original "
+                "degrees of freedom.")
 
     def test_CV_integration(self, frame):
         frame.fs.cv = ControlVolume0DBlock(default={

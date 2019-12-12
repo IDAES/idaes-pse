@@ -56,9 +56,12 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (solve_indexed_blocks,
+                                            fix_state_vars,
+                                            revert_state_vars)
 from idaes.core.util.exceptions import BurntToast
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_activated_equalities)
 from idaes import lib_directory
 from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
@@ -243,57 +246,7 @@ class _CubicStateBlock(StateBlock):
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            Fflag = {}
-            Xflag = {}
-            Pflag = {}
-            Tflag = {}
-
-            for k in blk.keys():
-                if blk[k].flow_mol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if state_args["flow_mol"] is None:
-                        blk[k].flow_mol.fix(1.0)
-                    else:
-                        blk[k].flow_mol.fix(state_args["flow_mol"])
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac_comp[j].fixed is True:
-                        Xflag[k, j] = True
-                    else:
-                        Xflag[k, j] = False
-                        if state_args["mole_frac_comp"] is None:
-                            blk[k].mole_frac_comp[j].fix(
-                                    1/len(blk[k]._params.component_list))
-                        else:
-                            blk[k].mole_frac_comp[j].fix(
-                                    state_args["mole_frac_comp"][j])
-
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if state_args["pressure"] is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(state_args["pressure"])
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if state_args["temperature"] is None:
-                        blk[k].temperature.fix(325)
-                    else:
-                        blk[k].temperature.fix(state_args["temperature"])
-
-            # ---------------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Xflag": Xflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
+            flags = fix_state_vars(blk, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
@@ -441,6 +394,7 @@ class _CubicStateBlock(StateBlock):
                             antoine_P(blk[k], j, blk[k].temperature))
 
         # Solve bubble and dew point constraints
+        cons_count = 0
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 # Deactivate all property constraints
@@ -453,8 +407,12 @@ class _CubicStateBlock(StateBlock):
                                         "_sum_mole_frac_pbub",
                                         "_sum_mole_frac_pdew"):
                     c.deactivate()
+            cons_count += number_activated_equalities(blk[k])
 
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        if cons_count > 0:
+            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        else:
+            results = None
         init_log.log(4,
                      "Dew and bubble point init: {}."
                      .format(condition(results)))
@@ -587,16 +545,7 @@ class _CubicStateBlock(StateBlock):
         init_log = getInitLogger(blk.name, outlvl)
 
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         init_log.info(5, '{} states released.'.format(blk.name))
 
