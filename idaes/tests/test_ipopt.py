@@ -17,9 +17,7 @@ def test_ipopt_available():
     """
     Tries to set-up the IPOPT and returns exception if not available
     """
-    try:
-        SolverFactory('ipopt')
-    except:
+    if not SolverFactory('ipopt').available():
         raise Exception(
             "Could not find IPOPT. Users are strongly encouraged to have a "
             "version of IPOPT available ,as it is the deault solver assuemd "
