@@ -31,10 +31,26 @@ pytestmark = pytest.mark.cubic_root
 prop_available = cubic_roots_available()
 
 
-class TestBasic(PropertyTestHarness):
+class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
-        self.param_args = {}
+        self.param_args = {"valid_phase": ("Liq", "Vap")}
+        self.prop_args = {}
+        self.has_density_terms = True
+
+
+class TestBasicL(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = BT_PR.BTParameterBlock
+        self.param_args = {"valid_phase": "Liq"}
+        self.prop_args = {}
+        self.has_density_terms = True
+
+
+class TestBasicV(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = BT_PR.BTParameterBlock
+        self.param_args = {"valid_phase": "Vap"}
         self.prop_args = {}
         self.has_density_terms = True
 
@@ -42,27 +58,6 @@ class TestBasic(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 class TestBTExample(object):
-    def test_CV_integration(self):
-        m = ConcreteModel()
-
-        m.fs = FlowsheetBlock(default={'dynamic': False})
-
-        m.fs.params = BT_PR.BTParameterBlock(
-                default={'valid_phase': ('Vap', 'Liq')})
-
-        m.fs.cv = ControlVolume0DBlock(default={
-                "property_package": m.fs.params})
-
-        m.fs.cv.add_geometry()
-
-        m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-
-        m.fs.cv.add_material_balances(has_phase_equilibrium=True)
-
-        m.fs.cv.add_energy_balances()
-
-        m.fs.cv.add_momentum_balances()
-
     def test_T_sweep(self):
         m = ConcreteModel()
 

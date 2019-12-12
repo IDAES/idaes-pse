@@ -652,6 +652,9 @@ class CubicStateBlockData(StateBlockData):
                              .format(self.name))
 
     def _make_liq_phase_eq(self):
+        # Add equilibrium temperature - in this case the state temperature
+        self._teq = Expression(expr=self.temperature)
+
         # Add supporting equations for Cubic EoS
         self.common_cubic()
 
@@ -671,6 +674,9 @@ class CubicStateBlockData(StateBlockData):
                               for i in self._params.component_list))
 
     def _make_vap_phase_eq(self):
+        # Add equilibrium temperature - in this case the state temperature
+        self._teq = Expression(expr=self.temperature)
+
         # Add supporting equations for Cubic EoS
         self.common_cubic()
 
