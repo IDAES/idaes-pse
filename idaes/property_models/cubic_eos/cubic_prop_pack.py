@@ -899,8 +899,8 @@ class CubicStateBlockData(StateBlockData):
         else:
             return 0
 
-    def get_enthalpy_density_terms(self, p):
-        """Create enthalpy density terms."""
+    def get_energy_density_terms(self, p):
+        """Create energy density terms."""
         return self.dens_mol_phase[p] * self.enth_mol_phase[p]
 
     def default_material_balance_type(self):

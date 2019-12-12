@@ -45,7 +45,7 @@ class TestParameterBlock(object):
     def test_build_default(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock()
 
@@ -60,7 +60,7 @@ class TestParameterBlock(object):
     def test_build_VL(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={
                 "valid_phase": ("Vap", "Liq")})
@@ -76,7 +76,7 @@ class TestParameterBlock(object):
     def test_build_LV(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={
                 "valid_phase": ("Liq", "Vap")})
@@ -92,7 +92,7 @@ class TestParameterBlock(object):
     def test_build_L(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={
                 "valid_phase": ("Liq")})
@@ -108,7 +108,7 @@ class TestParameterBlock(object):
     def test_build_V(self):
         m = ConcreteModel()
 
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={
                 "valid_phase": ("Vap")})

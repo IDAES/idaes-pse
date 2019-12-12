@@ -23,10 +23,20 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            value)
 
+from idaes.property_models.tests.test_harness import PropertyTestHarness
+
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
 prop_available = cubic_roots_available()
+
+
+class TestBasic(PropertyTestHarness):
+    def configure(self):
+        self.prop_pack = BT_PR.BTParameterBlock
+        self.param_args = {}
+        self.prop_args = {}
+        self.has_density_terms = True
 
 
 @pytest.mark.skipif(not prop_available,
