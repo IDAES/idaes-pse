@@ -198,7 +198,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic property package was not "
                            "provided with a state_definition configuration "
-                           "argument. Please fix you property parameter "
+                           "argument. Please fix your property parameter "
                            "definition to include this configuration "
                            "argument."):
             m.params = DummyParameterBlock(default={
@@ -212,8 +212,8 @@ class TestGenericParameterBlock(object):
 
         with pytest.raises(ConfigurationError,
                            match="params Generic property package was not "
-                           "provided with a equation_of_state configuration "
-                           "argument. Please fix you property parameter "
+                           "provided with an equation_of_state configuration "
+                           "argument. Please fix your property parameter "
                            "definition to include this configuration "
                            "argument."):
             m.params = DummyParameterBlock(default={

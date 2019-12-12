@@ -252,7 +252,7 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate equation of state
         if self.config.equation_of_state is None:
             raise ConfigurationError(
-                    "{} Generic property package was not provided with a "
+                    "{} Generic property package was not provided with an "
                     "equation_of_state configuration argument. Please fix "
                     "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
