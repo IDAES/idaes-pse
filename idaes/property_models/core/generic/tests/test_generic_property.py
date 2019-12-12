@@ -199,7 +199,7 @@ class TestGenericParameterBlock(object):
                            match="params Generic property package was not "
                            "provided with a state_definition configuration "
                            "argument. Please fix you property parameter "
-                           "defintion to include this configuration "
+                           "definition to include this configuration "
                            "argument."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
@@ -214,7 +214,7 @@ class TestGenericParameterBlock(object):
                            match="params Generic property package was not "
                            "provided with a equation_of_state configuration "
                            "argument. Please fix you property parameter "
-                           "defintion to include this configuration "
+                           "definition to include this configuration "
                            "argument."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
@@ -229,7 +229,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic property package was provided"
                            " with an invalid equation_of_state configuration "
-                           "argument. Argument must a dict with phases as "
+                           "argument. Argument must be a dict with phases as "
                            "keys."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
@@ -355,7 +355,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package provided "
                            "with invalid phase_equilibrium_dict. First value "
-                           "in each list must be a valid component, recieved "
+                           "in each list must be a valid component, received "
                            "foo."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
@@ -373,7 +373,7 @@ class TestGenericParameterBlock(object):
                            match="params Generic Property Package provided "
                            "with invalid phase_equilibrium_dict. Second value "
                            "in each list must be a 2-tuple containing 2 valid "
-                           "phases, recieved bar."):
+                           "phases, received bar."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],

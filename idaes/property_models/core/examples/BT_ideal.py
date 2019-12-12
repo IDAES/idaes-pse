@@ -11,7 +11,13 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
+Benzene-Toluene phase equilibrium package using ideal liquid and vapor.
 
+Example property package using the Generic Property Package Framework.
+This exmample shows how to set up a property package to do benzene-toluene
+phase equilibrium in the generic framework using ideal liquid and vapor
+assumptions along with methods drawn from the pre-built IDAES property
+libraries.
 """
 # Import Python libraries
 import logging
@@ -149,7 +155,7 @@ class BTIdealParameterData(GenericParameterData):
                 doc="Parameters for ideal gas heat capacity [J/mol.K]")
 
         # Constants for liquid phase specific enthalpy
-        # Source: Perry's Chemical Engineers Handbook 7th Ed.
+        # Source: Perry's Chemical Engineers' Handbook 7th Ed.
         # Units converted to J/mol.K
         cp_mol_liq_comp_coeff_data = {('benzene', '1'): 1.29E2,
                                       ('benzene', '2'): -1.7E-1,
@@ -187,7 +193,7 @@ class BTIdealParameterData(GenericParameterData):
             initialize=pressure_sat_comp_coeff_data,
             doc="Parameters for saturation pressure [Pa]")
 
-        # Source: "Perry's Chemical Engineers Handbook by Robert H. Perry"
+        # Source: "Perry's Chemical Engineers' Handbook by Robert H. Perry"
         # 7th Edition, pg. 2-98
         # Units converted to mol/m^3
         dens_mol_liq_comp_coeff_data = {('benzene', '1'): 1.0162*1e3,

@@ -25,7 +25,7 @@ from idaes.property_models.core.eos import ideal
 from idaes.core.util.exceptions import PropertyNotSupportedError
 
 
-# Dummy method for proeprty method calls
+# Dummy method for property method calls
 def dummy_call(b, j, T):
     return 42
 

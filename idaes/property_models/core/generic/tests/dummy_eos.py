@@ -18,10 +18,13 @@ from pyomo.environ import Var
 
 def common(b):
     # Create dummy var to be returned by expression calls
+    # This Var is used to create expressions where required.
     if not hasattr(b, "dummy_var"):
         b.dummy_var = Var(initialize=42)
 
     # Counter for how many times this method is called
+    # This is used to ensure that the method has been called by checking that
+    # the counter has advanced
     if hasattr(b, "eos_common"):
         b.eos_common += 1
     else:

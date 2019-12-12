@@ -63,9 +63,9 @@ class GenericPropertyPackageError(PropertyPackageError):
 def get_method(self, config_arg):
     """
     Method to inspect configuration argument and return the user-defined
-    construction method assoicated with it.
+    construction method associated with it.
 
-    This method checks whether the value is provided is a method or a
+    This method checks whether the value provided is a method or a
     module. If the value is a module, it looks in the module for a method
     with the same name as the config argument and returns this. If the
     value is a method, the method is returned. If the value is neither a
@@ -94,7 +94,7 @@ def get_method(self, config_arg):
         return c_arg
     else:
         raise ConfigurationError(
-                "{} Generic Property Package recieved invalid value "
+                "{} Generic Property Package received invalid value "
                 "for argumnet {}. Value must be either a module or a "
                 "method".format(self.name, config_arg))
 
@@ -111,7 +111,7 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""A list of names for the components of interest in the mixture.
         """))
     CONFIG.declare("phase_list", ConfigValue(
-        description="List of phases of interestl",
+        description="List of phases of interest",
         doc="""A list of phases of interest in the mixture for the property
         package."""))
     CONFIG.declare("phase_component_list", ConfigValue(
@@ -133,12 +133,12 @@ class GenericParameterData(PhysicalParameterBlock):
     CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
         default=None,
         description="Phase equilibrium formulation to use",
-        doc="""Flag indicating what formulation to use for calcuating phase
+        doc="""Flag indicating what formulation to use for calculating phase
         equilibrium. Value should be a valid Python method or None. Default =
         None, indicating no phase equilibrium will occur."""))
     CONFIG.declare("phase_equilibrium_dict", ConfigValue(
         default=None,
-        description="Phase equilibrium reactions to be modelled",
+        description="Phase equilibrium reactions to be modeled",
         doc="""Dict describing what phase equilibrium reactions should be
         included in the property package. Keys should be names from
         component_list, and values should be a 2-tuple of phases from
@@ -167,12 +167,12 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""Flag containing a dict indicating the equation of state for
         each phase. Value should be a dict with keys for each valid phase and
         values being a valid Python module with the necessary methods for
-        thedesired equation of state."""))
+        the desired equation of state."""))
 
     # Pure component property options
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density",
-        doc="""Flag indicating what method to use when calcuating liquid phase
+        doc="""Flag indicating what method to use when calculating liquid phase
         molar density."""))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies",
@@ -192,7 +192,7 @@ class GenericParameterData(PhysicalParameterBlock):
         phase component molar entropies."""))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure",
-        doc="""Flag indicating what method to use when calcuating saturation
+        doc="""Flag indicating what method to use when calculating saturation
         pressure. Value should be a valid Python method which takes two
         arguments: temperature and a component name."""))
 
@@ -246,7 +246,7 @@ class GenericParameterData(PhysicalParameterBlock):
             raise ConfigurationError(
                     "{} Generic property package was not provided with a "
                     "state_definition configuration argument. Please fix "
-                    "you property parameter defintion to include this "
+                    "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
 
         # Validate equation of state
@@ -254,13 +254,13 @@ class GenericParameterData(PhysicalParameterBlock):
             raise ConfigurationError(
                     "{} Generic property package was not provided with a "
                     "equation_of_state configuration argument. Please fix "
-                    "you property parameter defintion to include this "
+                    "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
         if not isinstance(self.config.equation_of_state, dict):
             raise ConfigurationError(
                     "{} Generic property package was provided with an invalid "
                     "equation_of_state configuration argument. Argument must "
-                    "a dict with phases as keys.".format(self.name))
+                    "be a dict with phases as keys.".format(self.name))
         if len(self.config.equation_of_state) != len(self.phase_list):
             raise ConfigurationError(
                     "{} Generic property package was provided with an invalid "
@@ -302,14 +302,14 @@ class GenericParameterData(PhysicalParameterBlock):
                     raise ConfigurationError(
                         "{} Generic Property Package provided with invalid "
                         "phase_equilibrium_dict. First value in each list "
-                        "must be a valid component, recieved {}."
+                        "must be a valid component, received {}."
                         .format(self.name, v[0]))
                 if not (isinstance(v[1], tuple) and len(v[1]) == 2):
                     raise ConfigurationError(
                         "{} Generic Property Package provided with invalid "
                         "phase_equilibrium_dict. Second value in each list "
                         "must be a 2-tuple containing 2 valid phases, "
-                        "recieved {}.".format(self.name, v[1]))
+                        "received {}.".format(self.name, v[1]))
                 for p in v[1]:
                     if p not in self.phase_list:
                         raise ConfigurationError(
@@ -328,13 +328,13 @@ class GenericParameterData(PhysicalParameterBlock):
 
     def configure(self):
         raise PropertyPackageError(
-                "{} User definied property package failed to define a "
+                "{} User defined property package failed to define a "
                 "configure method. Please contact the developer of the "
                 "property package with this error.".format(self.name))
 
     def parameters(self):
         raise PropertyPackageError(
-                "{} User definied property package failed to define a "
+                "{} User defined property package failed to define a "
                 "parameters method. Please contact the developer of the "
                 "property package with this error.".format(self.name))
 
@@ -403,9 +403,9 @@ class _GenericStateBlock(StateBlock):
                    hold_state=False, outlvl=5,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
-            state_args : a dict of initial vlaues for the state variables
+            state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
@@ -425,12 +425,12 @@ class _GenericStateBlock(StateBlock):
                                        with 0D blocks.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
@@ -491,7 +491,7 @@ class _GenericStateBlock(StateBlock):
                 # Starting high and moving down generally works better,
                 # as it under-predicts next step due to exponential form of
                 # Psat.
-                # Subtract 1 to avoid potenetial singularities at Tcrit
+                # Subtract 1 to avoid potential singularities at Tcrit
                 Tbub0 = min(blk[k]._params.temperature_crit_comp[j]
                             for j in blk[k]._params.component_list) - 1
 
@@ -513,7 +513,7 @@ class _GenericStateBlock(StateBlock):
                                    blk[k], j, Tbub0)
                            for j in blk[k]._params.component_list))
 
-                    # Limit temperature step to avoid avoid excessive overshoot
+                    # Limit temperature step to avoid excessive overshoot
                     # Only limit positive steps due to non-linearity
                     if f/df < -50:
                         Tbub1 = Tbub0 + 50
@@ -535,13 +535,13 @@ class _GenericStateBlock(StateBlock):
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
                 if hasattr(blk[k], "_mole_frac_tbub"):
-                    # If Tbub has been clacuated above, use this as the
+                    # If Tbub has been calculated above, use this as the
                     # starting point
                     Tdew0 = blk[k].temperature_bubble.value
                 else:
                     # Otherwise, use lowest component critical temperature as
                     # starting point
-                    # Subtract 1 to avoid potenetial singularities at Tcrit
+                    # Subtract 1 to avoid potential singularities at Tcrit
                     Tdew0 = min(blk[k]._params.temperature_crit_comp[j]
                                 for j in blk[k]._params.component_list) - 1
 
@@ -567,7 +567,7 @@ class _GenericStateBlock(StateBlock):
                                         blk[k], j, Tdew0)
                                 for j in blk[k]._params.component_list))
 
-                    # Limit temperature step to avoid avoid excessive overshoot
+                    # Limit temperature step to avoid excessive overshoot
                     if f/df < -50:
                         Tdew1 = Tdew0 + 50
                     else:
@@ -620,7 +620,7 @@ class _GenericStateBlock(StateBlock):
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
-                # Deactivate all constraints not assoicated wtih bubble and dew
+                # Deactivate all constraints not associated wtih bubble and dew
                 # points
                 if c.local_name not in ("eq_pressure_dew",
                                         "eq_pressure_bubble",
@@ -694,7 +694,7 @@ class _GenericStateBlock(StateBlock):
 
         results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
         init_log.log(4,
-                     "Property initialization initialization: {}."
+                     "Property initialization: {}."
                      .format(condition(results)))
 
         # ---------------------------------------------------------------------
@@ -713,12 +713,12 @@ class _GenericStateBlock(StateBlock):
                 blk.release_state(flag_dict)
 
         init_log.log(5,
-                     "Property package initialization initialization: {}."
+                     "Property package initialization: {}."
                      .format(condition(results)))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -748,7 +748,7 @@ class GenericStateBlockData(StateBlockData):
         """Callable method for Block construction."""
         super(GenericStateBlockData, self).build()
 
-        # Add state vairables and assoicated methods
+        # Add state variables and associated methods
         self._params.config.state_definition.define_state(self)
 
         # Create common components for each property package

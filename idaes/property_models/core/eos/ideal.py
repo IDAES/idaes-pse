@@ -93,6 +93,6 @@ def gibbs_mol_phase_comp(b, p, j):
 
 
 def _invalid_phase_msg(name, phase):
-    return ("{} recieved unrecognised phase name {}. Ideal property "
+    return ("{} received unrecognised phase name {}. Ideal property "
             "libray only supports Vap and Liq phases."
             .format(name, phase))
