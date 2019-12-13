@@ -20,5 +20,6 @@ def test_ipopt_available():
     if not SolverFactory('ipopt').available():
         raise Exception(
             "Could not find IPOPT. Users are strongly encouraged to have a "
-            "version of IPOPT available ,as it is the deault solver assuemd "
-            "by many IDAES examples and tests.")
+            "version of IPOPT available, as it is the default solver assumed "
+            "by many IDAES examples and tests. See the IDAES install "
+            "documentation for instructions on how to get IPOPT.")
