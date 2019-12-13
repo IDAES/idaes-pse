@@ -14,11 +14,11 @@ import pytest
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
+                           ExternalFunction,
                            Expression,
                            Param,
                            Set,
                            sqrt,
-                           value,
                            Var)
 
 from idaes.core import FlowsheetBlock
@@ -122,7 +122,7 @@ class TestParameterBlock(object):
             assert p in ["Vap"]
 
 
-class TestStateBlock_PR(object):
+class TestStateBlock_LV_PR(object):
     @pytest.fixture()
     def model(self):
         m = ConcreteModel()
@@ -278,144 +278,601 @@ class TestStateBlock_PR(object):
                                                4*EoS_param[eos]['w'])
 
         assert isinstance(model.fs.props[1].fw, Param)
-        assert len(model.fs.props[1].fw) == 2
-        for j in model.fs.props[1].fw:
-            assert j in ["a", "b"]
-            assert model.fs.props[1].fw[j] == (
-                    0.37464 +
-                    1.54226*model.fs.params.omega[j] -
-                    0.26992*model.fs.params.omega[j]**2)
-
         assert isinstance(model.fs.props[1].b, Param)
-        assert len(model.fs.props[1].b) == 2
-        for j in model.fs.props[1].b:
-            assert j in ["a", "b"]
-            assert model.fs.props[1].b[j] == value(
-                    model.fs.props[1].EoS_Bc*model.fs.params.gas_const *
-                    model.fs.params.temperature_crit[j] /
-                    model.fs.params.pressure_crit[j])
 
-#        def func_a(b, j):
-#            return (b.omegaA*((b._params.gas_const *
-#                               b._params.temperature_crit[j])**2 /
-#                              b._params.pressure_crit[j]) *
-#                    ((1+b.fw[j]*(1-sqrt(b.temperature /
-#                                        b._params.temperature_crit[j])))**2))
-#        blk.a = Expression(blk._params.component_list,
-#                           rule=func_a,
-#                           doc='Component a coefficient')
-#
-#        def func_a_eq(b, j):
-#            return (b.omegaA*((b._params.gas_const *
-#                               b._params.temperature_crit[j])**2 /
-#                              b._params.pressure_crit[j]) *
-#                    ((1+b.fw[j]*(1-sqrt(b._teq /
-#                                        b._params.temperature_crit[j])))**2))
-#        blk._a_eq = Expression(blk._params.component_list,
-#                               rule=func_a_eq,
-#                               doc='Component a coefficient at Teq')
-#
-#        def rule_am(b, p):
-#            return sum(sum(
-#                b.mole_frac_phase_comp[p, i]*b.mole_frac_phase_comp[p, j] *
-#                sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-#                for j in b._params.component_list)
-#                for i in b._params.component_list)
-#        blk.am = Expression(blk._params.phase_list, rule=rule_am)
-#
-#        def rule_am_eq(b, p):
-#            return sum(sum(
-#                b.mole_frac_phase_comp[p, i]*b.mole_frac_phase_comp[p, j] *
-#                sqrt(b._a_eq[i]*b._a_eq[j])*(1-b._params.kappa[i, j])
-#                for j in b._params.component_list)
-#                for i in b._params.component_list)
-#        blk._am_eq = Expression(blk._params.phase_list, rule=rule_am_eq)
-#
-#        def rule_bm(b, p):
-#            return sum(b.mole_frac_phase_comp[p, i]*b.b[i]
-#                       for i in b._params.component_list)
-#        blk.bm = Expression(blk._params.phase_list, rule=rule_bm)
-#
-#        def rule_A(b, p):
-#            return (b.am[p]*b.pressure /
-#                    (b._params.gas_const*b.temperature)**2)
-#        blk.A = Expression(blk._params.phase_list, rule=rule_A)
-#
-#        def rule_B(b, p):
-#            return (b.bm[p]*b.pressure /
-#                    (b._params.gas_const*b.temperature))
-#        blk.B = Expression(blk._params.phase_list, rule=rule_B)
-#
-#        def rule_A_eq(b, p):
-#            return (b._am_eq[p]*b.pressure /
-#                    (b._params.gas_const*b._teq)**2)
-#        blk._A_eq = Expression(blk._params.phase_list, rule=rule_A_eq)
-#
-#        def rule_B_eq(b, p):
-#            return (b.bm[p]*b.pressure /
-#                    (b._params.gas_const*b._teq))
-#        blk._B_eq = Expression(blk._params.phase_list, rule=rule_B_eq)
-#
-#        blk.proc_Z_liq = ExternalFunction(library=_so,
-#                                          function="ceos_z_liq")
-#        blk.proc_Z_vap = ExternalFunction(library=_so,
-#                                          function="ceos_z_vap")
-#        blk.proc_Z_liq_x = ExternalFunction(library=_so,
-#                                            function="ceos_z_liq_extend")
-#        blk.proc_Z_vap_x = ExternalFunction(library=_so,
-#                                            function="ceos_z_vap_extend")
-#
-#        def rule_delta(b, p, i):
-#            # See pg. 145 in Properties of Gases and Liquids
-#            return (2*sqrt(blk.a[i])/b.am[p] *
-#                    sum(b.mole_frac_phase_comp[p, j]*sqrt(blk.a[j]) *
-#                        (1-b._params.kappa[i, j])
-#                        for j in b._params.component_list))
-#        blk.delta = Expression(blk._params.phase_list,
-#                               blk._params.component_list,
-#                               rule=rule_delta)
-#
-#        def rule_delta_eq(b, p, i):
-#            # See pg. 145 in Properties of Gases and Liquids
-#            return (2*sqrt(blk._a_eq[i])/b._am_eq[p] *
-#                    sum(b.mole_frac_phase_comp[p, j]*sqrt(blk._a_eq[j]) *
-#                        (1-b._params.kappa[i, j])
-#                        for j in b._params.component_list))
-#        blk._delta_eq = Expression(blk._params.phase_list,
-#                                   blk._params.component_list,
-#                                   rule=rule_delta_eq)
-#
-#        def rule_dadT(b, p):
-#            # See pg. 102 in Properties of Gases and Liquids
-#            return -((b._params.gas_const/2)*sqrt(b.omegaA) *
-#                     sum(sum(b.mole_frac_phase_comp[p, i] *
-#                             b.mole_frac_phase_comp[p, j] *
-#                             (1-b._params.kappa[i, j]) *
-#                             (b.fw[j]*sqrt(b.a[i] *
-#                                           b._params.temperature_crit[j] /
-#                                           b._params.pressure_crit[j]) +
-#                              b.fw[i]*sqrt(b.a[j] *
-#                                           b._params.temperature_crit[i] /
-#                                           b._params.pressure_crit[i]))
-#                             for j in b._params.component_list)
-#                         for i in b._params.component_list) /
-#                     sqrt(b.temperature))
-#        blk.dadT = Expression(blk._params.phase_list, rule=rule_dadT)
-#
-#        blk._ext_func_param = Param(default=blk._params.cubic_type.value)
-#
-#        def rule_compress_fact(b, p):
-#            if p == "Vap":
-#                return b.proc_Z_vap(b._ext_func_param, b.A[p], b.B[p])
-#            else:
-#                return b.proc_Z_liq(b._ext_func_param, b.A[p], b.B[p])
-#        blk.compress_fact_phase = Expression(blk._params.phase_list,
-#                                             rule=rule_compress_fact)
-#
-#        def rule_compress_fact_eq(b, p):
-#            if p == "Vap":
-#                return b.proc_Z_vap(b._ext_func_param, b._A_eq[p], b._B_eq[p])
-#            else:
-#                return b.proc_Z_liq(b._ext_func_param, b._A_eq[p], b._B_eq[p])
-#        blk._compress_fact_eq = Expression(blk._params.phase_list,
-#                                           rule=rule_compress_fact_eq)
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+
+
+class TestStateBlock_L_PR(object):
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.params.component_list = Set(initialize=["a", "b"])
+        m.fs.params.cubic_type = CubicEoS.PR
+
+        m.fs.params.gas_const = Param(default=8.314462618)
+
+        m.fs.params.pressure_crit = Param(
+                m.fs.params.component_list,
+                initialize={'a': 5e6, 'b': 4e6})
+        m.fs.params.temperature_crit = Param(
+                m.fs.params.component_list,
+                initialize={"a": 500, "b": 600})
+
+        m.fs.params.omega = Param(
+                m.fs.params.component_list,
+                initialize={"a": 0.2, "b": 0.2})
+
+        m.fs.params.kappa = Param(
+            m.fs.params.component_list,
+            m.fs.params.component_list,
+            initialize={('a', 'a'): 0.0, ('a', 'b'): 0.0,
+                        ('b', 'a'): 0.0, ('b', 'b'): 0.0})
+
+        return m
+
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert len(model.fs.props[1].flow_mol) == 1
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        for j in model.fs.props[1].mole_frac_comp:
+            assert j in ["a", "b"]
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert len(model.fs.props[1].pressure) == 1
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert len(model.fs.props[1].temperature) == 1
+
+        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
+        assert len(model.fs.props[1].flow_mol_phase) == 1
+        for j in model.fs.props[1].flow_mol_phase:
+            assert j in ["Liq"]
+
+        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
+        assert len(model.fs.props[1].mole_frac_phase_comp) == 2
+        for j in model.fs.props[1].mole_frac_phase_comp:
+            assert j in [("Liq", "a"), ("Liq", "b")]
+
+        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
+        assert len(model.fs.props[1].total_flow_balance) == 1
+        assert str(model.fs.props[1].total_flow_balance.body) == str(
+                model.fs.props[1].flow_mol -
+                model.fs.props[1].flow_mol_phase['Liq'])
+
+        assert isinstance(model.fs.props[1].component_flow_balances,
+                          Constraint)
+        assert len(model.fs.props[1].component_flow_balances) == 2
+        for j in model.fs.props[1].component_flow_balances:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].component_flow_balances[j].body) == \
+                str(model.fs.props[1].mole_frac_comp[j] -
+                    model.fs.props[1].mole_frac_phase_comp['Liq', j])
+
+        assert isinstance(model.fs.props[1].sum_mole_frac_out, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac_out) == 1
+        assert str(model.fs.props[1].sum_mole_frac_out.body) == str(
+                sum(model.fs.props[1].mole_frac_comp[i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1]._teq, Expression)
+        assert len(model.fs.props[1]._teq) == 1
+        assert str(model.fs.props[1]._teq.expr) == str(
+            model.fs.props[1].temperature)
+
+    def test_common_cubic(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        eos = CubicEoS.PR
+
+        assert model.fs.props[1].omegaA == EoS_param[eos]['omegaA']
+        assert model.fs.props[1].EoS_Bc == EoS_param[eos]['coeff_b']
+        assert model.fs.props[1].EoS_u == EoS_param[eos]['u']
+        assert model.fs.props[1].EoS_w == EoS_param[eos]['w']
+        assert model.fs.props[1].EoS_p == sqrt(EoS_param[eos]['u']**2 -
+                                               4*EoS_param[eos]['w'])
+
+        assert isinstance(model.fs.props[1].fw, Param)
+        assert isinstance(model.fs.props[1].b, Param)
+
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+
+
+class TestStateBlock_V_PR(object):
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
+        m.fs.params.component_list = Set(initialize=["a", "b"])
+        m.fs.params.cubic_type = CubicEoS.PR
+
+        m.fs.params.gas_const = Param(default=8.314462618)
+
+        m.fs.params.pressure_crit = Param(
+                m.fs.params.component_list,
+                initialize={'a': 5e6, 'b': 4e6})
+        m.fs.params.temperature_crit = Param(
+                m.fs.params.component_list,
+                initialize={"a": 500, "b": 600})
+
+        m.fs.params.omega = Param(
+                m.fs.params.component_list,
+                initialize={"a": 0.2, "b": 0.2})
+
+        m.fs.params.kappa = Param(
+            m.fs.params.component_list,
+            m.fs.params.component_list,
+            initialize={('a', 'a'): 0.0, ('a', 'b'): 0.0,
+                        ('b', 'a'): 0.0, ('b', 'b'): 0.0})
+
+        return m
+
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert len(model.fs.props[1].flow_mol) == 1
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        for j in model.fs.props[1].mole_frac_comp:
+            assert j in ["a", "b"]
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert len(model.fs.props[1].pressure) == 1
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert len(model.fs.props[1].temperature) == 1
+
+        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
+        assert len(model.fs.props[1].flow_mol_phase) == 1
+        for j in model.fs.props[1].flow_mol_phase:
+            assert j in ["Vap"]
+
+        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
+        assert len(model.fs.props[1].mole_frac_phase_comp) == 2
+        for j in model.fs.props[1].mole_frac_phase_comp:
+            assert j in [("Vap", "a"), ("Vap", "b")]
+
+        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
+        assert len(model.fs.props[1].total_flow_balance) == 1
+        assert str(model.fs.props[1].total_flow_balance.body) == str(
+                model.fs.props[1].flow_mol -
+                model.fs.props[1].flow_mol_phase['Vap'])
+
+        assert isinstance(model.fs.props[1].component_flow_balances,
+                          Constraint)
+        assert len(model.fs.props[1].component_flow_balances) == 2
+        for j in model.fs.props[1].component_flow_balances:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].component_flow_balances[j].body) == \
+                str(model.fs.props[1].mole_frac_comp[j] -
+                    model.fs.props[1].mole_frac_phase_comp['Vap', j])
+
+        assert isinstance(model.fs.props[1].sum_mole_frac_out, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac_out) == 1
+        assert str(model.fs.props[1].sum_mole_frac_out.body) == str(
+                sum(model.fs.props[1].mole_frac_comp[i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1]._teq, Expression)
+        assert len(model.fs.props[1]._teq) == 1
+        assert str(model.fs.props[1]._teq.expr) == str(
+            model.fs.props[1].temperature)
+
+    def test_common_cubic(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        eos = CubicEoS.PR
+
+        assert model.fs.props[1].omegaA == EoS_param[eos]['omegaA']
+        assert model.fs.props[1].EoS_Bc == EoS_param[eos]['coeff_b']
+        assert model.fs.props[1].EoS_u == EoS_param[eos]['u']
+        assert model.fs.props[1].EoS_w == EoS_param[eos]['w']
+        assert model.fs.props[1].EoS_p == sqrt(EoS_param[eos]['u']**2 -
+                                               4*EoS_param[eos]['w'])
+
+        assert isinstance(model.fs.props[1].fw, Param)
+        assert isinstance(model.fs.props[1].b, Param)
+
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+
+
+class TestStateBlock_LV_SRK(object):
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.params = CubicParameterBlock()
+        m.fs.params.component_list = Set(initialize=["a", "b"])
+        m.fs.params.cubic_type = CubicEoS.SRK
+
+        m.fs.params.gas_const = Param(default=8.314462618)
+
+        m.fs.params.pressure_crit = Param(
+                m.fs.params.component_list,
+                initialize={'a': 5e6, 'b': 4e6})
+        m.fs.params.temperature_crit = Param(
+                m.fs.params.component_list,
+                initialize={"a": 500, "b": 600})
+
+        m.fs.params.omega = Param(
+                m.fs.params.component_list,
+                initialize={"a": 0.2, "b": 0.2})
+
+        m.fs.params.kappa = Param(
+            m.fs.params.component_list,
+            m.fs.params.component_list,
+            initialize={('a', 'a'): 0.0, ('a', 'b'): 0.0,
+                        ('b', 'a'): 0.0, ('b', 'b'): 0.0})
+
+        return m
+
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert len(model.fs.props[1].flow_mol) == 1
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        for j in model.fs.props[1].mole_frac_comp:
+            assert j in ["a", "b"]
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert len(model.fs.props[1].pressure) == 1
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert len(model.fs.props[1].temperature) == 1
+
+        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
+        assert len(model.fs.props[1].flow_mol_phase) == 2
+        for j in model.fs.props[1].flow_mol_phase:
+            assert j in ["Vap", "Liq"]
+
+        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
+        assert len(model.fs.props[1].mole_frac_phase_comp) == 4
+        for j in model.fs.props[1].mole_frac_phase_comp:
+            assert j in [("Liq", "a"), ("Liq", "b"),
+                         ("Vap", "a"), ("Vap", "b")]
+
+        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
+        assert len(model.fs.props[1].total_flow_balance) == 1
+        assert str(model.fs.props[1].total_flow_balance.body) == str(
+                model.fs.props[1].flow_mol_phase['Liq'] +
+                model.fs.props[1].flow_mol_phase['Vap'] -
+                model.fs.props[1].flow_mol)
+
+        assert isinstance(model.fs.props[1].component_flow_balances,
+                          Constraint)
+        assert len(model.fs.props[1].component_flow_balances) == 2
+        for j in model.fs.props[1].component_flow_balances:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].component_flow_balances[j].body) == \
+                str(model.fs.props[1].flow_mol *
+                    model.fs.props[1].mole_frac_comp[j] -
+                    (model.fs.props[1].flow_mol_phase['Liq'] *
+                     model.fs.props[1].mole_frac_phase_comp['Liq', j] +
+                     model.fs.props[1].flow_mol_phase['Vap'] *
+                     model.fs.props[1].mole_frac_phase_comp['Vap', j]))
+
+        assert isinstance(model.fs.props[1].sum_mole_frac, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac) == 1
+        assert str(model.fs.props[1].sum_mole_frac.body) == str(
+                sum(model.fs.props[1].mole_frac_phase_comp['Liq', i]
+                    for i in model.fs.params.component_list) -
+                sum(model.fs.props[1].mole_frac_phase_comp['Vap', i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1].sum_mole_frac_out, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac_out) == 1
+        assert str(model.fs.props[1].sum_mole_frac_out.body) == str(
+                sum(model.fs.props[1].mole_frac_comp[i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1]._teq, Var)
+        assert len(model.fs.props[1]._teq) == 1
+
+        assert isinstance(model.fs.props[1]._t1, Var)
+        assert len(model.fs.props[1]._t1) == 1
+
+        assert isinstance(model.fs.props[1].eps_1, Param)
+        assert model.fs.props[1].eps_1.value == 0.01
+        assert isinstance(model.fs.props[1].eps_2, Param)
+        assert model.fs.props[1].eps_2.value == 0.0005
+
+        assert isinstance(model.fs.props[1]._t1_constraint, Constraint)
+        assert len(model.fs.props[1]._t1_constraint) == 1
+        assert str(model.fs.props[1]._t1_constraint.body) == str(
+                model.fs.props[1]._t1 -
+                0.5*(model.fs.props[1].temperature +
+                     model.fs.props[1].temperature_bubble +
+                     sqrt((model.fs.props[1].temperature -
+                           model.fs.props[1].temperature_bubble)**2 +
+                          model.fs.props[1].eps_1**2)))
+
+        assert isinstance(model.fs.props[1]._teq_constraint, Constraint)
+        assert len(model.fs.props[1]._teq_constraint) == 1
+        assert str(model.fs.props[1]._teq_constraint.body) == str(
+                model.fs.props[1]._teq -
+                0.5*(model.fs.props[1]._t1 +
+                     model.fs.props[1].temperature_dew -
+                     sqrt((model.fs.props[1]._t1 -
+                           model.fs.props[1].temperature_dew)**2 +
+                          model.fs.props[1].eps_2**2)))
+
+        assert isinstance(model.fs.props[1]._tr_eq, Expression)
+        assert len(model.fs.props[1]._tr_eq) == 2
+        for j in model.fs.props[1]._tr_eq:
+            assert j in ["a", "b"]
+        assert str(model.fs.props[1]._tr_eq[j].expr) == str(
+                model.fs.props[1]._teq /
+                model.fs.props[1]._params.temperature_crit[j])
+
+        assert isinstance(model.fs.props[1].equilibrium_constraint,
+                          Constraint)
+        assert len(model.fs.props[1].equilibrium_constraint) == 2
+        for j in model.fs.props[1].equilibrium_constraint:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].equilibrium_constraint[j].body) == \
+                str(model.fs.props[1]._log_equilibrium_cubic("Vap", j) -
+                    model.fs.props[1]._log_equilibrium_cubic("Liq", j))
+
+    def test_common_cubic(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        eos = CubicEoS.SRK
+
+        assert model.fs.props[1].omegaA == EoS_param[eos]['omegaA']
+        assert model.fs.props[1].EoS_Bc == EoS_param[eos]['coeff_b']
+        assert model.fs.props[1].EoS_u == EoS_param[eos]['u']
+        assert model.fs.props[1].EoS_w == EoS_param[eos]['w']
+        assert model.fs.props[1].EoS_p == sqrt(EoS_param[eos]['u']**2 -
+                                               4*EoS_param[eos]['w'])
+
+        assert isinstance(model.fs.props[1].fw, Param)
+        assert isinstance(model.fs.props[1].b, Param)
+
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+
+
+class TestStateBlock_L_SRK(object):
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
+        m.fs.params.component_list = Set(initialize=["a", "b"])
+        m.fs.params.cubic_type = CubicEoS.SRK
+
+        m.fs.params.gas_const = Param(default=8.314462618)
+
+        m.fs.params.pressure_crit = Param(
+                m.fs.params.component_list,
+                initialize={'a': 5e6, 'b': 4e6})
+        m.fs.params.temperature_crit = Param(
+                m.fs.params.component_list,
+                initialize={"a": 500, "b": 600})
+
+        m.fs.params.omega = Param(
+                m.fs.params.component_list,
+                initialize={"a": 0.2, "b": 0.2})
+
+        m.fs.params.kappa = Param(
+            m.fs.params.component_list,
+            m.fs.params.component_list,
+            initialize={('a', 'a'): 0.0, ('a', 'b'): 0.0,
+                        ('b', 'a'): 0.0, ('b', 'b'): 0.0})
+
+        return m
+
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert len(model.fs.props[1].flow_mol) == 1
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        for j in model.fs.props[1].mole_frac_comp:
+            assert j in ["a", "b"]
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert len(model.fs.props[1].pressure) == 1
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert len(model.fs.props[1].temperature) == 1
+
+        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
+        assert len(model.fs.props[1].flow_mol_phase) == 1
+        for j in model.fs.props[1].flow_mol_phase:
+            assert j in ["Liq"]
+
+        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
+        assert len(model.fs.props[1].mole_frac_phase_comp) == 2
+        for j in model.fs.props[1].mole_frac_phase_comp:
+            assert j in [("Liq", "a"), ("Liq", "b")]
+
+        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
+        assert len(model.fs.props[1].total_flow_balance) == 1
+        assert str(model.fs.props[1].total_flow_balance.body) == str(
+                model.fs.props[1].flow_mol -
+                model.fs.props[1].flow_mol_phase['Liq'])
+
+        assert isinstance(model.fs.props[1].component_flow_balances,
+                          Constraint)
+        assert len(model.fs.props[1].component_flow_balances) == 2
+        for j in model.fs.props[1].component_flow_balances:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].component_flow_balances[j].body) == \
+                str(model.fs.props[1].mole_frac_comp[j] -
+                    model.fs.props[1].mole_frac_phase_comp['Liq', j])
+
+        assert isinstance(model.fs.props[1].sum_mole_frac_out, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac_out) == 1
+        assert str(model.fs.props[1].sum_mole_frac_out.body) == str(
+                sum(model.fs.props[1].mole_frac_comp[i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1]._teq, Expression)
+        assert len(model.fs.props[1]._teq) == 1
+        assert str(model.fs.props[1]._teq.expr) == str(
+            model.fs.props[1].temperature)
+
+    def test_common_cubic(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        eos = CubicEoS.SRK
+
+        assert model.fs.props[1].omegaA == EoS_param[eos]['omegaA']
+        assert model.fs.props[1].EoS_Bc == EoS_param[eos]['coeff_b']
+        assert model.fs.props[1].EoS_u == EoS_param[eos]['u']
+        assert model.fs.props[1].EoS_w == EoS_param[eos]['w']
+        assert model.fs.props[1].EoS_p == sqrt(EoS_param[eos]['u']**2 -
+                                               4*EoS_param[eos]['w'])
+
+        assert isinstance(model.fs.props[1].fw, Param)
+        assert isinstance(model.fs.props[1].b, Param)
+
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
+
+
+class TestStateBlock_V_SRK(object):
+    @pytest.fixture()
+    def model(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
+        m.fs.params.component_list = Set(initialize=["a", "b"])
+        m.fs.params.cubic_type = CubicEoS.SRK
+
+        m.fs.params.gas_const = Param(default=8.314462618)
+
+        m.fs.params.pressure_crit = Param(
+                m.fs.params.component_list,
+                initialize={'a': 5e6, 'b': 4e6})
+        m.fs.params.temperature_crit = Param(
+                m.fs.params.component_list,
+                initialize={"a": 500, "b": 600})
+
+        m.fs.params.omega = Param(
+                m.fs.params.component_list,
+                initialize={"a": 0.2, "b": 0.2})
+
+        m.fs.params.kappa = Param(
+            m.fs.params.component_list,
+            m.fs.params.component_list,
+            initialize={('a', 'a'): 0.0, ('a', 'b'): 0.0,
+                        ('b', 'a'): 0.0, ('b', 'b'): 0.0})
+
+        return m
+
+    def test_build_default(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        assert isinstance(model.fs.props[1].flow_mol, Var)
+        assert len(model.fs.props[1].flow_mol) == 1
+
+        assert isinstance(model.fs.props[1].mole_frac_comp, Var)
+        assert len(model.fs.props[1].mole_frac_comp) == 2
+        for j in model.fs.props[1].mole_frac_comp:
+            assert j in ["a", "b"]
+
+        assert isinstance(model.fs.props[1].pressure, Var)
+        assert len(model.fs.props[1].pressure) == 1
+        assert isinstance(model.fs.props[1].temperature, Var)
+        assert len(model.fs.props[1].temperature) == 1
+
+        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
+        assert len(model.fs.props[1].flow_mol_phase) == 1
+        for j in model.fs.props[1].flow_mol_phase:
+            assert j in ["Vap"]
+
+        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
+        assert len(model.fs.props[1].mole_frac_phase_comp) == 2
+        for j in model.fs.props[1].mole_frac_phase_comp:
+            assert j in [("Vap", "a"), ("Vap", "b")]
+
+        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
+        assert len(model.fs.props[1].total_flow_balance) == 1
+        assert str(model.fs.props[1].total_flow_balance.body) == str(
+                model.fs.props[1].flow_mol -
+                model.fs.props[1].flow_mol_phase['Vap'])
+
+        assert isinstance(model.fs.props[1].component_flow_balances,
+                          Constraint)
+        assert len(model.fs.props[1].component_flow_balances) == 2
+        for j in model.fs.props[1].component_flow_balances:
+            assert j in ["a", "b"]
+            assert str(model.fs.props[1].component_flow_balances[j].body) == \
+                str(model.fs.props[1].mole_frac_comp[j] -
+                    model.fs.props[1].mole_frac_phase_comp['Vap', j])
+
+        assert isinstance(model.fs.props[1].sum_mole_frac_out, Constraint)
+        assert len(model.fs.props[1].sum_mole_frac_out) == 1
+        assert str(model.fs.props[1].sum_mole_frac_out.body) == str(
+                sum(model.fs.props[1].mole_frac_comp[i]
+                    for i in model.fs.params.component_list))
+
+        assert isinstance(model.fs.props[1]._teq, Expression)
+        assert len(model.fs.props[1]._teq) == 1
+        assert str(model.fs.props[1]._teq.expr) == str(
+            model.fs.props[1].temperature)
+
+    def test_common_cubic(self, model):
+        model.fs.props = model.fs.params.state_block_class(
+                [1], default={"parameters": model.fs.params})
+
+        eos = CubicEoS.SRK
+
+        assert model.fs.props[1].omegaA == EoS_param[eos]['omegaA']
+        assert model.fs.props[1].EoS_Bc == EoS_param[eos]['coeff_b']
+        assert model.fs.props[1].EoS_u == EoS_param[eos]['u']
+        assert model.fs.props[1].EoS_w == EoS_param[eos]['w']
+        assert model.fs.props[1].EoS_p == sqrt(EoS_param[eos]['u']**2 -
+                                               4*EoS_param[eos]['w'])
+
+        assert isinstance(model.fs.props[1].fw, Param)
+        assert isinstance(model.fs.props[1].b, Param)
+
+        assert isinstance(model.fs.props[1].proc_Z_liq, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_liq_x, ExternalFunction)
+        assert isinstance(model.fs.props[1].proc_Z_vap_x, ExternalFunction)
