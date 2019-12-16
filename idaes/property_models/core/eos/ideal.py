@@ -70,7 +70,7 @@ def fug_phase_comp(b, p, j):
         return b.mole_frac_phase_comp[p, j]*b.pressure
     elif p == "Liq":
         return b.mole_frac_phase_comp[p, j] * \
-               get_method(b, "pressure_sat_comp")(b, j, b.temperature)
+               get_method(b, "pressure_sat_comp")(b, j, b._teq)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

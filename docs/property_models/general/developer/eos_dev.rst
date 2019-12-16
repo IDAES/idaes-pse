@@ -21,7 +21,9 @@ Equation of State Modules in the IDAES Generic Property Package Framework are fi
 Phase Equilibrium
 -----------------
 
-When calculating phase equilibrium, the IDAES Generic Property Package Framework uses the general form :math:`\Phi_{\text{phase 1, j}} = \Phi_{\text{phase 2, j}}` where :math:`\Phi_{p, j}` is the fugacity of component :math:`j` in phase :math:`p`. As such, all equation of state methods should contain a method for calculating fugacity if they are to support phase equilibrium calculations.
+When calculating phase equilibrium, the IDAES Generic Property Package Framework uses the general form :math:`\Phi^e_{\text{phase 1, j}} = \Phi^e_{\text{phase 2, j}}` where :math:`\Phi^e_{p, j}` is the fugacity of component :math:`j` in phase :math:`p` calculated at the equilibrium tempearture (:math:`T_{eq}`, variable name `self._teq`). The equilibrium temperature is calculated using the users' choice of phase equilibrium formulation and determines how the property packge will handle phase transitions.
+
+All equation of state methods should contain a method for calculating fugacity if they are to support phase equilibrium calculations.
 
 Accessing Pure Component Property Methods
 -----------------------------------------

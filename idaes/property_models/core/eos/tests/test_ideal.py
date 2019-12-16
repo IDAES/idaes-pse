@@ -44,6 +44,7 @@ def m():
     # Add common variables
     m.pressure = Var()
     m.temperature = Var()
+    m._teq = Var()
     m.mole_frac_phase_comp = Var(m._params.phase_list,
                                  m._params.component_list)
 
