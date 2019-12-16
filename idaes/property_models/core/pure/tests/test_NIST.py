@@ -42,21 +42,21 @@ def frame():
     m.params.pressure_ref = Var(initialize=1e5)
 
     m.params.pressure_sat_comp_coeff = Var(["H2O"], ["A", "B", "C"])
-    m.params.cp_ig_comp_coeff = Var(["H2O"],
-                                    ["A", "B", "C", "D", "E", "F", "G", "H"])
+    m.params.cp_mol_ig_comp_coeff = Var(
+            ["H2O"], ["A", "B", "C", "D", "E", "F", "G", "H"])
 
     m.params.pressure_sat_comp_coeff["H2O", "A"].value = 8.55959  # +5 for unit conversion
     m.params.pressure_sat_comp_coeff["H2O", "B"].value = 643.748
     m.params.pressure_sat_comp_coeff["H2O", "C"].value = -198.043
 
-    m.params.cp_ig_comp_coeff["H2O", "A"].value = 30.09200
-    m.params.cp_ig_comp_coeff["H2O", "B"].value = 6.832514
-    m.params.cp_ig_comp_coeff["H2O", "C"].value = 6.793435
-    m.params.cp_ig_comp_coeff["H2O", "D"].value = -2.534480
-    m.params.cp_ig_comp_coeff["H2O", "E"].value = 0.082139
-    m.params.cp_ig_comp_coeff["H2O", "F"].value = -250.8810
-    m.params.cp_ig_comp_coeff["H2O", "G"].value = 223.3967
-    m.params.cp_ig_comp_coeff["H2O", "H"].value = -241.8264
+    m.params.cp_mol_ig_comp_coeff["H2O", "A"].value = 30.09200
+    m.params.cp_mol_ig_comp_coeff["H2O", "B"].value = 6.832514
+    m.params.cp_mol_ig_comp_coeff["H2O", "C"].value = 6.793435
+    m.params.cp_mol_ig_comp_coeff["H2O", "D"].value = -2.534480
+    m.params.cp_mol_ig_comp_coeff["H2O", "E"].value = 0.082139
+    m.params.cp_mol_ig_comp_coeff["H2O", "F"].value = -250.8810
+    m.params.cp_mol_ig_comp_coeff["H2O", "G"].value = 223.3967
+    m.params.cp_mol_ig_comp_coeff["H2O", "H"].value = -241.8264
 
     # Create a dummy state block
     m.props = Block([1])

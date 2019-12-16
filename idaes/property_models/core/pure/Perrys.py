@@ -24,7 +24,7 @@ from pyomo.environ import log
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 def cp_mol_liq_comp(b, j, T):
-    # Specific enthalpy
+    # Specific heat capacity
     return 1e-3*(b._params.cp_mol_liq_comp_coeff[j, "5"]*T**4 +
                  b._params.cp_mol_liq_comp_coeff[j, "4"]*T**3 +
                  b._params.cp_mol_liq_comp_coeff[j, "3"]*T**2 +

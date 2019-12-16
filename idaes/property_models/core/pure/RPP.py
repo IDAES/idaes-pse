@@ -24,7 +24,7 @@ from pyomo.environ import exp, log
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 def cp_mol_ig_comp(b, j, T):
-    # Specific enthalpy
+    # Specific heat capacity
     return (b._params.cp_mol_ig_comp_coeff[j, "D"]*T**3 +
             b._params.cp_mol_ig_comp_coeff[j, "C"]*T**2 +
             b._params.cp_mol_ig_comp_coeff[j, "B"]*T +

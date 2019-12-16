@@ -27,38 +27,38 @@ from pyomo.environ import log
 def cp_mol_ig_comp(b, j, T):
     # Specific heat capacity (const. P)  via the Shomate equation
     t = T/1000
-    return(b._params.cp_ig_comp_coeff[j, "A"] +
-           b._params.cp_ig_comp_coeff[j, "B"]*t +
-           b._params.cp_ig_comp_coeff[j, "C"]*t**2 +
-           b._params.cp_ig_comp_coeff[j, "D"]*t**3 +
-           b._params.cp_ig_comp_coeff[j, "E"]*t**-2)
+    return(b._params.cp_mol_ig_comp_coeff[j, "A"] +
+           b._params.cp_mol_ig_comp_coeff[j, "B"]*t +
+           b._params.cp_mol_ig_comp_coeff[j, "C"]*t**2 +
+           b._params.cp_mol_ig_comp_coeff[j, "D"]*t**3 +
+           b._params.cp_mol_ig_comp_coeff[j, "E"]*t**-2)
 
 
 def enth_mol_ig_comp(b, j, T):
     # Specific enthalpy via the Shomate equation
     t = T/1000
     tr = b._params.temperature_ref/1000
-    return 1e3*(b._params.cp_ig_comp_coeff[j, "A"]*(t-tr) +
-                (b._params.cp_ig_comp_coeff[j, "B"]/2) *
+    return 1e3*(b._params.cp_mol_ig_comp_coeff[j, "A"]*(t-tr) +
+                (b._params.cp_mol_ig_comp_coeff[j, "B"]/2) *
                 (t**2-tr**2) +
-                (b._params.cp_ig_comp_coeff[j, "C"]/3) *
+                (b._params.cp_mol_ig_comp_coeff[j, "C"]/3) *
                 (t**3-tr**3) +
-                (b._params.cp_ig_comp_coeff[j, "D"]/4) *
+                (b._params.cp_mol_ig_comp_coeff[j, "D"]/4) *
                 (t**4-tr**4) -
-                b._params.cp_ig_comp_coeff[j, "E"]*(1/t-1/tr) +
-                b._params.cp_ig_comp_coeff[j, "F"] -
-                b._params.cp_ig_comp_coeff[j, "H"])
+                b._params.cp_mol_ig_comp_coeff[j, "E"]*(1/t-1/tr) +
+                b._params.cp_mol_ig_comp_coeff[j, "F"] -
+                b._params.cp_mol_ig_comp_coeff[j, "H"])
 
 
 def entr_mol_ig_comp(b, j, T):
     # Specific entropy via the Shomate equation
     t = T/1000
-    return(b._params.cp_ig_comp_coeff[j, "A"]*log(t) +
-           b._params.cp_ig_comp_coeff[j, "B"]*t +
-           (b._params.cp_ig_comp_coeff[j, "C"]/2)*t**2 +
-           (b._params.cp_ig_comp_coeff[j, "D"]/3)*t**3 -
-           (b._params.cp_ig_comp_coeff[j, "E"]/2)*t**-2 +
-           b._params.cp_ig_comp_coeff[j, "G"])
+    return(b._params.cp_mol_ig_comp_coeff[j, "A"]*log(t) +
+           b._params.cp_mol_ig_comp_coeff[j, "B"]*t +
+           (b._params.cp_mol_ig_comp_coeff[j, "C"]/2)*t**2 +
+           (b._params.cp_mol_ig_comp_coeff[j, "D"]/3)*t**3 -
+           (b._params.cp_mol_ig_comp_coeff[j, "E"]/2)*t**-2 +
+           b._params.cp_mol_ig_comp_coeff[j, "G"])
 
 
 # -----------------------------------------------------------------------------
