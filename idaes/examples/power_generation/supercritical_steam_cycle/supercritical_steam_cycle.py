@@ -899,7 +899,7 @@ def initialize(m, fileoutput=None, fileinput=None):
     return solver
 
 
-def pfd_result(outfile, m, df):
+def pfd_result(m, df, svg):
     tags = {}
     for i in df.index:
         tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
@@ -917,9 +917,8 @@ def pfd_result(outfile, m, df):
     tags["bfp_eff"] = pyo.value(m.fs.bfp.efficiency_pump[0]) * 100
     tags["bfpt_power"] = pyo.value(m.fs.bfpt.work_mechanical[0])
     tags["bfpt_eff"] = pyo.value(m.fs.bfpt.efficiency_isentropic[0]) * 100
-    original_svg_file = os.path.join(this_file_dir(), "supercritical_steam_cycle.svg")
-    with open(original_svg_file, "r") as f:
-        s = svg_tag(tags, f, outfile=outfile)
+
+    return svg_tag(tags, svg=svg)
 
 
 def main(initialize_from_file=None, store_initialization=None):
