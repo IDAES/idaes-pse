@@ -11,6 +11,13 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+"""This is an example supercritical pulverived coal (SCPC) power plant steam cycle
+model.  This model doesn't represent any specific power plant, but it represents
+what could be considered a typical SCPC plant.  This model is for demonstration
+and tutorial purposes only.  The modeled plant has an approximate gross power
+output of 640 MW.
+"""
+
 # Import Python libraries
 import os
 import logging
@@ -25,14 +32,20 @@ import argparse
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.opt import TerminationCondition
-from pyomo.common.fileutils import this_file_dir
 from pyomo.network import Arc, Port
-from pyomo.core.kernel.component_set import ComponentSet
 
-# Import IDAES
-from idaes.core import FlowsheetBlock, MaterialBalanceType
+# Imports IDAES, what they are and why they are used is described in the comments
+from idaes.core import (
+    FlowsheetBlock, # Flowsheet model class
+    MaterialBalanceType, # Enum for material balance equation type
+)
+# Model model_serializer allows the state of a model to be saved and loaded
 from idaes.core.util import model_serializer as ms
+# copy_port_values is used in initialization to copy port values from one model
+# to the next when models are solved independently.
 from idaes.core.util import copy_port_values as _set_port
+# svg_tag is a function that allows model values to be inserted into a svg. This
+# is usually used to make a PFD that shows model results. 
 from idaes.core.util.misc import svg_tag
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.power_generation import TurbineMultistage, FWH0D
