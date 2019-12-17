@@ -13,34 +13,23 @@
 
 """This is an example supercritical pulverived coal (SCPC) power plant steam cycle
 model.  This model doesn't represent any specific power plant, but it represents
-what could be considered a typical SCPC plant.  This model is for demonstration
-and tutorial purposes only.  The modeled plant has an approximate gross power
-output of 600 MW.
+what could be considered a typical SCPC plant, producing around 620 MW gross.
+This model is for demonstration and tutorial purposes only. Before looking at the
+model, it may be useful to look at the process flow diagram.
 """
 
 __author__ = "John Eslick"
 
 # Import Python libraries
-import os
-import logging
-import sys
-import csv
 from collections import OrderedDict
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import argparse
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
-from pyomo.opt import TerminationCondition
 from pyomo.network import Arc, Port
 
 # Imports IDAES, what they are and why they are used is described in the comments
-from idaes.core import (
-    FlowsheetBlock,  # Flowsheet model class
-    MaterialBalanceType,  # Enum for material balance equation type
-)
+from idaes.core import FlowsheetBlock  # Flowsheet model class
 
 # Model model_serializer allows the state of a model to be saved and loaded
 from idaes.core.util import model_serializer as ms
@@ -64,13 +53,7 @@ from idaes.unit_models.power_generation import TurbineMultistage, FWH0D
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import some basic IDAES unit models
-from idaes.unit_models import (
-    Mixer,
-    HeatExchanger,
-    PressureChanger,
-    MomentumMixingType,
-    Heater,
-)
+from idaes.unit_models import Mixer, HeatExchanger, PressureChanger, MomentumMixingType
 
 # Import a callback used to construct heat exchangers which use the Underwood
 # approximation for LMTD
@@ -183,7 +166,6 @@ def create_model():
     m.fs.condenser_mix = Mixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "inlet_list": ["main", "bfpt"],
             "property_package": m.fs.prop_water,
         }
@@ -268,7 +250,6 @@ def create_model():
     m.fs.hotwell = Mixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "inlet_list": ["condensate", "makeup"],
             "property_package": m.fs.prop_water,
         }
@@ -283,7 +264,6 @@ def create_model():
     m.fs.cond_pump = PressureChanger(
         default={
             "property_package": m.fs.prop_water,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "thermodynamic_assumption": ThermodynamicAssumption.pump,
         }
     )
@@ -292,11 +272,7 @@ def create_model():
     ############################################################################
     # Need to set the material balance type on all the feedwater heaters, so
     # define fwh_config to condense the code down a bit.
-    fwh_config = {
-        "delta_temperature_callback": delta_temperature_underwood_callback,
-        "shell": {"material_balance_type": MaterialBalanceType.componentTotal},
-        "tube": {"material_balance_type": MaterialBalanceType.componentTotal},
-    }
+    fwh_config = {"delta_temperature_callback": delta_temperature_underwood_callback}
 
     # The feedwater heater model allows feedwater heaters with a desuperheat,
     # condensing and subcooling section for be added an a resonably simple way.
@@ -316,7 +292,6 @@ def create_model():
     m.fs.fwh1_pump = PressureChanger(
         default={
             "property_package": m.fs.prop_water,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "thermodynamic_assumption": ThermodynamicAssumption.pump,
         }
     )
@@ -324,7 +299,6 @@ def create_model():
     m.fs.fwh1_return = Mixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "inlet_list": ["feedwater", "fwh1_drain"],
             "property_package": m.fs.prop_water,
         }
@@ -376,7 +350,6 @@ def create_model():
     m.fs.fwh5_da = Mixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "inlet_list": ["steam", "drain", "feedwater"],
             "property_package": m.fs.prop_water,
         }
@@ -390,7 +363,6 @@ def create_model():
     m.fs.bfp = PressureChanger(
         default={
             "property_package": m.fs.prop_water,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "thermodynamic_assumption": ThermodynamicAssumption.pump,
         }
     )
@@ -398,7 +370,6 @@ def create_model():
         default={
             "property_package": m.fs.prop_water,
             "compressor": False,
-            "material_balance_type": MaterialBalanceType.componentTotal,
             "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
         }
     )
@@ -536,9 +507,7 @@ def _create_arcs(m):
     m.fs.COND_01 = Arc(
         source=m.fs.condenser.outlet_1_ph, destination=m.fs.hotwell.condensate
     )
-    m.fs.COND_02 = Arc(
-        source=m.fs.hotwell.outlet, destination=m.fs.cond_pump.inlet
-    )
+    m.fs.COND_02 = Arc(source=m.fs.hotwell.outlet, destination=m.fs.cond_pump.inlet)
     ############################################################################
     #  Low pressure FWHs                                                       #
     ############################################################################
@@ -601,16 +570,12 @@ def _create_arcs(m):
     m.fs.EXTR_BFPT_A = Arc(
         source=m.fs.turb.ip_split[10].outlet_3, destination=m.fs.bfpt.inlet
     )
-    m.fs.EXHST_BFPT = Arc(
-        source=m.fs.bfpt.outlet, destination=m.fs.condenser_mix.bfpt
-    )
+    m.fs.EXHST_BFPT = Arc(source=m.fs.bfpt.outlet, destination=m.fs.condenser_mix.bfpt)
     ############################################################################
     #  High pressure feedwater heaters                                         #
     ############################################################################
     # fwh6
-    m.fs.FW05B = Arc(
-        source=m.fs.bfp.outlet, destination=m.fs.fwh6.cooling.inlet_2
-    )
+    m.fs.FW05B = Arc(source=m.fs.bfp.outlet, destination=m.fs.fwh6.cooling.inlet_2)
     m.fs.FWH6_DRN = Arc(
         source=m.fs.fwh6.cooling.outlet_1, destination=m.fs.fwh5_da.drain
     )
@@ -650,7 +615,9 @@ def _stream_dict(m):
     """
 
     # Put all the toplevel streams in the stream dict
-    m._streams = dict([(c.getname(), c) for c in m.fs.component_objects(Arc, descend_into=False)])
+    m._streams = dict(
+        [(c.getname(), c) for c in m.fs.component_objects(Arc, descend_into=False)]
+    )
 
     # There are some addtional streams we are interested in that are either
     # inlets or outlets, where there is no arc or arcs buried in unit models
@@ -672,7 +639,7 @@ def _stream_dict(m):
         }
     )
 
-    #Alphabetize to find streams easier in the tabular view.
+    # Alphabetize to find streams easier in the tabular view.
     m._streams = OrderedDict(sorted(m._streams.items()))
 
 
@@ -862,10 +829,10 @@ def initialize(m, fileoutput=None, fileinput=None):
     m.fs.turb.hp_split[4].split_fraction[:, "outlet_2"].unfix()
     # initialize the boiler feed pump turbine.
     _set_port(m.fs.bfpt.inlet, m.fs.turb.ip_split[10].outlet_3)
-    #m.fs.bfpt.ratioP.fix(0.4)
+    # m.fs.bfpt.ratioP.fix(0.4)
     m.fs.bfpt.initialize(outlvl=1)
     # m.fs.bfpt.ratioP.unfix()
-    #m.fs.constraint_out_pressure.deactivate()
+    # m.fs.constraint_out_pressure.deactivate()
     ############################################################################
     #  Condenser section                                                       #
     ############################################################################
