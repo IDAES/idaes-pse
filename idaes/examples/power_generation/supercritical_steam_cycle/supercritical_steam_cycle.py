@@ -242,7 +242,7 @@ def create_model():
         doc="Pressure added to Psat in the condeser. This is to account for"
         "some subcooling. (Pa)",
     )
-    m.fs.condenser.pressure_over_sat.fix(2000)
+    m.fs.condenser.pressure_over_sat.fix(500)
     # Add a constraint for condenser pressure
     @m.fs.condenser.Constraint(m.fs.time)
     def eq_pressure(b, t):
@@ -718,8 +718,9 @@ def set_model_input(m):
     ############################################################################
     #  Condenser section inputs                                                #
     ############################################################################
-    m.fs.condenser.inlet_2.flow_mol.fix(2000000)
-    m.fs.condenser.inlet_2.enth_mol.fix(1600)
+    m.fs.condenser.pressure_over_sat.fix(100)
+    m.fs.condenser.inlet_2.flow_mol.fix(2500000)
+    m.fs.condenser.inlet_2.enth_mol.fix(1700)
     m.fs.condenser.inlet_2.pressure.fix(500000)
     m.fs.condenser.delta_temperature_out.fix(3)
     m.fs.condenser.area.fix(2.2e4)
