@@ -18,7 +18,7 @@ __author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
-from idaes.examples.power_generation.supercritical_steam_cycle.supercritical_steam_cycle import main
+from idaes.examples.power_generation.supercritical_steam_cycle import main
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
 from idaes.property_models import iapws95
