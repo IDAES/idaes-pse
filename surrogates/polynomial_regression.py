@@ -1117,7 +1117,7 @@ class PolynomialRegression:
         )
         return self.polynomial_regression_fitting(additional_data)
 
-    def pr_predict_output(self, results_vector, x_data):
+    def poly_predict_output(self, results_vector, x_data):
         nf = x_data.shape[1]
         x_list = [i for i in range(0, nf)]
         import pyomo.environ as aml
