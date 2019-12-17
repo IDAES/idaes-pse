@@ -1,6 +1,6 @@
 import sys
 
-from pysmo.sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
+from sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
