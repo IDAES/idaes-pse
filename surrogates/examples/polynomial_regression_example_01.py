@@ -31,7 +31,7 @@ p.pprint()
 d.set_additional_terms([ pyo.sin(p['X1']), pyo.cos(p['X1']),
                          pyo.sin(p['X2']), pyo.cos(p['X2']) ])
 if True:
-    results = d.fit_surrogate()
+    results = d.pr_training()
 else:
     results = d.polynomial_regression_fitting(
         [ np.sin(c['X1']), np.cos(c['X1']), np.sin(c['X2']), np.cos(c['X2']) ])

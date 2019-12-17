@@ -1106,7 +1106,8 @@ class PolynomialRegression:
     def set_additional_terms(self, term_list):
         self.additional_term_expressions = term_list
 
-    def fit_surrogate(self):
+    # def fit_surrogate(self):
+	def pr_training(self):
         cMap = ComponentMap()
         for i, col in enumerate(self.regression_data_columns):
             cMap[self.feature_list[col]] = self.regression_data[:, i]
