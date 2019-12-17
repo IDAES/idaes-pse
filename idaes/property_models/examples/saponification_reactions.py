@@ -15,9 +15,6 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 
@@ -124,10 +121,10 @@ class _ReactionBlock(ReactionBlockBase):
     """
     def initialize(blk, outlvl=0, **kwargs):
         '''
-        Initialisation routine for reaction package.
+        Initialization routine for reaction package.
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = report after each step
@@ -136,8 +133,7 @@ class _ReactionBlock(ReactionBlockBase):
             None
         '''
         if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialization Complete.'.format(blk.name))
 
 
 @declare_process_block_class("ReactionBlock",
@@ -209,19 +205,4 @@ class ReactionBlockData(ReactionBlockDataBase):
         return MaterialFlowBasis.molar
 
     def model_check(blk):
-        """
-        Model checks for property block
-        """
-        # Check temperature bounds
-        if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
-        if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
-
-        # Check pressure bounds
-        if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
-        if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+        pass

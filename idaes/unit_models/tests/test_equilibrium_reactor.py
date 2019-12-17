@@ -64,9 +64,9 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.has_rate_reactions

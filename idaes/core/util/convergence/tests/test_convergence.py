@@ -20,6 +20,7 @@ import os
 import os.path
 from pyutilib.misc import compare_json_files
 import pyomo.environ as pe
+from pyomo.common.fileutils import this_file_dir
 import idaes.core.util.convergence.convergence_base as cb
 
 # See if ipopt is available and set up solver
@@ -34,7 +35,7 @@ ceval_unfixedvar_mutableparam_str = (
         'idaes.core.util.convergence.tests.'
         'conv_eval_classes.ConvEvalUnfixedVarMutableParam')
 
-currdir = os.path.dirname(os.path.abspath(__file__))
+currdir = this_file_dir()
 
 
 def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
@@ -150,7 +151,7 @@ def test_convergence_evaluation_fixedvar_mutableparam():
     assert global_results[2]['name'] == 'Sample-3'
     assert global_results[2]['solved']
     assert global_results[2]['iters'] == 12
-    
+
     if os.path.exists(fname):
         os.remove(fname)
     # if os.path.exists(results_fname):
@@ -162,4 +163,3 @@ if __name__ == '__main__':
     # test_convergence_evaluation_specification_file_unfixedvar_mutableparam()
     # test_convergence_evaluation_specification_file_fixedvar_immutableparam()
     test_convergence_evaluation_fixedvar_mutableparam()
-

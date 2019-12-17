@@ -1,0 +1,37 @@
+/*
+ * Specify some variable names for local icons
+ * JupyterLab's build process will generate some static url for each
+ * eg., --idaes-mixer-icon: url(/static/lab/47e10492ad6fae9175cdad835b1efc5d.svg);
+ * These values can later be referenced like var(--idaes-mixer-icon)
+ * We can use these to replace hrefs with the appropriate static urls
+ */
+:root {
+  --idaes-reactor-c-icon: url('icons/reactor_c.svg');
+  --idaes-flash-icon: url('icons/flash.svg');
+  --idaes-reactor-g-icon: url('icons/reactor_g.svg');
+  --idaes-heat-exchanger-1-icon: url('icons/heat_exchanger_1.svg');
+  --idaes-heater-2-icon: url('icons/heater_2.svg');
+  --idaes-mixer-icon: url('icons/mixer.svg');
+  --idaes-reactor-pfr-icon: url('icons/reactor_pfr.svg');
+  --idaes-compressor-icon: url('icons/compressor.svg');
+  --idaes-splitter-icon: url('icons/splitter.svg');
+  --idaes-reactor-s-icon: url('icons/reactor_s.svg');
+  --idaes-reactor-e-icon: url('icons/reactor_e.svg');
+  --idaes-feed-icon: url('icons/feed.svg');
+  --idaes-product-icon: url('icons/product.svg');
+  --idaes-packed-column-1-icon: url('icons/packed_column_1.svg');
+  --idaes-tray-column-1-icon: url('icons/tray_column_1.svg');
+  --idaes-default-icon: url('icons/default.svg');
+}
+
+/* currently out of scope/unused
+  --idaes-heater-1-flipped-icon: url('icons/heater_1_flipped.svg');
+  --idaes-heater-1-icon: url('icons/heater_1.svg');
+  --idaes-horizontal-flash-icon: url('icons/horizontal_flash.svg');
+ */
+
+.mimerenderer-idaes-model {
+  width: "100%";
+  height: "100%";
+  overflow: auto;
+}

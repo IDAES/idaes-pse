@@ -18,10 +18,10 @@ import json
 import logging
 import os
 import sys
+from io import StringIO
 
 # third-party
 import pytest
-from six import StringIO
 
 # local
 from idaes.dmf.propdata import PropertyTable, PropertyData, PropertyMetadata
@@ -183,4 +183,3 @@ def test_property_data_bad():
     for inpfile in inputs:
         with pytest.raises(Exception):
             PropertyData.from_csv(inpfile, 0)
-

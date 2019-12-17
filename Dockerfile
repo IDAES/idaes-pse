@@ -10,7 +10,6 @@ USER $NB_UID
 
 # Install Python 3 packages
 RUN conda install --quiet --yes \
-    'conda-forge::blas=*=openblas' \
     'ipywidgets=7.2*' \
     'xlrd'  && \
     # Activate ipywidgets extension in the environment that runs the notebook server
@@ -18,9 +17,9 @@ RUN conda install --quiet --yes \
     # Also activate ipywidgets extension for JupyterLab
     # Check this URL for most recent compatibilities
     # https://github.com/jupyter-widgets/ipywidgets/tree/master/packages/jupyterlab-manager
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager@^0.38.1 && \
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager && \
     # Pin to 0.6.2 until we can move to Lab 0.35 (jupyterlab_bokeh didn't bump to 0.7.0)
-    jupyter labextension install jupyterlab_bokeh@0.6.3 && \
+    jupyter labextension install jupyterlab_bokeh && \
     npm cache clean --force && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
     rm -rf /home/$NB_USER/.cache/yarn && \
@@ -37,39 +36,19 @@ RUN conda install --quiet --yes \
 # Add idaes directory and change permissions to the notebook user:
 ADD . /home/idaes
 USER root
-RUN wget https://idaes-files.s3.amazonaws.com/public/idaes-coinbinary.tar.gz -P /usr/local
 RUN sudo apt-get update
+RUN sudo apt-get -y install libgfortran3
 RUN echo "America/Los_Angeles" > /etc/timezone
 RUN chown -R $NB_UID /home/idaes
-
-# Expand idaes-coinbinary contents:
-WORKDIR /usr/local
-RUN tar xvzf idaes-coinbinary.tar.gz
-
-# Copying part of install-solvers here:
-WORKDIR /home/idaes
-RUN sudo apt-get update && sudo apt-get install -y libboost-dev
-RUN sudo apt-get install -y libgfortran3
-RUN wget https://ampl.com/netlib/ampl/solvers.tgz
-RUN tar -xf solvers.tgz
-WORKDIR /home/idaes/solvers 
-RUN ./configure && make
-ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
-
-# Install ipopt from conda (pinned version to avoid JupyterHub issues):
-# Commenting this in favor of using COIN-OR suite binary.
-# RUN conda install -c conda-forge ipopt=3.12.12=hc6e8484_1002
 
 # Install idaes requirements.txt
 USER $NB_UID
 WORKDIR /home/idaes
 RUN pip install -r requirements-dev.txt
-RUN make
 RUN python setup.py install
+RUN idaes get-extensions
 
 WORKDIR /home
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/idaes-coinbinary-1.8.0/lib:/opt/conda/lib/
-ENV PATH=$PATH:/usr/local/idaes-coinbinary-1.8.0/bin
-# Command to smoke-test ipopt install in the Docker container:
-# cd /usr/local/idaes-coinbinary-1.8.0 && ./bin/ipopt ./test/mytoy.nl -AMPL linear_solver=ma57
+ENV PATH=$PATH:/home/jovyan/.idaes/bin
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/jovyan/.idaes/lib:/opt/conda/lib/
 USER $NB_UID

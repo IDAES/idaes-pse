@@ -1,0 +1,44 @@
+{
+  "name": "idaes-model-vis",
+  "version": "0.1.0",
+  "description": "A JupyterLab extension for rendering mimerenderer-idaes-model files.",
+  "author": "Perren Yang and Makayla Shepherd <mrshepherd@lbl.gov, perrenyang@lbl.gov>",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension"
+  ],
+  "files": [
+    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+  ],
+  "jupyterlab": {
+    "mimeExtension": true
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "prepare": "npm run clean && npm run build",
+    "watch": "tsc -w",
+    "extension:install": "jupyter labextension install idaes-model-vis",
+    "extension:uninstall": "jupyter labextension uninstall  idaes-model-vis",
+    "extension:enable": "jupyter labextension enable idaes-model-vis",
+    "extension:disable": "jupyter labextension disable idaes-model-vis"
+  },
+  "dependencies": {
+    "@jupyterlab/application": "^1.0.2",
+    "@jupyterlab/rendermime-interfaces": "^1.0.0",
+    "@phosphor/widgets": "^1.5.0",
+    "@types/backbone": "^1.4.0",
+    "backbone": "^1.4.0",
+    "jointjs": "^3.0.2",
+    "jquery": "^3.4.1",
+    "url-loader": "^2.0.1"
+  },
+  "devDependencies": {
+    "rimraf": "^2.6.2",
+    "typescript": "~3.5.2"
+  }
+}

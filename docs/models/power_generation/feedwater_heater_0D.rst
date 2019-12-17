@@ -7,7 +7,7 @@ Feedwater Heater (0D)
 .. module:: idaes.unit_models.power_generation.feedwater_heater_0D
   :noindex:
 
-The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.  It is intended to be used primarily used with the :ref:`IAWPS95 <property_models/water:Water/Steam>` property package. The feedwater heater is split into three sections the condensing section is required while the desuperheating and drain cooling sections are optional. There is also an optional mixer for adding a drain stream from another feedwater heater to the condensing section.  The figure below shows the layout of the feedwater heater.  All but the condensing section are optional.
+The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.  It is intended to be used primarily used with the :ref:`IAWPS95 <property_models/water:Water/Steam - IAPWS95>` property package. The feedwater heater is split into three sections the condensing section is required while the desuperheating and drain cooling sections are optional. There is also an optional mixer for adding a drain stream from another feedwater heater to the condensing section.  The figure below shows the layout of the feedwater heater.  All but the condensing section are optional.
 
 .. figure:: feedwater_heater_0D.svg
   :width: 800
@@ -25,8 +25,8 @@ The example below shows how to setup a feedwater heater with all tree sections. 
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.unit_models.heat_exchanger import (delta_temperature_underwood2_rule,
-      delta_temperature_underwood_rule, delta_temperature_lmtd_rule)
+  from idaes.unit_models.heat_exchanger import (delta_temperature_underwood_callback,
+      delta_temperature_lmtd_callback)
   from idaes.property_models import iapws95
   from idaes.unit_models.power_generation import FWH0D
 

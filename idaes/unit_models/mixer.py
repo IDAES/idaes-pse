@@ -13,10 +13,6 @@
 """
 General purpose mixer block for IDAES models
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division, print_function
-
-import logging
 from enum import Enum
 
 from pyomo.environ import (Constraint,
@@ -42,12 +38,13 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.math import smooth_min
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 # Enumerate options for balances
@@ -132,13 +129,14 @@ provided,
 **int** - number of inlets to create (will be named with sequential integers
 from 1 to num_inlets).}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed. Only
-used if ideal_separation = False.
-**default** - MaterialBalanceType.componentPhase.
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
@@ -154,16 +152,6 @@ calculated for the resulting mixed stream,
 **Valid values:** {
 **True** - calculate phase equilibrium in mixed stream,
 **False** - do not calculate equilibrium in mixed stream.}"""))
-    CONFIG.declare("material_mixing_type", ConfigValue(
-        default=MixingType.extensive,
-        domain=MixingType,
-        description="Method to use when mixing material flows",
-        doc="""Argument indicating what method to use when mixing material
-flows of incoming streams,
-**default** - MixingType.extensive.
-**Valid values:** {
-**MixingType.none** - do not include material mixing equations,
-**MixingType.extensive** - mix total flows of each phase-component pair.}"""))
     CONFIG.declare("energy_mixing_type", ConfigValue(
         default=MixingType.extensive,
         domain=MixingType,
@@ -246,17 +234,22 @@ linked to all inlet states and the mixed state,
         else:
             mixed_block = self.get_mixed_state_block()
 
-        if self.config.material_mixing_type == MixingType.extensive:
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().time.first()
+            mb_type = \
+                mixed_block[t_ref].default_material_balance_type()
+
+        if mb_type != MaterialBalanceType.none:
             self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
-                                               mixed_block=mixed_block)
-        elif self.config.material_mixing_type == MixingType.none:
-            pass
+                                               mixed_block=mixed_block,
+                                               mb_type=mb_type)
         else:
-            raise ConfigurationError("{} received unrecognised value for "
-                                     "material_mixing_type argument. This "
-                                     "should not occur, so please contact "
-                                     "the IDAES developers with this bug."
-                                     .format(self.name))
+            raise BurntToast("{} received unrecognised value for "
+                             "material_mixing_type argument. This "
+                             "should not occur, so please contact "
+                             "the IDAES developers with this bug."
+                             .format(self.name))
 
         if self.config.energy_mixing_type == MixingType.extensive:
             self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
@@ -404,15 +397,17 @@ linked to all inlet states and the mixed state,
 
         return self.config.mixed_state_block
 
-    def add_material_mixing_equations(self, inlet_blocks, mixed_block):
+    def add_material_mixing_equations(self,
+                                      inlet_blocks,
+                                      mixed_block,
+                                      mb_type):
         """
         Add material mixing equations.
         """
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
-        if self.config.material_balance_type == \
-                MaterialBalanceType.componentPhase:
+        if mb_type == MaterialBalanceType.componentPhase:
             # Create equilibrium generation term and constraints if required
             if self.config.has_phase_equilibrium is True:
                 # Get units from property package
@@ -425,34 +420,32 @@ linked to all inlet states and the mixed state,
                         units[u] = '-'
 
                 try:
-                    add_object_reference(
-                        self,
-                        "phase_equilibrium_idx_ref",
-                        self.config.property_package.phase_equilibrium_idx)
+                    self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.config.property_package.phase_equilibrium_idx,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
                 except AttributeError:
                     raise PropertyNotSupportedError(
                         "{} Property package does not contain a list of phase "
                         "equilibrium reactions (phase_equilibrium_idx), "
                         "thus does not support phase equilibrium."
                         .format(self.name))
-                self.phase_equilibrium_generation = Var(
-                            self.flowsheet().config.time,
-                            self.phase_equilibrium_idx_ref,
-                            domain=Reals,
-                            doc="Amount of generation in unit by phase "
-                                "equilibria [{}/{}]"
-                                .format(units['holdup'], units['time']))
 
             # Define terms to use in mixing equation
             def phase_equilibrium_term(b, t, p, j):
                 if self.config.has_phase_equilibrium:
                     sd = {}
-                    sblock = mixed_block[t]
-                    for r in b.phase_equilibrium_idx_ref:
-                        if sblock.phase_equilibrium_list[r][0] == j:
-                            if sblock.phase_equilibrium_list[r][1][0] == p:
+                    for r in b.config.property_package.phase_equilibrium_idx:
+                        if b.config.property_package.\
+                                phase_equilibrium_list[r][0] == j:
+                            if b.config.property_package.\
+                                    phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif sblock.phase_equilibrium_list[r][1][1] == p:
+                            elif b.config.property_package.\
+                                    phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
@@ -460,7 +453,8 @@ linked to all inlet states and the mixed state,
                             sd[r] = 0
 
                     return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                               for r in b.phase_equilibrium_idx_ref)
+                               for r in
+                               b.config.property_package.phase_equilibrium_idx)
                 else:
                     return 0
 
@@ -479,8 +473,7 @@ linked to all inlet states and the mixed state,
                 else:
                     return Constraint.Skip
 
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.componentTotal:
+        elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.component_list,
@@ -492,8 +485,7 @@ linked to all inlet states and the mixed state,
                     mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list)
 
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.total:
+        elif mb_type == MaterialBalanceType.total:
             # Write phase-component balances
             @self.Constraint(self.flowsheet().config.time,
                              doc="Material mixing equations")
@@ -504,12 +496,10 @@ linked to all inlet states and the mixed state,
                     mixed_block[t].get_material_flow_terms(p, j)
                     for j in b.config.property_package.component_list)
                     for p in b.config.property_package.phase_list)
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.elementTotal:
+        elif mb_type == MaterialBalanceType.elementTotal:
             raise ConfigurationError("{} Mixers do not support elemental "
                                      "material balances.".format(self.name))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.none:
+        elif mb_type == MaterialBalanceType.none:
             pass
         else:
             raise BurntToast("{} Mixer received unrecognised value for "
@@ -678,16 +668,20 @@ linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=0, optarg={},
+    def initialize(blk, outlvl=6, optarg={},
                    solver='ipopt', hold_state=False):
         '''
-        Initialisation routine for mixer (default solver ipopt)
+        Initialization routine for mixer (default solver ipopt)
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine. **Valid
-                     values:** **0** - no output (default), **1** - return
-                     solver state for each step in routine, **2** - include
-                     solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -704,12 +698,8 @@ linked to all inlet states and the mixed state,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
+        init_log = getInitLogger(blk.name, outlvl)
         # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
         opt = SolverFactory(solver)
         opt.options = optarg
 
@@ -721,7 +711,7 @@ linked to all inlet states and the mixed state,
             i_block = getattr(blk, i+"_state")
             i_block_list.append(i_block)
             flags[i] = {}
-            flags[i] = i_block.initialize(outlvl=outlvl-1,
+            flags[i] = i_block.initialize(outlvl=outlvl+1,
                                           optarg=optarg,
                                           solver=solver,
                                           hold_state=True)
@@ -732,39 +722,54 @@ linked to all inlet states and the mixed state,
         else:
             mblock = blk.config.mixed_state_block
 
+
+        o_flags = {}
         # Calculate initial guesses for mixed stream state
         for t in blk.flowsheet().config.time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
                 i_vars = []
-                for i in range(len(i_block_list)):
-                    i_vars.append(getattr(i_block_list[i][t],
-                                          s_vars[s].local_name))
+                for k in s_vars[s]:
+                    # Record whether variable was fixed or not
+                    o_flags[t, s, k] = s_vars[s][k].fixed
 
-                if s == "pressure":
-                    # If pressure, use minimum as initial guess
-                    mblock[t].pressure.value = min(
-                            i_block_list[i][t].pressure.value
-                            for i in range(len(i_block_list)))
-                elif "flow" in s:
-                    # If a "flow" variable (i.e. extensive), sum inlets
-                    for k in s_vars[s]:
-                        s_vars[s][k].value = sum(i_vars[i][k].value
-                                                 for i in range(
-                                                         len(i_block_list)))
-                else:
-                    # Otherwise use average of inlets
-                    for k in s_vars[s]:
-                        s_vars[s][k].value = (sum(i_vars[i][k].value
-                                                  for i in range(
-                                                         len(i_block_list))) /
-                                              len(i_block_list))
+                    # If fixed, use current value
+                    # otherwise calculate guess from mixed state
+                    if not s_vars[s][k].fixed:
+                        for i in range(len(i_block_list)):
+                            i_vars.append(getattr(i_block_list[i][t],
+                                                  s_vars[s].local_name))
 
-        mblock.initialize(outlvl=outlvl-1,
+                        if s == "pressure":
+                            # If pressure, use minimum as initial guess
+                            mblock[t].pressure.value = min(
+                                    i_block_list[i][t].pressure.value
+                                    for i in range(len(i_block_list)))
+                        elif "flow" in s:
+                            # If a "flow" variable (i.e. extensive), sum inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].value = sum(
+                                        i_vars[i][k].value
+                                        for i in range(len(i_block_list)))
+                        else:
+                            # Otherwise use average of inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].value = (
+                                    sum(i_vars[i][k].value for i in
+                                        range(len(i_block_list))) /
+                                    len(i_block_list))
+
+        mblock.initialize(outlvl=outlvl+1,
                           optarg=optarg,
                           solver=solver,
                           hold_state=False)
+
+        # Revert fixed status of variables to what they were before
+        for t in blk.flowsheet().config.time:
+            for s in s_vars:
+                for k in s_vars[s]:
+                    s_vars[s][k].fixed = o_flags[t, s, k]
 
         if blk.config.mixed_state_block is None:
             if (hasattr(blk, "pressure_equality_constraints") and
@@ -776,32 +781,27 @@ linked to all inlet states and the mixed state,
                             blk.create_inlet_list()[0]+"_state")[t].pressure
                     blk.mixed_state[t].pressure.fix(sys_press.value)
 
-                results = opt.solve(blk, tee=stee)
+                results = opt.solve(blk, tee=init_tee(init_log))
 
                 blk.pressure_equality_constraints.activate()
                 for t in blk.flowsheet().config.time:
                     blk.mixed_state[t].pressure.unfix()
 
             else:
-                results = opt.solve(blk, tee=stee)
+                results = opt.solve(blk, tee=init_tee(init_log))
 
-            if outlvl > 0:
-                if results.solver.termination_condition == \
-                        TerminationCondition.optimal:
-                    _log.info('{} Initialisation Complete.'.format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Failed.'.format(blk.name))
+            init_log.log(5, "Initialization Complete: {}".format(condition(results)))
         else:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+            init_log.log(5, "Initialization Complete.")
 
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=outlvl-1)
+            blk.release_state(flags, outlvl=outlvl+1)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -816,7 +816,7 @@ linked to all inlet states and the mixed state,
         inlet_list = blk.create_inlet_list()
         for i in inlet_list:
             i_block = getattr(blk, i+"_state")
-            i_block.release_state(flags[i], outlvl=outlvl-1)
+            i_block.release_state(flags[i], outlvl=outlvl+1)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}

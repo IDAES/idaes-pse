@@ -13,7 +13,6 @@
 """
 Standard IDAES Feed block with phase equilibrium.
 """
-from __future__ import division
 from enum import Enum
 
 # Import Pyomo libraries
@@ -57,12 +56,14 @@ class FeedFlashData(UnitModelBlockData):
         doc="""Feed units do not have defined volume, thus this must be
 False."""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of material balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,

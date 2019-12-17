@@ -13,8 +13,6 @@
 """
 Standard IDAES Gibbs reactor model.
 """
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -60,12 +58,14 @@ False."""))
         doc="""Gibbs reactors do not have defined volume, thus this must be
 False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,

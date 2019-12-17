@@ -20,7 +20,6 @@ import re
 
 # third party
 import pendulum
-import six
 from tinydb import TinyDB, Query
 
 # local
@@ -116,7 +115,7 @@ class ResourceDB(object):
             """Update filter, or set to 1st condition, & return new value."""
             return c if filter_expr is None else filter_expr & c
 
-        for k, v in six.iteritems(filter_dict):
+        for k, v in filter_dict.items():
             if not k:
                 continue  # XXX: Issue a warning?
             # strip off list-query operator

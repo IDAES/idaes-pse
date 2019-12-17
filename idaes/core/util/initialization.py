@@ -15,9 +15,135 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block
+from pyomo.environ import Block, Var
+from pyomo.network import Arc
+
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Andrew Lee, John Siirola"
+
+
+def fix_state_vars(blk, state_args={}):
+    """
+    Method for fixing state variables within StateBlocks. Method takes an
+    optional argument of values to use when fixing variables.
+
+    Args:
+        blk : An IDAES StateBlock object in which to fix the state variables
+        state_args : a dict containing values to use when fixing state
+                variables. Keys must match with names used in the
+                define_state_vars method, and indices of any variables must
+                agree.
+
+    Returns:
+        A dict keyed by block index, state variable name (as defined by
+        define_state_variables) and variable index indicating the fixed status
+        of each variable before the fix_state_vars method was applied.
+    """
+    flags = {}
+    for k in blk.keys():
+        for n, v in blk[k].define_state_vars().items():
+            for i in v:
+                flags[k, n, i] = v[i].is_fixed()
+
+                # If not fixed, fix at either guess provided or current value
+                if not v[i].is_fixed():
+                    if n in state_args:
+                        # Try to get initial guess from state_args
+                        try:
+                            if i is None:
+                                val = state_args[n]
+                            else:
+                                val = state_args[n][i]
+                        except KeyError:
+                            raise ConfigurationError(
+                                'Indexes in state_args did not agree with '
+                                'those of state variable {}. Please ensure '
+                                'that indexes for initial guesses are correct.'
+                                .format(n))
+                        v[i].fix(val)
+                    else:
+                        # No guess, try to use current value
+                        if v[i].value is not None:
+                            v[i].fix()
+                        else:
+                            # No initial value - raise Exception before this
+                            # gets to a solver.
+                            raise ConfigurationError(
+                                'State variable {} does not have a value '
+                                'assigned. This usually occurs when a Var '
+                                'is not assigned an initial value when it is '
+                                'created. Please ensure all variables have '
+                                'valid values before fixing them.'
+                                .format(v.name))
+
+    return flags
+
+
+def revert_state_vars(blk, flags):
+    """
+    Method to revert the fixed state of the state variables within an IDAES
+    StateBlock based on a set of flags of the previous state.
+
+    Args:
+        blk : an IDAES StateBlock
+        flags : a dict of bools indicating previous state with keys in the form
+                (StateBlock index, state variable name (as defined by
+                define_state_vars), var indices).
+
+    Returns:
+        None
+    """
+    for k in blk.keys():
+        for n, v in blk[k].define_state_vars().items():
+            for i in v:
+                try:
+                    if not flags[k, n, i]:
+                        v[i].unfix()
+                except KeyError:
+                    raise ConfigurationError(
+                        'Indices of flags proved do not match with indices of'
+                        'the StateBlock. Please make sure you are using the '
+                        'correct StateBlock.')
+
+
+def propagate_state(stream, direction="forward"):
+    """
+    This method propagates values between Ports along Arcs. Values can be
+    propagated in either direction using the direction argument.
+
+    Args:
+        stream : Arc object along which to propagate values
+        direction: direction in which to propagate values. Default = 'forward'
+                Valid value: 'forward', 'backward'.
+
+    Returns:
+        None
+    """
+    if not isinstance(stream, Arc):
+        raise TypeError("Unexpected type of stream argument. Value must be "
+                        "a Pyomo Arc.")
+
+    if direction == "forward":
+        value_source = stream.source
+        value_dest = stream.destination
+    elif direction == "backward":
+        value_source = stream.destination
+        value_dest = stream.source
+    else:
+        raise ValueError("Unexpected value for direction argument: ({}). "
+                         "Value must be either 'forward' or 'backward'."
+                         .format(direction))
+
+    for v in value_source.vars:
+        for i in value_source.vars[v]:
+            if not isinstance(value_dest.vars[v], Var):
+                raise TypeError("Port contains one or more members which are "
+                                "not Vars. propogate_state works by assigning "
+                                "to the value attribute, thus can only be "
+                                "when Port members are Pyomo Vars.")
+            if not value_dest.vars[v][i].fixed:
+                value_dest.vars[v][i].value = value_source.vars[v][i].value
 
 
 # HACK, courtesy of J. Siirola
@@ -28,7 +154,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     the contents of the objects in the blocks argument and then solved.
 
     Args:
-        solve : a Pyomo solver object to use when solving the Indexed Block
+        solver : a Pyomo solver object to use when solving the Indexed Block
         blocks : an object which inherits from Block, or a list of Blocks
         kwds : a dict of argumnets to be passed to the solver
 

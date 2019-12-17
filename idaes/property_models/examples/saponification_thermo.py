@@ -15,9 +15,6 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 
@@ -37,8 +34,11 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -116,20 +116,27 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, flow_vol=None, temperature=None, pressure=None,
-                   conc_mol_comp=None, state_vars_fixed=False,
+    def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
-        Initialisation routine for property package.
+        Initialization routine for property package.
 
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
-            outlvl : sets output level of initialisation routine
+        state_args : Dictionary with initial guesses for the state vars
+                     chosen. Note that if this method is triggered
+                     through the control volume, and if initial guesses
+                     were not provied at the unit model level, the
+                     control volume passes the inlet values as initial
+                     guess.The keys for the state_args dictionary are:
+
+                     flow_mol_comp : value at which to initialize component
+                                     flows (default=None)
+                     pressure : value at which to initialize pressure
+                                (default=None)
+                     temperature : value at which to initialize temperature
+                                  (default=None)
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -163,62 +170,15 @@ class _StateBlock(StateBlock):
         '''
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
+        # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
+        # which is also specified by the conc_water_eqn constraint
         for k in blk.keys():
             if blk[k].config.defined_state is False:
                 blk[k].conc_water_eqn.deactivate()
 
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
-            Fflag = {}
-            Pflag = {}
-            Tflag = {}
-            Cflag = {}
-
-            for k in blk.keys():
-                # Fix state vars if not already fixed
-                if blk[k].flow_vol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if flow_vol is None:
-                        blk[k].flow_vol.fix(1.0)
-                    else:
-                        blk[k].flow_vol.fix(flow_vol)
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].conc_mol_comp[j].fixed is True:
-                        Cflag[k, j] = True
-                    else:
-                        Cflag[k, j] = False
-                        if conc_mol_comp is None:
-                            if j == "H2O":
-                                blk[k].conc_mol_comp[j].fix(55388.0)
-                            else:
-                                blk[k].conc_mol_comp[j].fix(100.0)
-                        else:
-                            blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
-
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if pressure is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(pressure)
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if temperature is None:
-                        blk[k].temperature.fix(298.15)
-                    else:
-                        blk[k].temperature.fix(temperature)
-
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag, "Pflag": Pflag,
-                     "Tflag": Tflag, "Cflag": Cflag}
+            flags = fix_state_vars(blk, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
@@ -228,11 +188,7 @@ class _StateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
-
-        # Post initialization reactivate constraints specific for
-        # all blocks other than the inlet
+        # Reactivate conc_water_eqn
         for k in blk.keys():
             if not blk[k].config.defined_state:
                 blk[k].conc_water_eqn.activate()
@@ -244,12 +200,11 @@ class _StateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialization Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -261,16 +216,7 @@ class _StateBlock(StateBlock):
         if flags is None:
             return
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_vol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Cflag'][k, j] is False:
-                    blk[k].conc_mol_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -323,9 +269,15 @@ class SaponificationStateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b._params.dens_mol*b._params.cp_mol*(
                 b.temperature - b._params.temperature_ref)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,
