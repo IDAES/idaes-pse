@@ -16,7 +16,6 @@ reason to subclass a Pyomo block is to create a block that comes with
 pre-defined model equations. This is used in the IDAES modeling framework to
 create modular process model blocks.
 """
-from __future__ import absolute_import, division, print_function
 
 import sys
 import logging

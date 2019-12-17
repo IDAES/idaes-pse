@@ -61,9 +61,9 @@ def test_config():
     assert len(m.fs.unit.config) == 14
 
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_heat_transfer
@@ -194,15 +194,21 @@ class TestSaponification(object):
                           sum(sapon.fs.unit.outlet.conc_mol_comp[0, j]
                               for j in sapon.fs.properties.component_list)))
                 <= 1e-6)
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.inlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) -
-                         sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.outlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) +
-                         sapon.fs.unit.heat_duty[0])) <= 1e-1
+
+        assert (pytest.approx(3904.09, abs=1e-2) == value(
+                sapon.fs.unit.control_volume.heat_of_reaction[0]))
+        assert abs(value(
+                (sapon.fs.unit.inlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.inlet.temperature[0] -
+                    sapon.fs.properties.temperature_ref)) -
+                (sapon.fs.unit.outlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.outlet.temperature[0] -
+                  sapon.fs.properties.temperature_ref)) +
+                sapon.fs.unit.control_volume.heat_of_reaction[0])) <= 1e-3
 
     @pytest.mark.ui
     def test_report(self, sapon):

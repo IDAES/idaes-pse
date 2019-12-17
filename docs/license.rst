@@ -1,1 +1,3 @@
-../LICENSE.md
+.. _idaes-license:
+
+.. include:: ../LICENSE.md

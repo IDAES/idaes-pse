@@ -1,13 +1,15 @@
-<!-- BEGIN Status badges -->
-[![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev)
-[![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev)
-<!-- END Status badges -->
-
 # IDAES Toolkit
 
 The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
+
+<!-- BEGIN Status badges -->
+## Build statuses
+| idaes-dev | idaes-pse |
+|:---------:|:---------:|
+| [![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev) [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev) |[![CircleCI](https://circleci.com/gh/IDAES/idaes-pse.svg?style=svg)](https://circleci.com/gh/IDAES/idaes-pse) [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-pse/badge.svg?branch=master)](https://coveralls.io/github/IDAES/idaes-pse?branch=master)|
+<!-- END Status badges -->
 
 ## System requirements
 
@@ -17,7 +19,9 @@ The code and examples have been tested with the following operating systems:
 |----------------|--------------------|
 | Linux          | Any modern Linux   |
 | Windows        | Windows 10         |
-| Mac OSX        | Not supported      |
+| Mac OSX        | Not supported*     |
+
+*For advanced users, Mac OSX installation may be performed with some small changes to the Linux installation instructions.
 
 Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
@@ -33,6 +37,16 @@ Note that Python 3.5 is *not* supported.
 
 **By contributing to this repository, you are agreeing to all the terms set out
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
+
+## Quickstart
+
+To install with `pip`:
+
+```bash
+pip install idaes_pse
+```
+
+To install with Anaconda's `conda`: **coming soon**
 
 ## Getting Started
 For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/stable/).
@@ -61,15 +75,23 @@ $ pytest  # Please note some tests may be skipped based on solver availability.
 If there are errors, or you are having trouble, you can use our [issue tracker on Github](https://github.com/IDAES/idaes/issues) to look for other users experiencing similar problems, or to report a new bug.
 
 
-## Running a notebook
+## Running a Jupyter notebook
 
-There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` directory. To access them, you should start up a notebook server using the following command.
+There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` 
+directory. To access them, you should start up a Jupyter Lab notebook server using the
+following command.
 
 ```
-jupyter notebook
+jupyter lab
 ```
 
-This should start up a notebook server and then pop up a tab or window in your default web browser showing the available notebooks. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org). For more details on the examples, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/latest/). 
+This should start up a server and then pop up a tab or window in your default 
+web browser showing the Jupyter UI. On the left hand side you can browse to 
+available notebooks (files ending in ".ipynb"). For more information on how to 
+use Jupyter Lab, use the built-in *Help* menu and the extensive documentation 
+on the [Jupyter website](https://jupyter.org).
+For more details on the examples, please refer to the 
+[online documentation](https://idaes-pse.readthedocs.io/en/latest/). 
 
 ## Contacts and more information
 

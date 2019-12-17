@@ -167,9 +167,10 @@ class ModuleClassWalker(Walker):
                     if not self._expr and not self._parent:
                         if visit(x):
                             self._history.append(fullname)
-                    elif self._expr and self._expr.match(x.__name__):
-                        if visit(x):
-                            self._history.append(fullname)
+                    elif self._expr:
+                        if self._expr.match(x.__name__):
+                            if visit(x):
+                                self._history.append(fullname)
                     elif self._parent and issubclass(x, self._parent):
                         if visit(x):
                             self._history.append(fullname)

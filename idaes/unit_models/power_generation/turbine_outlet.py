@@ -17,12 +17,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136.
 """
-from __future__ import division
-
 __Author__ = "John Eslick"
-
-import logging
-_log = logging.getLogger(__name__)
 
 from pyomo.common.config import In
 from pyomo.environ import (Var, Expression, Constraint, sqrt, SolverFactory,
@@ -34,6 +29,9 @@ from idaes.unit_models.pressure_changer import (PressureChangerData,
                                                 ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("TurbineOutletStage",
@@ -138,7 +136,7 @@ class TurbineOutletStageData(PressureChangerData):
 
         return pc
 
-    def initialize(self, state_args={}, outlvl=0, solver='ipopt',
+    def initialize(self, state_args={}, outlvl=6, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the outlet turbine stage model.  This deactivates the
@@ -147,11 +145,18 @@ class TurbineOutletStageData(PressureChangerData):
 
         Args:
             state_args (dict): Initial state for property initialization
-            outlvl (int): Amount of output (0 to 3) 0 is lowest
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        stee = True if outlvl >= 3 else False
+        init_log = getInitLogger(self.name, outlvl)
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
@@ -185,7 +190,7 @@ class TurbineOutletStageData(PressureChangerData):
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             prdp = value((self.deltaP[t] - Pin)/Pin)
-            if value(Pout/Pin) > 0.9 or value(Pout/Pin) < 0.01:
+            if value(Pout/Pin) > 0.95 or value(Pout/Pin) < 0.003:
                 if value(self.ratioP[t]) < 0.9 and value(self.ratioP[t]) > 0.01:
                     Pout.fix(value(Pin*self.ratioP))
                 elif prdp < 0.9 and prdp > 0.01:
@@ -215,7 +220,7 @@ class TurbineOutletStageData(PressureChangerData):
         try:
             assert(dof == 0)
         except:
-            _log.exception("degrees_of_freedom = {}".format(dof))
+            init_log.log(5, "Error: Degrees_of_freedom = {}".format(dof))
             raise
 
         # one bad thing about reusing this is that the log messages aren't
@@ -225,23 +230,17 @@ class TurbineOutletStageData(PressureChangerData):
 
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
-        self.outlet.pressure.unfix()
+        self.outlet.pressure.fix()
+        self.inlet.flow_mol.unfix()
         self.stodola_equation.activate()
         self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        res = slvr.solve(self, tee=stee)
+        res = slvr.solve(self, tee=init_tee(init_log))
 
-        if outlvl > 0:
-            if res.solver.termination_condition == TerminationCondition.optimal:
-                _log.info("{} Initialization Complete.".format(self.name))
-            else:
-                _log.warning(
-"""{} Initialization Failed. The most likely cause of initialization failure for
-the Turbine inlet stages model is that the flow coefficient is not compatible
-with flow rate guess.""".format(self.name))
+        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)

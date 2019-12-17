@@ -159,6 +159,18 @@ def test_create_stream_table_dataframe_wrong_type(m):
         create_stream_table_dataframe({"state": m.fs.tank1})
 
 
+def test_create_stream_table_dataframe_ordering(m):
+    state_dict = {"state1": m.fs.stream,
+                  "state3": m.fs.tank1.control_volume.properties_out,
+                  "state2": m.fs.tank1.outlet}
+    df = create_stream_table_dataframe(state_dict)
+
+    columns = list(df)
+    assert columns[0] == "state1"
+    assert columns[1] == "state3"
+    assert columns[2] == "state2"
+
+
 def test_stream_table_dataframe_to_string(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out})

@@ -14,10 +14,7 @@
 Base class for control volumes
 """
 
-from __future__ import division
-
 # Import Python libraries
-import logging
 from enum import Enum
 
 # Import Pyomo libraries
@@ -32,17 +29,18 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        DynamicError,
                                         PropertyNotSupportedError)
+from idaes.logger import getIdaesLogger
 
 __author__ = "Andrew Lee"
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 # Enumerate options for material balances
 class MaterialBalanceType(Enum):
+    useDefault = -1
     none = 0
     componentPhase = 1
     componentTotal = 2
@@ -52,6 +50,7 @@ class MaterialBalanceType(Enum):
 
 # Enumerate options for energy balances
 class EnergyBalanceType(Enum):
+    useDefault = -1
     none = 0
     enthalpyPhase = 1
     enthalpyTotal = 2
@@ -372,7 +371,7 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_material_balances(self,
-                              balance_type=MaterialBalanceType.componentPhase,
+                              balance_type=MaterialBalanceType.useDefault,
                               **kwargs):
         """
         General method for adding material balances to a control volume.
@@ -400,6 +399,20 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        # Check if balance_type is useDefault, and get default if necessary
+        if balance_type == MaterialBalanceType.useDefault:
+            try:
+                blk = self._get_representative_property_block()
+                balance_type = blk.default_material_balance_type()
+            except NotImplementedError:
+                raise ConfigurationError(
+                        "{} property package has not implemented a "
+                        "default_material_balance_type, thus cannot use "
+                        "MaterialBalanceType.useDefault when constructing "
+                        "material balances. Please contact the developer of "
+                        "your property package to implement the necessary "
+                        "default attributes.".format(self.name))
+
         if balance_type == MaterialBalanceType.none:
             mb = None
         elif balance_type == MaterialBalanceType.componentPhase:
@@ -419,7 +432,7 @@ have a config block which derives from CONFIG_Base,
         return mb
 
     def add_energy_balances(self,
-                            balance_type=EnergyBalanceType.enthalpyTotal,
+                            balance_type=EnergyBalanceType.useDefault,
                             **kwargs):
         """
         General method for adding energy balances to a control volume.
@@ -441,6 +454,20 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        # Check if balance_type is useDefault, and get default if necessary
+        if balance_type == EnergyBalanceType.useDefault:
+            try:
+                blk = self._get_representative_property_block()
+                balance_type = blk.default_energy_balance_type()
+            except NotImplementedError:
+                raise ConfigurationError(
+                        "{} property package has not implemented a "
+                        "default_energy_balance_type, thus cannot use "
+                        "EnergyBalanceType.useDefault when constructing "
+                        "energy balances. Please contact the developer of "
+                        "your property package to implement the necessary "
+                        "default attributes.".format(self.name))
+
         if balance_type == EnergyBalanceType.none:
             eb = None
         elif balance_type == EnergyBalanceType.enthalpyTotal:
@@ -469,7 +496,8 @@ have a config block which derives from CONFIG_Base,
 
         Args:
             balance_type (MomentumBalanceType): Enum indicating which type of
-                momentum balance should be constructed.
+                momentum balance should be constructed. Default =
+                MomentumBalanceType.pressureTotal.
             has_pressure_change (bool): whether default generation terms for
                 pressure change should be included in momentum balances
             custom_term (Expression): a Pyomo Expression representing custom
@@ -773,3 +801,25 @@ have a config block which derives from CONFIG_Base,
                             "molecular weight (mw), which is required for "
                             "using property and reaction packages with "
                             "different bases.".format(b.name))
+
+    def _get_representative_property_block(self):
+        try:
+            t_ref = self.flowsheet().time.first()
+        except AttributeError:
+            raise ConfigurationError(
+                    "{} control volume does not appear to be part of a "
+                    "flowsheet (could not find a time attribute)."
+                    .format(self.name))
+
+        try:
+            rep_blk = self.properties_out[t_ref]
+        except AttributeError:
+            try:
+                d_ref = self.length_domain.first()
+                rep_blk = self.properties[t_ref, d_ref]
+            except AttributeError:
+                raise BurntToast("{} Something went wrong when trying to find "
+                                 "a representative StateBlock. Please contact "
+                                 "the IDAES developers with this bug."
+                                 .format(self.name))
+        return rep_blk

@@ -1,7 +1,10 @@
 # Code coverage configuration
 # See: https://coverage.readthedocs.io/
 [run]
+source = idaes
 omit =
+    # skip /opt
+    /opt/*
     # skip test directories
     */tests/*
     # skip DMF's CLI
