@@ -11,11 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-"""This is an example supercritical pulverived coal (SCPC) power plant steam cycle
+"""This is an example supercritical pulverized coal (SCPC) power plant steam cycle
 model.  This model doesn't represent any specific power plant, but it represents
 what could be considered a typical SCPC plant, producing around 620 MW gross.
 This model is for demonstration and tutorial purposes only. Before looking at the
-model, it may be useful to look at the process flow diagram.
+model, it may be useful to look at the process flow diagram (PFD).
 """
 
 __author__ = "John Eslick"
@@ -42,13 +42,13 @@ from idaes.unit_models import (  # basic IDAES unit models, and enum
     Mixer,
     HeatExchanger,
     PressureChanger,
-    MomentumMixingType,  # Enum type for mixer pressure calculation
+    MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
 from idaes.core.util import copy_port_values as _set_port  # for model intialization
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
-# Calback used to cunstruct heat exchangers with the Underwood approx for LMTD
+# Callback used to construct heat exchangers with the Underwood approx. for LMTD
 from idaes.unit_models.heat_exchanger import delta_temperature_underwood_callback
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
@@ -74,17 +74,17 @@ def create_model():
     m = pyo.ConcreteModel(name="Steam Cycle Model")
     m.fs = FlowsheetBlock(default={"dynamic": False})  # Add steady state flowsheet
 
-    # A phisical property parameter block for IAPWS-95 with pressure and entahlpy
-    # state variables.  Usually pressure and enthalpy state varaibles are more
-    # robust especially when the phases are unknown.
+    # A physical property parameter block for IAPWS-95 with pressure and enthalpy
+    # (PH) state variables.  Usually pressure and enthalpy state variables are
+    # more robust especially when the phases are unknown.
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
         default={"phase_presentation": iapws95.PhaseType.LG}
     )
 
-    # A physical property parameter block with temerature, pressue and vapor
-    # fraction state variables. There are a few instances where the vapor
+    # A physical property parameter block with temperature, pressure and vapor
+    # fraction (TPx) state variables. There are a few instances where the vapor
     # fraction is known and the temperature and pressure state variables are
-    # prefereable.
+    # preferable.
     m.fs.prop_water_tpx = iapws95.Iapws95ParameterBlock(
         default={
             "phase_presentation": iapws95.PhaseType.LG,
@@ -95,16 +95,16 @@ def create_model():
     #  Turbine with fill-in reheat constraints                                 #
     ############################################################################
     # The TurbineMultistage class allows creation of the full turbine model by
-    # provideding several configuration options, including: throttle valves;
-    # high, intermidiate, and low pressure sections; steam extractions; and
+    # providing several configuration options, including: throttle valves;
+    # high-, intermediate-, and low-pressure sections; steam extractions; and
     # pressure driven flow.  See the IDAES documentation for details.
     m.fs.turb = TurbineMultistage(
         default={
             "property_package": m.fs.prop_water,
             "num_parallel_inlet_stages": 4,  # number of admission arcs
-            "num_hp": 7,  # number of high pressure stages
-            "num_ip": 10,  # number of intermediate pressure stages
-            "num_lp": 11,  # number of low pressure stages
+            "num_hp": 7,  # number of high-pressure stages
+            "num_ip": 10,  # number of intermediate-pressure stages
+            "num_lp": 11,  # number of low-pressure stages
             "hp_split_locations": [4, 7],  # hp steam extraction locations
             "ip_split_locations": [5, 10],  # ip steam extraction locations
             "lp_split_locations": [4, 8, 10, 11],  # lp steam extraction locations
@@ -116,18 +116,18 @@ def create_model():
     # To fill in the reheater gap, a few constraints for the flow, pressure drop,
     # and outlet temperature are added. A detailed boiler model can be coupled later.
     #
-    # hp_split[7] is the splitter driectly after the last HP stage.  The splitter
+    # hp_split[7] is the splitter directly after the last HP stage.  The splitter
     # outlet "outlet_1" is always taken to be the main steam flow through the turbine.
-    # When the turbine model was instanciated the stream from the HP section to the IP
-    # section was ommited, so the reheater could be inserted.
+    # When the turbine model was instantiated the stream from the HP section to the IP
+    # section was omitted, so the reheater could be inserted.
 
     # The flow constraint sets flow from outlet_1 of the splitter equal to
-    # flow into the IP turbine. This
+    # flow into the IP turbine.
     @m.fs.turb.Constraint(m.fs.time)
     def constraint_reheat_flow(b, t):
         return b.ip_stages[1].inlet.flow_mol[t] == b.hp_split[7].outlet_1.flow_mol[t]
 
-    # Create a variable for pressure change in the reheater (assumig
+    # Create a variable for pressure change in the reheater (assuming
     # reheat_delta_p should be negative).
     m.fs.turb.reheat_delta_p = pyo.Var(m.fs.time, initialize=0)
 
@@ -140,8 +140,8 @@ def create_model():
             == b.hp_split[7].outlet_1.pressure[t] + b.reheat_delta_p[t]
         )
 
-    # Create a varaible for reheat temperature and fix it to the desired reheater
-    # outlet temperaure
+    # Create a variable for reheat temperature and fix it to the desired reheater
+    # outlet temperature
     m.fs.turb.reheat_out_T = pyo.Var(m.fs.time, initialize=866)
 
     # Create a constraint for the IP section inlet temperature.
@@ -155,7 +155,7 @@ def create_model():
     ############################################################################
     #  Add Condenser/hotwell/condensate pump                                   #
     ############################################################################
-    # Add a mixer for all the streams coming into the condeser.  In this case the
+    # Add a mixer for all the streams coming into the condenser.  In this case the
     # main steam, and the boiler feed pump turbine outlet go to the condenser
     m.fs.condenser_mix = Mixer(
         default={
@@ -165,26 +165,26 @@ def create_model():
         }
     )
     # The pressure in the mixer comes from the connection to the condenser.  All
-    # the streams comming in and going out of the mixer are equal, but we created
+    # the streams coming in and going out of the mixer are equal, but we created
     # the mixer with no calculation for the unit pressure. Here a constraint that
     # specifies that the mixer pressure is equal to the main steam pressure is
-    # added.  There is also a constraint that specifies the that BFP tubine outlet
+    # added.  There is also a constraint that specifies the that BFP turbine outlet
     # pressure is the same as the condenser pressure.  Combined with the stream
-    # connections between units, these constraints effectivly specify that the
-    # mxer inlet and outlet streams all have the same pressure.
+    # connections between units, these constraints effectively specify that the
+    # mixer inlet and outlet streams all have the same pressure.
     @m.fs.condenser_mix.Constraint(m.fs.time)
     def mixer_pressure_constraint(b, t):
         return b.main_state[t].pressure == b.mixed_state[t].pressure
 
-    # The condnenser model uses the physical property model with TPx state
+    # The condenser model uses the physical property model with TPx state
     # variables, while the rest of the model uses PH state variables. To
     # translate between the two property calculations, an extra port is added to
     # the mixer which contains temperature, pressure, and vapor fraction
-    # quantities. The first  step is to add refernces to the temperature and
-    # vapor fraction expressions in the IAPWS-95 property block. The refernces
-    # are used to handel time indexing in the ports by using the property blocks
+    # quantities. The first step is to add references to the temperature and
+    # vapor fraction expressions in the IAPWS-95 property block. The references
+    # are used to handle time indexing in the ports by using the property blocks
     # time index to create references that appear to be time indexed variables.
-    # These references miror the references created by the framework automatically
+    # These references mirror the references created by the framework automatically
     # for the existing ports.
     m.fs.condenser_mix._outlet_temperature_ref = pyo.Reference(
         m.fs.condenser_mix.mixed_state[:].temperature
@@ -192,7 +192,7 @@ def create_model():
     m.fs.condenser_mix._outlet_vapor_fraction_ref = pyo.Reference(
         m.fs.condenser_mix.mixed_state[:].vapor_frac
     )
-    # Add the new port with the state infromation that needs to go to the
+    # Add the new port with the state information that needs to go to the
     # condenser
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
@@ -203,7 +203,7 @@ def create_model():
         }
     )
 
-    # Add the heat exchaner model for the condneser.
+    # Add the heat exchanger model for the condenser.
     m.fs.condenser = HeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
@@ -279,10 +279,9 @@ def create_model():
     fwh_config = {"delta_temperature_callback": delta_temperature_underwood_callback}
 
     # The feedwater heater model allows feedwater heaters with a desuperheat,
-    # condensing, and subcooling section to be added an a resonably simple way.
+    # condensing, and subcooling section to be added an a reasonably simple way.
     # See the IDAES documentation for more information of configuring feedwater
     # heaters
-
     m.fs.fwh1 = FWH0D(
         default={
             "has_desuperheat": False,
@@ -351,8 +350,7 @@ def create_model():
     #  Add deaerator and boiler feed pump (BFP)                                #
     ############################################################################
     # The deaerator is basically an open tank with multiple inlets.  For steady-
-    # state, a mixer model is sufficent.
-
+    # state, a mixer model is sufficient.
     m.fs.fwh5_da = Mixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
@@ -381,7 +379,7 @@ def create_model():
         }
     )
 
-    # The boiler feed pump outlet pressure is the same as the condneser
+    # The boiler feed pump outlet pressure is the same as the condenser
     @m.fs.Constraint(m.fs.time)
     def constraint_out_pressure(b, t):
         return (
@@ -391,9 +389,9 @@ def create_model():
 
     # Instead of specifying a fixed efficiency, specify that the steam is just
     # starting to condense at the outlet of the boiler feed pump turbine.  This
-    # ensures approximatly the right behavior in the turbine.  With a fixed
-    # efficency, depending on the conditions you can get odd things like steam
-    # fully condnsing in the turbine.
+    # ensures approximately the right behavior in the turbine.  With a fixed
+    # efficiency, depending on the conditions you can get odd things like steam
+    # fully condensing in the turbine.
     @m.fs.Constraint(m.fs.time)
     def constraint_out_enthalpy(b, t):
         return (
@@ -402,8 +400,8 @@ def create_model():
         )
 
     # The boiler feed pump power is the same as the power generated by the
-    # boiler feed pump turbine. This constraint determins the steam flow to the
-    # BFP turbine. The turbine work is negitive for power out, while pump work
+    # boiler feed pump turbine. This constraint determines the steam flow to the
+    # BFP turbine. The turbine work is negative for power out, while pump work
     # is positive for power in.
     @m.fs.Constraint(m.fs.time)
     def constraint_bfp_power(b, t):
@@ -467,7 +465,7 @@ def create_model():
             == m.fs.turb.inlet_split.mixed_state[t].pressure
         )
 
-    # Again since the boiler is missing, set the flow of steam into the turbine
+    # Again, since the boiler is missing, set the flow of steam into the turbine
     # equal to the flow of feedwater out of the last feedwater heater.
     @m.fs.Constraint(m.fs.time)
     def close_flow(b, t):
@@ -492,7 +490,7 @@ def create_model():
         )
 
     # Calculate the efficiency of the steam cycle.  This doesn't account for
-    # heat loss in the boiler, so actual plant efficeny would be lower.
+    # heat loss in the boiler, so actual plant efficiency would be lower.
     @m.fs.Expression(m.fs.time)
     def steam_cycle_eff(b, t):
         return -100 * b.turb.power[t] / b.boiler_heat[t]
@@ -578,7 +576,7 @@ def create_model():
     )
     m.fs.EXHST_BFPT = Arc(source=m.fs.bfpt.outlet, destination=m.fs.condenser_mix.bfpt)
     ############################################################################
-    #  High pressure feedwater heaters                                         #
+    #  High-pressure feedwater heaters                                         #
     ############################################################################
     # fwh6
     m.fs.FW05B = Arc(source=m.fs.bfp.outlet, destination=m.fs.fwh6.cooling.inlet_2)
@@ -626,12 +624,12 @@ def _stream_dict(m):
         None
     """
 
-    # Put all the toplevel streams in the stream dict
+    # Put all the top-level streams in the stream dictionary
     m._streams = dict(
         [(c.getname(), c) for c in m.fs.component_objects(Arc, descend_into=False)]
     )
 
-    # There are some addtional streams we are interested in that are either
+    # There are some additional streams we are interested in that are either
     # inlets or outlets, where there is no arc or arcs buried in unit models.
     # Next those are added specifically.
     m._streams.update(
@@ -676,8 +674,8 @@ def set_model_input(m):
     m.fs.turb.inlet_split.inlet.pressure.fix(main_steam_pressure)
     m.fs.boiler_pressure_drop_fraction.fix(0.1)
     m.fs.turb.inlet_split.inlet.flow_mol[:].value = 21000
-    m.fs.turb.inlet_split.inlet.flow_mol.unfix()  # Pressure driven
-    m.fs.turb.inlet_mix.use_equal_pressure_constraint()  # Pressure driven mix
+    m.fs.turb.inlet_split.inlet.flow_mol.unfix()  # Pressure-driven
+    m.fs.turb.inlet_mix.use_equal_pressure_constraint()  # Pressure-driven mix
     # Set throttle valve
     m.fs.turb.throttle_cv_fix(0.0009)
     m.fs.turb.throttle_valve[1].valve_opening.fix(0.9)
@@ -718,7 +716,7 @@ def set_model_input(m):
     m.fs.cond_pump.efficiency_pump.fix(0.80)
     m.fs.cond_pump.deltaP.fix(1e6)
     ############################################################################
-    #  Low pressure FWH section inputs                                         #
+    #  Low-pressure FWH section inputs                                         #
     ############################################################################
     # fwh1
     m.fs.fwh1.condense.area.fix(400)
@@ -748,13 +746,13 @@ def set_model_input(m):
     m.fs.fwh4.cooling.area.fix(50)
     m.fs.fwh4.cooling.overall_heat_transfer_coefficient.fix(300)
     ############################################################################
-    #  Deaerator and boiler feed pump (BFP) Input                              #
+    #  Deaerator and boiler feed pump (BFP) input                              #
     ############################################################################
     m.fs.bfp.efficiency_pump.fix(0.80)
     m.fs.bfp.outlet.pressure[:].value = main_steam_pressure * 1.1 # guess
     m.fs.bfpt.efficiency_isentropic.value = 0.80 #don't fix, just initial guess
     ############################################################################
-    #  High pressure feedwater heater                                          #
+    #  High-pressure feedwater heater                                          #
     ############################################################################
     # fwh6
     m.fs.fwh6.condense.area.fix(300)
@@ -810,7 +808,7 @@ def initialize(m, fileinput=None, outlvl=3):
     #  Initialize turbine                                                      #
     ############################################################################
     # Extraction rates are calculated from the feedwater heater models, so to
-    # initialize the tubine fix some initial guesses. They get unfixed after
+    # initialize the turbine fix some initial guesses. They get unfixed after
     # solving the turbine
     m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.fix(3500)
     m.fs.turb.lp_split[11].split_fraction[:, "outlet_2"].fix(0.04403)
@@ -822,8 +820,8 @@ def initialize(m, fileinput=None, outlvl=3):
     m.fs.turb.ip_split[5].split_fraction[:, "outlet_2"].fix(0.05557)
     m.fs.turb.hp_split[7].split_fraction[:, "outlet_2"].fix(0.09741)
     m.fs.turb.hp_split[4].split_fraction[:, "outlet_2"].fix(0.0740)
-    # Put in a rough initial guess for the ip section inlet, since it is
-    # disconnected from the hp section for the reheater.
+    # Put in a rough initial guess for the IP section inlet, since it is
+    # disconnected from the HP section for the reheater.
     ip1_pin = 5.35e6
     ip1_hin = iapws95.htpx(T=866, P=ip1_pin)
     ip1_fin = pyo.value(m.fs.turb.inlet_split.inlet.flow_mol[0])
@@ -836,7 +834,7 @@ def initialize(m, fileinput=None, outlvl=3):
     # The turbine outlet pressure is determined by the condenser once hooked up
     m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.unfix()
     # Extraction rates are calculated once the feedwater heater models are
-    # add so unfix the splits.
+    # added so unfix the splits.
     m.fs.turb.lp_split[11].split_fraction[:, "outlet_2"].unfix()
     m.fs.turb.lp_split[10].split_fraction[:, "outlet_2"].unfix()
     m.fs.turb.lp_split[8].split_fraction[:, "outlet_2"].unfix()
@@ -845,7 +843,7 @@ def initialize(m, fileinput=None, outlvl=3):
     m.fs.turb.ip_split[5].split_fraction[:, "outlet_2"].unfix()
     m.fs.turb.hp_split[7].split_fraction[:, "outlet_2"].unfix()
     m.fs.turb.hp_split[4].split_fraction[:, "outlet_2"].unfix()
-    # initialize the boiler feed pump turbine.
+    # Initialize the boiler feed pump turbine.
     _set_port(m.fs.bfpt.inlet, m.fs.turb.ip_split[10].outlet_3)
     m.fs.bfpt.initialize(outlvl=5, optarg=solver.options)
     ############################################################################
@@ -877,7 +875,7 @@ def initialize(m, fileinput=None, outlvl=3):
     _set_port(m.fs.cond_pump.inlet, m.fs.hotwell.outlet)
     m.fs.cond_pump.initialize(outlvl=5, optarg=solver.options)
     ############################################################################
-    #  Low pressure FWH section                                                #
+    #  Low-pressure FWH section                                                #
     ############################################################################
     # fwh1
     m.fs.fwh1.drain_mix.drain.flow_mol[:] = 1000
@@ -955,12 +953,25 @@ def initialize(m, fileinput=None, outlvl=3):
 
 
 def pfd_result(m, df, svg):
-    tags = {}
-    for i in df.index:
+    """Insert model results into the PFD and return a new SVG string, which
+    can be displayed, further edited, or saved to a file.
+
+    Args:
+        m (ConcreteModel): A steam cycle model
+        df (Pandas DataFrame): Stream table
+        svg (FILE*, str, bytes): Origianl svg svg as either a file-like object,
+            a string, or a byte array.
+
+    Returns:
+        (str): SVG content.
+    """
+    tags = {} # dict of tags and data to insert into SVG
+    for i in df.index: # Create entires for streams
         tags[i + "_F"] = df.loc[i, "Molar Flow (mol/s)"]
         tags[i + "_T"] = df.loc[i, "T (K)"]
         tags[i + "_P"] = df.loc[i, "P (Pa)"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
+    # Add some addtional quntities from the model to report
     tags["gross_power"] = -pyo.value(m.fs.turb.power[0])
     tags["gross_power_mw"] = -pyo.value(m.fs.turb.power[0]) * 1e-6
     tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow (kg/s)"]
