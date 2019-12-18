@@ -1016,9 +1016,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--initialize_from_file",
-        help="File from which to load"
-        " initialized values. If specified, the initialization"
-        " proceedure will be skipped.",
+        help="File from which to load initialized values. If specified, the "
+             "initialization proceedure will be skipped.",
         default=None,
     )
     parser.add_argument(
