@@ -719,6 +719,9 @@ def set_model_input(m):
     #  Low-pressure FWH section inputs                                         #
     ############################################################################
     # fwh1
+    # Heat transfer coefficent correlation constraints can be added to the
+    # feedwater heaters, but to keep this example simple, they are fixed
+    # constant values here.
     m.fs.fwh1.condense.area.fix(400)
     m.fs.fwh1.condense.overall_heat_transfer_coefficient.fix(2000)
     # fwh1 pump
