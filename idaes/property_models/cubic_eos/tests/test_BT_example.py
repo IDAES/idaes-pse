@@ -12,7 +12,7 @@
 ##############################################################################
 import pytest
 
-from idaes.core import FlowsheetBlock, ControlVolume0DBlock
+from idaes.core import FlowsheetBlock
 from idaes.property_models.cubic_eos.cubic_prop_pack import \
     cubic_roots_available
 from idaes.property_models.cubic_eos import BT_PR
@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            value)
 
 from idaes.property_models.tests.test_harness import PropertyTestHarness
+from idaes.core.util.testing import get_default_solver
 
 
 # Set module level pyest marker
@@ -31,6 +32,13 @@ pytestmark = pytest.mark.cubic_root
 prop_available = cubic_roots_available()
 
 
+# -----------------------------------------------------------------------------
+# Get default solver for testing
+solver = get_default_solver()
+
+
+# -----------------------------------------------------------------------------
+# Run test harness
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = BT_PR.BTParameterBlock
@@ -55,6 +63,10 @@ class TestBasicV(PropertyTestHarness):
         self.has_density_terms = True
 
 
+# -----------------------------------------------------------------------------
+# Test robustness and some outputs
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 class TestBTExample(object):

@@ -260,7 +260,7 @@ class PropertyTestHarness(object):
 
         if degrees_of_freedom(frame.fs.props[1]) != frame._init_dof:
             raise Exception(
-                "release state did not restore State BLock to original "
+                "release state did not restore State Block to original "
                 "degrees of freedom.")
 
     def test_CV_integration(self, frame):
