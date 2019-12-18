@@ -671,7 +671,7 @@ def set_model_input(m):
     m.fs.turb.inlet_split.inlet.enth_mol.fix(62710)
     m.fs.turb.inlet_split.inlet.pressure.fix(main_steam_pressure)
     m.fs.boiler_pressure_drop_fraction.fix(0.1)
-    m.fs.turb.inlet_split.inlet.flow_mol[:].value = 26000
+    m.fs.turb.inlet_split.inlet.flow_mol[:].value = 21000
     m.fs.turb.inlet_split.inlet.flow_mol.unfix()  # Pressure driven
     m.fs.turb.inlet_mix.use_equal_pressure_constraint()  # Pressure driven mix
     # Set throttle valve
@@ -797,7 +797,7 @@ def initialize(m, fileoutput=None, fileinput=None):
     solver.options = {
         "tol": 1e-7,
         "linear_solver": "ma27",
-        "max_iter": 100,
+        "max_iter": 40,
     }
     if fileinput is not None:
         ms.from_json(m, fname=fileinput)
@@ -808,7 +808,7 @@ def initialize(m, fileoutput=None, fileinput=None):
     # Extraction rates are calculated from the feedwater heater models, so to
     # initialize the tubine fix some initial guesses. They get unfixed after
     # solving the turbine
-    m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.fix(9000)
+    m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.fix(3500)
     m.fs.turb.lp_split[11].split_fraction[:, "outlet_2"].fix(0.04403)
     m.fs.turb.lp_split[10].split_fraction[:, "outlet_2"].fix(0.04025)
     m.fs.turb.lp_split[8].split_fraction[:, "outlet_2"].fix(0.04362)
@@ -859,6 +859,7 @@ def initialize(m, fileoutput=None, fileinput=None):
     m.fs.condenser.inlet_1.fix()
     m.fs.condenser.inlet_1.pressure.unfix()
     solver.solve(m.fs.condenser, tee=True)
+    print("Condenser Pressure {}".format(m.fs.condenser.shell.properties_in[0].pressure.value))
     m.fs.condenser.inlet_1.unfix()
     # initialize hotwell
     _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1_ph)
@@ -1010,5 +1011,3 @@ if __name__ == "__main__":
         initialize_from_file=args.initialize_from_file,
         store_initialization=args.store_initialization,
     )
-    df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    pfd_result("result.svg", m, df)

@@ -53,16 +53,13 @@ class TurbineOutletStageData(PressureChangerData):
 
         self.flow_coeff = Var(initialize=0.0333,
             doc="Turbine flow coefficient [kg*C^0.5/s/Pa]")
-        self.delta_enth_isentropic = Var(self.flowsheet().config.time,
-                                         initialize=-100,
-            doc="Specific enthalpy change of isentropic process [J/mol]")
         self.eff_dry = Var(initialize=0.87,
             doc="Turbine dry isentropic efficiency")
         self.design_exhaust_flow_vol = Var(initialize=6000.0,
             doc="Design exit volumetirc flowrate [m^3/s]")
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
-        self.flow_scale = Param(mutable=True, default=1e3, doc=
+        self.flow_scale = Param(mutable=True, default=1e-4, doc=
             "Scaling factor for pressure flow relation should be approximatly"
             " the same order of magnitude as the expected flow.")
         self.eff_dry.fix()
@@ -88,16 +85,17 @@ class TurbineOutletStageData(PressureChangerData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return (1/b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
-                (1/b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
+            return (b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
+                (b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
 
-        @self.Constraint( self.flowsheet().config.time,
-            doc="Equation: isentropic specific enthalpy change")
-        def isentropic_enthalpy(b, t):
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Equation: isentropic specific enthalpy change"
+        )
+        def delta_enth_isentropic(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
-            dh_isen = b.delta_enth_isentropic[t]
             work_isen = b.work_isentropic[t]
-            return work_isen == dh_isen*flow
+            return work_isen/flow
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Equation: Efficiency correlation")
@@ -165,7 +163,6 @@ class TurbineOutletStageData(PressureChangerData):
         istate = to_json(self, return_dict=True, wts=sp)
         # Deactivate special constraints
         self.stodola_equation.deactivate()
-        self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
         self.deltaP.unfix()
         self.ratioP.unfix()
@@ -223,24 +220,32 @@ class TurbineOutletStageData(PressureChangerData):
             init_log.log(5, "Error: Degrees_of_freedom = {}".format(dof))
             raise
 
+        mw = self.control_volume.properties_in[0].mw
+        Tin = self.control_volume.properties_in[0].temperature
+        Pin = self.control_volume.properties_in[0].pressure
+        Pr = self.ratioP[0]
+        cf = self.flow_coeff
+        self.inlet.flow_mol.fix(value(cf*Pin*sqrt(1 - Pr**2)/mw/sqrt(Tin - 273.15)))
+
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
-        super(TurbineOutletStageData, self).initialize(state_args=state_args,
-            outlvl=outlvl, solver=solver, optarg=optarg)
-
+        super().initialize(
+            state_args=state_args,
+            outlvl=outlvl,
+            solver=solver,
+            optarg=optarg,
+        )
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         self.inlet.flow_mol.unfix()
         self.stodola_equation.activate()
-        self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
         res = slvr.solve(self, tee=init_tee(init_log))
-
-        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
+        init_log.log(5, "Initialization Complete (Outlet Stage): {}".format(condition(res)))
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)
