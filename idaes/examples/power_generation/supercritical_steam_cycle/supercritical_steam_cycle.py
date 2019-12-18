@@ -23,6 +23,7 @@ __author__ = "John Eslick"
 # Import Python libraries
 from collections import OrderedDict
 import argparse
+import logging
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
@@ -52,6 +53,9 @@ from idaes.unit_models.heat_exchanger import delta_temperature_underwood_callbac
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
 from idaes.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.logger import getModelLogger, getInitLogger, init_tee, condition
+
+_log = getModelLogger(__name__, logging.INFO)
 
 
 def create_model():
@@ -776,14 +780,12 @@ def set_model_input(m):
     # Now all the model input has been specified.
 
 
-def initialize(m, fileoutput=None, fileinput=None):
+def initialize(m, fileinput=None, outlvl=3):
     """ Initialize a mode from create_model(), set model inputs before
     initializing.
 
     Args:
         m (ConcreteModel): A Pyomo model from create_model()
-        fileoutput (str|None): File path to save initialized model state. If
-            None, don't save anything
         fileinput (str|None): File to load initialized model state from. If a
             file is supplied skip initialization routine. If None, initialize.
 
@@ -791,8 +793,7 @@ def initialize(m, fileoutput=None, fileinput=None):
         solver: A Pyomo solver object, that can be used to solve the model.
 
     """
-    if len(m.fs.time) > 1:
-        m.fs.condenser.heat_transfer_equation.deactivate()
+    init_log = getInitLogger(m.name, outlvl)
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "tol": 1e-7,
@@ -800,8 +801,11 @@ def initialize(m, fileoutput=None, fileinput=None):
         "max_iter": 40,
     }
     if fileinput is not None:
+        init_log.log(5, "Loading initial values from file: {}".format(fileinput))
         ms.from_json(m, fname=fileinput)
         return solver
+
+    init_log.log(5, "Starting initialization")
     ############################################################################
     #  Initialize turbine                                                      #
     ############################################################################
@@ -858,8 +862,12 @@ def initialize(m, fileoutput=None, fileinput=None):
     # true for the initial pressure guess this could fail to initialize
     m.fs.condenser.inlet_1.fix()
     m.fs.condenser.inlet_1.pressure.unfix()
-    solver.solve(m.fs.condenser, tee=True)
-    print("Condenser Pressure {}".format(m.fs.condenser.shell.properties_in[0].pressure.value))
+    res = solver.solve(m.fs.condenser, tee=init_tee(init_log))
+    init_log.log(4, "Condenser initialized: {}".format(condition(res)))
+    init_log.log(3, "Init condenser pressure: {}".format(
+            m.fs.condenser.shell.properties_in[0].pressure.value
+        )
+    )
     m.fs.condenser.inlet_1.unfix()
     # initialize hotwell
     _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1_ph)
@@ -940,11 +948,9 @@ def initialize(m, fileoutput=None, fileinput=None):
     _set_port(m.fs.fwh8.desuperheat.inlet_1, m.fs.turb.hp_split[4].outlet_2)
     m.fs.fwh8.initialize(outlvl=5, optarg=solver.options)
 
-    ############################################################################
-    #  Save and return solver                                                  #
-    ############################################################################
-    if fileoutput is not None:
-        raise NotImplementedError("Saving initialization not finished")
+    res = solver.solve(m, tee=init_tee(init_log))
+    init_log.log(5, "Initialization Complete: {}".format(condition(res)))
+
     return solver
 
 

@@ -120,8 +120,6 @@ class TurbineOutletStageData(PressureChangerData):
         pc = super()._get_performance_contents(time_point=time_point)
         pc["vars"]["Mechanical Efficiency"] = self.efficiency_mech
         pc["vars"]["Flow Coefficient"] = self.flow_coeff
-        pc["vars"]["Isentropic Specific Enthalpy"] = \
-            self.delta_enth_isentropic[time_point]
         pc["vars"]["Isentropic Efficieincy (Dry)"] = self.eff_dry
         pc["vars"]["Design Exhaust Flow"] = self.design_exhaust_flow_vol
 
