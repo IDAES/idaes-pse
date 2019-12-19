@@ -35,9 +35,11 @@ def add_object_reference(self, local_name, remote_object):
     try:
         object.__setattr__(self, local_name, remote_object)
     except AttributeError:
-        raise AttributeError("{} failed to construct reference to {} - remote "
-                             "object does not exist.".format(self.name,
-                                                             remote_object))
+        raise AttributeError(
+            "{} failed to construct reference to {} - remote "
+            "object does not exist.".format(self.name, remote_object)
+        )
+
 
 # Author: Jaffer Ghouse
 def extract_data(data_dict):
@@ -47,12 +49,15 @@ def extract_data(data_dict):
     a parameter but extract a subset of this data to initialize a Pyomo
     param object.
     """
+
     def _rule_initialize(m, *args):
         if len(args) > 1:
             return data_dict[args]
         else:
             return data_dict[args[0]]
+
     return _rule_initialize
+
 
 # Author: John Eslick
 def TagReference(s, description=""):
@@ -73,8 +78,17 @@ def TagReference(s, description=""):
     r.description = description
     return r
 
+
 # Author John Eslick
-def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
+def svg_tag(
+    tags,
+    svg,
+    outfile=None,
+    idx=None,
+    tag_map=None,
+    show_tags=False,
+    byte_encoding="utf-8",
+):
     """
     Replace text in a SVG with tag values for the model. This works by looking
     for text elements in the SVG with IDs that match the tags or are in tag_map.
@@ -90,13 +104,17 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
         tag_map: dictionary with svg id keys and tag values, to map svg ids to
             tags
         show_tags: Put tag labels of the diagram instead of numbers
+        byte_encoding: If svg is given as a byte-array, use this encoding to
+            convert it to a string.
 
     Returns:
         String for SVG
     """
-    if isinstance(svg, str): # assume this is svg content string
+    if isinstance(svg, str):  # assume this is svg content string
         pass
-    elif hasattr(svg, "read"): # file-like object to svg
+    elif isinstance(svg, bytes):
+        svg = svg.decode(byte_encoding)
+    elif hasattr(svg, "read"):  # file-like object to svg
         svg = svg.read()
     else:
         raise TypeError("SVG must either be a string or a file-like object")
@@ -109,12 +127,12 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
             tag_map[new_tag] = tag
     # Search for text in the svg that has an id in tags
     doc = xml.dom.minidom.parseString(svg)
-    texts = doc.getElementsByTagName('text')
+    texts = doc.getElementsByTagName("text")
     for t in texts:
-        id = t.attributes['id'].value
-        if(id in tag_map):
+        id = t.attributes["id"].value
+        if id in tag_map:
             # if it's multiline change last line
-            tspan = t.getElementsByTagName('tspan')[-1].childNodes[0]
+            tspan = t.getElementsByTagName("tspan")[-1].childNodes[0]
             try:
                 if show_tags:
                     val = tag_map[id]
@@ -125,9 +143,8 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
             except ZeroDivisionError:
                 val = "Divide_by_0"
             try:
-                tspan.nodeValue = \
-                    "{:.4e}".format(val)
-            except ValueError: # whatever it is can't be scientific notation
+                tspan.nodeValue = "{:.4e}".format(val)
+            except ValueError:  # whatever it is can't be scientific notation
                 tspan.nodeValue = val
 
     new_svg = doc.toxml()
@@ -136,6 +153,7 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
         with open(outfile, "w") as f:
             f.write(new_svg)
     return new_svg
+
 
 # Author: John Eslick
 def copy_port_values(destination, source):
