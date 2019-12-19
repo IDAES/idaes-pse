@@ -43,7 +43,6 @@ the critical point.
 __author__ = "John Eslick"
 
 # Import Python libraries
-import logging
 import os
 import enum
 
@@ -62,9 +61,10 @@ from idaes.core import declare_process_block_class, \
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 import idaes
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 # Logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 _so = os.path.join(idaes.lib_directory, "iapws95_external.so")
 
 
@@ -382,6 +382,8 @@ class _StateBlock(StateBlock):
     def initialize(self, *args, **kwargs):
         flags = {}
         hold_state = kwargs.pop("hold_state", False)
+        state_args = kwargs.pop("state_args", None)
+
         for i, v in self.items():
             pp = self[i].config.parameters.config.phase_presentation
             if self[i].state_vars == StateVars.PH:
@@ -389,10 +391,29 @@ class _StateBlock(StateBlock):
                 flags[i] = (v.flow_mol.fixed,
                             v.enth_mol.fixed,
                             v.pressure.fixed)
+
+                if state_args is not None:
+                    if not v.flow_mol.fixed:
+                        try:
+                            v.flow_mol.value = state_args["flow_mol"]
+                        except KeyError:
+                            pass
+                    if not v.enth_mol.fixed:
+                        try:
+                            v.enth_mol.value = state_args["enth_mol"]
+                        except KeyError:
+                            pass
+                    if not v.pressure.fixed:
+                        try:
+                            v.pressure.value = state_args["pressure"]
+                        except KeyError:
+                            pass
+
                 if hold_state:
                     v.flow_mol.fix()
                     v.enth_mol.fix()
                     v.pressure.fix()
+
             elif self[i].state_vars == StateVars.TPX:
                 # Hold the T-P-x vars
                 if pp in (PhaseType.MIX, PhaseType.LG):
@@ -400,6 +421,29 @@ class _StateBlock(StateBlock):
                                 v.temperature.fixed,
                                 v.pressure.fixed,
                                 v.vapor_frac.fixed)
+
+                    if state_args is not None:
+                        if not v.flow_mol.fixed:
+                            try:
+                                v.flow_mol.value = state_args["flow_mol"]
+                            except KeyError:
+                                pass
+                        if not v.temperature.fixed:
+                            try:
+                                v.temperature.value = state_args["temperature"]
+                            except KeyError:
+                                pass
+                        if not v.pressure.fixed:
+                            try:
+                                v.pressure.value = state_args["pressure"]
+                            except KeyError:
+                                pass
+                        if not v.vapor_frac.fixed:
+                            try:
+                                v.vapor_frac.value = state_args["vapor_frac"]
+                            except KeyError:
+                                pass
+
                     if hold_state:
                         v.flow_mol.fix()
                         v.temperature.fix()
@@ -409,6 +453,24 @@ class _StateBlock(StateBlock):
                     flags[i] = (v.flow_mol.fixed,
                                 v.temperature.fixed,
                                 v.pressure.fixed)
+
+                    if state_args is not None:
+                        if not v.flow_mol.fixed:
+                            try:
+                                v.flow_mol.value = state_args["flow_mol"]
+                            except KeyError:
+                                pass
+                        if not v.temperature.fixed:
+                            try:
+                                v.temperature.value = state_args["temperature"]
+                            except KeyError:
+                                pass
+                        if not v.pressure.fixed:
+                            try:
+                                v.pressure.value = state_args["pressure"]
+                            except KeyError:
+                                pass
+
                     if hold_state:
                         v.flow_mol.fix()
                         v.temperature.fix()

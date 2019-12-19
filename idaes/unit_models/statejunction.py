@@ -13,8 +13,6 @@
 """
 Standard IDAES StateJunction model.
 """
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import SolverFactory
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -24,11 +22,12 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "Andrew Lee"
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("StateJunction")
@@ -96,7 +95,7 @@ see property package for documentation.}"""))
                              block=self.properties,
                              doc="Outlet block")
 
-    def initialize(blk, state_args={}, outlvl=0,
+    def initialize(blk, state_args={}, outlvl=6,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method initializes the StateJunction block by calling the
@@ -107,13 +106,14 @@ see property package for documentation.}"""))
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
                            property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -121,17 +121,16 @@ see property package for documentation.}"""))
         Returns:
             None
         '''
+        init_log = getInitLogger(blk.name, outlvl)
         # Set solver options
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        blk.properties.initialize(outlvl=outlvl-1,
+        blk.properties.initialize(outlvl=outlvl+1,
                                   optarg=optarg,
                                   solver=solver,
                                   hold_state=False,
                                   **state_args)
-
-        if outlvl > 0:
-            _log.info('{} Initialisation Step Complete.'.format(blk.name))
+        init_log.log(5, 'Initialization Step Complete.')
