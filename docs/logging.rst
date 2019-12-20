@@ -15,20 +15,20 @@ Getting Loggers
 
 There are three main roots of IDAES loggers.  All these loggers are just
 standard Python loggers, and can be used as such.  The main differences between
-using the IDAES logging functions and plain Python methods, is that the IDAES
-functions make it a little easier to get loggers that fit into IDAES's standard
-logging hierarchy, and the IDAES loggers have a few additional named logging
-levels, which allow for a bit finer control over information output. Logging
-levels are described in detail later.
+using the IDAES logging functions to the loggers and plain Python methods, is that
+the IDAES functions make it a little easier to get loggers that fit into IDAES's
+standard logging hierarchy, and the IDAES loggers have a few additional named
+logging levels, which allow for a bit finer control over information output.
+Logging levels are described in detail later.
 
-idaes
-~~~~~
+idaes Logger
+~~~~~~~~~~~~
 
-The usually __name__ should be used when creating this logger.  Regardless of
-what the module name is, though the root of an IDAES logger will always be "idaes."
-Since this is usually used withing the IDAES framework the logger name is usually
-``__name__``, but if this is call outside the ``idaes`` package, "idaes." will be
-prepended to the name.
+Loggers descending from ``idaes`` (other that ``idaes.init`` or ``idaes.model``)
+are used for general IDAES framework logging. Typically the module name
+``__name__`` is used for the logger name. Modules in the ``idaes`` package already
+start with ``idaes``, but if an idaes logger is requested for a module outside the
+``idaes`` package "idaes." is prepended to the name.
 
 .. autofunction:: getLogger
 
@@ -41,15 +41,16 @@ prepended to the name.
   _log = idaeslog.getLogger(__name__)
 
 
-idaes.init
-~~~~~~~~~~
+idaes.init Logger
+~~~~~~~~~~~~~~~~~
 
 The init logger will always descend from "idaes.init".  This logger is used in
-IDAES model initialization methods. These models are instances of Pyomo's Block
-and have a name attribute.  When a used sees initialization log output it is
-useful to see which object instance produced the output.  The root "idaes.init"
-logger can be configured differently than "idaes" to provided different default
-behavior.
+IDAES model initialization methods, and can be used in user models as well.
+Initialization methods are usually attached to a Pyomo Block. Blocks have a
+``name`` attribute.  So the logger name is usually given as the block name, and
+the ``getInitLogger()`` function prepends ``idaes.init.`` The advantage of using
+the block name over the module name is that users can see exactly which model
+instance the initialization log messages are coming from.
 
 .. autofunction:: getInitLogger
 
@@ -67,24 +68,23 @@ behavior.
     def initialize():
       init_log = idaeslog.getInitLogger(self.name)
 
-idaes.model
-~~~~~~~~~~~
+idaes.model Logger
+~~~~~~~~~~~~~~~~~~
 
 The model logger is used to provide a standard way to produce log messages from
-user models that are not part of the ``idaes`` package. These logger names
-prepend "idaes.model" to the name provided by the user.  This is convenient
+user models that are not part of the ``idaes`` package. The logger name has
+"idaes.model" prepended to the name provided by the user.  This is convenient
 because it provides a way to use a standard configuration system for user model
-loggers.
+loggers.  The name the user can choose any name they like for these loggers.
 
 .. autofunction:: getModelLogger
 
 *Example*
 
-
 .. testcode::
   import idaes.logger as idaeslog
 
-  _log = idaeslog.getLogger("my_model")
+  _log = idaeslog.getModelLogger("my_model")
 
 Levels
 ------
