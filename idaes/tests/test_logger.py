@@ -1,6 +1,7 @@
 
 import idaes.logger as idaeslog
 import logging
+import pyomo.environ as pyo
 
 __author__ = "John Eslick"
 
@@ -37,5 +38,27 @@ def test_get_init_logger(caplog):
     log = idaeslog.getInitLogger("My Init 1")
     assert log.name == "idaes.init.My Init 1"
 
-if __name__ == "__main__":
-    test_get_model_logger()
+def test_solver_tee():
+    log = idaeslog.getInitLogger("solver")
+    log.setLevel(idaeslog.SOLVER)
+    assert idaeslog.solver_tee(log) == True
+    log.setLevel(idaeslog.INFO)
+    assert idaeslog.solver_tee(log) == False
+    assert idaeslog.solver_tee(log, idaeslog.ERROR) == True
+
+def test_solver_condition():
+    assert idaeslog.condition(None) == "Error, no result"
+
+def test_solver_condition2():
+    model = pyo.ConcreteModel("Solver Result Test Model")
+    model.x = pyo.Var([1,2])
+    model.y = pyo.Var(initialize=5)
+    model.x.fix(2)
+    model.y.unfix()
+    model.c = pyo.Constraint(expr=model.x[1] + model.x[2]==model.y)
+    solver = pyo.SolverFactory('ipopt')
+    res = solver.solve(model)
+    assert idaeslog.condition(res).startswith("optimal")
+    model.c2 = pyo.Constraint(expr=model.x[1]==model.y)
+    res = solver.solve(model)
+    assert idaeslog.condition(res).startswith("other")

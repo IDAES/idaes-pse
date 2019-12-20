@@ -82,52 +82,8 @@ def getIdaesLogger(name, level=None):
         l.setLevel(level)
     return __add_methods(logging.getLogger(name))
 
+
 getLogger = getIdaesLogger
-
-
-def solver_tee(logger, tee_level=SOLVER):
-    """Function to produce solver output based on the logging level of a specific
-    logger. This function just helps standardize the level for solver output to
-    appear and make code a bit cleaner.
-
-    Args:
-        logger: logger to get output level from
-        tee_level: Level at which to show solver output, usually use default
-
-    Returns
-        (bool)
-    """
-    return logger.getEffectiveLevel() <= tee_level
-
-
-def init_tee(logger, tee_level=2):
-    """Function to use in initialization to determine at a given output level
-    whether to use the sovler tee option to print solver output. This function
-    just helps standardize the level for solver output to appear and make the
-    initialization routine code a bit cleaner.
-
-    Args:
-        logger: logger to get output level from
-        tee_level: Level at which to show solver output, usually use default
-
-    Returns
-        (bool)
-    """
-    logging.getLogger(__name__).critical("WARNING THIS WILL BE REMOVED")
-    return logger.getEffectiveLevel() <= tee_level
-
-
-def condition(res):
-    """Get the solver termination condition.  Since it seems to be common to
-    have an if block to check for None if the solver call raised a handled
-    exception"""
-
-    if res is None:
-        return "Error, no result"
-    elif isinstance(res, str):
-        return res
-    else:
-        return str(res.solver.termination_condition)
 
 
 def getInitLogger(name, level=None):
@@ -164,3 +120,54 @@ def getModelLogger(name, level=None):
     if level is not None:
         l.setLevel(level)
     return __add_methods(logging.getLogger(name))
+
+
+def solver_tee(logger, tee_level=SOLVER):
+    """Function to produce solver output based on the logging level of a specific
+    logger. This function just helps standardize the level for solver output to
+    appear and make code a bit cleaner.
+
+    Args:
+        logger: logger to get output level from
+        tee_level: Level at which to show solver output, usually use default
+
+    Returns
+        (bool)
+    """
+    return logger.isEnabledFor(tee_level)
+
+
+def init_tee(logger, tee_level=2):
+    """Function to use in initialization to determine at a given output level
+    whether to use the sovler tee option to print solver output. This function
+    just helps standardize the level for solver output to appear and make the
+    initialization routine code a bit cleaner.
+
+    Args:
+        logger: logger to get output level from
+        tee_level: Level at which to show solver output, usually use default
+
+    Returns
+        (bool)
+    """
+    logging.getLogger(__name__).critical("WARNING THIS WILL BE REMOVED")
+    return logger.getEffectiveLevel() <= tee_level
+
+
+def condition(res):
+    """Get the solver termination condition to log.  This isn't a specifc value
+    that you can really depend on, just a message to pass on from the solver for
+    the user's benefit. Somtimes the solve is in a try-except, so we'll handle
+    None and str for those cases, where you don't have a real result."""
+
+    if res is None:
+        return "Error, no result"
+    elif isinstance(res, str):
+        return res
+    else:
+        s = str(res.solver.termination_condition)
+
+    try:
+        return "{} - {}".format(s, str(res.solver.message))
+    except:
+        return s
