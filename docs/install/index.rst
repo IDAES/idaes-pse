@@ -117,12 +117,11 @@ an optional step.
 
     idaes get-examples
 
-You can choose a different directory name by providing it to the ``-d/--dir`` option,
-for example::
+You can choose a different directory name by providing it to the `-d/--dir` option.
+For example::
 
-    idaes get-examples --dir ../some_examples
+    idaes get-examples --dir Documents/IDAES/examples
 
-To choose your own directory you can add the "--dir <name>" option.
 
 4. Run tests::
 

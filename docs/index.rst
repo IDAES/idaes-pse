@@ -43,6 +43,7 @@ Contents
     :maxdepth: 2
 
     install/index
+    examples
     standards
     core/index
     transformations/index
@@ -52,13 +53,14 @@ Contents
     dmf/index
     apps/index
     version
-    tutorials
     jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary
     license
     copyright
+
+.. tutorials
 
 Indices and tables
 ==================
