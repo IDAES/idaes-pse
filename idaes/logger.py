@@ -22,7 +22,7 @@ levelname = { # the level name of all our extra info levels is "INFO"
 }
 
 
-class _ExtraInfoLevelsFilter(logging.Filter):
+class _levelNamesFilter(logging.Filter):
     """Filter applied to IDAES loggers returned by this modulue."""
     def filter(record):
         """Add in the custom level name and let the record through"""
@@ -58,7 +58,7 @@ def __add_methods(log):
     log.info_most = __info_most.__get__(log)
     log.solver = __solver.__get__(log)
     # hopfully adding this multiple times is not a problem
-    log.addFilter(_ExtraInfoLevelsFilter)
+    log.addFilter(_levelNamesFilter)
     return log
 
 
