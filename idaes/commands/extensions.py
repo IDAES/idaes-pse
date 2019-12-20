@@ -18,12 +18,12 @@ import click
 import idaes.solvers
 from idaes.commands import cb
 
+
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--url",
     help="URL to download solver",
     default=idaes._config.default_binary_url)
-@click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(url, verbose):
     if url is not None:
         click.echo("Getting files...")
