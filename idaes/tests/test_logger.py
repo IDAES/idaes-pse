@@ -1,4 +1,4 @@
-
+import pytest
 import idaes.logger as idaeslog
 import logging
 import pyomo.environ as pyo
@@ -49,14 +49,15 @@ def test_solver_tee():
 def test_solver_condition():
     assert idaeslog.condition(None) == "Error, no result"
 
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():
+    solver = pyo.SolverFactory('ipopt')
     model = pyo.ConcreteModel("Solver Result Test Model")
     model.x = pyo.Var([1,2])
     model.y = pyo.Var(initialize=5)
     model.x.fix(2)
     model.y.unfix()
     model.c = pyo.Constraint(expr=model.x[1] + model.x[2]==model.y)
-    solver = pyo.SolverFactory('ipopt')
     res = solver.solve(model)
     assert idaeslog.condition(res).startswith("optimal")
     model.c2 = pyo.Constraint(expr=model.x[1]==model.y)
