@@ -47,7 +47,10 @@ def test_solver_tee():
     assert idaeslog.solver_tee(log, idaeslog.ERROR) == True
 
 def test_solver_condition():
+    # test the results that can be tested without a solver
     assert idaeslog.condition(None) == "Error, no result"
+    assert idaeslog.condition("something else") == "something else"
+
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():
@@ -59,7 +62,7 @@ def test_solver_condition2():
     model.y.unfix()
     model.c = pyo.Constraint(expr=model.x[1] + model.x[2]==model.y)
     res = solver.solve(model)
-    assert idaeslog.condition(res).startswith("optimal")
+    assert idaeslog.condition(res).startswith("optimal") #better solve
     model.c2 = pyo.Constraint(expr=model.x[1]==model.y)
     res = solver.solve(model)
-    assert idaeslog.condition(res).startswith("other")
+    assert idaeslog.condition(res).startswith("other") #too few degrees of freedom
