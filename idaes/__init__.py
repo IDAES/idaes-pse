@@ -4,7 +4,6 @@
 Set up logging for the idaes module, and import plugins.
 """
 import os
-import logging.config
 import pyomo.common.plugin
 import idaes.config
 import toml

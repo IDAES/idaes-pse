@@ -3,9 +3,10 @@ import logging.config
 import toml
 import os
 import importlib
+import idaes.logger as idaeslog
 
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"

@@ -66,3 +66,92 @@ def test_solver_condition2():
     model.c2 = pyo.Constraint(expr=model.x[1]==model.y)
     res = solver.solve(model)
     assert idaeslog.condition(res).startswith("other") #too few degrees of freedom
+
+def test_increasing_level():
+    log = idaeslog.getLogger("log")
+    log.setLevel(idaeslog.CRITICAL)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.ERROR
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.WARNING
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.INFO_LEAST
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.INFO_LESS
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.INFO
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.INFO_MORE
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.INFO_MOST
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.SOLVER
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.DEBUG
+    log.setLevel(lvl)
+
+    lvl = idaeslog.increased_output(log)
+    assert lvl == idaeslog.DEBUG
+    log.setLevel(lvl)
+
+
+def test_decreasing_level():
+    log = idaeslog.getLogger("log")
+    log.setLevel(idaeslog.DEBUG)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.SOLVER
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.INFO_MOST
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.INFO_MORE
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.INFO
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.INFO_LESS
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.INFO_LEAST
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.WARNING
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.ERROR
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.CRITICAL
+    log.setLevel(lvl)
+
+    lvl = idaeslog.decreased_output(log)
+    assert lvl == idaeslog.CRITICAL
+    log.setLevel(lvl)

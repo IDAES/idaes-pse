@@ -1,4 +1,5 @@
 import logging
+import bisect
 
 # Throw the standard levels in here, just let you access it all in one place
 CRITICAL = logging.CRITICAL # 50
@@ -9,7 +10,7 @@ INFO_LESS = 21
 INFO = logging.INFO # 20
 INFO_MORE = 19
 INFO_MOST = 18 # Level for info you usually don't want
-SOLVER = 15 # see solver output and info between INFO and DEBUG
+SOLVER = 17 # see solver output and info between INFO and DEBUG
 DEBUG = logging.DEBUG # 10
 NOTSET = logging.NOTSET # 0
 
@@ -21,6 +22,21 @@ levelname = { # the level name of all our extra info levels is "INFO"
     SOLVER: "SOLVER",
 }
 
+# Unfortunatly it seens to be a common practice in initialization routines
+# to call sub model initialization functions with an output level that's slightly
+# less.  This list makes it easy to shift up or down one NAMED level.
+_defined_levels = (
+    DEBUG,
+    SOLVER,
+    INFO_MOST,
+    INFO_MORE,
+    INFO,
+    INFO_LESS,
+    INFO_LEAST,
+    WARNING,
+    ERROR,
+    CRITICAL,
+)
 
 class _levelNamesFilter(logging.Filter):
     """Filter applied to IDAES loggers returned by this modulue."""
@@ -120,6 +136,20 @@ def getModelLogger(name, level=None):
     if level is not None:
         l.setLevel(level)
     return __add_methods(logging.getLogger(name))
+
+
+def increased_output(logger):
+    i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) - 1
+    if i < 0:
+        i = 0
+    return _defined_levels[i]
+
+
+def decreased_output(logger):
+    i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) + 1
+    if i >= len(_defined_levels):
+        i = -1
+    return _defined_levels[i]
 
 
 def solver_tee(logger, tee_level=SOLVER):
