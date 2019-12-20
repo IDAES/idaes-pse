@@ -15,8 +15,11 @@
 __author__ = "John Eslick"
 
 import click
+import logging
 import idaes.solvers
 from idaes.commands import cb
+
+_log = logging.getLogger("idaes.commands.extensions")
 
 
 @cb.command(name="get-extensions", help="Get solvers and libraries")
@@ -24,7 +27,8 @@ from idaes.commands import cb
     "--url",
     help="URL to download solver",
     default=idaes._config.default_binary_url)
-def get_extensions(url, verbose):
+def get_extensions(url):
+    verbose = _log.isEnabledFor(logging.INFO)
     if url is not None:
         click.echo("Getting files...")
         idaes.solvers.download_binaries(url, verbose)
