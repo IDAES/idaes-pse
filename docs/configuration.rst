@@ -1,14 +1,15 @@
 Configuration
 =============
 
-Some behavior of IDAES especially logging can be set through configuration files.
-IDAES's configuration is obtained by first setting everything to internal defaults,
-then loading a global config file if it exists then loading a config file from the
-current working directory, if it exists.
+Some behavior of IDAES, especially logging, is configurable through configuration
+files. IDAES's configuration is obtained by first setting everything to internal
+defaults; then loading a global config file, if it exists; then loading a config
+file from the current working directory, if it exists.
 
 Configuration file are in `TOML format <https://github.com/toml-lang/toml>`_. The
 default configuration is shown below and can be used as a template to create new
-configuration files.
+configuration files. This is the configuration used by IDAES if nothing else is
+provided.
 
 .. code-block:: yaml
 
@@ -40,8 +41,8 @@ configuration files.
       propagate = false
       handlers = ["console"]
 
-Global Configuration Location
------------------------------
+Global Configuration
+--------------------
 
 IDAES configuration files are named idaes.conf. The easiest way to find where the
 global configuration file should be placed is to run the command
@@ -51,7 +52,7 @@ creates one. The default configuration above can be used as a start.
 Windows
 ~~~~~~~
 
-On windows the global configuration file is located at
+On Windows the global configuration file is located at
 ``%LOCALAPPDATA%\idaes\idaes.conf``.
 
 UNIX-Like
@@ -64,7 +65,7 @@ Other
 ~~~~~
 
 On systems that have neither an ``%LOCALAPPDATA%`` or ``$HOME`` environment
-variable, global config files are not supported.
+variable, global config files are not currently supported.
 
 
 Important Configuration Entries
@@ -82,11 +83,12 @@ configuration.  See Python's logging documentation for more information.
 
 IDAES has three main loggers defined in the standard configuration, although
 additional loggers can be added if desired.  The standard loggers are:
-  1.) idaes, this is the root logger of most IDAES logging, unless otherwise noted.
-  2.) idaes.init, this is the root of IDAES initialization loggers
-  3.) idaes.model, this is the root of model loggers.  Model loggers are usually
-    used my models written using the IDAES framework, but not part of the ``idaes``
-    package.
+
+  1. idaes, this is the root logger of most IDAES logging, unless otherwise noted.
+
+  2. idaes.init, this is the root of IDAES initialization loggers.
+
+  3. idaes.model, this is the root of model loggers.  Model loggers are usually used models written using the IDAES framework, but not part of the ``idaes`` package.
 
 use_idaes_solvers
 ~~~~~~~~~~~~~~~~~

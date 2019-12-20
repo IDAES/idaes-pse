@@ -7,7 +7,6 @@ Core Contents
 .. toctree::
     :maxdepth: 1
 
-    configuration
     process_block
     model_concepts
     flowsheet_model
