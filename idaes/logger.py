@@ -1,5 +1,67 @@
 import logging
 
+# Throw the standard levels in here, just let you access it all in one place
+CRITICAL = logging.CRITICAL # 50
+ERROR = logging.ERROR # 40
+WARNING = logging.WARNING # 30
+INFO_LEAST = 22 # Level for info you almost always want
+INFO_LESS = 21
+INFO = logging.INFO # 20
+INFO_MORE = 19
+INFO_MOST = 18 # Level for info you usually don't want
+SOLVER = 15 # see solver output and info between INFO and DEBUG
+DEBUG = logging.DEBUG # 10
+NOTSET = logging.NOTSET # 0
+
+levelname = { # the level name of all our extra info levels is "INFO"
+    INFO_LEAST: "INFO",
+    INFO_LESS: "INFO",
+    INFO_MORE: "INFO",
+    INFO_MOST: "INFO",
+    SOLVER: "SOLVER",
+}
+
+
+class _ExtraInfoLevelsFilter(logging.Filter):
+    """Filter applied to IDAES loggers returned by this modulue."""
+    def filter(record):
+        """Add in the custom level name and let the record through"""
+        if record.levelno in levelname:
+            record.levelname = levelname[record.levelno]
+        return True
+
+
+def __info_least(self, *args, **kwargs):
+    self.log(INFO_LEAST, *args, **kwargs)
+
+
+def __info_less(self, *args, **kwargs):
+    self.log(INFO_LESS, *args, **kwargs)
+
+
+def __info_more(self, *args, **kwargs):
+    self.log(INFO_MORE, *args, **kwargs)
+
+
+def __info_most(self, *args, **kwargs):
+    self.log(INFO_MOST, *args, **kwargs)
+
+
+def __solver(self, *args, **kwargs):
+    self.log(SOLVER, *args, **kwargs)
+
+
+def __add_methods(log):
+    log.info_least = __info_least.__get__(log)
+    log.info_less = __info_less.__get__(log)
+    log.info_more = __info_more.__get__(log)
+    log.info_most = __info_most.__get__(log)
+    log.solver = __solver.__get__(log)
+    # hopfully adding this multiple times is not a problem
+    log.addFilter(_ExtraInfoLevelsFilter)
+    return log
+
+
 def getIdaesLogger(name, level=None):
     """ Return an idaes logger.
 
@@ -18,9 +80,12 @@ def getIdaesLogger(name, level=None):
     l = logging.getLogger(name)
     if level is not None:
         l.setLevel(level)
-    return logging.getLogger(name)
+    return __add_methods(logging.getLogger(name))
 
-def solver_tee(logger, tee_level=logging.DEBUG):
+getLogger = getIdaesLogger
+
+
+def solver_tee(logger, tee_level=SOLVER):
     """Function to produce solver output based on the logging level of a specific
     logger. This function just helps standardize the level for solver output to
     appear and make code a bit cleaner.
@@ -33,6 +98,7 @@ def solver_tee(logger, tee_level=logging.DEBUG):
         (bool)
     """
     return logger.getEffectiveLevel() <= tee_level
+
 
 def init_tee(logger, tee_level=2):
     """Function to use in initialization to determine at a given output level
@@ -47,7 +113,9 @@ def init_tee(logger, tee_level=2):
     Returns
         (bool)
     """
+    logging.getLogger(__name__).critical("WARNING THIS WILL BE REMOVED")
     return logger.getEffectiveLevel() <= tee_level
+
 
 def condition(res):
     """Get the solver termination condition.  Since it seems to be common to
@@ -61,19 +129,13 @@ def condition(res):
     else:
         return str(res.solver.termination_condition)
 
+
 def getInitLogger(name, level=None):
     """ Get a model initialization logger
 
     Args:
         name: Object name (usually Pyomo Component name)
-        level: Logging detail level (for initialization routines 1 to 6)
-             * 0 = Use default idaes.init logger setting
-             * 1 = Maximum output
-             * 2 = Include solver output
-             * 3 = Return solver state for each step in subroutines
-             * 4 = Return solver state for each step in routine
-             * 5 = Final initialization status and exceptions
-             * 6 = No output
+        level: Log level
 
     Returns:
         logger
@@ -82,7 +144,8 @@ def getInitLogger(name, level=None):
     l = logging.getLogger(name)
     if level is not None:
         l.setLevel(level)
-    return l
+    return __add_methods(l)
+
 
 def getModelLogger(name, level=None):
     """ Get a logger for an IDAES model. This function helps users keep their
@@ -100,4 +163,4 @@ def getModelLogger(name, level=None):
     l = logging.getLogger(name)
     if level is not None:
         l.setLevel(level)
-    return logging.getLogger(name)
+    return __add_methods(logging.getLogger(name))

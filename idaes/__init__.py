@@ -1,5 +1,5 @@
 # coding: utf-8
-""" __init__.py for idaes module
+"""__init__.py for idaes module
 
 Set up logging for the idaes module, and import plugins.
 """
@@ -8,10 +8,11 @@ import logging.config
 import pyomo.common.plugin
 import idaes.config
 import toml
+import idaes.logger as idaeslog
 
 from .ver import __version__  # noqa
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 # Create the general IDAES configuration block
 _config = config.new_idaes_config_block()
