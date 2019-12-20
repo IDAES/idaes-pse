@@ -636,7 +636,7 @@ class TurbineMultistageData(UnitModelBlockData):
                     prev_port = splits[i].outlet_1
             return prev_port
 
-        for k in [1, 2]:
+        for k in [1]:
             # Initialize Splitter
             # Fix n - 1 split fractions
             self.inlet_split.split_fraction[0, "outlet_1"].value = 1.0 / ni
