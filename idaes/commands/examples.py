@@ -2,12 +2,15 @@
 Command to get IDAES examples
 """
 # stdlib
+from io import StringIO
 import logging
 from operator import itemgetter
 import os
 from pathlib import Path
+import shutil
 import sys
 from tempfile import TemporaryDirectory
+from typing import List
 from zipfile import ZipFile
 
 # third-party
@@ -18,7 +21,7 @@ import requests
 from idaes.commands.base import command_base
 from idaes.ver import package_version as V
 
-_log = logging.getLogger("idaes.commands")
+_log = logging.getLogger("idaes.commands.examples")
 
 
 GITHUB = "https://github.com"
@@ -27,6 +30,7 @@ REPO_ORG = "idaes"
 REPO_NAME = "examples-pse"
 REPO_DIR = "src"
 PKG_VERSION = f"{V.major}.{V.minor}.{V.micro}"
+INSTALL_PKG = "idaes_examples"
 
 # XXX: probably don't *really* want pre-releases, but they are
 # XXX: handy for testing this script.
@@ -36,35 +40,78 @@ _skip_prereleases = False
 class DownloadError(Exception):
     """Used for errors downloading the release files.
     """
+
+    pass
+
+
+class InstallError(Exception):
+    """Used for errors installing the source as a Python package.
+    """
+
     pass
 
 
 @command_base.command(
-    name="get-examples", help="Fetch example scripts and Jupyter Notebooks"
+    name="get-examples", help="Fetch example scripts and Jupyter Notebooks."
 )
 @click.option(
-    "--dir", "-d", "directory", help="installation target directory", default="examples"
+    "--dir", "-d", "directory", help="installation target directory", default="examples",
+    type=str,
+)
+@click.option(
+    "--no-install", "-I", "no_install", help="Do *not* install examples into 'idaes_examples' package",
+    is_flag=True
 )
 @click.option(
     "--list-releases",
     "-l",
     help="List all available released versions, and stop",
-    flag_value="list",
+    is_flag=True,
+)
+@click.option(
+    "--no-download",
+    "-N",
+    "no_download",
+    help="Do not download anything",
+    is_flag=True
 )
 @click.option(
     "--version",
     "-V",
-    help=f"Version of examples to download (default={PKG_VERSION})",
+    help=f"Version of examples to download",
     default=PKG_VERSION,
+    show_default=True,
 )
-def get_examples(directory, list_releases, version):
+def get_examples(directory, no_install, list_releases, no_download, version):
     """Get the examples from Github and put them in a local directory.
     """
-    # check version
-    releases = get_releases()
-    if list_releases == "list":
+    # list-releases mode
+    if list_releases:
+        releases = get_releases()
         print_releases(releases)
         sys.exit(0)
+    # otherwise..
+    target_dir = Path(directory)
+    # no-download mode
+    if no_download:
+        _log.info("skipping download")
+    else:
+        click.echo("Downloading...")
+        download_examples(get_releases(), target_dir, version)
+        full_dir = os.path.realpath(target_dir)
+        click.echo(f"Downloaded examples to directory '{full_dir}'")
+    # install
+    if not no_install:
+        click.echo("Installing...")
+        try:
+            install_src(version, target_dir)
+        except InstallError as err:
+            click.echo(f"Install error: {err}")
+            sys.exit(-1)
+        click.echo(f"Installed examples in package {INSTALL_PKG}")
+
+
+def download_examples(releases, target_dir, version):
     matched_release = None
     for rel in releases:
         if version == rel[1]:  # matches tag
@@ -84,17 +131,16 @@ def get_examples(directory, list_releases, version):
         click.echo(f"Use -l/--list-releases to see all{how_ver}.")
         sys.exit(-1)
     # check target directory
-    target_dir = Path(directory)
     if target_dir.exists():
-        _log.error("target directory {target_dir} already exists")
+        click.echo(f"Cannot download: target directory '{target_dir}' already exists.")
         sys.exit(-1)
     # download
     try:
         download_contents(version, target_dir)
     except DownloadError as err:
-        _log.fatal(f"Download failed: {err}")
+        click.echo(f"Download failed: {err}")
+        shutil.rmtree(target_dir)  # remove partial download
         sys.exit(-1)
-    print(f"Downloaded example files to {target_dir}")
 
 
 def download_contents(version, target_dir):
@@ -178,3 +224,91 @@ def print_releases(releases):
         print(fmt.format(date=rel[0], tag=rel[1], name=rel[2]))
     # print footer
     print("")
+
+
+def install_src(version, target_dir):
+    from setuptools import setup, find_packages
+    root_dir = target_dir.parent
+    examples_dir = root_dir / INSTALL_PKG
+    if examples_dir.exists():
+        raise InstallError(f"package directory {examples_dir} already exists")
+    _log.info(f"install into {INSTALL_PKG} package")
+    # set the args to make it look like the 'install' command has been invoked
+    saved_args = sys.argv[:]
+    sys.argv = ["setup.py", "install"]
+    # add some empty __init__.py files
+    _log.debug("add temporary __init__.py files")
+    pydirs = find_python_directories(target_dir)
+    pydirs.append(target_dir)  # include top-level dir
+    for d in pydirs:
+        init_py = d / "__init__.py"
+        init_py.open("w")
+    # temporarily rename target directory to the package name
+    os.rename(target_dir, examples_dir)
+    # if there is a 'build' directory, move it aside
+    build_dir = root_dir / 'build'
+    if build_dir.exists():
+        from uuid import uuid1
+        random_letters = str(uuid1())
+        moved_build_dir = f"{build_dir}.{random_letters}"
+        _log.debug(f"move existing build dir to {moved_build_dir}")
+        os.rename(str(build_dir), moved_build_dir)
+    else:
+        _log.debug("no existing build directory (nothing to do)")
+        moved_build_dir = None
+    # run setuptools' setup command (in root directory)
+    _log.info(f"run setup command in directory {root_dir}")
+    orig_dir = os.curdir
+    os.chdir(root_dir)
+    packages = [d for d in find_packages() if d.startswith(INSTALL_PKG)]
+    _log.debug(f"install packages: {packages}")
+    # before running, grab stdout
+    orig_stdout = sys.stdout
+    sys.stdout = setup_out = StringIO()
+    # run setup
+    setup(
+        name=INSTALL_PKG,
+        version=version,
+        # description='IDAES examples',
+        packages=packages,
+        python_requires=">=3.5,  <4",
+        zip_safe=False
+    )
+    # restore stdout
+    sys.stdout = orig_stdout
+    # print/log output
+    output_str = setup_out.getvalue()
+    if _log.isEnabledFor(logging.DEBUG):
+        for line in output_str.split("\n"):
+            _log.debug(f"(setup) {line}")
+    # name the target directory back to original
+    os.rename(examples_dir, target_dir)
+    # remove the empty __init__.py files
+    # _log.debug("remove temporary __init__.py files")
+    for d in pydirs:
+        init_py = d / "__init__.py"
+        init_py.unlink()
+    # remove build dir, and restore any moved build dir
+    shutil.rmtree(str(build_dir))
+    if moved_build_dir is not None:
+        _log.debug(f"restore build dir '{build_dir}' from '{moved_build_dir}'")
+        os.rename(moved_build_dir, str(build_dir))
+    # restore previous args
+    sys.argv = saved_args
+    # change back to previous directory
+    os.chdir(orig_dir)
+
+
+def find_python_directories(target_dir: Path) -> List[Path]:
+    """Find all directories from target_dir, on down, that contain a
+    Python module or sub-package.
+    """
+    # get directories that contain python files -> pydirs
+    pydirs = set((x.parent for x in target_dir.rglob("*.py")))
+    # get all directories in the tree leading to the 'pydirs'
+    alldirs = set()
+    for d in pydirs:
+        while d != target_dir:
+            alldirs.add(d)
+            d = d.parent
+    return list(alldirs)

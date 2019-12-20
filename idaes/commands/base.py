@@ -19,7 +19,12 @@ __author__ = "John Eslick"
 import logging
 import click
 
+# separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")
+_h = logging.StreamHandler()
+_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+_log.addHandler(_h)
+_log.propagate = False
 
 
 def level_from_verbosity(vb):
