@@ -139,6 +139,7 @@ def getModelLogger(name, level=None):
 
 
 def increased_output(logger):
+    """Get the a logging level that produces one level more output than logger"""
     i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) - 1
     if i < 0:
         i = 0
@@ -146,6 +147,7 @@ def increased_output(logger):
 
 
 def decreased_output(logger):
+    """Get the a logging level that produces one level less output than logger"""
     i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) + 1
     if i >= len(_defined_levels):
         i = -1
