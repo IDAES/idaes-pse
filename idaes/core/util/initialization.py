@@ -40,6 +40,10 @@ def fix_state_vars(blk, state_args={}):
         define_state_variables) and variable index indicating the fixed status
         of each variable before the fix_state_vars method was applied.
     """
+    # For sanity, handle cases where state_args is None
+    if state_args is None:
+        state_args = {}
+
     flags = {}
     for k in blk.keys():
         for n, v in blk[k].define_state_vars().items():
