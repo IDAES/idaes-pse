@@ -113,11 +113,22 @@ an optional step.
 
    .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
 
-3. Run tests::
+3. Run the idaes command to download the example files into "examples"::
+
+    idaes get-examples
+
+You can choose a different directory name by providing it to the ``-d/--dir`` option,
+for example::
+
+    idaes get-examples --dir ../some_examples
+
+To choose your own directory you can add the "--dir <name>" option.
+
+4. Run tests::
 
     pytest --pyargs idaes -W ignore
 
-4. You should see the tests run and all should pass to ensure the installation worked. You
+5. You should see the tests run and all should pass to ensure the installation worked. You
    may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of failed and succeed test is reported at the end of the pytest
    output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
