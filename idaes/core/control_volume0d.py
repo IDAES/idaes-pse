@@ -1429,17 +1429,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                              hold_state=hold_state,
                                              state_args=state_args)
 
-        blk.properties_out.initialize(outlvl=outlvl+1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      hold_state=False,
-                                      state_args=state_args)
+        oflags = blk.properties_out.initialize(outlvl=outlvl+1,
+                                               optarg=optarg,
+                                               solver=solver,
+                                               hold_state=True,
+                                               state_args=state_args)
         try:
             blk.reactions.initialize(outlvl=outlvl+1,
                                      optarg=optarg,
-                                     solver=solver)
+                                     solver=solver,
+                                     state_vars_fixed=True)
         except AttributeError:
             pass
+
+        # Unfix outlet properties
+        blk.properties_out.release_state(flags=oflags, outlvl=outlvl+1)
 
         init_log.log(5, 'Initialization Complete')
 
