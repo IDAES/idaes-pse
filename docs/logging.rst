@@ -5,7 +5,9 @@ Logging
 
 IDAES provides the ``idaes.logger`` module to assist with a few common logging
 tasks, and the make it to get a logger that descends from one of the IDAES standard
-loggers (``idaes``, ``idaes.model``, or ``idaes.init``).
+loggers (``idaes``, ``idaes.model``, or ``idaes.init``).  Extra logging levels
+are also provided for ``idaes`` loggers to allow finer control over information
+output.
 
 
 Getting Loggers
