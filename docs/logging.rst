@@ -124,3 +124,33 @@ common in the IDAES framework.
 .. autofunction:: increased_output
 
 .. autofunction:: decreased_output
+
+Logging Solver Output
+---------------------
+
+The solver output can be captured and directed to a logger using the
+``pyutilib.misc.capture_output()`` context manager, which temporarily redirects
+``sys.stdout`` and ``sys.stderr`` to a string buffer.  This can be advantageous
+in that solver output can be recorded in log files, but the disadvantage is that
+output will not be written to ``stdout`` as the solver runs.
+
+*Example*
+
+.. testcode::
+
+  import idaes.logging as idaeslog
+  import pyomo.environ as pyo
+  from pyutilib.misc import capture_output
+
+  solver = pyo.SolverFactory("ipopt")
+
+  model.x = pyo.Var()
+  model.y = pyo.Var()
+  model.x.fix(3)
+  model.c = pyo.Constraint(expr=model.y==model.x**2)
+
+  with capture_output() as o:
+      res = solver.solve(model, tee=True)
+
+  _log.setLevel(idaeslog.SOLVER)
+  _log.solver(o.getvalue())

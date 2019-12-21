@@ -24,9 +24,6 @@ from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
-import logging
-
-_log = logging.getLogger(__name__)
 
 
 def is_physical_parameter_block(val):
