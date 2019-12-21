@@ -37,7 +37,7 @@ import idaes.logger as idaeslog
 __author__ = "Andrew Lee"
 
 
-_log = getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
