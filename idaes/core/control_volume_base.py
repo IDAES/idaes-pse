@@ -30,12 +30,11 @@ from idaes.core.util.config import (is_physical_parameter_block,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
-from idaes.logger import getIdaesLogger
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Andrew Lee"
-
-# Set up logger
-_log = getIdaesLogger(__name__)
 
 
 # Enumerate options for material balances
