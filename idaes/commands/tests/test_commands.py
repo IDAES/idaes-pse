@@ -10,7 +10,7 @@ import tempfile
 import pytest
 
 # package
-from idaes.commands import base, data_directory, examples, extensions
+from idaes.commands import examples
 
 ################
 # get-examples #
@@ -18,7 +18,7 @@ from idaes.commands import base, data_directory, examples, extensions
 
 
 def test_examples_list_releases():
-    releases = examples.get_releases()
+    releases = examples.get_releases(True)
     assert len(releases) > 0
     examples.print_releases(releases)
 

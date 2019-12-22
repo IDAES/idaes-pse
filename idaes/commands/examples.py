@@ -1,10 +1,11 @@
 """
-Command to get IDAES examples.
+Install IDAES example files locally.
 
-By default, this will download the examples from examples-pse/src on Github,
-with a release matching the current IDAES version number, into a sub-directory
-of the current directory named "examples", and install all Python modules found
-in the downloaded directory into a package called "idaes_examples".
+By default, this will download the examples from "examples-pse/src" on Github,
+with a release matching the version of the currently installed idaes package,
+into a sub-directory of the current directory named "examples". It will
+also, unless directed otherwise, install all Python modules from the downloaded
+directory into a package called "idaes_examples".
 
 Options let the user choose a different version, directory, and
 whether to actually download or install.
@@ -35,6 +36,7 @@ __author__ = "Dan Gunter"
 
 _log = logging.getLogger("idaes.commands.examples")
 
+# Constants
 
 GITHUB = "https://github.com"
 GITHUB_API = "https://api.github.com"
@@ -43,10 +45,6 @@ REPO_NAME = "examples-pse"
 REPO_DIR = "src"
 PKG_VERSION = f"{V.major}.{V.minor}.{V.micro}"
 INSTALL_PKG = "idaes_examples"
-
-# XXX: probably don't *really* want pre-releases, but they are
-# XXX: handy for testing this script.
-_skip_prereleases = False
 
 
 class DownloadError(Exception):
@@ -91,19 +89,26 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     is_flag=True
 )
 @click.option(
+    "--unstable",
+    "-U",
+    help="Allow and list unstable/pre-release versions",
+    is_flag=True
+)
+@click.option(
     "--version",
     "-V",
     help=f"Version of examples to download",
     default=PKG_VERSION,
     show_default=True,
 )
-def get_examples(directory, no_install, list_releases, no_download, version):
+def get_examples(directory, no_install, list_releases, no_download, version,
+                 unstable):
     """Get the examples from Github and put them in a local directory.
     """
     # list-releases mode
     if list_releases:
-        releases = get_releases()
-        print_releases(releases)
+        releases = get_releases(unstable)
+        print_releases(releases, unstable)
         sys.exit(0)
     # otherwise..
     target_dir = Path(directory)
@@ -113,7 +118,7 @@ def get_examples(directory, no_install, list_releases, no_download, version):
     else:
         click.echo("Downloading...")
         try:
-            download(get_releases(), target_dir, version)
+            download(get_releases(unstable), target_dir, version)
         except DownloadError as err:
             _log.fatal(f"abort due to failed download: {err}")
             sys.exit(-1)
@@ -207,7 +212,7 @@ def archive_file_url(version, org=REPO_ORG, repo=REPO_NAME):
     return f"{GITHUB}/{org}/{repo}/archive/{version}.zip"
 
 
-def get_releases() -> List[Release]:
+def get_releases(unstable) -> List[Release]:
     """Returns a list of releases.
 
     The list is sorted in ascending order by date.
@@ -216,19 +221,23 @@ def get_releases() -> List[Release]:
     url = f"{GITHUB_API}/repos/{REPO_ORG}/{REPO_NAME}/releases"
     req = requests.get(url)
     for rel in req.json():
-        if _skip_prereleases and rel["prerelease"]:
+        if not unstable and rel["prerelease"]:
             continue
         releases.append(Release(rel["published_at"], rel["tag_name"], rel["name"]))
     releases.sort(key=attrgetter("date"))  # sort by publication date
     return releases
 
 
-def print_releases(releases: List[Release]):
+def print_releases(releases: List[Release], unstable):
     """Print the releases, as returned by `get_releases()`, as a table
     to standard output.
     """
     if len(releases) == 0:
-        print("No releases to list")
+        if unstable:
+            print("No releases found")
+        else:
+            print("No stable releases found. Add -U/--unstable to also look "
+                  "for pre-releases.")
         return
     # determine column widths
     widths = [4, 7, 7]  # widths of column titles: date,version,details
