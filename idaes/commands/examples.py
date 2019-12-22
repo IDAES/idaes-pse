@@ -1,10 +1,19 @@
 """
-Command to get IDAES examples
+Command to get IDAES examples.
+
+By default, this will download the examples from examples-pse/src on Github,
+with a release matching the current IDAES version number, into a sub-directory
+of the current directory named "examples", and install all Python modules found
+in the downloaded directory into a package called "idaes_examples".
+
+Options let the user choose a different version, directory, and
+whether to actually download or install.
 """
 # stdlib
+from collections import namedtuple
 from io import StringIO
 import logging
-from operator import itemgetter
+from operator import attrgetter
 import os
 from pathlib import Path
 import shutil
@@ -20,6 +29,9 @@ import requests
 # package
 from idaes.commands.base import command_base
 from idaes.ver import package_version as V
+
+__author__ = "Dan Gunter"
+
 
 _log = logging.getLogger("idaes.commands.examples")
 
@@ -49,6 +61,9 @@ class InstallError(Exception):
     """
 
     pass
+
+
+Release = namedtuple("Release", ["date", "tag", "info"])
 
 
 @command_base.command(
@@ -97,7 +112,11 @@ def get_examples(directory, no_install, list_releases, no_download, version):
         _log.info("skipping download")
     else:
         click.echo("Downloading...")
-        download_examples(get_releases(), target_dir, version)
+        try:
+            download(get_releases(), target_dir, version)
+        except DownloadError as err:
+            _log.fatal(f"abort due to failed download: {err}")
+            sys.exit(-1)
         full_dir = os.path.realpath(target_dir)
         click.echo(f"Downloaded examples to directory '{full_dir}'")
     # install
@@ -111,7 +130,12 @@ def get_examples(directory, no_install, list_releases, no_download, version):
         click.echo(f"Installed examples in package {INSTALL_PKG}")
 
 
-def download_examples(releases, target_dir, version):
+def download(releases, target_dir, version):
+    """Download `version` into `target_dir`.
+
+    Raises:
+        DownloadError
+    """
     matched_release = None
     for rel in releases:
         if version == rel[1]:  # matches tag
@@ -129,18 +153,18 @@ def download_examples(releases, target_dir, version):
             f"No release found matching {how} IDAES package version '{version}'."
         )
         click.echo(f"Use -l/--list-releases to see all{how_ver}.")
-        sys.exit(-1)
+        raise DownloadError("bad version")
     # check target directory
     if target_dir.exists():
         click.echo(f"Cannot download: target directory '{target_dir}' already exists.")
-        sys.exit(-1)
+        raise DownloadError("target dir exists")
     # download
     try:
         download_contents(version, target_dir)
     except DownloadError as err:
         click.echo(f"Download failed: {err}")
         shutil.rmtree(target_dir)  # remove partial download
-        sys.exit(-1)
+        raise
 
 
 def download_contents(version, target_dir):
@@ -183,8 +207,9 @@ def archive_file_url(version, org=REPO_ORG, repo=REPO_NAME):
     return f"{GITHUB}/{org}/{repo}/archive/{version}.zip"
 
 
-def get_releases():
-    """Returns a list of releases, with a tuple for each of (date, tag, info).
+def get_releases() -> List[Release]:
+    """Returns a list of releases.
+
     The list is sorted in ascending order by date.
     """
     releases = []
@@ -193,12 +218,12 @@ def get_releases():
     for rel in req.json():
         if _skip_prereleases and rel["prerelease"]:
             continue
-        releases.append((rel["published_at"], rel["tag_name"], rel["name"]))
-    releases.sort(key=itemgetter(0))  # sort by publication date
+        releases.append(Release(rel["published_at"], rel["tag_name"], rel["name"]))
+    releases.sort(key=attrgetter("date"))  # sort by publication date
     return releases
 
 
-def print_releases(releases):
+def print_releases(releases: List[Release]):
     """Print the releases, as returned by `get_releases()`, as a table
     to standard output.
     """
@@ -207,7 +232,7 @@ def print_releases(releases):
         return
     # determine column widths
     widths = [4, 7, 7]  # widths of column titles: date,version,details
-    widths[0] = len(releases[0][0])  # dates are all the same
+    widths[0] = len(releases[0].date)  # dates are all the same
     # tags and names can have different widths
     for rel in releases:
         for i in range(1, 3):
@@ -221,12 +246,17 @@ def print_releases(releases):
     print(fmt.format(date="-" * widths[0], tag="-" * widths[1], name="-" * widths[2]))
     # print rows
     for rel in releases:
-        print(fmt.format(date=rel[0], tag=rel[1], name=rel[2]))
+        print(fmt.format(date=rel.date, tag=rel.tag, name=rel.info))
     # print footer
     print("")
 
 
 def install_src(version, target_dir):
+    """Install the 'src' subdirectory as a package, given by `INSTALL_PKG`,
+    by renaming the directory, adding '__init__.py' files,
+    and then running `setuptools.setup()` on the directory tree.
+    When done, name the directory back to 'src', and remove '__init__.py' files
+    """
     from setuptools import setup, find_packages
     root_dir = target_dir.parent
     examples_dir = root_dir / INSTALL_PKG
