@@ -211,11 +211,9 @@ class _CubicStateBlock(StateBlock):
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating whcih solver to use during
@@ -516,11 +514,6 @@ class _CubicStateBlock(StateBlock):
         init_log.log(4, "Property init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
-        # Return state to initial conditions
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].sum_mole_frac_out.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -539,6 +532,10 @@ class _CubicStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].sum_mole_frac_out.activate()
+
         if flags is None:
             return
 
