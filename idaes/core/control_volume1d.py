@@ -16,7 +16,6 @@ Base class for control volumes
 
 # Import Python libraries
 import copy
-import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -39,7 +38,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee
+from idaes.logger import getIdaesLogger, getInitLogger
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -1736,10 +1735,11 @@ argument)."""))
 
         # Get source block
         if blk._flow_direction == FlowDirection.forward:
-            sidx = blk.length_domain.first()
+            source_idx = blk.length_domain.first()
         else:
-            sidx = blk.length_domain.last()
-        source = blk.properties[blk.flowsheet().config.time.first(), sidx]
+            source_idx = blk.length_domain.last()
+        source = blk.properties[blk.flowsheet().config.time.first(),
+                                source_idx]
 
         # Fix source state and get state_args if not provided
         source_flags = {}
@@ -1829,10 +1829,11 @@ argument)."""))
         '''
         # Get source block
         if blk._flow_direction == FlowDirection.forward:
-            sidx = blk.length_domain.first()
+            source_idx = blk.length_domain.first()
         else:
-            sidx = blk.length_domain.last()
-        source = blk.properties[blk.flowsheet().config.time.first(), sidx]
+            source_idx = blk.length_domain.last()
+        source = blk.properties[blk.flowsheet().config.time.first(),
+                                source_idx]
 
         # Set fixed attribute on state vars based on flags
         state_dict = source.define_port_members()
