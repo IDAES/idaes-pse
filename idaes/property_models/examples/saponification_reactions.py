@@ -15,9 +15,6 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            exp,
@@ -34,13 +31,15 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
+import idaes.logger as idaeslog
+
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("SaponificationReactionParameterBlock")
@@ -126,14 +125,11 @@ class _ReactionBlock(ReactionBlockBase):
         Keyword Arguments:
             outlvl : sets output level of initialization routine
 
-                     * 0 = no output (default)
-                     * 1 = report after each step
-
         Returns:
             None
         '''
-        if outlvl > 0:
-            _log.info('{} Initialization Complete.'.format(blk.name))
+        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log.info_least('Initialization Complete.')
 
 
 @declare_process_block_class("ReactionBlock",

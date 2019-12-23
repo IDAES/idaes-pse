@@ -156,12 +156,16 @@ def increased_output(logger):
     """Get the a logging level that produces one level more output than logger.
 
     Args:
-        logger (logging.Logger): Logger to read the level from
+        logger (logging.Logger|int): Logger to read the level from or level
 
     Returns:
         (int): Number for the next named level with more output.  At most DEBUG.
     """
-    i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) - 1
+    if isinstance(logger, logging.Logger):
+        lvl = logger.getEffectiveLevel()
+    else:
+        lvl = logger
+    i = bisect.bisect_left(_defined_levels, lvl) - 1
     if i < 0:
         i = 0
     return _defined_levels[i]
@@ -171,13 +175,17 @@ def decreased_output(logger):
     """Get the a logging level that produces one level less output than loggers
 
     Args:
-        logger (logging.Logger): Logger to read the level from
+        logger (logging.Logger|int): Logger to read the level from or level
 
     Returns:
         (int): Number for the next named level with less output.  At least CRITICAL.
     """
+    if isinstance(logger, logging.Logger):
+        lvl = logger.getEffectiveLevel()
+    else:
+        lvl = logger
 
-    i = bisect.bisect_left(_defined_levels, logger.getEffectiveLevel()) + 1
+    i = bisect.bisect_left(_defined_levels, lvl) + 1
     if i >= len(_defined_levels):
         i = -1
     return _defined_levels[i]
@@ -234,12 +242,21 @@ def condition(res):
         return s
 
 def solver_capture_on():
+    """This function turns on the solver capture for the solver_log context
+    manager. If this is on, solver output within the solver_log contex is captured
+    and sent to the logger.
+    """
     _config["solver_capture"] = True
 
 def solver_capture_off():
+    """This function turns off the solver capture for the solver_log context
+    manager. If this is off solver output within the solver_log contex is just
+    sent to stdout like normal.
+    """
     _config["solver_capture"] = False
 
 def solver_capture():
+    """Return True if solver capture is on or False otherwise."""
     return _config["solver_capture"]
 
 

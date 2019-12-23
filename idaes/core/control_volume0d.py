@@ -1413,38 +1413,44 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     state_args[k] = state_dict[k].value
 
         # Initialize state blocks
-        in_flags = blk.properties_in.initialize(outlvl=outlvl+1,
-                                                optarg=optarg,
-                                                solver=solver,
-                                                hold_state=hold_state,
-                                                state_args=state_args)
-
-        out_flags = blk.properties_out.initialize(outlvl=outlvl+1,
-                                                  optarg=optarg,
-                                                  solver=solver,
-                                                  hold_state=True,
-                                                  state_args=state_args)
+        in_flags = blk.properties_in.initialize(
+            outlvl=idaeslog.decreased_output(init_log),
+            optarg=optarg,
+            solver=solver,
+            hold_state=hold_state,
+            state_args=state_args,
+        )
+        out_flags = blk.properties_out.initialize(
+            outlvl=idaeslog.decreased_output(init_log),
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
         try:
             # TODO: setting state_vars_fixed may not work for heterogeneous
             # systems where a second control volume is involved, as we cannot
             # assume those state vars are also fixed. For now, heterogeneous
             # reactions should ignore the state_vars_fixed argument and always
             # check their state_vars.
-            blk.reactions.initialize(outlvl=outlvl+1,
-                                     optarg=optarg,
-                                     solver=solver,
-                                     state_vars_fixed=True)
+            blk.reactions.initialize(
+                outlvl=idaeslog.decreased_output(init_log),
+                optarg=optarg,
+                solver=solver,
+                state_vars_fixed=True,
+            )
         except AttributeError:
             pass
 
         # Unfix outlet properties
-        blk.properties_out.release_state(flags=out_flags, outlvl=outlvl+1)
-
-        init_log.log(5, 'Initialization Complete')
-
+        blk.properties_out.release_state(
+            flags=out_flags,
+            outlvl=idaeslog.decreased_output(init_log),
+        )
+        init_log.info_least('Initialization Complete')
         return in_flags
 
-    def release_state(blk, flags, outlvl=6):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to release state variables fixed during initialization.
 
@@ -1458,7 +1464,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         '''
-        blk.properties_in.release_state(flags, outlvl=outlvl+1)
+        blk.properties_in.release_state(
+            flags,
+            outlvl=idaeslog.decreased_output(outlvl),
+        )
 
     def _add_phase_fractions(self):
         """
