@@ -1790,7 +1790,8 @@ argument)."""))
                             state_dict[k].fix(state_args[k])
 
         # Initialize state blocks
-        flags = blk.properties.initialize(outlvl=outlvl + 1,
+        flags = blk.properties.initialize(state_args=state_args,
+                                          outlvl=outlvl + 1,
                                           optarg=optarg,
                                           solver=solver,
                                           hold_state=True)
