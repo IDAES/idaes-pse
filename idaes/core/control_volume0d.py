@@ -1433,9 +1433,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                                   state_args=state_args)
         try:
             # TODO: setting state_vars_fixed may not work for heterogeneous
-            # systmes where a second control volume is involved, as we cannot
+            # systems where a second control volume is involved, as we cannot
             # assume those state vars are also fixed. For now, heterogeneous
-            # reactions shoudl ignore the state_vars_fixed argument and always
+            # reactions should ignore the state_vars_fixed argument and always
             # check their state_vars.
             blk.reactions.initialize(outlvl=outlvl+1,
                                      optarg=optarg,
