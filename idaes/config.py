@@ -28,8 +28,12 @@ use_idaes_solvers = true
     level = "INFO"
     propagate = true
     handlers = ["console"]
+  [logging.loggers."idaes.solve"]
+    level = "INFO"
+    propagate = false
+    handlers = ["console"]
   [logging.loggers."idaes.init"]
-    level = 5
+    level = "INFO"
     propagate = false
     handlers = ["console"]
   [logging.loggers."idaes.model"]

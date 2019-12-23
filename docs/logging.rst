@@ -5,9 +5,9 @@ Logging
 
 IDAES provides the ``idaes.logger`` module to assist with a few common logging
 tasks, and the make it to get a logger that descends from one of the IDAES standard
-loggers (``idaes``, ``idaes.model``, or ``idaes.init``).  Extra logging levels
-are also provided for ``idaes`` loggers to allow finer control over information
-output.
+loggers (``idaes``, ``idaes.model``, ``idaes.init``, ``idaes.solve``).  Extra
+logging levels are also provided for ``idaes`` loggers to allow finer control over
+information output.
 
 
 Getting Loggers
@@ -86,6 +86,16 @@ loggers.  The name the user can choose any name they like for these loggers.
 
   _log = idaeslog.getModelLogger("my_model")
 
+  idaes.solve Logger
+  ~~~~~~~~~~~~~~~~~
+
+  The solve logger will always descend from "idaes.solve".  This logger is used in
+  to log solver output.  Since solvers may produce a lot of output, it can be useful
+  to specify different handlers for the solve logger to direct it to a separate file.
+
+  .. autofunction:: getSolveLogger
+
+
 Levels
 ------
 
@@ -129,10 +139,14 @@ Logging Solver Output
 ---------------------
 
 The solver output can be captured and directed to a logger using the
-``pyutilib.misc.capture_output()`` context manager, which temporarily redirects
-``sys.stdout`` and ``sys.stderr`` to a string buffer.  This can be advantageous
-in that solver output can be recorded in log files, but the disadvantage is that
-output will not be written to ``stdout`` as the solver runs.
+``idaes.logger.solver_log(logger, level)`` context manager, which uses
+``pyutilib.misc.capture_output()`` to temporarily redirect ``sys.stdout`` and
+``sys.stderr`` to a string buffer.  The logger argument is the logger to log to,
+and the level argument is the level to sent records to the logger at. The output
+is logged by a separate logging thread, so output can be logged as it is produced
+instead of after the solve completes.  Is the  ``solver_log()`` context manager
+is used, it can be turned on and off by using the ``idaes.logger.solver_capture_on()``
+and ``idaes.logger.solver_capture_on()`` functions.
 
 *Example*
 
@@ -140,7 +154,6 @@ output will not be written to ``stdout`` as the solver runs.
 
   import idaes.logging as idaeslog
   import pyomo.environ as pyo
-  from pyutilib.misc import capture_output
 
   solver = pyo.SolverFactory("ipopt")
 
@@ -149,8 +162,8 @@ output will not be written to ``stdout`` as the solver runs.
   model.x.fix(3)
   model.c = pyo.Constraint(expr=model.y==model.x**2)
 
-  with capture_output() as o:
-      res = solver.solve(model, tee=True)
+  log = idaes.log("solver.demo")
+  log.setLevel(idaeslog.SOLVER)
 
-  _log.setLevel(idaeslog.SOLVER)
-  _log.solver(o.getvalue())
+  with solver_log(log, idaeslog.SOLVER):
+      res = solver.solve(model, tee=True)

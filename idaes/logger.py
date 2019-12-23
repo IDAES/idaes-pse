@@ -1,5 +1,13 @@
 import logging
 import bisect
+import threading
+
+from contextlib import contextmanager
+from pyutilib.misc import capture_output
+
+_config = {
+    "solver_capture":True,
+}
 
 # Throw the standard levels in here, just let you access it all in one place
 CRITICAL = logging.CRITICAL # 50
@@ -78,6 +86,16 @@ def __add_methods(log):
     return log
 
 
+def _getLogger(name, logger_name="idaes", level=None):
+    if name.startswith("idaes."):
+        name = name[6:]
+    name = ".".join([logger_name, name])
+    l = logging.getLogger(name)
+    if level is not None:
+        l.setLevel(level)
+    return __add_methods(logging.getLogger(name))
+
+
 def getIdaesLogger(name, level=None):
     """ Return an idaes logger.
 
@@ -88,19 +106,23 @@ def getIdaesLogger(name, level=None):
     Returns:
         logger
     """
-    # this function is fairly useless right now, but it helps to standardize
-
-    # This probably does nothing, but if you ask for an idaes logger outside
-    # the idaes package it makes sure you get one.
-    name = ".".join(["idaes", name.lstrip("idaes.")])
-    l = logging.getLogger(name)
-    if level is not None:
-        l.setLevel(level)
-    return __add_methods(logging.getLogger(name))
+    return _getLogger(name=name, logger_name="idaes", level=level)
 
 
 getLogger = getIdaesLogger
 
+def getSolveLogger(name, level=None):
+    """ Get a model initialization logger
+
+    Args:
+        name: logger name is "idaes.solve." + name (if name starts with "idaes."
+            it is removed before creating the logger name)
+        level: Log level
+
+    Returns:
+        logger
+    """
+    return _getLogger(name=name, logger_name="idaes.solve", level=level)
 
 def getInitLogger(name, level=None):
     """ Get a model initialization logger
@@ -112,11 +134,7 @@ def getInitLogger(name, level=None):
     Returns:
         logger
     """
-    name = ".".join(["idaes.init", name])
-    l = logging.getLogger(name)
-    if level is not None:
-        l.setLevel(level)
-    return __add_methods(l)
+    return _getLogger(name=name, logger_name="idaes.init", level=level)
 
 
 def getModelLogger(name, level=None):
@@ -131,11 +149,7 @@ def getModelLogger(name, level=None):
     Returns:
         logger
     """
-    name = ".".join(["idaes.model", name.lstrip("idaes.")])
-    l = logging.getLogger(name)
-    if level is not None:
-        l.setLevel(level)
-    return __add_methods(logging.getLogger(name))
+    return _getLogger(name=name, logger_name="idaes.model", level=level)
 
 
 def increased_output(logger):
@@ -218,3 +232,73 @@ def condition(res):
         return "{} - {}".format(s, str(res.solver.message))
     except:
         return s
+
+def solver_capture_on():
+    _config["solver_capture"] = True
+
+def solver_capture_off():
+    _config["solver_capture"] = False
+
+def solver_capture():
+    return _config["solver_capture"]
+
+
+class IOToLogTread(threading.Thread):
+    """This is a Thread class that can log solver messages and show them as
+    they ar produced, while the main thread is waiting on the solver to finish"""
+
+    def __init__(self, stream, logger, sleep=1.0, level=logging.ERROR):
+        super().__init__(daemon=True)
+        self.log = logger
+        self.level = level
+        self.stream = stream
+        self.sleep = sleep
+        self.stop = threading.Event()
+        self.pos=0
+
+    def log_value(self):
+        try:
+            v = self.stream.getvalue()[self.pos:]
+        except ValueError:
+            self.stop.set()
+            return
+        self.pos += len(v)
+        for l in v.split("\n"):
+            if l:
+                self.log.log(self.level, l.strip())
+
+    def run(self):
+        while True:
+            self.log_value()
+            self.stop.wait(self.sleep)
+            if self.stop.isSet():
+                self.log_value()
+                self.pos=0
+                return
+
+
+@contextmanager
+def solver_log(logger, level=logging.ERROR):
+    """Context manager to send solver output to a logger.  This uses a seperate
+    thread to log solver output while the solver is running"""
+    # wait 3 seconds to  join thread.  Should be plenty of time.  In case
+    # something goes horibly wrong though don't want to hang.  The logging
+    # trhead is daemonic, so it will shut down with the main process even if it
+    # stays around for some mysterious reason.
+    join_timeout = 3
+    if not solver_capture():
+        yield
+    else:
+        with capture_output() as s:
+            lt = IOToLogTread(s, logger=logger, level=level)
+            lt.start()
+            try:
+                yield lt
+            except:
+                lt.stop.set()
+                lt.join(timeout=join_timeout)
+                raise
+        # thread should end when s is closed, but the setting stop makes sure
+        # the last of the output gets logged before closing s
+        lt.stop.set()
+        lt.join(timeout=join_timeout)
