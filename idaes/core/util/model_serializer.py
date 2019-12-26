@@ -510,7 +510,7 @@ def component_data_to_dict(o, wts):
             _write_component(sd=cdict, o=o2, wts=wts)
     return edict
 
-def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
+def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
             return_dict=False, return_json_string=False):
     """
     Save the state of a model to a Python dictionary, and optionally dump it
@@ -523,7 +523,7 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
         fname: json file name to save model state, if None only create
             python dict
         gz: If fname is given and gv is True gzip the json file. The default is
-            False.
+            True if the file name ends with '.gz' otherwise False.
         human_read: if True, add indents and spacing to make the json file more
             readable, if false cut out whitespace and make as compact as
             possilbe
@@ -543,6 +543,12 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
         is also written to a json file.  If gz is True and fname is given, writes
         a gzipped json file.
     """
+    if gz is None:
+        if isinstance(fname, str):
+            gz = fname.endswith(".gz")
+        else:
+            gz = False
+
     suffixes = []
     lookup = {}
     count = Counter()
@@ -738,7 +744,7 @@ def _read_suffixes(lookup, suffixes):
                 continue
             s[kc] = d[key]
 
-def from_json(o, sd=None, fname=None, s=None, wts=None, gz=False):
+def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None):
     """
     Load the state of a Pyomo component state from a dictionary, json file, or
     json string.  Must only specify one of sd, fname, or s as a non-None value.
@@ -754,7 +760,7 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=False):
         s: JSON string to load only used if both sd and fname are None
         wts: StoreSpec object specifying what to load
         gz: If True assume the file specified by fname is gzipped. The default is
-            False.
+            True if fname ends with '.gz' otherwise False.
 
     Returns:
         Dictionary with some perfomance information. The keys are
@@ -762,6 +768,12 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=False):
         "etime_read_dict", how long in seconds it took to read models state
         "etime_read_suffixes", how long in seconds it took to read suffixes
     """
+    if gz is None:
+        if isinstance(fname, str):
+            gz = fname.endswith(".gz")
+        else:
+            gz = False
+
     # keeping track of elapsed time.  want to make sure I don't do anything
     # that's too slow.
     start_time = time.time()

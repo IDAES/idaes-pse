@@ -16,7 +16,6 @@ Heat Exchanger Models.
 
 __author__ = "John Eslick"
 
-import logging
 from enum import Enum
 
 # Import Pyomo libraries
@@ -50,7 +49,7 @@ from idaes.core import (
     useDefault,
 )
 
-
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.heater import (
@@ -61,7 +60,7 @@ from idaes.unit_models.heater import (
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 class HeatExchangerFlowPattern(Enum):
@@ -136,7 +135,7 @@ countercurrent temperature difference.}""",
 
 def delta_temperature_lmtd_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD).  It can be supplied to "delta_temperature_callback"
     HeatExchanger configuration option.
@@ -151,7 +150,7 @@ def delta_temperature_lmtd_callback(b):
 
 def delta_temperature_amtd_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using arithmetic-mean
     temperature difference (AMTD).  It can be supplied to
     "delta_temperature_callback" HeatExchanger configuration option.
@@ -166,7 +165,7 @@ def delta_temperature_amtd_callback(b):
 
 def delta_temperature_underwood_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD) approximation given by Underwood (1970).  It can be
     supplied to "delta_temperature_callback" HeatExchanger configuration option.
@@ -325,7 +324,7 @@ class HeatExchangerData(UnitModelBlockData):
         add_object_reference(self, config.hot_side_name + "_outlet", self.outlet_1)
         add_object_reference(self, config.cold_side_name + "_outlet", self.outlet_2)
         ########################################################################
-        # Add end temperaure differnece constraints                            #
+        # Add end temperature differnece constraints                            #
         ########################################################################
         @self.Constraint(self.flowsheet().config.time)
         def delta_temperature_in_equation(b, t):
@@ -410,11 +409,14 @@ class HeatExchangerData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for side_2 (see documentation of the specific
                 property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -426,49 +428,40 @@ class HeatExchangerData(UnitModelBlockData):
 
         """
         # Set solver options
-        tee = True if outlvl >= 3 else False
+        init_log = getInitLogger(self.name, outlvl)
         opt = SolverFactory(solver)
         opt.options = optarg
         flags1 = self.side_1.initialize(
-            outlvl=outlvl - 1, optarg=optarg, solver=solver, state_args=state_args_1
+            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
-        if outlvl > 0:
-            _log.info("{} Initialization Step 1a (side_1) Complete.".format(self.name))
+        init_log.log(4, "Initialization Step 1a (side_1) Complete.")
 
         flags2 = self.side_2.initialize(
-            outlvl=outlvl - 1, optarg=optarg, solver=solver, state_args=state_args_2
+            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
-        if outlvl > 0:
-            _log.info("{} Initialization Step 1b (side_2) Complete.".format(self.name))
+        init_log.log(4, "Initialization Step 1b (side_2) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         self.heat_transfer_equation.deactivate()
         self.side_2.heat.fix(duty)
-        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
-        if outlvl > 0:
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                _log.info("{} Initialization Step 2 Complete.".format(self.name))
-            else:
-                _log.warning("{} Initialization Step 2 Failed.".format(self.name))
+        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
+        init_log.log(
+            4, "Initialization Step 2 {}.".format(results.solver.termination_condition)
+        )
         self.side_2.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
-        if outlvl > 0:
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                _log.info("{} Initialization Step 3 Complete.".format(self.name))
-            else:
-                _log.warning("{} Initialization Step 3 Failed.".format(self.name))
+        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
+        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.side_1.release_state(flags1, outlvl - 1)
-        self.side_2.release_state(flags2, outlvl - 1)
+        self.side_1.release_state(flags1, outlvl + 1)
+        self.side_2.release_state(flags2, outlvl + 1)
 
-        if outlvl > 0:
-            _log.info("{} Initialization Complete.".format(self.name))
+        init_log.log(5, "Initialization Completed, {}".format(condition(results)))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {

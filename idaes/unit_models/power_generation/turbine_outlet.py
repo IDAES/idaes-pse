@@ -19,9 +19,6 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-import logging
-_log = logging.getLogger(__name__)
-
 from pyomo.common.config import In
 from pyomo.environ import (Var, Expression, Constraint, sqrt, SolverFactory,
                            value, Param)
@@ -32,6 +29,9 @@ from idaes.unit_models.pressure_changer import (PressureChangerData,
                                                 ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("TurbineOutletStage",
@@ -53,16 +53,13 @@ class TurbineOutletStageData(PressureChangerData):
 
         self.flow_coeff = Var(initialize=0.0333,
             doc="Turbine flow coefficient [kg*C^0.5/s/Pa]")
-        self.delta_enth_isentropic = Var(self.flowsheet().config.time,
-                                         initialize=-100,
-            doc="Specific enthalpy change of isentropic process [J/mol]")
         self.eff_dry = Var(initialize=0.87,
             doc="Turbine dry isentropic efficiency")
         self.design_exhaust_flow_vol = Var(initialize=6000.0,
             doc="Design exit volumetirc flowrate [m^3/s]")
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
-        self.flow_scale = Param(mutable=True, default=1e3, doc=
+        self.flow_scale = Param(mutable=True, default=1e-4, doc=
             "Scaling factor for pressure flow relation should be approximatly"
             " the same order of magnitude as the expected flow.")
         self.eff_dry.fix()
@@ -88,16 +85,17 @@ class TurbineOutletStageData(PressureChangerData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return (1/b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
-                (1/b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
+            return (b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
+                (b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
 
-        @self.Constraint( self.flowsheet().config.time,
-            doc="Equation: isentropic specific enthalpy change")
-        def isentropic_enthalpy(b, t):
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Equation: isentropic specific enthalpy change"
+        )
+        def delta_enth_isentropic(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
-            dh_isen = b.delta_enth_isentropic[t]
             work_isen = b.work_isentropic[t]
-            return work_isen == dh_isen*flow
+            return work_isen/flow
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Equation: Efficiency correlation")
@@ -122,8 +120,6 @@ class TurbineOutletStageData(PressureChangerData):
         pc = super()._get_performance_contents(time_point=time_point)
         pc["vars"]["Mechanical Efficiency"] = self.efficiency_mech
         pc["vars"]["Flow Coefficient"] = self.flow_coeff
-        pc["vars"]["Isentropic Specific Enthalpy"] = \
-            self.delta_enth_isentropic[time_point]
         pc["vars"]["Isentropic Efficieincy (Dry)"] = self.eff_dry
         pc["vars"]["Design Exhaust Flow"] = self.design_exhaust_flow_vol
 
@@ -136,7 +132,7 @@ class TurbineOutletStageData(PressureChangerData):
 
         return pc
 
-    def initialize(self, state_args={}, outlvl=0, solver='ipopt',
+    def initialize(self, state_args={}, outlvl=6, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the outlet turbine stage model.  This deactivates the
@@ -145,11 +141,18 @@ class TurbineOutletStageData(PressureChangerData):
 
         Args:
             state_args (dict): Initial state for property initialization
-            outlvl (int): Amount of output (0 to 3) 0 is lowest
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        stee = True if outlvl >= 3 else False
+        init_log = getInitLogger(self.name, outlvl)
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
@@ -158,7 +161,6 @@ class TurbineOutletStageData(PressureChangerData):
         istate = to_json(self, return_dict=True, wts=sp)
         # Deactivate special constraints
         self.stodola_equation.deactivate()
-        self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
         self.deltaP.unfix()
         self.ratioP.unfix()
@@ -183,7 +185,7 @@ class TurbineOutletStageData(PressureChangerData):
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             prdp = value((self.deltaP[t] - Pin)/Pin)
-            if value(Pout/Pin) > 0.9 or value(Pout/Pin) < 0.01:
+            if value(Pout/Pin) > 0.95 or value(Pout/Pin) < 0.003:
                 if value(self.ratioP[t]) < 0.9 and value(self.ratioP[t]) > 0.01:
                     Pout.fix(value(Pin*self.ratioP))
                 elif prdp < 0.9 and prdp > 0.01:
@@ -213,33 +215,35 @@ class TurbineOutletStageData(PressureChangerData):
         try:
             assert(dof == 0)
         except:
-            _log.exception("degrees_of_freedom = {}".format(dof))
+            init_log.log(5, "Error: Degrees_of_freedom = {}".format(dof))
             raise
+
+        mw = self.control_volume.properties_in[0].mw
+        Tin = self.control_volume.properties_in[0].temperature
+        Pin = self.control_volume.properties_in[0].pressure
+        Pr = self.ratioP[0]
+        cf = self.flow_coeff
+        self.inlet.flow_mol.fix(value(cf*Pin*sqrt(1 - Pr**2)/mw/sqrt(Tin - 273.15)))
 
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
-        super(TurbineOutletStageData, self).initialize(state_args=state_args,
-            outlvl=outlvl, solver=solver, optarg=optarg)
-
+        super().initialize(
+            state_args=state_args,
+            outlvl=outlvl,
+            solver=solver,
+            optarg=optarg,
+        )
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
-        self.outlet.pressure.unfix()
+        self.outlet.pressure.fix()
+        self.inlet.flow_mol.unfix()
         self.stodola_equation.activate()
-        self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        res = slvr.solve(self, tee=stee)
-
-        if outlvl > 0:
-            if res.solver.termination_condition == TerminationCondition.optimal:
-                _log.info("{} Initialization Complete.".format(self.name))
-            else:
-                _log.warning(
-"""{} Initialization Failed. The most likely cause of initialization failure for
-the Turbine inlet stages model is that the flow coefficient is not compatible
-with flow rate guess.""".format(self.name))
+        res = slvr.solve(self, tee=init_tee(init_log))
+        init_log.log(5, "Initialization Complete (Outlet Stage): {}".format(condition(res)))
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)

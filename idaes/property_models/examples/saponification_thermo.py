@@ -120,7 +120,7 @@ class _StateBlock(StateBlock):
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
-        Initialisation routine for property package.
+        Initialization routine for property package.
 
         Keyword Arguments:
         state_args : Dictionary with initial guesses for the state vars
@@ -136,18 +136,16 @@ class _StateBlock(StateBlock):
                                 (default=None)
                      temperature : value at which to initialize temperature
                                   (default=None)
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None)
@@ -188,11 +186,6 @@ class _StateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        # Reactivate conc_water_eqn
-        for k in blk.keys():
-            if not blk[k].config.defined_state:
-                blk[k].conc_water_eqn.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -200,11 +193,11 @@ class _StateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialization Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -213,6 +206,11 @@ class _StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        # Reactivate conc_water_eqn
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].conc_water_eqn.activate()
+
         if flags is None:
             return
         # Unfix state variables

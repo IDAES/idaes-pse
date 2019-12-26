@@ -14,9 +14,6 @@
 Base class for control volumes
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Var
 from pyomo.dae import DerivativeVar
@@ -32,10 +29,12 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.tables import create_stream_table_dataframe
 
+from idaes.logger import getIdaesLogger, getInitLogger
+
 __author__ = "Andrew Lee"
 
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
@@ -1369,20 +1368,24 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'model_check method to the associated '
                              'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=0, optarg=None,
+    def initialize(blk, state_args=None, outlvl=6, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for 0D control volume (default solver ipopt)
+        Initialization routine for 0D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine. **Valid
-                     values:** **0** - no output (default), **1** - return
-                     solver state for each step in routine, **2** - include
-                     solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -1400,6 +1403,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             states were fixed during initialization.
         '''
         # Get inlet state if not provided
+        init_log = getInitLogger(blk.name, outlvl)
         if state_args is None:
             state_args = {}
             state_dict = (
@@ -1416,32 +1420,40 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     state_args[k] = state_dict[k].value
 
         # Initialize state blocks
-        flags = blk.properties_in.initialize(outlvl=outlvl-1,
-                                             optarg=optarg,
-                                             solver=solver,
-                                             hold_state=hold_state,
-                                             state_args=state_args)
+        in_flags = blk.properties_in.initialize(outlvl=outlvl+1,
+                                                optarg=optarg,
+                                                solver=solver,
+                                                hold_state=hold_state,
+                                                state_args=state_args)
 
-        blk.properties_out.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      hold_state=False,
-                                      state_args=state_args)
+        out_flags = blk.properties_out.initialize(outlvl=outlvl+1,
+                                                  optarg=optarg,
+                                                  solver=solver,
+                                                  hold_state=True,
+                                                  state_args=state_args)
         try:
-            blk.reactions.initialize(outlvl=outlvl-1,
+            # TODO: setting state_vars_fixed may not work for heterogeneous
+            # systems where a second control volume is involved, as we cannot
+            # assume those state vars are also fixed. For now, heterogeneous
+            # reactions should ignore the state_vars_fixed argument and always
+            # check their state_vars.
+            blk.reactions.initialize(outlvl=outlvl+1,
                                      optarg=optarg,
-                                     solver=solver)
+                                     solver=solver,
+                                     state_vars_fixed=True)
         except AttributeError:
             pass
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete'.format(blk.name))
+        # Unfix outlet properties
+        blk.properties_out.release_state(flags=out_flags, outlvl=outlvl+1)
 
-        return flags
+        init_log.log(5, 'Initialization Complete')
 
-    def release_state(blk, flags, outlvl=0):
+        return in_flags
+
+    def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -1453,7 +1465,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         '''
-        blk.properties_in.release_state(flags, outlvl=outlvl-1)
+        blk.properties_in.release_state(flags, outlvl=outlvl+1)
 
     def _add_phase_fractions(self):
         """
