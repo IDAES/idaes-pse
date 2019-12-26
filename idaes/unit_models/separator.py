@@ -14,7 +14,6 @@
 General purpose separator block for IDAES models
 """
 
-import logging
 from enum import Enum
 from pandas import DataFrame
 
@@ -43,12 +42,13 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 # Enumerate options for balances
@@ -1105,16 +1105,20 @@ linked the mixed state and all outlet states,
                              ' method to the associated StateBlock class.'
                              .format(blk.name))
 
-    def initialize(blk, outlvl=0, optarg={},
+    def initialize(blk, outlvl=6, optarg={},
                    solver='ipopt', hold_state=False):
         '''
-        Initialisation routine for separator (default solver ipopt)
+        Initialization routine for separator (default solver ipopt)
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine. **Valid
-                     values:** **0** - no output (default), **1** - return
-                     solver state for each step in routine, **2** - include
-                     solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -1131,12 +1135,8 @@ linked the mixed state and all outlet states,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
+        init_log = getInitLogger(blk.name, outlvl)
         # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
         opt = SolverFactory(solver)
         opt.options = optarg
 
@@ -1145,13 +1145,13 @@ linked the mixed state and all outlet states,
             mblock = blk.config.mixed_state_block
         else:
             mblock = blk.mixed_state
-        flags = mblock.initialize(outlvl=outlvl-1,
+        flags = mblock.initialize(outlvl=outlvl+1,
                                   optarg=optarg,
                                   solver=solver,
                                   hold_state=True)
 
         if blk.config.ideal_separation:
-            # If using ideal splitting, initialisation should be complete
+            # If using ideal splitting, initialization should be complete
             return flags
 
         # Initialize outlet StateBlocks
@@ -1206,7 +1206,7 @@ linked the mixed state and all outlet states,
                                 s_vars[v][k].fix(m_var[k].value)
 
             # Call initialization routine for outlet StateBlock
-            o_block.initialize(outlvl=outlvl-1,
+            o_block.initialize(outlvl=outlvl+1,
                                optarg=optarg,
                                solver=solver,
                                hold_state=False)
@@ -1218,25 +1218,19 @@ linked the mixed state and all outlet states,
                         s_vars[v][k].fixed = o_flags[t, v, k]
 
         if blk.config.mixed_state_block is None:
-            results = opt.solve(blk, tee=stee)
-
-            if outlvl > 0:
-                if results.solver.termination_condition == \
-                        TerminationCondition.optimal:
-                    _log.info('{} Initialisation Complete.'.format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Failed.'.format(blk.name))
+            results = opt.solve(blk, tee=init_tee(init_log))
+            init_log.log(5, "Initialization Complete: {}".format(condition(results)))
         else:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+            init_log.log(5, "Initialization Complete.")
 
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=outlvl-1)
+            blk.release_state(flags, outlvl=outlvl+1)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -1253,7 +1247,7 @@ linked the mixed state and all outlet states,
         else:
             mblock = blk.config.mixed_state_block
 
-        mblock.release_state(flags, outlvl=outlvl-1)
+        mblock.release_state(flags, outlvl=outlvl+1)
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):

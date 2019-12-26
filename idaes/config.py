@@ -1,5 +1,9 @@
 import pyomo.common.config
 import logging.config
+import toml
+import os
+import importlib
+
 
 _log = logging.getLogger(__name__)
 
@@ -7,7 +11,7 @@ default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 use_idaes_solvers = true
 [plugins]
-  required = []
+  required = ["idaes"]
   optional = []
 [logging]
   version = 1
@@ -21,6 +25,15 @@ use_idaes_solvers = true
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
     level = "INFO"
+    propagate = true
+    handlers = ["console"]
+  [logging.loggers."idaes.init"]
+    level = 5
+    propagate = false
+    handlers = ["console"]
+  [logging.loggers."idaes.model"]
+    level = "INFO"
+    propagate = false
     handlers = ["console"]
 """
 
@@ -85,6 +98,7 @@ def new_idaes_config_block():
     )
     return _config
 
+
 def read_config(read_config, write_config):
     """Read either a TOML formatted config file or a configuration dictionary.
     Args:
@@ -109,3 +123,37 @@ def read_config(read_config, write_config):
     logging.config.dictConfig(write_config["logging"])
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+
+
+def create_dir(d):
+    """Create a directory if it doesn't exist.
+
+    Args:
+        d(str): directory path to create
+
+    Retruns:
+        None
+    """
+    if os.path.exists(d):
+        return
+    else:
+        os.mkdir(d)
+
+def import_packages(packages, optional=True):
+    """Import plugin package, condensed from pyomo.environ.__init__.py
+    Args:
+        packages: list of packages in which to look for plugins
+        optional: true, log ImportError but continue; false, raise if ImportError
+    Returns:
+        None
+    """
+    for name in packages:
+        pname = name + '.plugins'  # look in plugins sub-package
+        try:
+            pkg = importlib.import_module(pname)
+        except ImportError as e:
+            _log.exception("failed to import plugin: {}".format(pname))
+            if not optional:
+                raise e
+        if hasattr(pkg, 'load'):  # run load function for a module if it exists
+            pkg.load()

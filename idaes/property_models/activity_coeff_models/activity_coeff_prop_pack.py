@@ -41,9 +41,6 @@ References:
    functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
     Set, Expression, Param, sqrt
@@ -63,6 +60,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -70,7 +68,7 @@ __version__ = "0.0.2"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("ActivityCoeffParameterBlock")
@@ -194,10 +192,10 @@ class _ActivityCoeffStateBlock(StateBlock):
     """
 
     def initialize(blk, state_args={}, hold_state=False,
-                   state_vars_fixed=False, outlvl=1,
+                   state_vars_fixed=False, outlvl=5,
                    solver="ipopt", optarg={"tol": 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -214,10 +212,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                          the state_args dictionary are:
                          flow_mol_comp, temperature, pressure.
 
-            outlvl : sets output level of initialisation routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = "ipopt")
@@ -231,12 +233,21 @@ class _ActivityCoeffStateBlock(StateBlock):
                         - False - state variables are unfixed after
                                  initialization by calling the
                                  relase_state method
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
+
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
+        init_log = getInitLogger(blk.name, outlvl)
         for k in blk.keys():
             if (blk[k].config.defined_state is False) and \
                     (blk[k]._params.config.state_vars == "FTPz"):
@@ -252,12 +263,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
-
-        # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
 
         if optarg is None:
             sopt = {"tol": 1e-8}
@@ -296,21 +301,10 @@ class _ActivityCoeffStateBlock(StateBlock):
                     ("Liq", "Vap")) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ("Vap", "Liq")):
-            results = solve_indexed_blocks(opt, [blk], tee=stee)
-
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info("Initialisation step 1 for "
-                              "{} completed".format(blk.name))
-                else:
-                    _log.warning("Initialisation step 1 for "
-                                 "{} failed".format(blk.name))
-
+            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+            init_log.log(4, "Initialization Step 1 {}.".format(condition(results)))
         else:
-            if outlvl > 0:
-                _log.info("Initialisation step 1 for "
-                          "{} skipped".format(blk.name))
+            init_log.info(4, "Initialization step 1 skipped")
 
         # Continue initialization sequence and activate select constraints
         for k in blk.keys():
@@ -326,16 +320,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Initialisation step 2 for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Initialisation step 2 for "
-                             "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
 
         # Activate activity coefficient specific constraints
         for k in blk.keys():
@@ -347,15 +333,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                                         "eq_B"]:
                         c.activate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Initialisation step 3 for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Initialisation step 3 for "
-                             "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
 
         for k in blk.keys():
             if blk[k].config.parameters.config.activity_coeff_model \
@@ -363,15 +342,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_activity_coeff.activate()
                 blk[k].activity_coeff_comp.unfix()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Initialisation step 4 for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Initialisation step 4 for "
-                             "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 4 {}.".format(condition(results)))
 
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
@@ -379,20 +351,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "eq_entr_mol_phase"]:
                     c.activate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Initialisation step 5 for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Initialisation step 5 for "
-                             "{} failed".format(blk.name))
-
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False) and \
-                    (blk[k]._params.config.state_vars == "FTPz"):
-                blk[k].eq_mol_frac_out.activate()
+        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        init_log.log(4, "Initialization Step 5 {}.".format(condition(results)))
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -400,13 +360,11 @@ class _ActivityCoeffStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info("Initialisation completed for {}.".format(blk.name))
+        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=6):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -414,6 +372,11 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
+        for k in blk.keys():
+            if (not blk[k].config.defined_state and
+                    blk[k]._params.config.state_vars == "FTPz"):
+                blk[k].eq_mol_frac_out.activate()
+
         if flags is None:
             return
 

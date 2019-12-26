@@ -948,7 +948,7 @@ class TestBTXIdeal(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialiszation(self, btx):
-        # Default initialisation will fail as it cannot handle total
+        # Default initialization will fail as it cannot handle total
         # flow with a phase split.
         # However, this should do enough that the problem can be solved
         with pytest.raises(KeyError):

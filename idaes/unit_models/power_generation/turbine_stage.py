@@ -88,7 +88,7 @@ class TurbineStageData(PressureChangerData):
     def initialize(
         self,
         state_args={},
-        outlvl=0,
+        outlvl=6,
         solver="ipopt",
         optarg={"tol": 1e-6, "max_iter": 30},
     ):
@@ -99,11 +99,17 @@ class TurbineStageData(PressureChangerData):
 
         Args:
             state_args (dict): Initial state for property initialization
-            outlvl (int): Amount of output (0 to 3) 0 is lowest
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        stee = True if outlvl >= 3 else False
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes

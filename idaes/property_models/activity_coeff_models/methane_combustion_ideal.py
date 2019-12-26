@@ -18,9 +18,6 @@ these parameters are declared as variables here to allow for use in a parameter
 estimation problem if the VLE data is available.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
 from pyomo.common.config import ConfigValue, In
@@ -31,6 +28,8 @@ from idaes.core.util.misc import extract_data
 
 from idaes.property_models.activity_coeff_models.activity_coeff_prop_pack \
     import ActivityCoeffParameterData
+from idaes.logger import getIdaesLogger
+
 
 # Some more inforation about this module
 __author__ = "Andrew Lee, Jaffer Ghouse"
@@ -38,7 +37,7 @@ __version__ = "0.0.1"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("MethaneParameterBlock")
