@@ -118,7 +118,7 @@ def test_set_inputs():
     # Fix the inputs (typically this will be the outlet liquid from the
     # bottom tray)
     m.fs.R101.inlet.flow_mol.fix(1)
-    m.fs.R101.inlet.temperature.fix(362)
+    m.fs.R101.inlet.temperature.fix(363)
     m.fs.R101.inlet.pressure.fix(101325)
     m.fs.R101.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.R101.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
@@ -136,7 +136,7 @@ def test_set_inputs():
     # bottom tray)
     m.fs.R101_FcTP.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
     m.fs.R101_FcTP.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
-    m.fs.R101_FcTP.inlet.temperature.fix(362)
+    m.fs.R101_FcTP.inlet.temperature.fix(363)
     m.fs.R101_FcTP.inlet.pressure.fix(101325)
 
     assert degrees_of_freedom(m.fs.R101_FcTP) == 0
@@ -191,7 +191,7 @@ def test_solution():
             value(m.fs.R101.bottoms.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(17090.919, abs=1e-3) ==
+    assert (pytest.approx(16926.526, abs=1e-3) ==
             value(m.fs.R101.heat_duty[0]))
 
     # Reboiler when using FcTP
@@ -217,5 +217,5 @@ def test_solution():
             value(m.fs.R101_FcTP.bottoms.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(17090.780, abs=1e-3) ==
+    assert (pytest.approx(16926.370, abs=1e-3) ==
             value(m.fs.R101_FcTP.heat_duty[0]))

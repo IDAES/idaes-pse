@@ -158,7 +158,7 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.boilup_ratio = Var(initialize=1, doc="boilup ratio for reboiler")
+        self.boilup_ratio = Var(initialize=0.5, doc="boilup ratio for reboiler")
 
         if self.config.has_boilup_ratio is True:
             def rule_boilup_ratio(self, t):
@@ -430,6 +430,7 @@ see property package for documentation.}"""))
                 tee = False
 
             solver_output = solver.solve(self, tee=tee)
+
             if solver_output.solver.termination_condition == \
                     TerminationCondition.optimal:
                 _log.info('{} Reboiler Initialisation Complete.'
