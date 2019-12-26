@@ -228,7 +228,7 @@ def test_solution():
             value(m.fs.C101_partial.vapor_outlet.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(-15924.559, abs=1e-3) ==
+    assert (pytest.approx(-15901.107, abs=1e-3) ==
             value(m.fs.C101_partial.heat_duty[0]))
 
     # Partial condenser when using FcTP
@@ -267,5 +267,5 @@ def test_solution():
                   pressure[0]))
 
     # Unit level
-    assert (pytest.approx(-15923.044, abs=1e-3) ==
+    assert (pytest.approx(-15899.596, abs=1e-3) ==
             value(m.fs.C101_partial_FcTP.heat_duty[0]))

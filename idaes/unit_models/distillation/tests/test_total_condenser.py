@@ -208,7 +208,7 @@ def test_solution():
             value(m.fs.C101_total.distillate.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(-33727.350, abs=1e-3) ==
+    assert (pytest.approx(-33711.313, abs=1e-3) ==
             value(m.fs.C101_total.heat_duty[0]))
 
     # Total condenser when using FcTP
@@ -233,5 +233,5 @@ def test_solution():
             value(m.fs.C101_total_FcTP.distillate.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(-33727.333, abs=1e-3) ==
+    assert (pytest.approx(-33711.295, abs=1e-3) ==
             value(m.fs.C101_total_FcTP.heat_duty[0]))

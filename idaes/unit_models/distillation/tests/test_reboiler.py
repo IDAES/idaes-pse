@@ -191,7 +191,7 @@ def test_solution():
             value(m.fs.R101.bottoms.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(17082.730, abs=1e-3) ==
+    assert (pytest.approx(17090.919, abs=1e-3) ==
             value(m.fs.R101.heat_duty[0]))
 
     # Reboiler when using FcTP
@@ -217,5 +217,5 @@ def test_solution():
             value(m.fs.R101_FcTP.bottoms.pressure[0]))
 
     # Unit level
-    assert (pytest.approx(17082.591, abs=1e-3) ==
+    assert (pytest.approx(17090.780, abs=1e-3) ==
             value(m.fs.R101_FcTP.heat_duty[0]))
