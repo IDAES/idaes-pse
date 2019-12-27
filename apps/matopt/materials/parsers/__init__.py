@@ -1,4 +1,3 @@
-
 # matopt.materials.parsers
 
 # TODO: Decide if (and how) we should support:
@@ -13,4 +12,4 @@ import matopt.materials.parsers.PDB
 import matopt.materials.parsers.POSCAR
 import matopt.materials.parsers.XYZ
 '''
-#TODO: Decide if this is necessary
+# TODO: Decide if this is necessary

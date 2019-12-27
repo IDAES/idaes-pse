@@ -1,7 +1,7 @@
-
 import matplotlib.pyplot as plt
 
-def makeBondLengthsHistogram(BondLengths,bins=None,visible=False,save=False,filename=None):
+
+def makeBondLengthsHistogram(BondLengths, bins=None, visible=False, save=False, filename=None):
     """
 
     Args:
@@ -14,9 +14,9 @@ def makeBondLengthsHistogram(BondLengths,bins=None,visible=False,save=False,file
     Returns:
 
     """
-    plt.hist(BondLengths,bins=bins)
-    if(visible):
+    plt.hist(BondLengths, bins=bins)
+    if (visible):
         plt.show()
-    if(save):
+    if (save):
         plt.savefig(filename)
     plt.close()
