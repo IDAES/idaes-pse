@@ -1,15 +1,15 @@
-
 import os
 from copy import deepcopy
 
 from .atom import Atom
 from .canvas import Canvas
-from .parsers.PDB import readPointsAndAtomsFromPDB,writeDesignToPDB
-from .parsers.XYZ import readPointsAndAtomsFromXYZ,writeDesignToXYZ
-from .parsers.CFG import readPointsAndAtomsFromCFG,writeDesignToCFG
-from .parsers.POSCAR import readPointsAndAtomsFromPOSCAR,writeDesignToPOSCAR
-#from .Tiling import PlanarTiling,CubicTiling
+from .parsers.PDB import readPointsAndAtomsFromPDB, writeDesignToPDB
+from .parsers.XYZ import readPointsAndAtomsFromXYZ, writeDesignToXYZ
+from .parsers.CFG import readPointsAndAtomsFromCFG, writeDesignToCFG
+from .parsers.POSCAR import readPointsAndAtomsFromPOSCAR, writeDesignToPOSCAR
+# from .Tiling import PlanarTiling,CubicTiling
 from .transform_func import ShiftFunc
+
 
 class Design(object):
     """A class used to represent material designs.
@@ -27,13 +27,13 @@ class Design(object):
     """
 
     # === STANDARD CONSTRUCTOR
-    def __init__(self,Canvas_=None,Contents=None):
+    def __init__(self, Canvas_=None, Contents=None):
         """Initialize a Design object from standard data."""
-        if(Canvas_ is not None and Contents is None):
-            Contents = [None]*len(Canvas_)
-        elif(Canvas_ is not None and isinstance(Contents,Atom)):
-            Contents = [Contents]*len(Canvas_)
-        elif(Canvas_ is None):
+        if (Canvas_ is not None and Contents is None):
+            Contents = [None] * len(Canvas_)
+        elif (Canvas_ is not None and isinstance(Contents, Atom)):
+            Contents = [Contents] * len(Canvas_)
+        elif (Canvas_ is None):
             Canvas_ = Canvas()
             Contents = []
         self._Canvas = Canvas_
@@ -41,7 +41,7 @@ class Design(object):
 
     # === CONSTRUCTOR - From PDB
     @classmethod
-    def fromPDB(cls,filename,DefaultNN=0):
+    def fromPDB(cls, filename, DefaultNN=0):
         """Make a Design by reading from PDB file.
 
         Args:
@@ -53,13 +53,13 @@ class Design(object):
             Design) A new Design.
 
         """
-        Pts,Atoms = readPointsAndAtomsFromPDB(filename)
-        return cls(Canvas(Points=Pts,DefaultNN=DefaultNN),
+        Pts, Atoms = readPointsAndAtomsFromPDB(filename)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
                    Atoms)
 
     # === CONSTRUCTOR - From XYZ
     @classmethod
-    def fromXYZ(cls,filename,DefaultNN=0):
+    def fromXYZ(cls, filename, DefaultNN=0):
         """Make a Design by reading from XYZ file.
 
         Args:
@@ -71,13 +71,13 @@ class Design(object):
             Design) A new Design.
 
         """
-        Pts,Atoms = readPointsAndAtomsFromXYZ(filename)
-        return cls(Canvas(Points=Pts,DefaultNN=DefaultNN),
+        Pts, Atoms = readPointsAndAtomsFromXYZ(filename)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
                    Atoms)
 
     # === CONSTRUCTOR - From CFG
     @classmethod
-    def fromCFG(cls,filename,DefaultNN=0):
+    def fromCFG(cls, filename, DefaultNN=0):
         """Makes a Design by reading from CFG file.
 
         Args:
@@ -89,13 +89,13 @@ class Design(object):
             Design) A new Design.
 
         """
-        Pts,Atoms = readPointsAndAtomsFromCFG(filename)
-        return cls(Canvas(Points=Pts,DefaultNN=DefaultNN),
+        Pts, Atoms = readPointsAndAtomsFromCFG(filename)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
                    Atoms)
 
     # === CONSTRUCTOR - From POSCAR/CONTCAR
     @classmethod
-    def fromPOSCAR(cls,filename,DefaultNN=0):
+    def fromPOSCAR(cls, filename, DefaultNN=0):
         """Make a Design by reading from POSCAR file.
 
         Args:
@@ -107,8 +107,8 @@ class Design(object):
             Design) A new Design.
 
         """
-        Pts,Atoms = readPointsAndAtomsFromPOSCAR(filename)
-        return cls(Canvas(Points=Pts,DefaultNN=DefaultNN),
+        Pts, Atoms = readPointsAndAtomsFromPOSCAR(filename)
+        return cls(Canvas(Points=Pts, DefaultNN=DefaultNN),
                    Atoms)
 
     fromCONTCAR = fromPOSCAR
@@ -190,11 +190,11 @@ class Design(object):
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
         """Determine if object is consistent with class assumptions."""
-        if(len(self.Canvas)!=len(Contents)): return False
+        if (len(self.Canvas) != len(Contents)): return False
         return self.Canvas.isConsistentWithDesign()
 
     # === MANIPULATION METHODS
-    def setContent(self,i,Elem):
+    def setContent(self, i, Elem):
         """Set content at a particular location.
 
         Args:
@@ -207,7 +207,7 @@ class Design(object):
         """
         self._Contents[i] = Elem
 
-    def setContents(self,Elem):
+    def setContents(self, Elem):
         """Set content across all locations.
 
         Args:
@@ -218,9 +218,9 @@ class Design(object):
 
         """
         for i in range(len(self.Contents)):
-            self.setContent(i,Elem)
+            self.setContent(i, Elem)
 
-    def transform(self,TransF):
+    def transform(self, TransF):
         """Transform the this Design according to a functor.
 
         Args:
@@ -232,7 +232,7 @@ class Design(object):
         """
         self._Canvas.transform(TransF)
 
-    def getTransformed(self,TransF):
+    def getTransformed(self, TransF):
         """Copy and transform this Design.
 
         Args:
@@ -246,7 +246,7 @@ class Design(object):
         result.transform(TransF)
         return result
 
-    def add(self,P,Elem):
+    def add(self, P, Elem):
         """Add point and element to this Design.
 
         Args:
@@ -259,7 +259,7 @@ class Design(object):
         self._Canvas.addLocation(P)
         self._Contents.append(Elem)
 
-    def addOther(self,other,blnAssertNotAlreadyInDesign=True):
+    def addOther(self, other, blnAssertNotAlreadyInDesign=True):
         """Add another Design to this one.
 
         Args:
@@ -271,20 +271,19 @@ class Design(object):
             None.
 
         """
-        self._Canvas.addOther(other.Canvas,blnAssertNotAlreadyInDesign)
+        self._Canvas.addOther(other.Canvas, blnAssertNotAlreadyInDesign)
         self._Contents.extend(other.Contents)
-
 
     # === PROPERTY EVALUATION METHODS
     def __len__(self):
         """Get the size of this Canvas for this Design."""
         return len(self.Canvas)
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         """Compare strict equality of two Designs."""
-        return self.Contents==other.Contents and self.Canvas==other.Canvas
+        return self.Contents == other.Contents and self.Canvas == other.Canvas
 
-    def isEquivalentTo(self,other,
+    def isEquivalentTo(self, other,
                        blnPreserveIndexing=False,
                        blnIgnoreVoid=True):
         """Compare equivilancy of two Designs.
@@ -304,25 +303,25 @@ class Design(object):
         """
         # NOTE: The code below is commented out because it was found to
         #       be significantly slower than just checking the for-loop
-        #if(blnIgnoreVoid and self.NonVoidCount!=other.NonVoidCount):
+        # if(blnIgnoreVoid and self.NonVoidCount!=other.NonVoidCount):
         #    return False
-        if(not blnIgnoreVoid and len(self)!=len(other)):
+        if (not blnIgnoreVoid and len(self) != len(other)):
             return False
-        if(blnPreserveIndexing):
-            return self==other
-        for i,P in enumerate(self.Canvas.Points):
-            if(not other.Canvas.hasPoint(P)):
+        if (blnPreserveIndexing):
+            return self == other
+        for i, P in enumerate(self.Canvas.Points):
+            if (not other.Canvas.hasPoint(P)):
                 return False
             else:
                 j = other.Canvas.getPointIndex(P)
-                if(self.Contents[i]!=other.Contents[j]):
+                if (self.Contents[i] != other.Contents[j]):
                     return False
         return True
 
     @property
     def NonVoidCount(self):
         """Count number of contents that are not considered void."""
-        #import code; code.interact(local=dict(locals(),**globals()));
+        # import code; code.interact(local=dict(locals(),**globals()));
         return sum(Elem is not None and Elem != Atom() for Elem in self.Contents)
 
     @property
@@ -345,7 +344,7 @@ class Design(object):
         return self._Contents
 
     # === REPORTING METHODS
-    def toPDB(self,filename):
+    def toPDB(self, filename):
         """Write a Design to PDB file.
 
         Args:
@@ -355,9 +354,9 @@ class Design(object):
             None.
 
         """
-        writeDesignToPDB(self,filename)
+        writeDesignToPDB(self, filename)
 
-    def toXYZ(self,filename):
+    def toXYZ(self, filename):
         """Write a Design to XYZ file.
 
         Args:
@@ -367,9 +366,9 @@ class Design(object):
             None.
 
         """
-        writeDesignToXYZ(self,filename)
+        writeDesignToXYZ(self, filename)
 
-    def toCFG(self,filename,GS=None,BBox=None,AuxPropMap=None,blnGroupByType=True):
+    def toCFG(self, filename, GS=None, BBox=None, AuxPropMap=None, blnGroupByType=True):
         """Write a Design to CFG file.
 
         Args:
@@ -388,10 +387,10 @@ class Design(object):
             None.
 
         """
-        writeDesignToCFG(self,filename,GS=GS,BBox=BBox,AuxPropMap=AuxPropMap,blnGroupByType=blnGroupByType)
+        writeDesignToCFG(self, filename, GS=GS, BBox=BBox, AuxPropMap=AuxPropMap, blnGroupByType=blnGroupByType)
 
-    def toPOSCAR(self,filename,CommentLine=None,GS=None,BBox=None,
-                 Elems=None,blnUseDirect=True):
+    def toPOSCAR(self, filename, CommentLine=None, GS=None, BBox=None,
+                 Elems=None, blnUseDirect=True):
         """Write a Design to CFG file.
 
         Args:
@@ -412,11 +411,11 @@ class Design(object):
             None.
 
         """
-        writeDesignToPOSCAR(self,filename,CommentLine=CommentLine,GS=GS,BBox=BBox,
-                            Elems=Elems,blnUseDirect=blnUseDirect)
+        writeDesignToPOSCAR(self, filename, CommentLine=CommentLine, GS=GS, BBox=BBox,
+                            Elems=Elems, blnUseDirect=blnUseDirect)
 
 
-def loadFromPDBs(filenames,folder=None):
+def loadFromPDBs(filenames, folder=None):
     """Load a list of Designs from PDB files.
 
     Args:
@@ -430,12 +429,13 @@ def loadFromPDBs(filenames,folder=None):
     """
     result = []
     for filename in filenames:
-        if(folder is not None):
-            filename = os.path.join(folder,filename)
+        if (folder is not None):
+            filename = os.path.join(folder, filename)
         result.append(Design.fromPDB(filename))
     return result
 
-def loadFromXYZs(filenames,folder=None):
+
+def loadFromXYZs(filenames, folder=None):
     """Load a list of Designs from XYZ files.
 
     Args:
@@ -449,12 +449,13 @@ def loadFromXYZs(filenames,folder=None):
     """
     result = []
     for filename in filenames:
-        if(folder is not None):
-            filename = os.path.join(folder,filename)
+        if (folder is not None):
+            filename = os.path.join(folder, filename)
         result.append(Design.fromXYZ(filename))
     return result
 
-def loadFromCFGs(filenames,folder=None):
+
+def loadFromCFGs(filenames, folder=None):
     """Load a list of Designs from CFG files.
 
     Args:
@@ -468,7 +469,7 @@ def loadFromCFGs(filenames,folder=None):
     """
     result = []
     for filename in filenames:
-        if(folder is not None):
-            filename = os.path.join(folder,filename)
+        if (folder is not None):
+            filename = os.path.join(folder, filename)
         result.append(Design.fromCFG(filename))
     return result

@@ -1,12 +1,12 @@
-
 import numpy as np
 from math import sqrt
-from copy import deepcopy 
+from copy import deepcopy
 
 from ..geometry import Parallelepiped
 from ..transform_func import ScaleFunc
-from .unit_cell_lattice import UnitCell,UnitCellLattice
+from .unit_cell_lattice import UnitCell, UnitCellLattice
 from ..tiling import CubicTiling
+
 
 class CubicLattice(UnitCellLattice):
     RefIAD = 1
@@ -45,25 +45,25 @@ class CubicLattice(UnitCellLattice):
     '''
 
     # === STANDARD CONSTRUCTOR
-    def __init__(self,IAD):
+    def __init__(self, IAD):
         RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(CubicLattice.RefIAD,
                                                              CubicLattice.RefIAD,
                                                              CubicLattice.RefIAD,
-                                                             np.pi/2,np.pi/2,np.pi/2,
-                                                             np.array([0,0,0],dtype=float))
+                                                             np.pi / 2, np.pi / 2, np.pi / 2,
+                                                             np.array([0, 0, 0], dtype=float))
         RefUnitCellTiling = CubicTiling(RefUnitCellShape)
         RefFracPositions = [np.array([0.0, 0.0, 0.0])]
-        RefUnitCell = UnitCell(RefUnitCellTiling,RefFracPositions)
-        UnitCellLattice.__init__(self,RefUnitCell)
+        RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
+        UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = IAD
-        self._RefNeighborsPattern = [np.array([ 1.0, 0.0, 0.0]),
-                                     np.array([ 0.0, 1.0, 0.0]),
-                                     np.array([ 0.0, 0.0, 1.0]),
+        self._RefNeighborsPattern = [np.array([1.0, 0.0, 0.0]),
+                                     np.array([0.0, 1.0, 0.0]),
+                                     np.array([0.0, 0.0, 1.0]),
                                      np.array([-1.0, 0.0, 0.0]),
-                                     np.array([ 0.0,-1.0, 0.0]),
-                                     np.array([ 0.0, 0.0,-1.0])]
-        self.applyTransF(ScaleFunc(IAD/CubicLattice.RefIAD))
-        assert(self.isConsistentWithDesign())
+                                     np.array([0.0, -1.0, 0.0]),
+                                     np.array([0.0, 0.0, -1.0])]
+        self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
+        assert (self.isConsistentWithDesign())
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
@@ -71,18 +71,18 @@ class CubicLattice(UnitCellLattice):
         return UnitCellLattice.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
-    def applyTransF(self,TransF):
-        if(isinstance(TransF,ScaleFunc)):
+    def applyTransF(self, TransF):
+        if (isinstance(TransF, ScaleFunc)):
             self._IAD *= TransF.Scale
-        UnitCellLattice.applyTransF(self,TransF)
+        UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS
     # def isOnLattice(self,P):
 
-    def areNeighbors(self,P1,P2):
-        return np.linalg.norm(P2-P1) <= self.IAD
+    def areNeighbors(self, P1, P2):
+        return np.linalg.norm(P2 - P1) <= self.IAD
 
-    def getNeighbors(self,P):
+    def getNeighbors(self, P):
         RefP = self._getConvertToReference(P)
         result = deepcopy(self._RefNeighborsPattern)
         for NeighP in result:
@@ -91,6 +91,6 @@ class CubicLattice(UnitCellLattice):
         return result
 
     # === BASIC QUERY METHODS
-    @property 
+    @property
     def IAD(self):
         return self._IAD

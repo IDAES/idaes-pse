@@ -1,4 +1,3 @@
-
 from copy import deepcopy
 from abc import abstractmethod
 import numpy as np
@@ -6,14 +5,16 @@ import numpy as np
 from .geometry import Parallelepiped
 from .design import Design
 
+
 class Tiling(object):
     """ """
+
     def __init__(self):
         pass
 
     # === PROPERTY EVALUATION METHODS
     @abstractmethod
-    def transformInsideTile(self,P):
+    def transformInsideTile(self, P):
         """Transform point to lie inside a tile.
 
         Args:
@@ -26,7 +27,7 @@ class Tiling(object):
         raise NotImplementedError
 
     @abstractmethod
-    def replicateDesign(self,D,nTiles,OldToNewIndices=None,AuxPropMap=None):
+    def replicateDesign(self, D, nTiles, OldToNewIndices=None, AuxPropMap=None):
         """Create a larger Design by tiling a smaller one.
 
         Args:
@@ -48,26 +49,27 @@ class Tiling(object):
         """
         raise NotImplementedError
 
+
 class PlanarTiling(Tiling):
     """ """
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
-    def __init__(self,Parallelepiped_):
+    def __init__(self, Parallelepiped_):
         self._TileShape = Parallelepiped_
         self._TilingDirections = []
         self._TilingDirections.append(-Parallelepiped_.Vx)
         self._TilingDirections.append(-Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx)
-        self._TilingDirections.append( Parallelepiped_.Vy)
-        self._TilingDirections.append(-Parallelepiped_.Vx-Parallelepiped_.Vy)
-        self._TilingDirections.append(-Parallelepiped_.Vx+Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx-Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx+Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vx)
+        self._TilingDirections.append(Parallelepiped_.Vy)
+        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy)
+        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy)
 
     # === CONSTRUCTOR - From POSCAR file
     @classmethod
-    def fromPOSCAR(cls,filename):
+    def fromPOSCAR(cls, filename):
         """
 
         Args:
@@ -79,7 +81,7 @@ class PlanarTiling(Tiling):
         return cls(Parallelepiped.fromPOSCAR(filename))
 
     # === PROPERTY EVALUATION METHODS
-    def transformInsideTile(self,P,EdgeTol=DBL_TOL):
+    def transformInsideTile(self, P, EdgeTol=DBL_TOL):
         """
 
         Args:
@@ -90,24 +92,25 @@ class PlanarTiling(Tiling):
 
         """
 
-        def _isInsideAndNotOnPosEdge(P,EdgeTol=EdgeTol):
+        def _isInsideAndNotOnPosEdge(P, EdgeTol=EdgeTol):
             return (self.TileShape.isInShape(P) and
-                    self.TileShape.satisfiesFacet(P,2,-EdgeTol) and
-                    self.TileShape.satisfiesFacet(P,3,-EdgeTol))
-        if(_isInsideAndNotOnPosEdge(P,EdgeTol)):
-            return True # Do not transform P, return True
+                    self.TileShape.satisfiesFacet(P, 2, -EdgeTol) and
+                    self.TileShape.satisfiesFacet(P, 3, -EdgeTol))
+
+        if (_isInsideAndNotOnPosEdge(P, EdgeTol)):
+            return True  # Do not transform P, return True
         NegCorner = self.TileShape.V[0]
         PosCorner = self.TileShape.V[7]
         Nx = self.TileShape.FacetNorms[3]
         Ny = self.TileShape.FacetNorms[2]
-        while(np.inner(P-NegCorner,-Nx) >  PlanarTiling.DBL_TOL) : P += self.TileShape.Vx
-        while(np.inner(P-PosCorner, Nx) > -PlanarTiling.DBL_TOL) : P -= self.TileShape.Vx
-        while(np.inner(P-NegCorner,-Ny) >  PlanarTiling.DBL_TOL) : P += self.TileShape.Vy
-        while(np.inner(P-PosCorner, Ny) > -PlanarTiling.DBL_TOL) : P -= self.TileShape.Vy
-        assert(_isInsideAndNotOnPosEdge(P))
+        while (np.inner(P - NegCorner, -Nx) > PlanarTiling.DBL_TOL): P += self.TileShape.Vx
+        while (np.inner(P - PosCorner, Nx) > -PlanarTiling.DBL_TOL): P -= self.TileShape.Vx
+        while (np.inner(P - NegCorner, -Ny) > PlanarTiling.DBL_TOL): P += self.TileShape.Vy
+        while (np.inner(P - PosCorner, Ny) > -PlanarTiling.DBL_TOL): P -= self.TileShape.Vy
+        assert (_isInsideAndNotOnPosEdge(P))
         return True
 
-    def getFractionalCoords(self,P,blnRelativeToCenter=False,blnRoundInside=True,blnPreferZero=True):
+    def getFractionalCoords(self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True):
         """
 
         Args:
@@ -124,18 +127,18 @@ class PlanarTiling(Tiling):
         #       of that range. Some programs (like AtomEye?) are not robust
         #       enough to handle small negative numbers or values greater than 1
         #       in these cases.
-        Pfrac = self.TileShape.getFractionalCoords(P,blnRelativeToCenter=blnRelativeToCenter)
+        Pfrac = self.TileShape.getFractionalCoords(P, blnRelativeToCenter=blnRelativeToCenter)
         Pfrac -= Pfrac.astype(int)
-        if(blnRoundInside):
-            if(blnPreferZero):
-                Pfrac[np.isclose(Pfrac,0.0,rtol=0.0,atol=PlanarTiling.DBL_TOL)] = 0.0
-                Pfrac[np.isclose(Pfrac,1.0,rtol=0.0,atol=PlanarTiling.DBL_TOL)] = 0.0
+        if (blnRoundInside):
+            if (blnPreferZero):
+                Pfrac[np.isclose(Pfrac, 0.0, rtol=0.0, atol=PlanarTiling.DBL_TOL)] = 0.0
+                Pfrac[np.isclose(Pfrac, 1.0, rtol=0.0, atol=PlanarTiling.DBL_TOL)] = 0.0
             else:
-                Pfrac[np.isclose(Pfrac,0.0,rtol=0.0,atol=PlanarTiling.DBL_TOL)] = 0.0
-                Pfrac[np.isclose(Pfrac,1.0,rtol=0.0,atol=PlanarTiling.DBL_TOL)] = 1.0
+                Pfrac[np.isclose(Pfrac, 0.0, rtol=0.0, atol=PlanarTiling.DBL_TOL)] = 0.0
+                Pfrac[np.isclose(Pfrac, 1.0, rtol=0.0, atol=PlanarTiling.DBL_TOL)] = 1.0
         return Pfrac
 
-    def getDistance(self,P0,P1):
+    def getDistance(self, P0, P1):
         """
 
         Args:
@@ -145,15 +148,15 @@ class PlanarTiling(Tiling):
         Returns:
 
         """
-        result = np.linalg.norm(P1-P0)
+        result = np.linalg.norm(P1 - P0)
         for TilingDirection in self.TilingDirections:
             P1Tiled = P1 + TilingDirection
-            TiledDistance = np.linalg.norm(P1Tiled-P0)
-            if(TiledDistance<result):
+            TiledDistance = np.linalg.norm(P1Tiled - P0)
+            if (TiledDistance < result):
                 result = TiledDistance
         return result
 
-    def replicateDesign(self,D,nTiles,OldToNewIndices=None,AuxPropMap=None):
+    def replicateDesign(self, D, nTiles, OldToNewIndices=None, AuxPropMap=None):
         """Create a larger Design by tiling a smaller one.
 
         Args:
@@ -173,27 +176,27 @@ class PlanarTiling(Tiling):
             (Design): A larger, periodic Design
 
         """
-        if(isinstance(nTiles,int)):
-            nTiles = np.array([nTiles]*2,dtype=int)
-        if(OldToNewIndices is None and AuxPropMap is not None):
+        if (isinstance(nTiles, int)):
+            nTiles = np.array([nTiles] * 2, dtype=int)
+        if (OldToNewIndices is None and AuxPropMap is not None):
             OldToNewIndices = {}
-        if(OldToNewIndices is not None):
-            #del OldToNewIndices[:]
+        if (OldToNewIndices is not None):
+            # del OldToNewIndices[:]
             OldToNewIndices.clear()
             for i in range(len(D)):
                 OldToNewIndices[i] = []
         result = Design()
         for nx in range(nTiles[0]):
             for ny in range(nTiles[1]):
-                Offset = nx*self.Vx+ny*self.Vy
-                for i,P in enumerate(D.Canvas.Points):
+                Offset = nx * self.Vx + ny * self.Vy
+                for i, P in enumerate(D.Canvas.Points):
                     j = len(result)
-                    result.add(P+Offset,D.Contents[i])
-                    if(OldToNewIndices is not None):
+                    result.add(P + Offset, D.Contents[i])
+                    if (OldToNewIndices is not None):
                         OldToNewIndices[i].append(j)
-        if(AuxPropMap is not None):
+        if (AuxPropMap is not None):
             for AuxProp in AuxPropMap:
-                #import code; code.interact(local=dict(locals(),**globals()));
+                # import code; code.interact(local=dict(locals(),**globals()));
                 for i in OldToNewIndices:
                     for j in OldToNewIndices[i]:
                         AuxPropMap[AuxProp][j] = AuxPropMap[AuxProp][i]
@@ -220,44 +223,45 @@ class PlanarTiling(Tiling):
         """ """
         return self._TilingDirections[3]
 
+
 class CubicTiling(Tiling):
     """ """
     DBL_TOL = 1e-5
 
     # === STANDARD CONSTRUCTOR
-    def __init__(self,Parallelepiped_):
+    def __init__(self, Parallelepiped_):
         self._TileShape = Parallelepiped_
         self._TilingDirections = []
         self._TilingDirections.append(-Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx-Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vy-Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx-Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vy-Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx-Parallelepiped_.Vy-Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx+Parallelepiped_.Vy-Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx-Parallelepiped_.Vy-Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx+Parallelepiped_.Vy-Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy - Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy - Parallelepiped_.Vz)
         self._TilingDirections.append(-Parallelepiped_.Vx)
         self._TilingDirections.append(-Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx)
-        self._TilingDirections.append( Parallelepiped_.Vy)
-        self._TilingDirections.append(-Parallelepiped_.Vx-Parallelepiped_.Vy)
-        self._TilingDirections.append(-Parallelepiped_.Vx+Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx-Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vx+Parallelepiped_.Vy)
-        self._TilingDirections.append( Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx+Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vy+Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx+Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vy+Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx-Parallelepiped_.Vy+Parallelepiped_.Vz)
-        self._TilingDirections.append(-Parallelepiped_.Vx+Parallelepiped_.Vy+Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx-Parallelepiped_.Vy+Parallelepiped_.Vz)
-        self._TilingDirections.append( Parallelepiped_.Vx+Parallelepiped_.Vy+Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx)
+        self._TilingDirections.append(Parallelepiped_.Vy)
+        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy)
+        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy)
+        self._TilingDirections.append(Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(-Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx - Parallelepiped_.Vy + Parallelepiped_.Vz)
+        self._TilingDirections.append(Parallelepiped_.Vx + Parallelepiped_.Vy + Parallelepiped_.Vz)
 
     # === CONSTRUCTOR - From POSCAR file
     @classmethod
-    def fromPOSCAR(cls,filename):
+    def fromPOSCAR(cls, filename):
         """
 
         Args:
@@ -269,7 +273,7 @@ class CubicTiling(Tiling):
         return cls(Parallelepiped.fromPOSCAR(filename))
 
     # === PROPERTY EVALUATION METHODS
-    def transformInsideTile(self,P,EdgeTol=DBL_TOL):
+    def transformInsideTile(self, P, EdgeTol=DBL_TOL):
         """
 
         Args:
@@ -279,29 +283,30 @@ class CubicTiling(Tiling):
         Returns:
 
         """
-        def _isInsideAndNotOnPosEdge(P,EdgeTol=EdgeTol):
+
+        def _isInsideAndNotOnPosEdge(P, EdgeTol=EdgeTol):
             return (self.TileShape.isInShape(P) and
-                    self.TileShape.satisfiesFacet(P,2,-EdgeTol) and
-                    self.TileShape.satisfiesFacet(P,3,-EdgeTol) and
-                    self.TileShape.satisfiesFacet(P,4,-EdgeTol))
-        if(_isInsideAndNotOnPosEdge(P)):
-            return True # Do not transform P, return True
+                    self.TileShape.satisfiesFacet(P, 2, -EdgeTol) and
+                    self.TileShape.satisfiesFacet(P, 3, -EdgeTol) and
+                    self.TileShape.satisfiesFacet(P, 4, -EdgeTol))
+
+        if (_isInsideAndNotOnPosEdge(P)):
+            return True  # Do not transform P, return True
         NegCorner = self.TileShape.V[0]
         PosCorner = self.TileShape.V[7]
         Nx = self.TileShape.FacetNorms[3]
         Ny = self.TileShape.FacetNorms[2]
         Nz = self.TileShape.FacetNorms[4]
-        while(np.inner(P-NegCorner,-Nx) >  CubicTiling.DBL_TOL) : P += self.TileShape.Vx
-        while(np.inner(P-PosCorner, Nx) > -CubicTiling.DBL_TOL) : P -= self.TileShape.Vx
-        while(np.inner(P-NegCorner,-Ny) >  CubicTiling.DBL_TOL) : P += self.TileShape.Vy
-        while(np.inner(P-PosCorner, Ny) > -CubicTiling.DBL_TOL) : P -= self.TileShape.Vy
-        while(np.inner(P-NegCorner,-Nz) >  CubicTiling.DBL_TOL) : P += self.TileShape.Vz
-        while(np.inner(P-PosCorner, Nz) > -CubicTiling.DBL_TOL) : P -= self.TileShape.Vz
-        assert(_isInsideAndNotOnPosEdge(P))
+        while (np.inner(P - NegCorner, -Nx) > CubicTiling.DBL_TOL): P += self.TileShape.Vx
+        while (np.inner(P - PosCorner, Nx) > -CubicTiling.DBL_TOL): P -= self.TileShape.Vx
+        while (np.inner(P - NegCorner, -Ny) > CubicTiling.DBL_TOL): P += self.TileShape.Vy
+        while (np.inner(P - PosCorner, Ny) > -CubicTiling.DBL_TOL): P -= self.TileShape.Vy
+        while (np.inner(P - NegCorner, -Nz) > CubicTiling.DBL_TOL): P += self.TileShape.Vz
+        while (np.inner(P - PosCorner, Nz) > -CubicTiling.DBL_TOL): P -= self.TileShape.Vz
+        assert (_isInsideAndNotOnPosEdge(P))
         return True
 
-
-    def getFractionalCoords(self,P,blnRelativeToCenter=False,blnRoundInside=True,blnPreferZero=True):
+    def getFractionalCoords(self, P, blnRelativeToCenter=False, blnRoundInside=True, blnPreferZero=True):
         """
 
         Args:
@@ -318,18 +323,18 @@ class CubicTiling(Tiling):
         #       of that range. Some programs (like AtomEye?) are not robust
         #       enough to handle small negative numbers or values greater than 1
         #       in these cases.
-        Pfrac = self.TileShape.getFractionalCoords(P,blnRelativeToCenter=blnRelativeToCenter)
+        Pfrac = self.TileShape.getFractionalCoords(P, blnRelativeToCenter=blnRelativeToCenter)
         Pfrac -= Pfrac.astype(int)
-        if(blnRoundInside):
-            if(blnPreferZero):
-                Pfrac[np.isclose(Pfrac,0.0,rtol=0.0,atol=CubicTiling.DBL_TOL)] = 0.0
-                Pfrac[np.isclose(Pfrac,1.0,rtol=0.0,atol=CubicTiling.DBL_TOL)] = 0.0
+        if (blnRoundInside):
+            if (blnPreferZero):
+                Pfrac[np.isclose(Pfrac, 0.0, rtol=0.0, atol=CubicTiling.DBL_TOL)] = 0.0
+                Pfrac[np.isclose(Pfrac, 1.0, rtol=0.0, atol=CubicTiling.DBL_TOL)] = 0.0
             else:
-                Pfrac[np.isclose(Pfrac,0.0,rtol=0.0,atol=CubicTiling.DBL_TOL)] = 0.0
-                Pfrac[np.isclose(Pfrac,1.0,rtol=0.0,atol=CubicTiling.DBL_TOL)] = 1.0
+                Pfrac[np.isclose(Pfrac, 0.0, rtol=0.0, atol=CubicTiling.DBL_TOL)] = 0.0
+                Pfrac[np.isclose(Pfrac, 1.0, rtol=0.0, atol=CubicTiling.DBL_TOL)] = 1.0
         return Pfrac
 
-    def getDistance(self,P0,P1):
+    def getDistance(self, P0, P1):
         """
 
         Args:
@@ -339,15 +344,15 @@ class CubicTiling(Tiling):
         Returns:
 
         """
-        result = np.linalg.norm(P1-P0)
+        result = np.linalg.norm(P1 - P0)
         for TilingDirection in self.TilingDirections:
             P1Tiled = P1 + TilingDirection
-            TiledDistance = np.linalg.norm(P1Tiled-P0)
-            if(TiledDistance<result):
+            TiledDistance = np.linalg.norm(P1Tiled - P0)
+            if (TiledDistance < result):
                 result = TiledDistance
         return result
 
-    def replicateDesign(self,D,nTiles,OldToNewIndices=None,AuxPropMap=None):
+    def replicateDesign(self, D, nTiles, OldToNewIndices=None, AuxPropMap=None):
         """Create a larger Design by tiling a smaller one.
 
         Args:
@@ -367,12 +372,12 @@ class CubicTiling(Tiling):
             (Design): A larger, periodic Design
         
         """
-        if(isinstance(nTiles,int)):
-            nTiles = np.array([nTiles]*3,dtype=int)
-        if(OldToNewIndices is None and AuxPropMap is not None):
+        if (isinstance(nTiles, int)):
+            nTiles = np.array([nTiles] * 3, dtype=int)
+        if (OldToNewIndices is None and AuxPropMap is not None):
             OldToNewIndices = {}
-        if(OldToNewIndices is not None):
-            #del OldToNewIndices[:]
+        if (OldToNewIndices is not None):
+            # del OldToNewIndices[:]
             OldToNewIndices.clear()
             for i in range(len(D)):
                 OldToNewIndices[i] = []
@@ -380,19 +385,18 @@ class CubicTiling(Tiling):
         for nx in range(nTiles[0]):
             for ny in range(nTiles[1]):
                 for nz in range(nTiles[2]):
-                    Offset = nx*self.Vx+ny*self.Vy+nz*self.Vz
-                    for i,P in enumerate(D.Canvas.Points):
+                    Offset = nx * self.Vx + ny * self.Vy + nz * self.Vz
+                    for i, P in enumerate(D.Canvas.Points):
                         j = len(result)
-                        result.add(P+Offset,D.Contents[i])
-                        if(OldToNewIndices is not None):
+                        result.add(P + Offset, D.Contents[i])
+                        if (OldToNewIndices is not None):
                             OldToNewIndices[i].append(j)
-        if(AuxPropMap is not None):
+        if (AuxPropMap is not None):
             for AuxProp in AuxPropMap:
                 for i in OldToNewIndices:
                     for j in OldToNewIndices[i]:
                         AuxPropMap[AuxProp][j] = AuxPropMap[AuxProp][i]
         return result
-
 
     # === BASIC QUERY METHODS
     @property
