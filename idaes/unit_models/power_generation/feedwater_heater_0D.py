@@ -32,8 +32,11 @@ from pyomo.environ import SolverFactory, TransformationFactory, Var, value
 from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
 
-from idaes.core import (declare_process_block_class, UnitModelBlockData,
-                        MaterialBalanceType)
+from idaes.core import (
+    declare_process_block_class,
+    UnitModelBlockData,
+    MaterialBalanceType,
+)
 from idaes.unit_models.heat_exchanger import HeatExchangerData
 from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -46,42 +49,63 @@ _log = getIdaesLogger(__name__)
 
 
 def _define_feedwater_heater_0D_config(config):
-    config.declare("has_drain_mixer", ConfigValue(
+    config.declare(
+        "has_drain_mixer",
+        ConfigValue(
             default=True,
             domain=In([True, False]),
             description="Add a mixer to the inlet of the condensing section",
             doc="""Add a mixer to the inlet of the condensing section to add
-water from the drain of another feedwaterheater to the steam, if True"""))
-    config.declare("has_desuperheat", ConfigValue(
+water from the drain of another feedwaterheater to the steam, if True""",
+        ),
+    )
+    config.declare(
+        "has_desuperheat",
+        ConfigValue(
             default=True,
             domain=In([True, False]),
             description="Add a mixer desuperheat section to the heat exchanger",
-            doc="Add a mixer desuperheat section to the heat exchanger"))
-    config.declare("has_drain_cooling", ConfigValue(
+            doc="Add a mixer desuperheat section to the heat exchanger",
+        ),
+    )
+    config.declare(
+        "has_drain_cooling",
+        ConfigValue(
             default=True,
             domain=In([True, False]),
             description="Add a section after condensing section cool condensate.",
-            doc="Add a section after condensing section to cool condensate."))
-    config.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
+            doc="Add a section after condensing section to cool condensate.",
+        ),
+    )
+    config.declare(
+        "property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
-    config.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+**PropertyParameterObject** - a PropertyParameterBlock object.}""",
+        ),
+    )
+    config.declare(
+        "property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))
+see property package for documentation.}""",
+        ),
+    )
     config.declare("condense", HeatExchangerData.CONFIG())
     config.declare("desuperheat", HeatExchangerData.CONFIG())
     config.declare("cooling", HeatExchangerData.CONFIG())
+
 
 def _set_port(p1, p2):
     """
@@ -95,6 +119,7 @@ def _set_port(p1, p2):
         if isinstance(v, Var):
             for i in v:
                 v[i].value = value(p2.vars[k][i])
+
 
 def _set_prop_pack(hxcfg, fwhcfg):
     """
@@ -116,21 +141,28 @@ def _set_prop_pack(hxcfg, fwhcfg):
         hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
 
 
-@declare_process_block_class("FWHCondensing0D", doc=
-"""Feedwater Heater Condensing Section
+@declare_process_block_class(
+    "FWHCondensing0D",
+    doc="""Feedwater Heater Condensing Section
 The feedwater heater condensing section model is a normal 0D heat exchanger
 model with an added constraint to calculate the steam flow such that the outlet
-of shell is a saturated liquid.""")
+of shell is a saturated liquid.""",
+)
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
         self.enth_sub = Var(self.flowsheet().config.time, initialize=0)
         self.enth_sub.fix()
-        @self.Constraint(self.flowsheet().config.time,
-            doc="Calculate steam extraction rate such that all steam condenses")
+
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Calculate steam extraction rate such that all steam condenses",
+        )
         def extraction_rate_constraint(b, t):
-            return  b.shell.properties_out[t].enth_mol - b.enth_sub[t] == \
-                   b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
+            return (
+                b.shell.properties_out[t].enth_mol - b.enth_sub[t]
+                == b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
+            )
 
     def initialize(self, *args, **kwargs):
         """
@@ -138,49 +170,58 @@ class FWHCondensing0DData(HeatExchangerData):
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
-        self.extraction_rate_constraint.deactivate()
-        super().initialize(*args, **kwargs)
-        self.extraction_rate_constraint.activate()
-
         solver = kwargs.get("solver", "ipopt")
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", 6)
-
         init_log = getInitLogger(self.name, outlvl)
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
+        self.extraction_rate_constraint.deactivate()
         self.area.fix()
         self.overall_heat_transfer_coefficient.fix()
         self.inlet_1.fix()
         self.inlet_2.fix()
         self.outlet_1.unfix()
         self.outlet_2.unfix()
-        self.inlet_1.flow_mol.unfix()
-        results = opt.solve(self, tee=init_tee(init_log))
 
-        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
+        # Do regular heat exchanger intialization
+        super().initialize(*args, **kwargs)
+        self.extraction_rate_constraint.activate()
+        self.inlet_1.flow_mol.unfix()
+
+        opt = SolverFactory(solver)
+        opt.options = optarg
+
+        results = opt.solve(self, tee=init_tee(init_log))
+        init_log.log(
+            5,
+            "Initialization Complete (w/ extraction calc): {}".format(
+                condition(results)
+            ),
+        )
 
         from_json(self, sd=istate, wts=sp)
 
 
-@declare_process_block_class("FWH0D", doc="""Feedwater Heater Model
+@declare_process_block_class(
+    "FWH0D",
+    doc="""Feedwater Heater Model
 This is a 0D feedwater heater model.  The model may contain three 0D heat
 exchanger models representing the desuperheat, condensing and drain cooling
 sections of the feedwater heater. Only the condensing section must be included.
 A drain mixer can also be optionally included, which mixes the drain outlet of
 another feedwater heater with the steam fed into the condensing section.
-""")
+""",
+)
 class FWH0DData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     _define_feedwater_heater_0D_config(CONFIG)
 
     def build(self):
         super().build()
-        config = self.config # sorter ref to config for less line splitting
+        config = self.config  # sorter ref to config for less line splitting
 
         # All feedwater heaters have a condensing section
         _set_prop_pack(config.condense, config)
@@ -188,15 +229,17 @@ class FWH0DData(UnitModelBlockData):
 
         # Add a mixer to add the drain stream from another feedwater heater
         if config.has_drain_mixer:
-            mix_cfg = { # general unit model config
-                "dynamic":config.dynamic,
-                "has_holdup":config.has_holdup,
-                "property_package":config.property_package,
-                "property_package_args":config.property_package_args,
-                "momentum_mixing_type":MomentumMixingType.none,
-                "material_balance_type":MaterialBalanceType.componentTotal,
-                "inlet_list":["steam", "drain"]}
+            mix_cfg = {  # general unit model config
+                "dynamic": config.dynamic,
+                "has_holdup": config.has_holdup,
+                "property_package": config.property_package,
+                "property_package_args": config.property_package_args,
+                "momentum_mixing_type": MomentumMixingType.none,
+                "material_balance_type": MaterialBalanceType.componentTotal,
+                "inlet_list": ["steam", "drain"],
+            }
             self.drain_mix = Mixer(default=mix_cfg)
+
             @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
             def mixer_pressure_constraint(b, t):
                 """
@@ -205,9 +248,11 @@ class FWH0DData(UnitModelBlockData):
                 always be a higher pressure than the steam inlet.
                 """
                 return b.steam_state[t].pressure == b.mixed_state[t].pressure
+
             # Connect the mixer to the condensing section inlet
-            self.mix_out_arc = Arc(source=self.drain_mix.outlet,
-                                   destination=self.condense.inlet_1)
+            self.mix_out_arc = Arc(
+                source=self.drain_mix.outlet, destination=self.condense.inlet_1
+            )
 
         # Add a desuperheat section before the condensing section
         if config.has_desuperheat:
@@ -218,15 +263,15 @@ class FWH0DData(UnitModelBlockData):
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.desuperheat_drain_arc = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.drain_mix.steam)
+                    source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
+                )
             else:
                 self.desuperheat_drain_arc = Arc(
-                    source=self.desuperheat.outlet_1,
-                    destination=self.condense.inlet_1)
+                    source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
+                )
             self.condense_out2_arc = Arc(
-                source=self.condense.outlet_2,
-                destination=self.desuperheat.inlet_2)
+                source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
+            )
 
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
@@ -236,16 +281,18 @@ class FWH0DData(UnitModelBlockData):
             # almost always be overridden by the user fixing an area later
             self.cooling.area.value = 10
             self.cooling_out2_arc = Arc(
-                source=self.cooling.outlet_2,
-                destination=self.condense.inlet_2)
+                source=self.cooling.outlet_2, destination=self.condense.inlet_2
+            )
             self.condense_out1_arc = Arc(
-                source=self.condense.outlet_1,
-                destination=self.cooling.inlet_1)
+                source=self.condense.outlet_1, destination=self.cooling.inlet_1
+            )
 
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def initialize(self, *args, **kwargs):
-        config = self.config # sorter ref to config for less line splitting
+        outlvl = kwargs.get("outlvl", 5)
+        init_log = getInitLogger(self.name, outlvl)
+        config = self.config  # shorter ref to config for less line splitting
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
@@ -269,7 +316,7 @@ class FWH0DData(UnitModelBlockData):
                 _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
             # fix the steam and fwh inlet for init
             self.desuperheat.inlet_1.fix()
-            self.desuperheat.inlet_1.flow_mol.unfix() #unfix for extract calc
+            self.desuperheat.inlet_1.flow_mol.unfix()  # unfix for extract calc
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
@@ -290,22 +337,41 @@ class FWH0DData(UnitModelBlockData):
         if not config.has_drain_mixer and not config.has_desuperheat:
             self.condense.inlet_1.fix()
             self.condense.inlet_1.flow_mol.unfix()
+
+        tempsat = value(self.condense.shell.properties_in[0].temperature_sat)
+        temp = value(self.condense.tube.properties_in[0].temperature)
+        if tempsat - temp < 30:
+            init_log.log(
+                5,
+                "Warning: the steam sat. temperature ({}) is near the feedwater"
+                " inlet temperature ({})".format(tempsat, temp),
+            )
+
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
         # Solve all together
-        outlvl = kwargs.get("outlvl", 0)
         opt = SolverFactory(kwargs.get("solver", "ipopt"))
         opt.options = kwargs.get("oparg", {})
-        tee = True if outlvl >= 3 else False
-        assert(degrees_of_freedom(self)==0)
-        results = opt.solve(self, tee=tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            if outlvl >= 2:
-                _log.info('{} Initialization Complete.'.format(self.name))
-        else:
-            _log.warning('{} Initialization Failed.'.format(self.name))
+        assert degrees_of_freedom(self) == 0
+        res = opt.solve(self, tee=init_tee(init_log))
+        init_log.log(
+            3,
+            "Condensing shell inlet delta T = {}".format(
+                value(self.condense.delta_temperature_in[0])
+            ),
+        )
+        init_log.log(
+            3,
+            "Condensing Shell outlet delta T = {}".format(
+                value(self.condense.delta_temperature_out[0])
+            ),
+        )
+        init_log.log(
+            3, "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
+        )
+        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
 
         from_json(self, sd=istate, wts=sp)

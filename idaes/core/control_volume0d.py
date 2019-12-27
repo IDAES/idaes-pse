@@ -14,9 +14,6 @@
 Base class for control volumes
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Var
 from pyomo.dae import DerivativeVar
@@ -32,7 +29,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.tables import create_stream_table_dataframe
 
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee
+from idaes.logger import getIdaesLogger, getInitLogger
 
 __author__ = "Andrew Lee"
 
@@ -1423,27 +1420,36 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     state_args[k] = state_dict[k].value
 
         # Initialize state blocks
-        flags = blk.properties_in.initialize(outlvl=outlvl+1,
-                                             optarg=optarg,
-                                             solver=solver,
-                                             hold_state=hold_state,
-                                             state_args=state_args)
+        in_flags = blk.properties_in.initialize(outlvl=outlvl+1,
+                                                optarg=optarg,
+                                                solver=solver,
+                                                hold_state=hold_state,
+                                                state_args=state_args)
 
-        blk.properties_out.initialize(outlvl=outlvl+1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      hold_state=False,
-                                      state_args=state_args)
+        out_flags = blk.properties_out.initialize(outlvl=outlvl+1,
+                                                  optarg=optarg,
+                                                  solver=solver,
+                                                  hold_state=True,
+                                                  state_args=state_args)
         try:
+            # TODO: setting state_vars_fixed may not work for heterogeneous
+            # systems where a second control volume is involved, as we cannot
+            # assume those state vars are also fixed. For now, heterogeneous
+            # reactions should ignore the state_vars_fixed argument and always
+            # check their state_vars.
             blk.reactions.initialize(outlvl=outlvl+1,
                                      optarg=optarg,
-                                     solver=solver)
+                                     solver=solver,
+                                     state_vars_fixed=True)
         except AttributeError:
             pass
 
+        # Unfix outlet properties
+        blk.properties_out.release_state(flags=out_flags, outlvl=outlvl+1)
+
         init_log.log(5, 'Initialization Complete')
 
-        return flags
+        return in_flags
 
     def release_state(blk, flags, outlvl=6):
         '''

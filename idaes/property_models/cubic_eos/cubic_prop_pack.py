@@ -42,7 +42,6 @@ from pyomo.environ import (Constraint,
                            Set,
                            SolverFactory,
                            sqrt,
-                           TerminationCondition,
                            Param,
                            PositiveReals,
                            value,
@@ -54,10 +53,15 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
-from idaes.core.util.initialization import solve_indexed_blocks
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
+from idaes.core.util.initialization import (solve_indexed_blocks,
+                                            fix_state_vars,
+                                            revert_state_vars)
 from idaes.core.util.exceptions import BurntToast
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_activated_equalities)
 from idaes import lib_directory
 from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
@@ -88,6 +92,7 @@ EoS_param = {
         }
 
 
+@declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
     """
     General Property Parameter Block Class
@@ -206,11 +211,9 @@ class _CubicStateBlock(StateBlock):
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating whcih solver to use during
@@ -241,57 +244,7 @@ class _CubicStateBlock(StateBlock):
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            Fflag = {}
-            Xflag = {}
-            Pflag = {}
-            Tflag = {}
-
-            for k in blk.keys():
-                if blk[k].flow_mol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if state_args["flow_mol"] is None:
-                        blk[k].flow_mol.fix(1.0)
-                    else:
-                        blk[k].flow_mol.fix(state_args["flow_mol"])
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac_comp[j].fixed is True:
-                        Xflag[k, j] = True
-                    else:
-                        Xflag[k, j] = False
-                        if state_args["mole_frac_comp"] is None:
-                            blk[k].mole_frac_comp[j].fix(
-                                    1/len(blk[k]._params.component_list))
-                        else:
-                            blk[k].mole_frac_comp[j].fix(
-                                    state_args["mole_frac_comp"][j])
-
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if state_args["pressure"] is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(state_args["pressure"])
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if state_args["temperature"] is None:
-                        blk[k].temperature.fix(325)
-                    else:
-                        blk[k].temperature.fix(state_args["temperature"])
-
-            # ---------------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Xflag": Xflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
+            flags = fix_state_vars(blk, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
@@ -439,6 +392,7 @@ class _CubicStateBlock(StateBlock):
                             antoine_P(blk[k], j, blk[k].temperature))
 
         # Solve bubble and dew point constraints
+        cons_count = 0
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 # Deactivate all property constraints
@@ -451,9 +405,15 @@ class _CubicStateBlock(StateBlock):
                                         "_sum_mole_frac_pbub",
                                         "_sum_mole_frac_pdew"):
                     c.deactivate()
+            cons_count += number_activated_equalities(blk[k])
 
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Dew and bubble point init: {}.".format(condition(results)))
+        if cons_count > 0:
+            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
+        else:
+            results = None
+        init_log.log(4,
+                     "Dew and bubble point init: {}."
+                     .format(condition(results)))
 
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
@@ -539,8 +499,8 @@ class _CubicStateBlock(StateBlock):
                     c.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Phase equilibrium init: {}.".format(condition(results)))
-
+        init_log.log(4,
+                     "Phase equilibrium init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -554,11 +514,6 @@ class _CubicStateBlock(StateBlock):
         init_log.log(4, "Property init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
-        # Return state to initial conditions
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].sum_mole_frac_out.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -566,7 +521,6 @@ class _CubicStateBlock(StateBlock):
                 blk.release_state(flags)
 
         init_log.log(5, "Initialization complete.")
-
 
     def release_state(blk, flags, outlvl=6):
         '''
@@ -578,22 +532,17 @@ class _CubicStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].sum_mole_frac_out.activate()
+
         if flags is None:
             return
 
         init_log = getInitLogger(blk.name, outlvl)
 
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         init_log.info(5, '{} states released.'.format(blk.name))
 
@@ -649,6 +598,9 @@ class CubicStateBlockData(StateBlockData):
                              .format(self.name))
 
     def _make_liq_phase_eq(self):
+        # Add equilibrium temperature - in this case the state temperature
+        self._teq = Expression(expr=self.temperature)
+
         # Add supporting equations for Cubic EoS
         self.common_cubic()
 
@@ -668,6 +620,9 @@ class CubicStateBlockData(StateBlockData):
                               for i in self._params.component_list))
 
     def _make_vap_phase_eq(self):
+        # Add equilibrium temperature - in this case the state temperature
+        self._teq = Expression(expr=self.temperature)
+
         # Add supporting equations for Cubic EoS
         self.common_cubic()
 
@@ -896,9 +851,15 @@ class CubicStateBlockData(StateBlockData):
         else:
             return 0
 
-    def get_enthalpy_density_terms(self, p):
-        """Create enthalpy density terms."""
+    def get_energy_density_terms(self, p):
+        """Create energy density terms."""
         return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
@@ -909,6 +870,12 @@ class CubicStateBlockData(StateBlockData):
                 "mole_frac_comp": self.mole_frac_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
+
+    def define_display_vars(b):
+        return {"Molar Flowrate": b.flow_mol,
+                "Mole Fractions": b.cmole_frac_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
 
     def model_check(blk):
         """Model checks for property block."""
