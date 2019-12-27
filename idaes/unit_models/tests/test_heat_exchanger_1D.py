@@ -392,7 +392,15 @@ class TestBTX_countercurrent(object):
         orig_fixed_vars = fixed_variables_set(btx)
         orig_act_consts = activated_constraints_set(btx)
 
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
+        # Need some initial guesses to achieve convergence
+        btx.fs.unit.initialize(
+                optarg={'tol': 1e-6},
+                shell_state_args={"flow_mol": 5,
+                                  "temperature": 304,
+                                  "pressure": 101325},
+                tube_state_args={"flow_mol": 1,
+                                 "temperature": 331.5,
+                                 "pressure": 101325})
 
         assert degrees_of_freedom(btx) == 0
 

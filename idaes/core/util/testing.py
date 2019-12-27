@@ -208,7 +208,8 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None, solver=None):
+    def initialize(blk, outlvl=0, optarg=None,
+                   solver=None, state_vars_fixed=False):
         for k in blk.keys():
             blk[k].init_test = True
 

@@ -640,7 +640,7 @@ see property package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl + 1)
-        init_log.log(5, "Initialization Complete.")
+        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
 
 
     def _get_performance_contents(self, time_point=0):
