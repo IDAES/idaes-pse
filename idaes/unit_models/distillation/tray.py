@@ -314,7 +314,7 @@ see property package for documentation.}"""))
             self._make_phase_split(
                 port=self.vap_out,
                 phase="Vap",
-                side_sf=1-self.vap_side_sf)
+                side_sf=1 - self.vap_side_sf)
         else:
             # Populate the vapor outlet port when no vapor side draw
             self._make_phase_split(
@@ -483,10 +483,15 @@ see property package for documentation.}"""))
                         "phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, outlvl=None):
+                   state_args_vap=None, solver=None, outlvl=0):
 
-        # Use input values to initialize if values are passed from another
-        # initialized tray.
+        if self.config.has_liquid_side_draw:
+            if not self.liq_side_sf.fixed:
+                raise Exception("Liquid side draw split fraction not fixed.")
+
+        if self.config.has_vapor_side_draw:
+            if not self.vap_side_sf.fixed:
+                raise Exception("Vapor side draw split fraction not fixed.")
 
         # Initialize the inlet state blocks
         if self.config.is_feed_tray:
@@ -500,7 +505,7 @@ see property package for documentation.}"""))
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
 
-        if self.config.is_feed_tray:
+        if not self.config.is_feed_tray:
             average_temperature = \
                 0.5 * (self.properties_in_liq[0].temperature.value
                        + self.properties_in_vap[0].temperature.value)
