@@ -287,12 +287,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         "add_geometry method before adding balance equations."
                         .format(self.name))
 
+        # Get phase component set and lists
+        pc_set = self.config.property_package.get_phase_component_set()
+        phase_component_list = self._get_phase_comp_list()
+
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(self.flowsheet().config.time,
-                                       self.config.property_package.phase_list,
-                                       self.config.property_package.
-                                       component_list,
+                                       pc_set,
                                        domain=Reals,
                                        initialize=1.0,
                                        doc="Material holdup in unit [{}]"
@@ -304,9 +306,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     doc="Material accumulation in unit [{}/{}]"
                         .format(units['holdup'], units['time']))
 
-        # Get phase component list(s)
-        phase_component_list = self._get_phase_comp_list()
-
         # Create material balance terms as required
         # Kinetic reaction generation
         if has_rate_reactions:
@@ -317,8 +316,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
+                        pc_set,
                         domain=Reals,
                         initialize=0.0,
                         doc="Amount of component generated in "
@@ -336,8 +334,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 domain=Reals,
                 initialize=0.0,
                 doc="Amount of component generated in unit "
@@ -365,8 +362,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
+                        pc_set,
                         domain=Reals,
                         initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
@@ -463,8 +459,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Add component balances
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         pc_set,
                          doc="Material balances")
         def material_balances(b, t, p, j):
             if j in phase_component_list[p]:
@@ -480,25 +475,19 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             else:
                 return Constraint.Skip
 
-        # TODO: Need to set material_holdup = 0 for non-present component-phase
-        # pairs. Not ideal, but needed to close DoF. Is there a better way?
-
         # Material Holdup
         if has_holdup:
             if not hasattr(self, "phase_fraction"):
                 self._add_phase_fractions()
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
+                             pc_set,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, p, j] == (
                           b.volume[t]*self.phase_fraction[t, p] *
                           b.properties_out[t].get_material_density_terms(p, j))
-                else:
-                    return b.material_holdup[t, p, j] == 0
 
         if has_rate_reactions:
             # Add extents of reaction and stoichiometric constraints
@@ -651,12 +640,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         "add_geometry method before adding balance equations."
                         .format(self.name))
 
+        # Get phase component set and lists
+        pc_set = self.config.property_package.get_phase_component_set()
+        phase_component_list = self._get_phase_comp_list()
+
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(
                     self.flowsheet().config.time,
-                    self.config.property_package.phase_list,
-                    self.config.property_package.component_list,
+                    pc_set,
                     domain=Reals,
                     initialize=0.0,
                     doc="Material holdup in unit [{}]".format(units['holdup']))
@@ -666,9 +658,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     wrt=self.flowsheet().config.time,
                     doc="Material accumulation in unit [{}/{}]"
                         .format(units['holdup'], units['time']))
-
-        # Get phase component list(s)
-        phase_component_list = self._get_phase_comp_list()
 
         # Create material balance terms as required
         # Kinetic reaction generation
@@ -680,8 +669,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 domain=Reals,
                 initialize=0.0,
                 doc="Amount of component generated in "
@@ -699,8 +687,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 domain=Reals,
                 initialize=0.0,
                 doc="Amount of component generated in unit "
@@ -711,8 +698,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
+                        pc_set,
                         domain=Reals,
                         initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
@@ -805,25 +791,19 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 sum(transfer_term(b, t, p, j) for p in cplist) +
                 user_term_mol(b, t, j) + user_term_mass(b, t, j))
 
-        # TODO: Need to set material_holdup = 0 for non-present component-phase
-        # pairs. Not ideal, but needed to close DoF. Is there a better way?
-
         # Material Holdup
         if has_holdup:
             if not hasattr(self, "phase_fraction"):
                 self._add_phase_fractions()
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
+                             pc_set,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, p, j] == (
                           b.volume[t]*self.phase_fraction[t, p] *
                           b.properties_out[t].get_material_density_terms(p, j))
-                else:
-                    return b.material_holdup[t, p, j] == 0
 
         if has_rate_reactions:
             # Add extents of reaction and stoichiometric constraints
@@ -836,8 +816,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
+                             pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
@@ -861,8 +840,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
+                             pc_set,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
