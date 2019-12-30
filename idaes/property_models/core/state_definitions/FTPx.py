@@ -243,7 +243,7 @@ def state_initialization(b):
             b.flow_mol_phase[p].value = \
                 b.flow_mol.value
 
-            for j in b._params.component_list:
+            for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
                     b.mole_frac_comp[j].value
 
@@ -253,7 +253,7 @@ def state_initialization(b):
             b.flow_mol_phase[p].value = \
                 b.flow_mol.value / len(b._params.phase_list)
 
-            for j in b._params.component_list:
+            for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
                     b.mole_frac_comp[j].value
 

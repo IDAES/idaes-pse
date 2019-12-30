@@ -316,7 +316,7 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate state definition
         if self.config.state_definition is None:
             raise ConfigurationError(
-                    "{} Generic property package was not provided with a "
+                    "{} Generic Property Package was not provided with a "
                     "state_definition configuration argument. Please fix "
                     "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
@@ -324,24 +324,24 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate equation of state
         if self.config.equation_of_state is None:
             raise ConfigurationError(
-                    "{} Generic property package was not provided with an "
+                    "{} Generic Property Package was not provided with an "
                     "equation_of_state configuration argument. Please fix "
                     "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
         if not isinstance(self.config.equation_of_state, dict):
             raise ConfigurationError(
-                    "{} Generic property package was provided with an invalid "
+                    "{} Generic Property Package was provided with an invalid "
                     "equation_of_state configuration argument. Argument must "
                     "be a dict with phases as keys.".format(self.name))
         if len(self.config.equation_of_state) != len(self.phase_list):
             raise ConfigurationError(
-                    "{} Generic property package was provided with an invalid "
+                    "{} Generic Property Package was provided with an invalid "
                     "equation_of_state configuration argument. A value must "
                     "be present for each phase.".format(self.name))
         for p in self.config.equation_of_state:
             if p not in self.phase_list:
                 raise ConfigurationError(
-                    "{} Generic property unrecognised phase {} in "
+                    "{} Generic Property Package unrecognised phase {} in "
                     "equation_of_state configuration argument. Keys must be "
                     "valid phases.".format(self.name, p))
 
@@ -831,6 +831,25 @@ class GenericStateBlockData(StateBlockData):
         if (self._params.config.phase_equilibrium_formulation is not None and
                 (not self.config.defined_state or self.always_flash)):
             self._params.config.phase_equilibrium_formulation.phase_equil(self)
+
+    def components_in_phase(self, phase):
+        """
+        Generator method which yields components present in a given phase.
+
+        Args:
+            phase - phase for which to yield components
+
+        Yields:
+            components present in phase.
+        """
+        if self._params.config.phase_component_list is None:
+            # All components in all phases
+            for j in self._params.component_list:
+                yield j
+        else:
+            # Return only components for indicated phase
+            for j in self._params.config.phase_component_list[phase]:
+                yield j
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points

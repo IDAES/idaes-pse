@@ -269,7 +269,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was not "
+                           match="params Generic Property Package was not "
                            "provided with a state_definition configuration "
                            "argument. Please fix your property parameter "
                            "definition to include this configuration "
@@ -284,7 +284,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was not "
+                           match="params Generic Property Package was not "
                            "provided with an equation_of_state configuration "
                            "argument. Please fix your property parameter "
                            "definition to include this configuration "
@@ -300,7 +300,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was provided"
+                           match="params Generic Property Package was provided"
                            " with an invalid equation_of_state configuration "
                            "argument. Argument must be a dict with phases as "
                            "keys."):
@@ -316,7 +316,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was provided"
+                           match="params Generic Property Package was provided"
                            " with an invalid equation_of_state configuration "
                            "argument. A value must be present for each "
                            "phase."):
@@ -332,9 +332,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property unrecognised phase "
-                           "3 in equation_of_state configuration argument. "
-                           "Keys must be valid phases."):
+                           match="params Generic Property Package unrecognised"
+                           " phase 3 in equation_of_state configuration "
+                           "argument. Keys must be valid phases."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],

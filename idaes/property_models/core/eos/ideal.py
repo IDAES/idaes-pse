@@ -32,14 +32,14 @@ def dens_mol_phase(b, p):
     elif p == "Liq":
         return sum(b.mole_frac_phase_comp[p, j] *
                    get_method(b, "dens_mol_liq_comp")(b, j, b.temperature)
-                   for j in b._params.component_list)
+                   for j in b.components_in_phase(p))
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def enth_mol_phase(b, p):
     return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
-               for j in b._params.component_list)
+               for j in b.components_in_phase(p))
 
 
 def enth_mol_phase_comp(b, p, j):
@@ -53,7 +53,7 @@ def enth_mol_phase_comp(b, p, j):
 
 def entr_mol_phase(b, p):
     return sum(b.mole_frac_phase_comp[p, j]*b.entr_mol_phase_comp[p, j]
-               for j in b._params.component_list)
+               for j in b.components_in_phase(p))
 
 
 def entr_mol_phase_comp(b, p, j):
@@ -83,7 +83,7 @@ def fug_coeff_phase_comp(b, p, j):
 
 def gibbs_mol_phase(b, p):
     return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
-               for j in b._params.component_list)
+               for j in b.components_in_phase(p))
 
 
 def gibbs_mol_phase_comp(b, p, j):
