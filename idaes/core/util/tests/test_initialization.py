@@ -70,10 +70,10 @@ def test_fix_state_vars_basic(model):
     assert model.fs.sb.temperature.fixed
     assert model.fs.sb.temperature.value == 300
 
-    assert not flags[None, "component_flow", ("p1", "c1")]
-    assert not flags[None, "component_flow", ("p1", "c2")]
-    assert not flags[None, "component_flow", ("p2", "c1")]
-    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "component_flow_phase", ("p1", "c1")]
+    assert not flags[None, "component_flow_phase", ("p1", "c2")]
+    assert not flags[None, "component_flow_phase", ("p2", "c1")]
+    assert not flags[None, "component_flow_phase", ("p2", "c2")]
     assert not flags[None, "pressure", None]
     assert not flags[None, "temperature", None]
 
@@ -88,7 +88,7 @@ def test_fix_state_vars_None_value(model):
 def test_fix_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3,
                                      ("p2", "c2"): 4},
@@ -111,10 +111,10 @@ def test_fix_state_vars_guesses(model):
     assert model.fs.sb.temperature.fixed
     assert model.fs.sb.temperature.value == 500
 
-    assert not flags[None, "component_flow", ("p1", "c1")]
-    assert not flags[None, "component_flow", ("p1", "c2")]
-    assert not flags[None, "component_flow", ("p2", "c1")]
-    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "component_flow_phase", ("p1", "c1")]
+    assert not flags[None, "component_flow_phase", ("p1", "c2")]
+    assert not flags[None, "component_flow_phase", ("p2", "c1")]
+    assert not flags[None, "component_flow_phase", ("p2", "c2")]
     assert not flags[None, "pressure", None]
     assert not flags[None, "temperature", None]
 
@@ -122,7 +122,7 @@ def test_fix_state_vars_guesses(model):
 def test_fix_state_vars_partial_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3,
                                      ("p2", "c2"): 4}}
@@ -143,10 +143,10 @@ def test_fix_state_vars_partial_guesses(model):
     assert model.fs.sb.temperature.fixed
     assert model.fs.sb.temperature.value == 300
 
-    assert not flags[None, "component_flow", ("p1", "c1")]
-    assert not flags[None, "component_flow", ("p1", "c2")]
-    assert not flags[None, "component_flow", ("p2", "c1")]
-    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "component_flow_phase", ("p1", "c1")]
+    assert not flags[None, "component_flow_phase", ("p1", "c2")]
+    assert not flags[None, "component_flow_phase", ("p2", "c1")]
+    assert not flags[None, "component_flow_phase", ("p2", "c2")]
     assert not flags[None, "pressure", None]
     assert not flags[None, "temperature", None]
 
@@ -154,7 +154,7 @@ def test_fix_state_vars_partial_guesses(model):
 def test_fix_state_vars_guesses_mismatch_index(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3},
                   "pressure": 2e5,
@@ -186,11 +186,11 @@ def test_fix_state_vars_fixed_no_guesses(model):
     assert model.fs.sb.temperature.fixed
     assert model.fs.sb.temperature.value == 300
 
-    # Pressure and component_flow[p1, c1] should be True
-    assert flags[None, "component_flow", ("p1", "c1")]
-    assert not flags[None, "component_flow", ("p1", "c2")]
-    assert not flags[None, "component_flow", ("p2", "c1")]
-    assert not flags[None, "component_flow", ("p2", "c2")]
+    # Pressure and component_flow_phase[p1, c1] should be True
+    assert flags[None, "component_flow_phase", ("p1", "c1")]
+    assert not flags[None, "component_flow_phase", ("p1", "c2")]
+    assert not flags[None, "component_flow_phase", ("p2", "c1")]
+    assert not flags[None, "component_flow_phase", ("p2", "c2")]
     assert flags[None, "pressure", None]
     assert not flags[None, "temperature", None]
 
@@ -201,7 +201,7 @@ def test_fix_state_vars_fixed_guesses(model):
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
 
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3,
                                      ("p2", "c2"): 4},
@@ -224,11 +224,11 @@ def test_fix_state_vars_fixed_guesses(model):
     assert model.fs.sb.temperature.fixed
     assert model.fs.sb.temperature.value == 500
 
-    # Pressure and component_flow[p1, c1] should be True
-    assert flags[None, "component_flow", ("p1", "c1")]
-    assert not flags[None, "component_flow", ("p1", "c2")]
-    assert not flags[None, "component_flow", ("p2", "c1")]
-    assert not flags[None, "component_flow", ("p2", "c2")]
+    # Pressure and component_flow_phase[p1, c1] should be True
+    assert flags[None, "component_flow_phase", ("p1", "c1")]
+    assert not flags[None, "component_flow_phase", ("p1", "c2")]
+    assert not flags[None, "component_flow_phase", ("p2", "c1")]
+    assert not flags[None, "component_flow_phase", ("p2", "c2")]
     assert flags[None, "pressure", None]
     assert not flags[None, "temperature", None]
 
@@ -250,7 +250,7 @@ def test_revert_state_vars_basic(model):
 def test_revert_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3,
                                      ("p2", "c2"): 4},
@@ -307,7 +307,7 @@ def test_revert_state_vars_fixed_guesses(model):
     model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
     model.fs.sb.pressure.fix(1.5e5)
 
-    state_args = {"component_flow": {("p1", "c1"): 1,
+    state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                      ("p1", "c2"): 2,
                                      ("p2", "c1"): 3,
                                      ("p2", "c2"): 4},
@@ -334,9 +334,9 @@ def test_revert_state_vars_fixed_guesses(model):
 
 
 def test_revert_state_vars_flag_mismatch(model):
-    flags = {(None, 'component_flow', ('p1', 'c1')): False,
-             (None, 'component_flow', ('p1', 'c2')): False,
-             (None, 'component_flow', ('p2', 'c1')): False,
+    flags = {(None, 'component_flow_phase', ('p1', 'c1')): False,
+             (None, 'component_flow_phase', ('p1', 'c2')): False,
+             (None, 'component_flow_phase', ('p2', 'c1')): False,
              (None, 'pressure', None): False}
 
     with pytest.raises(ConfigurationError):
