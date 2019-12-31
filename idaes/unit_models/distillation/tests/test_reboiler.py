@@ -46,15 +46,16 @@ m.fs.properties_2 = BTXParameterBlock(default={"valid_phase":
 
 
 def test_build():
-    m.fs.R101 = Reboiler(default={"property_package": m.fs.properties})
+    m.fs.R101 = Reboiler(default={"property_package": m.fs.properties,
+                                  "has_pressure_change": True})
 
     assert len(m.fs.R101.config) == 9
 
     assert m.fs.R101.config.has_boilup_ratio
     assert m.fs.R101.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.R101.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.R101.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.R101.config.has_pressure_change
@@ -77,15 +78,16 @@ def test_build():
     assert hasattr(m.fs.R101.vapor_reboil, "temperature")
     assert hasattr(m.fs.R101.vapor_reboil, "pressure")
 
-    m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2})
+    m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2,
+                                       "has_pressure_change": True})
 
     assert len(m.fs.R101_FcTP.config) == 9
 
     assert m.fs.R101_FcTP.config.has_boilup_ratio
     assert m.fs.R101_FcTP.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.R101_FcTP.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.R101_FcTP.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.R101_FcTP.config.has_pressure_change
@@ -108,8 +110,8 @@ def test_build():
 
 def test_set_inputs():
 
-    assert number_variables(m.fs.R101) == 51
-    assert number_total_constraints(m.fs.R101) == 44
+    assert number_variables(m.fs.R101) == 49
+    assert number_total_constraints(m.fs.R101) == 42
 
     # Fix the reboiler variables
     m.fs.R101.boilup_ratio.fix(1)
@@ -125,8 +127,8 @@ def test_set_inputs():
 
     assert degrees_of_freedom(m.fs.R101) == 0
 
-    assert number_variables(m.fs.R101_FcTP) == 53
-    assert number_total_constraints(m.fs.R101_FcTP) == 47
+    assert number_variables(m.fs.R101_FcTP) == 51
+    assert number_total_constraints(m.fs.R101_FcTP) == 45
 
     # Fix the reboiler variables
     m.fs.R101_FcTP.boilup_ratio.fix(1)

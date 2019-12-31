@@ -53,15 +53,16 @@ m.fs.properties_2 = BTXParameterBlock(default={"valid_phase":
 def test_build_partial_condenser():
     m.fs.C101_partial = Condenser(
         default={"property_package": m.fs.properties,
-                 "condenser_type": CondenserType.partialCondenser})
+                 "condenser_type": CondenserType.partialCondenser,
+                 "has_pressure_change": True})
 
     assert len(m.fs.C101_partial.config) == 9
     assert m.fs.C101_partial.config.condenser_type ==\
         CondenserType.partialCondenser
     assert m.fs.C101_partial.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.C101_partial.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.C101_partial.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.C101_partial.config.has_pressure_change
@@ -97,15 +98,16 @@ def test_build_partial_condenser():
 
     m.fs.C101_partial_FcTP = Condenser(
         default={"property_package": m.fs.properties_2,
-                 "condenser_type": CondenserType.partialCondenser})
+                 "condenser_type": CondenserType.partialCondenser,
+                 "has_pressure_change": True})
 
     assert len(m.fs.C101_partial_FcTP.config) == 9
     assert m.fs.C101_partial_FcTP.config.condenser_type == \
         CondenserType.partialCondenser
     assert m.fs.C101_partial_FcTP.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.C101_partial_FcTP.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.C101_partial_FcTP.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.C101_partial_FcTP.config.has_pressure_change
@@ -134,8 +136,8 @@ def test_build_partial_condenser():
 def test_set_inputs():
 
     # Check variables and constraints when using FTPz
-    assert number_variables(m.fs.C101_partial) == 51
-    assert number_total_constraints(m.fs.C101_partial) == 43
+    assert number_variables(m.fs.C101_partial) == 49
+    assert number_total_constraints(m.fs.C101_partial) == 41
 
     # Fix the partial condenser variables
     m.fs.C101_partial.reflux_ratio.fix(1)
@@ -152,8 +154,8 @@ def test_set_inputs():
     assert degrees_of_freedom(m.fs.C101_partial) == 0
 
     # Check variables and constraints when using FcTP
-    assert number_variables(m.fs.C101_partial_FcTP) == 53
-    assert number_total_constraints(m.fs.C101_partial_FcTP) == 46
+    assert number_variables(m.fs.C101_partial_FcTP) == 51
+    assert number_total_constraints(m.fs.C101_partial_FcTP) == 44
 
     # Fix the partial condenser variables
     m.fs.C101_partial_FcTP.reflux_ratio.fix(1)

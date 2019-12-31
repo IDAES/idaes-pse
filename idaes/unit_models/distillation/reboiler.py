@@ -29,6 +29,7 @@ from pyomo.environ import Reference, Expression, Var, Constraint, \
     TerminationCondition
 
 # Import IDAES cores
+from idaes.logger import getIdaesLogger, getInitLogger, condition
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
@@ -40,7 +41,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("Reboiler")
@@ -62,7 +63,7 @@ constructed,
 **True** - include construction of boilup ratio constraint,
 **False** - exclude construction of boilup ratio constraint}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
@@ -74,7 +75,7 @@ constructed,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
@@ -98,7 +99,7 @@ constructed,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
@@ -191,8 +192,9 @@ see property package for documentation.}"""))
         # Add object reference to variables of the control volume
         # Reference to the heat duty
         add_object_reference(self, "heat_duty", self.control_volume.heat)
-        # Reference to the pressure drop
-        add_object_reference(self, "deltaP", self.control_volume.deltaP)
+        # Reference to the pressure drop (if set to True)
+        if self.config.has_pressure_change:
+            add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
     def _make_ports(self):
 
@@ -420,6 +422,8 @@ see property package for documentation.}"""))
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
 
+        init_log = getInitLogger(self.name, outlvl)
+
         # Initialize the inlet and outlet state blocks
         self.control_volume.initialize(outlvl=outlvl)
 
@@ -433,5 +437,5 @@ see property package for documentation.}"""))
 
             if solver_output.solver.termination_condition == \
                     TerminationCondition.optimal:
-                _log.info('{} Reboiler Initialisation Complete.'
-                          .format(self.name))
+                init_log.log(4, 'Reboiler Initialisation Complete, {}.'
+                             .format(condition(solver_output)))
