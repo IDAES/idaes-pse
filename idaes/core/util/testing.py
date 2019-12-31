@@ -154,7 +154,7 @@ class StateTestBlockData(StateBlockData):
             raise NotImplementedError
 
     def define_state_vars(self):
-        return {"component_flow": self.flow_mol_phase_comp,
+        return {"component_flow_phase": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
