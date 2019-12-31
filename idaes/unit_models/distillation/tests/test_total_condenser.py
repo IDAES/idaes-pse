@@ -65,7 +65,7 @@ def test_config():
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.unit.config.has_pressure_change
+    assert not m.fs.unit.config.has_pressure_change
 
 
 ###############################################################################

@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import PropertyPackageError, ConfigurationError
 
 _log = getIdaesLogger(__name__)
 
@@ -172,13 +172,26 @@ see property package for documentation.}"""))
 
             self._make_splits_total_condenser()
 
-            # Set condition for total condenser (T_cond = T_bubble) (Option 1)
+            if hasattr(self.control_volume.properties_out[0],
+                       "temperature_bubble") and not \
+               self.control_volume.properties_out[:].temperature.fixed:
+                # Option 1: condition for total condenser (T_cond = T_bubble)
+                def rule_total_cond(self, t):
+                    return self.control_volume.properties_out[t].\
+                        temperature == self.control_volume.properties_out[t].\
+                        temperature_bubble
+                self.eq_total_cond_spec = Constraint(self.flowsheet().time,
+                                                     rule=rule_total_cond)
+            elif self.control_volume.properties_out[:].temperature.fixed:
+                # Option 2: User sets the outlet temperature
+                pass
+            else:
+                raise ConfigurationError(
+                    "Total condenser needs either the outlet temperature "
+                    "set to the bubble point which is not available from the "
+                    "property package or the user needs to specify the outlet "
+                    "temperature.")
 
-            def rule_total_cond(self, t):
-                return self.control_volume.properties_out[t].temperature == \
-                    self.control_volume.properties_out[t].temperature_bubble
-            self.eq_total_cond_spec = Constraint(self.flowsheet().time,
-                                                 rule=rule_total_cond)
         else:
             self._make_splits_partial_condenser()
 
@@ -218,7 +231,7 @@ see property package for documentation.}"""))
         # Create references and populate the reflux, distillate ports
         for k in member_list:
             # Create references and populate the intensive variables
-            if "flow" not in k:
+            if "flow" not in member_list[k].local_name:
                 if not member_list[k].is_indexed():
                     var = self.control_volume.properties_out[:].\
                         component(member_list[k].local_name)
@@ -232,7 +245,7 @@ see property package for documentation.}"""))
                 # add the reference and variable name to the distillate port
                 self.distillate.add(Reference(var), k)
 
-            else:
+            elif "flow" in member_list[k].local_name:
                 # Create references and populate the extensive variables
                 # This is for vars that are not indexed
                 if not member_list[k].is_indexed():
@@ -258,50 +271,29 @@ see property package for documentation.}"""))
                     self.distillate.add(self.e_distillate_flow, k)
                 else:
                     # Create references and populate the extensive variables
-                    # This is for vars that are indexed
+                    # This is for vars that are indexed by phase, comp or both.
                     index_set = member_list[k].index_set()
 
-                    if "phase" not in k:
+                    def rule_reflux_flow(self, t, *args):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name)[args] * \
+                            (self.reflux_ratio / (1 + self.reflux_ratio))
+                    self.e_reflux_flow = Expression(self.flowsheet().time,
+                                                    index_set,
+                                                    rule=rule_reflux_flow)
+                    self.reflux.add(self.e_reflux_flow, k)
 
-                        def rule_reflux_flow(self, t, i):
-                            return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[i] * \
-                                (self.reflux_ratio / (1 + self.reflux_ratio))
-                        self.e_reflux_flow = Expression(self.flowsheet().time,
-                                                        index_set,
-                                                        rule=rule_reflux_flow)
-                        self.reflux.add(self.e_reflux_flow, k)
+                    def rule_distillate_flow(self, t, *args):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name)[args] / \
+                            (1 + self.reflux_ratio)
+                    self.e_distillate_flow = Expression(
+                        self.flowsheet().time, index_set,
+                        rule=rule_distillate_flow)
+                    self.distillate.add(self.e_distillate_flow, k)
 
-                        def rule_distillate_flow(self, t, i):
-                            return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[i] / \
-                                (1 + self.reflux_ratio)
-                        self.e_distillate_flow = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_distillate_flow)
-                        self.distillate.add(self.e_distillate_flow, k)
-
-                    elif "phase" in k:
-                        def rule_reflux_flow(self, t, p, i):
-                            return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[p, i] * \
-                                (self.reflux_ratio / (1 + self.reflux_ratio))
-                        self.e_reflux_flow = Expression(self.flowsheet().time,
-                                                        index_set,
-                                                        rule=rule_reflux_flow)
-                        self.reflux.add(self.e_reflux_flow, k)
-
-                        def rule_distillate_flow(self, t, p, i):
-                            return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[p, i] / \
-                                (1 + self.reflux_ratio)
-                        self.e_distillate_flow = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_distillate_flow)
-                        self.distillate.add(self.e_distillate_flow, k)
-
-                    else:
-                        raise Exception("Unrecognized names for flow variables.")
+            else:
+                raise Exception("Unrecognized names for flow variables.")
 
     def _make_splits_partial_condenser(self):
         # Get dict of Port members and names
