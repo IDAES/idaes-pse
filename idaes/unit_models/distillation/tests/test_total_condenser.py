@@ -11,7 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for total condenser unit model.
+Tests for total condenser unit model.Tests 2 sets of state vars using the ideal
+property package (FTPz and FcTP).
 
 Author: Jaffer Ghouse
 """
@@ -26,7 +27,8 @@ from idaes.unit_models.distillation.condenser import CondenserType
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints
+    number_variables, number_total_constraints, number_unused_variables, \
+    fixed_variables_set, activated_constraints_set
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock
 
@@ -34,17 +36,6 @@ from idaes.core.util.testing import get_default_solver, \
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
-
-# m.fs.properties = BTXParameterBlock(default={"valid_phase":
-#                                              ('Liq', 'Vap'),
-#                                              "activity_coeff_model":
-#                                              "Ideal"})
-# m.fs.properties_2 = BTXParameterBlock(default={"valid_phase":
-#                                                ('Liq', 'Vap'),
-#                                                "activity_coeff_model":
-#                                                "Ideal",
-#                                                "state_vars":
-#                                                "FcTP"})
 
 
 def test_config():
@@ -55,9 +46,10 @@ def test_config():
 
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
-                 "condenser_type": CondenserType.totalCondenser})
+                 "condenser_type": CondenserType.totalCondenser,
+                 "condenser_spec": "custom_temperature"})
 
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 10
     assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.useDefault
@@ -68,193 +60,255 @@ def test_config():
     assert not m.fs.unit.config.has_pressure_change
 
 
-###############################################################################
+class TestBTXIdeal(object):
+    @pytest.fixture(scope="class")
+    def btx_ftpz(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal"})
 
-# def test_build_total_condenser():
-#     m.fs.C101_total = Condenser(
-#         default={"property_package": m.fs.properties,
-#                  "condenser_type": CondenserType.totalCondenser,
-#                  "has_pressure_change": True})
-#
-#     assert len(m.fs.C101_total.config) == 9
-#     assert m.fs.C101_total.config.condenser_type == CondenserType.totalCondenser
-#     assert m.fs.C101_total.config.material_balance_type == \
-#         MaterialBalanceType.useDefault
-#     assert m.fs.C101_total.config.energy_balance_type == \
-#         EnergyBalanceType.useDefault
-#     assert m.fs.C101_total.config.momentum_balance_type == \
-#         MomentumBalanceType.pressureTotal
-#     assert m.fs.C101_total.config.has_pressure_change
-#
-#     assert hasattr(m.fs.C101_total, "reflux_ratio")
-#     assert hasattr(m.fs.C101_total, "eq_total_cond_spec")
-#
-#     assert hasattr(m.fs.C101_total, "inlet")
-#
-#     assert hasattr(m.fs.C101_total.inlet, "flow_mol")
-#     assert hasattr(m.fs.C101_total.inlet, "mole_frac_comp")
-#     assert hasattr(m.fs.C101_total.inlet, "temperature")
-#     assert hasattr(m.fs.C101_total.inlet, "pressure")
-#
-#     assert hasattr(m.fs.C101_total, "reflux")
-#
-#     assert hasattr(m.fs.C101_total.reflux, "flow_mol")
-#     assert hasattr(m.fs.C101_total.reflux, "mole_frac_comp")
-#     assert hasattr(m.fs.C101_total.reflux, "temperature")
-#     assert hasattr(m.fs.C101_total.reflux, "pressure")
-#
-#     assert hasattr(m.fs.C101_total, "distillate")
-#     assert hasattr(m.fs.C101_total.distillate, "flow_mol")
-#     assert hasattr(m.fs.C101_total.distillate, "mole_frac_comp")
-#     assert hasattr(m.fs.C101_total.distillate, "temperature")
-#     assert hasattr(m.fs.C101_total.distillate, "pressure")
-#
-#     m.fs.C101_total_FcTP = Condenser(
-#         default={"property_package": m.fs.properties_2,
-#                  "condenser_type": CondenserType.totalCondenser,
-#                  "has_pressure_change": True})
-#
-#     assert len(m.fs.C101_total_FcTP.config) == 9
-#     assert m.fs.C101_total_FcTP.config.condenser_type == \
-#         CondenserType.totalCondenser
-#     assert m.fs.C101_total_FcTP.config.material_balance_type == \
-#         MaterialBalanceType.useDefault
-#     assert m.fs.C101_total_FcTP.config.energy_balance_type == \
-#         EnergyBalanceType.useDefault
-#     assert m.fs.C101_total_FcTP.config.momentum_balance_type == \
-#         MomentumBalanceType.pressureTotal
-#     assert m.fs.C101_total_FcTP.config.has_pressure_change
-#
-#     assert hasattr(m.fs.C101_total_FcTP, "reflux_ratio")
-#     assert hasattr(m.fs.C101_total_FcTP, "eq_total_cond_spec")
-#
-#     assert hasattr(m.fs.C101_total_FcTP, "inlet")
-#
-#     assert hasattr(m.fs.C101_total_FcTP.inlet, "flow_mol_comp")
-#     assert hasattr(m.fs.C101_total_FcTP.inlet, "temperature")
-#     assert hasattr(m.fs.C101_total_FcTP.inlet, "pressure")
-#
-#     assert hasattr(m.fs.C101_total_FcTP, "reflux")
-#
-#     assert hasattr(m.fs.C101_total_FcTP.reflux, "flow_mol_comp")
-#     assert hasattr(m.fs.C101_total_FcTP.reflux, "temperature")
-#     assert hasattr(m.fs.C101_total_FcTP.reflux, "pressure")
-#
-#     assert hasattr(m.fs.C101_total_FcTP, "distillate")
-#     assert hasattr(m.fs.C101_total_FcTP.distillate, "flow_mol_comp")
-#     assert hasattr(m.fs.C101_total_FcTP.distillate, "temperature")
-#     assert hasattr(m.fs.C101_total_FcTP.distillate, "pressure")
-#
-#
-# def test_set_inputs():
-#
-#     # Check variables and constraints when using FTPz
-#     assert number_variables(m.fs.C101_total) == 49
-#     assert number_total_constraints(m.fs.C101_total) == 42
-#
-#     # Fix the partial condenser variables
-#     m.fs.C101_total.reflux_ratio.fix(1)
-#     m.fs.C101_total.deltaP.fix(0)
-#
-#     # Fix the inputs (typically this will be the outlet vapor from the top tray)
-#     m.fs.C101_total.inlet.flow_mol.fix(1)
-#     m.fs.C101_total.inlet.temperature.fix(375)
-#     m.fs.C101_total.inlet.pressure.fix(101325)
-#     m.fs.C101_total.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-#     m.fs.C101_total.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-#
-#     assert degrees_of_freedom(m.fs.C101_total) == 0
-#
-#     # Check variables and constraints when using FcTP
-#     assert number_variables(m.fs.C101_total_FcTP) == 51
-#     assert number_total_constraints(m.fs.C101_total_FcTP) == 45
-#
-#     # Fix the partial condenser variables
-#     m.fs.C101_total_FcTP.reflux_ratio.fix(1)
-#     m.fs.C101_total_FcTP.deltaP.fix(0)
-#
-#     # Fix the inputs (typically this will be the outlet vapor from the top tray)
-#     m.fs.C101_total_FcTP.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
-#     m.fs.C101_total_FcTP.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
-#     m.fs.C101_total_FcTP.inlet.temperature.fix(375)
-#     m.fs.C101_total_FcTP.inlet.pressure.fix(101325)
-#
-#     assert degrees_of_freedom(m.fs.C101_total_FcTP) == 0
-#
-#
-# def test_solve():
-#     # Test the solve to optimality for FTPz state vars
-#     m.fs.C101_total.initialize(solver=solver, outlvl=1)
-#
-#     solve_status = solver.solve(m.fs.C101_total)
-#
-#     assert solve_status.solver.termination_condition == \
-#         TerminationCondition.optimal
-#     assert solve_status.solver.status == SolverStatus.ok
-#
-#     # Test the solve to optimality for FcTP state vars
-#     m.fs.C101_total_FcTP.initialize(solver=solver, outlvl=1)
-#
-#     solve_status = solver.solve(m.fs.C101_total_FcTP)
-#
-#     assert solve_status.solver.termination_condition == \
-#         TerminationCondition.optimal
-#     assert solve_status.solver.status == SolverStatus.ok
-#
-#
-# def test_solution():
-#
-#     # Total condenser when using FTPz
-#     # Reflux port
-#     assert (pytest.approx(0.4999, abs=1e-3) ==
-#             value(m.fs.C101_total.reflux.flow_mol[0]))
-#     assert (pytest.approx(0.5, abs=1e-3) ==
-#             value(m.fs.C101_total.reflux.mole_frac_comp[0, "benzene"]))
-#     assert (pytest.approx(0.5, abs=1e-3) ==
-#             value(m.fs.C101_total.reflux.mole_frac_comp[0, "toluene"]))
-#     assert (pytest.approx(365.347, abs=1e-3) ==
-#             value(m.fs.C101_total.reflux.temperature[0]))
-#     assert (pytest.approx(101325, abs=1e-3) ==
-#             value(m.fs.C101_total.reflux.pressure[0]))
-#
-#     # Distillate port
-#     assert (pytest.approx(0.4999, abs=1e-3) ==
-#             value(m.fs.C101_total.distillate.flow_mol[0]))
-#     assert (pytest.approx(0.5, abs=1e-3) ==
-#             value(m.fs.C101_total.distillate.mole_frac_comp[0, "benzene"]))
-#     assert (pytest.approx(0.5, abs=1e-3) ==
-#             value(m.fs.C101_total.distillate.mole_frac_comp[0, "toluene"]))
-#     assert (pytest.approx(365.347, abs=1e-3) ==
-#             value(m.fs.C101_total.distillate.temperature[0]))
-#     assert (pytest.approx(101325, abs=1e-3) ==
-#             value(m.fs.C101_total.distillate.pressure[0]))
-#
-#     # Unit level
-#     assert (pytest.approx(-33711.313, abs=1e-3) ==
-#             value(m.fs.C101_total.heat_duty[0]))
-#
-#     # Total condenser when using FcTP
-#     # Reflux port
-#     assert (pytest.approx(0.25, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.reflux.flow_mol_comp[0, "benzene"]))
-#     assert (pytest.approx(0.25, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.reflux.flow_mol_comp[0, "toluene"]))
-#     assert (pytest.approx(365.347, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.reflux.temperature[0]))
-#     assert (pytest.approx(101325, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.reflux.pressure[0]))
-#
-#     # Distillate port
-#     assert (pytest.approx(0.25, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.distillate.flow_mol_comp[0, "benzene"]))
-#     assert (pytest.approx(0.25, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.distillate.flow_mol_comp[0, "toluene"]))
-#     assert (pytest.approx(365.347, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.distillate.temperature[0]))
-#     assert (pytest.approx(101325, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.distillate.pressure[0]))
-#
-#     # Unit level
-#     assert (pytest.approx(-33711.295, abs=1e-3) ==
-#             value(m.fs.C101_total_FcTP.heat_duty[0]))
+        m.fs.unit = Condenser(
+            default={"property_package": m.fs.properties,
+                     "condenser_type": CondenserType.totalCondenser,
+                     "condenser_spec": "at_bubble_point",
+                     "has_pressure_change": True})
+
+        return m
+
+    @pytest.fixture(scope="class")
+    def btx_fctp(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal",
+                                                     "state_vars": "FcTP"})
+
+        m.fs.unit = Condenser(
+            default={"property_package": m.fs.properties,
+                     "condenser_type": CondenserType.totalCondenser,
+                     "condenser_spec": "at_bubble_point",
+                     "has_pressure_change": True})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, btx_ftpz, btx_fctp):
+        assert hasattr(btx_ftpz.fs.unit, "reflux_ratio")
+        assert hasattr(btx_ftpz.fs.unit, "eq_total_cond_spec")
+
+        assert hasattr(btx_ftpz.fs.unit, "inlet")
+
+        assert hasattr(btx_ftpz.fs.unit.inlet, "flow_mol")
+        assert hasattr(btx_ftpz.fs.unit.inlet, "mole_frac_comp")
+        assert hasattr(btx_ftpz.fs.unit.inlet, "temperature")
+        assert hasattr(btx_ftpz.fs.unit.inlet, "pressure")
+
+        assert hasattr(btx_ftpz.fs.unit, "reflux")
+
+        assert hasattr(btx_ftpz.fs.unit.reflux, "flow_mol")
+        assert hasattr(btx_ftpz.fs.unit.reflux, "mole_frac_comp")
+        assert hasattr(btx_ftpz.fs.unit.reflux, "temperature")
+        assert hasattr(btx_ftpz.fs.unit.reflux, "pressure")
+
+        assert hasattr(btx_ftpz.fs.unit, "distillate")
+        assert hasattr(btx_ftpz.fs.unit.distillate, "flow_mol")
+        assert hasattr(btx_ftpz.fs.unit.distillate, "mole_frac_comp")
+        assert hasattr(btx_ftpz.fs.unit.distillate, "temperature")
+        assert hasattr(btx_ftpz.fs.unit.distillate, "pressure")
+
+        assert number_variables(btx_ftpz.fs.unit) == 49
+        assert number_total_constraints(btx_ftpz.fs.unit) == 42
+        assert number_unused_variables(btx_ftpz) == 1
+
+        assert hasattr(btx_fctp.fs.unit, "reflux_ratio")
+        assert hasattr(btx_fctp.fs.unit, "eq_total_cond_spec")
+
+        assert hasattr(btx_fctp.fs.unit, "inlet")
+
+        assert hasattr(btx_fctp.fs.unit.inlet, "flow_mol_comp")
+        assert hasattr(btx_fctp.fs.unit.inlet, "temperature")
+        assert hasattr(btx_fctp.fs.unit.inlet, "pressure")
+
+        assert hasattr(btx_fctp.fs.unit, "reflux")
+
+        assert hasattr(btx_fctp.fs.unit.reflux, "flow_mol_comp")
+        assert hasattr(btx_fctp.fs.unit.reflux, "temperature")
+        assert hasattr(btx_fctp.fs.unit.reflux, "pressure")
+
+        assert hasattr(btx_fctp.fs.unit, "distillate")
+        assert hasattr(btx_fctp.fs.unit.distillate, "flow_mol_comp")
+        assert hasattr(btx_fctp.fs.unit.distillate, "temperature")
+        assert hasattr(btx_fctp.fs.unit.distillate, "pressure")
+
+        assert number_variables(btx_fctp.fs.unit) == 51
+        assert number_total_constraints(btx_fctp.fs.unit) == 45
+        assert number_unused_variables(btx_fctp) == 1
+
+    def test_dof(self, btx_ftpz, btx_fctp):
+
+        # Fix the total condenser variables (FTPz)
+        btx_ftpz.fs.unit.reflux_ratio.fix(1)
+        btx_ftpz.fs.unit.deltaP.fix(0)
+
+        # Fix the inputs (typically this will be the vapor from the top tray)
+        btx_ftpz.fs.unit.inlet.flow_mol.fix(1)
+        btx_ftpz.fs.unit.inlet.temperature.fix(375)
+        btx_ftpz.fs.unit.inlet.pressure.fix(101325)
+        btx_ftpz.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx_ftpz.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        assert degrees_of_freedom(btx_ftpz) == 0
+
+        # Fix the total condenser variables (FcTP)
+        btx_fctp.fs.unit.reflux_ratio.fix(1)
+        btx_fctp.fs.unit.deltaP.fix(0)
+
+        # Fix the inputs (typically this will be the outlet vapor from the top tray)
+        btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
+        btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
+        btx_fctp.fs.unit.inlet.temperature.fix(375)
+        btx_fctp.fs.unit.inlet.pressure.fix(101325)
+
+        assert degrees_of_freedom(btx_fctp) == 0
+
+    @pytest.mark.initialization
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, btx_ftpz, btx_fctp):
+        orig_fixed_vars = fixed_variables_set(btx_ftpz)
+        orig_act_consts = activated_constraints_set(btx_ftpz)
+
+        btx_ftpz.fs.unit.initialize(solver=solver)
+
+        assert degrees_of_freedom(btx_ftpz) == 0
+
+        fin_fixed_vars = fixed_variables_set(btx_ftpz)
+        fin_act_consts = activated_constraints_set(btx_ftpz)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+        orig_fixed_vars = fixed_variables_set(btx_fctp)
+        orig_act_consts = activated_constraints_set(btx_fctp)
+
+        btx_fctp.fs.unit.initialize(solver=solver)
+
+        assert degrees_of_freedom(btx_fctp) == 0
+
+        fin_fixed_vars = fixed_variables_set(btx_fctp)
+        fin_act_consts = activated_constraints_set(btx_fctp)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, btx_ftpz, btx_fctp):
+        results = solver.solve(btx_ftpz)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        results = solver.solve(btx_fctp)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, btx_ftpz, btx_fctp):
+        # Reflux port
+        assert (pytest.approx(0.4999, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reflux.flow_mol[0]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reflux.mole_frac_comp[0, "benzene"]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reflux.mole_frac_comp[0, "toluene"]))
+        assert (pytest.approx(365.347, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reflux.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reflux.pressure[0]))
+
+        # Distillate port
+        assert (pytest.approx(0.4999, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.distillate.flow_mol[0]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.distillate.mole_frac_comp[0, "benzene"]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.distillate.mole_frac_comp[0, "toluene"]))
+        assert (pytest.approx(365.347, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.distillate.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.distillate.pressure[0]))
+
+        # Unit level
+        assert (pytest.approx(-33711.313, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.heat_duty[0]))
+
+        # Reflux port
+        assert (pytest.approx(0.25, abs=1e-3) ==
+                value(btx_fctp.fs.unit.reflux.flow_mol_comp[0, "benzene"]))
+        assert (pytest.approx(0.25, abs=1e-3) ==
+                value(btx_fctp.fs.unit.reflux.flow_mol_comp[0, "toluene"]))
+        assert (pytest.approx(365.347, abs=1e-3) ==
+                value(btx_fctp.fs.unit.reflux.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_fctp.fs.unit.reflux.pressure[0]))
+
+        # Distillate port
+        assert (pytest.approx(0.25, abs=1e-3) ==
+                value(btx_fctp.fs.unit.distillate.flow_mol_comp[0, "benzene"]))
+        assert (pytest.approx(0.25, abs=1e-3) ==
+                value(btx_fctp.fs.unit.distillate.flow_mol_comp[0, "toluene"]))
+        assert (pytest.approx(365.347, abs=1e-3) ==
+                value(btx_fctp.fs.unit.distillate.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_fctp.fs.unit.distillate.pressure[0]))
+
+        # Unit level
+        assert (pytest.approx(-33711.295, abs=1e-3) ==
+                value(btx_fctp.fs.unit.heat_duty[0]))
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx_ftpz, btx_fctp):
+        assert abs(value(btx_ftpz.fs.unit.inlet.flow_mol[0] -
+                         (btx_ftpz.fs.unit.reflux.flow_mol[0] +
+                          btx_ftpz.fs.unit.distillate.flow_mol[0]))) <= 1e-6
+
+        assert abs(value(btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"] +
+                         btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"] -
+                         (btx_fctp.fs.unit.reflux.flow_mol_comp[0, "benzene"] +
+                          btx_fctp.fs.unit.reflux.flow_mol_comp[0, "toluene"] +
+                          btx_fctp.fs.unit.distillate.
+                          flow_mol_comp[0, "benzene"] +
+                          btx_fctp.fs.unit.distillate.
+                          flow_mol_comp[0, "toluene"]))) <= 1e-6
+
+    @pytest.mark.ui
+    def test_report(self, btx_ftpz, btx_fctp):
+        btx_ftpz.fs.unit.report()
+        btx_fctp.fs.unit.report()
