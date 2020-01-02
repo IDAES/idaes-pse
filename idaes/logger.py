@@ -300,8 +300,8 @@ def solver_log(logger, level=logging.ERROR):
     thread to log solver output while the solver is running"""
     # wait 3 seconds to  join thread.  Should be plenty of time.  In case
     # something goes horibly wrong though don't want to hang.  The logging
-    # trhead is daemonic, so it will shut down with the main process even if it
-    # stays around for some mysterious reason.
+    # thread is daemonic, so it will shut down with the main process even if it
+    # stays around for some mysterious reason while the model is running.
     join_timeout = 3
     if not solver_capture():
         yield
