@@ -56,9 +56,9 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as _set_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 def _define_turbine_multistage_config(config):
@@ -604,7 +604,7 @@ class TurbineMultistageData(UnitModelBlockData):
         self.outlet_stage.flow_coeff.fix(value)
 
     def initialize(
-        self, outlvl=6, solver="ipopt", optarg={"tol": 1e-6, "max_iter": 35}
+        self, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6, "max_iter": 35}
     ):
         """
         Initialize
@@ -613,7 +613,8 @@ class TurbineMultistageData(UnitModelBlockData):
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl)
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -708,16 +709,15 @@ class TurbineMultistageData(UnitModelBlockData):
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        init_log.log(4, "Solve full multistage turbine")
+        init_log.info_less("Solve full multistage turbine")
         self.inlet_split.inlet.flow_mol.unfix()
-        res = slvr.solve(self, tee=init_tee(init_log))
-
-        init_log.log(
-            3,
+        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
+            res = slvr.solve(self, tee=idaeslog.solver_tee(init_log))
+        init_log.info(
             "Flow guess: {}, Initialized Flow: {}".format(
                 flow_guess, self.outlet_stage.inlet.flow_mol[0].value
             ),
         )
-        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
+        init_log.info_least(5, "Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)
