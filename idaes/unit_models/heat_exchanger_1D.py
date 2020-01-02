@@ -579,7 +579,7 @@ thickness of the tube""",
         blk,
         shell_state_args=None,
         tube_state_args=None,
-        outlvl=ideaslog.NOTSET,
+        outlvl=idaeslog.NOTSET,
         solver="ipopt",
         optarg={"tol": 1e-6},
     ):
@@ -600,7 +600,7 @@ thickness of the tube""",
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solver_log = idaeslog.getSolverLogger(blk.name, outlvl)
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl)
 
         opt = SolverFactory(solver)
         opt.options = optarg
@@ -653,7 +653,7 @@ thickness of the tube""",
             blk.tube_heat_transfer_eq.activate()
 
             with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = opt.solve(blk, tee=idaes.solver_tee(init_log))
+                res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
             init_log.info_less(
                 "Initialization Step 3 {}.".format(idaeslog.condition(res))
             )
