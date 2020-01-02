@@ -1340,31 +1340,31 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_3, Port)
         assert isinstance(m.fs.sep.outlet_4, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_3.component_flow[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_3.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_3.temperature[0]) == 300
         assert value(m.fs.sep.outlet_3.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_4.component_flow[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_4.temperature[0]) == 300
         assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
 
@@ -1393,17 +1393,17 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
@@ -1432,17 +1432,17 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 

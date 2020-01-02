@@ -2074,17 +2074,17 @@ def test_get_stream_table_contents():
 
     df = m.fs.cv._get_stream_table_contents()
 
-    assert df.loc["component_flow ('p1', 'c1')"]["In"] == 2
-    assert df.loc["component_flow ('p1', 'c2')"]["In"] == 2
-    assert df.loc["component_flow ('p2', 'c1')"]["In"] == 2
-    assert df.loc["component_flow ('p2', 'c2')"]["In"] == 2
+    assert df.loc["component_flow_phase ('p1', 'c1')"]["In"] == 2
+    assert df.loc["component_flow_phase ('p1', 'c2')"]["In"] == 2
+    assert df.loc["component_flow_phase ('p2', 'c1')"]["In"] == 2
+    assert df.loc["component_flow_phase ('p2', 'c2')"]["In"] == 2
     assert df.loc["pressure"]["In"] == 1e5
     assert df.loc["temperature"]["In"] == 300
 
-    assert df.loc["component_flow ('p1', 'c1')"]["Out"] == 2
-    assert df.loc["component_flow ('p1', 'c2')"]["Out"] == 2
-    assert df.loc["component_flow ('p2', 'c1')"]["Out"] == 2
-    assert df.loc["component_flow ('p2', 'c2')"]["Out"] == 2
+    assert df.loc["component_flow_phase ('p1', 'c1')"]["Out"] == 2
+    assert df.loc["component_flow_phase ('p1', 'c2')"]["Out"] == 2
+    assert df.loc["component_flow_phase ('p2', 'c1')"]["Out"] == 2
+    assert df.loc["component_flow_phase ('p2', 'c2')"]["Out"] == 2
     assert df.loc["pressure"]["Out"] == 1e5
     assert df.loc["temperature"]["Out"] == 300
 
@@ -2188,7 +2188,7 @@ def test_get_performance_contents_elemental():
             'Phase Fraction [p1]', 'Phase Fraction [p2]',
             'Enthalpy Holdup [p1]', 'Enthalpy Holdup [p2]',
             'Enthalpy Accumulation [p1]', 'Enthalpy Accumulation [p2]',
-            'Elemental Holdup [H]', 
+            'Elemental Holdup [H]',
             'Elemental Holdup [He]',
             'Elemental Holdup [Li]',
             'Elemental Accumulation [H]',
