@@ -144,9 +144,10 @@ The solver output can be captured and directed to a logger using the
 ``sys.stderr`` to a string buffer.  The logger argument is the logger to log to,
 and the level argument is the level to sent records to the logger at. The output
 is logged by a separate logging thread, so output can be logged as it is produced
-instead of after the solve completes.  Is the  ``solver_log()`` context manager
+instead of after the solve completes.  If the  ``solver_log()`` context manager
 is used, it can be turned on and off by using the ``idaes.logger.solver_capture_on()``
-and ``idaes.logger.solver_capture_on()`` functions.
+and ``idaes.logger.solver_capture_off()`` functions.  If the capture is off solver
+output won't be logged and it will go to standard output as usual.
 
 *Example*
 
