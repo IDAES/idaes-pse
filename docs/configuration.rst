@@ -32,6 +32,10 @@ provided.
       level = "INFO"
       propagate = true
       handlers = ["console"]
+    [logging.loggers."idaes.solve"]
+      level = "INFO"
+      propagate = false
+      handlers = ["console"]
     [logging.loggers."idaes.init"]
       level = "INFO"
       propagate = false
@@ -81,14 +85,16 @@ This section of the file configures IDAES loggers.  Once the configuration is
 read, Python's standard ``logging.config.dictConfig()`` is used to set the logger
 configuration.  See Python's logging documentation for more information.
 
-IDAES has three main loggers defined in the standard configuration, although
+IDAES has four main loggers defined in the standard configuration, although
 additional loggers can be added if desired.  The standard loggers are:
 
   1. idaes, this is the root logger of most IDAES logging, unless otherwise noted.
 
   2. idaes.init, this is the root of IDAES initialization loggers.
 
-  3. idaes.model, this is the root of model loggers.  Model loggers are usually used models written using the IDAES framework, but not part of the ``idaes`` package.
+  3. idaes.solve, this is the root of IDAES solver loggers and solver information.
+
+  4. idaes.model, this is the root of model loggers.  Model loggers are usually used models written using the IDAES framework, but not part of the ``idaes`` package.
 
 use_idaes_solvers
 ~~~~~~~~~~~~~~~~~
