@@ -21,12 +21,13 @@ different state variables and the associated splits.
 __author__ = "Jaffer Ghouse"
 
 import logging
+from pandas import DataFrame
 from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, \
+from pyomo.environ import Reference, Expression, Var, Constraint, value, \
     TerminationCondition
 
 # Import IDAES cores
@@ -62,6 +63,17 @@ class CondenserData(UnitModelBlockData):
         default=CondenserType.totalCondenser,
         domain=In(CondenserType),
         description="Type of condenser flag",
+        doc="""Indicates what type of condenser should be constructed,
+**default** - CondenserType.totalCondenser.
+**Valid values:** {
+**CondenserType.totalCondenser** - Incoming vapor from top tray is condensed
+to all liquid,
+**CondenserType.partialCondenser** - Incoming vapor from top tray is
+partially condensed to a vapor and liquid stream.}"""))
+    CONFIG.declare("condenser_spec", ConfigValue(
+        default=None,
+        domain=In([None, "at_bubble_point", "custom_temperature"]),
+        description="Temperature spec for the condenser",
         doc="""Indicates what type of condenser should be constructed,
 **default** - CondenserType.totalCondenser.
 **Valid values:** {
@@ -144,6 +156,16 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(CondenserData, self).build()
 
+        # Check config arguments
+        if self.config.condenser_spec is None:
+            raise ConfigurationError("condenser_spec config argument "
+                                     "has not been specified. Please select "
+                                     "a valid option.")
+        if (self.config.condenser_type == CondenserType.partialCondenser) and \
+                (self.config.condenser_spec == "at_bubble_point"):
+            raise ConfigurationError("condenser_type set to partial but "
+                                     "condenser_spec set to at_bubble_point. ")
+
         # Add Control Volume for the condenser
         self.control_volume = ControlVolume0DBlock(default={
             "dynamic": self.config.dynamic,
@@ -172,9 +194,8 @@ see property package for documentation.}"""))
 
             self._make_splits_total_condenser()
 
-            if hasattr(self.control_volume.properties_out[0],
-                       "temperature_bubble") and not \
-               self.control_volume.properties_out[:].temperature.fixed:
+            if (self.config.condenser_type == CondenserType.totalCondenser) \
+                    and (self.config.condenser_spec == "at_bubble_point"):
                 # Option 1: condition for total condenser (T_cond = T_bubble)
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
@@ -182,15 +203,6 @@ see property package for documentation.}"""))
                         temperature_bubble
                 self.eq_total_cond_spec = Constraint(self.flowsheet().time,
                                                      rule=rule_total_cond)
-            elif self.control_volume.properties_out[:].temperature.fixed:
-                # Option 2: User sets the outlet temperature
-                pass
-            else:
-                raise ConfigurationError(
-                    "Total condenser needs either the outlet temperature "
-                    "set to the bubble point which is not available from the "
-                    "property package or the user needs to specify the outlet "
-                    "temperature.")
 
         else:
             self._make_splits_partial_condenser()
@@ -547,7 +559,7 @@ see property package for documentation.}"""))
                         "Only total mixture enthalpy or enthalpy by "
                         "phase are supported.")
 
-    def initialize(self, solver=None, outlvl=None):
+    def initialize(self, solver=None, outlvl=0):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -575,3 +587,45 @@ see property package for documentation.}"""))
                     TerminationCondition.optimal:
                 init_log.log(4, 'Condenser Initialisation Complete, {}.'
                              .format(condition(solver_output)))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+
+        if self.config.condenser_type == CondenserType.totalCondenser:
+            stream_dict = {"Inlet": "inlet",
+                           "Reflux": "reflux",
+                           "Distillate": "distillate"}
+        else:
+            stream_dict = {"Inlet": "inlet",
+                           "Vapor Outlet": "vapor_outlet",
+                           "Reflux": "reflux",
+                           "Distillate": "distillate"}
+
+        for n, v in stream_dict.items():
+            port_obj = getattr(self, v)
+
+            stream_attributes[n] = {}
+
+            for k in port_obj.vars:
+                for i in port_obj.vars[k].keys():
+                    if isinstance(i, float):
+                        stream_attributes[n][k] = value(
+                            port_obj.vars[k][time_point])
+                    else:
+                        if len(i) == 2:
+                            kname = str(i[1])
+                        else:
+                            kname = str(i[1:])
+                        stream_attributes[n][k + " " + kname] = \
+                            value(port_obj.vars[k][time_point, i[1:]])
+
+        return DataFrame.from_dict(stream_attributes, orient="columns")
