@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel, TerminationCondition,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.distillation import Condenser
-from idaes.unit_models.distillation.condenser import CondenserType
+from idaes.unit_models.distillation.condenser import CondenserType, \
+    TemperatureSpec
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
@@ -47,7 +48,7 @@ def test_config():
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
                  "condenser_type": CondenserType.totalCondenser,
-                 "condenser_spec": "custom_temperature"})
+                 "temperature_spec": TemperatureSpec.custom_temperature})
 
     assert len(m.fs.unit.config) == 10
     assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
@@ -75,7 +76,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "condenser_spec": "at_bubble_point",
+                     "temperature_spec": TemperatureSpec.at_bubble_point,
                      "has_pressure_change": True})
 
         return m
@@ -94,7 +95,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "condenser_spec": "at_bubble_point",
+                     "temperature_spec": TemperatureSpec.at_bubble_point,
                      "has_pressure_change": True})
 
         return m

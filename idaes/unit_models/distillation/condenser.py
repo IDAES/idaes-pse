@@ -51,6 +51,12 @@ class CondenserType(Enum):
     partialCondenser = 1
 
 
+class TemperatureSpec(Enum):
+    none = 0
+    at_bubble_point = 1
+    custom_temperature = 2
+
+
 @declare_process_block_class("Condenser")
 class CondenserData(UnitModelBlockData):
     """
@@ -70,17 +76,18 @@ class CondenserData(UnitModelBlockData):
 to all liquid,
 **CondenserType.partialCondenser** - Incoming vapor from top tray is
 partially condensed to a vapor and liquid stream.}"""))
-    CONFIG.declare("condenser_spec", ConfigValue(
-        default=None,
-        domain=In([None, "at_bubble_point", "custom_temperature"]),
+    CONFIG.declare("temperature_spec", ConfigValue(
+        default=TemperatureSpec.none,
+        domain=In(TemperatureSpec),
         description="Temperature spec for the condenser",
-        doc="""Indicates what type of condenser should be constructed,
-**default** - CondenserType.totalCondenser.
+        doc="""Temperature specification for the condenser,
+**default** - TemperatureSpec.none
 **Valid values:** {
-**CondenserType.totalCondenser** - Incoming vapor from top tray is condensed
-to all liquid,
-**CondenserType.partialCondenser** - Incoming vapor from top tray is
-partially condensed to a vapor and liquid stream.}"""))
+**TemperatureSpec.none** - No spec is selected,
+**TemperatureSpec.at_bubble_point** - Condenser temperature set at
+bubble point i.e. total condenser,
+**TemperatureSpec.custom_temperature** - Condenser temperature at
+user specified temperature.}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
@@ -157,14 +164,17 @@ see property package for documentation.}"""))
         super(CondenserData, self).build()
 
         # Check config arguments
-        if self.config.condenser_spec is None:
+        if self.config.temperature_spec is TemperatureSpec.none:
             raise ConfigurationError("condenser_spec config argument "
                                      "has not been specified. Please select "
                                      "a valid option.")
         if (self.config.condenser_type == CondenserType.partialCondenser) and \
-                (self.config.condenser_spec == "at_bubble_point"):
+                (self.config.temperature_spec ==
+                 TemperatureSpec.at_bubble_point):
             raise ConfigurationError("condenser_type set to partial but "
-                                     "condenser_spec set to at_bubble_point. ")
+                                     "temperature_spec set to at_bubble_point. "
+                                     "Select custom_temperature and specify "
+                                     "outlet temperature.")
 
         # Add Control Volume for the condenser
         self.control_volume = ControlVolume0DBlock(default={
@@ -195,7 +205,8 @@ see property package for documentation.}"""))
             self._make_splits_total_condenser()
 
             if (self.config.condenser_type == CondenserType.totalCondenser) \
-                    and (self.config.condenser_spec == "at_bubble_point"):
+                    and (self.config.temperature_spec ==
+                         TemperatureSpec.at_bubble_point):
                 # Option 1: condition for total condenser (T_cond = T_bubble)
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
@@ -224,8 +235,8 @@ see property package for documentation.}"""))
         # Outlet ports that always exist irrespective of condenser type
         self.reflux = Port(noruleinit=True, doc="Reflux stream that is"
                            " returned to the top tray.")
-        self.distillate = Port(noruleinit=True, doc="Reflux stream that is"
-                               " returned to the top tray.")
+        self.distillate = Port(noruleinit=True, doc="Distillate stream that is"
+                               " the top product.")
 
         if self.config.condenser_type == CondenserType.partialCondenser:
             self.vapor_outlet = Port(noruleinit=True,
