@@ -21,12 +21,13 @@ different state variables and the associated splits.
 __author__ = "Jaffer Ghouse"
 
 import logging
+from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition
+    TerminationCondition, value
 
 # Import IDAES cores
 from idaes.logger import getIdaesLogger, getInitLogger, condition
@@ -53,7 +54,7 @@ class ReboilerData(UnitModelBlockData):
     """
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("has_boilup_ratio", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Boilup ratio term construction flag",
         doc="""Indicates whether terms for boilup ratio should be
@@ -159,9 +160,11 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.boilup_ratio = Var(initialize=0.5, doc="boilup ratio for reboiler")
-
         if self.config.has_boilup_ratio is True:
+
+            self.boilup_ratio = Var(initialize=0.5,
+                                    doc="boilup ratio for reboiler")
+
             def rule_boilup_ratio(self, t):
                 if hasattr(self.control_volume.properties_out[t],
                            "flow_mol_phase"):
@@ -417,7 +420,7 @@ see property package for documentation.}"""))
                         "Only total mixture enthalpy or enthalpy by "
                         "phase are supported.")
 
-    def initialize(self, solver=None, outlvl=None):
+    def initialize(self, solver=None, outlvl=0):
 
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -439,3 +442,39 @@ see property package for documentation.}"""))
                     TerminationCondition.optimal:
                 init_log.log(4, 'Reboiler Initialisation Complete, {}.'
                              .format(condition(solver_output)))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+
+        stream_dict = {"Inlet": "inlet",
+                       "Vapor Reboil": "vapor_reboil",
+                       "Bottoms": "bottoms"}
+
+        for n, v in stream_dict.items():
+            port_obj = getattr(self, v)
+
+            stream_attributes[n] = {}
+
+            for k in port_obj.vars:
+                for i in port_obj.vars[k].keys():
+                    if isinstance(i, float):
+                        stream_attributes[n][k] = value(
+                            port_obj.vars[k][time_point])
+                    else:
+                        if len(i) == 2:
+                            kname = str(i[1])
+                        else:
+                            kname = str(i[1:])
+                        stream_attributes[n][k + " " + kname] = \
+                            value(port_obj.vars[k][time_point, i[1:]])
+
+        return DataFrame.from_dict(stream_attributes, orient="columns")
