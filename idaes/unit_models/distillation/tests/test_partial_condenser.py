@@ -58,6 +58,7 @@ def test_config():
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_pressure_change
+    assert hasattr(m.fs.unit, "heat_duty")
 
 
 class TestBTXIdeal(object):
