@@ -94,7 +94,7 @@ class KrigingModel:
         x_data_scaled, self.x_data_min, self.x_data_max = fs.data_scaling_minmax(self.x_data)
         self.x_data_scaled = x_data_scaled.reshape(self.x_data.shape)
 
-        if isinstance(regularization, bool):
+        if isinstance(numerical_gradients, bool):
             self.num_grads = numerical_gradients
         else:
             raise Exception('numerical_gradients must be boolean.')
@@ -211,7 +211,7 @@ class KrigingModel:
             other_args = {"args": (self.x_data_scaled, self.y_data, p), 'bounds': bounds}
             # other_args = {"args": (self.x_data, self.y_data, p)}
             mybounds = MyBounds()  # Bounds on regularization parameter
-            opt_results = basinhopping(self.objective_function, initial_value_list, minimizer_kwargs=other_args, niter=1000, disp=True, accept_test=mybounds) # , interval=5)
+            opt_results = basinhopping(self.objective_function, initial_value_list, minimizer_kwargs=other_args, niter=250, disp=True, accept_test=mybounds) # , interval=5)
         return opt_results
 
     def optimal_parameter_evaluation(self, var_vector, p):
