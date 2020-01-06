@@ -251,9 +251,9 @@ def unit_convert(
             )
             return x, frm
     if to is None:
-        y = q(x, ureg.parse_expression(frm)).to_base_units()
+        y = q(np.array(x), ureg.parse_expression(frm)).to_base_units()
     else:
-        y = q(x, ureg.parse_expression(frm)).to(to)
+        y = q(np.array(x), ureg.parse_expression(frm)).to(to)
     if gauge:
         # convert gauge pressure to absolute
         y = y + ambient_pressure * ureg.parse_expression(ambient_pressure_unit)
