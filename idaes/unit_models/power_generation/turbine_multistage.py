@@ -718,6 +718,6 @@ class TurbineMultistageData(UnitModelBlockData):
                 flow_guess, self.outlet_stage.inlet.flow_mol[0].value
             ),
         )
-        init_log.info_least(5, "Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info_least("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)
