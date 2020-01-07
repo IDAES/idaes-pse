@@ -882,6 +882,7 @@ linked to all inlet states and the mixed state,
 
         # Revert fixed status of variables to what they were before
         for t in blk.flowsheet().config.time:
+            s_vars = mblock[t].define_state_vars()
             for s in s_vars:
                 for k in s_vars[s]:
                     s_vars[s][k].fixed = o_flags[t, s, k]

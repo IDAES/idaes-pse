@@ -1380,6 +1380,7 @@ linked the mixed state and all outlet states,
 
             # Revert fixed status of variables to what they were before
             for t in blk.flowsheet().config.time:
+                s_vars = o_block[t].define_state_vars()
                 for v in s_vars:
                     for k in s_vars[v]:
                         s_vars[v][k].fixed = o_flags[t, v, k]
