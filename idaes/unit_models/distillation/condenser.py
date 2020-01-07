@@ -54,9 +54,8 @@ class CondenserType(Enum):
 
 
 class TemperatureSpec(Enum):
-    none = 0
-    atBubblePoint = 1
-    customTemperature = 2
+    atBubblePoint = 0
+    customTemperature = 1
 
 
 @declare_process_block_class("Condenser")
@@ -79,7 +78,7 @@ to all liquid,
 **CondenserType.partialCondenser** - Incoming vapor from top tray is
 partially condensed to a vapor and liquid stream.}"""))
     CONFIG.declare("temperature_spec", ConfigValue(
-        default=TemperatureSpec.none,
+        default=None,
         domain=In(TemperatureSpec),
         description="Temperature spec for the condenser",
         doc="""Temperature specification for the condenser,
@@ -166,7 +165,7 @@ see property package for documentation.}"""))
         super(CondenserData, self).build()
 
         # Check config arguments
-        if self.config.temperature_spec is TemperatureSpec.none:
+        if self.config.temperature_spec is None:
             raise ConfigurationError("temperature_spec config argument "
                                      "has not been specified. Please select "
                                      "a valid option.")
@@ -206,10 +205,12 @@ see property package for documentation.}"""))
 
             self._make_splits_total_condenser()
 
-            if (self.config.condenser_type == CondenserType.totalCondenser) \
-                    and (self.config.temperature_spec ==
-                         TemperatureSpec.atBubblePoint):
-                # Option 1: condition for total condenser (T_cond = T_bubble)
+            if (self.config.temperature_spec == TemperatureSpec.atBubblePoint):
+                # Option 1: if true, condition for total condenser
+                # (T_cond = T_bubble)
+                # Option 2: if this is false, then user has selected
+                # custom temperature spec and needs to fix an outlet
+                # temperature.
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
                         temperature == self.control_volume.properties_out[t].\
