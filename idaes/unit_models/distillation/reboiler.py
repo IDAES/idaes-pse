@@ -40,7 +40,8 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import PropertyPackageError, \
+    PropertyNotSupportedError
 
 _log = getIdaesLogger(__name__)
 
@@ -184,7 +185,9 @@ see property package for documentation.}"""))
                             for i in self.control_volume.properties_out[t].
                             _params.component_list)
                 else:
-                    raise Exception("Unsupported flow variables")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized names for flow variables encountered "
+                        "while building the constraint for reboiler.")
             self.eq_boilup_ratio = Constraint(self.flowsheet().time,
                                               rule=rule_boilup_ratio)
 
@@ -366,7 +369,10 @@ see property package for documentation.}"""))
                             "_phase"
                     else:
                         raise PropertyPackageError(
-                            "Expected an unindexed variable.")
+                            "Enthalpy is indexed but the variable "
+                            "name does not reflect the presence of an index. "
+                            "Please follow the naming convention outlined "
+                            "in the documentation for state variables.")
 
                     # Rule for vap enthalpy. Setting the enthalpy to the
                     # enth_mol_phase['Vap'] value from the state block
@@ -415,10 +421,10 @@ see property package for documentation.}"""))
                     # vapor outlet port
                     self.vapor_reboil.add(Reference(var), k)
                 else:
-                    raise NotImplementedError(
-                        "Unrecognized enthalpy state variable. "
-                        "Only total mixture enthalpy or enthalpy by "
-                        "phase are supported.")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized enthalpy state variable encountered "
+                        "while building ports for the reboiler. Only total "
+                        "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, solver=None, outlvl=0):
 
