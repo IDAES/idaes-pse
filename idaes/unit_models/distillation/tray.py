@@ -11,7 +11,15 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tray model for distillation.
+Tray model for distillation. Can build the following:
+1. Conventional tray with liq/vap inlet and liq/vap outlet
+2. Feed tray with single feed inlet, liq/vap inlet, and liq/vap outlet
+3. Conventional tray with side liq/vap draws (with or without feed inlet)
+
+NOTE:
+1. Does not use the IDAES control volume blocks.
+2. Side vapor draw is unconventional but the model allows the user to
+have a side vapor draw if required.
 """
 
 __author__ = "Jaffer Ghouse"
@@ -47,18 +55,18 @@ class TrayData(UnitModelBlockData):
     CONFIG.declare("is_feed_tray", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Flag to indicate feed tray.",
-        doc="""Indicates if this is a feed tray and constructs
+        description="flag to indicate feed tray.",
+        doc="""indicates if this is a feed tray and constructs
 corresponding ports,
 **default** - False.
 **Valid values:** {
-**True** - Feed tray,
-**False** - conventional tray}"""))
+**True** - feed tray,
+**False** - conventional tray with no feed inlet}"""))
     CONFIG.declare("has_liquid_side_draw", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Liquid side draw construction flag.",
-        doc="""Indicates if there is a liquid side draw from the tray,
+        description="liquid side draw construction flag.",
+        doc="""indicates if there is a liquid side draw from the tray,
 **default** - False.
 **Valid values:** {
 **True** - include a liquid side draw from the tray,
@@ -66,8 +74,8 @@ corresponding ports,
     CONFIG.declare("has_vapor_side_draw", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Vapor side draw construction flag.",
-        doc="""Indicates if there is a vapor side draw from the tray,
+        description="vapor side draw construction flag.",
+        doc="""indicates if there is a vapor side draw from the tray,
 **default** - False.
 **Valid values:** {
 **True** - include a vapor side draw from the tray,
@@ -75,17 +83,17 @@ corresponding ports,
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Heat transfer to/from tray construction flag.",
-        doc="""Indicates if there is heat transfer to/from the tray,
+        description="heat duty to/from tray construction flag.",
+        doc="""indicates if there is heat duty to/from the tray,
 **default** - False.
 **Valid values:** {
-**True** - include a heat transfer term,
-**False** - exclude a heat transfer term.}"""))
+**True** - include a heat duty term,
+**False** - exclude a heat duty term.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
+        description="pressure change term construction flag",
+        doc="""indicates whether terms for pressure change should be
     constructed,
     **default** - False.
     **Valid values:** {
@@ -94,16 +102,16 @@ corresponding ports,
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
+        description="property package to use for control volume",
+        doc="""property parameter object used to define property calculations,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PropertyParameterObject** - a PropertyParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+        description="arguments to use for constructing property packages",
+        doc="""a ConfigBlock with arguments to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
@@ -120,7 +128,7 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(TrayData, self).build()
 
-        # Create the inlets for the tray
+        # Create the inlet list to build inlet state blocks
         if self.config.is_feed_tray:
             inlet_list = ["feed", "liq", "vap"]
         else:
@@ -135,14 +143,14 @@ see property package for documentation.}"""))
         for i in inlet_list:
             state_obj = self.config.property_package.state_block_class(
                 self.flowsheet().config.time,
-                doc="State block for inlet to tray",
+                doc="State block for " + inlet_list[i] + "_inlet to tray",
                 default=state_block_args)
 
             setattr(self, "properties_in_" + i, state_obj)
 
         # add mixed outlet state blocks which is the feed to the tray
 
-        # Setup StateBlock argument dict
+        # Create a dict to set up the mixed outlet state blocks
         mixed_block_args = dict(**self.config.property_package_args)
         mixed_block_args["has_phase_equilibrium"] = True
         mixed_block_args["parameters"] = self.config.property_package
@@ -150,7 +158,7 @@ see property package for documentation.}"""))
 
         self.properties_out = self.config.property_package.\
             state_block_class(self.flowsheet().config.time,
-                              doc="State block for inlet to tray",
+                              doc="State block for mixed outlet from tray",
                               default=mixed_block_args)
 
         self._add_material_balance()
@@ -160,10 +168,11 @@ see property package for documentation.}"""))
         self._add_ports()
 
     def _add_material_balance(self):
+        """Method to construct the mass balance equation."""
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.property_package.component_list,
-                         doc="Material mixing equations")
+                         doc="material balance")
         def material_mixing_equations(b, t, j):
             if self.config.is_feed_tray:
                 return 0 == sum(
@@ -180,12 +189,13 @@ see property package for documentation.}"""))
                     for p in b.config.property_package.phase_list)
 
     def _add_energy_balance(self):
+        """Method to construct the energy balance equation."""
 
         if self.config.has_heat_transfer:
             self.heat_duty = Var(initialize=0,
                                  doc="heat duty for the tray")
 
-        @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
+        @self.Constraint(self.flowsheet().config.time, doc="energy balance")
         def enthalpy_mixing_equations(b, t):
             if self.config.is_feed_tray:
                 if self.config.has_heat_transfer:
@@ -243,12 +253,13 @@ see property package for documentation.}"""))
                             for p in b.config.property_package.phase_list))
 
     def _add_pressure_balance(self):
+        """Method to construct the pressure balance."""
         if self.config.has_pressure_change:
             self.deltaP = Var(initialize=0,
                               doc="pressure drop across tray")
 
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Pressure drop constraint for tray")
+                         doc="pressure balance for tray")
         def pressure_drop_equation(self, t):
             if self.config.has_pressure_change:
                 return self.properties_out[t].pressure == \
@@ -258,8 +269,9 @@ see property package for documentation.}"""))
                     self.properties_in_vap[t].pressure
 
     def _add_ports(self):
+        """Method to construct the ports for the tray."""
 
-        # Add inlet ports
+        # Add feed inlet port
         if self.config.is_feed_tray:
             self.add_inlet_port(name="feed", block=self.properties_in_feed)
 
@@ -326,6 +338,8 @@ see property package for documentation.}"""))
                           has_liquid_side_draw=False,
                           has_vapor_side_draw=False,
                           side_sf=None):
+        """Method to split and populate the outlet ports with corresponding
+           phase values from the mixed stream outlet block."""
 
         member_list = self.properties_out[0].define_port_members()
 
@@ -364,8 +378,7 @@ see property package for documentation.}"""))
                         return self.properties_out[t].\
                             component(local_name)[phase, i]
 
-                    # add the reference and variable name to the liq_side_draw
-                    # port
+                    # add the reference and variable name to the port
                     expr = Expression(self.flowsheet().time,
                                       index_set,
                                       rule=rule_mole_frac)
@@ -380,8 +393,7 @@ see property package for documentation.}"""))
                     var = self.properties_out[:].\
                         component(member_list[k].local_name)[...]
 
-                    # add the reference and variable name to the
-                    # liq_side_draw port
+                    # add the reference and variable name to the port
                     port.add(Reference(var), k)
             elif "flow" in k:
                 if "phase" not in k:
@@ -399,14 +411,13 @@ see property package for documentation.}"""))
                         local_name = str(member_list[k].local_name) + \
                             "_phase"
 
-                        # Rule to link the liq flow to the liq_side_draw
+                        # Rule to link the flow to the port
                         def rule_flow(self, t):
                             return self.properties_out[t].\
                                 component(local_name)[phase] * \
                                 (side_sf)
 
-                        # add the reference and variable name to the
-                        # liq_side_draw port
+                        # add the reference and variable name to the port
                         expr = Expression(self.flowsheet().time,
                                           rule=rule_flow)
                         self.add_component("e_flow_" + port.local_name,
@@ -423,7 +434,7 @@ see property package for documentation.}"""))
                         # Get the indexing set i.e. component list
                         index_set = member_list[k].index_set()
 
-                        # Rule to link the liq flow to the liq_side_draw
+                        # Rule to link the flow to the port
                         def rule_flow(self, t, i):
                             return self.properties_out[t].\
                                 component(local_name)[phase, i] * \
@@ -447,9 +458,7 @@ see property package for documentation.}"""))
                         raise PropertyPackageError(
                             "Expected an unindexed variable.")
 
-                    # Rule to link the liq enthalpy to the reflux.
-                    # Setting the enthalpy to the
-                    # enth_mol_phase['Liq'] value from the state block
+                    # Rule to link the phase enthalpy to the port.
                     def rule_enth(self, t):
                         return self.properties_out[t].\
                             component(local_name)[phase]
@@ -458,15 +467,15 @@ see property package for documentation.}"""))
                                       rule=rule_enth)
                     self.add_component("e_enth_" + port.local_name,
                                        expr)
+                    # add the reference and variable name to the port
                     port.add(expr, k)
-                    # add the reference and variable name to the reflux port
+
                 elif "phase" in k:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
                     # reference irrespective of the reflux, distillate and
                     # vap_outlet
 
-                    # Rule for liq flow
                     if not member_list[k].is_indexed():
                         var = self.properties_out[:].\
                             component(member_list[k].local_name)
@@ -474,7 +483,7 @@ see property package for documentation.}"""))
                         var = self.properties_out[:].\
                             component(member_list[k].local_name)[...]
 
-                    # add the reference and variable name to the reflux port
+                    # add the reference and variable name to the port
                     port.add(Reference(var), k)
                 else:
                     raise Exception(
