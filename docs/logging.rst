@@ -112,10 +112,10 @@ ERROR                 40     ERROR        ``error()``, ``exception()``
 WARNING               30     WARNING      ``warning()``
 FLOWSHEET             23     FLOWSHEET    ``flowsheet()
 UNIT                  22     UNIT         ``unit()``
-UNIT_HIGH             21     UNIT         ``unit_high()``
 INFO                  20     INFO         ``info()``
-CV                    19     CV           ``cv()``
-PROP                  18     PROP         ``prop()``
+UNIT_HIGH             19     UNIT         ``unit_high()``
+CV                    18     CV           ``cv()``
+PROP                  17     PROP         ``prop()``
 DEBUG                 10     DEBUG        ``debug()``
 NOTSET                0      NOTSET       --
 ===================== ====== ============ ============================
