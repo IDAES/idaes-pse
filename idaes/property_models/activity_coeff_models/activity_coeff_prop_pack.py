@@ -233,6 +233,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                         - False - state variables are unfixed after
                                  initialization by calling the
                                  relase_state method
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
+
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -346,11 +354,6 @@ class _ActivityCoeffStateBlock(StateBlock):
         results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
         init_log.log(4, "Initialization Step 5 {}.".format(condition(results)))
 
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False) and \
-                    (blk[k]._params.config.state_vars == "FTPz"):
-                blk[k].eq_mol_frac_out.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -358,7 +361,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk.release_state(flags)
 
         init_log.log(5, "Initialization Complete: {}".format(condition(results)))
-
 
     def release_state(blk, flags, outlvl=6):
         """
@@ -370,6 +372,11 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
+        for k in blk.keys():
+            if (not blk[k].config.defined_state and
+                    blk[k]._params.config.state_vars == "FTPz"):
+                blk[k].eq_mol_frac_out.activate()
+
         if flags is None:
             return
 

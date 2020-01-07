@@ -88,7 +88,7 @@ The number of degrees of freedom that need to be fixed to yield a square problem
 
    "Ideal (vapor) - Ideal (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "None", "3 + :math:`N_{c}`"
    "Ideal (vapor) - NRTL (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
-   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac`_comp`", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
 
 Please refer to reference 3 for recommended values for ``tau``.
 

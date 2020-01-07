@@ -398,9 +398,9 @@ class TestVisualisation(object):
 
         assert df.loc["pressure"]["stream"] == 1e5
         assert df.loc["temperature"]["stream"] == 300
-        assert df.loc["component_flow ('p1', 'c1')"]["stream"] == 2.0
-        assert df.loc["component_flow ('p1', 'c2')"]["stream"] == 2.0
-        assert df.loc["component_flow ('p2', 'c1')"]["stream"] == 2.0
-        assert df.loc["component_flow ('p2', 'c2')"]["stream"] == 2.0
+        assert df.loc["component_flow_phase ('p1', 'c1')"]["stream"] == 2.0
+        assert df.loc["component_flow_phase ('p1', 'c2')"]["stream"] == 2.0
+        assert df.loc["component_flow_phase ('p2', 'c1')"]["stream"] == 2.0
+        assert df.loc["component_flow_phase ('p2', 'c2')"]["stream"] == 2.0
 
         m.fs.report()
