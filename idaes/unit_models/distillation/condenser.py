@@ -39,9 +39,11 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialBalanceType,
                         UnitModelBlockData,
                         useDefault)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import PropertyPackageError, ConfigurationError
+from idaes.core.util.exceptions import PropertyPackageError, \
+    ConfigurationError, PropertyNotSupportedError
 
 _log = getIdaesLogger(__name__)
 
@@ -53,8 +55,8 @@ class CondenserType(Enum):
 
 class TemperatureSpec(Enum):
     none = 0
-    at_bubble_point = 1
-    custom_temperature = 2
+    atBubblePoint = 1
+    customTemperature = 2
 
 
 @declare_process_block_class("Condenser")
@@ -84,9 +86,9 @@ partially condensed to a vapor and liquid stream.}"""))
 **default** - TemperatureSpec.none
 **Valid values:** {
 **TemperatureSpec.none** - No spec is selected,
-**TemperatureSpec.at_bubble_point** - Condenser temperature set at
+**TemperatureSpec.atBubblePoint** - Condenser temperature set at
 bubble point i.e. total condenser,
-**TemperatureSpec.custom_temperature** - Condenser temperature at
+**TemperatureSpec.customTemperature** - Condenser temperature at
 user specified temperature.}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.useDefault,
@@ -165,15 +167,15 @@ see property package for documentation.}"""))
 
         # Check config arguments
         if self.config.temperature_spec is TemperatureSpec.none:
-            raise ConfigurationError("condenser_spec config argument "
+            raise ConfigurationError("temperature_spec config argument "
                                      "has not been specified. Please select "
                                      "a valid option.")
         if (self.config.condenser_type == CondenserType.partialCondenser) and \
                 (self.config.temperature_spec ==
-                 TemperatureSpec.at_bubble_point):
+                 TemperatureSpec.atBubblePoint):
             raise ConfigurationError("condenser_type set to partial but "
-                                     "temperature_spec set to at_bubble_point. "
-                                     "Select custom_temperature and specify "
+                                     "temperature_spec set to atBubblePoint. "
+                                     "Select customTemperature and specify "
                                      "outlet temperature.")
 
         # Add Control Volume for the condenser
@@ -206,7 +208,7 @@ see property package for documentation.}"""))
 
             if (self.config.condenser_type == CondenserType.totalCondenser) \
                     and (self.config.temperature_spec ==
-                         TemperatureSpec.at_bubble_point):
+                         TemperatureSpec.atBubblePoint):
                 # Option 1: condition for total condenser (T_cond = T_bubble)
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
@@ -316,7 +318,9 @@ see property package for documentation.}"""))
                     self.distillate.add(self.e_distillate_flow, k)
 
             else:
-                raise Exception("Unrecognized names for flow variables.")
+                raise PropertyNotSupportedError(
+                    "Unrecognized names for flow variables encountered while "
+                    "building the condenser ports.")
 
     def _make_splits_partial_condenser(self):
         # Get dict of Port members and names
@@ -492,6 +496,7 @@ see property package for documentation.}"""))
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
+                    # and hence should not be indexed by phase
                     if not member_list[k].is_indexed():
                         # if state var is not enth_mol/enth_mass
                         # by phase, add _phase string to extract the right
@@ -500,7 +505,10 @@ see property package for documentation.}"""))
                             "_phase"
                     else:
                         raise PropertyPackageError(
-                            "Expected an unindexed variable.")
+                            "Enthalpy is indexed but the variable "
+                            "name does not reflect the presence of an index. "
+                            "Please follow the naming convention outlined "
+                            "in the documentation for state variables.")
 
                     # Rule for vap enthalpy. Setting the enthalpy to the
                     # enth_mol_phase['Vap'] value from the state block
@@ -565,10 +573,10 @@ see property package for documentation.}"""))
                     # vapor outlet port
                     self.vapor_outlet.add(Reference(var), k)
                 else:
-                    raise Exception(
-                        "Unrecognized enthalpy state variable. "
-                        "Only total mixture enthalpy or enthalpy by "
-                        "phase are supported.")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized enthalpy state variable encountered "
+                        "while building ports for the condenser. Only total "
+                        "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, solver=None, outlvl=0):
 
@@ -576,6 +584,14 @@ see property package for documentation.}"""))
         # the top tray or take it as an argument to this method.
 
         init_log = getInitLogger(self.name, outlvl)
+
+        if self.config.temperature_spec == TemperatureSpec.customTemperature:
+            if degrees_of_freedom(self) != 0:
+                raise ConfigurationError(
+                    "Degrees of freedom is not 0 during initialization. "
+                    "Check if outlet temperature has been fixed in addition "
+                    "to the other inputs required as customTemperature was "
+                    "selected for temperature_spec config argument.")
 
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()

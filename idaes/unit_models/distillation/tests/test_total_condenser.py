@@ -48,7 +48,7 @@ def test_config():
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
                  "condenser_type": CondenserType.totalCondenser,
-                 "temperature_spec": TemperatureSpec.custom_temperature})
+                 "temperature_spec": TemperatureSpec.customTemperature})
 
     assert len(m.fs.unit.config) == 10
     assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
@@ -76,7 +76,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "temperature_spec": TemperatureSpec.at_bubble_point,
+                     "temperature_spec": TemperatureSpec.atBubblePoint,
                      "has_pressure_change": True})
 
         return m
@@ -95,7 +95,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "temperature_spec": TemperatureSpec.at_bubble_point,
+                     "temperature_spec": TemperatureSpec.atBubblePoint,
                      "has_pressure_change": True})
 
         return m

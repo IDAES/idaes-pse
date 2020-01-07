@@ -415,7 +415,7 @@ see property package for documentation.}"""))
                     # vapor outlet port
                     self.vapor_reboil.add(Reference(var), k)
                 else:
-                    raise Exception(
+                    raise NotImplementedError(
                         "Unrecognized enthalpy state variable. "
                         "Only total mixture enthalpy or enthalpy by "
                         "phase are supported.")
