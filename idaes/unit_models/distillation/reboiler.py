@@ -21,14 +21,16 @@ different state variables and the associated splits.
 __author__ = "Jaffer Ghouse"
 
 import logging
+from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition
+    TerminationCondition, value
 
 # Import IDAES cores
+from idaes.logger import getIdaesLogger, getInitLogger, condition
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
@@ -38,9 +40,10 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import PropertyPackageError, \
+    PropertyNotSupportedError
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("Reboiler")
@@ -52,7 +55,7 @@ class ReboilerData(UnitModelBlockData):
     """
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("has_boilup_ratio", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Boilup ratio term construction flag",
         doc="""Indicates whether terms for boilup ratio should be
@@ -62,7 +65,7 @@ constructed,
 **True** - include construction of boilup ratio constraint,
 **False** - exclude construction of boilup ratio constraint}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
@@ -74,7 +77,7 @@ constructed,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
@@ -98,7 +101,7 @@ constructed,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
@@ -158,9 +161,11 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.boilup_ratio = Var(initialize=1, doc="boilup ratio for reboiler")
-
         if self.config.has_boilup_ratio is True:
+
+            self.boilup_ratio = Var(initialize=0.5,
+                                    doc="boilup ratio for reboiler")
+
             def rule_boilup_ratio(self, t):
                 if hasattr(self.control_volume.properties_out[t],
                            "flow_mol_phase"):
@@ -180,7 +185,9 @@ see property package for documentation.}"""))
                             for i in self.control_volume.properties_out[t].
                             _params.component_list)
                 else:
-                    raise Exception("Unsupported flow variables")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized names for flow variables encountered "
+                        "while building the constraint for reboiler.")
             self.eq_boilup_ratio = Constraint(self.flowsheet().time,
                                               rule=rule_boilup_ratio)
 
@@ -191,8 +198,9 @@ see property package for documentation.}"""))
         # Add object reference to variables of the control volume
         # Reference to the heat duty
         add_object_reference(self, "heat_duty", self.control_volume.heat)
-        # Reference to the pressure drop
-        add_object_reference(self, "deltaP", self.control_volume.deltaP)
+        # Reference to the pressure drop (if set to True)
+        if self.config.has_pressure_change:
+            add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
     def _make_ports(self):
 
@@ -361,7 +369,10 @@ see property package for documentation.}"""))
                             "_phase"
                     else:
                         raise PropertyPackageError(
-                            "Expected an unindexed variable.")
+                            "Enthalpy is indexed but the variable "
+                            "name does not reflect the presence of an index. "
+                            "Please follow the naming convention outlined "
+                            "in the documentation for state variables.")
 
                     # Rule for vap enthalpy. Setting the enthalpy to the
                     # enth_mol_phase['Vap'] value from the state block
@@ -410,15 +421,17 @@ see property package for documentation.}"""))
                     # vapor outlet port
                     self.vapor_reboil.add(Reference(var), k)
                 else:
-                    raise Exception(
-                        "Unrecognized enthalpy state variable. "
-                        "Only total mixture enthalpy or enthalpy by "
-                        "phase are supported.")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized enthalpy state variable encountered "
+                        "while building ports for the reboiler. Only total "
+                        "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=None):
+    def initialize(self, solver=None, outlvl=0):
 
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
+
+        init_log = getInitLogger(self.name, outlvl)
 
         # Initialize the inlet and outlet state blocks
         self.control_volume.initialize(outlvl=outlvl)
@@ -430,7 +443,44 @@ see property package for documentation.}"""))
                 tee = False
 
             solver_output = solver.solve(self, tee=tee)
+
             if solver_output.solver.termination_condition == \
                     TerminationCondition.optimal:
-                _log.info('{} Reboiler Initialisation Complete.'
-                          .format(self.name))
+                init_log.log(4, 'Reboiler Initialisation Complete, {}.'
+                             .format(condition(solver_output)))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+
+        stream_dict = {"Inlet": "inlet",
+                       "Vapor Reboil": "vapor_reboil",
+                       "Bottoms": "bottoms"}
+
+        for n, v in stream_dict.items():
+            port_obj = getattr(self, v)
+
+            stream_attributes[n] = {}
+
+            for k in port_obj.vars:
+                for i in port_obj.vars[k].keys():
+                    if isinstance(i, float):
+                        stream_attributes[n][k] = value(
+                            port_obj.vars[k][time_point])
+                    else:
+                        if len(i) == 2:
+                            kname = str(i[1])
+                        else:
+                            kname = str(i[1:])
+                        stream_attributes[n][k + " " + kname] = \
+                            value(port_obj.vars[k][time_point, i[1:]])
+
+        return DataFrame.from_dict(stream_attributes, orient="columns")
