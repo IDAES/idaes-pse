@@ -427,13 +427,13 @@ class HeatExchangerData(UnitModelBlockData):
         opt = SolverFactory(solver)
         opt.options = optarg
         flags1 = self.side_1.initialize(
-            outlvl=idaeslog.decreased_output(init_log), optarg=optarg, solver=solver, state_args=state_args_1
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
         init_log.info_less("Initialization Step 1a (side_1) Complete.")
 
         flags2 = self.side_2.initialize(
-            outlvl=idaeslog.decreased_output(init_log), optarg=optarg, solver=solver, state_args=state_args_2
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
         init_log.info_less("Initialization Step 1b (side_2) Complete.")
@@ -453,8 +453,8 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_less("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.side_1.release_state(flags1, outlvl=idaeslog.decreased_output(init_log))
-        self.side_2.release_state(flags2, outlvl=idaeslog.decreased_output(init_log))
+        self.side_1.release_state(flags1, outlvl=outlvl)
+        self.side_2.release_state(flags2, outlvl=outlvl)
 
         init_log.info_least("Initialization Completed, {}".format(idaeslog.condition(res)))
 

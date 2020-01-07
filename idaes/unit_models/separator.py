@@ -1301,7 +1301,7 @@ linked the mixed state and all outlet states,
         else:
             mblock = blk.mixed_state
         flags = mblock.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,
@@ -1372,7 +1372,7 @@ linked the mixed state and all outlet states,
 
             # Call initialization routine for outlet StateBlock
             o_block.initialize(
-                outlvl=idaeslog.decreased_output(init_log),
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 hold_state=False,
@@ -1395,7 +1395,7 @@ linked the mixed state and all outlet states,
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=idaeslog.decreased_output(init_log))
+            blk.release_state(flags, outlvl=outlvl)
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
@@ -1418,7 +1418,7 @@ linked the mixed state and all outlet states,
         else:
             mblock = blk.config.mixed_state_block
 
-        mblock.release_state(flags, outlvl=idaeslog.decreased_output(init_log))
+        mblock.release_state(flags, outlvl=outlvl)
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):

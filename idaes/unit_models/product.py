@@ -150,7 +150,7 @@ see property package for documentation.}""",
         # Initialize state block
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
         blk.properties.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             **state_args

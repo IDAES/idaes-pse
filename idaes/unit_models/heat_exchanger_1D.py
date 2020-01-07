@@ -608,14 +608,14 @@ thickness of the tube""",
         # ---------------------------------------------------------------------
         # Initialize shell block
         flags_shell = blk.shell.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=shell_state_args,
         )
 
         flags_tube = blk.tube.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=tube_state_args,

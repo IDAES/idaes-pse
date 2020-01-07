@@ -516,7 +516,7 @@ Must be True if dynamic = True,
         # ---------------------------------------------------------------------
         # Initialize control volume block
         flags = blk.control_volume.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,

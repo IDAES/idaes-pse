@@ -823,7 +823,7 @@ linked to all inlet states and the mixed state,
             i_block_list.append(i_block)
             flags[i] = {}
             flags[i] = i_block.initialize(
-                outlvl=idaeslog.decreased_output(init_log),
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 hold_state=True,
@@ -874,7 +874,7 @@ linked to all inlet states and the mixed state,
                                 ) / len(i_block_list)
 
         mblock.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=False,
@@ -915,7 +915,7 @@ linked to all inlet states and the mixed state,
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=idaeslog.decreased_output(init_log))
+            blk.release_state(flags, outlvl=outlvl)
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """

@@ -218,7 +218,7 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_in,
@@ -226,7 +226,7 @@ see property package for documentation.}""",
         )
 
         blk.properties_out.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args_out,

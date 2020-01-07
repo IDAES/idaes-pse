@@ -172,7 +172,7 @@ def increased_output(logger):
 
 
 def decreased_output(logger):
-    """Get the a logging level that produces one level less output than loggers
+    """Get the a logging level that produces one level less output than logger.
 
     Args:
         logger (logging.Logger|int): Logger to read the level from or level

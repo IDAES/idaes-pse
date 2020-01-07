@@ -1414,14 +1414,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Initialize state blocks
         in_flags = blk.properties_in.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=hold_state,
             state_args=state_args,
         )
         out_flags = blk.properties_out.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,
@@ -1434,7 +1434,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             # reactions should ignore the state_vars_fixed argument and always
             # check their state_vars.
             blk.reactions.initialize(
-                outlvl=idaeslog.decreased_output(init_log),
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_vars_fixed=True,
@@ -1445,7 +1445,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Unfix outlet properties
         blk.properties_out.release_state(
             flags=out_flags,
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
         )
         init_log.info_least('Initialization Complete')
         return in_flags
@@ -1464,10 +1464,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         '''
-        blk.properties_in.release_state(
-            flags,
-            outlvl=idaeslog.decreased_output(outlvl),
-        )
+        blk.properties_in.release_state(flags, outlvl=outlvl)
 
     def _add_phase_fractions(self):
         """

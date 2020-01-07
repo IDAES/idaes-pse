@@ -133,7 +133,7 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize control volume block
         blk.properties.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=False,

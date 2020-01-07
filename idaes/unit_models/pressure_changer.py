@@ -673,7 +673,7 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Initialize holdup block
         flags = blk.control_volume.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,
@@ -698,7 +698,7 @@ see property package for documentation.}""",
                     state_args[k] = state_dict[k].value
 
         blk.properties_isentropic.initialize(
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             state_args=state_args,

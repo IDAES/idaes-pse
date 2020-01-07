@@ -1785,7 +1785,7 @@ argument)."""))
         # Initialize state blocks
         flags = blk.properties.initialize(
             state_args=state_args,
-            outlvl=idaeslog.decreased_output(init_log),
+            outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             hold_state=True,
@@ -1798,7 +1798,7 @@ argument)."""))
             # reactions should ignore the state_vars_fixed argument and always
             # check their state_vars.
             blk.reactions.initialize(
-                outlvl=idaeslog.decreased_output(init_log),
+                outlvl=outlvl,
                 optarg=optarg,
                 solver=solver,
                 state_vars_fixed=True,
