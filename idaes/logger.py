@@ -13,38 +13,23 @@ _config = {
 CRITICAL = logging.CRITICAL # 50
 ERROR = logging.ERROR # 40
 WARNING = logging.WARNING # 30
-INFO_LEAST = 22 # Level for info you almost always want
-INFO_LESS = 21
+FLOWSHEET = 23 #FLOWSHEET INFO
+UNIT = 22 # UNIT INFO
 INFO = logging.INFO # 20
-INFO_MORE = 19
-INFO_MOST = 18 # Level for info you usually don't want
-SOLVER = 17 # see solver output and info between INFO and DEBUG
+UNIT_HIGH = 19
+CV = 18
+PROP = 17 #
 DEBUG = logging.DEBUG # 10
 NOTSET = logging.NOTSET # 0
 
 levelname = { # the level name of all our extra info levels is "INFO"
-    INFO_LEAST: "INFO",
-    INFO_LESS: "INFO",
-    INFO_MORE: "INFO",
-    INFO_MOST: "INFO",
-    SOLVER: "SOLVER",
+    FLOWSHEET: "FLOWSHEET",
+    UNIT: "UNIT",
+    UNIT_HIGH: "UNIT_HIGH",
+    CV: "CV",
+    PROP: "PROP"
 }
 
-# Unfortunatly it seens to be a common practice in initialization routines
-# to call sub model initialization functions with an output level that's slightly
-# less.  This list makes it easy to shift up or down one NAMED level.
-_defined_levels = (
-    DEBUG,
-    SOLVER,
-    INFO_MOST,
-    INFO_MORE,
-    INFO,
-    INFO_LESS,
-    INFO_LEAST,
-    WARNING,
-    ERROR,
-    CRITICAL,
-)
 
 class _levelNamesFilter(logging.Filter):
     """Filter applied to IDAES loggers returned by this modulue."""
@@ -55,32 +40,32 @@ class _levelNamesFilter(logging.Filter):
         return True
 
 
-def __info_least(self, *args, **kwargs):
-    self.log(INFO_LEAST, *args, **kwargs)
+def __flowsheet(self, *args, **kwargs):
+    self.log(FLOWSHEET, *args, **kwargs)
 
 
-def __info_less(self, *args, **kwargs):
-    self.log(INFO_LESS, *args, **kwargs)
+def __unit(self, *args, **kwargs):
+    self.log(UNIT, *args, **kwargs)
 
 
-def __info_more(self, *args, **kwargs):
-    self.log(INFO_MORE, *args, **kwargs)
+def __unit_high(self, *args, **kwargs):
+    self.log(UNIT_HIGH, *args, **kwargs)
 
 
-def __info_most(self, *args, **kwargs):
-    self.log(INFO_MOST, *args, **kwargs)
+def __cv(self, *args, **kwargs):
+    self.log(CV, *args, **kwargs)
 
 
-def __solver(self, *args, **kwargs):
-    self.log(SOLVER, *args, **kwargs)
+def __prop(self, *args, **kwargs):
+    self.log(PROP, *args, **kwargs)
 
 
 def __add_methods(log):
-    log.info_least = __info_least.__get__(log)
-    log.info_less = __info_less.__get__(log)
-    log.info_more = __info_more.__get__(log)
-    log.info_most = __info_most.__get__(log)
-    log.solver = __solver.__get__(log)
+    log.flowsheet = __flowsheet.__get__(log)
+    log.unit = __unit.__get__(log)
+    log.unit_high = __unit_high.__get__(log)
+    log.cv = __cv.__get__(log)
+    log.prop = __prop.__get__(log)
     # hopfully adding this multiple times is not a problem
     log.addFilter(_levelNamesFilter)
     return log
@@ -150,78 +135,6 @@ def getModelLogger(name, level=None):
         logger
     """
     return _getLogger(name=name, logger_name="idaes.model", level=level)
-
-
-def increased_output(logger):
-    """Get the a logging level that produces one level more output than logger.
-
-    Args:
-        logger (logging.Logger|int): Logger to read the level from or level
-
-    Returns:
-        (int): Number for the next named level with more output.  At most DEBUG.
-    """
-    if isinstance(logger, logging.Logger):
-        lvl = logger.getEffectiveLevel()
-    else:
-        lvl = logger
-    i = bisect.bisect_left(_defined_levels, lvl) - 1
-    if i < 0:
-        i = 0
-    return _defined_levels[i]
-
-
-def decreased_output(logger):
-    """Get the a logging level that produces one level less output than logger.
-
-    Args:
-        logger (logging.Logger|int): Logger to read the level from or level
-
-    Returns:
-        (int): Number for the next named level with less output.  At least CRITICAL.
-    """
-    if isinstance(logger, logging.Logger):
-        lvl = logger.getEffectiveLevel()
-    else:
-        lvl = logger
-
-    i = bisect.bisect_left(_defined_levels, lvl) + 1
-    if i >= len(_defined_levels):
-        i = -1
-    return _defined_levels[i]
-
-
-def solver_tee(logger, tee_level=SOLVER):
-    """Function to produce solver output based on the logging level of a specific
-    logger. This function just helps standardize the level for solver output to
-    appear and make code a bit cleaner.
-
-    Args:
-        logger: logger to get output level from
-        tee_level: Level at which to show solver output, usually use default
-
-    Returns
-        (bool)
-    """
-    return logger.isEnabledFor(tee_level)
-
-
-def init_tee(logger, tee_level=2):
-    """Function to use in initialization to determine at a given output level
-    whether to use the sovler tee option to print solver output. This function
-    just helps standardize the level for solver output to appear and make the
-    initialization routine code a bit cleaner.
-
-    Args:
-        logger: logger to get output level from
-        tee_level: Level at which to show solver output, usually use default
-
-    Returns
-        (bool)
-    """
-    logging.getLogger(__name__).critical("WARNING THIS WILL BE REMOVED")
-    return logger.getEffectiveLevel() <= tee_level
-
 
 def condition(res):
     """Get the solver termination condition to log.  This isn't a specifc value
@@ -294,6 +207,12 @@ class IOToLogTread(threading.Thread):
                 return
 
 
+class SolverLogInfo(object):
+    def __init__(self, tee=True, thread=None):
+        self.tee = tee
+        self.thread = thread
+
+
 @contextmanager
 def solver_log(logger, level=logging.ERROR):
     """Context manager to send solver output to a logger.  This uses a seperate
@@ -303,14 +222,15 @@ def solver_log(logger, level=logging.ERROR):
     # thread is daemonic, so it will shut down with the main process even if it
     # stays around for some mysterious reason while the model is running.
     join_timeout = 3
+    tee = logger.isEnabledFor(level)
     if not solver_capture():
-        yield
+        yield SolverLogInfo(tee=tee)
     else:
         with capture_output() as s:
             lt = IOToLogTread(s, logger=logger, level=level)
             lt.start()
             try:
-                yield lt
+                yield SolverLogInfo(tee=tee, thread=lt)
             except:
                 lt.stop.set()
                 lt.join(timeout=join_timeout)

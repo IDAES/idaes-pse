@@ -228,7 +228,7 @@ class _CubicStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
 
-        init_log.info_least('Starting initialization')
+        init_log.prop('Starting initialization')
 
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
@@ -402,15 +402,11 @@ class _CubicStateBlock(StateBlock):
             cons_count += number_activated_equalities(blk[k])
 
         if cons_count > 0:
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = solve_indexed_blocks(
-                    opt,
-                    [blk],
-                    tee=idaeslog.solver_tee(init_log),
-                )
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
             res = ""
-        init_log.info_less("Dew and bubble point init complete {}.".format(
+        init_log.prop("Dew and bubble point init complete {}.".format(
             idaeslog.condition(res))
         )
 
@@ -423,7 +419,7 @@ class _CubicStateBlock(StateBlock):
                                        blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
                                         blk[k].temperature_dew.value)
-        init_log.info_less("Equilibrium temperature init complete.")
+        init_log.prop("Equilibrium temperature init complete.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -496,13 +492,9 @@ class _CubicStateBlock(StateBlock):
                                     "_t1_constraint",
                                     "_teq_constraint"):
                     c.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            results = solve_indexed_blocks(
-                opt,
-                [blk],
-                tee=idaeslog.solver_tee(init_log),
-            )
-        init_log.info_less("Phase equilibrium init: {}.".format(
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+        init_log.prop("Phase equilibrium init: {}.".format(
             idaeslog.condition(results))
         )
 
@@ -514,13 +506,9 @@ class _CubicStateBlock(StateBlock):
                 if c.local_name not in ("sum_mole_frac_out"):
                     c.activate()
 
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            results = solve_indexed_blocks(
-                opt,
-                [blk],
-                tee=idaeslog.solver_tee(init_log),
-            )
-        init_log.info_less("Property init: {}.".format(
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+        init_log.prop("Property init: {}.".format(
             idaeslog.condition(results))
         )
 
@@ -531,7 +519,7 @@ class _CubicStateBlock(StateBlock):
             else:
                 blk.release_state(flags, outlvl=outlvl)
 
-        init_log.info_least("Initialization complete.")
+        init_log.prop("Initialization complete.")
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
@@ -553,7 +541,7 @@ class _CubicStateBlock(StateBlock):
         # Unfix state variables
         revert_state_vars(blk, flags)
 
-        idaeslog.getInitLogger(blk.name, outlvl).info('States released.')
+        idaeslog.getInitLogger(blk.name, outlvl).prop('States released.')
 
 
 @declare_process_block_class("CubicStateBlock",

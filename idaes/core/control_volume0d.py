@@ -1447,7 +1447,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             flags=out_flags,
             outlvl=outlvl,
         )
-        init_log.info_least('Initialization Complete')
+        init_log.cv('Initialization Complete')
         return in_flags
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):

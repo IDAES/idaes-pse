@@ -437,7 +437,7 @@ class _GenericStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
 
-        init_log.info_least('Starting initialization')
+        init_log.prop('Starting initialization')
 
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
@@ -632,9 +632,9 @@ class _GenericStateBlock(StateBlock):
         for k in blk:
             n_cons += number_activated_constraints(blk[k])
         if n_cons > 0:
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-            init_log.info_less(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            init_log.prop(
                 "Dew and bubble point initialization: {}.".format(idaeslog.condition(res))
             )
         # ---------------------------------------------------------------------
@@ -650,7 +650,7 @@ class _GenericStateBlock(StateBlock):
                 eq_check += 1
 
         if eq_check > 0:
-            init_log.info_most("Equilibrium temperature initialization completed.")
+            init_log.prop("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -658,7 +658,7 @@ class _GenericStateBlock(StateBlock):
             blk[k]._params.config.state_definition.state_initialization(blk[k])
 
         if outlvl > 0:
-            init_log.info_most("State variable initialization completed.")
+            init_log.prop("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
         if (blk[k]._params.config.phase_equilibrium_formulation is not None and
@@ -666,13 +666,9 @@ class _GenericStateBlock(StateBlock):
             blk[k]._params.config.phase_equilibrium_formulation \
                 .phase_equil_initialization(blk[k])
 
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = solve_indexed_blocks(
-                    opt,
-                    [blk],
-                    tee=idaeslog.solver_tee(init_log),
-                )
-            init_log.info_least(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            init_log.prop(
                 "Phase equilibrium initialization: {}.".format(
                     idaeslog.condition(res)
                 )
@@ -687,9 +683,9 @@ class _GenericStateBlock(StateBlock):
                         blk[k]._params.config
                         .state_definition.do_not_initialize):
                     c.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Property initialization: {}.".format(
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.prop("Property initialization: {}.".format(
             idaeslog.condition(res))
         )
 
@@ -708,7 +704,7 @@ class _GenericStateBlock(StateBlock):
             else:
                 blk.release_state(flag_dict)
 
-        init_log.info_least("Property package initialization: {}.".format(
+        init_log.prop("Property package initialization: {}.".format(
             idaeslog.condition(res))
         )
 
@@ -723,7 +719,7 @@ class _GenericStateBlock(StateBlock):
             outlvl : sets output level of initialization routine
         '''
         revert_state_vars(blk, flags)
-        idaeslog.getInitLogger(blk.name, outlvl).info_less("State released.")
+        idaeslog.getInitLogger(blk.name, outlvl).prop("State released.")
 
 @declare_process_block_class("GenericStateBlock",
                              block_class=_GenericStateBlock)

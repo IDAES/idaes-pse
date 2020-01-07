@@ -621,7 +621,7 @@ thickness of the tube""",
             state_args=tube_state_args,
         )
 
-        init_log.info_less("Initialization Step 1 Complete.")
+        init_log.unit_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -643,34 +643,34 @@ thickness of the tube""",
             blk.tube_heat_transfer_eq.deactivate()
             blk.wall_0D_model.deactivate()
 
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
-            init_log.info_less(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.unit_high(
                 "Initialization Step 2 {}.".format(idaeslog.condition(res))
             )
 
             blk.tube.activate()
             blk.tube_heat_transfer_eq.activate()
 
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
-            init_log.info_less(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.unit_high(
                 "Initialization Step 3 {}.".format(idaeslog.condition(res))
             )
 
             blk.wall_0D_model.activate()
             blk.temperature_wall.unfix()
 
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
-            init_log.info_less(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.unit_high(
                 "Initialization Step 4 {}.".format(idaeslog.condition(res))
             )
 
         blk.shell.release_state(flags_shell)
         blk.tube.release_state(flags_tube)
 
-        init_log.info_least("Initialization Complete.")
+        init_log.unit("Initialization Complete.")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

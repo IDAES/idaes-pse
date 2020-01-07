@@ -1806,7 +1806,7 @@ argument)."""))
         except AttributeError:
             pass
 
-        init_log.info_least('Initialization Complete')
+        init_log.cv('Initialization Complete')
 
         # Unfix state variables except for source block
         blk.properties.release_state(flags)

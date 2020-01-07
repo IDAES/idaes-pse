@@ -187,7 +187,7 @@ class _StateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        init_log.info_least('Initialization Complete.')
+        init_log.prop('Initialization Complete.')
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
@@ -211,7 +211,7 @@ class _StateBlock(StateBlock):
             return
         # Unfix state variables
         revert_state_vars(blk, flags)
-        init_log.info_least('State Released.')
+        init_log.prop('State Released.')
 
 
 @declare_process_block_class("SaponificationStateBlock",

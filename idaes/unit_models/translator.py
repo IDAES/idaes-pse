@@ -234,4 +234,4 @@ see property package for documentation.}""",
 
         blk.properties_in.release_state(flags)
 
-        init_log.info_least("Initialization Complete.")
+        init_log.unit("Initialization Complete.")

@@ -709,15 +709,15 @@ class TurbineMultistageData(UnitModelBlockData):
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        init_log.info_less("Solve full multistage turbine")
+        init_log.unit_high("Solve full multistage turbine")
         self.inlet_split.inlet.flow_mol.unfix()
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = slvr.solve(self, tee=idaeslog.solver_tee(init_log))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = slvr.solve(self, tee=slc.tee)
         init_log.info(
             "Flow guess: {}, Initialized Flow: {}".format(
                 flow_guess, self.outlet_stage.inlet.flow_mol[0].value
             ),
         )
-        init_log.info_least("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.unit("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)

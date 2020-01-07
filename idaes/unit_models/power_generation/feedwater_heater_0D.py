@@ -195,9 +195,9 @@ class FWHCondensing0DData(HeatExchangerData):
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = opt.solve(self, tee=idaeslog.solver_tee(init_log))
-        init_log.info_least(
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.unit(
             "Initialization Complete (w/ extraction calc): {}".format(
                 idaeslog.condition(res)
             )
@@ -359,8 +359,8 @@ class FWH0DData(UnitModelBlockData):
         opt = SolverFactory(kwargs.get("solver", "ipopt"))
         opt.options = kwargs.get("oparg", {})
         assert degrees_of_freedom(self) == 0
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = opt.solve(self, tee=idaeslog.solver_tee(init_log))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
         init_log.info(
             "Condensing shell inlet delta T = {}".format(
                 value(self.condense.delta_temperature_in[0])
@@ -374,7 +374,7 @@ class FWH0DData(UnitModelBlockData):
         init_log.info(
             "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
         )
-        init_log.info_least(
+        init_log.unit(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 

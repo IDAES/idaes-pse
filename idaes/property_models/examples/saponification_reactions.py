@@ -129,7 +129,7 @@ class _ReactionBlock(ReactionBlockBase):
             None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        init_log.info_least('Initialization Complete.')
+        init_log.prop('Initialization Complete.')
 
 
 @declare_process_block_class("ReactionBlock",

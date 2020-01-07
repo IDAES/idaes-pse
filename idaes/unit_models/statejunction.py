@@ -139,4 +139,4 @@ see property package for documentation.}""",
             hold_state=False,
             **state_args
         )
-        init_log.info_least("Initialization Step Complete.")
+        init_log.unit("Initialization Step Complete.")

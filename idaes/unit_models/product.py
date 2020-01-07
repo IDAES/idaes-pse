@@ -155,7 +155,7 @@ see property package for documentation.}""",
             solver=solver,
             **state_args
         )
-        init_log.info_least("Initialization Complete.")
+        init_log.unit("Initialization Complete.")
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

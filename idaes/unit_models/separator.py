@@ -1386,12 +1386,13 @@ linked the mixed state and all outlet states,
                         s_vars[v][k].fixed = o_flags[t, v, k]
 
         if blk.config.mixed_state_block is None:
-            res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
-            init_log.info_least(
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.unit(
                 "Initialization Complete: {}".format(idaeslog.condition(res))
             )
         else:
-            init_log.info_least("Initialization Complete.")
+            init_log.unit("Initialization Complete.")
 
         if hold_state is True:
             return flags

@@ -295,11 +295,11 @@ class _ActivityCoeffStateBlock(StateBlock):
                     ("Liq", "Vap")) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ("Vap", "Liq")):
-            with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
             res="skipped"
-        init_log.info_less("Initialization Step 1 {}.".format(idaeslog.condition(res)))
+        init_log.prop("Initialization Step 1 {}.".format(idaeslog.condition(res)))
 
 
         # Continue initialization sequence and activate select constraints
@@ -316,9 +316,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.prop("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # Activate activity coefficient specific constraints
         for k in blk.keys():
@@ -330,9 +330,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                                         "eq_B"]:
                         c.activate()
 
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.prop("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             if blk[k].config.parameters.config.activity_coeff_model \
@@ -340,9 +340,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_activity_coeff.activate()
                 blk[k].activity_coeff_comp.unfix()
 
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.prop("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
@@ -350,9 +350,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "eq_entr_mol_phase"]:
                     c.activate()
 
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = solve_indexed_blocks(opt, [blk], tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 5 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.prop("Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -360,7 +360,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             else:
                 blk.release_state(flags, outlvl=outlvl)
 
-        init_log.info_least("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.prop("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
@@ -385,7 +385,7 @@ class _ActivityCoeffStateBlock(StateBlock):
         # Unfix state variables
         revert_state_vars(blk, flags)
 
-        init_log.info_less("State Released.")
+        init_log.prop("State Released.")
 
 
 @declare_process_block_class("ActivityCoeffStateBlock",

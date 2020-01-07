@@ -898,20 +898,20 @@ linked to all inlet states and the mixed state,
                         t
                     ].pressure
                     blk.mixed_state[t].pressure.fix(sys_press.value)
-                with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                    res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG)as slc:
+                    res = opt.solve(blk, tee=slc.tee)
                 blk.pressure_equality_constraints.activate()
                 for t in blk.flowsheet().config.time:
                     blk.mixed_state[t].pressure.unfix()
             else:
-                with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-                    res = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(blk, tee=slc.tee)
 
-            init_log.info_least(
+            init_log.unit(
                 "Initialization Complete: {}".format(idaeslog.condition(res))
             )
         else:
-            init_log.info_least("Initialization Complete.")
+            init_log.unit("Initialization Complete.")
 
         if hold_state is True:
             return flags

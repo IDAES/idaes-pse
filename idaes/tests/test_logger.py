@@ -8,14 +8,21 @@ __author__ = "John Eslick"
 def test_get_idaes_logger(caplog):
     caplog.set_level(logging.DEBUG)
     log = idaeslog.getLogger("My Test Logger 1")
+    log.setLevel(logging.DEBUG)
     assert log.name == "idaes.My Test Logger 1"
-    log.info_least("Hello!")
-    log.info_less("Hello!")
+    log.flowsheet("Hello!")
+    log.unit("Hello!")
     log.info("Hello!")
-    log.info_more("Hello!")
-    log.info_most("Hello!")
-    for record in caplog.records:
-        assert record.levelname == "INFO"
+    log.unit_high("Hello!")
+    log.cv("Hello!")
+    log.prop("Hello!")
+    assert caplog.records[0].levelname == "FLOWSHEET"
+    assert caplog.records[1].levelname == "UNIT"
+    assert caplog.records[2].levelname == "INFO"
+    assert caplog.records[3].levelname == "UNIT_HIGH"
+    assert caplog.records[4].levelname == "CV"
+    assert caplog.records[5].levelname == "PROP"
+
     log = idaeslog.getLogger("idaes.My Test Logger 2")
     assert log.name == "idaes.My Test Logger 2"
 
@@ -23,14 +30,15 @@ def test_get_model_logger(caplog):
     log = idaeslog.getModelLogger("My Model 1")
     assert isinstance(log, logging.Logger)
     assert log.name == "idaes.model.My Model 1"
-    caplog.set_level(idaeslog.INFO_LESS)
-    log.info_least("Hello! from least")
-    log.info_less("Hello! from less")
+    caplog.set_level(idaeslog.UNIT)
+    log.flowsheet("Hello! from flowsheet")
+    log.unit("Hello! from unit")
     log.info("Hello! from info")
-    log.info_more("Hello! from more")
-    log.info_most("Hello! from most")
+    log.unit_high("Hello! from unit high")
+    log.cv("Hello! from cv")
+    log.prop("Hello! from prop")
     for record in caplog.records:
-        assert record.message in ["Hello! from least", "Hello! from less"]
+        assert record.message in ["Hello! from flowsheet", "Hello! from unit"]
     log = idaeslog.getModelLogger("idaes.My Model 2")
     assert log.name == "idaes.model.My Model 2"
 
@@ -38,19 +46,10 @@ def test_get_init_logger():
     log = idaeslog.getInitLogger("My Init 1")
     assert log.name == "idaes.init.My Init 1"
 
-def test_solver_tee():
-    log = idaeslog.getInitLogger("solver")
-    log.setLevel(idaeslog.SOLVER)
-    assert idaeslog.solver_tee(log) == True
-    log.setLevel(idaeslog.INFO)
-    assert idaeslog.solver_tee(log) == False
-    assert idaeslog.solver_tee(log, idaeslog.ERROR) == True
-
 def test_solver_condition():
     # test the results that can be tested without a solver
     assert idaeslog.condition(None) == "Error, no result"
     assert idaeslog.condition("something else") == "something else"
-
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():
@@ -78,13 +77,13 @@ def test_solver_log(caplog):
     model.c = pyo.Constraint(expr=model.x[1] + model.x[2]==model.y)
 
     log = idaeslog.getLogger("solver")
-    caplog.set_level(idaeslog.SOLVER)
-    log.setLevel(idaeslog.SOLVER)
+    caplog.set_level(idaeslog.DEBUG)
+    log.setLevel(idaeslog.DEBUG)
 
     idaeslog.solver_capture_on()
-    with idaeslog.solver_log(log, idaeslog.SOLVER) as lt:
+    with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
         res = solver.solve(model, tee=True)
-    assert(not lt.is_alive()) # make sure logging thread is down
+    assert(not slc.thread.is_alive()) # make sure logging thread is down
     s = ""
     for record in caplog.records:
         s += record.message
@@ -92,98 +91,8 @@ def test_solver_log(caplog):
 
     # test that an excpetion still results in tread terminating right
     try:
-        with idaeslog.solver_log(log, idaeslog.SOLVER) as lt:
+        with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
             res = solver.solve(modelf, tee=True)
     except NameError:
         pass # expect name error
-    assert(not lt.is_alive()) # make sure logging thread is down
-
-
-def test_increasing_level():
-    log = idaeslog.getLogger("log")
-    log.setLevel(idaeslog.CRITICAL)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.ERROR
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.WARNING
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.INFO_LEAST
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.INFO_LESS
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.INFO
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.INFO_MORE
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.INFO_MOST
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.SOLVER
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.DEBUG
-    log.setLevel(lvl)
-
-    lvl = idaeslog.increased_output(log)
-    assert lvl == idaeslog.DEBUG
-    log.setLevel(lvl)
-
-
-def test_decreasing_level():
-    log = idaeslog.getLogger("log")
-    log.setLevel(idaeslog.DEBUG)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.SOLVER
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.INFO_MOST
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.INFO_MORE
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.INFO
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.INFO_LESS
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.INFO_LEAST
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.WARNING
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.ERROR
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.CRITICAL
-    log.setLevel(lvl)
-
-    lvl = idaeslog.decreased_output(log)
-    assert lvl == idaeslog.CRITICAL
-    log.setLevel(lvl)
+    assert(not slc.thread.is_alive()) # make sure logging thread is down

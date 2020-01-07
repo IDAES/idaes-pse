@@ -430,33 +430,33 @@ class HeatExchangerData(UnitModelBlockData):
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
-        init_log.info_less("Initialization Step 1a (side_1) Complete.")
+        init_log.unit_high("Initialization Step 1a (side_1) Complete.")
 
         flags2 = self.side_2.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
-        init_log.info_less("Initialization Step 1b (side_2) Complete.")
+        init_log.unit_high("Initialization Step 1b (side_2) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         self.heat_transfer_equation.deactivate()
         self.side_2.heat.fix(duty)
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = opt.solve(self, tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.unit_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
         self.side_2.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = opt.solve(self, tee=idaeslog.solver_tee(init_log))
-        init_log.info_less("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.unit_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         self.side_1.release_state(flags1, outlvl=outlvl)
         self.side_2.release_state(flags2, outlvl=outlvl)
 
-        init_log.info_least("Initialization Completed, {}".format(idaeslog.condition(res)))
+        init_log.unit("Initialization Completed, {}".format(idaeslog.condition(res)))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {

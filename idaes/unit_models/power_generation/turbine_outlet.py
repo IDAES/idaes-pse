@@ -254,9 +254,9 @@ class TurbineOutletStageData(PressureChangerData):
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            res = slvr.solve(self, tee=idaeslog.solver_tee(init_log))
-        init_log.info_least(
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = slvr.solve(self, tee=slc.tee)
+        init_log.unit(
             "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
         )
 

@@ -104,21 +104,21 @@ include the standard Python Levels.  The following levels are provided for IDAES
 loggers.  The additional levels of info provide finer control over the amount of
 logging information produced by IDAES loggers.
 
-================== ====== ============ ============================
-Constant Name      Value  Name         Log Method
-================== ====== ============ ============================
-CRITICAL           50     CRITICAL     ``critial()``
-ERROR              40     ERROR        ``error()``, ``exception()``
-WARNING            30     WARNING      ``warning()``
-INFO_LEAST         22     INFO         ``info_least()``
-INFO_LESS          21     INFO         ``info_less()``
-INFO               20     INFO         ``info()``
-INFO_MORE          19     INFO         ``info_more()``
-INFO_MOST          18     INFO         ``info_most()``
-SOLVER             17     SOLVER       ``solver()``
-DEBUG              10     DEBUG        ``debug()``
-NOTSET             0      NOTSET       --
-================== ====== ============ ============================
+===================== ====== ============ ============================
+Constant Name         Value  Name         Log Method
+===================== ====== ============ ============================
+CRITICAL              50     CRITICAL     ``critial()``
+ERROR                 40     ERROR        ``error()``, ``exception()``
+WARNING               30     WARNING      ``warning()``
+FLOWSHEET             23     FLOWSHEET    ``flowsheet()
+UNIT                  22     UNIT         ``unit()``
+UNIT_HIGH             21     UNIT         ``unit_high()``
+INFO                  20     INFO         ``info()``
+CV                    19     CV           ``cv()``
+PROP                  18     PROP         ``prop()``
+DEBUG                 10     DEBUG        ``debug()``
+NOTSET                0      NOTSET       --
+===================== ====== ============ ============================
 
 
 Utility Functions
@@ -127,13 +127,8 @@ Utility Functions
 There are some additional utility functions to perform logging tasks that are
 common in the IDAES framework.
 
-.. autofunction:: solver_tee
-
 .. autofunction:: condition
 
-.. autofunction:: increased_output
-
-.. autofunction:: decreased_output
 
 Logging Solver Output
 ---------------------
@@ -148,6 +143,12 @@ instead of after the solve completes.  If the  ``solver_log()`` context manager
 is used, it can be turned on and off by using the ``idaes.logger.solver_capture_on()``
 and ``idaes.logger.solver_capture_off()`` functions.  If the capture is off solver
 output won't be logged and it will go to standard output as usual.
+
+The ``solver_log`` context yields and object with ``tee`` and ``thread`` attributes.
+Thread is the logging thread, which is not needed for most uses. Tee is the ``solve``
+``tee`` argument.  Tee tells the Pyomo solvers to produce solver output.  The solver
+log context can provide this argument by determining if the solver output would be
+logged at the given level.
 
 *Example*
 
@@ -164,7 +165,7 @@ output won't be logged and it will go to standard output as usual.
   model.c = pyo.Constraint(expr=model.y==model.x**2)
 
   log = idaes.log("solver.demo")
-  log.setLevel(idaeslog.SOLVER)
+  log.setLevel(idaeslog.DEBUG)
 
-  with solver_log(log, idaeslog.SOLVER):
-      res = solver.solve(model, tee=True)
+  with solver_log(log, idaeslog.DEBUG) as slc:
+      res = solver.solve(model, tee=slc.tee)

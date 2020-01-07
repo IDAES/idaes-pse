@@ -522,17 +522,19 @@ Must be True if dynamic = True,
             state_args=state_args,
         )
 
-        init_log.info_less('Initialization Step 1 Complete.')
+        init_log.unit_high('Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
-        with idaeslog.solver_log(solve_log, idaeslog.SOLVER):
-            results = opt.solve(blk, tee=idaeslog.solver_tee(init_log))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = opt.solve(blk, tee=slc.tee)
 
-        init_log.info_less("Initialization Step 2 {}.".format(idaeslog.condition(results)))
+        init_log.unit_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl+1)
 
-        init_log.info_least('Initialization Complete: {}'.format(idaeslog.condition(results)))
+        init_log.unit('Initialization Complete: {}'.format(idaeslog.condition(results)))
