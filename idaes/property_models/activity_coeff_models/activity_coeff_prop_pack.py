@@ -44,7 +44,7 @@ References:
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
     Set, Expression, Param, sqrt
-from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.opt import SolverFactory
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -61,6 +61,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+from idaes.core.util.constants import gas_const
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -302,7 +303,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                 (blk[k].config.parameters.config.valid_phase ==
                     ("Vap", "Liq")):
             results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-            init_log.log(4, "Initialization Step 1 {}.".format(condition(results)))
+            init_log.log(4,
+                         "Initialization Step 1 {}."
+                         .format(condition(results)))
         else:
             init_log.info(4, "Initialization step 1 skipped")
 
@@ -360,7 +363,8 @@ class _ActivityCoeffStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
+        init_log.log(5,
+                     "Initialization Complete: {}".format(condition(results)))
 
     def release_state(blk, flags, outlvl=6):
         """
@@ -854,7 +858,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self._params.gas_const *
+                                         gas_const *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 _log.warning("Using a place holder for liquid density "
@@ -896,8 +900,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             if p == "Vap":
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j] - \
-                    b._params.gas_const * (b.temperature -
-                                           b._params.temperature_ref)
+                    gas_const * (b.temperature - b._params.temperature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j]
@@ -1035,9 +1038,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                (self.temperature - self._params.temperature_reference)
                 + self._params.CpIG['Vap', j, 'A'] *
                 log(self.temperature / self._params.temperature_reference)) -
-            self._params.gas_const * log(self.mole_frac_phase_comp['Vap', j] *
-                                         self.pressure /
-                                         self._params.pressure_reference))
+            gas_const * log(self.mole_frac_phase_comp['Vap', j] *
+                            self.pressure /
+                            self._params.pressure_reference))
 
     def _gibbs_mol_phase_comp(self):
         self.gibbs_mol_phase_comp = Var(

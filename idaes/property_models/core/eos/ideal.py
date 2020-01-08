@@ -15,6 +15,7 @@ Methods for ideal equations of state.
 """
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.property_models.core.generic.generic_property import get_method
+from idaes.core.util.constants import gas_const
 
 
 def common(b):
@@ -28,7 +29,7 @@ def dens_mass_phase(b, p):
 
 def dens_mol_phase(b, p):
     if p == "Vap":
-        return b.pressure/(b._params.gas_const*b.temperature)
+        return b.pressure/(gas_const*b.temperature)
     elif p == "Liq":
         return sum(b.mole_frac_phase_comp[p, j] *
                    get_method(b, "dens_mol_liq_comp")(b, j, b.temperature)
