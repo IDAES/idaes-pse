@@ -10,35 +10,26 @@ def test_get_idaes_logger(caplog):
     log = idaeslog.getLogger("My Test Logger 1")
     log.setLevel(logging.DEBUG)
     assert log.name == "idaes.My Test Logger 1"
-    log.flowsheet("Hello!")
-    log.unit("Hello!")
+    log.info_high("Hello!")
     log.info("Hello!")
-    log.unit_high("Hello!")
-    log.cv("Hello!")
-    log.prop("Hello!")
-    assert caplog.records[0].levelname == "FLOWSHEET"
-    assert caplog.records[1].levelname == "UNIT"
+    log.info_low("Hello!")
+    assert caplog.records[0].levelname == "INFO"
+    assert caplog.records[1].levelname == "INFO"
     assert caplog.records[2].levelname == "INFO"
-    assert caplog.records[3].levelname == "UNIT_HIGH"
-    assert caplog.records[4].levelname == "CV"
-    assert caplog.records[5].levelname == "PROP"
 
     log = idaeslog.getLogger("idaes.My Test Logger 2")
     assert log.name == "idaes.My Test Logger 2"
 
 def test_get_model_logger(caplog):
     log = idaeslog.getModelLogger("My Model 1")
-    assert isinstance(log, logging.Logger)
+    assert isinstance(log, logging.LoggerAdapter)
     assert log.name == "idaes.model.My Model 1"
-    caplog.set_level(idaeslog.UNIT)
-    log.flowsheet("Hello! from flowsheet")
-    log.unit("Hello! from unit")
+    caplog.set_level(idaeslog.INFO)
+    log.info_low("Hello! from unit")
     log.info("Hello! from info")
-    log.unit_high("Hello! from unit high")
-    log.cv("Hello! from cv")
-    log.prop("Hello! from prop")
+    log.info_high("Hello! from unit high")
     for record in caplog.records:
-        assert record.message in ["Hello! from flowsheet", "Hello! from unit"]
+        assert record.message in ["Hello! INFO", "Hello! from INFO_LOW"]
     log = idaeslog.getModelLogger("idaes.My Model 2")
     assert log.name == "idaes.model.My Model 2"
 
@@ -50,6 +41,23 @@ def test_solver_condition():
     # test the results that can be tested without a solver
     assert idaeslog.condition(None) == "Error, no result"
     assert idaeslog.condition("something else") == "something else"
+
+def test_modules(caplog):
+    def a(module):
+        caplog.set_level(logging.DEBUG)
+        log = idaeslog.getLogger("Unit", module=module)
+        log.setLevel(logging.DEBUG)
+        log.info_high("Hello!")
+        log.info("Hello!")
+        log.info_low("Hello!")
+        if module not in idaeslog.log_modules():
+             assert len(caplog.records) == 0
+        else:
+            assert caplog.records[0].levelname == "INFO"
+            assert caplog.records[1].levelname == "INFO"
+            assert caplog.records[2].levelname == "INFO"
+    for m in idaeslog.valid_log_modules():
+        a(m)
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():
