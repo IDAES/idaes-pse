@@ -442,7 +442,7 @@ see property package for documentation.}"""))
                 res = solver.solve(self, tee=slc.tee)
 
             init_log.log(
-                "Initialisation Complete, {}."".format(idaeslog.condition(res))
+                "Initialisation Complete, {}.".format(idaeslog.condition(res))
             )
 
     def _get_performance_contents(self, time_point=0):
