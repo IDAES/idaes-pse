@@ -31,7 +31,7 @@ from pyomo.environ import Reference, Expression, Var, Constraint, value, \
     TerminationCondition
 
 # Import IDAES cores
-from idaes.logger import getIdaesLogger, getInitLogger, condition
+import idaes.logger as idaeslog
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
@@ -45,7 +45,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 class CondenserType(Enum):
@@ -579,12 +579,13 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=0):
+    def initialize(self, solver=None, outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
 
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl)
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
 
         if self.config.temperature_spec == TemperatureSpec.customTemperature:
             if degrees_of_freedom(self) != 0:
@@ -592,7 +593,8 @@ see property package for documentation.}"""))
                     "Degrees of freedom is not 0 during initialization. "
                     "Check if outlet temperature has been fixed in addition "
                     "to the other inputs required as customTemperature was "
-                    "selected for temperature_spec config argument.")
+                    "selected for temperature_spec config argument."
+                )
 
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()
@@ -605,16 +607,11 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.activate()
 
         if solver is not None:
-            if outlvl > 2:
-                tee = True
-            else:
-                tee = False
-
-            solver_output = solver.solve(self, tee=tee)
-            if solver_output.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                init_log.log(4, 'Condenser Initialisation Complete, {}.'
-                             .format(condition(solver_output)))
+            with solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
+            init_log.unit(
+                "Initialisation Complete, {}.".format(idaeslog.condition(res))
+            )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
