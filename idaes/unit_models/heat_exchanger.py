@@ -485,7 +485,7 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, tag=costing):
+    def get_costing(self, module=costing):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing()
         self.costing = Block()
