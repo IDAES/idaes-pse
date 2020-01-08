@@ -95,6 +95,7 @@ def getIdaesLogger(name, level=None, module=None):
     Args:
         name: usually __name__
         level: standard IDAES logging level (default use IDAES config)
+        module: type of module doing the logging, see valid_log_modules()
 
     Returns:
         logger
@@ -111,6 +112,7 @@ def getSolveLogger(name, level=None, module=None):
         name: logger name is "idaes.solve." + name (if name starts with "idaes."
             it is removed before creating the logger name)
         level: Log level
+        module: type of module doing the logging, see valid_log_modules()
 
     Returns:
         logger
@@ -123,6 +125,7 @@ def getInitLogger(name, level=None, module=None):
     Args:
         name: Object name (usually Pyomo Component name)
         level: Log level
+        module: type of module doing the logging, see valid_log_modules()
 
     Returns:
         logger
@@ -138,6 +141,7 @@ def getModelLogger(name, level=None, module=None):
         name: Name (usually __name__).  Any starting 'idaes.' is stripped off, so
             if a model is part of the idaes package, idaes won't be repeated.
         level: Standard Python logging level (default use IDAES config)
+        module: type of module doing the logging, see valid_log_modules()
 
     Returns:
         logger
@@ -181,36 +185,78 @@ def solver_capture():
     return _config["solver_capture"]
 
 def log_modules():
+    """Returns a set of logging modules to be logged.
+
+    Args:
+        None
+
+    Returns:
+        (set) modules to be logged
+    """
     return _config["modules"]
 
 def set_log_modules(modules):
+    """Specify a set of modules to be logged
+
+    Args:
+        modelues(iterable of str): Modules to log
+
+    Returns:
+        None
+    """
     for m in modules:
         if m not in _valid_modules:
             raise ValueError("{} is not a valid logging module".format(m))
     _config["modules"] = set(modules)
 
 def add_log_module(module):
+    """Add a module to the list of modules to log.
+
+    Args:
+        modelues(str): Module to log
+
+    Returns:
+        None
+    """
     if m not in _valid_modules:
         raise ValueError("{} is not a valid logging module".format(m))
     _config["modules"].add(module)
 
 def remove_log_module(module):
+    """Remove a module to the list of modules to log.
+
+    Args:
+        modelues(str): Modules not to log
+
+    Returns:
+        None
+    """
     try:
         _config["modules"].remove(module)
     except ValueError:
         pass
 
 def valid_log_modules():
+    """Returns a set of logging valid module names.
+
+    Args:
+        None
+
+    Returns:
+        (set) valid module names
+    """
     return _config["modules"]
 
 def add_valid_log_module(module):
-    _config["modules"].add(module)
+    """Add a module name to the list of valid names.
 
-def remove_valid_log_module(module):
-    try:
-        __config["modules"].remove(module)
-    except ValueError:
-        pass
+    Args:
+        module (str): A module name
+
+    Returns:
+        None
+    """
+    _config["modules"].add(module)
 
 
 class IOToLogTread(threading.Thread):

@@ -3,23 +3,29 @@ Logging
 
 .. module:: idaes.logger
 
-IDAES provides the ``idaes.logger`` module to assist with a few common logging
-tasks, and the make it to get a logger that descends from one of the IDAES standard
-loggers (``idaes``, ``idaes.model``, ``idaes.init``, ``idaes.solve``).  Extra
-logging levels are also provided for ``idaes`` loggers to allow finer control over
-information output.
+IDAES provides some logging extensions to provide finer control over information
+logging and to allow solver output to be logged.
 
 
 Getting Loggers
 ---------------
 
-There are three main roots of IDAES loggers.  All these loggers are just
-standard Python loggers, and can be used as such.  The main differences between
-using the IDAES logging functions to the loggers and plain Python methods, is that
+There are four main roots of IDAES loggers (``idaes``, ``idaes.model``,
+``idaes.init``, ``idaes.solve``).  All these loggers are standard Python
+loggers, and can be used as such.  The main differences between using the IDAES
+logging functions to get the loggers and plain Python methods, is that
 the IDAES functions make it a little easier to get loggers that fit into IDAES's
 standard logging hierarchy, and the IDAES loggers have a few additional named
 logging levels, which allow for a bit finer control over information output.
 Logging levels are described in detail later.
+
+You can also specify a module name that be used to filter logging output.  By
+default the module name is None and log messages won't be filtered. Valid module
+names are in the set {None, "framework", "model", "flowsheet", "unit",
+"control_volume", "properties", "reactions"}.  Users may add to the set of
+valid names.  To see how to control which logging modules are logged, see section
+"Modules" below. To avoid filtering out import warning and error messages,
+records logged at the WARNING level and above are not filtered out.
 
 idaes Logger
 ~~~~~~~~~~~~
@@ -38,7 +44,7 @@ start with ``idaes``, but if an idaes logger is requested for a module outside t
 
   import idaes.logger as idaeslog
 
-  _log = idaeslog.getLogger(__name__)
+  _log = idaeslog.getLogger(__name__, module="framework")
 
 
 idaes.init Logger
@@ -65,8 +71,8 @@ instance the initialization log messages are coming from.
     def __init__(name):
       self.name = name
 
-    def initialize():
-      init_log = idaeslog.getInitLogger(self.name)
+    def initialize(outlvl=idaeslog.INFO):
+      init_log = idaeslog.getInitLogger(self.name, level=outlvl, module="unit")
 
 idaes.model Logger
 ~~~~~~~~~~~~~~~~~~
@@ -84,7 +90,7 @@ loggers.  The name the user can choose any name they like for these loggers.
 .. testcode::
   import idaes.logger as idaeslog
 
-  _log = idaeslog.getModelLogger("my_model")
+  _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, module="model")
 
   idaes.solve Logger
   ~~~~~~~~~~~~~~~~~
@@ -95,6 +101,37 @@ loggers.  The name the user can choose any name they like for these loggers.
 
   .. autofunction:: getSolveLogger
 
+Modules
+-------
+
+Logging module names provided by the IDAES logger allow control over what types of
+logger messages to display. The logging module is just a string that gets attached
+to a logger, which specifies that a logger generates records of a certain type. You
+can then specify what modules you want to see information from.  A filter will
+filter records from modules that you don't want to see at levels below WARNING.
+
+The types of modules to allow information from are a global setting in the idaes.logger
+module.  When getting a logger, you can set it's module by providing the module
+argument, see "Getting Loggers" above.
+
+To specify which logging modules will be allowed the following functions can be used.
+
+.. autofunction:: log_modules
+
+.. autofunction:: set_log_modules
+
+.. autofunction:: add_log_module
+
+.. autofunction:: remove_log_module
+
+The names of the logging modules are validated against a list of valid modules to
+provide error checking for typos and to enforce some standard module names. To
+provide more flexibility, users can add to the list of valid module names, but
+cannot remove names.
+
+.. autofunction:: valid_log_modules
+
+.. autofunction:: add_valid_log_module
 
 Levels
 ------
@@ -110,12 +147,9 @@ Constant Name         Value  Name         Log Method
 CRITICAL              50     CRITICAL     ``critial()``
 ERROR                 40     ERROR        ``error()``, ``exception()``
 WARNING               30     WARNING      ``warning()``
-FLOWSHEET             23     FLOWSHEET    ``flowsheet()
-UNIT                  22     UNIT         ``unit()``
+INFO_LOW              21     INFO         ``unit_low()``
 INFO                  20     INFO         ``info()``
-UNIT_HIGH             19     UNIT         ``unit_high()``
-CV                    18     CV           ``cv()``
-PROP                  17     PROP         ``prop()``
+INFO_HIGH             19     INFO         ``unit_high()``
 DEBUG                 10     DEBUG        ``debug()``
 NOTSET                0      NOTSET       --
 ===================== ====== ============ ============================
