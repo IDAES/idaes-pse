@@ -25,6 +25,7 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core.util.constants import gas_const
 
 from .methanol_state_block_VLE import IdealStateBlock
 
@@ -102,12 +103,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
              3: ["H2", ("Vap", "Liq")],
              4: ["CH3OH", ("Vap", "Liq")]}
 
-        # Gas Constant
-        self.gas_constant = Param(within=NonNegativeReals,
-                                  mutable=False,
-                                  default=0.008314,
-                                  doc='Gas Constant [MJ/(kgmol.K)]')
-
         self.vapor_pressure_coeff = {('CH4', 'A'): 15.2243,
                                      ('CH4', 'B'): 897.84,
                                      ('CH4', 'C'): -7.16,
@@ -122,7 +117,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                      ('CH3OH', 'C'): -34.29}
 
         Cp = self.config.Cp
-        Cv = Cp - self.gas_constant.value
+        Cv = Cp - gas_const*1e-3
         gamma = Cp / Cv
 
         self.gamma = Param(within=NonNegativeReals, mutable=True, default=gamma, doc='Ratio of Cp to Cv')
