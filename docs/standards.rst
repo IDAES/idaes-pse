@@ -1,4 +1,4 @@
-﻿.. _standards:
+.. _standards:
 
 IDAES Modeling Standards
 ========================
@@ -107,26 +107,30 @@ Reference State    ref
 
 Constants
 ^^^^^^^^^
-IDAES contains a library of common physical constants of use in process systems engineering models, which can be imported from `idaes.core.util.constants`. Below is a list of these constants with their standard names and values (SI units)
+IDAES contains a library of common physical constants of use in process systems engineering models, which can be imported from `idaes.core.util.constants`. Below is a list of these constants with their standard names and values (SI units).
 
 ================================= =================== ================ =============
 Constant                          Standard Name       Value            Units
 ================================= =================== ================ =============
 Acceleration due to Gravity       accel_gravity       9.80665          :math:`m⋅s^{-2}`
 Avogadro's Number                 avogadro_number     6.02214076e23    :math:`mol^{-1}`
-Boltzmann Constant                boltzmann_const     1.380649e-23     :math:`J⋅K^{-1}`
+Boltzmann Constant                boltzmann_const     1.38064900e-23   :math:`J⋅K^{-1}`
 Elementary Charge                 elementary_charge   1.602176634e-19  :math:`C`
 Faraday's Constant                faraday_const       96485.33212      :math:`C⋅mol^{-1}`
-Gas Constant                      gas_const           8.31446261815324 :math:`J⋅mol^{-1}⋅K^{-1}`
+Gas Constant                      gas_const           8.314462618      :math:`J⋅mol^{-1}⋅K^{-1}`
 Newtonian Constant of Gravitation gravitational_const 6.67430e-11      :math:`m^3⋅kg^{-1}⋅s^{-2}`
 Mass of an Electron               mass_electron       9.1093837015e-31 :math:`kg`
 Pi (Archimedes' Constant)         pi                  3.141592 [1]
 Planck Constant                   planck_const        6.62607015e-34   :math:`J⋅s`
-Stefan-Boltzmann Constant         stefan_const        5.670374419e-8   :math:`W⋅m^{-2}⋅K^{-4}`
+Stefan-Boltzmann Constant         stefan_const        5.67037442e-8    :math:`W⋅m^{-2}⋅K^{-4}`
 Speed of Light in a Vacuum        speed_light         299792458        :math:`m⋅s^{-1}`
 ================================= =================== ================ =============
 
 [1] pi imported from the Python `math` library and is available to machine precision.
+
+Values for fundamental constants and derived constants are drawn from the definitions of SI units (https://www.bipm.org/utils/common/pdf/si-brochure/SI-Brochure-9.pdf) and are generally defined to 9 significant figures.
+
+Acceleration due to gravity, gravitational constant and electron mass are sourced from NIST (https://physics.nist.gov) and used the significant figures reported there.
 
 Thermophysical and Transport Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -223,5 +227,4 @@ conc_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase
 temperature_red                Reduced temperature
 pressure_crit                  Critical pressure
 ============================== ===========================================================
-
 

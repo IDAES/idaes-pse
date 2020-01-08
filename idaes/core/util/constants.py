@@ -14,33 +14,53 @@
 """
 This module contains common constants of use in process systems engineering.
 
-All units are SI
+All units are SI, and generally expressed to 9 signficant figures where
+avaialble
 """
 
 __author__ = "Andrew Lee"
 
-from math import pi
+# -----------------------------------------------------------------------------
+# General geometric relationships
+import math
+pi = math.pi
 
-accel_gravity = 9.80665  # m⋅s^-2
+# -----------------------------------------------------------------------------
+# Constants used as fundamental definitions in SI, from
+# https://www.bipm.org/utils/common/pdf/si-brochure/SI-Brochure-9.pdf
 
 avogadro_number = 6.02214076e23  # unitless or mol^-1
 
-boltzmann_const = 1.380649e-23  # J⋅K^-1
+boltzmann_const = 1.38064900e-23  # J⋅K^-1
 
 elemental_charge = 1.602176634e-19  # C
 
-faraday_const = 96485.33212  # C⋅mol^-1
-
-gas_const = 8.31446261815324  # J⋅mol^-1⋅K^-1
-
-gravitational_const = 6.67430e-11  # m^3⋅kg^−1⋅s^−2
-
-mass_electron = 9.1093837015e-31  # kg
-
-pi = pi
-
 planck_const = 6.62607015e-34  # J⋅s
 
-stefan_const = 5.670374419e-8  # W⋅m^−2⋅K^−4
-
 speed_light = 299792458  # in a vacuum m⋅s^-1
+
+# -----------------------------------------------------------------------------
+# Constants derived from fundamental constants
+
+# Faraday constant = elemental charge * Avogadro's constant
+faraday_const = 96485.33212  # C⋅mol^-1
+
+# Gas constant = Avogadro's constant * Boltzmann's constant
+gas_const = 8.314462618  # J⋅mol^-1⋅K^-1
+
+# Stefan-Boltzmann constant
+# Function of Boltzmann constant, pi and speed of light
+stefan_const = 5.67037442e-8  # W⋅m^−2⋅K^−4
+
+# -----------------------------------------------------------------------------
+# Other constants - all values sourced from NIST to avaialble uncertainty
+# All values retrieved 8th Jan 2020
+
+# https://physics.nist.gov/cgi-bin/cuu/Value?gn
+accel_gravity = 9.80665  # m⋅s^-2
+
+# https://physics.nist.gov/cgi-bin/cuu/Value?bg
+gravitational_const = 6.67430e-11  # m^3⋅kg^−1⋅s^−2
+
+# https://physics.nist.gov/cgi-bin/cuu/Value?me
+mass_electron = 9.1093837015e-31  # kg
