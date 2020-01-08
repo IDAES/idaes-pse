@@ -19,22 +19,22 @@ standard logging hierarchy, and the IDAES loggers have a few additional named
 logging levels, which allow for a bit finer control over information output.
 Logging levels are described in detail later.
 
-You can also specify a module name that be used to filter logging output.  By
-default the module name is None and log messages won't be filtered. Valid module
-names are in the set {None, "framework", "model", "flowsheet", "unit",
-"control_volume", "properties", "reactions"}.  Users may add to the set of
-valid names.  To see how to control which logging modules are logged, see section
-"Modules" below. To avoid filtering out import warning and error messages,
-records logged at the WARNING level and above are not filtered out.
+A tag can also be specified and used to filter logging records.  By default the
+tag is None and log records won't be filtered. Valid tags are in the set {None,
+"framework", "model", "flowsheet", "unit", "control_volume", "properties",
+"reactions"}.  Users may add to the set of valid names. To see how
+to control which logging modules are logged, see section "Tags" below. To avoid
+filtering out import warning and error messages, records logged at the WARNING
+level and above are not filtered out regardless of tag.
 
 idaes Logger
 ~~~~~~~~~~~~
 
-Loggers descending from ``idaes`` (other that ``idaes.init`` or ``idaes.model``)
-are used for general IDAES framework logging. Typically the module name
-``__name__`` is used for the logger name. Modules in the ``idaes`` package already
-start with ``idaes``, but if an idaes logger is requested for a module outside the
-``idaes`` package "idaes." is prepended to the name.
+Loggers descending from ``idaes`` (other than ``idaes.init``, ``idaes.model``, or
+``idaes.solve``) are used for general IDAES framework logging. Typically the
+module name ``__name__`` is used for the logger name. Modules in the ``idaes``
+package already start with ``idaes``, but if an idaes logger is requested for a
+module outside the ``idaes`` package "idaes." is prepended to the name.
 
 .. autofunction:: getLogger
 
@@ -44,7 +44,7 @@ start with ``idaes``, but if an idaes logger is requested for a module outside t
 
   import idaes.logger as idaeslog
 
-  _log = idaeslog.getLogger(__name__, module="framework")
+  _log = idaeslog.getLogger(__name__, tag="framework")
 
 
 idaes.init Logger
@@ -72,7 +72,7 @@ instance the initialization log messages are coming from.
       self.name = name
 
     def initialize(outlvl=idaeslog.INFO):
-      init_log = idaeslog.getInitLogger(self.name, level=outlvl, module="unit")
+      init_log = idaeslog.getInitLogger(self.name, level=outlvl, tag="unit")
 
 idaes.model Logger
 ~~~~~~~~~~~~~~~~~~
@@ -90,48 +90,47 @@ loggers.  The name the user can choose any name they like for these loggers.
 .. testcode::
   import idaes.logger as idaeslog
 
-  _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, module="model")
+  _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, tag="model")
 
-  idaes.solve Logger
-  ~~~~~~~~~~~~~~~~~
+idaes.solve Logger
+~~~~~~~~~~~~~~~~~~
 
-  The solve logger will always descend from "idaes.solve".  This logger is used in
-  to log solver output.  Since solvers may produce a lot of output, it can be useful
-  to specify different handlers for the solve logger to direct it to a separate file.
+The solve logger will always descend from "idaes.solve".  This logger is used in
+to log solver output.  Since solvers may produce a lot of output, it can be useful
+to specify different handlers for the solve logger to direct it to a separate file.
 
-  .. autofunction:: getSolveLogger
+.. autofunction:: getSolveLogger
 
-Modules
--------
+Tags
+----
 
-Logging module names provided by the IDAES logger allow control over what types of
-logger messages to display. The logging module is just a string that gets attached
-to a logger, which specifies that a logger generates records of a certain type. You
-can then specify what modules you want to see information from.  A filter will
-filter records from modules that you don't want to see at levels below WARNING.
+Logger tags are provided to allow control over what types of log records to
+display. The logger tag is just a string that gets attached to a logger, which
+specifies that a logger generates records of a certain type. You can then specify
+what tags you want to see information from.  A filter removes not in the list of
+tags to display at levels below WARNING.
 
-The types of modules to allow information from are a global setting in the idaes.logger
-module.  When getting a logger, you can set it's module by providing the module
+The tags to allow information from is a global setting in the idaes.logger
+module.  When getting a logger, you can set it's tag by providing the ``tag``
 argument, see "Getting Loggers" above.
 
 To specify which logging modules will be allowed the following functions can be used.
 
-.. autofunction:: log_modules
+.. autofunction:: log_tags
 
-.. autofunction:: set_log_modules
+.. autofunction:: set_log_tags
 
-.. autofunction:: add_log_module
+.. autofunction:: add_log_tag
 
-.. autofunction:: remove_log_module
+.. autofunction:: remove_log_tag
 
-The names of the logging modules are validated against a list of valid modules to
-provide error checking for typos and to enforce some standard module names. To
-provide more flexibility, users can add to the list of valid module names, but
-cannot remove names.
+The tags are validated against a list of valid tags to provide error checking
+for typos and to enforce some standard tag names. To provide more flexibility,
+users can add to the list of valid module names, but cannot remove names.
 
-.. autofunction:: valid_log_modules
+.. autofunction:: valid_log_tags
 
-.. autofunction:: add_valid_log_module
+.. autofunction:: add_valid_log_tag
 
 Levels
 ------

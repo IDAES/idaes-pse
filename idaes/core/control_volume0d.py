@@ -1396,7 +1396,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             states were fixed during initialization.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="control_volume")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
         if state_args is None:
             state_args = {}
             state_dict = (

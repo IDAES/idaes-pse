@@ -8,7 +8,7 @@ from pyutilib.misc import capture_output
 
 # There isn't really any reason to neforce this other that to catch typing errors
 # and enforce standards.
-_valid_modules = set(
+_valid_tags = set(
     [
         None,
         "framework",
@@ -24,7 +24,7 @@ _valid_modules = set(
 
 _config = {
     "solver_capture":True,
-    "modules": set(["framework", "model", "flowsheet", "unit"]),
+    "tags": set(["framework", "model", "flowsheet", "unit"]),
 }
 
 
@@ -45,7 +45,7 @@ levelname = { # the level name of all our extra info levels is "INFO"
 }
 
 
-class _ModuleFilter(logging.Filter):
+class _TagFilter(logging.Filter):
     """Filter applied to IDAES loggers returned by this modulue."""
     def filter(record):
         """Add in the custom level name and let the record through"""
@@ -54,7 +54,7 @@ class _ModuleFilter(logging.Filter):
         if record.levelno >= WARNING:
             return True
         try:
-            if record.idaesmod is None or record.idaesmod in _config["modules"]:
+            if record.tag is None or record.tag in _config["tags"]:
                 return True
         except AttributeError:
             return True
@@ -69,71 +69,71 @@ def __info_high(self, *args, **kwargs):
     self.log(INFO_HIGH, *args, **kwargs)
 
 
-def __add_methods(log, module=None):
-    log.addFilter(_ModuleFilter)
-    log = logging.LoggerAdapter(log, {"idaesmod": module})
+def __add_methods(log, tag=None):
+    log.addFilter(_TagFilter)
+    log = logging.LoggerAdapter(log, {"tag": tag})
     log.info_high = __info_high.__get__(log)
     log.info_low = __info_low.__get__(log)
     # hopfully adding this multiple times is not a problem
     return log
 
 
-def _getLogger(name, logger_name="idaes", level=None, module=None):
-    assert module in _valid_modules
+def _getLogger(name, logger_name="idaes", level=None, tag=None):
+    assert tag in _valid_tags
     if name.startswith("idaes."):
         name = name[6:]
     name = ".".join([logger_name, name])
     l = logging.getLogger(name)
     if level is not None:
         l.setLevel(level)
-    return __add_methods(logging.getLogger(name), module)
+    return __add_methods(logging.getLogger(name), tag)
 
 
-def getIdaesLogger(name, level=None, module=None):
+def getIdaesLogger(name, level=None, tag=None):
     """ Return an idaes logger.
 
     Args:
         name: usually __name__
         level: standard IDAES logging level (default use IDAES config)
-        module: type of module doing the logging, see valid_log_modules()
+        tag: logger tag for filtering, see valid_log_tags()
 
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes", level=level, module=module)
+    return _getLogger(name=name, logger_name="idaes", level=level, tag=tag)
 
 
 getLogger = getIdaesLogger
 
-def getSolveLogger(name, level=None, module=None):
+def getSolveLogger(name, level=None, tag=None):
     """ Get a model initialization logger
 
     Args:
         name: logger name is "idaes.solve." + name (if name starts with "idaes."
             it is removed before creating the logger name)
         level: Log level
-        module: type of module doing the logging, see valid_log_modules()
+        tag: logger tag for filtering, see valid_log_tags()
 
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.solve", level=level, module=module)
+    return _getLogger(name=name, logger_name="idaes.solve", level=level, tag=tag)
 
-def getInitLogger(name, level=None, module=None):
+def getInitLogger(name, level=None, tag=None):
     """ Get a model initialization logger
 
     Args:
         name: Object name (usually Pyomo Component name)
         level: Log level
-        module: type of module doing the logging, see valid_log_modules()
+        tag: logger tag for filtering, see valid_log_tags()
 
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.init", level=level, module=module)
+    return _getLogger(name=name, logger_name="idaes.init", level=level, tag=tag)
 
 
-def getModelLogger(name, level=None, module=None):
+def getModelLogger(name, level=None, tag=None):
     """ Get a logger for an IDAES model. This function helps users keep their
     loggers in a standard location and using the IDAES logging config.
 
@@ -141,12 +141,12 @@ def getModelLogger(name, level=None, module=None):
         name: Name (usually __name__).  Any starting 'idaes.' is stripped off, so
             if a model is part of the idaes package, idaes won't be repeated.
         level: Standard Python logging level (default use IDAES config)
-        module: type of module doing the logging, see valid_log_modules()
+        tag: logger tag for filtering, see valid_log_tags()
 
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.model", level=level, module=module)
+    return _getLogger(name=name, logger_name="idaes.model", level=level, tag=tag)
 
 def condition(res):
     """Get the solver termination condition to log.  This isn't a specifc value
@@ -184,79 +184,73 @@ def solver_capture():
     """Return True if solver capture is on or False otherwise."""
     return _config["solver_capture"]
 
-def log_modules():
-    """Returns a set of logging modules to be logged.
-
-    Args:
-        None
+def log_tags():
+    """Returns a set of logging tags to be logged.
 
     Returns:
-        (set) modules to be logged
+        (set) tags to be logged
     """
-    return _config["modules"]
+    return _config["tags"]
 
-def set_log_modules(modules):
-    """Specify a set of modules to be logged
+def set_log_tags(tags):
+    """Specify a set of tags to be logged
 
     Args:
-        modelues(iterable of str): Modules to log
+        tags(iterable of str): Tags to log
 
     Returns:
         None
     """
-    for m in modules:
-        if m not in _valid_modules:
-            raise ValueError("{} is not a valid logging module".format(m))
-    _config["modules"] = set(modules)
+    for m in tags:
+        if m not in _valid_tags:
+            raise ValueError("{} is not a valid logging tag".format(m))
+    _config["tags"] = set(tags)
 
-def add_log_module(module):
-    """Add a module to the list of modules to log.
+def add_log_tag(tag):
+    """Add a tag to the list of tagss to log.
 
     Args:
-        modelues(str): Module to log
+        modelue(str): Tag to log
 
     Returns:
         None
     """
-    if m not in _valid_modules:
-        raise ValueError("{} is not a valid logging module".format(m))
-    _config["modules"].add(module)
+    if m not in _valid_tags:
+        raise ValueError("{} is not a valid logging tag".format(m))
+    _config["tags"].add(tag)
 
-def remove_log_module(module):
-    """Remove a module to the list of modules to log.
+def remove_log_tag(tag):
+    """Remove a tag to the list of tags to log.
 
     Args:
-        modelues(str): Modules not to log
+        modelue(str): Tags not to log
 
     Returns:
         None
     """
     try:
-        _config["modules"].remove(module)
+        _config["tags"].remove(tag)
     except ValueError:
         pass
 
-def valid_log_modules():
-    """Returns a set of logging valid module names.
-
-    Args:
-        None
+def valid_log_tags():
+    """Returns a set of logging valid tag names.
 
     Returns:
-        (set) valid module names
+        (set) valid tag names
     """
-    return _config["modules"]
+    return _config["tags"]
 
-def add_valid_log_module(module):
-    """Add a module name to the list of valid names.
+def add_valid_log_tag(tag):
+    """Add a tag name to the list of valid names.
 
     Args:
-        module (str): A module name
+        tag(str): A tag name
 
     Returns:
         None
     """
-    _config["modules"].add(module)
+    _config["tags"].add(tag)
 
 
 class IOToLogTread(threading.Thread):

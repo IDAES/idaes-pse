@@ -584,8 +584,8 @@ see property package for documentation.}"""))
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         if self.config.temperature_spec == TemperatureSpec.customTemperature:
             if degrees_of_freedom(self) != 0:

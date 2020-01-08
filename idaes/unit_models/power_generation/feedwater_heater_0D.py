@@ -173,8 +173,8 @@ class FWHCondensing0DData(HeatExchangerData):
         solver = kwargs.get("solver", "ipopt")
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -293,8 +293,8 @@ class FWH0DData(UnitModelBlockData):
     def initialize(self, *args, **kwargs):
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         config = self.config  # shorter ref to config for less line splitting
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

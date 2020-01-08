@@ -239,8 +239,8 @@ class _ActivityCoeffStateBlock(StateBlock):
         """
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         for k in blk.keys():
             if (blk[k].config.defined_state is False) and \
@@ -372,7 +372,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         for k in blk.keys():
             if (not blk[k].config.defined_state and
                     blk[k]._params.config.state_vars == "FTPz"):

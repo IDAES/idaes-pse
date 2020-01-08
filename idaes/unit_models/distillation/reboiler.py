@@ -431,8 +431,8 @@ see property package for documentation.}"""))
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Initialize the inlet and outlet state blocks
         self.control_volume.initialize(outlvl=outlvl)

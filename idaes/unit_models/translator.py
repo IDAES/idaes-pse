@@ -214,7 +214,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(

@@ -613,8 +613,8 @@ class TurbineMultistageData(UnitModelBlockData):
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)

@@ -434,8 +434,8 @@ class _GenericStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
         init_log.info('Starting initialization')
 
@@ -719,7 +719,7 @@ class _GenericStateBlock(StateBlock):
             outlvl : sets output level of initialization routine
         '''
         revert_state_vars(blk, flags)
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high("State released.")
 
 @declare_process_block_class("GenericStateBlock",

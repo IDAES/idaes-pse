@@ -126,7 +126,7 @@ see property package for documentation.}"""))
             None
         '''
         # ---------------------------------------------------------------------
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
         # Initialize state block
         blk.properties.initialize(outlvl=outlvl,

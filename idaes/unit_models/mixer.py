@@ -807,8 +807,8 @@ linked to all inlet states and the mixed state,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Set solver options
         opt = SolverFactory(solver)

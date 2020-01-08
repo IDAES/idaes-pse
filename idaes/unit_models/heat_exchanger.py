@@ -421,8 +421,8 @@ class HeatExchangerData(UnitModelBlockData):
 
         """
         # Set solver options
-        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = SolverFactory(solver)
         opt.options = optarg
@@ -485,7 +485,7 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=costing):
+    def get_costing(self, tag=costing):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing()
         self.costing = Block()

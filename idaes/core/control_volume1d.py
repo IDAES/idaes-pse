@@ -1724,7 +1724,7 @@ argument)."""))
             triggered.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="control_volume")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
 
         # Get source block
         if blk._flow_direction == FlowDirection.forward:

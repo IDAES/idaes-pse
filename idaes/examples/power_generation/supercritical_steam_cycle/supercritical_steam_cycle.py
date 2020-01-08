@@ -794,8 +794,8 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
         solver: A Pyomo solver object, that can be used to solve the model.
 
     """
-    init_log = idaeslog.getInitLogger(m.name, outlvl, module="flowsheet")
-    solve_log = idaeslog.getSolveLogger(m.name, outlvl, module="flowsheet")
+    init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
+    solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "tol": 1e-7,

@@ -160,7 +160,7 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
         # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
@@ -200,7 +200,7 @@ class _StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
 
         # Reactivate conc_water_eqn
         for k in blk.keys():

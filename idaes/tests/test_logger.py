@@ -42,21 +42,21 @@ def test_solver_condition():
     assert idaeslog.condition(None) == "Error, no result"
     assert idaeslog.condition("something else") == "something else"
 
-def test_modules(caplog):
-    def a(module):
+def test_tags(caplog):
+    def a(tag):
         caplog.set_level(logging.DEBUG)
-        log = idaeslog.getLogger("Unit", module=module)
+        log = idaeslog.getLogger("Unit", tag=tag)
         log.setLevel(logging.DEBUG)
         log.info_high("Hello!")
         log.info("Hello!")
         log.info_low("Hello!")
-        if module not in idaeslog.log_modules():
+        if tag not in idaeslog.log_tags():
              assert len(caplog.records) == 0
         else:
             assert caplog.records[0].levelname == "INFO"
             assert caplog.records[1].levelname == "INFO"
             assert caplog.records[2].levelname == "INFO"
-    for m in idaeslog.valid_log_modules():
+    for m in idaeslog.valid_log_tags():
         a(m)
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")

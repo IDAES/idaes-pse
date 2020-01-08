@@ -148,7 +148,7 @@ see property package for documentation.}""",
         """
         # ---------------------------------------------------------------------
         # Initialize state block
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         blk.properties.initialize(
             outlvl=outlvl,
             optarg=optarg,
