@@ -128,7 +128,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
@@ -139,4 +139,4 @@ see property package for documentation.}""",
             hold_state=False,
             **state_args
         )
-        init_log.unit("Initialization Step Complete.")
+        init_log.info("Initialization Step Complete.")

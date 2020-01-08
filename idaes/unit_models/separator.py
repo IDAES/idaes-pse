@@ -1289,8 +1289,8 @@ linked the mixed state and all outlet states,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="unit")
         # Set solver options
         opt = SolverFactory(solver)
         opt.options = optarg
@@ -1388,11 +1388,11 @@ linked the mixed state and all outlet states,
         if blk.config.mixed_state_block is None:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
-            init_log.unit(
+            init_log.info(
                 "Initialization Complete: {}".format(idaeslog.condition(res))
             )
         else:
-            init_log.unit("Initialization Complete.")
+            init_log.info("Initialization Complete.")
 
         if hold_state is True:
             return flags
@@ -1413,7 +1413,7 @@ linked the mixed state and all outlet states,
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
 
         if blk.config.mixed_state_block is None:
             mblock = blk.mixed_state

@@ -214,7 +214,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(
@@ -234,4 +234,4 @@ see property package for documentation.}""",
 
         blk.properties_in.release_state(flags)
 
-        init_log.unit("Initialization Complete.")
+        init_log.info("Initialization Complete.")

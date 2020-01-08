@@ -1724,7 +1724,7 @@ argument)."""))
             triggered.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="control_volume")
 
         # Get source block
         if blk._flow_direction == FlowDirection.forward:
@@ -1806,7 +1806,7 @@ argument)."""))
         except AttributeError:
             pass
 
-        init_log.cv('Initialization Complete')
+        init_log.info('Initialization Complete')
 
         # Unfix state variables except for source block
         blk.properties.release_state(flags)

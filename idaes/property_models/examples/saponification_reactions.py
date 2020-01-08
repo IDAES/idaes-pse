@@ -128,8 +128,8 @@ class _ReactionBlock(ReactionBlockBase):
         Returns:
             None
         '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        init_log.prop('Initialization Complete.')
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log.info('Initialization Complete.')
 
 
 @declare_process_block_class("ReactionBlock",

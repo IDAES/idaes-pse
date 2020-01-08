@@ -239,8 +239,8 @@ class _ActivityCoeffStateBlock(StateBlock):
         """
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="properties")
 
         for k in blk.keys():
             if (blk[k].config.defined_state is False) and \
@@ -299,7 +299,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
             res="skipped"
-        init_log.prop("Initialization Step 1 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 1 {}.".format(idaeslog.condition(res)))
 
 
         # Continue initialization sequence and activate select constraints
@@ -318,7 +318,7 @@ class _ActivityCoeffStateBlock(StateBlock):
         # Second solve for the active constraints
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.prop("Initialization Step 2 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # Activate activity coefficient specific constraints
         for k in blk.keys():
@@ -332,7 +332,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.prop("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             if blk[k].config.parameters.config.activity_coeff_model \
@@ -342,7 +342,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.prop("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
@@ -352,7 +352,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.prop("Initialization Step 5 {}.".format(idaeslog.condition(res)))
+        init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -360,7 +360,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             else:
                 blk.release_state(flags, outlvl=outlvl)
 
-        init_log.prop("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
@@ -372,7 +372,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
         for k in blk.keys():
             if (not blk[k].config.defined_state and
                     blk[k]._params.config.state_vars == "FTPz"):
@@ -385,7 +385,7 @@ class _ActivityCoeffStateBlock(StateBlock):
         # Unfix state variables
         revert_state_vars(blk, flags)
 
-        init_log.prop("State Released.")
+        init_log.info("State Released.")
 
 
 @declare_process_block_class("ActivityCoeffStateBlock",

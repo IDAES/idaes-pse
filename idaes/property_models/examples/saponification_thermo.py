@@ -160,7 +160,7 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
         # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
@@ -187,7 +187,7 @@ class _StateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-        init_log.prop('Initialization Complete.')
+        init_log.info('Initialization Complete.')
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
@@ -200,7 +200,7 @@ class _StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
 
         # Reactivate conc_water_eqn
         for k in blk.keys():
@@ -211,7 +211,7 @@ class _StateBlock(StateBlock):
             return
         # Unfix state variables
         revert_state_vars(blk, flags)
-        init_log.prop('State Released.')
+        init_log.info('State Released.')
 
 
 @declare_process_block_class("SaponificationStateBlock",

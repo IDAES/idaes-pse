@@ -794,8 +794,8 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
         solver: A Pyomo solver object, that can be used to solve the model.
 
     """
-    init_log = idaeslog.getInitLogger(m.name, outlvl)
-    solve_log = idaeslog.getSolveLogger(m.name, outlvl) #logger for solver output
+    init_log = idaeslog.getInitLogger(m.name, outlvl, module="flowsheet")
+    solve_log = idaeslog.getSolveLogger(m.name, outlvl, module="flowsheet")
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "tol": 1e-7,
@@ -803,11 +803,11 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
         "max_iter": 40,
     }
     if fileinput is not None:
-        init_log.flowsheet("Loading initial values from file: {}".format(fileinput))
+        init_log.info("Loading initial values from file: {}".format(fileinput))
         ms.from_json(m, fname=fileinput)
         return solver
 
-    init_log.flowsheet("Starting initialization")
+    init_log.info("Starting initialization")
     ############################################################################
     #  Initialize turbine                                                      #
     ############################################################################
@@ -866,8 +866,8 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.condenser.inlet_1.pressure.unfix()
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         res = solver.solve(m.fs.condenser, tee=slc.tee)
-    init_log.flowsheet("Condenser initialized: {}".format(idaeslog.condition(res)))
-    init_log.info("Init condenser pressure: {}".format(
+    init_log.info("Condenser initialized: {}".format(idaeslog.condition(res)))
+    init_log.info_high("Init condenser pressure: {}".format(
             m.fs.condenser.shell.properties_in[0].pressure.value
         )
     )
@@ -952,7 +952,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.fwh8.initialize(outlvl=outlvl, optarg=solver.options)
     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
         res = solver.solve(m, tee=slc.tee)
-    init_log.flowsheet("Initialization Complete: {}".format(idaeslog.condition(res)))
+    init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
     return solver
 

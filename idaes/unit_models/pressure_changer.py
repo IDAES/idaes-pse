@@ -664,8 +664,8 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="unit")
         # Set solver options
         opt = SolverFactory(solver)
         opt.options = optarg
@@ -678,7 +678,7 @@ see property package for documentation.}""",
             solver=solver,
             state_args=state_args,
         )
-        init_log.unit_high("Initialization Step 1 Complete.")
+        init_log.info_high("Initialization Step 1 Complete.")
         # ---------------------------------------------------------------------
         # Initialize Isentropic block
 
@@ -704,7 +704,7 @@ see property package for documentation.}""",
             state_args=state_args,
         )
 
-        init_log.unit_high("Initialization Step 2 Complete.")
+        init_log.info_high("Initialization Step 2 Complete.")
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
@@ -716,7 +716,7 @@ see property package for documentation.}""",
         blk.isentropic.deactivate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.unit_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         if isinstance(
             blk.properties_isentropic[blk.flowsheet().config.time.first()].temperature,
@@ -729,12 +729,12 @@ see property package for documentation.}""",
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.unit_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl + 1)
-        init_log.unit(
+        init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 

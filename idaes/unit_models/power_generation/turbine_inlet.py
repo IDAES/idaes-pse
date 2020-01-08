@@ -181,8 +181,8 @@ class TurbineInletStageData(PressureChangerData):
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        init_log = idaeslog.getInitLogger(self.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
 
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
@@ -269,7 +269,7 @@ class TurbineInletStageData(PressureChangerData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
 
-        init_log.unit(
+        init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 

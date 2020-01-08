@@ -11,6 +11,7 @@ from pyutilib.misc import capture_output
 _valid_modules = set(
     [
         None,
+        "framework",
         "model",
         "flowsheet",
         "unit",
@@ -23,7 +24,7 @@ _valid_modules = set(
 
 _config = {
     "solver_capture":True,
-    "modules": set(["model", "flowsheet", "unit"]),
+    "modules": set(["framework", "model", "flowsheet", "unit"]),
 }
 
 

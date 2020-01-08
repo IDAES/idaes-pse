@@ -148,14 +148,14 @@ see property package for documentation.}""",
         """
         # ---------------------------------------------------------------------
         # Initialize state block
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
         blk.properties.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
             **state_args
         )
-        init_log.unit("Initialization Complete.")
+        init_log.info("Initialization Complete.")
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(

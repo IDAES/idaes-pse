@@ -507,8 +507,8 @@ Must be True if dynamic = True,
             None
         '''
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="unit")
 
         opt = SolverFactory(solver)
         opt.options = optarg
@@ -522,14 +522,14 @@ Must be True if dynamic = True,
             state_args=state_args,
         )
 
-        init_log.unit_high('Initialization Step 1 Complete.')
+        init_log.info_high('Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
-        init_log.unit_high(
+        init_log.info_high(
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
@@ -537,4 +537,4 @@ Must be True if dynamic = True,
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl+1)
 
-        init_log.unit('Initialization Complete: {}'.format(idaeslog.condition(results)))
+        init_log.info('Initialization Complete: {}'.format(idaeslog.condition(results)))

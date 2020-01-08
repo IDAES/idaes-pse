@@ -613,8 +613,8 @@ class TurbineMultistageData(UnitModelBlockData):
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
-        init_log = idaeslog.getInitLogger(self.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -709,7 +709,7 @@ class TurbineMultistageData(UnitModelBlockData):
 
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        init_log.unit_high("Solve full multistage turbine")
+        init_log.info_high("Solve full multistage turbine")
         self.inlet_split.inlet.flow_mol.unfix()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
@@ -718,6 +718,6 @@ class TurbineMultistageData(UnitModelBlockData):
                 flow_guess, self.outlet_stage.inlet.flow_mol[0].value
             ),
         )
-        init_log.unit("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)

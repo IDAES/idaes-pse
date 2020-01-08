@@ -173,8 +173,8 @@ class FWHCondensing0DData(HeatExchangerData):
         solver = kwargs.get("solver", "ipopt")
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
-        init_log = idaeslog.getInitLogger(self.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -197,7 +197,7 @@ class FWHCondensing0DData(HeatExchangerData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.unit(
+        init_log.info(
             "Initialization Complete (w/ extraction calc): {}".format(
                 idaeslog.condition(res)
             )
@@ -293,8 +293,8 @@ class FWH0DData(UnitModelBlockData):
     def initialize(self, *args, **kwargs):
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
 
-        init_log = idaeslog.getInitLogger(self.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, module="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, module="unit")
 
         config = self.config  # shorter ref to config for less line splitting
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
@@ -374,7 +374,7 @@ class FWH0DData(UnitModelBlockData):
         init_log.info(
             "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
         )
-        init_log.unit(
+        init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
 

@@ -434,10 +434,10 @@ class _GenericStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, module="properties")
 
-        init_log.prop('Starting initialization')
+        init_log.info('Starting initialization')
 
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
@@ -634,7 +634,7 @@ class _GenericStateBlock(StateBlock):
         if n_cons > 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            init_log.prop(
+            init_log.info(
                 "Dew and bubble point initialization: {}.".format(idaeslog.condition(res))
             )
         # ---------------------------------------------------------------------
@@ -650,7 +650,7 @@ class _GenericStateBlock(StateBlock):
                 eq_check += 1
 
         if eq_check > 0:
-            init_log.prop("Equilibrium temperature initialization completed.")
+            init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -658,7 +658,7 @@ class _GenericStateBlock(StateBlock):
             blk[k]._params.config.state_definition.state_initialization(blk[k])
 
         if outlvl > 0:
-            init_log.prop("State variable initialization completed.")
+            init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
         if (blk[k]._params.config.phase_equilibrium_formulation is not None and
@@ -668,7 +668,7 @@ class _GenericStateBlock(StateBlock):
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt,[blk],tee=slc.tee)
-            init_log.prop(
+            init_log.info(
                 "Phase equilibrium initialization: {}.".format(
                     idaeslog.condition(res)
                 )
@@ -685,7 +685,7 @@ class _GenericStateBlock(StateBlock):
                     c.activate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.prop("Property initialization: {}.".format(
+        init_log.info("Property initialization: {}.".format(
             idaeslog.condition(res))
         )
 
@@ -704,7 +704,7 @@ class _GenericStateBlock(StateBlock):
             else:
                 blk.release_state(flag_dict)
 
-        init_log.prop("Property package initialization: {}.".format(
+        init_log.info("Property package initialization: {}.".format(
             idaeslog.condition(res))
         )
 
@@ -719,7 +719,8 @@ class _GenericStateBlock(StateBlock):
             outlvl : sets output level of initialization routine
         '''
         revert_state_vars(blk, flags)
-        idaeslog.getInitLogger(blk.name, outlvl).prop("State released.")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, module="properties")
+        init_log.info_high("State released.")
 
 @declare_process_block_class("GenericStateBlock",
                              block_class=_GenericStateBlock)
