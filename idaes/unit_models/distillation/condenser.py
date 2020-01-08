@@ -607,7 +607,7 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.activate()
 
         if solver is not None:
-            with solver_log(solve_log, idaeslog.DEBUG) as slc:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
             init_log.unit(
                 "Initialisation Complete, {}.".format(idaeslog.condition(res))
