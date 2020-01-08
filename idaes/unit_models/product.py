@@ -19,18 +19,16 @@ from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        UnitModelBlockData,
-                        useDefault)
+from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Product")
@@ -38,36 +36,53 @@ class ProductData(UnitModelBlockData):
     """
     Standard Product Block Class
     """
+
     CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = False. Product blocks are always steady-state."""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Holdup construction flag - must be False",
-        doc="""Product blocks do not contain holdup, thus this must be
-False."""))
-    CONFIG.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
+    CONFIG.declare(
+        "dynamic",
+        ConfigValue(
+            domain=In([False]),
+            default=False,
+            description="Dynamic model flag - must be False",
+            doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Product blocks are always steady-state.""",
+        ),
+    )
+    CONFIG.declare(
+        "has_holdup",
+        ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Holdup construction flag - must be False",
+            doc="""Product blocks do not contain holdup, thus this must be
+False.""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package",
+        ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
-**PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-    CONFIG.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+**PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
+        ),
+    )
+    CONFIG.declare(
+        "property_package_args",
+        ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s)
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))
+see property package for documentation.}""",
+        ),
+    )
 
     def build(self):
         """
@@ -84,19 +99,21 @@ see property package for documentation.}"""))
         super(ProductData, self).build()
 
         # Add State Block
-        self.properties = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties in product",
-                            default={
-                                "defined_state": True,
-                                "parameters": self.config.property_package,
-                                "has_phase_equilibrium": False,
-                                **self.config.property_package_args}))
+        self.properties = self.config.property_package.state_block_class(
+            self.flowsheet().config.time,
+            doc="Material properties in product",
+            default={
+                "defined_state": True,
+                "parameters": self.config.property_package,
+                "has_phase_equilibrium": False,
+                **self.config.property_package_args,
+            },
+        )
 
         # Add references to all state vars
         s_vars = self.properties[
-                self.flowsheet().config.time.first()].define_state_vars()
+            self.flowsheet().config.time.first()
+        ].define_state_vars()
         for s in s_vars:
             l_name = s_vars[s].local_name
             if s_vars[s].is_indexed():
@@ -110,9 +127,10 @@ see property package for documentation.}"""))
         # Add outlet port
         self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
 
-    def initialize(blk, state_args={}, outlvl=6,
-                   solver='ipopt', optarg={'tol': 1e-6}):
-        '''
+    def initialize(
+        blk, state_args={}, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}
+    ):
+        """
         This method calls the initialization method of the state block.
 
         Keyword Arguments:
@@ -121,31 +139,25 @@ see property package for documentation.}"""))
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
             None
-        '''
+        """
         # ---------------------------------------------------------------------
         # Initialize state block
-        init_log = getInitLogger(blk.name, outlvl)
-        blk.properties.initialize(outlvl=outlvl+1,
-                                  optarg=optarg,
-                                  solver=solver,
-                                  **state_args)
-        init_log.log(5, 'Initialization Complete.')
-
+        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        blk.properties.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            **state_args
+        )
+        init_log.unit("Initialization Complete.")
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
-                {"Inlet": self.inlet},
-                time_point=time_point)
+            {"Inlet": self.inlet}, time_point=time_point
+        )

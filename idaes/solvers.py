@@ -1,11 +1,11 @@
 import os
-import logging
+import idaes.logger as idaeslog
 import tarfile
 import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 def download_binaries(url=None, verbose=False):
     """
@@ -19,7 +19,7 @@ def download_binaries(url=None, verbose=False):
         None
     """
     if verbose:
-        _log.setLevel(logging.DEBUG)
+        _log.setLevel(idaeslog.DEBUG)
     idaes._create_lib_dir()
     idaes._create_bin_dir()
     solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")

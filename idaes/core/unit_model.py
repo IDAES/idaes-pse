@@ -16,7 +16,6 @@ Base class for unit models
 
 from pyomo.environ import Reference, SolverFactory
 from pyomo.network import Port
-from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
 from .process_base import (declare_process_block_class,
@@ -28,7 +27,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -36,7 +35,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("UnitModelBlock")
@@ -483,7 +482,7 @@ Must be True if dynamic = True,
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-    def initialize(blk, state_args=None, outlvl=6,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a general purpose initialization routine for simple unit
@@ -500,13 +499,6 @@ Must be True if dynamic = True,
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -515,27 +507,34 @@ Must be True if dynamic = True,
             None
         '''
         # Set solver options
-        init_log = getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl)
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl) #logger for solver output
+
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.control_volume.initialize(outlvl=outlvl+1,
-                                              optarg=optarg,
-                                              solver=solver,
-                                              state_args=state_args)
+        flags = blk.control_volume.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
 
-        init_log.log(4, 'Initialization Step 1 Complete.')
+        init_log.unit_high('Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(blk, tee=init_tee(init_log))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = opt.solve(blk, tee=slc.tee)
 
-        init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
+        init_log.unit_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl+1)
 
-        init_log.log(5, 'Initialization Complete: {}'.format(condition(results)))
+        init_log.unit('Initialization Complete: {}'.format(idaeslog.condition(results)))
