@@ -22,10 +22,11 @@
  File: iapws95_phi.h
 ------------------------------------------------------------------------------*/
 
-#include "iapws95_param.h"
+#include "iapws95_config.h"
 
 #ifndef _INCLUDE_IAPWS95_PHI_H_
 #define _INCLUDE_IAPWS95_PHI_H_
+
 
 // Ideal part and derivatives of dimensionless Helmholtz
 s_real phi0(s_real delta, s_real tau); //Ideal part of dimensionless Helmholtz
@@ -56,5 +57,17 @@ s_real phir_delta_tau3(s_real delta, s_real tau);
 s_real phir_tau3(s_real delta, s_real tau);
 s_real phir_tau4(s_real delta, s_real tau);
 s_real phir_delta3_tau(s_real delta, s_real tau);
+
+
+/*------------------------------------------------------------------------------
+  Some phi0 derivatives that are 0, just to be more explicit in calculations
+  phi0 is the ideal part of dimensionless Helmholtz free energy
+------------------------------------------------------------------------------*/
+static const s_real phi0_delta_tau = 0;  //derivative of phi0 wrt delta and tau
+static const s_real phi0_delta2_tau = 0;
+static const s_real phi0_delta_tau2 = 0;
+static const s_real phi0_delta3_tau = 0;
+static const s_real phi0_delta2_tau2 = 0;
+static const s_real phi0_delta_tau3 = 0;
 
 #endif

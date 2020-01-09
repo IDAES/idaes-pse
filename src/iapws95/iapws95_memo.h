@@ -19,7 +19,7 @@
 
 #include<unordered_map>
 #include<boost/functional/hash.hpp>
-#include"iapws95_param.h"
+#include"iapws95_config.h"
 
 #ifndef _INCLUDE_IAPWS95_MEMO_H_
 #define _INCLUDE_IAPWS95_MEMO_H_
