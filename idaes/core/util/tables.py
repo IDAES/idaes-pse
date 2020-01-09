@@ -51,10 +51,12 @@ def create_stream_table_dataframe(streams,
 
     for n in streams.keys():
         try:
-            if isinstance(streams[n], Arc):
+            if isinstance(streams[n], Arc) and not streams[n].is_indexed():
                 # Use destination of Arc, as inlets are more likely (?) to be
                 # fully-defined StateBlocks
                 sb = _get_state_from_port(streams[n].destination, time_point)
+            elif isinstance(streams[n], Arc):
+                pass #for now
             elif isinstance(streams[n], Port):
                 sb = _get_state_from_port(streams[n], time_point)
             else:
