@@ -41,7 +41,8 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError, \
+    PropertyPackageError, PropertyNotSupportedError
 
 _log = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ see property package for documentation.}"""))
         for i in inlet_list:
             state_obj = self.config.property_package.state_block_class(
                 self.flowsheet().config.time,
-                doc="State block for " + inlet_list[i] + "_inlet to tray",
+                doc="State block for " + i + "_inlet to tray",
                 default=state_block_args)
 
             setattr(self, "properties_in_" + i, state_obj)
@@ -456,7 +457,10 @@ see property package for documentation.}"""))
                             "_phase"
                     else:
                         raise PropertyPackageError(
-                            "Expected an unindexed variable.")
+                            "Enthalpy is indexed but the variable "
+                            "name does not reflect the presence of an index. "
+                            "Please follow the naming convention outlined "
+                            "in the documentation for state variables.")
 
                     # Rule to link the phase enthalpy to the port.
                     def rule_enth(self, t):
@@ -486,30 +490,31 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the port
                     port.add(Reference(var), k)
                 else:
-                    raise Exception(
-                        "Unrecognized enthalpy state variable. "
-                        "Only total mixture enthalpy or enthalpy by "
-                        "phase are supported.")
+                    raise PropertyNotSupportedError(
+                        "Unrecognized enthalpy state variable encountered "
+                        "while building ports for the tray. Only total "
+                        "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=0):
 
         if self.config.has_liquid_side_draw:
             if not self.liq_side_sf.fixed:
-                raise Exception("Liquid side draw split fraction not fixed.")
+                raise ConfigurationError(
+                    "Liquid side draw split fraction not fixed but "
+                    "has_liquid_side_draw set to True.")
 
         if self.config.has_vapor_side_draw:
             if not self.vap_side_sf.fixed:
-                raise Exception("Vapor side draw split fraction not fixed.")
+                raise ConfigurationError(
+                    "Vapor side draw split fraction not fixed but "
+                    "has_vapor_side_draw set to True.")
 
         # Initialize the inlet state blocks
         if self.config.is_feed_tray:
             self.properties_in_feed.initialize(outlvl=outlvl)
         self.properties_in_liq.initialize(outlvl=outlvl)
         self.properties_in_vap.initialize(outlvl=outlvl)
-
-        # Initialize the mixed outlet state block
-        self.properties_out.initialize(outlvl=outlvl)
 
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
@@ -528,6 +533,8 @@ see property package for documentation.}"""))
         self.pressure_drop_equation.deactivate()
         self.properties_out[:].pressure.\
             fix(self.properties_in_vap[0].pressure.value)
+
+        self.properties_out.initialize(outlvl=outlvl)
 
         if solver is not None:
             if outlvl > 2:
@@ -562,6 +569,8 @@ see property package for documentation.}"""))
         # Activate pressure balance
         self.pressure_drop_equation.activate()
         self.properties_out[:].pressure.unfix()
+
+        solver_output = solver.solve(self, tee=tee)
 
         if solver_output.solver.termination_condition == \
                 TerminationCondition.optimal:
