@@ -49,33 +49,42 @@ def create_stream_table_dataframe(streams,
     """
     stream_attributes = OrderedDict()
 
+    def _stream_attributes_dict_add(sb, n, i=None):
+        """add a line to the stream table"""
+        if true_state:
+            disp_dict = sb.define_state_vars()
+        else:
+            disp_dict = sb.define_display_vars()
+        if i is None:
+            key = n
+        else:
+            key = "{}[{}]".format(n,i)
+        stream_attributes[key] = {}
+        for k in disp_dict:
+            for i in disp_dict[k]:
+                if i is None:
+                    stream_attributes[key][k] = value(disp_dict[k][i])
+                else:
+                    stream_attributes[key][k+" "+str(i)] = \
+                        value(disp_dict[k][i])
+
     for n in streams.keys():
         try:
             if isinstance(streams[n], Arc) and not streams[n].is_indexed():
                 # Use destination of Arc, as inlets are more likely (?) to be
                 # fully-defined StateBlocks
                 sb = _get_state_from_port(streams[n].destination, time_point)
+                _stream_attributes_dict_add(sb, n)
             elif isinstance(streams[n], Arc):
-                pass #for now
+                for i, a in streams[n].items():
+                    sb = _get_state_from_port(a.destination, time_point)
+                    _stream_attributes_dict_add(sb, n, i)
             elif isinstance(streams[n], Port):
                 sb = _get_state_from_port(streams[n], time_point)
+                _stream_attributes_dict_add(sb, n)
             else:
                 sb = streams[n][time_point]
-
-            if true_state:
-                disp_dict = sb.define_state_vars()
-            else:
-                disp_dict = sb.define_display_vars()
-
-            stream_attributes[n] = {}
-
-            for k in disp_dict:
-                for i in disp_dict[k]:
-                    if i is None:
-                        stream_attributes[n][k] = value(disp_dict[k][i])
-                    else:
-                        stream_attributes[n][k+" "+str(i)] = \
-                            value(disp_dict[k][i])
+                _stream_attributes_dict_add(sb, n)
         except (AttributeError, KeyError):
             raise TypeError(
                     f"Unrecognised component provided in stream argument "
