@@ -26,6 +26,18 @@
 #define _INCLUDE_IAPWS95_DERIV_PARTS_H_
 
 /*
+ok I know this is probably sort of lazy, but I know there are three parameters
+I'm not going to use here and since they are declared as static in the
+parameters header file, I get local copies of the pointers anyway.  I'm going to
+define a function with those parameter just to avoid the unused variable warning.
+I guess it's my stupid way of saying yeah I know, don't worry it's cool.
+*/
+inline s_real _dummy_unused(unsigned char i){
+  return n[i] + n0[i] + gamma0[i];
+}
+
+
+/*
 This next set of macros lets me use the functions for derivative parts without
 typing the arguments.  The goal is to make the derivative equations more
 readable. Of course, that means where these macros are used you need to have
@@ -210,34 +222,34 @@ Look below this section for the actual functions
 // Functions for derivative parts, eventually will document in a paper or report
 
 inline s_real Ea_F(unsigned char i, s_real delta){
-  return s_exp(-s_pow(delta,c[i8(i)]));}
+  return s_exp(-s_pow(delta,c[i]));}
 
 inline s_real Ea_d_F(unsigned char i, s_real delta){
-  return -c[i8(i)]*s_pow(delta,c[i8(i)] - 1)*Ea;}
+  return -c[i]*s_pow(delta,c[i] - 1)*Ea;}
 
 inline s_real Ed_F(unsigned char i, s_real delta){
-  return s_pow(delta, d[i1(i)] - 2);}
+  return s_pow(delta, d[i] - 2);}
 
 inline s_real Ed_d_F(unsigned char i, s_real delta){
-  return (d[i1(i)] - 2)*s_pow(delta, d[i1(i)] - 3);}
+  return (d[i] - 2)*s_pow(delta, d[i] - 3);}
 
 inline s_real Eb_F(unsigned char i, s_real delta){
-   return d[i1(i)] - c[i8(i)]*s_pow(delta, c[i8(i)]);}
+   return d[i] - c[i]*s_pow(delta, c[i]);}
 
 inline s_real Eb_d_F(unsigned char i, s_real delta){
-   return -c[i8(i)]*c[i8(i)]*s_pow(delta, c[i8(i)] - 1);}
+   return -c[i]*c[i]*s_pow(delta, c[i] - 1);}
 
 inline s_real Ec_F(unsigned char i, s_real delta){
-   return d[i1(i)] - 1 - c[i8(i)]*s_pow(delta, c[i8(i)]);}
+   return d[i] - 1 - c[i]*s_pow(delta, c[i]);}
 
 inline s_real Ec_d_F(unsigned char i, s_real delta){
-  return -c[i8(i)]*c[i8(i)]*s_pow(delta, c[i8(i)] - 1);}
+  return -c[i]*c[i]*s_pow(delta, c[i] - 1);}
 
 inline s_real Ee_F(unsigned char i, s_real delta){
-  return c[i8(i)]*c[i8(i)]*s_pow(delta, c[i8(i)]);}
+  return c[i]*c[i]*s_pow(delta, c[i]);}
 
 inline s_real Ee_d_F(unsigned char i, s_real delta){
-  return c[i8(i)]*c[i8(i)]*c[i8(i)]*s_pow(delta, c[i8(i)] - 1);}
+  return c[i]*c[i]*c[i]*s_pow(delta, c[i] - 1);}
 
 inline s_real Ef_F(unsigned char i, s_real delta){
   return Eb*Ec;}
@@ -252,20 +264,20 @@ inline s_real Eg_d_F(unsigned char i, s_real delta){
   return Ed_d*(Ef - Ee) + Ed*(Ef_d - Ee_d);}
 
 inline s_real Ea_dd_F(unsigned char i, s_real delta){
-  return -c[i8(i)]*(c[i8(i)] - 1)*s_pow(delta,c[i8(i)] - 2)*Ea +
-         -c[i8(i)]*s_pow(delta,c[i8(i)] - 1)*Ea_d;}
+  return -c[i]*(c[i] - 1)*s_pow(delta,c[i] - 2)*Ea +
+         -c[i]*s_pow(delta,c[i] - 1)*Ea_d;}
 
 inline s_real Eb_dd_F(unsigned char i, s_real delta){
-  return -c[i8(i)]*c[i8(i)]*(c[i8(i)] - 1)*s_pow(delta, c[i8(i)] - 2);}
+  return -c[i]*c[i]*(c[i] - 1)*s_pow(delta, c[i] - 2);}
 
 inline s_real Ec_dd_F(unsigned char i, s_real delta){
-  return -c[i8(i)]*c[i8(i)]*(c[i8(i)] - 1)*s_pow(delta, c[i8(i)] - 2);}
+  return -c[i]*c[i]*(c[i] - 1)*s_pow(delta, c[i] - 2);}
 
 inline s_real Ed_dd_F(unsigned char i, s_real delta){
-  return (d[i1(i)] - 2)*(d[i1(i)] - 3)*s_pow(delta, d[i1(i)] - 4);}
+  return (d[i] - 2)*(d[i] - 3)*s_pow(delta, d[i] - 4);}
 
 inline s_real Ee_dd_F(unsigned char i, s_real delta){
-  return c[i8(i)]*c[i8(i)]*c[i8(i)]*(c[i8(i)] - 1)*s_pow(delta, c[i8(i)] - 2);}
+  return c[i]*c[i]*c[i]*(c[i] - 1)*s_pow(delta, c[i] - 2);}
 
 inline s_real Ef_dd_F(unsigned char i, s_real delta){
   return Eb_dd*Ec + 2.0*Eb_d*Ec_d + Eb*Ec_dd;}
@@ -274,69 +286,69 @@ inline s_real Eg_dd_F(unsigned char i, s_real delta){
   return Ed_dd*(Ef - Ee) + 2.0*Ed_d*(Ef_d - Ee_d) + Ed*(Ef_dd - Ee_dd);}
 
 inline s_real Fa_F(unsigned char i, s_real delta, s_real tau){
-  return s_exp(-alpha[i52(i)]*(delta - eps[i52(i)])*(delta - eps[i52(i)]) -
-    beta[i52(i)]*(tau - gamma_[i52(i)])*(tau - gamma_[i52(i)]));}
+  return s_exp(-alpha[i]*(delta - eps[i])*(delta - eps[i]) -
+    beta[i]*(tau - theta[i])*(tau - theta[i]));}
 
 inline s_real Fa_d_F(unsigned char i, s_real delta, s_real tau){
-  return -2.0*alpha[i52(i)]*(delta - eps[i52(i)])*Fa;}
+  return -2.0*alpha[i]*(delta - eps[i])*Fa;}
 
 inline s_real Fb_F(unsigned char i, s_real delta){
-  return -2.0*alpha[i52(i)]*s_pow(delta, d[i1(i)]);}
+  return -2.0*alpha[i]*s_pow(delta, d[i]);}
 
 inline s_real Ff_F(unsigned char i, s_real delta){
-  return 4.0*alpha[i52(i)]*alpha[i52(i)]*s_pow(delta, d[i1(i)]);}
+  return 4.0*alpha[i]*alpha[i]*s_pow(delta, d[i]);}
 
 inline s_real Fg_F(unsigned char i, s_real delta){
-  return (delta - eps[i52(i)])*(delta - eps[i52(i)]);}
+  return (delta - eps[i])*(delta - eps[i]);}
 
 inline s_real Fc_F(unsigned char i, s_real delta){return Ff*Fg;}
 
 inline s_real Fh_F(unsigned char i, s_real delta){
-  return -4.0*d[i1(i)]*alpha[i52(i)]*s_pow(delta, d[i1(i)] - 1);}
+  return -4.0*d[i]*alpha[i]*s_pow(delta, d[i] - 1);}
 
 inline s_real Fk_F(unsigned char i, s_real delta){
-  return (delta - eps[i52(i)]);}
+  return (delta - eps[i]);}
 
 inline s_real Fd_F(unsigned char i, s_real delta){return Fh*Fk;}
 
 inline s_real Fe_F(unsigned char i, s_real delta){
-  return d[i1(i)]*(d[i1(i)] - 1)*s_pow(delta, d[i1(i)] - 2);}
+  return d[i]*(d[i] - 1)*s_pow(delta, d[i] - 2);}
 
 inline s_real Fb_d_F(unsigned char i, s_real delta){
-  return -2*alpha[i52(i)]*d[i1(i)]*s_pow(delta, d[i1(i)] - 1);}
+  return -2*alpha[i]*d[i]*s_pow(delta, d[i] - 1);}
 
 inline s_real Ff_d_F(unsigned char i, s_real delta){
-  return 4*alpha[i52(i)]*alpha[i52(i)]*d[i1(i)]*s_pow(delta, d[i1(i)] - 1);}
+  return 4*alpha[i]*alpha[i]*d[i]*s_pow(delta, d[i] - 1);}
 
 inline s_real Fg_d_F(unsigned char i, s_real delta){
-  return 2*(delta - eps[i52(i)]);}
+  return 2*(delta - eps[i]);}
 
 inline s_real Fc_d_F(unsigned char i, s_real delta){
   return Ff_d*Fg + Ff*Fg_d;}
 
 inline s_real Fh_d_F(unsigned char i, s_real delta){
-  return -4.0*d[i1(i)]*alpha[i52(i)]*(d[i1(i)]-1)*s_pow(delta, d[i1(i)] - 2);}
+  return -4.0*d[i]*alpha[i]*(d[i]-1)*s_pow(delta, d[i] - 2);}
 
 inline s_real Fd_d_F(unsigned char i, s_real delta){
   return Fh_d*Fk + Fh*Fk_d;}
 
 inline s_real Fe_d_F(unsigned char i, s_real delta){
-  return d[i1(i)]*(d[i1(i)] - 1)*(d[i1(i)] - 2)*s_pow(delta, d[i1(i)] - 3);}
+  return d[i]*(d[i] - 1)*(d[i] - 2)*s_pow(delta, d[i] - 3);}
 
 inline s_real Fa_dd_F(unsigned char i, s_real delta, s_real tau){
-  return -2.0*alpha[i52(i)]*(delta - eps[i52(i)])*Fa_d - 2.0*alpha[i52(i)]*Fa;}
+  return -2.0*alpha[i]*(delta - eps[i])*Fa_d - 2.0*alpha[i]*Fa;}
 
 inline s_real Fb_dd_F(unsigned char i, s_real delta){
-  return -2.0*alpha[i52(i)]*d[i1(i)]*(d[i1(i)] - 1)*s_pow(delta, d[i1(i)] - 2);}
+  return -2.0*alpha[i]*d[i]*(d[i] - 1)*s_pow(delta, d[i] - 2);}
 
 inline s_real Fe_dd_F(unsigned char i, s_real delta){
-  return d[i1(i)]*(d[i1(i)] - 1)*(d[i1(i)] - 2)*(d[i1(i)] - 3)*s_pow(delta, d[i1(i)] - 4);}
+  return d[i]*(d[i] - 1)*(d[i] - 2)*(d[i] - 3)*s_pow(delta, d[i] - 4);}
 
 inline s_real Ff_dd_F(unsigned char i, s_real delta){
-  return 4.0*alpha[i52(i)]*alpha[i52(i)]*d[i1(i)]*(d[i1(i)] - 1)*s_pow(delta, d[i1(i)] - 2);}
+  return 4.0*alpha[i]*alpha[i]*d[i]*(d[i] - 1)*s_pow(delta, d[i] - 2);}
 
 inline s_real Fh_dd_F(unsigned char i, s_real delta){
-  return -4.0*d[i1(i)]*alpha[i52(i)]*(d[i1(i)]-1)*(d[i1(i)]-2)*s_pow(delta, d[i1(i)] - 3);}
+  return -4.0*d[i]*alpha[i]*(d[i]-1)*(d[i]-2)*s_pow(delta, d[i] - 3);}
 
 inline s_real Fc_dd_F(unsigned char i, s_real delta){
   return Ff_dd*Fg + 2*Ff_d*Fg_d + Ff*Fg_dd;}
@@ -354,47 +366,47 @@ inline s_real Fm_d_F(unsigned char i, s_real delta){
     return Fb_dd + Fc_dd + Fd_dd + Fe_dd;}
 
 inline s_real Fa_t_F(unsigned char i, s_real delta, s_real tau){
-  return -2.0*beta[i52(i)]*(tau - gamma_[i52(i)])*Fa;}
+  return -2.0*beta[i]*(tau - theta[i])*Fa;}
 
 inline s_real Fa_tt_F(unsigned char i, s_real delta, s_real tau){
-  return -2.0*beta[i52(i)]*Fa - 2.0*beta[i52(i)]*(tau - gamma_[i52(i)])*Fa_t;}
+  return -2.0*beta[i]*Fa - 2.0*beta[i]*(tau - theta[i])*Fa_t;}
 
 inline s_real Fa_dt_F(unsigned char i, s_real delta, s_real tau){
-  return -2.0*beta[i52(i)]*(tau - gamma_[i52(i)])*Fa_d;}
+  return -2.0*beta[i]*(tau - theta[i])*Fa_d;}
 
 inline s_real Ga_F(unsigned char i, s_real delta){
-  return d[i1(i)]/delta - 2.0*alpha[i52(i)]*(delta - eps[i52(i)]);}
+  return d[i]/delta - 2.0*alpha[i]*(delta - eps[i]);}
 
 inline s_real Gb_F(unsigned char i, s_real tau){
-  return t[i1(i)]/tau - 2.0*beta[i52(i)]*(tau - gamma_[i52(i)]);}
+  return t[i]/tau - 2.0*beta[i]*(tau - theta[i]);}
 
 inline s_real Gb_t_F(unsigned char i, s_real tau){
-  return -t[i1(i)]/tau/tau - 2.0*beta[i52(i)];}
+  return -t[i]/tau/tau - 2.0*beta[i];}
 
 inline s_real Gb_tt_F(unsigned char i, s_real tau){
-  return 2.0*t[i1(i)]/tau/tau/tau;}
+  return 2.0*t[i]/tau/tau/tau;}
 
 inline s_real Ha_F(unsigned char i, s_real tau){
-  return s_pow(t[i1(i)]/tau -2.0*beta[i52(i)]*(tau - gamma_[i52(i)]), 2);}
+  return s_pow(t[i]/tau -2.0*beta[i]*(tau - theta[i]), 2);}
 
 inline s_real Hb_F(unsigned char i, s_real tau){
-  return -t[i1(i)]/tau/tau - 2.0*beta[i52(i)];
+  return -t[i]/tau/tau - 2.0*beta[i];
 }
 
 inline s_real Ha_t_F(unsigned char i, s_real tau){
-  return 2.0*Hb*(t[i1(i)]/tau -2.0*beta[i52(i)]*(tau - gamma_[i52(i)]));
+  return 2.0*Hb*(t[i]/tau -2.0*beta[i]*(tau - theta[i]));
 }
 
 inline s_real Hb_t_F(unsigned char i, s_real tau){
-  return 2.0*t[i1(i)]/tau/tau/tau;
+  return 2.0*t[i]/tau/tau/tau;
 }
 
 inline s_real Ha_tt_F(unsigned char i, s_real tau){
-  return 2.0*Hb_t*(t[i1(i)]/tau -2.0*beta[i52(i)]*(tau - gamma_[i52(i)])) + 2.0*Hb*Hb;
+  return 2.0*Hb_t*(t[i]/tau -2.0*beta[i]*(tau - theta[i])) + 2.0*Hb*Hb;
 }
 
 inline s_real Hb_tt_F(unsigned char i, s_real tau){
-  return -6.0*t[i1(i)]/tau/tau/tau/tau;
+  return -6.0*t[i]/tau/tau/tau/tau;
 }
 
 inline s_real XA_F(s_real delta, s_real tau){

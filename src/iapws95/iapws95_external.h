@@ -24,7 +24,7 @@
  File iapws95.h
 ------------------------------------------------------------------------------*/
 
-#include "iapws95_param.h"
+#include "iapws95_config.h"
 #include "iapws95_phi.h"
 
 #ifndef _INCLUDE_IAPWS95_H_
