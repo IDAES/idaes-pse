@@ -6,8 +6,8 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from pyutilib.misc import capture_output
 
-# There isn't really any reason to neforce this other that to catch typing errors
-# and enforce standards.
+# There isn't really any reason to enforce this other than to catch
+# typing errors and enforce standards.
 _valid_tags = set(
     [
         None,
@@ -74,7 +74,7 @@ def __add_methods(log, tag=None):
     log = logging.LoggerAdapter(log, {"tag": tag})
     log.info_high = __info_high.__get__(log)
     log.info_low = __info_low.__get__(log)
-    # hopfully adding this multiple times is not a problem
+    # hopefully adding this multiple times is not a problem
     return log
 
 
@@ -106,7 +106,7 @@ def getIdaesLogger(name, level=None, tag=None):
 getLogger = getIdaesLogger
 
 def getSolveLogger(name, level=None, tag=None):
-    """ Get a model initialization logger
+    """ Get a solver logger
 
     Args:
         name: logger name is "idaes.solve." + name (if name starts with "idaes."
@@ -135,11 +135,11 @@ def getInitLogger(name, level=None, tag=None):
 
 def getModelLogger(name, level=None, tag=None):
     """ Get a logger for an IDAES model. This function helps users keep their
-    loggers in a standard location and using the IDAES logging config.
+    loggers in a standard location and use the IDAES logging config.
 
     Args:
         name: Name (usually __name__).  Any starting 'idaes.' is stripped off, so
-            if a model is part of the idaes package, idaes won't be repeated.
+            if a model is part of the idaes package, 'idaes' won't be repeated.
         level: Standard Python logging level (default use IDAES config)
         tag: logger tag for filtering, see valid_log_tags()
 
@@ -151,7 +151,7 @@ def getModelLogger(name, level=None, tag=None):
 def condition(res):
     """Get the solver termination condition to log.  This isn't a specifc value
     that you can really depend on, just a message to pass on from the solver for
-    the user's benefit. Somtimes the solve is in a try-except, so we'll handle
+    the user's benefit. Sometimes the solve is in a try-except, so we'll handle
     None and str for those cases, where you don't have a real result."""
 
     if res is None:
@@ -168,15 +168,17 @@ def condition(res):
 
 def solver_capture_on():
     """This function turns on the solver capture for the solver_log context
-    manager. If this is on, solver output within the solver_log contex is captured
-    and sent to the logger.
+    manager. If this is on, solver output within the solver_log context
+    is captured and sent to the logger.
+
     """
     _config["solver_capture"] = True
 
 def solver_capture_off():
     """This function turns off the solver capture for the solver_log context
-    manager. If this is off solver output within the solver_log contex is just
-    sent to stdout like normal.
+    manager. If this is off, solver output within the solver_log context
+    is just sent to stdout like normal.
+
     """
     _config["solver_capture"] = False
 
@@ -207,10 +209,10 @@ def set_log_tags(tags):
     _config["tags"] = set(tags)
 
 def add_log_tag(tag):
-    """Add a tag to the list of tagss to log.
+    """Add a tag to the list of tags to log.
 
     Args:
-        modelue(str): Tag to log
+        tag(str): Tag to log
 
     Returns:
         None
@@ -220,10 +222,10 @@ def add_log_tag(tag):
     _config["tags"].add(tag)
 
 def remove_log_tag(tag):
-    """Remove a tag to the list of tags to log.
+    """Remove a tag from the list of tags to log.
 
     Args:
-        modelue(str): Tags not to log
+        tag(str): Tag to no longer log
 
     Returns:
         None
@@ -234,7 +236,7 @@ def remove_log_tag(tag):
         pass
 
 def valid_log_tags():
-    """Returns a set of logging valid tag names.
+    """Returns a set of valid logging tag names.
 
     Returns:
         (set) valid tag names
@@ -255,7 +257,8 @@ def add_valid_log_tag(tag):
 
 class IOToLogTread(threading.Thread):
     """This is a Thread class that can log solver messages and show them as
-    they ar produced, while the main thread is waiting on the solver to finish"""
+    they are produced, while the main thread is waiting on the solver to finish
+    """
 
     def __init__(self, stream, logger, sleep=1.0, level=logging.ERROR):
         super().__init__(daemon=True)
@@ -295,10 +298,10 @@ class SolverLogInfo(object):
 
 @contextmanager
 def solver_log(logger, level=logging.ERROR):
-    """Context manager to send solver output to a logger.  This uses a seperate
+    """Context manager to send solver output to a logger. This uses a separate
     thread to log solver output while the solver is running"""
     # wait 3 seconds to  join thread.  Should be plenty of time.  In case
-    # something goes horibly wrong though don't want to hang.  The logging
+    # something goes horribly wrong though don't want to hang.  The logging
     # thread is daemonic, so it will shut down with the main process even if it
     # stays around for some mysterious reason while the model is running.
     join_timeout = 3
@@ -315,7 +318,7 @@ def solver_log(logger, level=logging.ERROR):
                 lt.stop.set()
                 lt.join(timeout=join_timeout)
                 raise
-        # thread should end when s is closed, but the setting stop makes sure
+        # thread should end when s is closed, but setting stop makes sure
         # the last of the output gets logged before closing s
         lt.stop.set()
         lt.join(timeout=join_timeout)

@@ -69,10 +69,10 @@ def test_solver_condition2():
     model.y.unfix()
     model.c = pyo.Constraint(expr=model.x[1] + model.x[2]==model.y)
     res = solver.solve(model)
-    assert idaeslog.condition(res).startswith("optimal") #better solve
+    assert idaeslog.condition(res).startswith("optimal") # better solve
     model.c2 = pyo.Constraint(expr=model.x[1]==model.y)
     res = solver.solve(model)
-    assert idaeslog.condition(res).startswith("other") #too few degrees of freedom
+    assert idaeslog.condition(res).startswith("other") # too few degrees of freedom
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_log(caplog):
@@ -97,7 +97,7 @@ def test_solver_log(caplog):
         s += record.message
     assert "Optimal" in s
 
-    # test that an excpetion still results in tread terminating right
+    # test that an exception still results in the thread terminating
     try:
         with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
             res = solver.solve(modelf, tee=True)

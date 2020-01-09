@@ -11,19 +11,19 @@ Getting Loggers
 ---------------
 
 There are four main roots of IDAES loggers (``idaes``, ``idaes.model``,
-``idaes.init``, ``idaes.solve``).  All these loggers are standard Python
+``idaes.init``, ``idaes.solve``).  All of these loggers are standard Python
 loggers, and can be used as such.  The main differences between using the IDAES
-logging functions to get the loggers and plain Python methods, is that
+logging functions to get the loggers and plain Python methods are that
 the IDAES functions make it a little easier to get loggers that fit into IDAES's
 standard logging hierarchy, and the IDAES loggers have a few additional named
-logging levels, which allow for a bit finer control over information output.
+logging levels, which allow for finer control over the information displayed.
 Logging levels are described in detail later.
 
 A tag can also be specified and used to filter logging records.  By default the
-tag is None and log records won't be filtered. Valid tags are in the set {None,
+tag is None and log records won't be filtered. Valid tags are in the set ``{None,
 "framework", "model", "flowsheet", "unit", "control_volume", "properties",
-"reactions"}.  Users may add to the set of valid names. To see how
-to control which logging modules are logged, see section "Tags" below. To avoid
+"reactions"}``.  Users may add to the set of valid names. To see how
+to control which logging tags are logged, see section "Tags" below. To avoid
 filtering out import warning and error messages, records logged at the WARNING
 level and above are not filtered out regardless of tag.
 
@@ -33,8 +33,8 @@ idaes Logger
 Loggers descending from ``idaes`` (other than ``idaes.init``, ``idaes.model``, or
 ``idaes.solve``) are used for general IDAES framework logging. Typically the
 module name ``__name__`` is used for the logger name. Modules in the ``idaes``
-package already start with ``idaes``, but if an idaes logger is requested for a
-module outside the ``idaes`` package "idaes." is prepended to the name.
+package already start with ``idaes``, but if an IDAES logger is requested for a
+module outside of the ``idaes`` package ``idaes.`` is prepended to the name.
 
 .. autofunction:: getLogger
 
@@ -50,11 +50,11 @@ module outside the ``idaes`` package "idaes." is prepended to the name.
 idaes.init Logger
 ~~~~~~~~~~~~~~~~~
 
-The init logger will always descend from "idaes.init".  This logger is used in
+The init logger will always descend from "idaes.init". This logger is used in
 IDAES model initialization methods, and can be used in user models as well.
 Initialization methods are usually attached to a Pyomo Block. Blocks have a
-``name`` attribute.  So the logger name is usually given as the block name, and
-the ``getInitLogger()`` function prepends ``idaes.init.`` The advantage of using
+``name`` attribute. So the logger name is usually given as the block name, and
+the ``getInitLogger()`` function prepends ``idaes.init.``. The advantage of using
 the block name over the module name is that users can see exactly which model
 instance the initialization log messages are coming from.
 
@@ -79,9 +79,9 @@ idaes.model Logger
 
 The model logger is used to provide a standard way to produce log messages from
 user models that are not part of the ``idaes`` package. The logger name has
-"idaes.model" prepended to the name provided by the user.  This is convenient
+``idaes.model`` prepended to the name provided by the user. This is convenient
 because it provides a way to use a standard configuration system for user model
-loggers.  The name the user can choose any name they like for these loggers.
+loggers. The user can choose any name they like for these loggers.
 
 .. autofunction:: getModelLogger
 
@@ -95,26 +95,29 @@ loggers.  The name the user can choose any name they like for these loggers.
 idaes.solve Logger
 ~~~~~~~~~~~~~~~~~~
 
-The solve logger will always descend from "idaes.solve".  This logger is used in
-to log solver output.  Since solvers may produce a lot of output, it can be useful
-to specify different handlers for the solve logger to direct it to a separate file.
+The solve logger will always descend from "idaes.solve". This logger is
+used to log solver output. Since solvers may produce a lot of output,
+it can be useful to specify different handlers for the solve logger to
+direct it to a separate file.
 
 .. autofunction:: getSolveLogger
 
 Tags
 ----
 
-Logger tags are provided to allow control over what types of log records to
-display. The logger tag is just a string that gets attached to a logger, which
-specifies that a logger generates records of a certain type. You can then specify
-what tags you want to see information from.  A filter removes not in the list of
-tags to display at levels below WARNING.
+Logger tags are provided to allow control over what types of log records
+to display. The logger tag is just a string that gets attached to a
+logger, which specifies that a logger generates records of a certain
+type. You can then specify what tags you want to see information from.
+A filter removes any tags that are not in the list of tags to display at
+levels below WARNING.
 
-The tags to allow information from is a global setting in the idaes.logger
-module.  When getting a logger, you can set it's tag by providing the ``tag``
-argument, see "Getting Loggers" above.
+The set of tags to display information from is a global setting in the
+idaes.logger module. When getting a logger, you can set its tag by
+providing the ``tag`` argument, see "Getting Loggers" above.
 
-To specify which logging modules will be allowed the following functions can be used.
+The following functions can be used to specify which logging tags to
+display:
 
 .. autofunction:: log_tags
 
@@ -126,7 +129,7 @@ To specify which logging modules will be allowed the following functions can be 
 
 The tags are validated against a list of valid tags to provide error checking
 for typos and to enforce some standard tag names. To provide more flexibility,
-users can add to the list of valid module names, but cannot remove names.
+users can add to the list of valid tag names, but cannot remove names.
 
 .. autofunction:: valid_log_tags
 
@@ -135,9 +138,9 @@ users can add to the list of valid module names, but cannot remove names.
 Levels
 ------
 
-Several logging level constants are defined in the ``idaes.logger`` module these
-include the standard Python Levels.  The following levels are provided for IDAES
-loggers.  The additional levels of info provide finer control over the amount of
+Several logging level constants are defined in the ``idaes.logger`` module. These
+include the standard Python Levels. The following levels are provided for IDAES
+loggers. The additional levels of info provide finer control over the amount of
 logging information produced by IDAES loggers.
 
 ===================== ====== ============ ============================
@@ -168,20 +171,24 @@ Logging Solver Output
 
 The solver output can be captured and directed to a logger using the
 ``idaes.logger.solver_log(logger, level)`` context manager, which uses
-``pyutilib.misc.capture_output()`` to temporarily redirect ``sys.stdout`` and
-``sys.stderr`` to a string buffer.  The logger argument is the logger to log to,
-and the level argument is the level to sent records to the logger at. The output
-is logged by a separate logging thread, so output can be logged as it is produced
-instead of after the solve completes.  If the  ``solver_log()`` context manager
-is used, it can be turned on and off by using the ``idaes.logger.solver_capture_on()``
-and ``idaes.logger.solver_capture_off()`` functions.  If the capture is off solver
-output won't be logged and it will go to standard output as usual.
+``pyutilib.misc.capture_output()`` to temporarily redirect
+``sys.stdout`` and ``sys.stderr`` to a string buffer.  The ``logger``
+argument is the logger to log to, and the ``level`` argument is the
+level at which records are sent to the logger. The output is logged by a
+separate logging thread, so output can be logged as it is produced
+instead of after the solve completes.  If the ``solver_log()`` context
+manager is used, it can be turned on and off by using the
+``idaes.logger.solver_capture_on()`` and
+``idaes.logger.solver_capture_off()`` functions.  If the capture is off
+solver output won't be logged and it will go to standard output as
+usual.
 
-The ``solver_log`` context yields and object with ``tee`` and ``thread`` attributes.
-Thread is the logging thread, which is not needed for most uses. Tee is the ``solve``
-``tee`` argument.  Tee tells the Pyomo solvers to produce solver output.  The solver
-log context can provide this argument by determining if the solver output would be
-logged at the given level.
+The ``solver_log`` context yields an object with ``tee`` and ``thread``
+attributes. ``thread`` is the logging thread, which is not needed for
+most uses. The ``tee`` attribute should be passed to the ``tee``
+argument of the ``solve`` method. Tee tells the Pyomo solver to
+display solver output. The solver log context can provide this argument
+by determining if the solver output would be logged at the given level.
 
 *Example*
 
