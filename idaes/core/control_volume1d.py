@@ -16,7 +16,6 @@ Base class for control volumes
 
 # Import Python libraries
 import copy
-import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -39,7 +38,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee
+from idaes.logger import getIdaesLogger, getInitLogger
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -1733,99 +1732,92 @@ argument)."""))
         '''
         # Get inlet state if not provided
         init_log = getInitLogger(blk.name, outlvl)
+
+        # Get source block
+        if blk._flow_direction == FlowDirection.forward:
+            source_idx = blk.length_domain.first()
+        else:
+            source_idx = blk.length_domain.last()
+        source = blk.properties[blk.flowsheet().config.time.first(),
+                                source_idx]
+
+        # Fix source state and get state_args if not provided
+        source_flags = {}
         if state_args is None:
+            # No state args, create whilst fixing vars
             state_args = {}
-            state_dict = (
-                blk.properties[
-                    blk.flowsheet().config.time.first(), 0]
-                .define_port_members())
+            # Should be checking flow direction
+            state_dict = source.define_port_members()
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
+                    source_flags[k] = {}
                     for m in state_dict[k].keys():
+                        source_flags[k][m] = state_dict[k][m].fixed
                         if state_dict[k][m].value is not None:
+                            state_dict[k][m].fix()
                             state_args[k][m] = state_dict[k][m].value
                         else:
                             raise Exception("State variables have not been "
                                             "fixed nor have been given "
                                             "initial values.")
                 else:
+                    source_flags[k] = state_dict[k].fixed
                     if state_dict[k].value is not None:
+                        state_dict[k].fix()
                         state_args[k] = state_dict[k].value
                     else:
                         raise Exception("State variables have not been "
                                         "fixed nor have been given "
                                         "initial values.")
+        else:
+            # State  args provided
+            state_dict = source.define_port_members()
 
-        # Create a dict to hold the flags; default to True (i,e. already fixed)
-        flags = {}
-        for k in blk.properties.keys():
-            for j in state_args.keys():
-                # Check if var is an indexed var
-                if isinstance(state_args[j], dict):
-                    for i in state_args[j].keys():
-                        flags[k, j, i] = True
+            for k in state_dict.keys():
+                source_flags[k] = {}
+                if state_dict[k].is_indexed():
+                    for m in state_dict[k].keys():
+                        source_flags[k][m] = state_dict[k][m].fixed
+                        if not state_dict[k][m].fixed:
+                            state_dict[k][m].fix(state_args[k][m])
                 else:
-                    flags[k, j] = True
-
-            # Assign values to state vars and flag accordingly
-                if isinstance(state_args[j], dict):
-                    for i in state_args[j].keys():
-                        if blk.properties[k].component(j)[i].fixed is True:
-                            pass
-                        else:
-                            blk.properties[k].component(j)[i].\
-                                fix(state_args[j][i])
-                            flags[k, j, i] = False
-                else:
-                    if blk.properties[k].component(j).fixed is True:
-                        pass
-                    else:
-                        blk.properties[k].component(j).fix(state_args[j])
-                        flags[k, j] = False
-
-        # state_vars_fixed is a flag to denote if the variables have been
-        # fixed here. If CV1D initialize is triggered, this is always True.
+                    source_flags[k] = state_dict[k].fixed
+                    if state_dict[k].value is not None:
+                        state_dict[k].fix()
+                        if not state_dict[k].fixed:
+                            state_dict[k].fix(state_args[k])
 
         # Initialize state blocks
-        blk.properties.initialize(outlvl=outlvl + 1,
-                                  optarg=optarg,
-                                  solver=solver,
-                                  state_vars_fixed=True)
+        flags = blk.properties.initialize(state_args=state_args,
+                                          outlvl=outlvl + 1,
+                                          optarg=optarg,
+                                          solver=solver,
+                                          hold_state=True)
 
         try:
+            # TODO: setting state_vars_fixed may not work for heterogeneous
+            # systems where a second control volume is involved, as we cannot
+            # assume those state vars are also fixed. For now, heterogeneous
+            # reactions should ignore the state_vars_fixed argument and always
+            # check their state_vars.
             blk.reactions.initialize(outlvl=outlvl + 1,
                                      optarg=optarg,
-                                     solver=solver)
+                                     solver=solver,
+                                     state_vars_fixed=True)
         except AttributeError:
             pass
 
         init_log.log(5, 'Initialization Complete')
 
-        # Unfix the state vars fixed for discretized blocks other than inlet
-        for k in blk.properties.keys():
-            # k is a tuple (t, x)
-            if k[1] == blk.length_domain.first() and \
-                    blk._flow_direction == FlowDirection.forward:
-                pass
-            elif k[1] == blk.length_domain.last() and \
-                    blk._flow_direction == FlowDirection.backward:
-                pass
-            else:
-                for j in state_args.keys():
-                    if isinstance(state_args[j], dict):
-                        for i in state_args[j].keys():
-                            if flags[k, j, i] is False:
-                                blk.properties[k].component(j)[i].unfix()
-                    else:
-                        if flags[k, j] is False:
-                            blk.properties[k].component(j).unfix()
+        # Unfix state variables except for source block
+        blk.properties.release_state(flags)
 
         if hold_state is True:
-            return flags
+            return source_flags
         else:
-            blk.release_state(flags)
+            blk.release_state(source_flags)
 
     def release_state(blk, flags, outlvl=6):
         '''
@@ -1841,45 +1833,23 @@ argument)."""))
         Returns:
             None
         '''
-        # Extracting the keys i.e. the state variables
-        state_args = {}
-        state_dict = \
-            blk.properties[
-                blk.flowsheet().config.time.first(), 0].define_port_members()
+        # Get source block
+        if blk._flow_direction == FlowDirection.forward:
+            source_idx = blk.length_domain.first()
+        else:
+            source_idx = blk.length_domain.last()
+        source = blk.properties[blk.flowsheet().config.time.first(),
+                                source_idx]
+
+        # Set fixed attribute on state vars based on flags
+        state_dict = source.define_port_members()
 
         for k in state_dict.keys():
             if state_dict[k].is_indexed():
-                state_args[k] = {}
                 for m in state_dict[k].keys():
-                    state_args[k][m] = None
+                    state_dict[k][m].fixed = flags[k][m]
             else:
-                state_args[k] = None
-
-        # Unfix the state vars if fixed for the inlet during initialization
-        for k in blk.properties.keys():
-            # for forward flow direction (inlet is at x = 0)
-            if k[1] == blk.length_domain.first() and \
-                    blk._flow_direction == FlowDirection.forward:
-                for j in state_args.keys():
-                    if isinstance(state_args[j], dict):
-                        for i in state_args[j].keys():
-                            if flags[k, j, i] is False:
-                                blk.properties[k].component(j)[i].unfix()
-                    else:
-                        if flags[k, j] is False:
-                            blk.properties[k].component(j).unfix()
-
-            # for backward flow direction (inlet is at x = 1)
-            if k[1] == blk.length_domain.last() and \
-                    blk._flow_direction == FlowDirection.backward:
-                for j in state_args.keys():
-                    if isinstance(state_args[j], dict):
-                        for i in state_args[j].keys():
-                            if flags[k, j, i] is False:
-                                blk.properties[k].component(j)[i].unfix()
-                    else:
-                        if flags[k, j] is False:
-                            blk.properties[k].component(j).unfix()
+                state_dict[k].fixed = flags[k]
 
     def _add_phase_fractions(self):
         """
