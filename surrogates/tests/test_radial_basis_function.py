@@ -1,310 +1,443 @@
-from pysmo.radial_basis_function import RadialBasisFunctions, FeatureScaling
+import sys
+import os
+sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+
+from radial_basis_function import RadialBasisFunctions, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
 from unittest.mock import patch
+from scipy.spatial import distance
 
+'''
+coverage run test_radial_basis_function.py
+coverage report -m
+coverage html
+
+'''
 
 class FeatureScalingTestCases(unittest.TestCase):
+    """
+    test_data_scaling_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_scaling_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_scaling_03: Test behaviour when input is a numpy array and with 3D array.
+    test_data_scaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_scaling_05: Test behaviour list input TypeError
+
+    test_data_scaling_06: Test behaviour when input is a Pandas DataFrame and with 1D array.
+    test_data_scaling_07: Test behaviour when input is a Pandas DataFrame and with 2D array.
+    test_data_scaling_08: Test behaviour when input is a Pandas DataFrame and with 3D array.
+    test_data_scaling_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a varibale is constant.
+
+    test_data_unscaling_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_unscaling_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_unscaling_03: Test behaviour when input is a numpy array and with 3D array. 
+    test_data_unscaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+
+    test_data_unscaling_05: Test behaviour IndexError when input array size > array size
+    test_data_unscaling_06: Test behaviour IndexError when input array size < array size  
+
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np_1d =  np.array(range(10))
+        input_array_np_2d = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        input_array_np_3d = np.array([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
+        input_array_np_3d_constant = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
 
-    """
-    Tests 1 - 7: Tests to check the range of potential inputs for the number of samples:
-     - 01: Test behaviour when input is a pandas dataframe
-     - 02: Test behaviour when input is a numpy array and with 1D array. Returns a 2D N x 1 array.
-     - 03: Test behaviour input is neither of the acceptable types - should throw up a
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-    Tests 3 and 5 also check x_data attribute is returned correctly.
-    """
+        input_array_pd_1d = pd.DataFrame( np.array(range(10)))
+        input_array_pd_2d = pd.DataFrame([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        input_array_pd_3d = pd.DataFrame([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
+        input_array_pd_3d_constant = pd.DataFrame([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
 
+        self.test_data_numpy_1d = input_array_np_1d
+        self.test_data_numpy_2d = input_array_np_2d
+        self.test_data_numpy_3d = input_array_np_3d
+        self.test_data_numpy_3d_constant = input_array_np_3d_constant
+
+        self.test_data_pandas_1d = input_array_pd_1d
+        self.test_data_pandas_2d = input_array_pd_2d
+        self.test_data_pandas_3d = input_array_pd_3d
+        self.test_data_pandas_3d_constant = input_array_pd_3d_constant
+        
+    
     def test_data_scaling_01(self):
-        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(self.test_data)
-        expected_output_2 = np.array([[0, 1]])
-        expected_output_3 = np.array([[9, 100]])
-        expected_output_1 = (self.test_data - expected_output_2) / (expected_output_3 - expected_output_2)
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_numpy_1d
+
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9]])
+        expected_output_2 = np.array([[0]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
         np.testing.assert_array_equal(output_3, expected_output_3)
         np.testing.assert_array_equal(output_2, expected_output_2)
-        np.testing.assert_array_equal(output_1, expected_output_1)
+        np.testing.assert_array_equal(output_1, expected_output_1.reshape(10, 1))
 
     def test_data_scaling_02(self):
-        test_data_as_array = self.test_data.values
-        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(test_data_as_array[:, 0])
-        expected_output_2 = np.array([[0]])
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 100]])
+        expected_output_2 = np.array([[0, 1]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_03(self):
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_numpy_3d 
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 19, 119]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_04(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_numpy_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 10, 110]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        scale = expected_output_3 - expected_output_2
+        scale[scale == 0.0] = 1.0
+        expected_output_1 = (input_array - expected_output_2) / scale
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_05(self):
+        # TypeError with list
+        input_array = self.test_data_numpy_2d.tolist()
+        with self.assertRaises(TypeError):
+            FeatureScaling.data_scaling(input_array)
+
+    def test_data_scaling_06(self):
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_pandas_1d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
         expected_output_3 = np.array([[9]])
-        expected_output_1 = (test_data_as_array[:, 0] - expected_output_2) / (expected_output_3 - expected_output_2)
-        expected_output_1 = expected_output_1.reshape(expected_output_1.shape[1], 1)  # Because shape is changed backend
+        expected_output_2 = np.array([[0]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
         np.testing.assert_array_equal(output_3, expected_output_3)
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
 
-    def test_data_scaling_03(self):
-        test_data_as_list = self.test_data.values.tolist()
-        with self.assertRaises(TypeError):
-            FeatureScaling.data_scaling_minmax(test_data_as_list)
+    def test_data_scaling_07(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array =self.test_data_pandas_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 100]])
+        expected_output_2 = np.array([[0, 1]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_08(self):
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_pandas_3d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 19, 119]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_09(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_pandas_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 10, 110]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        scale = expected_output_3 - expected_output_2
+        scale[scale == 0.0] = 1.0
+        expected_output_1 = (input_array - expected_output_2) / scale
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
 
     def test_data_unscaling_01(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6]])
-        max_array = np.array([[5, 10]])
-        output = FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
-        expected_output = np.array([[1, 10], [2, 9], [3, 8], [4, 7], [5, 6]])
-        np.testing.assert_array_equal(output, expected_output)
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_numpy_1d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1 = output_1.reshape(output_1.shape[0], )
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array.reshape(10, 1))
 
     def test_data_unscaling_02(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+    
+    def test_data_unscaling_03(self):
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_numpy_3d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+    
+    def test_data_unscaling_04(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_numpy_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+
+    def test_data_unscaling_05(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+
         min_array = np.array([[1]])
         max_array = np.array([[5]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
+            FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
-    def test_data_unscaling_03(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6, 10]])
-        max_array = np.array([[5, 10, 15]])
+    def test_data_unscaling_06(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+                
+        min_array = np.array([[1,2,3]])
+        max_array = np.array([[5,6,7]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
-
-    def test_data_unscaling_04(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6]])
-        max_array = np.array([[5, 10]])
-        output = FeatureScaling.data_unscaling_minmax(data_array[:, 0], min_array[:, 0], max_array[:, 0])
-        expected_output = np.array([[1], [2], [3], [4], [5]])
-        np.testing.assert_array_equal(output, expected_output)
+            FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
 
 class RadialBasisFunctionTestCases(unittest.TestCase):
+    '''
+    test__init__01: Check that all default values are correctly loaded when input is sparse with both input arrays are numpy
+    test__init__02: Check that all default values are correctly loaded when input is sparse with both input arrays are pandas
+    test__init__03: Check that all user input values are correctly loaded when input is sparse with both input arrays are numpy
+    test__init__04: Test behaviour raise Exception with list inputs
+    test__init__05: Test behaviour raise Exception with invalid solution method type
+    test__init__06: Test behaviour raise Exception with invalid solution method value
+    test__init__07: Test behaviour raise Exception with invalid basis_function type
+    test__init__08: Test behaviour raise Exception with invalid basis_function value
+    test__init__09: Test behaviour raise Exception with invalid regularization type
+
+    test_r2_distance: 
+        Tests: : Unit tests for eucl_distance, a function that evaluates the distance between a point c and a set of points in a numpy array.
+            The test checks that the function is able to calculate the distance from a single point (n x 1 row vector) to a set of design points (supplied in an n x m array)
+
+    test_gaussian_basis_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+    test_linear_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+    test_cubic_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+    test_multiquadric_basis_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+    test_inverse_multiquadric_basis_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+    test_thin_plate_spline_transformation: Tests for the basis transformations, test the results returned by each transformation for a wide range of values.
+
+    test_basis_generation:
+        Tests: : Tests for the function basis_generation.
+        The test checks that for a small dataset, the expected result is returned by the function for each basis transformation type.
+
+    test_cost_function_01:
+    test_cost_function_02:
+    test_cost_function_03:
+        Tests: : Unit tests for cost_function.  The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
+            Three demonstration tests are done:
+            The first test checks that the correct loss value is returned when theta is initialized as a vector of zeros.
+            The second test checks that the correct loss value is returned for a random point within the solution space.
+            The third test checks that the loss value is zero when the exact solution is found.
+
+    test_gradient_function_01:
+    test_gradient_function_02:
+    test_gradient_function_03:
+         Tests: : Unit tests for gradient_function. The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
+            Three demonstration tests are done:
+            The first test checks that the correct gradients returned when theta is initialized as a vector of zeros.
+            The second test checks that the correct gradients are returned for a random point within the solution space.
+            The third test checks that the gradients are zero when the exact solution is found. 
+
+    test_bfgs_parameter_optimization_01:
+    test_bfgs_parameter_optimization_02:
+        Tests: : Unit tests for bfgs_parameter_optimization function. Two unit tests are done:
+            The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
+            The second test is used to check that higher order multi-variable problems are solved correctly.
+            - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
+            - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
+
+    test_explicit_linear_algebra_solution_01:
+    test_explicit_linear_algebra_solution_02:
+        Tests: : Unit tests for explicit_linear_algebra_solution function. The same two unit tests are done:
+            The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
+            The second test is used to check that higher order multi-variable problems are solved correctly.
+            - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
+            - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
+
+    test_pyomo_optimization_01:
+    test_pyomo_optimization_02:
+        Tests: : Unit tests for pyomo_optimization function. As with the other parameter estimation methods, two unit tests are done:
+            The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
+            The second test is used to check that higher order multi-variable problems are solved correctly.
+            - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
+            - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
+
+    test_error_calculation_01:
+    test_error_calculation_02:
+    test_error_calculation_03:
+        Tests: : Unit tests for error_calculation function.  The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
+            The three tests used for the cost_function are repeated for the RMSE and SSE errors. 
+            - The first test checks that the correct cv error is returned when theta is initialized as a vector of zeros.
+            - The second test checks that the correct cv error is returned for a random point within the solution space.
+            - The third test checks that the cv error is zero when the exact solution is found.
+        In each case, the result is expected to be twice as large as the cost function's expected value: the cost function is half of the total squared error.
+  
+    test_r2_calculation_01:
+    test_r2_calculation_02:
+        Tests: : Unit tests for r2_calculation function.  The function is tested for two cases where the predicted values 
+        deviate from the actual by 5% and 50% respectively. The R2-value in each case is compared against Excel evaluated values.
+  
+    test_loo_error_estimation_with_rippa_method_01:
+    test_loo_error_estimation_with_rippa_method_02:
+    test_loo_error_estimation_with_rippa_method_03:
+        Tests: : Unit tests for loo_error_estimation_with_rippa_method. 
+            - Three tests are run to check that the correct condition number and errors are returned by the method irrespective of solution_method:
+                - First test checks the algebraic method
+                - Second test checks the pyomo method
+                - Third test checks the bfgs solution
+            - In each test, the basis_generation method and relevant optimization method are replaced with mocks. The results from the mocks
+            are used to compute the condition number and LOOCV errors.
+
+    test_leave_one_out_crossvalidation_01: Test leave_one_out_crossvalidation with all default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_02: Test leave_one_out_crossvalidation with basis_function='cubic', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_03: Test leave_one_out_crossvalidation with basis_function='linear', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_04: Test leave_one_out_crossvalidation with basis_function='spline', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_05: Test leave_one_out_crossvalidation with basis_function='gaussian', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_06: Test leave_one_out_crossvalidation with basis_function='mq', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_07: Test leave_one_out_crossvalidation with basis_function='imq', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_08: Test leave_one_out_crossvalidation with solution_method='algebraic', all other default inputs  - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_09: Test leave_one_out_crossvalidation with solution_method='BFGS', all other default inputs  - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_10: Test leave_one_out_crossvalidation with solution_method='pyomo', all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+    test_leave_one_out_crossvalidation_11: Test leave_one_out_crossvalidation with regularization=True, all other default inputs - (all calulations test with method "loo_error_estimation_with_rippa_method")
+
+    test_rbf_training_01: Test rbf_training with solution_method='algebraic'. All methods are already tested. Report class is tested here with x_condition_number < (1 / np.finfo(float).eps)
+    test_rbf_training_02: Test rbf_training with solution_method='pyomo'. All methods are already tested. Report class is tested here with x_condition_number >= (1 / np.finfo(float).eps), raise warning.
+    test_rbf_training_03: Test rbf_training with solution_method='bfgs'. All methods are already tested. Report class is tested here with x_condition_number >= (1 / np.finfo(float).eps), raise warning.
+
+    test_rbf_predict_output_01:
+    test_rbf_predict_output_02:
+    test_rbf_predict_output_03:
+    test_rbf_predict_output_04:
+    test_rbf_predict_output_05:
+    test_rbf_predict_output_06:
+        Tests: : Unit tests for rbf_predict_output, a function that generates predictions for a test dataset. 
+             For a small dataset, we verify that the current predictions are produced for each transformation type.
+
+    test_get_feature_vector_01:
+    test_get_feature_vector_02:
+        Tests: : Unit tests for get_feature_vector. We verify that:
+            - 1: The (key, val) dictionary obtained from the generated IndexParam matches the headers of the data when the input is a dataframe
+            - 2: The (key, val) dictionary obtained from the generated IndexParam matches is numerically consistent with that of the input array when a numpy array is supplied. 
+
+    test_rbf_generate_expression_01: test only while it is running with self.basis_function == 'linear' or not (not compared values)
+    test_rbf_generate_expression_02: test only while it is running with self.basis_function == 'cubic' or not (not compared values)
+    test_rbf_generate_expression_03: test only while it is running with self.basis_function == 'gaussian' or not (not compared values)
+    test_rbf_generate_expression_04: test only while it is running with self.basis_function == 'mq' or not (not compared values)
+    test_rbf_generate_expression_05: test only while it is running with self.basis_function == 'imq' or not (not compared values)
+    test_rbf_generate_expression_06: test only while it is running with self.basis_function == 'spline' or not (not compared values)
+    ''' 
 
     def setUp(self):
         # Data generated from the expression (x_1 + 1)^2 + (x_2 + 1) ^ 2 between 0 and 10 for x_1 and x_2
-        x1 = np.linspace(0, 10, 21)
-        x2 = np.linspace(0, 10, 21)
-        y = np.zeros((len(x1) * len(x2), 3))
-        counter = 0
-        for i in x1:
-            for j in x2:
-                y[counter, 0] = i
-                y[counter, 1] = j
-                y[counter, 2] = ((i + 1) ** 2) + ((j + 1) ** 2)
-                counter = counter + 1
+        x1 = np.linspace(1, 10, 21)
+        x2 = np.linspace(1, 10, 21)
+        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
         self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
 
         # Theoretical sample data from range for(x_1 + 1)^2 + (x_2 + 1) ^ 2 between 0 and 10 for x_1 and x_2
         x1 = np.linspace(0, 10, 5)
         x2 = np.linspace(0, 10, 5)
-        training_samples = np.zeros((len(x1) * len(x2), 3))
-        counter = 0
-        for i in x1:
-            for j in x2:
-                training_samples[counter, 0] = i
-                training_samples[counter, 1] = j
-                training_samples[counter, 2] = ((i + 1) ** 2) + ((j + 1) ** 2)
-                counter = counter + 1
-        self.training_data = training_samples
+        self.training_data = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
 
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = input_array  # pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
+        self.test_data_numpy = np.array([[i,(i+1)**2] for i in range(10)])
+        self.test_data_pandas = pd.DataFrame([[i,(i+1)**2] for i in range(10)])
+        self.test_data_large =  np.array([[i,(i+1)**2] for i in range(200)])
+        self.test_data_numpy_1d = np.array([[(i+1)**2] for i in range(10)])
+        self.test_data_numpy_3d = np.array([[i,(i+1)**2,(i+2)**2] for i in range(10)]) 
 
-        return self.full_data, self.training_data, self.test_data
+        self.sample_points_numpy = np.array([[i,(i+1)**2] for i in range(8)])
+        self.sample_points_large =  np.array([[i,(i+1)**2] for i in range(100)])
+        self.sample_points_pandas= pd.DataFrame([[i,(i+1)**2] for i in range(8)])
+        self.sample_points_numpy_1d = np.array([[(i+1)**2] for i in range(8)])
+        self.sample_points_numpy_3d = np.array([[i,(i+1)**2,(i+2)**2] for i in range(8)])
 
-    def mock_basis_generation(self, r):
-        return np.ones((self.x_data.shape[0], self.x_data.shape[0]))
-
-    def mock_optimization(self, x, y):
-        return 500 * np.ones((x.shape[0], 1))
-
-    """
-    Tests 01 - 03 : Demonstration of behaviour for different data input types
-     - 01: Test behaviour when the input is a dataframe. We check that all attributes related to the data are properly loaded.
-     - 02: Test behaviour when the input is a numpy array. We check that all attributes related to the data are properly loaded.
-     - 03: Test behaviour when the input is not a numpy array or dataframe. A ValueError is expected to be raised.
-    """
-
-    def test_initialization_rbfs_01(self):
-        data_feed = RadialBasisFunctions(self.full_data, 'linear')
-        expected_output_1 = self.full_data.values[:, :-1]
-        expected_output_2 = self.full_data.values[:, -1].reshape(expected_output_1.shape[0], 1)
-        expected_output_3 = expected_output_1
-        expected_output_4 = list(self.full_data.columns)[:-1]
-        np.testing.assert_array_equal(expected_output_1, data_feed.x_data)
-        np.testing.assert_array_equal(expected_output_2, data_feed.y_data)
-        np.testing.assert_array_equal(expected_output_3, data_feed.centres)
-        self.assertListEqual(expected_output_4, data_feed.x_data_columns)
-
-    def test_initialization_rbfs_02(self):
-        data_feed = RadialBasisFunctions(self.training_data, 'linear')
-        expected_output_1 = self.training_data[:, :-1]
-        expected_output_2 = self.training_data[:, -1].reshape(expected_output_1.shape[0], 1)
-        expected_output_3 = expected_output_1
-        expected_output_4 = list(range(self.training_data.shape[1] - 1))
-        np.testing.assert_array_equal(expected_output_1, data_feed.x_data)
-        np.testing.assert_array_equal(expected_output_2, data_feed.y_data)
-        np.testing.assert_array_equal(expected_output_3, data_feed.centres)
-        self.assertListEqual(expected_output_4, data_feed.x_data_columns)
-
-    def test_initialization_rbfs_03(self):
-        sample_points = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        with self.assertRaises(ValueError):
-            RadialBasisFunctions(self.training_data.tolist(), basis_function='linear')
-
-    """
-    Tests 04-08 : Tests to class attribute solution_method.
-     - 04: Test behaviour when solution_method input is not a string. Should raise exception.
-     - 05: Test behaviour when solution_method = 'alGebraIC'. Attribute should be set to 'algebraic' irrespective of case.
-     - 06: Test behaviour when solve_method = 'pYomO'. Attribute should be set to 'pyomo' irrespective of case.
-     - 07: Test behaviour when solve_method = 'bFGs'. Attribute should be set to 'bfgs' irrespective of case.
-     - 08: Test behaviour when solve_method is an invalid string. Should raise exception.
-     - 09: Test behaviour when solve_method is None. Attribute should be set to default ('algebraic').
-    """
-
-    def test_initialization_rbfs_04(self):
-        solve_method = 1
+    
+    def test__init__01(self):
+        RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=None, solution_method=None, regularization=None)
+        self.assertEqual(RbfClass.solution_method, 'algebraic')
+        self.assertEqual(RbfClass.basis_function, 'gaussian')
+        self.assertEqual(RbfClass.regularization, True)
+    
+    def test__init__02(self):
+        RbfClass = RadialBasisFunctions(self.test_data_pandas, basis_function=None, solution_method=None, regularization=None)
+        self.assertEqual(RbfClass.solution_method, 'algebraic')
+        self.assertEqual(RbfClass.basis_function, 'gaussian')
+        self.assertEqual(RbfClass.regularization, True)
+    
+    def test__init__03(self):
+        RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False)
+        self.assertEqual(RbfClass.solution_method, 'pyomo')
+        self.assertEqual(RbfClass.basis_function, 'linear')
+        self.assertEqual(RbfClass.regularization, False)
+    
+    def test__init__04(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, solution_method=solve_method)
-
-    def test_initialization_rbfs_05(self):
-        solve_method = 'aLgeBraiC'
-        output_1 = RadialBasisFunctions(self.test_data, solution_method=solve_method)
-        self.assertEqual(output_1.solution_method, solve_method.lower())
-
-    def test_initialization_rbfs_06(self):
-        solve_method = 'pYomO'
-        output_1 = RadialBasisFunctions(self.test_data, solution_method=solve_method)
-        self.assertEqual(output_1.solution_method, solve_method.lower())
-
-    def test_initialization_rbfs_07(self):
-        solve_method = 'bFGs'
-        output_1 = RadialBasisFunctions(self.test_data, solution_method=solve_method)
-        self.assertEqual(output_1.solution_method, solve_method.lower())
-
-    def test_initialization_rbfs_08(self):
-        solve_method = 'mle'
+            RbfClass = RadialBasisFunctions([1,2,3,4], basis_function='LineaR', solution_method='PyoMo', regularization=False)
+        
+    def test__init__05(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, solution_method=solve_method)
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=None, solution_method=1, regularization=None)
 
-    def test_initialization_rbfs_09(self):
-        default_solve = 'algebraic'
-        output = RadialBasisFunctions(self.test_data)
-        self.assertEqual(output.solution_method, default_solve)
-
-    """
-    Tests 10-18 : Tests to class attribute basis_function.
-     - 10: Test behaviour when basis_function = 'lineaR'. Attribute should be set to 'linear' irrespective of case.
-     - 11: Test behaviour when basis_function = 'splinE'. Attribute should be set to 'spline' irrespective of case.
-     - 12: Test behaviour when basis_function = 'cubiC'. Attribute should be set to 'cubic' irrespective of case.
-     - 13: Test behaviour when basis_function = 'gaussiaN'. Attribute should be set to 'gaussian' irrespective of case.
-     - 14: Test behaviour when basis_function = 'imQ'. Attribute should be set to 'imq' irrespective of case.
-     - 15: Test behaviour when basis_function = 'mQ'. Attribute should be set to 'mq' irrespective of case.
-     - 16: Test behaviour when basis_function is an invalid string. Should raise exception.
-     - 17: Test behaviour when basis_function is None. Attribute should be set to default ('gaussian').
-     - 18: Test behaviour when basis_function input is not a string. Should raise exception.
-    """
-
-    def test_initialization_rbfs_10(self):
-        basis = 'lineaR'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_11(self):
-        basis = 'splinE'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_12(self):
-        basis = 'cubiC'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_13(self):
-        basis = 'gaussiaN'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_14(self):
-        basis = 'imQ'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_15(self):
-        basis = 'mQ'
-        output = RadialBasisFunctions(self.test_data, basis_function=basis)
-        self.assertEqual(output.basis_function, basis.lower())
-
-    def test_initialization_rbfs_16(self):
-        basis = 'pyomo'
+    def test__init__06(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, basis_function=basis)
-
-    def test_initialization_rbfs_17(self):
-        default_basis = 'gaussian'
-        output = RadialBasisFunctions(self.test_data)
-        self.assertEqual(output.basis_function, default_basis)
-
-    def test_initialization_rbfs_18(self):
-        basis = 1
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=None, solution_method='idaes', regularization=None)
+    
+    def test__init__07(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, basis_function=basis)
-
-    """
-    Tests 10-18 : Tests to class attribute self.regularization.
-     - 19: Test behaviour when regularization input = 'True'. self.regularization attribute should be set to 'True'.
-     - 20: Test behaviour when regularization input = 'False'. self.regularization attribute should be set to 'False'.
-     - 21: Test behaviour when regularization input is None. self.regularization attribute should be set to the default value of 'True'.
-     - 22: Test behaviour when a non-boolean string is supplied as regularization input. An exception should be raised.
-     - 23: Test behaviour when a non-string is supplied as regularization input. An exception should be raised.
-    """
-
-    def test_initialization_rbfs_19(self):
-        reg = True
-        output = RadialBasisFunctions(self.test_data, regularization=reg)
-        self.assertEqual(output.regularization, reg)
-
-    def test_initialization_rbfs_20(self):
-        reg = False
-        output = RadialBasisFunctions(self.test_data, regularization=reg)
-        self.assertEqual(output.regularization, reg)
-
-    def test_initialization_rbfs_21(self):
-        default_reg = True
-        output = RadialBasisFunctions(self.test_data)
-        self.assertEqual(output.regularization, default_reg)
-
-    def test_initialization_rbfs_22(self):
-        reg = 'gaussian'
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=1, solution_method=None, regularization=None)
+    
+    def test__init__08(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, regularization=reg)
-
-    def test_initialization_rbfs_23(self):
-        reg = 5
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function='idaes', solution_method=None, regularization=None)
+    
+    def test__init__09(self):
         with self.assertRaises(Exception):
-            RadialBasisFunctions(self.test_data, regularization=reg)
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=None, solution_method=None, regularization=1)
 
-    """
-    Tests: : Unit tests for eucl_distance, a function that evaluates the distance between a point c and a set of points in a numpy array.
-        The test checks that the function is able to calculate the distance from a single point (n x 1 row vector) to a set of design points (supplied in an n x m array)
-    """
-
+    
     def test_r2_distance(self):
-        u = np.array([[3.6, 7.2]])
-        data_feed = RadialBasisFunctions(self.training_data[0:10, :], basis_function='linear')
+        u = np.array([[0.1, 0.9]])
+        data_feed = RadialBasisFunctions(self.training_data)
         output = data_feed.r2_distance(u)
-        expected_output = np.array([8.049844719, 5.9203040462, 4.2190046219, 3.6124783736, 4.5607017004, 7.2835430939, 4.8270073545, 2.4596747752, 1.1401754251, 3.0083217913])
+
+        scaled=FeatureScaling.data_scaling(self.training_data)
+        scaled = scaled[0]
+        scaled_x = scaled[:,:-1]
+        expected_output = np.sqrt(np.sum(np.square(scaled_x-u),axis=1))
         np.testing.assert_almost_equal(expected_output, output, decimal=6)
 
-    """
-    Tests: : The next six tests are for the basis transformations. 
-    They test the results returned by each transformation for a wide range of values.
-    """
 
     def test_gaussian_basis_transformation(self):
         d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
@@ -318,6 +451,17 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         np.testing.assert_array_equal(expected_output_1, output_1)
         np.testing.assert_array_equal(expected_output_2, output_2)
         np.testing.assert_array_equal(expected_output_3, output_3)
+
+    def test_linear_transformation(self):
+        d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
+        output_1 = RadialBasisFunctions.linear_transformation(d_vec)
+        np.testing.assert_array_equal(d_vec, output_1)
+
+    def test_cubic_transformation(self):
+        d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
+        expected_output = d_vec ** 3
+        output = RadialBasisFunctions.cubic_transformation(d_vec)
+        np.testing.assert_array_equal(expected_output, output)
 
     def test_multiquadric_basis_transformation(self):
         d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
@@ -345,32 +489,21 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         np.testing.assert_array_equal(expected_output_2, output_2)
         np.testing.assert_array_equal(expected_output_3, output_3)
 
-    def test_linear_transformation(self):
-        d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
-        output_1 = RadialBasisFunctions.linear_transformation(d_vec)
-        np.testing.assert_array_equal(d_vec, output_1)
-
-    def test_cubic_transformation(self):
-        d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
-        expected_output = d_vec ** 3
-        output = RadialBasisFunctions.cubic_transformation(d_vec)
-        np.testing.assert_array_equal(expected_output, output)
-
     def test_thin_plate_spline_transformation(self):
-        d_vec = np.array([[0, 0], [5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70]])
+        d_vec = np.array([[5e-6, 7e-6], [0.005, 0.007], [0.05, 0.07], [0.5, 0.7], [5, 7], [50, 70], [50, np.NaN]])
         expected_output = np.nan_to_num(d_vec ** 2 * np.log(d_vec))
         output = RadialBasisFunctions.thin_plate_spline_transformation(d_vec)
         np.testing.assert_array_equal(expected_output, output)
-
-    """
-    Tests: : Tests for the function basis_generation.
-    The test checks that for a small dataset, the expected result is returned by the function for each basis transformation type.
-    """
+        
 
     def test_basis_generation(self):
 
         # Pair-wise distances for the first three samples of training_data
-        distance_array = np.array([[0, 2.5, 5], [2.5, 0, 2.5], [5, 2.5, 0]])
+        scaled=FeatureScaling.data_scaling(self.training_data[0:3, :])
+        scaled = scaled[0]
+        scaled_x = scaled[:,:-1]
+        
+        distance_array = distance.cdist(scaled_x, scaled_x, 'euclidean')
 
         # Linear
         data_feed_01 = RadialBasisFunctions(self.training_data[0:3, :], basis_function='linear')
@@ -384,42 +517,33 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         output_2 = data_feed_02.basis_generation(2)
         np.testing.assert_array_equal(expected_output_2, output_2)
 
-        # Spline
+        # # Spline
         data_feed_03 = RadialBasisFunctions(self.training_data[0:3, :], basis_function='spline')
         expected_output_3 = np.nan_to_num(distance_array ** 2 * np.log(distance_array))
         output_3 = data_feed_03.basis_generation(2)
         np.testing.assert_array_equal(expected_output_3, output_3)
 
-        # Gaussian
+        # # Gaussian
         data_feed_04 = RadialBasisFunctions(self.training_data[0:3, :], basis_function='gaussian')
         shape_value = 2
         expected_output_4 = np.exp(-1 * ((distance_array * shape_value) ** 2))
         output_4 = data_feed_04.basis_generation(shape_value)
         np.testing.assert_array_equal(expected_output_4, output_4)
 
-        # Multiquadric
+        # # Multiquadric
         data_feed_05 = RadialBasisFunctions(self.training_data[0:3, :], basis_function='mq')
         shape_value = 2
         expected_output_5 = np.sqrt(((distance_array * shape_value) ** 2) + 1)
         output_5 = data_feed_05.basis_generation(shape_value)
         np.testing.assert_array_equal(expected_output_5, output_5)
 
-        # Inverse multiquadric
+        # # Inverse multiquadric
         data_feed_06 = RadialBasisFunctions(self.training_data[0:3, :], basis_function='imq')
         shape_value = 2
         expected_output_6 = 1 / np.sqrt(((distance_array * shape_value) ** 2) + 1)
         output_6 = data_feed_06.basis_generation(shape_value)
         np.testing.assert_array_equal(expected_output_6, output_6)
-        print()
-
-    """
-    Tests: : Unit tests for cost_function.  The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
-        Three demonstration tests are done:
-        The first test checks that the correct loss value is returned when theta is initialized as a vector of zeros.
-        The second test checks that the correct loss value is returned for a random point within the solution space.
-        The third test checks that the loss value is zero when the exact solution is found.
-        - 
-    """
+        
 
     def test_cost_function_01(self):
         x = self.training_data[:, :-1]
@@ -472,13 +596,6 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         output_1 = RadialBasisFunctions.cost_function(theta, x_vector, y)
         self.assertEqual(output_1, expected_value)
 
-    """
-    Tests: : Unit tests for gradient_function. The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
-        Three demonstration tests are done:
-        The first test checks that the correct gradients returned when theta is initialized as a vector of zeros.
-        The second test checks that the correct gradients are returned for a random point within the solution space.
-        The third test checks that the gradients are zero when the exact solution is found. 
-    """
 
     def test_gradient_function_01(self):
         x = self.training_data[:, :-1]
@@ -538,13 +655,6 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         output_1 = RadialBasisFunctions.gradient_function(theta, x_vector, y)
         np.testing.assert_equal(output_1, expected_value)
 
-    """
-    Tests: : Unit tests for bfgs_parameter_optimization function. Two unit tests are done:
-        The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
-        The second test is used to check that higher order multi-variable problems are solved correctly.
-        - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
-        - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
-    """
 
     def test_bfgs_parameter_optimization_01(self):
         input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
@@ -555,7 +665,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         x_vector[:, 1] = x[:, ]
         x_vector[:, 2] = 1
         expected_value = np.array([[1.], [2.], [1.]]).reshape(3, )
-        data_feed = RadialBasisFunctions(self.test_data, basis_function='linear', solution_method='bfgs')
+        data_feed = RadialBasisFunctions(self.test_data_numpy, basis_function='linear', solution_method='bfgs')
         output_1 = data_feed.bfgs_parameter_optimization(x_vector, y)
         self.assertEqual(data_feed.solution_method, 'bfgs')
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
@@ -576,50 +686,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(data_feed.solution_method, 'bfgs')
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
 
-    """
-    Tests: : Unit tests for pyomo_optimization function. As with the other parameter estimation methods, two unit tests are done:
-        The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
-        The second test is used to check that higher order multi-variable problems are solved correctly.
-        - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
-        - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
-    """
-
-    @staticmethod
-    def test_pyomo_optimization_01():
-        # Create x vector for ax2 + bx + c: x data supplied in x_vector
-        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        x = input_array[:, 0]
-        y = input_array[:, 1]
-        x_vector = np.zeros((x.shape[0], 3))
-        x_vector[:, 0] = x[:, ] ** 2
-        x_vector[:, 1] = x[:, ]
-        x_vector[:, 2] = 1
-        expected_value = np.array([[1.], [2.], [1.]])
-        output_1 = RadialBasisFunctions.pyomo_optimization(x_vector, y)
-        np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
-
-    def test_pyomo_optimization_02(self):
-        x = self.training_data[:, : -1]
-        y = self.training_data[:, -1]
-        x_vector = np.zeros((x.shape[0], 6))
-        x_vector[:, 0] = x[:, 0] ** 2
-        x_vector[:, 1] = x[:, 1] ** 2
-        x_vector[:, 2] = x[:, 0]
-        x_vector[:, 3] = x[:, 1]
-        x_vector[:, 4] = x[:, 1] * x[:, 0]
-        x_vector[:, 5] = 1
-        expected_value = np.array([[1.], [1.], [2.], [2.], [0.], [2.]])
-        output_1 = RadialBasisFunctions.pyomo_optimization(x_vector, y)
-        np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
-
-    """
-    Tests: : Unit tests for explicit_linear_algebra_solution function. The same two unit tests are done:
-        The first test is used to check that a single variable problem y = (ax + b)^2 is solved correctly.
-        The second test is used to check that higher order multi-variable problems are solved correctly.
-        - 01: y = a.x ^ 2 + b.x + c, find values a-c given data to 4.d.p.
-        - 02: y = a.x_1 ^ 2 + b.x_2 ^ 2 + c.x_1 + e.x_2 + f.x_1 * x_2 + g, find values of a-g given data to 4.d.p.
-    """
-
+    
     def test_explicit_linear_algebra_solution_01(self):
         input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
         x = input_array[:, 0]
@@ -646,14 +713,34 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         output_1 = RadialBasisFunctions.explicit_linear_algebra_solution(x_vector, y)
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
 
-    """
-    Tests: : Unit tests for error_calculation function.  The second order problem (ax1 + b)^2 + (cx2 + d)^2 is considered.
-        The three tests used for the cost_function are repeated for the RMSE and SSE errors. 
-         - The first test checks that the correct cv error is returned when theta is initialized as a vector of zeros.
-         - The second test checks that the correct cv error is returned for a random point within the solution space.
-         - The third test checks that the cv error is zero when the exact solution is found.
-    In each case, the result is expected to be twice as large as the cost function's expected value: the cost function is half of the total squared error.
-    """
+
+    def test_pyomo_optimization_01(self):
+        # Create x vector for ax2 + bx + c: x data supplied in x_vector
+        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        x = input_array[:, 0]
+        y = input_array[:, 1]
+        x_vector = np.zeros((x.shape[0], 3))
+        x_vector[:, 0] = x[:, ] ** 2
+        x_vector[:, 1] = x[:, ]
+        x_vector[:, 2] = 1
+        expected_value = np.array([[1.], [2.], [1.]])
+        output_1 = RadialBasisFunctions.pyomo_optimization(x_vector, y)
+        np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
+
+    def test_pyomo_optimization_02(self):
+        x = self.training_data[:, : -1]
+        y = self.training_data[:, -1]
+        x_vector = np.zeros((x.shape[0], 6))
+        x_vector[:, 0] = x[:, 0] ** 2
+        x_vector[:, 1] = x[:, 1] ** 2
+        x_vector[:, 2] = x[:, 0]
+        x_vector[:, 3] = x[:, 1]
+        x_vector[:, 4] = x[:, 1] * x[:, 0]
+        x_vector[:, 5] = 1
+        expected_value = np.array([[1.], [1.], [2.], [2.], [0.], [2.]])
+        output_1 = RadialBasisFunctions.pyomo_optimization(x_vector, y)
+        np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
+
 
     def test_error_calculation_01(self):
         x = self.training_data[:, :-1]
@@ -712,10 +799,6 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(output_1, expected_value_1)
         self.assertEqual(output_2, expected_value_2)
 
-    """
-    Tests: : Unit tests for r2_calculation function.  The function is tested for two cases where the predicted values 
-    deviate from the actual by 5% and 50% respectively. The R2-value in each case is compared against Excel evaluated values.
-    """
 
     def test_r2_calculation_01(self):
         y_actual = np.array([[1], [4], [9], [16], [25], [36], [49], [64], [81], [100]])
@@ -723,7 +806,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         expected_output = 0.993974359  # Evaluated in Excel
         output = RadialBasisFunctions.r2_calculation(y_actual, y_pred)
         self.assertAlmostEqual(expected_output, output, places=7)
-        print()
+        
 
     def test_r2_calculation_02(self):
         y_actual = np.array([[1], [4], [9], [16], [25], [36], [49], [64], [81], [100]])
@@ -731,115 +814,12 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         expected_output = 0.3974358974  # Evaluated in Excel
         output = RadialBasisFunctions.r2_calculation(y_actual, y_pred)
         self.assertAlmostEqual(expected_output, output, places=7)
-        print()
-
-    """
-       Tests: : Unit tests for get_feature_vector. We verify that:
-           - 1: The (key, val) dictionary obtained from the generated IndexParam matches the headers of the data when the input is a dataframe
-           - 2: The (key, val) dictionary obtained from the generated IndexParam matches is numerically consistent with that of the input array when a numpy array is supplied. 
-    """
-
-    def test_get_feature_vector_01(self):
-        data_feed = RadialBasisFunctions(self.full_data, basis_function='linear')
-        output = data_feed.get_feature_vector()
-        expected_dict = {'x1': 0, 'x2': 0}
-        self.assertDictEqual(expected_dict, output.extract_values())
-        print()
-
-    def test_get_feature_vector_02(self):
-        data_feed = RadialBasisFunctions(self.training_data, basis_function='linear')
-        output = data_feed.get_feature_vector()
-        expected_dict = {0: 0, 1: 0}
-        self.assertDictEqual(expected_dict, output.extract_values())
-        print()
-
-    """
-       Tests: : Unit tests for rbf_predict_output, a function that generates predictions for a test dataset. 
-       For a small dataset, we verify that the current predictions are produced for each transformation type.
-    """
-
-    def test_rbf_predict_output_01(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='linear')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(distance_vec, opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    def test_rbf_predict_output_02(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='cubic')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(distance_vec**3, opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    def test_rbf_predict_output_03(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='gaussian')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(np.exp(-(distance_vec**reg)**2), opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    def test_rbf_predict_output_04(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='imq')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(1 / np.sqrt(((distance_vec * reg) ** 2) + 1), opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    def test_rbf_predict_output_05(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='mq')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(np.sqrt(((distance_vec * reg) ** 2) + 1), opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    def test_rbf_predict_output_06(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='spline')
-        x_test = np.array([[0, 7.5]])
-        opt_wts = np.array([[2], [1], [3]])
-        lambda_reg = 0
-        reg = 1
-        distance_vec = np.array([[7.5, 5, 2.5]])
-        expected_output = np.matmul(np.nan_to_num(distance_vec ** 2 * np.log(distance_vec)), opt_wts)
-        output = data_feed.rbf_predict_output(opt_wts, x_test, data_feed.centres, reg, lambda_reg)
-        self.assertEqual(expected_output, output)
-        print()
-
-    """
-    Tests: : Unit tests for loo_error_estimation_with_rippa_method. 
-        - Three tests are run to check that the correct condition number and errors are returned by the method irrespective of solution_method:
-            - First test checks the algebraic method
-            - Second test checks the pyomo method
-            - Third test checks the bfgs solution
-        - In each test, the basis_generation method and relevant optimization method are replaced with mocks. The results from the mocks
-          are used to compute the condition number and LOOCV errors.
-    """
-
+        
+    
+    def mock_basis_generation(self, r):
+        return np.ones((self.x_data.shape[0], self.x_data.shape[0]))
+    def mock_optimization(self, x, y):
+        return 500 * np.ones((x.shape[0], 1))
     @patch.object(RadialBasisFunctions, 'basis_generation', mock_basis_generation)
     @patch.object(RadialBasisFunctions, 'explicit_linear_algebra_solution', mock_optimization)
     def test_loo_error_estimation_with_rippa_method_01(self):
@@ -886,8 +866,448 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         _, output_1, output_2 = data_feed.loo_error_estimation_with_rippa_method(shape_factor, reg_param)
         self.assertEqual(output_1, np.linalg.cond(expected_x))
         np.testing.assert_array_equal(output_2, expected_errors)
-        print()
 
 
+    def test_leave_one_out_crossvalidation_01(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function=None,solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+
+    def test_leave_one_out_crossvalidation_02(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='cubic',solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+    
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_03(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='linear' ,solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+        
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_04(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='spline' ,solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+        
+    def test_leave_one_out_crossvalidation_05(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='gaussian',solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_06(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='mq',solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_07(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function= 'imq',solution_method=None, regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_08(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function=None,solution_method='algebraic', regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_09(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function=None,solution_method='BFGS', regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+    
+    def test_leave_one_out_crossvalidation_10(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function=None,solution_method='pyomo', regularization=False)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+
+    def test_leave_one_out_crossvalidation_11(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function=None,solution_method=None, regularization=True)
+        r_best, lambda_best, error_best = data_feed.leave_one_out_crossvalidation()
+
+        if (data_feed.basis_function == 'gaussian') or (data_feed.basis_function == 'mq') or (data_feed.basis_function.lower() == 'imq'):
+            r_set = [0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1.0, 2.0, 5.0, 7.5, 10.0, 20.0, 50.0, 75.0, 100.0, 200.0, 500.0, 1000.0]
+        else:
+            r_set = [0]
+
+        if data_feed.regularization is True:
+            reg_parameter = [0.00001, 0.00002, 0.00005, 0.000075, 0.0001, 0.0002, 0.0005, 0.00075, 0.001, 0.002, 0.005, 0.0075, 0.01, 0.02, 0.05, 0.075, 0.1, 0.2, 0.5, 0.75, 1]
+        elif data_feed.regularization is False:
+            reg_parameter = [0]
+        _,_,expected_errors = data_feed.loo_error_estimation_with_rippa_method(r_best, lambda_best)
+
+        self.assertEqual(r_best in r_set, True)
+        self.assertEqual(lambda_best in reg_parameter, True)
+        self.assertEqual(error_best, expected_errors)
+
+
+    def test_rbf_training_01(self):
+        data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='algebraic', regularization=False)
+        results = data_feed.rbf_training()
+
+        best_r_value, best_lambda_param, _ = data_feed.leave_one_out_crossvalidation()
+
+        # Generate x matrix
+        x_transformed = data_feed.basis_generation(best_r_value)
+        x_transformed = x_transformed + (best_lambda_param * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_condition_number = np.linalg.cond(x_transformed)
+
+        if data_feed.solution_method == 'algebraic':
+            radial_weights = data_feed.explicit_linear_algebra_solution(x_transformed, data_feed.y_data)
+        elif data_feed.solution_method == 'pyomo':
+            radial_weights = data_feed.pyomo_optimization(x_transformed, data_feed.y_data)
+        elif data_feed.solution_method == 'bfgs':
+            radial_weights = data_feed.bfgs_parameter_optimization(x_transformed, data_feed.y_data)
+        radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
+
+        training_ss_error, rmse_error, y_training_predictions_scaled = data_feed.error_calculation(radial_weights, x_transformed, data_feed.y_data)
+        r_square = data_feed.r2_calculation(data_feed.y_data, y_training_predictions_scaled)
+        y_training_predictions = data_feed.data_min[0, -1] + y_training_predictions_scaled * (data_feed.data_max[0, -1] - data_feed.data_min[0, -1])
+        
+        np.testing.assert_array_equal(radial_weights, results.weights)
+        np.testing.assert_array_equal(best_r_value, results.sigma)
+        np.testing.assert_array_equal(best_lambda_param, results.regularization)
+        np.testing.assert_array_equal(data_feed.centres, results.centres )
+        np.testing.assert_array_equal(y_training_predictions, results.output_predictions )
+        np.testing.assert_array_equal(rmse_error, results.rmse )
+        np.testing.assert_array_equal(x_condition_number, results.condition_number )
+        np.testing.assert_array_equal(data_feed.regularization, results.regularization )
+        np.testing.assert_array_equal(r_square, results.R2 )
+        self.assertEqual(data_feed.basis_function, results.basis_function)
+        np.testing.assert_array_equal(data_feed.data_min[:, :-1], results.x_data_min )
+        np.testing.assert_array_equal(data_feed.data_max[:, :-1], results.x_data_max )
+        np.testing.assert_array_equal(data_feed.data_min[:, -1], results.y_data_min )
+        np.testing.assert_array_equal(data_feed.data_max[:, -1], results.y_data_max )
+        self.assertEqual(results.solution_status, 'ok')
+    
+    def test_rbf_training_02(self):
+        data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='pyomo', regularization=False)
+        results = data_feed.rbf_training()
+        with self.assertWarns(Warning):
+            results = data_feed.rbf_training()          
+            self.assertEqual(results.solution_status, 'unstable solution')
+    
+    def test_rbf_training_03(self):
+        data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='bfgs', regularization=False)
+        results = data_feed.rbf_training()
+        with self.assertWarns(Warning):
+            results = data_feed.rbf_training()          
+            self.assertEqual(results.solution_status, 'unstable solution')
+
+
+    def test_rbf_predict_output_01(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='linear')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(distance_vec, results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+        
+    def test_rbf_predict_output_02(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='cubic')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(distance_vec**3, results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+        
+    def test_rbf_predict_output_03(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='gaussian')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(np.exp(-1 * ((distance_vec * results.sigma) ** 2)),  results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+    
+    def test_rbf_predict_output_04(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='imq')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(1 / np.sqrt(((distance_vec * results.sigma) ** 2) + 1),  results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+        
+    def test_rbf_predict_output_05(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='mq')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(np.sqrt(((distance_vec * results.sigma) ** 2) + 1),  results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+
+    def test_rbf_predict_output_06(self):
+        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='spline')
+        results = data_feed.rbf_training()
+        x_test = np.array([[0, 7.5]])
+        output = data_feed.rbf_predict_output(results, x_test)
+                
+        data_minimum =results.x_data_min
+        data_maximum = results.x_data_max
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_test - data_minimum)/scale
+        x_test = x_pred_scaled.reshape(x_test.shape)
+
+        distance_vec = distance.cdist(x_test, results.centres, 'euclidean')
+        expected_output = np.matmul(np.nan_to_num(distance_vec ** 2 * np.log(distance_vec)),  results.weights)
+        expected_output = results.y_data_min + expected_output * (results.y_data_max - results.y_data_min)
+        self.assertEqual(expected_output, output)
+
+
+    def test_get_feature_vector_01(self):
+        data_feed = RadialBasisFunctions(self.full_data, basis_function='linear')
+        output = data_feed.get_feature_vector()
+        expected_dict = {'x1': 0, 'x2': 0}
+        self.assertDictEqual(expected_dict, output.extract_values())
+        
+    def test_get_feature_vector_02(self):
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='linear')
+        output = data_feed.get_feature_vector()
+        expected_dict = {0: 0, 1: 0}
+        self.assertDictEqual(expected_dict, output.extract_values())
+        
+        
+    def test_rbf_generate_expression_01(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='linear',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    def test_rbf_generate_expression_02(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='cubic',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    def test_rbf_generate_expression_03(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='gaussian',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    def test_rbf_generate_expression_04(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='mq',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    def test_rbf_generate_expression_05(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='imq',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    def test_rbf_generate_expression_06(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training()       
+        lv =[]
+        for i in p.keys():
+            lv.append(p[i])
+        rbf_expr = results.rbf_generate_expression((lv))
+    
+    
 if __name__ == '__main__':
     unittest.main()

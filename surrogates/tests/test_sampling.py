@@ -1,539 +1,1774 @@
-from pysmo.sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
+import sys, os
+sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+
+from sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
 
+'''
+coverage run test_sampling.py
+coverage report -m
+coverage html
 
+'''
 class FeatureScalingTestCases(unittest.TestCase):
+    """
+    test_data_scaling_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_scaling_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_scaling_03: Test behaviour when input is a numpy array and with 3D array.
+    test_data_scaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_scaling_05: Test behaviour list input TypeError
+
+    test_data_scaling_06: Test behaviour when input is a Pandas DataFrame and with 1D array.
+    test_data_scaling_07: Test behaviour when input is a Pandas DataFrame and with 2D array.
+    test_data_scaling_08: Test behaviour when input is a Pandas DataFrame and with 3D array.
+    test_data_scaling_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a varibale is constant.
+
+    test_data_unscaling_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_unscaling_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_unscaling_03: Test behaviour when input is a numpy array and with 3D array. 
+    test_data_unscaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+
+    test_data_unscaling_05: Test behaviour IndexError when input array size > array size
+    test_data_unscaling_06: Test behaviour IndexError when input array size < array size  
+
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np_1d = np.array(range(10))
+        input_array_np_2d = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        input_array_np_3d = np.array([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
+        input_array_np_3d_constant = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
 
-    """
-    Tests 1 - 7: Tests to check the range of potential inputs for the number of samples:
-     - 01: Test behaviour when input is a pandas dataframe
-     - 02: Test behaviour when input is a numpy array and with 1D array. Returns a 2D N x 1 array.
-     - 03: Test behaviour input is neither of the acceptable types - should throw up a
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-    Tests 3 and 5 also check x_data attribute is returned correctly.
-    """
+        input_array_pd_1d = pd.DataFrame(range(10))
+        input_array_pd_2d = pd.DataFrame([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        input_array_pd_3d = pd.DataFrame([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
+        input_array_pd_3d_constant = pd.DataFrame([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
 
+        self.test_data_numpy_1d = input_array_np_1d
+        self.test_data_numpy_2d = input_array_np_2d
+        self.test_data_numpy_3d = input_array_np_3d
+        self.test_data_numpy_3d_constant = input_array_np_3d_constant
+
+        self.test_data_pandas_1d = input_array_pd_1d
+        self.test_data_pandas_2d = input_array_pd_2d
+        self.test_data_pandas_3d = input_array_pd_3d
+        self.test_data_pandas_3d_constant = input_array_pd_3d_constant
+        
+    
     def test_data_scaling_01(self):
-        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(self.test_data)
-        expected_output_2 = np.array([[0, 1]])
-        expected_output_3 = np.array([[9, 100]])
-        expected_output_1 = (self.test_data - expected_output_2) / (expected_output_3 - expected_output_2)
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_numpy_1d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9]])
+        expected_output_2 = np.array([[0]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
         np.testing.assert_array_equal(output_3, expected_output_3)
         np.testing.assert_array_equal(output_2, expected_output_2)
-        np.testing.assert_array_equal(output_1, expected_output_1)
+        np.testing.assert_array_equal(output_1, expected_output_1.reshape(10, 1))
 
     def test_data_scaling_02(self):
-        test_data_as_array = self.test_data.values
-        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(test_data_as_array[:, 0])
-        expected_output_2 = np.array([[0]])
-        expected_output_3 = np.array([[9]])
-        expected_output_1 = (test_data_as_array[:, 0] - expected_output_2) / (expected_output_3 - expected_output_2)
-        expected_output_1 = expected_output_1.reshape(expected_output_1.shape[1], 1)  # Because shape is changed backend
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 100]])
+        expected_output_2 = np.array([[0, 1]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
         np.testing.assert_array_equal(output_3, expected_output_3)
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
-
+    
     def test_data_scaling_03(self):
-        test_data_as_list = self.test_data.values.tolist()
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_numpy_3d 
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 19, 119]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_04(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_numpy_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 10, 110]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        scale = expected_output_3 - expected_output_2
+        scale[scale == 0.0] = 1.0
+        expected_output_1 = (input_array - expected_output_2) / scale
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_05(self):
+        # TypeError with list
+        input_array = self.test_data_numpy_2d.tolist()
         with self.assertRaises(TypeError):
-            FeatureScaling.data_scaling_minmax(test_data_as_list)
+            FeatureScaling.data_scaling(input_array)
+
+    def test_data_scaling_06(self):
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_pandas_1d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9]])
+        expected_output_2 = np.array([[0]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_07(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array =self.test_data_pandas_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 100]])
+        expected_output_2 = np.array([[0, 1]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_08(self):
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_pandas_3d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 19, 119]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
+    def test_data_scaling_09(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_pandas_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        expected_output_3 = np.array([[9, 10, 110]])
+        expected_output_2 = np.array([[0, 10, 11]])
+        scale = expected_output_3 - expected_output_2
+        scale[scale == 0.0] = 1.0
+        expected_output_1 = (input_array - expected_output_2) / scale
+        np.testing.assert_array_equal(output_3, expected_output_3)
+        np.testing.assert_array_equal(output_2, expected_output_2)
+        np.testing.assert_array_equal(output_1, expected_output_1)
+    
 
     def test_data_unscaling_01(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6]])
-        max_array = np.array([[5, 10]])
-        output = FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
-        expected_output = np.array([[1, 10], [2, 9], [3, 8], [4, 7], [5, 6]])
-        np.testing.assert_array_equal(output, expected_output)
+        # 1D
+        # Sample data generated from between 0 and 9
+        input_array = self.test_data_numpy_1d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1 = output_1.reshape(output_1.shape[0], )
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array.reshape(10, 1))
 
     def test_data_unscaling_02(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+    
+    def test_data_unscaling_03(self):
+        # 3D
+        # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
+        input_array = self.test_data_numpy_3d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+    
+    def test_data_unscaling_04(self):
+        # 3D with constant
+        # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
+        input_array = self.test_data_numpy_3d_constant
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        np.testing.assert_array_equal(un_output_1, input_array)
+
+    def test_data_unscaling_05(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+
         min_array = np.array([[1]])
         max_array = np.array([[5]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
+            FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
-    def test_data_unscaling_03(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6, 10]])
-        max_array = np.array([[5, 10, 15]])
+    def test_data_unscaling_06(self):
+        # 2D
+        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
+        input_array = self.test_data_numpy_2d
+        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+                
+        min_array = np.array([[1,2,3]])
+        max_array = np.array([[5,6,7]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling_minmax(data_array, min_array, max_array)
+            FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
-    def test_data_unscaling_04(self):
-        data_array = np.array([[0, 1], [0.25, 0.75], [0.5, 0.5], [0.75, 0.25], [1, 0]])
-        min_array = np.array([[1, 6]])
-        max_array = np.array([[5, 10]])
-        output = FeatureScaling.data_unscaling_minmax(data_array[:, 0], min_array[:, 0], max_array[:, 0])
-        expected_output = np.array([[1], [2], [3], [4], [5]])
-        np.testing.assert_array_equal(output, expected_output)
+             
+class SamplingMethodsTestCases(unittest.TestCase):
+    def setUp(self):
+        input_array_np_1d = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
+        input_array_np_2d = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        input_array_np_3d = np.array([[0,10, 11], [1,11, 15], [2,12, 21], [3,13, 29], [4,14, 39], [5,15, 51], [6,16, 65], [7,17, 81], [8,18, 99], [9,19, 119]])
+        
+        self.test_data_numpy_1d = input_array_np_1d
+        self.test_data_numpy_2d = input_array_np_2d
+        self.test_data_numpy_3d = input_array_np_3d
+    """
+   
+    test_nearest_neighbour_01: Test behaviour with array N x d = (10,3) data and a=[-0.5,1]
+    test_nearest_neighbour_02: Test behaviour with array N x d = (10,2) data and a=[-0.5]
+    test_nearest_neighbour_03: Test behaviour with array N x d = (10,1) data and a=[]
+    test_nearest_neighbour_04: working even with diffent input size
+    test_nearest_neighbour_05: Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3) 
+    
+    test_points_selection_01: Test behaviour with array N x d = (10,3) data and a=[[-0.5,10],[10,100]]
+    test_points_selection_02: Test behaviour with array N x d = (10,2) data and a=[[-0.5],[10]]
+    test_points_selection_03: Test behaviour with array N x d = (10,1) data and a=[[],[]] <---both return the first element
+    test_points_selection_04: Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3); small
+    test_points_selection_05: Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3); large
+    
+    test_sample_point_selection_01: selection - Test behaviour with array N x d = (10,3) data and a=[[0,0],[10,19]]
+    test_sample_point_selection_02: selection - Test behaviour with array N x d = (10,2) data and a=[[0],[7]]
+    test_sample_point_selection_03: selection - Test behaviour with array N x d = (10,1) data and a=[[],[]] <---both return the first element, so return only 1 []
+    test_sample_point_selection_04: selection - Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3); large
+    test_sample_point_selection_05: selection - Test behaviour raise ValueError if dimension of point is not matching with array N x d = (10,3); large
+    
+    test_points_selection_06: creation - Test behaviour with points dimension should be d with array N x d = (10,3) 
+    test_points_selection_07: creation - Test behaviour with points dimension should be d with array N x d = (10,2) 
+    test_points_selection_08: creation - Test behaviour with points dimension should be d with array N x d = (10,1) 
+    test_points_selection_09: creation - raise IndexError if dimension of point is not matching with array N x d = (10,3); small
+    test_points_selection_10: creation - raise IndexError if dimension of point is not matching with array N x d = (10,3); large
+    
+    test_points_selection_01: Test behaviour with n = 3
+    test_points_selection_02: Test behaviour with n = 1
+    test_points_selection_03: Test behaviour with n = 0
+    test_points_selection_04: Test behaviour with n = -1
+    test_points_selection_04: Test behaviour with n = 2.9
+    
+    test_base_conversion_01: Test behaviour with 5 to base 2
+    test_base_conversion_02: Test behaviour with 57 to base 47
+    test_base_conversion_03: Test behaviour with negative base - works, returns always 0
+    test_base_conversion_04: Test behaviour raise ZeroDivisionError with 0 base
+    test_base_conversion_05: Test behaviour with 1 base, infinity loop
+    
+    test_prime_base_to_decimal_01: Test behaviour with 0.01 in base 2 to base 10
+    test_prime_base_to_decimal_02: Test behaviour with 0.01 in base 20 to base 10
+    test_prime_base_to_decimal_03: working with base 1
+    test_prime_base_to_decimal_04: working with base -1
+    
+    test_data_sequencing: in th
+    e notes, (3,2) -> expected [0, 0.5, 0.75], but returns [0.  , 0.5 , 0.25]
+    """
+    def test_nearest_neighbour_01(self):
+        input_array = self.test_data_numpy_3d
+        closest_point = SamplingMethods.nearest_neighbour(self, input_array, [-0.5,1])
+        np.testing.assert_array_equal(closest_point, input_array[0,:])
 
+    def test_nearest_neighbour_02(self):
+        input_array = self.test_data_numpy_2d
+        closest_point = SamplingMethods.nearest_neighbour(self, input_array, [-0.5])
+        np.testing.assert_array_equal(closest_point, input_array[0,:])
+
+    def test_nearest_neighbour_03(self):
+        input_array = self.test_data_numpy_1d
+        closest_point = SamplingMethods.nearest_neighbour(self, input_array, [])
+        np.testing.assert_array_equal(closest_point, input_array[0,:])
+
+    def test_nearest_neighbour_04(self):
+        input_array = self.test_data_numpy_3d
+        closest_point = SamplingMethods.nearest_neighbour(self, input_array, [0.5])
+     
+    def test_nearest_neighbour_05(self):
+        input_array = self.test_data_numpy_3d
+        with self.assertRaises(ValueError):
+            closest_point = SamplingMethods.nearest_neighbour(self, input_array, [0.5,0.9,10])
+
+
+    def test_points_selection_01(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[-0.5,10],
+                                             [10,100]])
+        SamplingClass = SamplingMethods()
+        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
+        np.testing.assert_array_equal(equivalent_points[1], input_array[-1,:])
+
+    def test_points_selection_02(self):
+        input_array = self.test_data_numpy_2d        
+        generated_sample_points =  np.array([[-0.5],
+                                             [10]])
+        SamplingClass = SamplingMethods()
+        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
+        np.testing.assert_array_equal(equivalent_points[1], input_array[-1,:])
+    
+    def test_points_selection_03(self):
+        input_array = self.test_data_numpy_1d        
+        generated_sample_points =  np.array([[],
+                                             []])
+        SamplingClass = SamplingMethods()
+        equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+        np.testing.assert_array_equal(equivalent_points[0], input_array[0,:])
+        np.testing.assert_array_equal(equivalent_points[1], input_array[0,:])
+    
+    def test_points_selection_04(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5],
+                                             [10]])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(ValueError):
+            equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+    
+    def test_points_selection_05(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5,0.7,10],
+                                             [10,0.9,20]])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(ValueError):
+            equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
+    
+
+    def test_sample_point_selection_01(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0,0],
+                                             [10,19]])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
+        np.testing.assert_array_equal(unique_sample_points[1], input_array[-1,:])
+
+    def test_sample_point_selection_02(self):
+        input_array = self.test_data_numpy_2d        
+        generated_sample_points =  np.array([[0],
+                                             [7]])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
+        np.testing.assert_array_equal(unique_sample_points[1], input_array[-1,:])
+
+    def test_sample_point_selection_03(self):
+        input_array = self.test_data_numpy_1d        
+        generated_sample_points =  np.array([[],
+                                             []])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+        np.testing.assert_array_equal(unique_sample_points[0], input_array[0,:])
+    
+    def test_sample_point_selection_04(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5],
+                                             [7]])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(ValueError):
+            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+    
+    def test_sample_point_selection_05(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5,1,10],
+                                             [7,19,20]])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(ValueError):
+            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
+
+    def test_sample_point_selection_06(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5,11,3],
+                                             [7,19,4]])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        min_ , max_ = input_array[0, :], input_array[1, :]
+        testing = min_ + generated_sample_points * (max_ - min_)
+        np.testing.assert_array_equal(testing,unique_sample_points)
+
+    def test_sample_point_selection_07(self):
+        input_array = self.test_data_numpy_2d        
+        generated_sample_points =  np.array([[0.5,1],
+                                             [7,19]])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        min_ , max_ = input_array[0, :], input_array[1, :]
+        testing = min_ + generated_sample_points * (max_ - min_)
+        np.testing.assert_array_equal(testing,unique_sample_points)
+
+    def test_sample_point_selection_08(self):
+        input_array = self.test_data_numpy_1d        
+        generated_sample_points =  np.array([[0.5],
+                                             [7]])
+        SamplingClass = SamplingMethods()
+        unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+        min_ , max_ = input_array[0, :], input_array[1, :]
+        testing = min_ + generated_sample_points * (max_ - min_)
+        np.testing.assert_array_equal(testing,unique_sample_points)
+    
+    def test_sample_point_selection_09(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[],
+                                             []])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(IndexError):
+            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+    
+    def test_sample_point_selection_10(self):
+        input_array = self.test_data_numpy_3d        
+        generated_sample_points =  np.array([[0.5,1,10,11],
+                                             [7,19,10,12]])
+        SamplingClass = SamplingMethods()
+        with self.assertRaises(IndexError):
+            unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
+
+
+    def test_prime_number_generator_01(self):
+        prime_list = SamplingMethods.prime_number_generator(self, 3)
+        np.testing.assert_array_equal(prime_list, [2, 3, 5])
+
+    def test_prime_number_generator_02(self):
+        prime_list = SamplingMethods.prime_number_generator(self, 1)
+        np.testing.assert_array_equal(prime_list, [2])
+
+    def test_prime_number_generator_03(self):
+        prime_list = SamplingMethods.prime_number_generator(self, 0)
+        np.testing.assert_array_equal(prime_list, [])
+    
+    def test_prime_number_generator_04(self):
+        prime_list = SamplingMethods.prime_number_generator(self, -1)
+        np.testing.assert_array_equal(prime_list, [])
+
+    def test_prime_number_generator_05(self):
+        prime_list = SamplingMethods.prime_number_generator(self, 2.9)
+        np.testing.assert_array_equal(prime_list, [2, 3, 5])
+        
+
+    def test_base_conversion_01(self):
+        string_representation = SamplingMethods.base_conversion(self, 5, 2)
+        self.assertListEqual(string_representation,['1', '0', '1'])
+    
+    def test_base_conversion_02(self):
+        string_representation = SamplingMethods.base_conversion(self, 57, 47)
+        self.assertListEqual(string_representation,['1', '10'])
+    
+    def test_base_conversion_03(self):
+        string_representation = SamplingMethods.base_conversion(self, 10, -1)
+        self.assertListEqual(string_representation,['0'])
+        
+    def test_base_conversion_04(self):
+        with self.assertRaises(ZeroDivisionError):
+            string_representation = SamplingMethods.base_conversion(self, 10, 0)
+
+    # def test_base_conversion_05(self):
+    #     string_representation = SamplingMethods.base_conversion(self, 10, 1)
+
+
+    def test_prime_base_to_decimal_01(self):
+        string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 2)
+        self.assertEqual(0.25, string_representation)
+    
+    def test_prime_base_to_decimal_02(self):
+        string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 20)
+        self.assertEqual(0.0025, string_representation)
+    
+    def test_prime_base_to_decimal_03(self):
+        string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 1)
+            
+    def test_prime_base_to_decimal_04(self):
+        string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], -1)
+
+
+    def test_data_sequencing(self):
+        SamplingClass = SamplingMethods()
+        sequence_decimal = SamplingClass.data_sequencing(3, 2)
+        
 
 class LatinHypercubeSamplingTestCases(unittest.TestCase):
+    """
+    test__init__selection_01: input numpy array - Test behaviour generate LatinHypercubeSampling object with selection, default number of sample = 5
+    test__init__selection_02: input Pandas DataFrame - Test behaviour generate LatinHypercubeSampling object with selection, default number of sample
+    test__init__selection_03: input numpy array - Test behaviour generate LatinHypercubeSampling object with selection, with a selected number of sample
+    test__init__selection_04: input Pandas DataFrame - Test behaviour generate LatinHypercubeSampling object with selection, with a selected number of sample
+    test__init__selection_05: input numpy array - Test behaviour raise exception with a selected number of sample = 0
+    test__init__selection_06: input numpy array - Test behaviour raise exception with a selected number of sample = -1
+    test__init__selection_07: input numpy array - Test behaviour raise exception with a selected number of sample > input size
+    test__init__selection_08: input numpy array - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__selection_09: input list - Test behaviour raise ValueError with list input
+    
+    test__init__creation_01: input list - Test behaviour generate LatinHypercubeSampling object with default sampling_type, default number of sample = 5
+    test__init__creation_02: input list - Test behaviour generate LatinHypercubeSampling object with sampling_type = creation, default number of sample = 5
+    test__init__creation_03: input list - Test behaviour generate LatinHypercubeSampling object with creation with a selected number of sample
+    test__init__creation_04: input list - Test behaviour raise exception with a selected number of sample = 0
+    test__init__creation_05: input list - Test behaviour raise exception with a selected number of sample = -1
+    test__init__creation_06: input list - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__creation_07: input numpy - Test behaviour raise ValueError with numpy input
+    test__init__creation_08: input numpy - Test behaviour raise ValueError with pandas input
+    test__init__creation_09: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5]]
+    test__init__creation_10: input numpy - Test behaviour raise exception with data_input =  [np.array([1,10,3]),[2,11,4.5]]
+    test__init__creation_11: input numpy - Test behaviour raise exception with data_input =  [[1,10,3],np.array([2,11,4.5])]
+    test__init__creation_12: input numpy - Test behaviour raise exception with data_input =  [[1,10],[2,11,4.5]]
+    test__init__creation_13: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5],[2,11,4.5]]
 
+    test__init__creation_selection_01 - Test behaviour raise Exception with sampling_type = non string
+    test__init__creation_selection_02 - Test behaviour raise Exception with sampling_type = incorrect string
+
+    test_variable_sample_creation: Test behaviour, sampled values are in the range (min, max), number of samples = 5, 10, 1
+    
+    test_lhs_points_generation: Test behaviour, sampled values are in the range (0, 1) , number of samples = 5, 10, 1, 2 d
+    
+    test_random_shuffling: Test behaviour, random_shuffling = sampled values after soring, they are in the range (0, 1) , number of samples = 5, 10, 1, 2 d
+
+    test_sample_points_01: Test behaviour with selection, sample points are unique, all in the input array , number of samples = 5, 10, 1, 2 d
+    test_sample_points_02: Test behaviour with creation, sample points are unique, all in the input range (min,max) , number of samples = 5, 10, 1, 2 d
+    test_sample_points_02: Test behaviour with selection + pandas dataframe, sample points are unique, all in the input array , number of samples = 5, 10, 1, 2 d
+    
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                        'y': [11,14,19,26,35,46,59,74,91,110]})
+        input_array_list = [[1,10,3],[2,11,4.5]]
+        self.test_data_numpy = input_array_np
+        self.test_data_pandas = input_array_pd
+        self.test_data_list= input_array_list
+        x1 = np.linspace(0, 10, 21)
+        x2 = np.linspace(0, 10, 21)
+        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
+        self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
+        
 
-    """
-    Tests 1 - 7: Tests to check the range of potential inputs for the number of samples:
-     - 01: Test behaviour when number_of_samples = -ve. Should raise exception.
-     - 02: Test behaviour when number_of_samples = 0. Should raise exception.
-     - 03: Test behaviour when number_of_samples = + integer within acceptable range. Should complete successfully.
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-    Tests 3 and 5 also check x_data attribute is returned correctly.
-    """
+    def test__init__selection_01(self):
+        input_array = self.test_data_numpy
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples, 5)
+        np.testing.assert_array_equal(LHSClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_02(self):
+        input_array = self.test_data_pandas
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples, 5)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(LHSClass.x_data, input_array[:, :-1])
+        
+    def test__init__selection_03(self):
+        input_array = self.test_data_numpy
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples,6)
+        np.testing.assert_array_equal(LHSClass.x_data, input_array[:, :-1])
 
-    def test_initialization_01(self):
+    def test__init__selection_04(self):
+        input_array = self.test_data_pandas
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples,6)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(LHSClass.x_data, input_array[:, :-1])
+
+    def test__init__selection_05(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            LatinHypercubeSampling(self.test_data, -1)
-
-    def test_initialization_02(self):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=0, sampling_type="selection")
+    
+    def test__init__selection_06(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            LatinHypercubeSampling(self.test_data, 0)
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=-1, sampling_type="selection")
 
-    def test_initialization_03(self):
-        output_1 = LatinHypercubeSampling(self.test_data, 7)
-        expected_output_1 = 7
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_1.number_of_samples, expected_output_1)
-        self.assertEqual(output_1.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_04(self):
+    def test__init__selection_07(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            LatinHypercubeSampling(self.test_data, 11)
-
-    def test_initialization_05(self):
-        output_2 = LatinHypercubeSampling(self.test_data)
-        expected_output = 5
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_2.number_of_samples, expected_output)
-        self.assertEqual(output_2.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_06(self):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=101, sampling_type="selection")
+        
+    def test__init__selection_08(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            LatinHypercubeSampling(self.test_data, 1.7)
-
-    def test_initialization_07(self):
-        test_data_as_array = self.test_data.values
-        output_1 = LatinHypercubeSampling(test_data_as_array, 7)
-        np.testing.assert_array_equal(output_1.data, test_data_as_array)
-
-    def test_initialization_08(self):
-        test_data_as_list = self.test_data.values.tolist()
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=1.1, sampling_type="selection")
+    
+    def test__init__selection_09(self):
+        input_array = self.test_data_list
         with self.assertRaises(ValueError):
-            LatinHypercubeSampling(test_data_as_list, 7)
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type="selection")
 
-    """
-    Test: The random_shuffling function shuffles the columns of arrays. The next test simply checks that the array columns
-    have been shuffled by comparing the lists and sets generated from each column before and after shuffling.
 
-    The sets are expected to be the same, but the lists are expected to be different due to the re-arrangement.
-    """
+    def test__init__creation_01(self):
+        input_array = self.test_data_list
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type=None)
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples,5)
+    
+    def test__init__creation_02(self):
+        input_array = self.test_data_list
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples,5)
 
+    def test__init__creation_03(self):
+        input_array = self.test_data_list
+        LHSClass = LatinHypercubeSampling( input_array, number_of_samples=100, sampling_type='creation')
+        np.testing.assert_array_equal(LHSClass.data, input_array)
+        np.testing.assert_array_equal(LHSClass.number_of_samples,100)
+
+    def test__init__creation_04(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=0, sampling_type='creation')
+
+    def test__init__creation_05(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=-1, sampling_type='creation')
+    
+    def test__init__creation_06(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=1.1, sampling_type='creation')
+    
+    def test__init__creation_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_08(self):
+        input_array = self.test_data_pandas
+        with self.assertRaises(ValueError):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_09(self):
+        input_array = [[2,11,4.5]]
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_10(self):
+        input_array = [np.array([1,10,3]),[2,11,4.5]]
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_11(self):
+        input_array = [[1,10,3],np.array([2,11,4.5])]
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_12(self):
+        input_array = [[1,10],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_13(self):
+        input_array = [[2,11,4.5],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
+        
+
+
+    def test__init__creation_selection_01(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type=1)
+    
+    def test__init__creation_selection_02(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='jp')
+
+
+    def test_variable_sample_creation(self):
+        input_array = self.test_data_numpy        
+        for num_samples in [None,10,1]:
+            LHSClass = LatinHypercubeSampling( input_array, number_of_samples=num_samples, sampling_type="selection")
+            minimum, maximum = 10, 100
+            out_var_samples = LHSClass.variable_sample_creation(minimum, maximum)
+            self.assertTrue((out_var_samples>=minimum).all() and (out_var_samples<=maximum).all())
+            np.testing.assert_array_equal(LHSClass.number_of_samples, out_var_samples.shape[0])
+
+
+    def test_lhs_points_generation(self):
+        input_array = self.test_data_numpy
+        for num_samples in [None,10,1]:
+            LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            out_sample_points_vector = LHSClass.lhs_points_generation()
+            self.assertTrue((out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all())
+            np.testing.assert_array_equal(LHSClass.number_of_samples, out_sample_points_vector.shape[0])
+            np.testing.assert_array_equal(input_array.shape[1] - 1,out_sample_points_vector.shape[1])
+
+        
     def test_random_shuffling(self):
-        x_pure = np.array(
-            [[0, 1, 2, 3], [3, 4, 5, 6], [6, 7, 8, 9], [9, 10, 11, 12], [12, 13, 14, 15], [15, 16, 17, 18]])
-        x = np.array([[0, 1, 2, 3], [3, 4, 5, 6], [6, 7, 8, 9], [9, 10, 11, 12], [12, 13, 14, 15], [15, 16, 17, 18]])
-        output_1 = LatinHypercubeSampling.random_shuffling(x)
-        # Test 1: Check that randomization of columns has been done by comparing individual columns before and after
-        self.assertNotEqual(output_1[:, 0].tolist(), x_pure[:, 0].tolist())
-        self.assertNotEqual(output_1[:, 1].tolist(), x_pure[:, 1].tolist())
-        self.assertNotEqual(output_1[:, 2].tolist(), x_pure[:, 2].tolist())
-        self.assertNotEqual(output_1[:, 3].tolist(), x_pure[:, 3].tolist())
-        # Test 2: Check that the columns still contain exactly the same values as before randomization by comparing the sets
-        self.assertEqual(set(output_1[:, 0]), set(x_pure[:, 0]))
-        self.assertEqual(set(output_1[:, 1]), set(x_pure[:, 1]))
-        self.assertEqual(set(output_1[:, 2]), set(x_pure[:, 2]))
-        self.assertEqual(set(output_1[:, 3]), set(x_pure[:, 3]))
+        input_array = self.test_data_numpy
+        for num_samples in [None,10,1]:
+            LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            out_sample_points_vector = LHSClass.lhs_points_generation()
+            vector_of_points = LHSClass.random_shuffling(out_sample_points_vector)
+                    
+            sidx1 = out_sample_points_vector.argsort(axis=0)
+            out1 = out_sample_points_vector[sidx1, np.arange(sidx1.shape[1])]
+            sidx2 = vector_of_points.argsort(axis=0)
+            out2 = vector_of_points[sidx2, np.arange(sidx2.shape[1])]        
 
-    """
-    Test: Tests for lhs_points_generation: the function(s) that conduct random number generation for the input data.
-     - The first test checks that its performance for the minimum number of sample points (1).
-       The shape and returned value are checked against expected values.
+            self.assertTrue((out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all())
+            np.testing.assert_array_equal(out1, out2)
+            np.testing.assert_array_equal(LHSClass.number_of_samples, out_sample_points_vector.shape[0])
+            np.testing.assert_array_equal(input_array.shape[1] - 1,out_sample_points_vector.shape[1])
 
-     - The second test checks its performance for a typical value of number_of_samples. The first and last values in the
-       returned array are verified to be within the expected ranges. The shapes are also checked to be correct.
 
-     - The third test checks its performance for the upper bound - the number of input data points.
-    """
+    def test_sample_points_01(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_numpy
+            LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = LHSClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
 
-    def test_lhs_points_generation_01(self):
-        number_of_samples = 1
-        data_feed = LatinHypercubeSampling(self.test_data, number_of_samples)  # Three samples requested.
-        output_1 = data_feed.lhs_points_generation()
-        # Test set 1: Check that the output has the right shape
-        self.assertEqual(output_1.shape[0], number_of_samples)
-        self.assertEqual(output_1.shape[1], (self.test_data.shape[1] - 1))
-        # Test set 2: Check that the values returned are within the expected range
-        expected_lower = 0  # Minimum value for x in input_array
-        expected_upper = 1  # Maximum value for x in input_array
-        self.assertTrue((output_1 > expected_lower) and (output_1 < expected_upper))
+    def test_sample_points_02(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_list
+            LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="creation")
+            unique_sample_points = LHSClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:,i]
+                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
-    def test_lhs_points_generation_02(self):
-        number_of_samples = 3
-        data_feed = LatinHypercubeSampling(self.test_data, number_of_samples)  # Three samples requested.
-        output_1 = data_feed.lhs_points_generation()
-        # Test set 1: Check that the output has the right shape
-        self.assertEqual(output_1.shape[0], number_of_samples)
-        self.assertEqual(output_1.shape[1], (self.test_data.shape[1] - 1))
-        # Test set 2: Check that the values returned are within the expected range.
-        expected_lower_firstvalue = 0
-        expected_upper_lastvalue = 1
-        expected_upper_firstvalue = expected_upper_lastvalue * 1 / number_of_samples
-        expected_lower_lastvalue = expected_upper_lastvalue * (number_of_samples - 1) / number_of_samples
-        self.assertTrue((output_1[0, 0] > expected_lower_firstvalue) and (output_1[0, 0] < expected_upper_firstvalue))
-        self.assertTrue((output_1[number_of_samples - 1, 0] > expected_lower_lastvalue) and (
-                output_1[number_of_samples - 1, 0] < expected_upper_lastvalue))
-
-    def test_lhs_points_generation_03(self):
-        number_of_samples = 10
-        data_feed = LatinHypercubeSampling(self.test_data, number_of_samples)  # Three samples requested.
-        output_1 = data_feed.lhs_points_generation()
-        # Test set 1: Check that the output has the right shape
-        self.assertEqual(output_1.shape[0], number_of_samples)
-        self.assertEqual(output_1.shape[1], (self.test_data.shape[1] - 1))
-        # Test set 2: Check that the values returned are within the expected range.
-        expected_lower_firstvalue = 0
-        expected_upper_lastvalue = 1
-        expected_upper_firstvalue = expected_upper_lastvalue * 1 / number_of_samples
-        expected_lower_lastvalue = expected_upper_lastvalue * (number_of_samples - 1) / number_of_samples
-        self.assertTrue((output_1[0, 0] > expected_lower_firstvalue) and (output_1[0, 0] < expected_upper_firstvalue))
-        self.assertTrue((output_1[number_of_samples - 1, 0] > expected_lower_lastvalue) and (
-                output_1[number_of_samples - 1, 0] < expected_upper_lastvalue))
-
+    def test_sample_points_03(self):
+        for num_samples in [None,10,1]:
+            input_array = self.full_data
+            LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = LHSClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            unique_sample_points = np.array(unique_sample_points)
+            out_testing = [unique_sample_points[i,:] in np.array(input_array) for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+    
 
 class UniformSamplingTestCases(unittest.TestCase):
+    """
+    test__init__selection_01: input numpy array - Test behaviour generate UniformSampling object with selection, default edge, list_of_samples_per_variable = [2,5]
+    test__init__selection_02: input Pandas DataFrame - Test behaviour generate UniformSampling object with selection, default edge, list_of_samples_per_variable = [2,5]
+    test__init__selection_03: input numpy array - Test behaviour raise TypeError with a list_of_samples_per_variable is numpy, default edge
+    test__init__selection_04: input numpy array - Test behaviour raise TypeError with a list_of_samples_per_variable is pandas, default edge
+    test__init__selection_05: input numpy array - Test behaviour raise ValueError with a list_of_samples_per_variable < number of variables, default edge
+    test__init__selection_06: input numpy array - Test behaviour raise ValueError with a list_of_samples_per_variable > number of variables, default edge
+    test__init__selection_07: input numpy array - Test behaviour raise ValueError with a min(list_of_samples_per_variable) < 2, default edge
+    test__init__selection_08: input numpy array - Test behaviour raise TypeError with a list_of_samples_per_variable is non integer, default edge
+    test__init__selection_09: input numpy array - Test behaviour raise Exception with a list_of_samples_per_variable = [2,50], 2*50 > number of input data, default edge
+    test__init__selection_10: input numpy array - Test behaviour generate UniformSampling object with selection, edge = True, list_of_samples_per_variable = [2,5]
+    test__init__selection_11: input numpy array - Test behaviour generate UniformSampling object with selection, edge = True, list_of_samples_per_variable = [2,5]
+    test__init__selection_12: input numpy array - Test behaviour raise Exception with edge = 1
+    test__init__selection_13: input numpy array - Test behaviour raise Exception with edge = 'str'
+    test__init__selection_14: input numpy array - Test behaviour raise ValueError with non-numpy, non-panda inputs
 
+    test__init__creation_01: input list - Test behaviour generate UniformSampling object with default sampling_type, default edge, list_of_samples_per_variable = [2,7,5]
+    test__init__creation_02: input list - Test behaviour generate UniformSampling object with sampling_type = creation, default edge, list_of_samples_per_variable = [2,7,5]
+    test__init__creation_03: input list - Test behaviour raise exception with a list_of_samples_per_variable = [1,7,5]
+    test__init__creation_04: input list - Test behaviour raise exception with a list_of_samples_per_variable = [-1,7,5]
+    test__init__creation_05: input list - Test behaviour raise exception with a list_of_samples_per_variable = [1.1,7,5] (non-integer)
+    test__init__creation_06: input numpy - Test behaviour raise ValueError with numpy input
+    test__init__creation_07: input Pandas - Test behaviour raise ValueError with Pandas input
+    test__init__creation_08: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5]]
+    test__init__creation_09: input numpy - Test behaviour raise exception with data_input =  [np.array([1,10,3]),[2,11,4.5]]
+    test__init__creation_10: input numpy - Test behaviour raise exception with data_input =  [[1,10,3],np.array([2,11,4.5])]
+    test__init__creation_11: input numpy - Test behaviour raise exception with data_input =  [[1,10],[2,11,4.5]]
+    test__init__creation_12: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5],[2,11,4.5]]
+
+    test__init__creation_selection_01 - Test behaviour raise Exception with sampling_type = non string
+    test__init__creation_selection_02 - Test behaviour raise Exception with sampling_type = incorrect string
+
+    test_sample_points_01: Test behaviour with selection, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with creation, sample points are unique, all in the input range (min,max) , number of samples = [2,5,9],[3,2,10],[4,2,28]   
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                        'y': [11,14,19,26,35,46,59,74,91,110]})
+        input_array_list = [[1,10,3],[2,11,4.5]]
+        self.test_data_numpy = input_array_np
+        self.test_data_pandas = input_array_pd
+        self.test_data_list= input_array_list
+        x1 = np.linspace(0, 10, 21)
+        x2 = np.linspace(0, 10, 21)
+        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
+        self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
 
-    """
-    Tests 1 - 12: Tests to check the range of potential inputs for UniformSampling class:
-     - 01: Test behaviour when list_of_samples_per_variable is of the wrong type (not a list). Code should raise TypeError.
-     - 02: Test behaviour when list_of_samples_per_variable is of the wrong length/dimension. Code should raise ValueError.
-     - 03: Test behaviour when any entry in list_of_samples_per_variable < 2. Code should raise ValueError.
-     - 04: Test behaviour when list_of_samples_per_variable is not an integer. Code should raise TypeError.
-     - 05: Test behaviour when the total number  of samples to be generated(product of entries in list_of_samples_per_variable)
-           is greater than the number of samples in the input data. Code should raise Exception.
-     - 06: Test that the function behaves as expected and all attributes are properly loaded when all inputs are okay. 
-     - 07: Test behaviour when 'edges' entry is non-boolean. Code should raise Exception.
-     - 08: Test behaviour when no input is supplied for 'edges'. Default value of 'True' should be loaded.
-     - 09: Ensure that 'self.edge' is loaded correctly when Boolean value 'True' is supplied.
-     - 10: Ensure that 'self.edge' is loaded correctly when Boolean value 'False' is supplied.
-     - 11: Test that the function behaves as expected and all attributes are properly loaded when data_input is an array.
-     - 12: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame     
-    """
+    def test__init__selection_01(self):
+        input_array = self.test_data_numpy
+        UniClass = UniformSampling( input_array, [2,5], sampling_type="selection")
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples, 10)
+        np.testing.assert_array_equal(UniClass.x_data, input_array[:, :-1])
 
-    def test_initialization_01(self):
+    def test__init__selection_02(self):
+        input_array = self.test_data_pandas
+        UniClass = UniformSampling( input_array, [2,5], sampling_type="selection")
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples, 10)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(UniClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_03(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(TypeError):
-            UniformSampling(self.test_data, np.array([2]))
-
-    def test_initialization_02(self):
-        with self.assertRaises(ValueError):
-            UniformSampling(self.test_data, [2, 2])
-
-    def test_initialization_03(self):
-        with self.assertRaises(ValueError):
-            UniformSampling(self.test_data, [1])
-
-    def test_initialization_04(self):
+            UniClass = UniformSampling( input_array, np.array([2,5]), sampling_type="selection")
+    
+    def test__init__selection_04(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(TypeError):
-            UniformSampling(self.test_data, [2.3])
-
-    def test_initialization_05(self):
-        with self.assertRaises(Exception):
-            UniformSampling(self.test_data, [11])
-
-    def test_initialization_06(self):
-        output_2 = UniformSampling(self.test_data, [3])
-        expected_output = 3
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        expected_output_3 = [3]
-        expected_output_4 = self.test_data.columns.values.tolist()
-        self.assertEqual(output_2.number_of_samples, expected_output)
-        self.assertEqual(output_2.x_data.tolist(), expected_output_2.tolist())
-        self.assertEqual(output_2.dim_vector, expected_output_3)
-        self.assertEqual(output_2.data_headers, expected_output_4)
-
-    def test_initialization_07(self):
-        with self.assertRaises(Exception):
-            UniformSampling(self.test_data, [3], edges='x')
-
-    def test_initialization_08(self):
-        output = UniformSampling(self.test_data, [3])
-        self.assertEqual(output.edge, True)
-
-    def test_initialization_09(self):
-        output = UniformSampling(self.test_data, [3], edges=True)
-        self.assertEqual(output.edge, True)
-
-    def test_initialization_10(self):
-        output = UniformSampling(self.test_data, [3], edges=False)
-        self.assertEqual(output.edge, False)
-
-    def test_initialization_11(self):
-        test_data_as_array = self.test_data.values
-        output = UniformSampling(test_data_as_array, [7])
-        np.testing.assert_array_equal(output.data, test_data_as_array)
-        self.assertEqual(output.number_of_samples, 7)
-
-    def test_initialization_12(self):
-        test_data_as_list = self.test_data.values.tolist()
+            UniClass = UniformSampling( input_array, pd.DataFrame([2,5]), sampling_type="selection")
+    
+    def test__init__selection_05(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(ValueError):
-            UniformSampling(test_data_as_list,[7])
+            UniClass = UniformSampling( input_array, [2], sampling_type="selection")
+    
+    def test__init__selection_06(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            UniClass = UniformSampling( input_array, [2,5,5], sampling_type="selection")
+    
+    def test__init__selection_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            UniClass = UniformSampling( input_array, [-2,5], sampling_type="selection")
+    
+    def test__init__selection_08(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(TypeError):
+            UniClass = UniformSampling( input_array, [2.1,5], sampling_type="selection")
+    
+    def test__init__selection_09(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,50], sampling_type="selection")
+    
+    def test__init__selection_10(self):
+        input_array = self.test_data_numpy
+        UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges=True)
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples, 10)
+        np.testing.assert_array_equal(UniClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_11(self):
+        input_array = self.test_data_numpy
+        UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges=False)
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples, 10)
+        np.testing.assert_array_equal(UniClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_12(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges=1)
+    
+    def test__init__selection_13(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges='x')
+    
+    def test__init__selection_14(self):
+        input_array = list(self.test_data_numpy)
+        with self.assertRaises(ValueError):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type="selection")
+        
+
+    def test__init__creation_01(self):
+        input_array = self.test_data_list
+        UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples,2*7*5)
+    
+    def test__init__creation_02(self):
+        input_array = self.test_data_list
+        UniClass = UniformSampling( input_array, [2,7,5], sampling_type="creation")
+        np.testing.assert_array_equal(UniClass.data, input_array)
+        np.testing.assert_array_equal(UniClass.number_of_samples,2*7*5)
+    
+    def test__init__creation_03(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [1,7,5], sampling_type="creation")
+    
+    def test__init__creation_04(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [-1,7,5], sampling_type="creation")
+    
+    def test__init__creation_05(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [1.1,7,5], sampling_type="creation")
+    
+    def test__init__creation_06(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type="creation")
+    
+    def test__init__creation_07(self):
+        input_array = self.test_data_pandas
+        with self.assertRaises(ValueError):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type="creation")
+
+    def test__init__creation_08(self):
+        input_array = [[2,11,4.5]]
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+
+    def test__init__creation_09(self):
+        input_array = [np.array([1,10,3]),[2,11,4.5]]
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+
+    def test__init__creation_10(self):
+        input_array = [[1,10,3],np.array([2,11,4.5])]
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+
+    def test__init__creation_11(self):
+        input_array = [[1,10],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+
+    def test__init__creation_12(self):
+        input_array = [[2,11,4.5],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
+    
+
+    def test__init__creation_selection_01(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type=1)
+    
+    def test__init__creation_selection_02(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            UniClass = UniformSampling( input_array, [2,5], sampling_type='jp')
+    
+
+    def test_sample_points_01(self):
+        for num_samples in [[2,5],[3,2],[4,2]]:
+            input_array = self.test_data_numpy 
+            UniClass = UniformSampling(input_array, num_samples, sampling_type="selection")
+            unique_sample_points = UniClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+
+    def test_sample_points_02(self):
+        input_array = self.test_data_list
+        for num_samples in [[2,5,9],[3,2,10],[4,2,28]]:
+            input_array = self.test_data_list
+            UniClass = UniformSampling(input_array, num_samples, sampling_type="creation")
+            unique_sample_points = UniClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:,i]
+                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
+    
+    def test_sample_points_03(self):
+        for num_samples in [[2,5],[3,2],[4,2]]:
+            input_array = self.test_data_numpy 
+            UniClass = UniformSampling(input_array, num_samples, sampling_type="selection",edges=False)
+            unique_sample_points = UniClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+
+    def test_sample_points_04(self):
+        for num_samples in [[2,5],[3,2],[4,2]]:
+            input_array = self.full_data
+            UniClass = UniformSampling(input_array, num_samples, sampling_type="selection")
+            unique_sample_points = UniClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            unique_sample_points = np.array(unique_sample_points)
+            out_testing = [unique_sample_points[i,:] in np.array(input_array) for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
 
 
 class HaltonSamplingTestCases(unittest.TestCase):
+    """
+    test__init__selection_01: input numpy array - Test behaviour generate HaltonSampling object with selection, default number of sample = 5
+    test__init__selection_02: input Pandas DataFrame - Test behaviour generate HaltonSampling object with selection, default number of sample
+    test__init__selection_03: input numpy array - Test behaviour generate HaltonSampling object with selection, with a selected number of sample
+    test__init__selection_04: input Pandas DataFrame - Test behaviour generate HaltonSampling object with selection, with a selected number of sample
+    test__init__selection_05: input numpy array - Test behaviour raise exception with a selected number of sample = 0
+    test__init__selection_06: input numpy array - Test behaviour raise exception with a selected number of sample = -1
+    test__init__selection_07: input numpy array - Test behaviour raise exception with a selected number of sample > input size
+    test__init__selection_08: input numpy array - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__selection_09: input list - Test behaviour raise ValueError with list input
+    test__init__selection_10: input numpy array - Test behaviour raise exception with invalid sampling_type, e.g sampling_type=[1,2,3]
+    test__init__selection_11: input numpy array - Test behaviour raise exception with invalid sampling_type, e.g sampling_type='choose'
+    test__init__selection_12: input numpy array - Test behaviour raise exception with high dimension data > 10
+    
 
+    test__init__creation_01: input list - Test behaviour generate HaltonSampling object with default sampling_type, default number of sample = 5
+    test__init__creation_02: input list - Test behaviour generate HaltonSampling object with sampling_type = creation, default number of sample = 5
+    test__init__creation_03: input list - Test behaviour generate HaltonSampling object with creation with a selected number of sample
+    test__init__creation_04: input list - Test behaviour raise exception with a selected number of sample = 0
+    test__init__creation_05: input list - Test behaviour raise exception with a selected number of sample = -1
+    test__init__creation_06: input list - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__creation_07: input numpy - Test behaviour raise ValueError with numpy input
+    test__init__creation_08: input numpy - Test behaviour raise ValueError with pandas input
+    test__init__creation_09: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5]]
+    test__init__creation_10: input numpy - Test behaviour raise exception with data_input =  [np.array([1,10,3]),[2,11,4.5]]
+    test__init__creation_11: input numpy - Test behaviour raise exception with data_input =  [[1,10,3],np.array([2,11,4.5])]
+    test__init__creation_12: input numpy - Test behaviour raise exception with data_input =  [[1,10],[2,11,4.5]]
+    test__init__creation_13: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5],[2,11,4.5]]
+
+    test__init__selection: Test behaviour with  dimensionality > 10
+
+    test_sample_points_01: Test behaviour with selection, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with creation, sample points are unique, all in the input range (min,max) , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with selection + pandas dataframe, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
+        input_array_np_large = np.array([[0, 10, 11,1,2,3,4,5,6,7,8,9,10], [1, 10, 14,1,2,3,4,5,6,7,8,9,10], [2, 10, 19,1,2,3,4,5,6,7,8,9,10], [3, 10, 26,1,2,3,4,5,6,7,8,9,10], [4, 10, 35,1,2,3,4,5,6,7,8,9,10], [5, 10, 46,1,2,3,4,5,6,7,8,9,10], [6, 10, 59,1,2,3,4,5,6,7,8,9,10], [7, 10, 74,1,2,3,4,5,6,7,8,9,10], [8, 10, 91,1,2,3,4,5,6,7,8,9,10], [9, 10, 110,1,2,3,4,5,6,7,8,9,10]])
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                        'y': [11,14,19,26,35,46,59,74,91,110]})
+        input_array_list = [[1,10,3],[2,11,4.5]]
+        self.test_data_numpy = input_array_np
+        self.test_data_numpy_large = input_array_np_large
+        self.test_data_numpy_high = np.array([[i,i*2,i**2,i**3,i**4,i**5,i**6,i**7,i**8,i**9,i**10,i**11] for i in range(10)])
+        self.test_data_pandas = input_array_pd
+        self.test_data_list= input_array_list
+    
+        x1 = np.linspace(0, 10, 21)
+        x2 = np.linspace(0, 10, 21)
+        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
+        self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
+        
 
-    """
-    Tests 1 - 7: Tests to check the range of potential inputs for the number of samples:
-     - 01: Test behaviour when number_of_samples = -ve. Should raise exception.
-     - 02: Test behaviour when number_of_samples = 0. Should raise exception.
-     - 03: Test behaviour when number_of_samples = + integer within acceptable range. Should complete successfully.
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-    Tests 3 and 5 also check x_data attribute is returned correctly.
-    """
+    def test__init__selection_01(self):
+        input_array = self.test_data_numpy
+        HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples, 5)
+        np.testing.assert_array_equal(HaltonClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_02(self):
+        input_array = self.test_data_pandas
+        HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples, 5)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(HaltonClass.x_data, input_array[:, :-1])
+        
+    def test__init__selection_03(self):
+        input_array = self.test_data_numpy
+        HaltonClass = HaltonSampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples,6)
+        np.testing.assert_array_equal(HaltonClass.x_data, input_array[:, :-1])
 
-    def test_initialization_01(self):
+    def test__init__selection_04(self):
+        input_array = self.test_data_pandas
+        HaltonClass = HaltonSampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples,6)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(HaltonClass.x_data, input_array[:, :-1])
+
+    def test__init__selection_05(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HaltonSampling(self.test_data, -1)
-
-    def test_initialization_02(self):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=0, sampling_type="selection")
+    
+    def test__init__selection_06(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HaltonSampling(self.test_data, 0)
+            HaltonClass = HaltonSampling( input_array, number_of_samples=-1, sampling_type="selection")
 
-    def test_initialization_03(self):
-        output_1 = HaltonSampling(self.test_data, 7)
-        expected_output_1 = 7
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_1.number_of_samples, expected_output_1)
-        self.assertEqual(output_1.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_04(self):
+    def test__init__selection_07(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HaltonSampling(self.test_data, 11)
-
-    def test_initialization_05(self):
-        output_2 = HaltonSampling(self.test_data)
-        expected_output = 5
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_2.number_of_samples, expected_output)
-        self.assertEqual(output_2.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_06(self):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=101, sampling_type="selection")
+        
+    def test__init__selection_08(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HaltonSampling(self.test_data, 1.7)
-
-    def test_initialization_07(self):
-        test_data_as_array = self.test_data.values
-        output_1 = HaltonSampling(test_data_as_array, 7)
-        np.testing.assert_array_equal(output_1.data, test_data_as_array)
-
-    def test_initialization_08(self):
-        test_data_as_list = self.test_data.values.tolist()
+            HaltonClass = HaltonSampling( input_array, number_of_samples=1.1, sampling_type="selection")
+    
+    def test__init__selection_09(self):
+        input_array = self.test_data_list
         with self.assertRaises(ValueError):
-            HaltonSampling(test_data_as_list, 7)
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
 
+    def test__init__selection_10(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type=[1,2,3])
+
+    def test__init__selection_11(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='choose')
+    
+    def test__init__selection_12(self):
+        input_array = self.test_data_numpy_high
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='selection')
+
+
+    def test__init__creation_01(self):
+        input_array = self.test_data_list
+        HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type=None)
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples,5)
+    
+    def test__init__creation_02(self):
+        input_array = self.test_data_list
+        HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples,5)
+
+    def test__init__creation_03(self):
+        input_array = self.test_data_list
+        HaltonClass = HaltonSampling( input_array, number_of_samples=100, sampling_type='creation')
+        np.testing.assert_array_equal(HaltonClass.data, input_array)
+        np.testing.assert_array_equal(HaltonClass.number_of_samples,100)
+
+    def test__init__creation_04(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=0, sampling_type='creation')
+
+    def test__init__creation_05(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=-1, sampling_type='creation')
+    
+    def test__init__creation_06(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=1.1, sampling_type='creation')
+    
+    def test__init__creation_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_08(self):
+        input_array = self.test_data_pandas
+        with self.assertRaises(ValueError):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_09(self):
+        input_array = [[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_10(self):
+        input_array = [np.array([1,10,3]),[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_11(self):
+        input_array = [[1,10,3],np.array([2,11,4.5])]
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_12(self):
+        input_array = [[1,10],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_13(self):
+        input_array = [[2,11,4.5],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+
+    def test__init__selection(self):
+        input_array = self.test_data_numpy_large
+        with self.assertRaises(Exception):
+            HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
+    
+
+    def test_sample_points_01(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_numpy 
+            HaltonClass = HaltonSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = HaltonClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+    
+    def test_sample_points_02(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_list
+            HaltonClass = HaltonSampling(input_array, number_of_samples=num_samples, sampling_type="creation")
+            unique_sample_points = HaltonClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:,i]
+                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
+
+    def test_sample_points_03(self):
+        for num_samples in [None,10,1]:
+            input_array = self.full_data
+            HaltonClass = HaltonSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = HaltonClass.sample_points()
+            unique_sample_points = np.array(unique_sample_points)
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in np.array(input_array) for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+    
 
 class HammersleySamplingTestCases(unittest.TestCase):
+    """
+    test__init__selection_01: input numpy array - Test behaviour generate HammersleySampling object with selection, default number of sample = 5
+    test__init__selection_02: input Pandas DataFrame - Test behaviour generate HammersleySampling object with selection, default number of sample
+    test__init__selection_03: input numpy array - Test behaviour generate HammersleySampling object with selection, with a selected number of sample
+    test__init__selection_04: input Pandas DataFrame - Test behaviour generate HammersleySampling object with selection, with a selected number of sample
+    test__init__selection_05: input numpy array - Test behaviour raise exception with a selected number of sample = 0
+    test__init__selection_06: input numpy array - Test behaviour raise exception with a selected number of sample = -1
+    test__init__selection_07: input numpy array - Test behaviour raise exception with a selected number of sample > input size
+    test__init__selection_08: input numpy array - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__selection_09: input list - Test behaviour raise ValueError with list input
+    test__init__selection_10: input numpy array - Test behaviour raise exception with invalid sampling_type, e.g sampling_type=[1,2,3]
+    test__init__selection_11: input numpy array - Test behaviour raise exception with invalid sampling_type, e.g sampling_type='choose'
+    test__init__selection_12: input numpy array - Test behaviour raise exception with high dimension data > 10
+    
 
+    test__init__creation_01: input list - Test behaviour generate HammersleySampling object with default sampling_type, default number of sample = 5
+    test__init__creation_02: input list - Test behaviour generate HammersleySampling object with sampling_type = creation, default number of sample = 5
+    test__init__creation_03: input list - Test behaviour generate HammersleySampling object with creation with a selected number of sample
+    test__init__creation_04: input list - Test behaviour raise exception with a selected number of sample = 0
+    test__init__creation_05: input list - Test behaviour raise exception with a selected number of sample = -1
+    test__init__creation_06: input list - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__creation_07: input numpy - Test behaviour raise ValueError with numpy input
+    test__init__creation_08: input numpy - Test behaviour raise ValueError with pandas input
+    test__init__creation_09: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5]]
+    test__init__creation_10: input numpy - Test behaviour raise exception with data_input =  [np.array([1,10,3]),[2,11,4.5]]
+    test__init__creation_11: input numpy - Test behaviour raise exception with data_input =  [[1,10,3],np.array([2,11,4.5])]
+    test__init__creation_12: input numpy - Test behaviour raise exception with data_input =  [[1,10],[2,11,4.5]]
+    test__init__creation_13: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5],[2,11,4.5]]
+
+    test__init__selection: Test behaviour with  dimensionality > 10
+
+    test_sample_points_01: Test behaviour with selection, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with creation, sample points are unique, all in the input range (min,max) , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with selection + pandas dataframe, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    
+    """
     def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
+        input_array_np = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
+        input_array_np_large = np.array([[0, 10, 11,1,2,3,4,5,6,7,8,9,10], [1, 10, 14,1,2,3,4,5,6,7,8,9,10], [2, 10, 19,1,2,3,4,5,6,7,8,9,10], [3, 10, 26,1,2,3,4,5,6,7,8,9,10], [4, 10, 35,1,2,3,4,5,6,7,8,9,10], [5, 10, 46,1,2,3,4,5,6,7,8,9,10], [6, 10, 59,1,2,3,4,5,6,7,8,9,10], [7, 10, 74,1,2,3,4,5,6,7,8,9,10], [8, 10, 91,1,2,3,4,5,6,7,8,9,10], [9, 10, 110,1,2,3,4,5,6,7,8,9,10]])
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                        'y': [11,14,19,26,35,46,59,74,91,110]})
+        input_array_list = [[1,10,3],[2,11,4.5]]
+        self.test_data_numpy = input_array_np
+        self.test_data_numpy_large = input_array_np_large
+        self.test_data_numpy_high = np.array([[i,i*2,i**2,i**3,i**4,i**5,i**6,i**7,i**8,i**9,i**10,i**11] for i in range(10)])
+        self.test_data_pandas = input_array_pd
+        self.test_data_list= input_array_list
+    
+        x1 = np.linspace(0, 10, 21)
+        x2 = np.linspace(0, 10, 21)
+        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
+        self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
+        
 
-    """
-    Tests 1 - 7: Tests to check the range of potential inputs for the number of samples:
-     - 01: Test behaviour when number_of_samples = -ve. Should raise exception.
-     - 02: Test behaviour when number_of_samples = 0. Should raise exception.
-     - 03: Test behaviour when number_of_samples = + integer within acceptable range. Should complete successfully.
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-    Tests 3 and 5 also check x_data attribute is returned correctly.
-    """
+    def test__init__selection_01(self):
+        input_array = self.test_data_numpy
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples, 5)
+        np.testing.assert_array_equal(HammersleyClass.x_data, input_array[:, :-1])
+    
+    def test__init__selection_02(self):
+        input_array = self.test_data_pandas
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples, 5)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(HammersleyClass.x_data, input_array[:, :-1])
+        
+    def test__init__selection_03(self):
+        input_array = self.test_data_numpy
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples,6)
+        np.testing.assert_array_equal(HammersleyClass.x_data, input_array[:, :-1])
 
-    def test_initialization_01(self):
+    def test__init__selection_04(self):
+        input_array = self.test_data_pandas
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=6, sampling_type="selection")
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples,6)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(HammersleyClass.x_data, input_array[:, :-1])
+
+    def test__init__selection_05(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HammersleySampling(self.test_data, -1)
-
-    def test_initialization_02(self):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=0, sampling_type="selection")
+    
+    def test__init__selection_06(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HammersleySampling(self.test_data, 0)
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=-1, sampling_type="selection")
 
-    def test_initialization_03(self):
-        output_1 = HammersleySampling(self.test_data, 7)
-        expected_output_1 = 7
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_1.number_of_samples, expected_output_1)
-        self.assertEqual(output_1.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_04(self):
+    def test__init__selection_07(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HammersleySampling(self.test_data, 11)
-
-    def test_initialization_05(self):
-        output_2 = HammersleySampling(self.test_data)
-        expected_output = 5
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_2.number_of_samples, expected_output)
-        self.assertEqual(output_2.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_06(self):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=101, sampling_type="selection")
+        
+    def test__init__selection_08(self):
+        input_array = self.test_data_numpy
         with self.assertRaises(Exception):
-            HammersleySampling(self.test_data, 1.7)
-
-    def test_initialization_07(self):
-        test_data_as_array = self.test_data.values
-        output_1 = HammersleySampling(test_data_as_array, 7)
-        np.testing.assert_array_equal(output_1.data, test_data_as_array)
-
-    def test_initialization_08(self):
-        test_data_as_list = self.test_data.values.tolist()
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=1.1, sampling_type="selection")
+    
+    def test__init__selection_09(self):
+        input_array = self.test_data_list
         with self.assertRaises(ValueError):
-            HammersleySampling(test_data_as_list, 7)
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
+
+    def test__init__selection_10(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type=[1,2,3])
+
+    def test__init__selection_11(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='choose')
+    
+    def test__init__selection_12(self):
+        input_array = self.test_data_numpy_high
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='selection')
+
+    def test__init__creation_01(self):
+        input_array = self.test_data_list
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type=None)
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples,5)
+    
+    def test__init__creation_02(self):
+        input_array = self.test_data_list
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples,5)
+
+    def test__init__creation_03(self):
+        input_array = self.test_data_list
+        HammersleyClass = HammersleySampling( input_array, number_of_samples=100, sampling_type='creation')
+        np.testing.assert_array_equal(HammersleyClass.data, input_array)
+        np.testing.assert_array_equal(HammersleyClass.number_of_samples,100)
+
+    def test__init__creation_04(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=0, sampling_type='creation')
+
+    def test__init__creation_05(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=-1, sampling_type='creation')
+    
+    def test__init__creation_06(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=1.1, sampling_type='creation')
+    
+    def test__init__creation_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_08(self):
+        input_array = self.test_data_pandas
+        with self.assertRaises(ValueError):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_09(self):
+        input_array = [[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_10(self):
+        input_array = [np.array([1,10,3]),[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_11(self):
+        input_array = [[1,10,3],np.array([2,11,4.5])]
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_12(self):
+        input_array = [[1,10],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_13(self):
+        input_array = [[2,11,4.5],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
+
+
+    def test__init__selection(self):
+        input_array = self.test_data_numpy_large
+        with self.assertRaises(Exception):
+            HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
+    
+
+    def test_sample_points_01(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_numpy 
+            HammersleyClass = HammersleySampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = HammersleyClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+    
+    def test_sample_points_02(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_list
+            HammersleyClass = HammersleySampling(input_array, number_of_samples=num_samples, sampling_type="creation")
+            unique_sample_points = HammersleyClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:,i]
+                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
+
+    def test_sample_points_03(self):
+        for num_samples in [None,10,1]:
+            input_array = self.full_data
+            HammersleyClass = HammersleySampling(input_array, number_of_samples=num_samples, sampling_type="selection")
+            unique_sample_points = HammersleyClass.sample_points()
+            unique_sample_points = np.array(unique_sample_points)
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in np.array(input_array) for i in range(unique_sample_points.shape[0])]
+            
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+
 
 
 class CVTSamplingTestCases(unittest.TestCase):
-
-    def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
-
     """
-    Tests 1 - 7: Tests to check the range of potential inputs for CVTSampling initialization:
-     - 01: Test behaviour when number_of_samples = -ve. Should raise exception.
-     - 02: Test behaviour when number_of_samples = 0. Should raise exception.
-     - 03: Test behaviour when number_of_samples = + integer within acceptable range. Should complete successfully.
-     - 04: Test behaviour when number_of_samples > acceptable range. Should raise exception.
-     - 05: Test behaviour when number_of_samples = None. Should complete successfully with default number_of_samples
-     - 06: Test behaviour when number_of_samples = fractional. Should raise exception.
-     - 07: Test that data loading behaves as expected when a numpy array is provided.
-     - 08: Test that a ValueError is thrown when the input is not a numpy array or Pandas DataFrame
-     - 09&10: Test behaviour when tolerance >= acceptable maximum. Should raise Exception.
-     - 11: Test behaviour when tolerance is within acceptable range. Should complete successfully, and the eps attribute should be properly loaded.
-     - 12: Test behaviour when tolerance = None. Should complete successfully with the eps attribute set to the value of 1e-7.
-     - 13: Test behaviour when tolerance < aavisable value. Should complete loading with the eps attrinute set to the provided value, but should raise warning (not tested).
-     - 14: Test behaviour when tolerance input is of wrong type. Should raise Exception.
-    """
+    test__init__selection_01: input numpy array - Test behaviour generate object with selection, default number of sample = 5, default tolerance
+    test__init__selection_02: input Pandas DataFrame - Test behaviour generate object with selection, default number of sample, default tolerance
+    test__init__selection_03: input numpy array - Test behaviour generate object with selection, with a selected number of sample, default tolerance
+    test__init__selection_04: input Pandas DataFrame - Test behaviour generate object with selection, with a selected number of sample, default tolerance
+    test__init__selection_05: input numpy array - Test behaviour raise exception with a selected number of sample = 0, default tolerance
+    test__init__selection_06: input numpy array - Test behaviour raise exception with a selected number of sample = -1, default tolerance
+    test__init__selection_07: input numpy array - Test behaviour raise exception with a selected number of sample > input size, default tolerance
+    test__init__selection_08: input numpy array - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer), default tolerance
+    test__init__selection_09: input list - Test behaviour raise ValueError with list input
+    test__init__selection_10: input numpy array - Test behaviour raise exception with tolerance > 0.1
+    test__init__selection_11: input numpy array - Test behaviour raise Warning with tolerance < 0.9
+    test__init__selection_12: input numpy array - Test behaviour tolerance   0.09
+    test__init__selection_13: input numpy array - Test behaviour tolerance  -0.09
+    
 
-    def test_initialization_01(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, -1)
+    test__init__creation_01: input list - Test behaviour generate object with default sampling_type, default number of sample = 5, default tolerance
+    test__init__creation_02: input list - Test behaviour generate object with sampling_type = creation, default number of sample = 5, default tolerance
+    test__init__creation_03: input list - Test behaviour generate object with creation with a selected number of sample, default tolerance
+    test__init__creation_04: input list - Test behaviour raise exception with a selected number of sample = 0
+    test__init__creation_05: input list - Test behaviour raise exception with a selected number of sample = -1
+    test__init__creation_06: input list - Test behaviour raise exception with a selected number of sample = 1.1 (non-integer)
+    test__init__creation_07: input numpy - Test behaviour raise ValueError with numpy input
+    test__init__creation_08: input numpy - Test behaviour raise ValueError with pandas input
+    test__init__creation_09: input list - Test behaviour raise exception with tolerance > 0.1
+    test__init__creation_10: input list - Test behaviour raise Warning with tolerance < 0.9
+    test__init__creation_11: input list - Test behaviour tolerance   0.09
+    test__init__creation_12: input list - Test behaviour tolerance  -0.09
+    test__init__creation_13: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5]]
+    test__init__creation_14: input numpy - Test behaviour raise exception with data_input =  [np.array([1,10,3]),[2,11,4.5]]
+    test__init__creation_15: input numpy - Test behaviour raise exception with data_input =  [[1,10,3],np.array([2,11,4.5])]
+    test__init__creation_16: input numpy - Test behaviour raise exception with data_input =  [[1,10],[2,11,4.5]]
+    test__init__creation_17: input numpy - Test behaviour raise exception with data_input =  [[2,11,4.5],[2,11,4.5]]
+    
 
-    def test_initialization_02(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, 0)
+    test__init__creation_selection_01 - Test behaviour raise Exception with sampling_type = non string
+    test__init__creation_selection_02 - Test behaviour raise Exception with sampling_type = incorrect string
 
-    def test_initialization_03(self):
-        output_1 = CVTSampling(self.test_data, 7)
-        expected_output_1 = 7
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_1.number_of_centres, expected_output_1)
-        self.assertEqual(output_1.x_data.tolist(), expected_output_2.tolist())
+    
+    test_random_sample_selection_01 - Test random_sample_selection with size = (5,2)
+    test_random_sample_selection_02 - Test random_sample_selection with size = (0,2)
+    test_random_sample_selection_03 - Test random_sample_selection with size = (2,0)
+    test_random_sample_selection_04 - Test behaviour raise ValueError with  size = (5,-1)
+    test_random_sample_selection_05 - Test behaviour raise TypeError with size =(5,1.1)
+        
 
-    def test_initialization_04(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, 11)
-
-    def test_initialization_05(self):
-        output_2 = CVTSampling(self.test_data)
-        expected_output = 5
-        expected_output_2 = np.array([[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]])
-        self.assertEqual(output_2.number_of_centres, expected_output)
-        self.assertEqual(output_2.x_data.tolist(), expected_output_2.tolist())
-
-    def test_initialization_06(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, 1.7)
-
-    def test_initialization_07(self):
-        test_data_as_array = self.test_data.values
-        output_1 = CVTSampling(test_data_as_array, 7)
-        np.testing.assert_array_equal(output_1.data, test_data_as_array)
-
-    def test_initialization_08(self):
-        test_data_as_list = self.test_data.values.tolist()
-        with self.assertRaises(ValueError):
-            CVTSampling(test_data_as_list, 7)
-
-    def test_initialization_09(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, tolerance=1)
-
-    def test_initialization_10(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, tolerance=0.1)
-
-    def test_initialization_11(self):
-        tol = 0.01
-        output = CVTSampling(self.test_data, tolerance=tol)
-        self.assertEqual(output.eps, tol)
-
-    def test_initialization_12(self):
-        deft = 1e-07
-        output = CVTSampling(self.test_data)
-        self.assertEqual(output.eps, deft)
-
-    def test_initialization_13(self):
-        tol = 1e-9
-        output = CVTSampling(self.test_data, tolerance=tol)
-        self.assertEqual(output.eps, tol)
-
-    def test_initialization_14(self):
-        with self.assertRaises(Exception):
-            CVTSampling(self.test_data, tolerance='0.1')
-
-    """
     Tests: : Unit tests for eucl_distance, a function that evaluates the distance between two points (u, v).
         Four demonstration tests are done:
-        The first test checks that the correct result is obtained when both inputs are single value arrays.
-        The second test checks that the correct result is returned when both inputs are 2D vectors.
-        The third test checks that the correct result is returned when both inputs are arrays of the same size. 
-        The fourth test checks that the function is able to calculate the distance from a single point (n x 1 row vector) to a set of design points (supplied in an n x m array)
-    """
+    test_eucl_distance_01 - The first test checks that the correct result is obtained when both inputs are single value arrays.
+    test_eucl_distance_02 - The second test checks that the correct result is returned when both inputs are 2D vectors.
+    test_eucl_distance_03 - The third test checks that the correct result is returned when both inputs are arrays of the same size. 
+    test_eucl_distance_04 - The fourth test checks that the function is able to calculate the distance from a single point (n x 1 row vector) to a set of design points (supplied in an n x m array)
 
+
+    Unit tests for create_centres, a function that generates new mass centroids for the design space based on McQueen's method.
+        Four demonstration tests are done:
+    test_create_centres_01 - The first test checks that the correct result for the new centres is returned when the counter is at its lowest value (1).
+    test_create_centres_02 - The second test checks that the correct result for the new centres is returned when the counter is at an arbitrary value (10).
+    test_create_centres_03 - The third test checks that the correct procedure is followed when one of the centres in initial_centres has no close design point to it.
+    test_create_centres_04 - The fourth test checks that the the approach works as expected for problems with more than two dimensions.
+    
+    test_sample_points_01: Test behaviour with selection, sample points are unique, all in the input array , number of samples = 5, 10, 1
+    test_sample_points_02: Test behaviour with creation, sample points are unique, all in the input range (min,max) , number of samples = 5, 10, 1
+
+    """
+    def setUp(self):
+        input_array_np = np.array([[0, 10, 11], [1, 10, 14], [2, 10, 19], [3, 10, 26], [4, 10, 35], [5, 10, 46], [6, 10, 59], [7, 10, 74], [8, 10, 91], [9, 10, 110]])
+        input_array_pd = pd.DataFrame({'x1': [0,1,2,3,4,5,6,7,8,9],
+                                       'x2': [10,10,10,10,10,10,10,10,10,10],
+                                        'y': [11,14,19,26,35,46,59,74,91,110]})
+        input_array_list = [[1,10,3],[2,11,4.5]]
+        self.test_data_numpy = input_array_np
+        self.test_data_pandas = input_array_pd
+        self.test_data_list= input_array_list
+    
+
+    def test__init__selection_01(self):
+        input_array = self.test_data_numpy
+        CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=None, sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres, 5)
+        np.testing.assert_array_equal(CVTClass.x_data, input_array[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps,1e-7)
+    
+    def test__init__selection_02(self):
+        input_array = self.test_data_pandas
+        CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None, sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres, 5)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(CVTClass.x_data, input_array[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps,1e-7)
+    
+    def test__init__selection_03(self):
+        input_array = self.test_data_numpy
+        CVTClass = CVTSampling( input_array, number_of_samples=6, tolerance=None,sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres,6)
+        np.testing.assert_array_equal(CVTClass.x_data, input_array[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps,1e-7)
+    
+    def test__init__selection_04(self):
+        input_array = self.test_data_pandas
+        CVTClass = CVTSampling( input_array, number_of_samples=6,tolerance=None, sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres,6)
+        input_array = input_array.to_numpy()
+        np.testing.assert_array_equal(CVTClass.x_data, input_array[:, :-1])
+        np.testing.assert_array_equal(CVTClass.eps,1e-7)
+    
+    def test__init__selection_05(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=0,tolerance=None, sampling_type="selection")
+    
+    def test__init__selection_06(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=-1,tolerance=None, sampling_type="selection")
+
+    def test__init__selection_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=101,tolerance=None, sampling_type="selection")
+        
+    def test__init__selection_08(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=1.1,tolerance=None, sampling_type="selection")
+    
+    def test__init__selection_09(self):
+        input_array = self.test_data_list
+        with self.assertRaises(ValueError):
+            CVTClass = CVTSampling( input_array, number_of_samples=None,tolerance=None, sampling_type="selection")
+    
+    def test__init__selection_10(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.11, sampling_type="selection")
+    
+    def test__init__selection_11(self):
+        input_array = self.test_data_numpy
+        with self.assertWarns(Warning):
+            CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=1e-10, sampling_type="selection")
+    
+    def test__init__selection_12(self):
+        input_array = self.test_data_numpy
+        CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.09, sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.eps,0.09)
+
+    def test__init__selection_13(self):
+        input_array = self.test_data_numpy
+        CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=-0.09, sampling_type="selection")
+        np.testing.assert_array_equal(CVTClass.eps,-0.09)
+        
+
+    def test__init__creation_01(self):
+        input_array = self.test_data_list
+        CVTClass = CVTSampling( input_array, number_of_samples=None,  tolerance=None, sampling_type=None)
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres,5)
+    
+    def test__init__creation_02(self):
+        input_array = self.test_data_list
+        CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None,sampling_type='creation')
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres,5)
+
+    def test__init__creation_03(self):
+        input_array = self.test_data_list
+        CVTClass = CVTSampling( input_array, number_of_samples=100,tolerance=None, sampling_type='creation')
+        np.testing.assert_array_equal(CVTClass.data, input_array)
+        np.testing.assert_array_equal(CVTClass.number_of_centres,100)
+
+    def test__init__creation_04(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=0, tolerance=None,sampling_type='creation')
+
+    def test__init__creation_05(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=-1,tolerance=None, sampling_type='creation')
+    
+    def test__init__creation_06(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=1.1,tolerance=None, sampling_type='creation')
+    
+    def test__init__creation_07(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(ValueError):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None, sampling_type='creation')
+
+    def test__init__creation_08(self):
+        input_array = self.test_data_pandas
+        with self.assertRaises(ValueError):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None, sampling_type='creation')
+
+    def test__init__creation_09(self):
+        input_array = self.test_data_list
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.11, sampling_type="creation")
+    
+    def test__init__creation_10(self):
+        input_array = self.test_data_list
+        with self.assertWarns(Warning):
+            CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=1e-10, sampling_type="creation")
+    
+    def test__init__creation_11(self):
+        input_array = self.test_data_list
+        CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.09, sampling_type="creation")
+        np.testing.assert_array_equal(CVTClass.eps,0.09)
+    
+    def test__init__creation_12(self):
+        input_array = self.test_data_list
+        CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=-0.09, sampling_type="creation")
+        np.testing.assert_array_equal(CVTClass.eps,-0.09)
+
+    def test__init__creation_13(self):
+        input_array = [[2,11,4.5]]
+        with self.assertRaises(Exception):
+            LHSClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
+
+    def test__init__creation_14(self):
+        input_array = [np.array([1,10,3]),[2,11,4.5]]
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_15(self):
+        input_array = [[1,10,3],np.array([2,11,4.5])]
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_16(self):
+        input_array = [[1,10],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
+    
+    def test__init__creation_1(self):
+        input_array = [[2,11,4.5],[2,11,4.5]]
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
+        
+
+    def test__init__creation_selection_01(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None,sampling_type=1)
+    
+    def test__init__creation_selection_02(self):
+        input_array = self.test_data_numpy
+        with self.assertRaises(Exception):
+            CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None,sampling_type='jp')    
+    
+    
+    def test_random_sample_selection_01(self):
+        size = (5,2)
+        out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
+        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
+        self.assertTrue(out_random_points.shape == size)
+    
+    def test_random_sample_selection_02(self):
+        size = (0,2)
+        out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
+        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
+        self.assertTrue(out_random_points.shape == size)
+    
+    def test_random_sample_selection_03(self):
+        size = (2,0)
+        out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
+        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
+        self.assertTrue(out_random_points.shape == size)
+
+    def test_random_sample_selection_04(self):
+        size = (5,-1)
+        with self.assertRaises(ValueError):
+            out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
+    
+    def test_random_sample_selection_05(self):
+        size = (5,1.1)
+        with self.assertRaises(TypeError):
+            out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
+
+  
     def test_eucl_distance_01(self):
         u = np.array( [ [3] ])
         v = np.array( [ [5] ])
@@ -560,17 +1795,9 @@ class CVTSamplingTestCases(unittest.TestCase):
         v = np.array([ [5, 6], [7, 8] ])
         expected_output = np.array([32**0.5, 72**0.5])
         output = CVTSampling.eucl_distance(u, v)
-        np.testing.assert_array_equal(expected_output, output)
-
-    """
-    Tests: : Unit tests for create_centres, a function that generates new mass centroids for the design space based on McQueen's method.
-        Four demonstration tests are done:
-        The first test checks that the correct result for the new centres is returned when the counter is at its lowest value (1).
-        The second test checks that the correct result for the new centres is returned when the counter is at an arbitrary value (10).
-        The third test checks that the correct procedure is followed when one of the centres in initial_centres has no close design point to it.
-        The fourth test checks that the the approach works as expected for problems with more than two dimensions.
-    """
-
+        np.testing.assert_array_equal(expected_output, output)\
+    
+    
     def test_create_centres_01(self):
         initial_centres = np.array([ [0, 0], [1, 1] ])
         current_random_points = np.array([[0.6, 0.6], [0.3, 0.3]])
@@ -606,184 +1833,33 @@ class CVTSamplingTestCases(unittest.TestCase):
         expected_output = np.array([ [0.3/5, 0.3/5, 0.3/5], [4.8/5, 4.8/5, 4.8/5]])
         output = CVTSampling.create_centres(initial_centres, current_random_points, current_centres, counter)
         np.testing.assert_array_equal(expected_output, output)
+    
+    
+    def test_sample_points_01(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_numpy
+            CVTClass = CVTSampling( input_array,number_of_samples=num_samples, tolerance=None, sampling_type="selection")
+            unique_sample_points = CVTClass.sample_points()
+            expected_testing = np.array([True]*unique_sample_points.shape[0], dtype=bool)
+            out_testing = [unique_sample_points[i,:] in input_array for i in range(unique_sample_points.shape[0])]
 
-
-class SampliingMethodsTestCases(unittest.TestCase):
-    def setUp(self):
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        input_array = np.array(
-            [[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
-        self.test_data = pd.DataFrame({'x': input_array[:, 0], 'y': input_array[:, 1]})
-        return self.test_data
-
-    """
-    Test: Tests the function nearest_neighbour for a range of possible points in the input data
-    """
-
-    def test_nearest_neighbour(self):
-        output_1 = SamplingMethods.nearest_neighbour(self, self.test_data.values, 0.35)
-        output_2 = SamplingMethods.nearest_neighbour(self, self.test_data.values, 4.46)
-        output_3 = SamplingMethods.nearest_neighbour(self, self.test_data.values, 4.56)
-        output_4 = SamplingMethods.nearest_neighbour(self, self.test_data.values, 8.79)
-        output_5 = SamplingMethods.nearest_neighbour(self, self.test_data.values, 0)
-        expected_output_1 = 0
-        expected_output_2 = 4
-        expected_output_3 = 5
-        expected_output_4 = 9
-        expected_output_5 = 0
-        expected_output_6 = 1
-        expected_output_7 = 25
-        expected_output_8 = 36
-        expected_output_9 = 100
-        expected_output_10 = 1
-        self.assertEqual(output_1[0, ], expected_output_1)
-        self.assertEqual(output_2[0, ], expected_output_2)
-        self.assertEqual(output_3[0, ], expected_output_3)
-        self.assertEqual(output_4[0, ], expected_output_4)
-        self.assertEqual(output_5[0, ], expected_output_5)
-        self.assertEqual(output_1[1, ], expected_output_6)
-        self.assertEqual(output_2[1, ], expected_output_7)
-        self.assertEqual(output_3[1, ], expected_output_8)
-        self.assertEqual(output_4[1, ], expected_output_9)
-        self.assertEqual(output_5[1, ], expected_output_10)
-
-    """
-    Test: Tests the points_selection function for a range of possible points in the input data.
-    Expected to return the closest point in the actual dataset based on L-2 distance.
-    Tests 01-05: points_selection is called with every single sampling technique it applies to.
-    """
-
-    def test_points_selection_01(self):
-        number_of_samples = 5
-        x = np.array([[8.79], [0.35], [4.56]])
-        data_feed = LatinHypercubeSampling(self.test_data, number_of_samples)
-        output = data_feed.points_selection(self.test_data.values, x)
-        expected_output = np.array([[9., 100.], [0., 1.], [5., 36.]])
-        self.assertEqual(output.tolist(), expected_output.tolist())
-
-    def test_points_selection_02(self):
-        number_of_samples = 5
-        x = np.array([[8.79], [0.35], [4.56]])
-        data_feed = HammersleySampling(self.test_data, number_of_samples)
-        output = data_feed.points_selection(self.test_data.values, x)
-        expected_output = np.array([[9., 100.], [0., 1.], [5., 36.]])
-        self.assertEqual(output.tolist(), expected_output.tolist())
-
-    def test_points_selection_03(self):
-        number_of_samples = 5
-        x = np.array([[8.79], [0.35], [4.56]])
-        data_feed = HaltonSampling(self.test_data, number_of_samples)
-        output = data_feed.points_selection(self.test_data.values, x)
-        expected_output = np.array([[9., 100.], [0., 1.], [5., 36.]])
-        self.assertEqual(output.tolist(), expected_output.tolist())
-
-    def test_points_selection_04(self):
-        number_of_samples = 5
-        x = np.array([[8.79], [0.35], [4.56]])
-        data_feed = CVTSampling(self.test_data, number_of_samples)
-        output = data_feed.points_selection(self.test_data.values, x)
-        expected_output = np.array([[9., 100.], [0., 1.], [5., 36.]])
-        self.assertEqual(output.tolist(), expected_output.tolist())
-
-    def test_points_selection_05(self):
-        nc = [5]
-        x = np.array([[8.79], [0.35], [4.56]])
-        data_feed = UniformSampling(self.test_data, list_of_samples_per_variable=nc)
-        output = data_feed.points_selection(self.test_data.values, x)
-        expected_output = np.array([[9., 100.], [0., 1.], [5., 36.]])
-        self.assertEqual(output.tolist(), expected_output.tolist())
-
-    """
-    Tests: : Unit tests for prime_number_generator, a function that generates prime numbers.
-        Two demonstration tests are done:
-        The first test checks that the function returns the right result for the minimum value of n (n=1).
-        The second test checks that the function returns the right result for an arbitrary value of n (n=10).
-    """
-
-    def test_prime_number_generator_01(self):
-        output = SamplingMethods.prime_number_generator(self, n=1)
-        expected_output = [2]
-        self.assertEqual(expected_output, output)
-
-    def test_prime_number_generator_02(self):
-        output = SamplingMethods.prime_number_generator(self, n=10)
-        expected_output = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
-        self.assertEqual(expected_output, output)
-
-    """
-    Tests: : Unit tests for base_conversion, converts numbers from base 10 to any base.
-        For a number 'a' to be converted to base 'b', four demonstration tests are done:
-        - The first and second tests check that the function returns the right string result for small bases when a > b 
-        - The third test checks that the function returns the right string result for arbitrarily large bases when a > b
-        - The third test checks that the function returns the right string  result ('a') for a < b
-    """
-
-    def test_base_conversion_01(self):
-        output = SamplingMethods.base_conversion(self, a=4, b=2)
-        expected_output = ['1','0','0']
-        self.assertEqual(expected_output, output)
-
-    def test_base_conversion_02(self):
-        output = SamplingMethods.base_conversion(self, a=5, b=3)
-        expected_output = ['1','2']
-        self.assertEqual(expected_output, output)
-
-    def test_base_conversion_03(self):
-        output = SamplingMethods.base_conversion(self, a=45, b=33)
-        expected_output = ['1','12']
-        self.assertEqual(expected_output, output)
-
-    def test_base_conversion_04(self):
-        output = SamplingMethods.base_conversion(self, a=3, b=5)
-        expected_output = ['3']
-        self.assertEqual(expected_output, output)
-
-    """
-    Tests: : Unit tests for prime_base_to_decimal, a function that converts decimal numbers from base any base to base 10.
-       The test checks that the current values are returned when 0.11 (in string form) is converted from bases 2, 5 and 19 to base 10.
-    """
-
-    def test_prime_base_to_decimal(self):
-        base_repr = ['0.', '1', '1']
-        output_1 = SamplingMethods.prime_base_to_decimal(self, num=base_repr, base = 2)
-        output_2 = SamplingMethods.prime_base_to_decimal(self, num=base_repr, base=5)
-        output_3 = SamplingMethods.prime_base_to_decimal(self, num=base_repr, base=19)
-        expected_output_1 = 0.75
-        expected_output_2 = 0.24
-        expected_output_3 = (1/19) + (1/361)
-        self.assertEqual(expected_output_1, output_1)
-        self.assertAlmostEqual(expected_output_2, output_2, places=6)
-        self.assertAlmostEqual(expected_output_3, output_3, places=6)
-
-    """
-    Tests: : Unit tests for data_sequencing, a function which generates the first no_samples elements of the Halton or Hammersley sequence.
-        Three demonstration tests are done:
-        - The first test checks that the function returns the first five elements of the van der Corput sequence for base 2 (no_samples > prime_base)
-        - The second test checks that the function returns the first element of the van der Corput sequence for base 3 (no_samples < prime_base)
-        - The third test checks that the function returns the first five elements of the van der Corput sequence for base 5 (no_samples = prime_base)
-    """
-
-    def test_data_sequencing_01(self):
-        data_feed = HaltonSampling(self.test_data, number_of_samples=5)
-        output = data_feed.data_sequencing(no_samples=5, prime_base=2)
-        expected_output = np.array( [0, 0.5, 0.25, 0.75, 0.125] )
-        np.testing.assert_array_equal(expected_output, output)
-
-    def test_data_sequencing_02(self):
-        data_feed = HaltonSampling(self.test_data, number_of_samples=5)
-        output = data_feed.data_sequencing(no_samples=1, prime_base=3)
-        expected_output = np.array( [0] )
-        np.testing.assert_array_equal(expected_output, output)
-
-    def test_data_sequencing_03(self):
-        data_feed = HammersleySampling(self.test_data, number_of_samples=5)
-        output = data_feed.data_sequencing(no_samples=5, prime_base=5)
-        expected_output = np.array( [0, 0.2, 0.4, 0.6, 0.8] )
-        np.testing.assert_array_equal(expected_output, output)
-
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0),unique_sample_points)
+            np.testing.assert_array_equal(expected_testing,out_testing)
+    
+    def test_sample_points_02(self):
+        for num_samples in [None,10,1]:
+            input_array = self.test_data_list
+            CVTClass = CVTSampling(input_array, number_of_samples=num_samples, sampling_type="creation")
+            unique_sample_points = CVTClass.sample_points()
+            input_array = np.array(input_array)
+            for i in range(input_array.shape[1]):
+                var_range = input_array[:,i]
+                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+            np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
 if __name__ == '__main__':
     unittest.main()
+    
 
 
 
