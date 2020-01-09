@@ -32,7 +32,7 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.constants import gas_const
+from idaes.core.util.constants import gas_constant
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -168,7 +168,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             self.arrhenius_eqn = Constraint(
                     expr=self.k_rxn == self._params.arrhenius *
                     exp(-self._params.energy_activation /
-                        (gas_const*self.temperature_ref)))
+                        (gas_constant*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.k_rxn)

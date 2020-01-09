@@ -31,11 +31,11 @@ pi = math.pi
 
 avogadro_number = 6.02214076e23  # unitless or mol^-1
 
-boltzmann_const = 1.38064900e-23  # J⋅K^-1
+boltzmann_constant = 1.38064900e-23  # J⋅K^-1
 
 elemental_charge = 1.602176634e-19  # C
 
-planck_const = 6.62607015e-34  # J⋅s
+planck_constant = 6.62607015e-34  # J⋅s
 
 speed_light = 299792458  # in a vacuum m⋅s^-1
 
@@ -43,24 +43,24 @@ speed_light = 299792458  # in a vacuum m⋅s^-1
 # Constants derived from fundamental constants
 
 # Faraday constant = elemental charge * Avogadro's constant
-faraday_const = 96485.33212  # C⋅mol^-1
+faraday_constant = 96485.33212  # C⋅mol^-1
 
 # Gas constant = Avogadro's constant * Boltzmann's constant
-gas_const = 8.314462618  # J⋅mol^-1⋅K^-1
+gas_constant = 8.314462618  # J⋅mol^-1⋅K^-1
 
 # Stefan-Boltzmann constant
 # Function of Boltzmann constant, pi and speed of light
-stefan_const = 5.67037442e-8  # W⋅m^−2⋅K^−4
+stefan_constant = 5.67037442e-8  # W⋅m^−2⋅K^−4
 
 # -----------------------------------------------------------------------------
 # Other constants - all values sourced from NIST to avaialble uncertainty
 # All values retrieved 8th Jan 2020
 
 # https://physics.nist.gov/cgi-bin/cuu/Value?gn
-accel_gravity = 9.80665  # m⋅s^-2
+acceleration_gravity = 9.80665  # m⋅s^-2
 
 # https://physics.nist.gov/cgi-bin/cuu/Value?bg
-gravitational_const = 6.67430e-11  # m^3⋅kg^−1⋅s^−2
+gravitational_constant = 6.67430e-11  # m^3⋅kg^−1⋅s^−2
 
 # https://physics.nist.gov/cgi-bin/cuu/Value?me
 mass_electron = 9.1093837015e-31  # kg

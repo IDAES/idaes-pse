@@ -41,7 +41,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.constants import gas_const
+from idaes.core.util.constants import gas_constant
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -570,7 +570,8 @@ class IdealStateBlockData(StateBlockData):
             if p == 'Vap':
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j] - \
-                        gas_const*(b.temperature -  b._params.temeprature_ref)
+                        gas_constant*(b.temperature - 
+                                      b._params.temeprature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j]
@@ -958,14 +959,14 @@ class IdealStateBlockData(StateBlockData):
                   (b.temperature - b._params.temperature_ref)
                 + b._params.cp_ig['Liq', j, '1'] *
                   log(b.temperature / b._params.temperature_ref)) -
-            gas_const * log(b.mole_frac_phase_comp['Liq', j] * b.pressure /
+            gas_constant * log(b.mole_frac_phase_comp['Liq', j] * b.pressure /
                             b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
     def _dens_mol_vap(b):
         return b.pressure == (b.dens_mol_phase['Vap'] *
-                              gas_const *
+                              gas_constant *
                               b.temperature)
 
     def _fug_vap(self):
@@ -1017,5 +1018,5 @@ class IdealStateBlockData(StateBlockData):
                            (b.temperature - b._params.temperature_ref)
                            + b._params.cp_ig['Vap', j, '1'] *
                            log(b.temperature / b._params.temperature_ref)) -
-            gas_const * log(b.mole_frac_phase_comp['Vap', j] * b.pressure /
+            gas_constant * log(b.mole_frac_phase_comp['Vap', j] * b.pressure /
                                       b._params.pressure_ref))
