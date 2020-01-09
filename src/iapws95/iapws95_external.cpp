@@ -29,7 +29,7 @@
 
 #include"iapws95_memo.h"
 #include"iapws95_external.h"
-#include"iapws95_param.h"
+#include"iapws95_config.h"
 #include"iapws95_deriv_parts.h"
 
 #define TAU_LOW 0.15
