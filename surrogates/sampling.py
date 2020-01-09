@@ -182,6 +182,14 @@ class SamplingMethods:
         ================================================================================================================
 
         """
+        # Alternative way of generating primes using list generators
+        # prime_list = []
+        # current_no = 2
+        # while len(prime_list) < n:
+        #     matching_objs = next((o for o in range(2, current_no) if current_no % o == 0), 0)
+        #     if matching_objs==0:
+        #         prime_list.append(current_no)
+        #     current_no += 1
 
         prime_list = []
         current_no = 2
