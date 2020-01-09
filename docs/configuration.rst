@@ -94,7 +94,9 @@ additional loggers can be added if desired.  The standard loggers are:
 
   3. idaes.solve, this is the root of IDAES solver loggers and solver information.
 
-  4. idaes.model, this is the root of model loggers.  Model loggers are usually used models written using the IDAES framework, but not part of the ``idaes`` package.
+  4. idaes.model, this is the root of model loggers.  Model loggers are
+     usually used by models written using the IDAES framework, but not
+     part of the ``idaes`` package.
 
 use_idaes_solvers
 ~~~~~~~~~~~~~~~~~
