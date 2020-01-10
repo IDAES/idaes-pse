@@ -43,9 +43,9 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 def _define_feedwater_heater_0D_config(config):
@@ -172,8 +172,9 @@ class FWHCondensing0DData(HeatExchangerData):
         """
         solver = kwargs.get("solver", "ipopt")
         optarg = kwargs.get("oparg", {})
-        outlvl = kwargs.get("outlvl", 6)
-        init_log = getInitLogger(self.name, outlvl)
+        outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -194,12 +195,12 @@ class FWHCondensing0DData(HeatExchangerData):
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        results = opt.solve(self, tee=init_tee(init_log))
-        init_log.log(
-            5,
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info(
             "Initialization Complete (w/ extraction calc): {}".format(
-                condition(results)
-            ),
+                idaeslog.condition(res)
+            )
         )
 
         from_json(self, sd=istate, wts=sp)
@@ -290,8 +291,11 @@ class FWH0DData(UnitModelBlockData):
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def initialize(self, *args, **kwargs):
-        outlvl = kwargs.get("outlvl", 5)
-        init_log = getInitLogger(self.name, outlvl)
+        outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
+
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
         config = self.config  # shorter ref to config for less line splitting
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
@@ -341,10 +345,9 @@ class FWH0DData(UnitModelBlockData):
         tempsat = value(self.condense.shell.properties_in[0].temperature_sat)
         temp = value(self.condense.tube.properties_in[0].temperature)
         if tempsat - temp < 30:
-            init_log.log(
-                5,
-                "Warning: the steam sat. temperature ({}) is near the feedwater"
-                " inlet temperature ({})".format(tempsat, temp),
+            init_log.warning(
+                "The steam sat. temperature ({}) is near the feedwater"
+                " inlet temperature ({})".format(tempsat, temp)
             )
 
         self.condense.initialize(*args, **kwargs)
@@ -356,22 +359,23 @@ class FWH0DData(UnitModelBlockData):
         opt = SolverFactory(kwargs.get("solver", "ipopt"))
         opt.options = kwargs.get("oparg", {})
         assert degrees_of_freedom(self) == 0
-        res = opt.solve(self, tee=init_tee(init_log))
-        init_log.log(
-            3,
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info(
             "Condensing shell inlet delta T = {}".format(
                 value(self.condense.delta_temperature_in[0])
-            ),
+            )
         )
-        init_log.log(
-            3,
+        init_log.info(
             "Condensing Shell outlet delta T = {}".format(
                 value(self.condense.delta_temperature_out[0])
-            ),
+            )
         )
-        init_log.log(
-            3, "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
+        init_log.info(
+            "Steam Flow = {}".format(value(self.condense.inlet_1.flow_mol[0]))
         )
-        init_log.log(5, "Initialization Complete: {}".format(condition(res)))
+        init_log.info(
+            "Initialization Complete: {}".format(idaeslog.condition(res))
+        )
 
         from_json(self, sd=istate, wts=sp)
