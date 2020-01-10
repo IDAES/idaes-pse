@@ -38,11 +38,11 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
 
 # Set up logger
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 # TODO: Need clean-up methods for all methods to work with Pyomo DAE
@@ -400,7 +400,7 @@ class _GenericStateBlock(StateBlock):
     """
 
     def initialize(blk, state_args={}, state_vars_fixed=False,
-                   hold_state=False, outlvl=5,
+                   hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialization routine for property package.
@@ -408,13 +408,6 @@ class _GenericStateBlock(StateBlock):
             state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
@@ -441,9 +434,10 @@ class _GenericStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        init_log = getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
-        init_log.info(5, 'Starting initialization')
+        init_log.info('Starting initialization')
 
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
@@ -638,12 +632,11 @@ class _GenericStateBlock(StateBlock):
         for k in blk:
             n_cons += number_activated_constraints(blk[k])
         if n_cons > 0:
-            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-
-            init_log.log(4,
-                         "Dew and bubble point initialization: {}."
-                         .format(condition(results)))
-
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            init_log.info(
+                "Dew and bubble point initialization: {}.".format(idaeslog.condition(res))
+            )
         # ---------------------------------------------------------------------
         # If StateBlock is using a smooth VLE, calculate _T1 and _Teq
         eq_check = 0
@@ -657,9 +650,7 @@ class _GenericStateBlock(StateBlock):
                 eq_check += 1
 
         if eq_check > 0:
-            init_log.log(1,
-                         "Equilibrium temperature initialization completed."
-                         .format(condition(results)))
+            init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -667,9 +658,7 @@ class _GenericStateBlock(StateBlock):
             blk[k]._params.config.state_definition.state_initialization(blk[k])
 
         if outlvl > 0:
-            init_log.log(1,
-                         "State variable initialization completed."
-                         .format(condition(results)))
+            init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
         if (blk[k]._params.config.phase_equilibrium_formulation is not None and
@@ -677,10 +666,13 @@ class _GenericStateBlock(StateBlock):
             blk[k]._params.config.phase_equilibrium_formulation \
                 .phase_equil_initialization(blk[k])
 
-            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-            init_log.log(4,
-                         "Phase equilibrium initialization: {}."
-                         .format(condition(results)))
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            init_log.info(
+                "Phase equilibrium initialization: {}.".format(
+                    idaeslog.condition(res)
+                )
+            )
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -691,11 +683,11 @@ class _GenericStateBlock(StateBlock):
                         blk[k]._params.config
                         .state_definition.do_not_initialize):
                     c.activate()
-
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4,
-                     "Property initialization: {}."
-                     .format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.info("Property initialization: {}.".format(
+            idaeslog.condition(res))
+        )
 
         # ---------------------------------------------------------------------
         # Return constraints to initial state
@@ -712,11 +704,11 @@ class _GenericStateBlock(StateBlock):
             else:
                 blk.release_state(flag_dict)
 
-        init_log.log(5,
-                     "Property package initialization: {}."
-                     .format(condition(results)))
+        init_log.info("Property package initialization: {}.".format(
+            idaeslog.condition(res))
+        )
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
@@ -725,19 +717,10 @@ class _GenericStateBlock(StateBlock):
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
         '''
-        init_log = getInitLogger(blk.name, outlvl)
-
         revert_state_vars(blk, flags)
-
-        init_log.log(4, "State released.")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log.info_high("State released.")
 
 @declare_process_block_class("GenericStateBlock",
                              block_class=_GenericStateBlock)

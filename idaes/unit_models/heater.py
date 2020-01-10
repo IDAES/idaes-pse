@@ -29,9 +29,9 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.logger import getIdaesLogger
+import idaes.logger as idaeslog
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 def _make_heater_control_volume(o, name, config,
