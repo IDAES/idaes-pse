@@ -43,6 +43,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
+from idaes.core.util.testing import get_default_solver
 
 _log = logging.getLogger(__name__)
 
@@ -495,8 +496,12 @@ see property package for documentation.}"""))
                         "while building ports for the tray. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, outlvl=0):
+    def initialize(self, state_args_feed={}, state_args_liq={},
+                   state_args_vap={}, solver=None, outlvl=0):
+
+        if solver is None:
+            # log warning that initialize method uses default solver
+            solver = get_default_solver()
 
         if self.config.has_liquid_side_draw:
             if not self.liq_side_sf.fixed:
@@ -512,9 +517,15 @@ see property package for documentation.}"""))
 
         # Initialize the inlet state blocks
         if self.config.is_feed_tray:
-            self.properties_in_feed.initialize(outlvl=outlvl)
-        self.properties_in_liq.initialize(outlvl=outlvl)
-        self.properties_in_vap.initialize(outlvl=outlvl)
+            self.properties_in_feed.initialize(state_args=state_args_feed,
+                                               solver=solver,
+                                               outlvl=outlvl)
+        self.properties_in_liq.initialize(state_args=state_args_liq,
+                                          solver=solver,
+                                          outlvl=outlvl)
+        self.properties_in_vap.initialize(state_args=state_args_vap,
+                                          solver=solver,
+                                          outlvl=outlvl)
 
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
@@ -536,13 +547,7 @@ see property package for documentation.}"""))
 
         self.properties_out.initialize(outlvl=outlvl)
 
-        if solver is not None:
-            if outlvl > 2:
-                tee = True
-            else:
-                tee = False
-
-        solver_output = solver.solve(self, tee=tee)
+        solver_output = solver.solve(self)
 
         if solver_output.solver.termination_condition == \
                 TerminationCondition.optimal:
@@ -556,7 +561,7 @@ see property package for documentation.}"""))
         self.enthalpy_mixing_equations.activate()
         self.properties_out[:].temperature.unfix()
 
-        solver_output = solver.solve(self, tee=tee)
+        solver_output = solver.solve(self)
 
         if solver_output.solver.termination_condition == \
                 TerminationCondition.optimal:
@@ -570,7 +575,7 @@ see property package for documentation.}"""))
         self.pressure_drop_equation.activate()
         self.properties_out[:].pressure.unfix()
 
-        solver_output = solver.solve(self, tee=tee)
+        solver_output = solver.solve(self)
 
         if solver_output.solver.termination_condition == \
                 TerminationCondition.optimal:
