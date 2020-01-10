@@ -9,22 +9,24 @@ from sampling import FeatureScaling as fs
 class ResultReport:
     """
     ===================================================================================================================
-    A class for creating an object containing information about the RBF solution to be returned to the user.
+    A class for creating an object containing information about the Kriging model to be returned to the user.
 
         :returns:
-        self function containing ten attributes -
+        self function containing several attributes -
 
-            self.weights(<np.ndarray>)              : array containing optimal radial weights (coefficients) for the RBF
-            self.sigma(<float>)                     : best shape parameter found for selected parametric basis function. Will return zero for fixed basis functions.
-            self.regularization                     : Boolean variable indicating whether regularization was turned on/off for the problem
-            self.regularization_parameter           : best regularization parameter found. Will return zero when reqularization is turned off
-            self.centres                            : co-ordinates of RBF centres
-            self.rmse                               : RMSE error on the training output predictions
-            self.output_predictions                 : Predictions from the RBF surrogate for the output variable of the training data
-            self.condition_number                   : Condition number of the regularized coefficient matrix used to generate the radial weights in the regression problem
-            self.R2                                 : R2 coefficient-of-fit between the actual output and the surrogate predictions
-            self.solution_status                    : Judgement on coefficient matrix conditioning. Returns 'ok' when problem is sufficiently well conditioned (condition number < 1 / eps); 'unstable solution' when the problem is ill-conditioned.
-
+            self.optimal_weights(<np.ndarray>)          : array containing kriging hyperparameters (coefficients)
+            self.regularization_parameter(<float>)      : best regularization parameter found.
+            self.optimal_mean(<float>)                  : Kriging model mean
+            self.optimal_variance(<float>)              : Kriging model variance
+            self.optimal_covariance_matrix(<np.ndarray>): Kriging model covaruiance matrix (regularized)
+            self.covariance_matrix_inverse(<np.ndarray>): Inverse of the Kriging covariance matrix
+            self.output_predictions(<np.ndarray>)       : Output predictions fosupplied inputs based on final Kriging model
+            self.training_R2                            : R2 coefficient-of-fit between the actual output and the surrogate predictions
+            self.training_rmse                          : RMSE error on the training output predictions
+            self.x_data(<np.ndarray>)                   : Input features data (unscaled)
+            self.scaled_x(<np.ndarray>)                 : Input features data (scaled)
+            self.x_min = x_data_min                     : Lower bounds of features data
+            self.x_max = x_data_max                     : Upper bounds of features data
     ===================================================================================================================
     """
 
@@ -46,6 +48,19 @@ class ResultReport:
         self.x_max = x_data_max
 
     def kriging_generate_expression(self, variable_list):
+        """
+        ====================================================================================================================
+        The kriging_generate_expression method returns the Pyomo expression for the Kriging model trained.
+        The expression is constructed based on the supplied variable list and the results of the previous RBF training process.
+
+        Input arguments:
+            variable_list(<list>)           : List of input variables to be used in generating expression. This can be the a list generated from the results of get_feature_vector.
+                                              The user can also choose to supply a new list of the appropriate length.
+
+        : returns
+            kriging_expr                    : Pyomo expression of the Kriging model based on the variables provided in variable_list
+        ====================================================================================================================
+        """
         t1 = np.array([variable_list])
         phi_var = []
         for i in range(0, self.x_data.shape[0]):
@@ -75,8 +90,72 @@ class MyBounds(object):
 
 
 class KrigingModel:
+    """
+    ====================================================================================================================
+    The KrigingModel class trains a Kriging model for a training data set.
+    The class must first be initialized by calling KrigingModel. Model training is then carried out by calling kriging_training.
+
+    For a given dataset with n features X = {x1, x2,...xn}, KrigingModel is able to generate two types of models: Interpolating and Regressing Kriging models.
+
+    Example:
+        >>> d = KrigingModel(training_data, numerical_gradients=True, regularization=True))
+        >>> p = d.get_feature_vector()
+        >>> results = d.kriging_training()
+        >>> predictions = d.kriging_predict_output(results, x_test)
+
+    Input Arguments:
+    To train a Kriging model, only one input is required:
+        - training_data(<np.ndarray> or <pd.DataFrame>)             : The dataset for Kriging training. The training_data is expected to contain xy_data, with the output values (y) in the last column.
+
+    Further details about the optional inputs may be found in the individual functions.
+
+    References:
+        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+
+        [2] D. R. Jones, A taxonomy of global optimization methods based on response surfaces, Journal of Global Optimization
+            https://link.springer.com/article/10.1023%2FA%3A1012771025575
+     ====================================================================================================================
+    """
 
     def __init__(self, XY_data, numerical_gradients=True, regularization=True):
+        """
+        ====================================================================================================================
+        Initialization of KrigngModel class.
+
+            Inputs:
+                - XY_data(<np.ndarray> or <pd.DataFrame>)   : The dataset for Kriging training. The training_data is expected to contain xy_data, with the output values (y) in the last column.
+
+            optional:
+                - numerical_gradients(<bool>)               : Whether or not numerical gradients should be used in training. This choice determines the algorithm used to solve the problem.
+                                                                - True: The problem is solved with BFGS using central differencing with a step size of 10e-6 to evaluate numerical gradients.
+                                                                - False: The problem is solved with Basinhopping, a stochastic optimization algorithm.
+                                                              Default is True.
+
+                - regularization(<bool>)                    :  This option determines whether or not regularization is considered during Kriging training. Takes True and False. Default = True.
+                                                                When regularization is turned off, the model generates an interpolating kriging model.
+
+
+            :returns:
+                self object with the following attributes:
+                    - self.x_data           : attribute of type <np.ndarray> containing unscaled Kriging features data
+                    - self.y_data           : attribute of type <np.ndarray> containing unscaled Kriging output variable for training data
+                    - self.x_data_scaled    : attribute of type <np.ndarray> containing scaled Kriging features data
+                    - self.num_vars         : attribute of type <np.ndarray> containing information about the number of Kriging variables to be trained
+                    - self.num_grads        : attribute of type <bool> indicating whether numerical gradients will be used.
+                    - self.regularization   : attribute of type <bool> indicating whether regularization was selected or not
+
+
+            :raises:
+                ValueError: The input datasets (original_data_input or regression_data_input) are of the wrong type (not np.ndarray or pd.DataFrame)
+
+                Exception:  - numerical_gradients is not boolean
+                            - regularization is not boolean
+
+            Example:
+                >>> d = KrigingModel(XY_data, basis_function='gaussian')
+         ====================================================================================================================
+        """
 
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
@@ -107,6 +186,21 @@ class KrigingModel:
 
     @staticmethod
     def covariance_matrix_generator(x, theta, reg_param, p):
+        """
+        ================================================================================================================
+        The covariance_matrix_generator method generates the regularized co-variance matrix for a Kriging model
+
+        Input Arguments:
+            x                       : scaled features data
+            theta                   : Kriging weights
+            reg_param               : regularization parameter
+            p                       : Kriging exponent, fixed at 2 for smoothness.
+
+        : returns:
+            cov_matrix              : Regularized co-variance matrix
+        ================================================================================================================
+
+        """
         distance_matrix = np.zeros((x.shape[0], x.shape[0]))
         for i in range(0, x.shape[0]):
             distance_matrix[i, :] = (np.matmul(((np.abs(x[i, :] - x)) ** p), theta)).transpose()
@@ -116,6 +210,18 @@ class KrigingModel:
 
     @staticmethod
     def covariance_inverse_generator(x):
+        """
+        ================================================================================================================
+        The covariance_inverse_generator method generates the inverse of the regularized co-variance matrix for a Kriging model
+
+        Input Arguments:
+            x                       : Regularized co-variance matrix
+
+        : returns:
+            inverse_x               : Inverse of regularized co-variance matrix
+        ================================================================================================================
+
+        """
         try:
             inverse_x = np.linalg.inv(x)
         except np.linalg.LinAlgError as LAE:
@@ -124,6 +230,24 @@ class KrigingModel:
 
     @staticmethod
     def kriging_mean(cov_inv, y):
+        """
+        ================================================================================================================
+        The kriging_mean method calculates the MLE estimate of the mean.
+
+        Input Arguments:
+            cov_inv (<np.ndarray)           : Inverse of the co-variance matrix
+            y (<np.ndarray)                 : Output values of the training data
+
+
+        : returns:
+            kriging_mean                    : MLE estimate OF THE Kriging mean
+
+        Reference:
+        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+        ================================================================================================================
+
+        """
         ones_vec = np.ones((y.shape[0], 1))
         kriging_mean = np.matmul(np.matmul(ones_vec.transpose(), cov_inv), y) / np.matmul(np.matmul(ones_vec.transpose(), cov_inv), ones_vec)
         # kriging_mean = np.matmul(ones_vec.transpose(), np.matmul(cov_inv, y)) / np.matmul(ones_vec.transpose(), np.matmul(cov_inv, ones_vec))
@@ -131,11 +255,34 @@ class KrigingModel:
 
     @staticmethod
     def y_mu_calculation(y, mu):
+        """
+        ================================================================================================================
+        The y_mu_calculation method calculates the deviation of each output value from the MLE estimate of the mean, mu
+        ================================================================================================================
+        """
         y_mu = y - mu * np.ones((y.shape[0], 1))
         return y_mu
 
     @staticmethod
     def kriging_sd(cov_inv, y_mu, ns):
+        """
+        ================================================================================================================
+        The kriging_sd method calculates the MLE estimate of the Kriging variance.
+
+        Input Arguments:
+            cov_inv (<np.ndarray)           : Inverse of the co-variance matrix
+            y_mu (<np.ndarray)              : Deviation of y from the Kriging mean estimate (y-mean)
+
+
+        : returns:
+            kriging_sd                      : MLE estimate OF THE Kriging variance
+
+        Reference:
+        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+        ================================================================================================================
+
+        """
         sigma_sq = np.matmul(np.matmul(y_mu.transpose(), cov_inv), y_mu) / ns
         # sigma_sq = np.matmul(y_mu.transpose(), np.matmul(cov_inv, y_mu)) / ns
         return sigma_sq
@@ -145,6 +292,25 @@ class KrigingModel:
         print("at minimum %.4f accepted %d" % (f, int(accepted)))
 
     def objective_function(self, var_vector, x, y, p):
+        """
+        ================================================================================================================
+        The objective_function method calculates the concentrated likelihood function
+
+        Input Arguments:
+            var_vector(<np.ndarray>)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
+            x(<np.ndarray>)                 : Scaled version of input features/variables
+            y(<np.ndarray>)                 : Output variable y (unscaled)
+            p(<float>)                      : Kriging model exponent (fixed to 2) to ensure model smoothness
+
+        : returns:
+            conc_log_like(<float>)          : Concentrated likelihood value. Function incurs a large penalty (10000) when co-variance matrix is non-positive definite
+
+        Reference:
+        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+        ================================================================================================================
+
+        """
         theta = var_vector[:-1]
         reg_param = var_vector[-1]
         theta = 10 ** theta  # Assumes log(theta) provided
@@ -165,6 +331,25 @@ class KrigingModel:
         return conc_log_like
 
     def numerical_gradient(self, var_vector, x, y, p):
+        """
+        ================================================================================================================
+        The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters via central differencing,
+
+            grad(theta) = f(theta + eps) - f(theta - eps)
+                        ---------------------------------
+                                    2 * eps
+
+        Input Arguments:
+            var_vector(<np.ndarray>)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
+            x(<np.ndarray>)                 : Scaled version of input features/variables
+            y(<np.ndarray>)                 : Output variable y (unscaled)
+            p(<float>)                      : Kriging model exponent (fixed to 2) to ensure model smoothness
+
+        : returns:
+            grad_vec(<np.ndarray>)          : Array of the gradients of the variables in var_vector
+        ================================================================================================================
+
+        """
         eps = 1e-6
         grad_vec = np.zeros(len(var_vector), )
         for i in range(0, len(var_vector)):
@@ -183,7 +368,8 @@ class KrigingModel:
 
     def parameter_optimization(self, p):
         """
-        Parameter (theta) optimization using BFGS algorithm
+        Parameter (theta) optimization using BFGS or Basinhopping algorithm. This is the core of the Kriging Class.
+        Algorithm used will depend on whether the numerical_gradients was set to True or False.
         """
         initial_value_list = np.random.randn(self.num_vars - 1, )
         initial_value_list = initial_value_list.tolist()
@@ -215,6 +401,30 @@ class KrigingModel:
         return opt_results
 
     def optimal_parameter_evaluation(self, var_vector, p):
+        """
+        ==============================================================================================================
+
+        The optimal_parameter_evaluation method  evaluates the values of all the parameters of the final Kriging model.
+        For an input set of Kriging parameters var_vector and p, it:
+            (1) Generates the covariance matrix by calling covariance_matrix_generator
+            (2) Finds the cobvariance matrix inverse
+            (3) Evaluates the Kriging mean and variance
+            (4)
+
+        Input Arguments:
+            var_vector              : Optimal Kriging parameters (weights + regularization parameter)
+            p                       : Krigng exponents
+
+        : returns:
+            theta                   : Optimal Kriging weights for each variable
+            reg_param               : Optimal regularization parameter
+            mean                    : Final MLE estimate of the mean
+            variance                : Final MLE estimate of the variance
+            cov_mat                 : Co-variance matrix of the final model
+            cov_inv, y_mu           : Inverse of final co-variance matrix
+        =============================================================================================================
+
+        """
         theta = var_vector[:-1]
         reg_param = var_vector[-1]
         theta = 10 ** theta  # Assumes log(theta) provided. Ensures that theta is always positive
@@ -230,6 +440,26 @@ class KrigingModel:
     @staticmethod
     def error_calculation(theta, p, mean, cov_inv, y_mu, x, y_data):
         """
+        ===============================================================================================================
+        This method calculates the SSE and RMSE errors between the actual and predicted output values,
+             ss_error = sum of squared errors / number of samples
+             rmse_error = sqrt(sum of squared errors / number of samples)
+
+        Input arguments:
+            theta           : Kriging weights
+            p               : Kriging exponents
+            mean            : MLE estimate of the Kriging mean
+            cov_inv         : Inverse of the co-variance matrix of the current solution
+            y_mu            : Deviation of y valuers from the mean estimate
+            x               : Input test data
+            y_data          : Actual outputs corresponding to input test data x
+
+        :returns
+            ss_error        : The average sum of squared errors
+            rmse_error      : The root-mean-squared error (RMSE)
+            y_prediction    : Predicted values of y
+         ==============================================================================================================
+
         """
         y_prediction = np.zeros((x.shape[0], 1))
         for i in range(0, x.shape[0]):
@@ -250,7 +480,7 @@ class KrigingModel:
 
         Input arguments:
             y_true(<np.ndarray>)             : Vector of actual values of the output variable
-            x_predicted(<np.ndarray>)        : Vector of predictions for the output variable based on the surrogate
+            y_predicted(<np.ndarray>)        : Vector of predictions for the output variable based on the surrogate
 
         :returns
             r_square(<float>)                : R2 measure-of-fit between actual anf predcited data
@@ -266,6 +496,19 @@ class KrigingModel:
         return r_square
 
     def kriging_predict_output(self, kriging_params, x_pred):
+        """
+        =====================================================================================================================
+
+        The function kriging_predict_output generates output predictions for input data x_data based a previously generated Kriging model.
+
+            Inputs:
+                kriging_params                  : Python object containing results of Kriging training generated by calling the kriging_training function.
+                x_pred(<np.ndarray>)            : numpy array of designs for which the output is to be evaluated/predicted.
+
+            :returns:
+                y_pred(<np.ndarray>)            : numpy array containing the output variable predictions based on the RBF
+        =====================================================================================================================
+        """
         x_pred_scaled = ((x_pred - self.x_data_min) / (self.x_data_max - self.x_data_min))
         x_pred = x_pred_scaled.reshape(x_pred.shape)
         if x_pred.ndim == 1:
@@ -278,6 +521,26 @@ class KrigingModel:
         return y_pred
 
     def kriging_training(self):
+        """
+        =====================================================================================================================
+
+        Main function for Kriging training.
+
+        To train the Kriging model:
+            (1) The Kriging exponent is fixed at 2
+            (2) The optimal radial weights are evaluated by calling the optimal_parameter_evaluation Method using either BFGS or Basinhopping
+            (5) The training predictions, prediction errors and r-square coefficient of fit are evaluated by calling the functions self.error_calculation and self.r2_calculation
+            (6) A results object is generated by calling the ResultsReport class
+
+            Inputs:
+                self                            : contains, among other things, the input data
+
+            :returns:
+                results                         : python object containing all information about the best RBF fitting obtained.
+
+        =====================================================================================================================
+        """
+
         # Create p values, for now fixed at p=2. Arraying p makes the code significantly (at least 7x slower)
         p = 2
         # Solve optimization problem
@@ -292,6 +555,14 @@ class KrigingModel:
         return results
 
     def get_feature_vector(self):
+        """
+        =====================================================================================================================
+        The get_feature_vector method generates the list of features from the column headers of the input dataset.
+
+        :returns
+            p(<IndexedParam>): An indexed parameter list of the variables supplied in the original data
+        =====================================================================================================================
+        """
         p = Param(self.x_data_columns, mutable=True, initialize=0)
         p.index_set().construct()
         p.construct()
