@@ -182,6 +182,14 @@ class SamplingMethods:
         ================================================================================================================
 
         """
+        # Alternative way of generating primes using list generators
+        # prime_list = []
+        # current_no = 2
+        # while len(prime_list) < n:
+        #     matching_objs = next((o for o in range(2, current_no) if current_no % o == 0), 0)
+        #     if matching_objs==0:
+        #         prime_list.append(current_no)
+        #     current_no += 1
 
         prime_list = []
         current_no = 2
@@ -299,7 +307,7 @@ class LatinHypercubeSampling(SamplingMethods):
     """
     =====================================================================================================================
     A class that performs Latin Hypercube Sampling. The function returns LHS samples which have been selected randomly after sample space stratification. Depending on the settings, the algorithm either returns samples from an input dataset
-    which have been selected using Euclidean distance minimization after the LHS samples have been generated, or returns samples from a supplied data range.
+    which has been selected using Euclidean distance minimization after the LHS samples have been generated, or returns samples from a supplied data range.
 
     For further details on Hammersley sampling see:
      [1] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
@@ -308,8 +316,8 @@ class LatinHypercubeSampling(SamplingMethods):
 
     To use: call class with inputs, and then sample_points function
     Example: For the first 10 samples in a 2-D space:
-        b = rbf.LatinHypercubeSampling(data, 10)
-        samples = b.sample_points()
+        >>> b = rbf.LatinHypercubeSampling(data, 10, sampling_type="selection")
+        >>> samples = b.sample_points()
     ===================================================================================================================
     """
 
@@ -319,11 +327,11 @@ class LatinHypercubeSampling(SamplingMethods):
         Initialization of LatinHypercubeSampling class. Two inputs are required.
 
             Inputs:
-                data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
+                data_input(<np.ndarray>, <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
                     - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to select a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
                 number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
-                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "selection".
+                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
 
             :returns:
                 self function containing three attributes -
@@ -506,8 +514,8 @@ class UniformSampling(SamplingMethods):
 
     To use: call class with inputs, and then uniform_sample_points function
     Example: For the first 10 samples in a 2-D space:
-        b = rbf.UniformSampling(data, [10, 5])
-        samples = b.sample_points()
+        >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
+        >>> samples = b.sample_points()
     ===================================================================================================================
 
     """
@@ -519,9 +527,9 @@ class UniformSampling(SamplingMethods):
         Inputs:
             data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                - When the aim is to select a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
             list_of_samples_per_variable(<list>): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a posotve integer variable greater than 1.
-            sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "selection".
+            sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
 
         :optional:
             edges(<bool>): Boolean variable representing bow the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
@@ -657,8 +665,8 @@ class HaltonSampling(SamplingMethods):
 
     To use: call class with inputs, and then lh_sample_points function
     Example: For the first 10 samples in a 2-D space:
-        b = rbf.HaltonSampling(data, 10)
-        samples = b.sample_points()
+        >>> b = rbf.HaltonSampling(data, 10, sampling_type="selection")
+        >>> samples = b.sample_points()
     ===================================================================================================================
 
     """
@@ -671,8 +679,9 @@ class HaltonSampling(SamplingMethods):
             Inputs:
                 data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
                     - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to select a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
                 number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
+                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
 
             :returns:
                 self function containing three attributes -
@@ -803,8 +812,8 @@ class HammersleySampling(SamplingMethods):
 
     To use: call class with inputs, and then hs_sample_points function
     Example: For the first 10 samples in a 2-D space:
-        b = rbf.HammersleySampling(data, 10)
-        samples = b.sample_points()
+        >>> b = rbf.HammersleySampling(data, 10, sampling_type="selection")
+        >>> samples = b.sample_points()
     ===================================================================================================================
 
     """
@@ -817,8 +826,9 @@ class HammersleySampling(SamplingMethods):
             Inputs:
                 data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
                     - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to select a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
                 number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
+                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
 
             :returns:
                 self function containing three attributes -
@@ -951,8 +961,8 @@ class CVTSampling(SamplingMethods):
 
     To use: call class with inputs, and then lh_sample_points function
     Example: For the first 10 samples in a 2-D space:
-        b = rbf.CVTSampling(data, 10, tolerance = 1e-5)
-        samples = b.sample_points()
+        >>> b = rbf.CVTSampling(data, 10, tolerance = 1e-5, sampling_type="selection")
+        >>> samples = b.sample_points()
     ===================================================================================================================
 
     """
@@ -965,8 +975,9 @@ class CVTSampling(SamplingMethods):
             Inputs:
                 data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
                     - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to select a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
                 number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
+                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
 
             :optional:
                 tolerance(<float>): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.

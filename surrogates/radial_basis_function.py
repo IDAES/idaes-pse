@@ -61,6 +61,19 @@ class ResultReport:
             self.solution_status = 'unstable solution'
 
     def rbf_generate_expression(self, variable_list):
+        """
+        ====================================================================================================================
+        The rbf_generate_expression method returns the Pyomo expression for the RBF model trained.
+        The expression is constructed based on the supplied variable list and the results of the previous RBF training process.
+
+        Input arguments:
+            variable_list(<list>)           : List of input variables to be used in generating expression. This can be the a list generated from the results of get_feature_vector.
+                                              The user can also choose to supply a new list of the appropriate length.
+
+        : returns
+            rbf_expr                        : Pyomo expression of the RBF model based on the variables provided in variable_list
+        ====================================================================================================================
+        """
         t1 = np.array([variable_list])
         basis_vector = []
         # Calculate distances from centres
@@ -213,11 +226,13 @@ class RadialBasisFunctions:
     It should be noted that the all the training points are treated as centres for the RBF, resulting in a square system.
 
     Example:
-        d = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization='True'))
-        e, f, g = d.rbf_training()
+        >>> d = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization=True))
+        >>> p = d.get_feature_vector()
+        >>> results = d.rbf_training()
+        >>> predictions = d.rbf_predict_output(results, x_test)
 
     Input Arguments:
-    For RadialBasisFunctions, only one input are required:
+    For RadialBasisFunctions, only one input is required:
         - training_data(<np.ndarray> or <pd.DataFrame>)             : The dataset for RBF training. The training_data is expected to contain xy_data, with the output values (y) in the last column.
 
     Further details about the optional inputs may be found in the individual functions.
@@ -258,7 +273,7 @@ class RadialBasisFunctions:
                     (c) 'pyomo'      : This option solves the optimization problem in pyomo with IPOPT as solver.
                 The default option is 'pyomo'
 
-                - regularization(<bool>):  This option determines whether or not regularization is considered during polynomial fitting. Takes True and False. Default = True.
+                - regularization(<bool>):  This option determines whether or not regularization is considered during RBF fitting. Takes True and False. Default = True.
 
 
             :returns:
@@ -269,16 +284,18 @@ class RadialBasisFunctions:
                     - self.centres          : attribute of type <np.ndarray)> containing the RBF centres
                     - self.solution_method  : attribute of type <str> containing solution_method entry
                     - self.basis_function   : attribute of type <str> indicating the selected basis function transformation
-                    - self.regularization   : attribute of type <bool> indicating wheter regukarization was selected or not
+                    - self.regularization   : attribute of type <bool> indicating whether regularization was selected or not
 
 
             :raises:
                 ValueError: The input datasets (original_data_input or regression_data_input) are of the wrong type (not np.ndarray or pd.DataFrame)
 
-                Exception:  - Dimensionality problems/conflicts exist between original_data_input and regression_data_input
-                            - solution_method is not 'algebraic', 'pyomo' or 'bfgs'
+                Exception:  - solution_method is not 'algebraic', 'pyomo' or 'bfgs'
                             - basis_function is not 'linear', 'cubic', 'spline', 'gaussian', 'mq' or 'imq'
                             - regularization is not boolean
+
+            Example:
+                >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
          ====================================================================================================================
         """
 
@@ -770,7 +787,7 @@ class RadialBasisFunctions:
 
         Input arguments:
             y_true(<np.ndarray>)             : Vector of actual values of the output variable
-            x_predicted(<np.ndarray>)        : Vector of predictions for the output variable based on the surrogate
+            y_predicted(<np.ndarray>)        : Vector of predictions for the output variable based on the surrogate
 
         :returns
             r_square(<float>)                : R2 measure-of-fit between actual anf predcited data
@@ -953,12 +970,8 @@ class RadialBasisFunctions:
         The function rbf_predict_output generates output predictions for input data x_data based a previously generated RBF fitting.
 
             Inputs:
-                self                            : contains, among other things, the input data and the basis function selected
-                radial_weights(<np.ndarray>)    : radial weights for fitted RBF
+                results_vector                  : Python object containing results of RBF fit generated by calling the rbf_training function.
                 x_data(<np.ndarray>)            : numpy array of designs for which the output is to be evaluated/predicted.
-                centres_matrix(<np.ndarray>)    : array of centres used to generate the RBF fitting
-                r (<float>)                     : shape parameter for fitted RBF
-                lambda(<float>)                 : regularization parameter for fitted RBF
 
             :returns:
                 y_prediction(<np.ndarray>)      : numpy array containing the output variable predictions based on the RBF
@@ -969,7 +982,9 @@ class RadialBasisFunctions:
         centres_matrix = results_vector.centres
         r = results_vector.sigma
         lambda_reg = results_vector.regularization_parameter
-        x_pred_scaled = ((x_data - results_vector.x_data_min) / (results_vector.x_data_max - results_vector.x_data_min))
+        scale = results_vector.x_data_max - results_vector.x_data_min
+        scale[scale == 0.0] = 1.0
+        x_pred_scaled = (x_data - results_vector.x_data_min)/scale
         x_data = x_pred_scaled.reshape(x_data.shape)
 
         basis_vector = np.zeros((x_data.shape[0], centres_matrix.shape[0]))
@@ -994,13 +1009,33 @@ class RadialBasisFunctions:
             x_transformed = RadialBasisFunctions.thin_plate_spline_transformation(basis_vector)
 
         # Add regularization shifting?
-        x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
-        # x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        # x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         y_prediction_scaled = np.matmul(x_transformed, radial_weights)
         y_prediction_unscaled = results_vector.y_data_min + y_prediction_scaled * (results_vector.y_data_max - results_vector.y_data_min)
         return y_prediction_unscaled
 
     def get_feature_vector(self):
+        """
+        =====================================================================================================================
+        The get_feature_vector method generates the list of features from the column headers of the input dataset.
+
+        :returns
+            p(<IndexedParam>): An indexed parameter list of the variables supplied in the original data
+
+
+        Example:
+        ---------
+        Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the RadialBasisFunctions class and print the column headers for the variables
+            >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
+            >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
+            >>> p = f.get_feature_vector()
+            >>> for i in p.keys():
+            >>>     print(i)
+            one
+            two
+        =====================================================================================================================
+        """
         p = Param(self.x_data_columns, mutable=True, initialize=0)
         p.index_set().construct()
         p.construct()
