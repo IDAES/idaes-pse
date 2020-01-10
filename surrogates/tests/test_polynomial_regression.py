@@ -385,7 +385,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
 
     test_set_additional_terms_01: need to check, working with any inputs
 
-    test_fit_surrogate_01: checking the status is 'ok', R2 > 0.95, by running polynomial_regression_fitting, ResultReport class is covered here
+    test_poly_training_01: checking the status is 'ok', R2 > 0.95, by running polynomial_regression_fitting, ResultReport class is covered here
 
     test_generate_expression:   test only while it is running or not (not compared values)
     '''
@@ -1467,10 +1467,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         np.testing.assert_equal(np.array([1,2]), data_feed.additional_term_expressions)
         
 
-    def test_fit_surrogate_01(self):
+    def test_poly_training_01(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
-        results = data_feed.fit_surrogate()
+        results = data_feed.poly_training()
         self.assertEqual(results.fit_status,'ok')
         
      
@@ -1478,7 +1478,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         
         p =data_feed.get_feature_vector()
-        results = data_feed.fit_surrogate()
+        results = data_feed.poly_training()
 
         lv =[]
         for i in p.keys():
