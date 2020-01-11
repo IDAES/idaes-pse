@@ -190,6 +190,7 @@ class FileModifier(object):
         # finalize the output
         out.close()
         # remove moved <name>.orig, the original input file
+        f.close()
         os.unlink(wfname)
 
 
