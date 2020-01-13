@@ -21,7 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 __author__ = "John Eslick, Andrew Lee"
 
 
-def state_block_table(streams, time_point=0):
+def stream_states_dict(streams, time_point=0):
     """
     Method to create a dictionary of state block representing stream states.
     This takes a dict with stream name keys and stream values.
@@ -99,7 +99,7 @@ def create_stream_table_dataframe(streams,
         A pandas DataFrame containing the stream table data.
     """
     stream_attributes = OrderedDict()
-    stream_states = state_block_table(streams=streams, time_point=time_point)
+    stream_states = stream_states_dict(streams=streams, time_point=time_point)
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
         if true_state:
