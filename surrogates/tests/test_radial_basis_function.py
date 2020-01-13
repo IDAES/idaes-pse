@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 
 from radial_basis_function import RadialBasisFunctions, FeatureScaling
 import numpy as np
@@ -1133,7 +1133,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
 
 
     def test_rbf_predict_output_01(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='linear')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='linear')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
@@ -1151,7 +1151,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(expected_output, output)
         
     def test_rbf_predict_output_02(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='cubic')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='cubic')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
@@ -1169,7 +1169,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(expected_output, output)
         
     def test_rbf_predict_output_03(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='gaussian')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='gaussian')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
@@ -1187,7 +1187,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(expected_output, output)
     
     def test_rbf_predict_output_04(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='imq')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='imq')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
@@ -1205,7 +1205,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(expected_output, output)
         
     def test_rbf_predict_output_05(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='mq')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='mq')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
@@ -1223,7 +1223,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         self.assertEqual(expected_output, output)
 
     def test_rbf_predict_output_06(self):
-        data_feed = RadialBasisFunctions(self.training_data[0:3, :], basis_function='spline')
+        data_feed = RadialBasisFunctions(self.training_data, basis_function='spline')
         results = data_feed.rbf_training()
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)

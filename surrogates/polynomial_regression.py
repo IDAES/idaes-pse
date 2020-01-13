@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
-from .utils import NumpyEvaluator
+from surrogates.utils import NumpyEvaluator
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.

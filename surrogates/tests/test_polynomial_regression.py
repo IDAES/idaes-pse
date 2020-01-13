@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 
 from polynomial_regression import PolynomialRegression, FeatureScaling
 import numpy as np
