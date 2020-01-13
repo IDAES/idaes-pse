@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 
 from sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np

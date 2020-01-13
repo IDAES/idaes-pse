@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 
 from radial_basis_function import RadialBasisFunctions, FeatureScaling
 import numpy as np
