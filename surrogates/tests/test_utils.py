@@ -22,7 +22,7 @@
 
 import pyutilib.th as unittest
 
-from pyomo.contrib.surrogates.utils import NumpyEvaluator
+from surrogates.utils import NumpyEvaluator
 from pyomo.environ import ConcreteModel, Param, Var, value, sin, atan, atanh
 from pyomo.core import ComponentMap
 

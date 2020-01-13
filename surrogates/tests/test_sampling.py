@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import sys, os
-sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..'))# current folder is ~/tests
 
 from sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np
@@ -26,24 +26,24 @@ coverage html
 '''
 class FeatureScalingTestCases(unittest.TestCase):
     """
-    test_data_scaling_01: Test behaviour when input is a numpy array and with 1D array.
-    test_data_scaling_02: Test behaviour when input is a numpy array and with 2D array.
-    test_data_scaling_03: Test behaviour when input is a numpy array and with 3D array.
-    test_data_scaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
-    test_data_scaling_05: Test behaviour list input TypeError
+    test_data_scaling_minmax_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_scaling_minmax_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_scaling_minmax_03: Test behaviour when input is a numpy array and with 3D array.
+    test_data_scaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_scaling_minmax_05: Test behaviour list input TypeError
 
-    test_data_scaling_06: Test behaviour when input is a Pandas DataFrame and with 1D array.
-    test_data_scaling_07: Test behaviour when input is a Pandas DataFrame and with 2D array.
-    test_data_scaling_08: Test behaviour when input is a Pandas DataFrame and with 3D array.
-    test_data_scaling_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a varibale is constant.
+    test_data_scaling_minmax_06: Test behaviour when input is a Pandas DataFrame and with 1D array.
+    test_data_scaling_minmax_07: Test behaviour when input is a Pandas DataFrame and with 2D array.
+    test_data_scaling_minmax_08: Test behaviour when input is a Pandas DataFrame and with 3D array.
+    test_data_scaling_minmax_09: Test behaviour when input is a Pandas DataFrame and with 3D array with a varibale is constant.
 
-    test_data_unscaling_01: Test behaviour when input is a numpy array and with 1D array.
-    test_data_unscaling_02: Test behaviour when input is a numpy array and with 2D array.
-    test_data_unscaling_03: Test behaviour when input is a numpy array and with 3D array. 
-    test_data_unscaling_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
+    test_data_unscaling_minmax_01: Test behaviour when input is a numpy array and with 1D array.
+    test_data_unscaling_minmax_02: Test behaviour when input is a numpy array and with 2D array.
+    test_data_unscaling_minmax_03: Test behaviour when input is a numpy array and with 3D array. 
+    test_data_unscaling_minmax_04: Test behaviour when input is a numpy array and with 3D array with a varibale is constant.
 
-    test_data_unscaling_05: Test behaviour IndexError when input array size > array size
-    test_data_unscaling_06: Test behaviour IndexError when input array size < array size  
+    test_data_unscaling_minmax_05: Test behaviour IndexError when input array size > array size
+    test_data_unscaling_minmax_06: Test behaviour IndexError when input array size < array size  
 
     """
     def setUp(self):
@@ -68,11 +68,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         self.test_data_pandas_3d_constant = input_array_pd_3d_constant
         
     
-    def test_data_scaling_01(self):
+    def test_data_scaling_minmax_01(self):
         # 1D
         # Sample data generated from between 0 and 9
         input_array = self.test_data_numpy_1d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9]])
         expected_output_2 = np.array([[0]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -80,11 +80,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1.reshape(10, 1))
 
-    def test_data_scaling_02(self):
+    def test_data_scaling_minmax_02(self):
         # 2D
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
         input_array = self.test_data_numpy_2d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 100]])
         expected_output_2 = np.array([[0, 1]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -92,11 +92,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_03(self):
+    def test_data_scaling_minmax_03(self):
         # 3D
         # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
         input_array = self.test_data_numpy_3d 
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 19, 119]])
         expected_output_2 = np.array([[0, 10, 11]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -104,11 +104,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_04(self):
+    def test_data_scaling_minmax_04(self):
         # 3D with constant
         # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
         input_array = self.test_data_numpy_3d_constant
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 10, 110]])
         expected_output_2 = np.array([[0, 10, 11]])
         scale = expected_output_3 - expected_output_2
@@ -118,17 +118,17 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_05(self):
+    def test_data_scaling_minmax_05(self):
         # TypeError with list
         input_array = self.test_data_numpy_2d.tolist()
         with self.assertRaises(TypeError):
-            FeatureScaling.data_scaling(input_array)
+            FeatureScaling.data_scaling_minmax(input_array)
 
-    def test_data_scaling_06(self):
+    def test_data_scaling_minmax_06(self):
         # 1D
         # Sample data generated from between 0 and 9
         input_array = self.test_data_pandas_1d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9]])
         expected_output_2 = np.array([[0]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -136,11 +136,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_07(self):
+    def test_data_scaling_minmax_07(self):
         # 2D
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
         input_array =self.test_data_pandas_2d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 100]])
         expected_output_2 = np.array([[0, 1]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -148,11 +148,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_08(self):
+    def test_data_scaling_minmax_08(self):
         # 3D
         # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
         input_array = self.test_data_pandas_3d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 19, 119]])
         expected_output_2 = np.array([[0, 10, 11]])
         expected_output_1 = (input_array - expected_output_2) / (expected_output_3 - expected_output_2)
@@ -160,11 +160,11 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_2, expected_output_2)
         np.testing.assert_array_equal(output_1, expected_output_1)
     
-    def test_data_scaling_09(self):
+    def test_data_scaling_minmax_09(self):
         # 3D with constant
         # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
         input_array = self.test_data_pandas_3d_constant
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         expected_output_3 = np.array([[9, 10, 110]])
         expected_output_2 = np.array([[0, 10, 11]])
         scale = expected_output_3 - expected_output_2
@@ -175,60 +175,60 @@ class FeatureScalingTestCases(unittest.TestCase):
         np.testing.assert_array_equal(output_1, expected_output_1)
     
 
-    def test_data_unscaling_01(self):
+    def test_data_unscaling_minmax_01(self):
         # 1D
         # Sample data generated from between 0 and 9
         input_array = self.test_data_numpy_1d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
         output_1 = output_1.reshape(output_1.shape[0], )
-        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        un_output_1 = FeatureScaling.data_unscaling_minmax(output_1, output_2, output_3)
         np.testing.assert_array_equal(un_output_1, input_array.reshape(10, 1))
 
-    def test_data_unscaling_02(self):
+    def test_data_unscaling_minmax_02(self):
         # 2D
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
         input_array = self.test_data_numpy_2d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
-        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
+        un_output_1 = FeatureScaling.data_unscaling_minmax(output_1, output_2, output_3)
         np.testing.assert_array_equal(un_output_1, input_array)
     
-    def test_data_unscaling_03(self):
+    def test_data_unscaling_minmax_03(self):
         # 3D
         # Sample data generated from the expression (x_1 + 1)^2 + x_2, x1: between 0 and 9, x2: between 10 and 19
         input_array = self.test_data_numpy_3d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
-        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
+        un_output_1 = FeatureScaling.data_unscaling_minmax(output_1, output_2, output_3)
         np.testing.assert_array_equal(un_output_1, input_array)
     
-    def test_data_unscaling_04(self):
+    def test_data_unscaling_minmax_04(self):
         # 3D with constant
         # Sample data generated from the expression (x_1 + 1)^2 + 10, x1: between 0 and 9
         input_array = self.test_data_numpy_3d_constant
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
-        un_output_1 = FeatureScaling.data_unscaling(output_1, output_2, output_3)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
+        un_output_1 = FeatureScaling.data_unscaling_minmax(output_1, output_2, output_3)
         np.testing.assert_array_equal(un_output_1, input_array)
 
-    def test_data_unscaling_05(self):
+    def test_data_unscaling_minmax_05(self):
         # 2D
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
         input_array = self.test_data_numpy_2d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
 
         min_array = np.array([[1]])
         max_array = np.array([[5]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling(output_1, min_array, max_array)
+            FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
-    def test_data_unscaling_06(self):
+    def test_data_unscaling_minmax_06(self):
         # 2D
         # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
         input_array = self.test_data_numpy_2d
-        output_1, output_2, output_3 = FeatureScaling.data_scaling(input_array)
+        output_1, output_2, output_3 = FeatureScaling.data_scaling_minmax(input_array)
                 
         min_array = np.array([[1,2,3]])
         max_array = np.array([[5,6,7]])
         with self.assertRaises(IndexError):
-            FeatureScaling.data_unscaling(output_1, min_array, max_array)
+            FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
              
 class SamplingMethodsTestCases(unittest.TestCase):
