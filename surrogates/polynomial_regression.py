@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
-from .utils import NumpyEvaluator
+from surrogates.utils import NumpyEvaluator
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
@@ -1107,7 +1107,7 @@ class PolynomialRegression:
         self.additional_term_expressions = term_list
 
     # def fit_surrogate(self):
-	def poly_training(self):
+    def poly_training(self):
         cMap = ComponentMap()
         for i, col in enumerate(self.regression_data_columns):
             cMap[self.feature_list[col]] = self.regression_data[:, i]
