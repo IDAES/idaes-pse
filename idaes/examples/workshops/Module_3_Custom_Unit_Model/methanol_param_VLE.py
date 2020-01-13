@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
-from idaes.core.util.constants import gas_constant
+from idaes.core.util.constants import Constants as const
 
 from .methanol_state_block_VLE import IdealStateBlock
 
@@ -117,7 +117,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                      ('CH3OH', 'C'): -34.29}
 
         Cp = self.config.Cp
-        Cv = Cp - gas_constant*1e-3
+        Cv = Cp - const.gas_constant*1e-3
         gamma = Cp / Cv
 
         self.gamma = Param(within=NonNegativeReals, mutable=True, default=gamma, doc='Ratio of Cp to Cv')

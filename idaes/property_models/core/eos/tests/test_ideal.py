@@ -21,7 +21,7 @@ from pyomo.environ import Block, ConcreteModel, Set, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.property_models.core.eos import ideal
-from idaes.core.util.constants import gas_constant
+from idaes.core.util.constants import Constants as const
 
 from idaes.core.util.exceptions import PropertyNotSupportedError
 
@@ -75,7 +75,7 @@ def test_dens_mol_phase_liq(m):
 
 def test_dens_mol_phase_vap(m):
     assert str(ideal.dens_mol_phase(m, "Vap")) == str(
-        m.pressure/(gas_constant*m.temperature))
+        m.pressure/(const.gas_constant*m.temperature))
 
 
 def test_dens_mol_phase_invalid_phase(m):

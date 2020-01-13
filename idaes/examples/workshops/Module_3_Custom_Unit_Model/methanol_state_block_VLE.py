@@ -33,7 +33,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.constants import gas_constant
+from idaes.core.util.constants import Constants as const
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
