@@ -21,6 +21,57 @@ from idaes.core.util.exceptions import ConfigurationError
 __author__ = "John Eslick, Andrew Lee"
 
 
+def state_block_table(streams, time_point=0):
+    """
+    Method to create a dictionary of state block representing stream states.
+    This takes a dict with stream name keys and stream values.
+
+    Args:
+        streams : dict with name keys and stream values. Names will be used as
+            display names for stream table, and streams may be Arcs, Ports or
+            StateBlocks.
+        time_point : point in the time domain at which to generate stream table
+            (default = 0)
+
+    Returns:
+        A pandas DataFrame containing the stream table data.
+    """
+    stream_dict = OrderedDict()
+
+    def _stream_dict_add(sb, n, i=None):
+        """add a line to the stream table"""
+        if i is None:
+            key = n
+        else:
+            key = "{}[{}]".format(n,i)
+        stream_dict[key] = sb
+
+    for n in streams.keys():
+        try:
+            if isinstance(streams[n], Arc) and not streams[n].is_indexed():
+                # Use destination of Arc, as inlets are more likely (?) to be
+                # fully-defined StateBlocks
+                sb = _get_state_from_port(streams[n].destination, time_point)
+                _stream_dict_add(sb, n)
+            elif isinstance(streams[n], Arc):
+                for i, a in streams[n].items():
+                    sb = _get_state_from_port(a.destination, time_point)
+                    _stream_dict_add(sb, n, i)
+            elif isinstance(streams[n], Port):
+                sb = _get_state_from_port(streams[n], time_point)
+                _stream_dict_add(sb, n)
+            else:
+                sb = streams[n][time_point]
+                _stream_dict_add(sb, n)
+        except (AttributeError, KeyError):
+            raise TypeError(
+                    f"Unrecognised component provided in stream argument "
+                    f"{streams[n]}. get_stream_table_attributes only "
+                    f"supports Arcs, Ports or StateBlocks.")
+
+    return stream_dict
+
+
 def create_stream_table_dataframe(streams,
                                   true_state=False,
                                   time_point=0,
@@ -48,18 +99,13 @@ def create_stream_table_dataframe(streams,
         A pandas DataFrame containing the stream table data.
     """
     stream_attributes = OrderedDict()
-
-    def _stream_attributes_dict_add(sb, n, i=None):
-        """add a line to the stream table"""
+    stream_states = state_block_table(streams=streams, time_point=time_point)
+    for key, sb in stream_states.items():
+        stream_attributes[key] = {}
         if true_state:
             disp_dict = sb.define_state_vars()
         else:
             disp_dict = sb.define_display_vars()
-        if i is None:
-            key = n
-        else:
-            key = "{}[{}]".format(n,i)
-        stream_attributes[key] = {}
         for k in disp_dict:
             for i in disp_dict[k]:
                 if i is None:
@@ -67,29 +113,6 @@ def create_stream_table_dataframe(streams,
                 else:
                     stream_attributes[key][k+" "+str(i)] = \
                         value(disp_dict[k][i])
-
-    for n in streams.keys():
-        try:
-            if isinstance(streams[n], Arc) and not streams[n].is_indexed():
-                # Use destination of Arc, as inlets are more likely (?) to be
-                # fully-defined StateBlocks
-                sb = _get_state_from_port(streams[n].destination, time_point)
-                _stream_attributes_dict_add(sb, n)
-            elif isinstance(streams[n], Arc):
-                for i, a in streams[n].items():
-                    sb = _get_state_from_port(a.destination, time_point)
-                    _stream_attributes_dict_add(sb, n, i)
-            elif isinstance(streams[n], Port):
-                sb = _get_state_from_port(streams[n], time_point)
-                _stream_attributes_dict_add(sb, n)
-            else:
-                sb = streams[n][time_point]
-                _stream_attributes_dict_add(sb, n)
-        except (AttributeError, KeyError):
-            raise TypeError(
-                    f"Unrecognised component provided in stream argument "
-                    f"{streams[n]}. get_stream_table_attributes only "
-                    f"supports Arcs, Ports or StateBlocks.")
 
     return DataFrame.from_dict(stream_attributes, orient=orient)
 
