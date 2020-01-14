@@ -13,14 +13,14 @@ models within an single IDAES flowsheet.
 
 
 Tools
------
+======
 PySMO provides two sets of tools necessary for:
 
 * Sampling
 * Surrogate model generation
 
 Sampling
-*********
+----------
 The PySMO package offers five common sampling methods for one-shot design:
 
 * Latin hypercube sampling
@@ -71,7 +71,7 @@ Further information about the sampling tools and their input options may be foun
 sampling methods.
 
 Surrogate Generation
-*********************
+----------------------
 
 PySMO offers tools for generating three types of surrogates:
 
@@ -81,18 +81,3 @@ PySMO offers tools for generating three types of surrogates:
    pysmo_polyregression
    pysmo_radialbasisfunctions
    pysmo_kriging
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
