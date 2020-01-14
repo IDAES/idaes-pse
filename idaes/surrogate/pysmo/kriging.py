@@ -15,7 +15,7 @@ from scipy.optimize import basinhopping
 import scipy.optimize as opt
 import pandas as pd
 from pyomo.core import Param, exp
-from sampling import FeatureScaling as fs
+from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
 
 
 class ResultReport:
