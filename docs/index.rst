@@ -49,6 +49,7 @@ Contents
     transformations/index
     models/index
     property_models/index
+    commands/index
     vis/index
     dmf/index
     apps/index
