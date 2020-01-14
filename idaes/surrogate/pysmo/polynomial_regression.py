@@ -25,7 +25,7 @@ from matplotlib import pyplot as plt
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
-from surrogates.utils import NumpyEvaluator
+from idaes.surrogate.pysmo.utils import NumpyEvaluator
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
