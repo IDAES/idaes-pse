@@ -24,7 +24,7 @@ from unittest.mock import patch
 from scipy.spatial import distance
 import scipy.optimize as opt
 import scipy.stats as stats
-from sklearn.metrics import mean_squared_error
+# from sklearn.metrics import mean_squared_error
 
 '''
 coverage run test_kriging.py
