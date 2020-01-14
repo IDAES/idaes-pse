@@ -13,7 +13,7 @@
 import sys
 import os
 import io
-sys.path.append(os.path.abspath('..')) # current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
+sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 
 
 from idaes.surrogate.pysmo.kriging import KrigingModel, ResultReport, MyBounds
