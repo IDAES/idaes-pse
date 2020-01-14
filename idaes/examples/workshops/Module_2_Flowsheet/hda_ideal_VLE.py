@@ -39,6 +39,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
                                              number_unfixed_variables
 from idaes.core.util.misc import extract_data
+from idaes.core.util.constants import Constants as const
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -117,12 +118,6 @@ class HDAParameterData(PhysicalParameterBlock):
             mutable=False,
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature [K]')
-
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -638,8 +633,8 @@ class IdealStateBlockData(StateBlockData):
             if p == 'Vap':
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j] - \
-                        b._params.gas_const*(b.temperature -
-                                             b._params.temeprature_ref)
+                        const.gas_constant*(b.temperature -
+                                            b._params.temeprature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j]
@@ -969,15 +964,15 @@ class IdealStateBlockData(StateBlockData):
                       (b.temperature - b._params.temperature_ref)
                     + b._params.cp_ig['Liq', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase_comp['Liq', j]*b.pressure /
-                    b._params.pressure_ref))
+                const.gas_constant * log(
+                        b.mole_frac_phase_comp['Liq', j]*b.pressure /
+                        b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
     def _dens_mol_vap(b):
         return b.pressure == (b.dens_mol_phase['Vap'] *
-                              b._params.gas_const *
+                              const.gas_constant *
                               b.temperature)
 
     def _fug_vap(self):
@@ -1033,6 +1028,6 @@ class IdealStateBlockData(StateBlockData):
                       (b.temperature - b._params.temperature_ref)
                     + b._params.cp_ig['Vap', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase_comp['Vap', j]*b.pressure /
-                    b._params.pressure_ref))
+                const.gas_constant * log(
+                        b.mole_frac_phase_comp['Vap', j]*b.pressure /
+                        b._params.pressure_ref))

@@ -63,6 +63,7 @@ from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes import lib_directory
+from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
 
@@ -1007,7 +1008,7 @@ class CubicStateBlockData(StateBlockData):
 
     def bubble_temp_liq(b, j):
         def a(k):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[k])**2 /
                               b._params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_bubble /
@@ -1019,8 +1020,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure/(b._params.gas_const*b.temperature_bubble)**2
-        B = bm*b.pressure/(b._params.gas_const*b.temperature_bubble)
+        A = am*b.pressure/(const.gas_constant*b.temperature_bubble)**2
+        B = bm*b.pressure/(const.gas_constant*b.temperature_bubble)
 
         delta = (2*sqrt(a(j))/am *
                  sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
@@ -1036,7 +1037,7 @@ class CubicStateBlockData(StateBlockData):
 
     def dew_temp_liq(b, j):
         def a(k):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[k])**2 /
                               b._params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_dew /
@@ -1048,8 +1049,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b._mole_frac_tdew[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure/(b._params.gas_const*b.temperature_dew)**2
-        B = bm*b.pressure/(b._params.gas_const*b.temperature_dew)
+        A = am*b.pressure/(const.gas_constant*b.temperature_dew)**2
+        B = bm*b.pressure/(const.gas_constant*b.temperature_dew)
 
         delta = (2*sqrt(a(j))/am *
                  sum(b._mole_frac_tdew[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
@@ -1070,8 +1071,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure_bubble/(b._params.gas_const*b.temperature)**2
-        B = bm*b.pressure_bubble/(b._params.gas_const*b.temperature)
+        A = am*b.pressure_bubble/(const.gas_constant*b.temperature)**2
+        B = bm*b.pressure_bubble/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b._params.kappa[j, i])
@@ -1092,8 +1093,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b._mole_frac_pdew[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure_dew/(b._params.gas_const*b.temperature)**2
-        B = bm*b.pressure_dew/(b._params.gas_const*b.temperature)
+        A = am*b.pressure_dew/(const.gas_constant*b.temperature)**2
+        B = bm*b.pressure_dew/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b._mole_frac_pdew[i]*sqrt(b.a[i]) *
@@ -1139,7 +1140,7 @@ class CubicStateBlockData(StateBlockData):
 
     def bubble_temp_vap(b, j):
         def a(k):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[k])**2 /
                               b._params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_bubble /
@@ -1151,8 +1152,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b._mole_frac_tbub[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure/(b._params.gas_const*b.temperature_bubble)**2
-        B = bm*b.pressure/(b._params.gas_const*b.temperature_bubble)
+        A = am*b.pressure/(const.gas_constant*b.temperature_bubble)**2
+        B = bm*b.pressure/(const.gas_constant*b.temperature_bubble)
 
         delta = (2*sqrt(a(j))/am *
                  sum(b._mole_frac_tbub[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
@@ -1168,7 +1169,7 @@ class CubicStateBlockData(StateBlockData):
 
     def dew_temp_vap(b, j):
         def a(k):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[k])**2 /
                               b._params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_dew /
@@ -1180,8 +1181,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure/(b._params.gas_const*b.temperature_dew)**2
-        B = bm*b.pressure/(b._params.gas_const*b.temperature_dew)
+        A = am*b.pressure/(const.gas_constant*b.temperature_dew)**2
+        B = bm*b.pressure/(const.gas_constant*b.temperature_dew)
 
         delta = (2*sqrt(a(j))/am *
                  sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
@@ -1202,8 +1203,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b._mole_frac_pbub[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure_bubble/(b._params.gas_const*b.temperature)**2
-        B = bm*b.pressure_bubble/(b._params.gas_const*b.temperature)
+        A = am*b.pressure_bubble/(const.gas_constant*b.temperature)**2
+        B = bm*b.pressure_bubble/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b._mole_frac_pbub[i]*sqrt(b.a[i]) *
@@ -1225,8 +1226,8 @@ class CubicStateBlockData(StateBlockData):
                  for i in b._params.component_list)
         bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
 
-        A = am*b.pressure_dew/(b._params.gas_const*b.temperature)**2
-        B = bm*b.pressure_dew/(b._params.gas_const*b.temperature)
+        A = am*b.pressure_dew/(const.gas_constant*b.temperature)**2
+        B = bm*b.pressure_dew/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b._params.kappa[j, i])
@@ -1273,14 +1274,14 @@ class CubicStateBlockData(StateBlockData):
                        doc='EoS S factor')
 
         def func_b(b, j):
-            return b.EoS_Bc*b._params.gas_const *\
+            return b.EoS_Bc*const.gas_constant *\
                    b._params.temperature_crit[j]/b._params.pressure_crit[j]
         blk.b = Param(blk._params.component_list,
                       initialize=func_b,
                       doc='Component b coefficient')
 
         def func_a(b, j):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[j])**2 /
                               b._params.pressure_crit[j]) *
                     ((1+b.fw[j]*(1-sqrt(b.temperature /
@@ -1290,7 +1291,7 @@ class CubicStateBlockData(StateBlockData):
                            doc='Component a coefficient')
 
         def func_a_eq(b, j):
-            return (b.omegaA*((b._params.gas_const *
+            return (b.omegaA*((const.gas_constant *
                                b._params.temperature_crit[j])**2 /
                               b._params.pressure_crit[j]) *
                     ((1+b.fw[j]*(1-sqrt(b._teq /
@@ -1322,22 +1323,22 @@ class CubicStateBlockData(StateBlockData):
 
         def rule_A(b, p):
             return (b.am[p]*b.pressure /
-                    (b._params.gas_const*b.temperature)**2)
+                    (const.gas_constant*b.temperature)**2)
         blk.A = Expression(blk._params.phase_list, rule=rule_A)
 
         def rule_B(b, p):
             return (b.bm[p]*b.pressure /
-                    (b._params.gas_const*b.temperature))
+                    (const.gas_constant*b.temperature))
         blk.B = Expression(blk._params.phase_list, rule=rule_B)
 
         def rule_A_eq(b, p):
             return (b._am_eq[p]*b.pressure /
-                    (b._params.gas_const*b._teq)**2)
+                    (const.gas_constant*b._teq)**2)
         blk._A_eq = Expression(blk._params.phase_list, rule=rule_A_eq)
 
         def rule_B_eq(b, p):
             return (b.bm[p]*b.pressure /
-                    (b._params.gas_const*b._teq))
+                    (const.gas_constant*b._teq))
         blk._B_eq = Expression(blk._params.phase_list, rule=rule_B_eq)
 
         blk.proc_Z_liq = ExternalFunction(library=_so,
@@ -1371,7 +1372,7 @@ class CubicStateBlockData(StateBlockData):
 
         def rule_dadT(b, p):
             # See pg. 102 in Properties of Gases and Liquids
-            return -((b._params.gas_const/2)*sqrt(b.omegaA) *
+            return -((const.gas_constant/2)*sqrt(b.omegaA) *
                      sum(sum(b.mole_frac_phase_comp[p, i] *
                              b.mole_frac_phase_comp[p, j] *
                              (1-b._params.kappa[i, j]) *
@@ -1406,11 +1407,11 @@ class CubicStateBlockData(StateBlockData):
 
     def _vol_mol_cubic(b, p):
         return (b.pressure*b.vol_mol_phase[p] ==
-                b.compress_fact_phase[p]*b._params.gas_const*b.temperature)
+                b.compress_fact_phase[p]*const.gas_constant*b.temperature)
 
     def _dens_mol_cubic(b, p):
         return b.pressure == (b.dens_mol_phase[p]*b.compress_fact_phase[p] *
-                              b._params.gas_const*b.temperature)
+                              const.gas_constant*b.temperature)
 
     def _dens_mass_cubic(b, p):
         return b.dens_mass_phase[p] == b.dens_mol_phase[p]*b.mw_phase[p]
@@ -1450,7 +1451,7 @@ class CubicStateBlockData(StateBlockData):
         return (((b.temperature*b.dadT[p] - b.am[p]) *
                  log((2*b.compress_fact_phase[p] + b.B[p]*(b.EoS_u+b.EoS_p)) /
                      (2*b.compress_fact_phase[p] + b.B[p]*(b.EoS_u-b.EoS_p))) +
-                 b._params.gas_const*b.temperature *
+                 const.gas_constant*b.temperature *
                  (b.compress_fact_phase[p]-1)*b.bm[p]*b.EoS_p) /
                 (b.bm[p]*b.EoS_p) + b._enth_mol_ig(p))
 
@@ -1461,11 +1462,11 @@ class CubicStateBlockData(StateBlockData):
 
     def _entr_mol_cubic(b, p):
         # See pg. 102 in Properties of Gases and Liquids
-        return ((b._params.gas_const*log(
+        return ((const.gas_constant*log(
                     (b.compress_fact_phase[p]-b.B[p]) /
                     b.compress_fact_phase[p])*b.bm[p]*b.EoS_p +
-                 b._params.gas_const*log(b.compress_fact_phase[p] *
-                                         b._params.pressure_ref/b.pressure) *
+                 const.gas_constant*log(b.compress_fact_phase[p] *
+                                  b._params.pressure_ref/b.pressure) *
                  b.bm[p]*b.EoS_p +
                  b.dadT[p]*log((2*b.compress_fact_phase[p] +
                                 b.B[p]*(b.EoS_u + b.EoS_p)) /

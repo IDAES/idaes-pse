@@ -19,9 +19,7 @@ Assumes dilute solutions with properties of H2O.
 from pyomo.environ import (Constraint,
                            exp,
                            Param,
-                           PositiveReals,
                            Set,
-                           value,
                            Var)
 
 # Import IDAES cores
@@ -31,6 +29,7 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
 
@@ -91,12 +90,6 @@ class ReactionParameterData(ReactionParameterBlock):
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
                             doc="Heat of reaction [J/mol]")
-
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
 
     @classmethod
     def define_metadata(cls, obj):
@@ -171,7 +164,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             self.arrhenius_eqn = Constraint(
                     expr=self.k_rxn == self._params.arrhenius *
                     exp(-self._params.energy_activation /
-                        (self._params.gas_const*self.temperature_ref)))
+                        (const.gas_constant*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.k_rxn)
