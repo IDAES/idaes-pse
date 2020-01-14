@@ -18,12 +18,12 @@ import pandas as pd
 import numpy as np
 import os
 
-datadir = os.path.join(
-    PYOMO_ROOT_DIR, 'pyomo', 'contrib', 'surrogates', 'examples', 'data_files')
+# datadir = os.path.join(
+    # PYOMO_ROOT_DIR, 'idaes', 'surrogate', 'pysmo', 'examples', 'data_files')
 
 # Load XY data from high fidelity model from tab file using Pandas. Y
 # data must be in the last column.
-data = pd.read_csv(os.path.join(datadir, 'three_humpback_data_v4.csv'),
+data = pd.read_csv(os.path.join('./data_files', 'three_humpback_data_v4.csv'),
                    header=0, index_col=0)
 
 # data = pd.read_excel('matyas_function.xls', header=0, index_col=0)

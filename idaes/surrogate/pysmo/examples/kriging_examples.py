@@ -19,11 +19,11 @@ import os
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 
-data_dir = os.path.join(
-    PYOMO_ROOT_DIR, 'pyomo', 'contrib', 'surrogates', 'examples', 'data_files')
+# data_dir = os.path.join(
+    # PYOMO_ROOT_DIR, 'pyomo', 'contrib', 'surrogates', 'examples', 'data_files')
 
 
-data = pd.read_csv(os.path.join(data_dir,'six_hump_data_2400.txt'),
+data = pd.read_csv(os.path.join('./data_files', six_hump_data_2400.txt'),
                    sep='\s+', header=None, index_col=None)
 sd = sp.FeatureScaling()
 data_scaled_x, data_min, data_max = sd.data_scaling_minmax(data.values[:, :-1])
