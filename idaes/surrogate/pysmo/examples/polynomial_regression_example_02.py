@@ -10,8 +10,8 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from pyomo.contrib.polynomial_regression import *
-from pyomo.contrib.sampling import sampling as sp
+from idaes.surrogate.pysmo.polynomial_regression import *
+from idaes.surrogate.pysmo.sampling import sampling as sp
 from pyomo.common.fileutils import PYOMO_ROOT_DIR
 import pandas as pd
 import numpy as np

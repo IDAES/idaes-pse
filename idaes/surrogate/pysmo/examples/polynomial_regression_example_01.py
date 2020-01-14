@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import pyomo.environ as pyo
-from pyomo.contrib.surrogates.polynomial_regression import *
-from pyomo.contrib.surrogates import sampling as sp
+from idaes.surrogate.pysmo.polynomial_regression import *
+from idaes.surrogate.pysmo import sampling as sp
 from pyomo.common.fileutils import PYOMO_ROOT_DIR
 import pandas as pd
 import numpy as np

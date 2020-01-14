@@ -13,7 +13,7 @@
 import pandas as pd
 import os
 from pyomo.common.fileutils import PYOMO_ROOT_DIR
-from pyomo.contrib.surrogates import sampling as sp
+from idaes.surrogate.pysmo import sampling as sp
 from matplotlib import pyplot as plt
 
 os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'data_files')
