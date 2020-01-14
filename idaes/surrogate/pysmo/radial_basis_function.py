@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 from __future__ import division, print_function
-from future.utils import string_types
+from six import string_types
 
 import random
 from builtins import int, str
@@ -21,7 +21,7 @@ from pyomo.environ import *
 import scipy.optimize as opt
 import warnings
 import itertools
-from sampling import FeatureScaling as fs
+from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
 
 
 """
