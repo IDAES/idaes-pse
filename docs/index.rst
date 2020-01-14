@@ -53,6 +53,7 @@ Contents
     vis/index
     dmf/index
     apps/index
+	pysmo/index
     version
     tutorials
     jupyterlab/index
