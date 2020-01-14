@@ -107,7 +107,8 @@ an optional step.
 
     pip install idaes-pse
 
-2. Run the idaes command to install the compiled binaries::
+2. Run the :doc:`idaes get-extensions command <../commands/get_extensions>`
+to install the compiled binaries::
 
     idaes get-extensions
 
