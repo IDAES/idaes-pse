@@ -112,3 +112,17 @@ an objective:
    >>> result = opt.solve(instance, tee=True)
 
 Further details about *pysmo.polynomial_regression* may be found by consulting the examples or reading the paper [...]
+
+.. module:: idaes.surrogate.pysmo.polynomial_regression
+
+Available Methods
+------------------
+
+.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.FeatureScaling
+    :members:
+
+.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.PolynomialRegression
+    :members: __init__, get_feature_vector, user_defined_terms, poly_training, poly_predict_output
+	
+.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.ResultReport
+    :members: 

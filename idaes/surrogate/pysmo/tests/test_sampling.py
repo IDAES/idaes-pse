@@ -13,7 +13,7 @@
 import sys, os
 sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
 
-from sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
+from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling, UniformSampling, HaltonSampling, HammersleySampling, CVTSampling, SamplingMethods, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest

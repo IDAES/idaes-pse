@@ -16,7 +16,7 @@ import io
 sys.path.append(os.path.abspath('..')) # current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
 
 
-from kriging import KrigingModel, ResultReport, MyBounds
+from idaes.surrogate.pysmo.kriging import KrigingModel, ResultReport, MyBounds
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest

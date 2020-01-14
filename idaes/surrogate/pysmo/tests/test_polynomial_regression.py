@@ -13,7 +13,7 @@
 import sys, os
 sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
 
-from polynomial_regression import PolynomialRegression, FeatureScaling
+from idaes.surrogate.pysmo.polynomial_regression import PolynomialRegression, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest

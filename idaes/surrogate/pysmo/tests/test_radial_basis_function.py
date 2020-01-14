@@ -14,7 +14,7 @@ import sys
 import os
 sys.path.append(os.path.abspath('..'))# current dic is ~/contrib/surrogates/tests and append ~/contrib/surrogates/
 
-from radial_basis_function import RadialBasisFunctions, FeatureScaling
+from idaes.surrogate.pysmo.radial_basis_function import RadialBasisFunctions, FeatureScaling
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
