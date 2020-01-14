@@ -113,14 +113,10 @@ an optional step.
 
    .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
 
-3. Run the idaes command to download the example files into "examples"::
+3. Run the :doc:`idaes get-examples command <../commands/get_examples>` to download
+   and install the example files::
 
     idaes get-examples
-
-You can choose a different directory name by providing it to the `-d/--dir` option.
-For example::
-
-    idaes get-examples --dir Documents/IDAES/examples
 
 
 4. Run tests::
