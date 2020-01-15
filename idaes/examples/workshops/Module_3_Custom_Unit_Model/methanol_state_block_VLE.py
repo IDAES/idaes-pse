@@ -33,6 +33,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.constants import Constants as const
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -345,7 +346,7 @@ class StateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return 10.0 * self.pressure == (self.density_mol[p] *
-                                         self._params.gas_constant *
+                                         gas_constant*1e-3 *
                                          self.temperature)
             elif p == "Liq":
                 return self.density_mol[p] == 11.1  # kgmol/m3 # dummy value
@@ -394,7 +395,7 @@ class StateBlockData(StateBlockData):
             return self.density_mol[p] * self._params.Cp * self.temperature
         elif p == "Vap":
             return (self.density_mol[p] * (
-                    self._params.Cp - self._params.gas_const) *
+                    self._params.Cp - self._params.gas_constant*1e-3) *
                     self.temperature)
 
     def default_material_balance_type(self):

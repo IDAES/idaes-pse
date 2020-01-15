@@ -59,7 +59,9 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
+
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -295,8 +297,10 @@ class _ActivityCoeffStateBlock(StateBlock):
                     ("Liq", "Vap")) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ("Vap", "Liq")):
+
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+
         else:
             res="skipped"
         init_log.info("Initialization Step 1 {}.".format(idaeslog.condition(res)))
@@ -361,6 +365,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk.release_state(flags, outlvl=outlvl)
 
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
@@ -854,7 +859,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self._params.gas_const *
+                                         const.gas_constant *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 _log.warning("Using a place holder for liquid density "
@@ -896,8 +901,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             if p == "Vap":
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j] - \
-                    b._params.gas_const * (b.temperature -
-                                           b._params.temperature_ref)
+                    const.gas_constant * \
+                    (b.temperature - b._params.temperature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j]
@@ -1035,9 +1040,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                (self.temperature - self._params.temperature_reference)
                 + self._params.CpIG['Vap', j, 'A'] *
                 log(self.temperature / self._params.temperature_reference)) -
-            self._params.gas_const * log(self.mole_frac_phase_comp['Vap', j] *
-                                         self.pressure /
-                                         self._params.pressure_reference))
+            const.gas_constant * log(self.mole_frac_phase_comp['Vap', j] *
+                                     self.pressure /
+                                     self._params.pressure_reference))
 
     def _gibbs_mol_phase_comp(self):
         self.gibbs_mol_phase_comp = Var(
