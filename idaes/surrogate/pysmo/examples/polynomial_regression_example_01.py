@@ -23,7 +23,7 @@ import os
 
 # Load XY data from high fidelity model from tab file using Pandas. Y
 # data must be in the last column.
-data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'three_humpback_data_v4.csv'),
+data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'three_humpback_data_v4.csv'),
                    header=0, index_col=0)
 
 # data = pd.read_excel('matyas_function.xls', header=0, index_col=0)

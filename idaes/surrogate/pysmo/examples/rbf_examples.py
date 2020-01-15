@@ -19,7 +19,7 @@ import os
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 
-datadir = os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'data_files')
+# datadir = os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'data_files')
 
 # =====================================================================================================================
 #
@@ -29,11 +29,11 @@ datadir = os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'dat
 # - Fit functions and generate contour plots
 # """
 #
-data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'three_humpback_data_v4.csv'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'matyas_function.xls'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'six_hump_function_data.tab'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'cozad_function_data_v2.txt'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'exponential_function_data.csv'), header=0, index_col=0)
+data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'three_humpback_data_v4.csv'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'matyas_function.xls'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'six_hump_function_data.tab'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'cozad_function_data_v2.txt'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'exponential_function_data.csv'), header=0, index_col=0)
 
 sd = sp.FeatureScaling()
 data_scaled, data_min, data_max = sd.data_scaling_minmax(data)

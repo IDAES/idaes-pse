@@ -16,11 +16,11 @@ from pyomo.common.fileutils import PYOMO_ROOT_DIR
 from idaes.surrogate.pysmo import sampling as sp
 from matplotlib import pyplot as plt
 
-os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'data_files')
+# os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'data_files')
 
 # Comparison of sampling methods with plots
 
-data = pd.read_csv('six_hump_function_data.tab', sep='\t', header=0, index_col=0)
+data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'six_hump_function_data.tab'), sep='\t', header=0, index_col=0)
 bounds_list = [[-1, -1], [1, 1]]
 
 b1 = sp.LatinHypercubeSampling(data, 100, sampling_type='selection')
