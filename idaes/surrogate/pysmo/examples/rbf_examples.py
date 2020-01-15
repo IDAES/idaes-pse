@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.surrogate.pysmo.radial_basis_functions import *
+from idaes.surrogate.pysmo.radial_basis_function import *
 from idaes.surrogate.pysmo import sampling as sp
 from pyomo.common.fileutils import PYOMO_ROOT_DIR
 import pandas as pd
