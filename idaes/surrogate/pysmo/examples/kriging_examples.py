@@ -31,7 +31,7 @@ y_r = data.values[:, -1]
 data_scaled = np.concatenate(
     (data_scaled_x, y_r.reshape(y_r.shape[0], 1)), axis=1)
 no_training_samples = 100
-b = sp.HammersleySampling(data_scaled, no_training_samples)
+b = sp.HammersleySampling(data_scaled, no_training_samples, 'selection')
 training_data = b.sample_points()
 
 # Kriging training

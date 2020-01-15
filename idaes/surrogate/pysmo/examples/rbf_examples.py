@@ -38,7 +38,7 @@ data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'th
 sd = sp.FeatureScaling()
 data_scaled, data_min, data_max = sd.data_scaling_minmax(data)
 no_training_samples = 200
-b = sp.HammersleySampling(data_scaled, no_training_samples)
+b = sp.HammersleySampling(data_scaled, no_training_samples, 'selection')
 training_data = b.sample_points()
 
 f1 = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization=True)

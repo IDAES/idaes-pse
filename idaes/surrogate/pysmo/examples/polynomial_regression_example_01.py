@@ -31,7 +31,7 @@ data = pd.read_csv(os.path.join('idaes/surrogate/pysmo/examples/data_files', 'th
 # data = pd.read_csv('cozad_function_data_v2.txt', sep='\s+', header=0, index_col=0)
 # data = pd.read_csv('mass_spring_data.txt', sep='\s+', header=None, index_col=None)
 
-b = sp.LatinHypercubeSampling(data, 75)
+b = sp.LatinHypercubeSampling(data, 75, 'selection')
 c = b.sample_points()
 
 # Carry out polynomial regression, feeding in the original data and the
