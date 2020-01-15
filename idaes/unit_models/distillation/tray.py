@@ -24,7 +24,7 @@ have a side vapor draw if required.
 
 __author__ = "Jaffer Ghouse"
 
-import logging
+import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -45,7 +45,7 @@ from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Tray")
@@ -497,10 +497,18 @@ see property package for documentation.}"""))
                         "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed={}, state_args_liq={},
-                   state_args_vap={}, solver=None, outlvl=0):
+                   state_args_vap={}, solver=None, outlvl=idaeslog.NOTSET):
+
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        init_log.info("Begin initialization.")
 
         if solver is None:
-            # log warning that initialize method uses default solver
+            # TODO:log warning that initialize method
+            # uses default solver
+            init_log.warning("Solver not provided. Default solver(ipopt) "
+                             " being used for initialization.")
             solver = get_default_solver()
 
         if self.config.has_liquid_side_draw:
@@ -547,7 +555,11 @@ see property package for documentation.}"""))
 
         self.properties_out.initialize(outlvl=outlvl)
 
-        solver_output = solver.solve(self)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        )
 
         if solver_output.solver.termination_condition == \
                 TerminationCondition.optimal:
