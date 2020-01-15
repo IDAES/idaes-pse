@@ -29,11 +29,11 @@ datadir = os.path.join(PYOMO_ROOT_DIR, 'contrib', 'surrogates', 'examples', 'dat
 # - Fit functions and generate contour plots
 # """
 #
-data = pd.read_csv(os.path.join(datadir, 'three_humpback_data_v4.csv'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(datadir, 'matyas_function.xls'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(datadir, 'six_hump_function_data.tab'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(datadir, 'cozad_function_data_v2.txt'), header=0, index_col=0)
-# data = pd.read_csv(os.path.join(datadir, 'exponential_function_data.csv'), header=0, index_col=0)
+data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'three_humpback_data_v4.csv'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'matyas_function.xls'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'six_hump_function_data.tab'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'cozad_function_data_v2.txt'), header=0, index_col=0)
+# data = pd.read_csv(os.path.join(os.getcwd(), 'data_files', 'exponential_function_data.csv'), header=0, index_col=0)
 
 sd = sp.FeatureScaling()
 data_scaled, data_min, data_max = sd.data_scaling_minmax(data)
@@ -120,42 +120,6 @@ fig.colorbar(img2, ax=ax2)
 # plt.show()
 # # =====================================================================================================================
 
-# # 3. Boiler Problem RBF surrogate generation
-#
-# """
-# Boiler problem for IDAES project
-# - 200 samples supplied by Miguel for 15 variables and about 15 measured outputs
-# - Training done with 150 samples (75%) of data, the remaining used as test data for the RBF fit obtained
-# - Samples for training selected randomly.
-# """
-#
-# boiler_data = pd.read_csv('C:/Users/OOAmusat/PycharmProjects/WorkProjects/github_files/data_files/boiler_data_full.csv', header=0, index_col=0)
-# x = boiler_data.iloc[:, 0:15]
-# y = boiler_data.iloc[:, 21]  #31]
-# h1_data = pd.concat([x, y], axis=1)
-#
-# sd = sp.FeatureScaling()
-# h1_data_scaled, data_min, data_max = sd.data_scaling_minmax(h1_data)
-# no_training_samples = 150
-#
-# # np.random.shuffle(h1_data_scaled)
-# # training_data = h1_data_scaled[:no_training_samples, :]
-# # test_data = h1_data_scaled[no_training_samples:, :]
-# h1_data_scaled = h1_data_scaled.sample(frac=1).reset_index(drop=True)
-# training_data = h1_data_scaled[:no_training_samples]
-# test_data = h1_data_scaled[no_training_samples:]
-#
-# f1 = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization=True)
-# results_pyomo = f1.rbf_training()
-# p = f1.get_feature_vector()
-# p.pprint()
-# y_predicted_pyomo = f1.rbf_predict_output(results_pyomo.weights, test_data.values[:, :-1], results_pyomo.centres, results_pyomo.sigma, results_pyomo.regularization_parameter)
-# r2_pyomo = f1.r2_calculation(test_data.values[:, -1], y_predicted_pyomo)
-#
-# list_vars = []
-# for i in p.keys():
-#     list_vars.append(p[i])
-# print('\nThe RBF expression is: \n',results_pyomo.rbf_generate_expression(list_vars))
 
 # # =====================================================================================================================
 
