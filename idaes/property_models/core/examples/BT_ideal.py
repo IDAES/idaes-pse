@@ -119,12 +119,6 @@ class BTIdealParameterData(GenericParameterData):
             initialize=temperature_crit_comp_data,
             doc='Critical temperature [K]')
 
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas constant [J/mol.K]')
-
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
         mw_comp_data = {'benzene': 78.1136E-3,
