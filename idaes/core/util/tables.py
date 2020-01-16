@@ -21,6 +21,27 @@ from idaes.core.util.exceptions import ConfigurationError
 __author__ = "John Eslick, Andrew Lee"
 
 
+def arcs_to_stream_dict(blk, descend_into=True):
+    """
+    Creates a stream dictionary from the Arcs in a mode, using the Arc names as
+    keys. This can be used to automate the creation of the streams dictornay
+    needed for the ``create_stream_table_dataframe()`` and  ``stream_states_dict()``
+    functions.
+
+    Args:
+        m (pyomo.environ._BlockData): Pyomo model to search for Arcs
+        descend_into (bool): If True, search subblocks for Arcs as well. The
+            default is True.
+
+    Returns:
+        Dictionary with Arc names as keays and the Arcs as values.
+
+    """
+    return dict(
+        (c.getname(), c) for c in blk.component_objects(Arc, descend_into=descend_into)
+    )
+
+
 def stream_states_dict(streams, time_point=0):
     """
     Method to create a dictionary of state block representing stream states.
@@ -43,7 +64,7 @@ def stream_states_dict(streams, time_point=0):
         if i is None:
             key = n
         else:
-            key = "{}[{}]".format(n,i)
+            key = "{}[{}]".format(n, i)
         stream_dict[key] = sb
 
     for n in streams.keys():
@@ -65,17 +86,17 @@ def stream_states_dict(streams, time_point=0):
                 _stream_dict_add(sb, n)
         except (AttributeError, KeyError):
             raise TypeError(
-                    f"Unrecognised component provided in stream argument "
-                    f"{streams[n]}. get_stream_table_attributes only "
-                    f"supports Arcs, Ports or StateBlocks.")
+                f"Unrecognised component provided in stream argument "
+                f"{streams[n]}. get_stream_table_attributes only "
+                f"supports Arcs, Ports or StateBlocks."
+            )
 
     return stream_dict
 
 
-def create_stream_table_dataframe(streams,
-                                  true_state=False,
-                                  time_point=0,
-                                  orient='columns'):
+def create_stream_table_dataframe(
+    streams, true_state=False, time_point=0, orient="columns"
+):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
     takes a dict with name keys and stream values. Use an OrderedDict to list
@@ -111,8 +132,7 @@ def create_stream_table_dataframe(streams,
                 if i is None:
                     stream_attributes[key][k] = value(disp_dict[k][i])
                 else:
-                    stream_attributes[key][k+" "+str(i)] = \
-                        value(disp_dict[k][i])
+                    stream_attributes[key][k + " " + str(i)] = value(disp_dict[k][i])
 
     return DataFrame.from_dict(stream_attributes, orient=orient)
 
@@ -125,15 +145,12 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
     # Set some default values for keyword arguments
     na_rep = kwargs.pop("na_rep", "-")
     justify = kwargs.pop("justify", "center")
-    float_format = kwargs.pop(
-            "float_format",
-            lambda x: "{:#.5g}".format(x))
+    float_format = kwargs.pop("float_format", lambda x: "{:#.5g}".format(x))
 
     # Print stream table
-    return stream_table.to_string(na_rep=na_rep,
-                                  justify=justify,
-                                  float_format=float_format,
-                                  **kwargs)
+    return stream_table.to_string(
+        na_rep=na_rep, justify=justify, float_format=float_format, **kwargs
+    )
 
 
 def _get_state_from_port(port, time_point):
@@ -147,10 +164,11 @@ def _get_state_from_port(port, time_point):
         # Port was not created by IDAES add_port methods. Return exception for
         # the user to fix.
         raise ConfigurationError(
-                f"Port {port.name} does not have a _state_block attribute, "
-                f"thus cannot determine StateBlock to use for collecting data."
-                f" Please provide the associated StateBlock instead, or use "
-                f"the IDAES add_port methods to create the Port.")
+            f"Port {port.name} does not have a _state_block attribute, "
+            f"thus cannot determine StateBlock to use for collecting data."
+            f" Please provide the associated StateBlock instead, or use "
+            f"the IDAES add_port methods to create the Port."
+        )
 
 
 def generate_table(blocks, attributes, heading=None):
@@ -175,7 +193,7 @@ def generate_table(blocks, attributes, heading=None):
     if heading is None:
         heading = attributes
     st = DataFrame(columns=heading)
-    row = [None]*len(attributes)  # not a big deal but save time on realloc
+    row = [None] * len(attributes)  # not a big deal but save time on realloc
     for key, s in blocks.items():
         for i, a in enumerate(attributes):
             try:
