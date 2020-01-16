@@ -23,18 +23,18 @@ __author__ = "John Eslick, Andrew Lee"
 
 def arcs_to_stream_dict(blk, descend_into=True):
     """
-    Creates a stream dictionary from the Arcs in a mode, using the Arc names as
-    keys. This can be used to automate the creation of the streams dictornay
+    Creates a stream dictionary from the Arcs in a model, using the Arc names as
+    keys. This can be used to automate the creation of the streams dictionary
     needed for the ``create_stream_table_dataframe()`` and  ``stream_states_dict()``
     functions.
 
     Args:
-        m (pyomo.environ._BlockData): Pyomo model to search for Arcs
+        blk (pyomo.environ._BlockData): Pyomo model to search for Arcs
         descend_into (bool): If True, search subblocks for Arcs as well. The
             default is True.
 
     Returns:
-        Dictionary with Arc names as keays and the Arcs as values.
+        Dictionary with Arc names as keys and the Arcs as values.
 
     """
     return dict(
