@@ -25,6 +25,7 @@ from scipy.spatial import distance
 import scipy.optimize as opt
 import scipy.stats as stats
 # from sklearn.metrics import mean_squared_error
+import pytest
 
 '''
 coverage run test_kriging.py
@@ -113,24 +114,24 @@ class KrigingModelTestCases(unittest.TestCase):
     
     def test__init__01(self):
         KrigingClass = KrigingModel(self.test_data_numpy)
-        self.assertEqual(KrigingClass.num_grads, True)
-        self.assertEqual(KrigingClass.regularization, True)
+        assert KrigingClass.num_grads == True
+        assert KrigingClass.regularization == True
     
     def test__init__02(self):
         KrigingClass = KrigingModel(self.test_data_pandas)
-        self.assertEqual(KrigingClass.num_grads, True)
-        self.assertEqual(KrigingClass.regularization, True)
+        assert KrigingClass.num_grads == True
+        assert KrigingClass.regularization == True
     
     def test__init__03(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             KrigingClass = KrigingModel(list(self.test_data_numpy))
     
     def test__init__04(self):
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             KrigingClass = KrigingModel(self.test_data_numpy,numerical_gradients=1)
     
     def test__init__05(self):
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             KrigingClass = KrigingModel(self.test_data_numpy,regularization=1)
     
     
@@ -176,7 +177,7 @@ class KrigingModelTestCases(unittest.TestCase):
                                    [ 0.67306158, -1.51792604,  1.82957788]])
         kriging_mean = KrigingClass.kriging_mean(cov_matrix_inv,KrigingClass.y_data)
         kriging_mean_exp =  20.18496
-        self.assertEqual(np.round(kriging_mean_exp,5), np.round(kriging_mean[0][0],5))
+        assert np.round(kriging_mean_exp,5) == np.round(kriging_mean[0][0],5)
 
 
     def test_y_mu_calculation(self):
@@ -199,7 +200,7 @@ class KrigingModelTestCases(unittest.TestCase):
                              [ 16.81504]])
         sigma_sq = KrigingClass.kriging_sd(cov_matrix_inv, y_mu_exp, KrigingClass.y_data.shape[0])
         sigma_sq_exp = 272.84104637
-        self.assertEqual(np.round(sigma_sq_exp,5), np.round(sigma_sq[0][0],5))
+        assert np.round(sigma_sq_exp,5) == np.round(sigma_sq[0][0],5)
     
     
     def test_print_fun(self):
@@ -208,7 +209,7 @@ class KrigingModelTestCases(unittest.TestCase):
         sys.stdout = capturedOutput  
         KrigingClass.print_fun(1, 2, 3.7)
         sys.stdout = sys.__stdout__ 
-        self.assertEqual("at minimum 2.0000 accepted 3\n", capturedOutput.getvalue()) 
+        assert "at minimum 2.0000 accepted 3\n" == capturedOutput.getvalue() 
     
     
     def test_objective_function(self):
@@ -218,7 +219,7 @@ class KrigingModelTestCases(unittest.TestCase):
         conc_log_like = KrigingClass.objective_function(var_vector, KrigingClass.x_data_scaled,  KrigingClass.y_data, p)
 
         conc_log_like_exp = 8.0408619
-        self.assertEqual(np.round(conc_log_like_exp,5), np.round(conc_log_like,5))
+        assert np.round(conc_log_like_exp,5) == np.round(conc_log_like,5)
 
     
     def test_numerical_gradient_01(self):
@@ -242,17 +243,17 @@ class KrigingModelTestCases(unittest.TestCase):
         KrigingClass = KrigingModel(self.training_data[0:3])
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
-        self.assertEqual(len(opt_results), 9)
-        self.assertEqual(len(opt_results.x), 3)
-        self.assertEqual(opt_results.success, True)
+        assert len(opt_results) == 9
+        assert len(opt_results.x) == 3
+        assert opt_results.success == True
     
     def test_parameter_optimization_02(self):
         KrigingClass = KrigingModel(self.training_data[0:3],numerical_gradients=False)
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
-        self.assertEqual(len(opt_results),7)
-        self.assertEqual(len(opt_results.x), 3)
-        self.assertEqual(opt_results.minimization_failures, False)
+        assert len(opt_results) == 7
+        assert len(opt_results.x) == 3
+        assert opt_results.minimization_failures == False
 
 
     def test_optimal_parameter_evaluation(self):
@@ -280,6 +281,7 @@ class KrigingModelTestCases(unittest.TestCase):
         np.testing.assert_array_equal(y_prediction, y_prediction_exp)
         self.assertEqual(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0],ss_error)
         self.assertEqual(np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0]),rmse_error)
+
     
     
     def test_r2_calculation(self):
@@ -290,7 +292,7 @@ class KrigingModelTestCases(unittest.TestCase):
         
         ss_error, rmse_error, y_prediction = KrigingClass.error_calculation(theta, p, mean, cov_inv, y_mu,KrigingClass.x_data_scaled, KrigingClass.y_data)
         r_square = KrigingClass.r2_calculation(KrigingClass.y_data,y_prediction)
-        self.assertEqual(0.999999999999,r_square)
+        assert 0.999999999999 == r_square
 
     
     def test_kriging_predict_output_01(self):
@@ -298,14 +300,14 @@ class KrigingModelTestCases(unittest.TestCase):
         KrigingClass = KrigingModel(self.training_data)
         results = KrigingClass.kriging_training()
         y_pred = KrigingClass.kriging_predict_output(results, KrigingClass.x_data_scaled)
-        self.assertEqual(y_pred.shape[0],KrigingClass.x_data_scaled.shape[0])
+        assert y_pred.shape[0] == KrigingClass.x_data_scaled.shape[0]
 
     def test_kriging_predict_output(self):
         np.random.seed(0)
         KrigingClass = KrigingModel(self.training_data)
         results = KrigingClass.kriging_training()
         y_pred = KrigingClass.kriging_predict_output(results, np.array([0.1, 0.2]))
-        self.assertEqual(y_pred.shape[0],1)
+        assert y_pred.shape[0] == 1
         
     
     def test_kriging_training(self):
@@ -344,13 +346,13 @@ class KrigingModelTestCases(unittest.TestCase):
         KrigingClass = KrigingModel(self.full_data,regularization=False)
         p = KrigingClass.get_feature_vector()
         expected_dict = {'x1': 0, 'x2': 0}
-        self.assertDictEqual(expected_dict, p.extract_values())
+        assert expected_dict == p.extract_values()
     
     def test_get_feature_vector_02(self):
         KrigingClass = KrigingModel(self.training_data,regularization=False)
         p = KrigingClass.get_feature_vector()
         expected_dict = {0: 0, 1: 0}
-        self.assertDictEqual(expected_dict, p.extract_values())
+        assert expected_dict == p.extract_values()
 
 
     def test_kriging_generate_expression(self):

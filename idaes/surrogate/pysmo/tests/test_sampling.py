@@ -17,6 +17,7 @@ from idaes.surrogate.pysmo.sampling import LatinHypercubeSampling, UniformSampli
 import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
+import pytest
 
 '''
 coverage run test_sampling.py
@@ -121,7 +122,7 @@ class FeatureScalingTestCases(unittest.TestCase):
     def test_data_scaling_minmax_05(self):
         # TypeError with list
         input_array = self.test_data_numpy_2d.tolist()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             FeatureScaling.data_scaling_minmax(input_array)
 
     def test_data_scaling_minmax_06(self):
@@ -216,7 +217,7 @@ class FeatureScalingTestCases(unittest.TestCase):
 
         min_array = np.array([[1]])
         max_array = np.array([[5]])
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
     def test_data_unscaling_minmax_06(self):
@@ -227,7 +228,7 @@ class FeatureScalingTestCases(unittest.TestCase):
                 
         min_array = np.array([[1,2,3]])
         max_array = np.array([[5,6,7]])
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             FeatureScaling.data_unscaling_minmax(output_1, min_array, max_array)
 
              
@@ -307,7 +308,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
      
     def test_nearest_neighbour_05(self):
         input_array = self.test_data_numpy_3d
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             closest_point = SamplingMethods.nearest_neighbour(self, input_array, [0.5,0.9,10])
 
 
@@ -343,7 +344,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[0.5],
                                              [10]])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
     
     def test_points_selection_05(self):
@@ -351,7 +352,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[0.5,0.7,10],
                                              [10,0.9,20]])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             equivalent_points = SamplingClass.points_selection(input_array, generated_sample_points)
     
 
@@ -386,7 +387,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[0.5],
                                              [7]])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
     
     def test_sample_point_selection_05(self):
@@ -394,7 +395,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[0.5,1,10],
                                              [7,19,20]])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'selection')
 
     def test_sample_point_selection_06(self):
@@ -432,7 +433,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[],
                                              []])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
     
     def test_sample_point_selection_10(self):
@@ -440,7 +441,7 @@ class SamplingMethodsTestCases(unittest.TestCase):
         generated_sample_points =  np.array([[0.5,1,10,11],
                                              [7,19,10,12]])
         SamplingClass = SamplingMethods()
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             unique_sample_points = SamplingClass.sample_point_selection(input_array, generated_sample_points,sampling_type = 'creation')
 
 
@@ -467,18 +468,18 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     def test_base_conversion_01(self):
         string_representation = SamplingMethods.base_conversion(self, 5, 2)
-        self.assertListEqual(string_representation,['1', '0', '1'])
+        assert string_representation == ['1', '0', '1']
     
     def test_base_conversion_02(self):
         string_representation = SamplingMethods.base_conversion(self, 57, 47)
-        self.assertListEqual(string_representation,['1', '10'])
+        assert string_representation == ['1', '10']
     
     def test_base_conversion_03(self):
         string_representation = SamplingMethods.base_conversion(self, 10, -1)
-        self.assertListEqual(string_representation,['0'])
+        assert string_representation == ['0']
         
     def test_base_conversion_04(self):
-        with self.assertRaises(ZeroDivisionError):
+        with pytest.raises(ZeroDivisionError):
             string_representation = SamplingMethods.base_conversion(self, 10, 0)
 
     # def test_base_conversion_05(self):
@@ -487,11 +488,11 @@ class SamplingMethodsTestCases(unittest.TestCase):
 
     def test_prime_base_to_decimal_01(self):
         string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 2)
-        self.assertEqual(0.25, string_representation)
+        assert 0.25 == string_representation
     
     def test_prime_base_to_decimal_02(self):
         string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 20)
-        self.assertEqual(0.0025, string_representation)
+        assert 0.0025 == string_representation
     
     def test_prime_base_to_decimal_03(self):
         string_representation = SamplingMethods.prime_base_to_decimal(self,['0', '0', '1'], 1)
@@ -592,27 +593,27 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
 
     def test__init__selection_05(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=0, sampling_type="selection")
     
     def test__init__selection_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=-1, sampling_type="selection")
 
     def test__init__selection_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=101, sampling_type="selection")
         
     def test__init__selection_08(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=1.1, sampling_type="selection")
     
     def test__init__selection_09(self):
         input_array = self.test_data_list
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type="selection")
 
 
@@ -636,64 +637,64 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
 
     def test__init__creation_04(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=0, sampling_type='creation')
 
     def test__init__creation_05(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=-1, sampling_type='creation')
     
     def test__init__creation_06(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=1.1, sampling_type='creation')
     
     def test__init__creation_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_08(self):
         input_array = self.test_data_pandas
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_09(self):
         input_array = [[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_10(self):
         input_array = [np.array([1,10,3]),[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_11(self):
         input_array = [[1,10,3],np.array([2,11,4.5])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_12(self):
         input_array = [[1,10],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_13(self):
         input_array = [[2,11,4.5],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='creation')
         
 
 
     def test__init__creation_selection_01(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type=1)
     
     def test__init__creation_selection_02(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=None, sampling_type='jp')
 
 
@@ -703,7 +704,7 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
             LHSClass = LatinHypercubeSampling( input_array, number_of_samples=num_samples, sampling_type="selection")
             minimum, maximum = 10, 100
             out_var_samples = LHSClass.variable_sample_creation(minimum, maximum)
-            self.assertTrue((out_var_samples>=minimum).all() and (out_var_samples<=maximum).all())
+            assert (out_var_samples>=minimum).all() and (out_var_samples<=maximum).all()
             np.testing.assert_array_equal(LHSClass.number_of_samples, out_var_samples.shape[0])
 
 
@@ -712,7 +713,7 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
         for num_samples in [None,10,1]:
             LHSClass = LatinHypercubeSampling(input_array, number_of_samples=num_samples, sampling_type="selection")
             out_sample_points_vector = LHSClass.lhs_points_generation()
-            self.assertTrue((out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all())
+            assert (out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all()
             np.testing.assert_array_equal(LHSClass.number_of_samples, out_sample_points_vector.shape[0])
             np.testing.assert_array_equal(input_array.shape[1] - 1,out_sample_points_vector.shape[1])
 
@@ -729,7 +730,7 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
             sidx2 = vector_of_points.argsort(axis=0)
             out2 = vector_of_points[sidx2, np.arange(sidx2.shape[1])]        
 
-            self.assertTrue((out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all())
+            assert (out_sample_points_vector>=0).all() and (out_sample_points_vector<=1).all()
             np.testing.assert_array_equal(out1, out2)
             np.testing.assert_array_equal(LHSClass.number_of_samples, out_sample_points_vector.shape[0])
             np.testing.assert_array_equal(input_array.shape[1] - 1,out_sample_points_vector.shape[1])
@@ -754,7 +755,7 @@ class LatinHypercubeSamplingTestCases(unittest.TestCase):
             input_array = np.array(input_array)
             for i in range(input_array.shape[1]):
                 var_range = input_array[:,i]
-                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+                assert (unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all()
             np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
     def test_sample_points_03(self):
@@ -837,37 +838,37 @@ class UniformSamplingTestCases(unittest.TestCase):
     
     def test__init__selection_03(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             UniClass = UniformSampling( input_array, np.array([2,5]), sampling_type="selection")
     
     def test__init__selection_04(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             UniClass = UniformSampling( input_array, pd.DataFrame([2,5]), sampling_type="selection")
     
     def test__init__selection_05(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [2], sampling_type="selection")
     
     def test__init__selection_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [2,5,5], sampling_type="selection")
     
     def test__init__selection_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [-2,5], sampling_type="selection")
     
     def test__init__selection_08(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             UniClass = UniformSampling( input_array, [2.1,5], sampling_type="selection")
     
     def test__init__selection_09(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,50], sampling_type="selection")
     
     def test__init__selection_10(self):
@@ -886,17 +887,17 @@ class UniformSamplingTestCases(unittest.TestCase):
     
     def test__init__selection_12(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges=1)
     
     def test__init__selection_13(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,5], sampling_type="selection",edges='x')
     
     def test__init__selection_14(self):
         input_array = list(self.test_data_numpy)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [2,5], sampling_type="selection")
         
 
@@ -914,63 +915,63 @@ class UniformSamplingTestCases(unittest.TestCase):
     
     def test__init__creation_03(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [1,7,5], sampling_type="creation")
     
     def test__init__creation_04(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [-1,7,5], sampling_type="creation")
     
     def test__init__creation_05(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [1.1,7,5], sampling_type="creation")
     
     def test__init__creation_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [2,5], sampling_type="creation")
     
     def test__init__creation_07(self):
         input_array = self.test_data_pandas
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             UniClass = UniformSampling( input_array, [2,5], sampling_type="creation")
 
     def test__init__creation_08(self):
         input_array = [[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
 
     def test__init__creation_09(self):
         input_array = [np.array([1,10,3]),[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
 
     def test__init__creation_10(self):
         input_array = [[1,10,3],np.array([2,11,4.5])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
 
     def test__init__creation_11(self):
         input_array = [[1,10],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
 
     def test__init__creation_12(self):
         input_array = [[2,11,4.5],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,7,5], sampling_type=None)
     
 
     def test__init__creation_selection_01(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,5], sampling_type=1)
     
     def test__init__creation_selection_02(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             UniClass = UniformSampling( input_array, [2,5], sampling_type='jp')
     
 
@@ -994,7 +995,7 @@ class UniformSamplingTestCases(unittest.TestCase):
             input_array = np.array(input_array)
             for i in range(input_array.shape[1]):
                 var_range = input_array[:,i]
-                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+                assert (unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all()
             np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
     
     def test_sample_points_03(self):
@@ -1109,42 +1110,42 @@ class HaltonSamplingTestCases(unittest.TestCase):
 
     def test__init__selection_05(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=0, sampling_type="selection")
     
     def test__init__selection_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=-1, sampling_type="selection")
 
     def test__init__selection_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=101, sampling_type="selection")
         
     def test__init__selection_08(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=1.1, sampling_type="selection")
     
     def test__init__selection_09(self):
         input_array = self.test_data_list
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
 
     def test__init__selection_10(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type=[1,2,3])
 
     def test__init__selection_11(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='choose')
     
     def test__init__selection_12(self):
         input_array = self.test_data_numpy_high
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='selection')
 
 
@@ -1168,58 +1169,58 @@ class HaltonSamplingTestCases(unittest.TestCase):
 
     def test__init__creation_04(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=0, sampling_type='creation')
 
     def test__init__creation_05(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=-1, sampling_type='creation')
     
     def test__init__creation_06(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=1.1, sampling_type='creation')
     
     def test__init__creation_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_08(self):
         input_array = self.test_data_pandas
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_09(self):
         input_array = [[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_10(self):
         input_array = [np.array([1,10,3]),[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_11(self):
         input_array = [[1,10,3],np.array([2,11,4.5])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_12(self):
         input_array = [[1,10],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_13(self):
         input_array = [[2,11,4.5],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type='creation')
 
 
     def test__init__selection(self):
         input_array = self.test_data_numpy_large
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HaltonClass = HaltonSampling( input_array, number_of_samples=None, sampling_type="selection")
     
 
@@ -1242,7 +1243,7 @@ class HaltonSamplingTestCases(unittest.TestCase):
             input_array = np.array(input_array)
             for i in range(input_array.shape[1]):
                 var_range = input_array[:,i]
-                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+                assert (unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all()
             np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
     def test_sample_points_03(self):
@@ -1346,42 +1347,42 @@ class HammersleySamplingTestCases(unittest.TestCase):
 
     def test__init__selection_05(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=0, sampling_type="selection")
     
     def test__init__selection_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=-1, sampling_type="selection")
 
     def test__init__selection_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=101, sampling_type="selection")
         
     def test__init__selection_08(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=1.1, sampling_type="selection")
     
     def test__init__selection_09(self):
         input_array = self.test_data_list
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
 
     def test__init__selection_10(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type=[1,2,3])
 
     def test__init__selection_11(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='choose')
     
     def test__init__selection_12(self):
         input_array = self.test_data_numpy_high
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='selection')
 
     def test__init__creation_01(self):
@@ -1404,58 +1405,58 @@ class HammersleySamplingTestCases(unittest.TestCase):
 
     def test__init__creation_04(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=0, sampling_type='creation')
 
     def test__init__creation_05(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=-1, sampling_type='creation')
     
     def test__init__creation_06(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=1.1, sampling_type='creation')
     
     def test__init__creation_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_08(self):
         input_array = self.test_data_pandas
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_09(self):
         input_array = [[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_10(self):
         input_array = [np.array([1,10,3]),[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_11(self):
         input_array = [[1,10,3],np.array([2,11,4.5])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_12(self):
         input_array = [[1,10],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_13(self):
         input_array = [[2,11,4.5],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type='creation')
 
 
     def test__init__selection(self):
         input_array = self.test_data_numpy_large
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             HammersleyClass = HammersleySampling( input_array, number_of_samples=None, sampling_type="selection")
     
 
@@ -1478,7 +1479,7 @@ class HammersleySamplingTestCases(unittest.TestCase):
             input_array = np.array(input_array)
             for i in range(input_array.shape[1]):
                 var_range = input_array[:,i]
-                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+                assert (unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all()
             np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
     def test_sample_points_03(self):
@@ -1608,37 +1609,37 @@ class CVTSamplingTestCases(unittest.TestCase):
     
     def test__init__selection_05(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=0,tolerance=None, sampling_type="selection")
     
     def test__init__selection_06(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=-1,tolerance=None, sampling_type="selection")
 
     def test__init__selection_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=101,tolerance=None, sampling_type="selection")
         
     def test__init__selection_08(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=1.1,tolerance=None, sampling_type="selection")
     
     def test__init__selection_09(self):
         input_array = self.test_data_list
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CVTClass = CVTSampling( input_array, number_of_samples=None,tolerance=None, sampling_type="selection")
     
     def test__init__selection_10(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.11, sampling_type="selection")
     
     def test__init__selection_11(self):
         input_array = self.test_data_numpy
-        with self.assertWarns(Warning):
+        with pytest.warns(Warning):
             CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=1e-10, sampling_type="selection")
     
     def test__init__selection_12(self):
@@ -1672,37 +1673,37 @@ class CVTSamplingTestCases(unittest.TestCase):
 
     def test__init__creation_04(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=0, tolerance=None,sampling_type='creation')
 
     def test__init__creation_05(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=-1,tolerance=None, sampling_type='creation')
     
     def test__init__creation_06(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=1.1,tolerance=None, sampling_type='creation')
     
     def test__init__creation_07(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None, sampling_type='creation')
 
     def test__init__creation_08(self):
         input_array = self.test_data_pandas
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None, sampling_type='creation')
 
     def test__init__creation_09(self):
         input_array = self.test_data_list
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=0.11, sampling_type="creation")
     
     def test__init__creation_10(self):
         input_array = self.test_data_list
-        with self.assertWarns(Warning):
+        with pytest.warns(Warning):
             CVTClass = CVTSampling( input_array,number_of_samples=None, tolerance=1e-10, sampling_type="creation")
     
     def test__init__creation_11(self):
@@ -1717,67 +1718,67 @@ class CVTSamplingTestCases(unittest.TestCase):
 
     def test__init__creation_13(self):
         input_array = [[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             LHSClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
 
     def test__init__creation_14(self):
         input_array = [np.array([1,10,3]),[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_15(self):
         input_array = [[1,10,3],np.array([2,11,4.5])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_16(self):
         input_array = [[1,10],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
     
     def test__init__creation_1(self):
         input_array = [[2,11,4.5],[2,11,4.5]]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, sampling_type='creation')
         
 
     def test__init__creation_selection_01(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None,sampling_type=1)
     
     def test__init__creation_selection_02(self):
         input_array = self.test_data_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             CVTClass = CVTSampling( input_array, number_of_samples=None, tolerance=None,sampling_type='jp')    
     
     
     def test_random_sample_selection_01(self):
         size = (5,2)
         out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
-        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
-        self.assertTrue(out_random_points.shape == size)
+        assert (out_random_points>=0).all() and (out_random_points<=1).all()
+        assert out_random_points.shape == size
     
     def test_random_sample_selection_02(self):
         size = (0,2)
         out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
-        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
-        self.assertTrue(out_random_points.shape == size)
+        assert (out_random_points>=0).all() and (out_random_points<=1).all()
+        assert out_random_points.shape == size
     
     def test_random_sample_selection_03(self):
         size = (2,0)
         out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
-        self.assertTrue((out_random_points>=0).all() and (out_random_points<=1).all())
-        self.assertTrue(out_random_points.shape == size)
+        assert (out_random_points>=0).all() and (out_random_points<=1).all()
+        assert out_random_points.shape == size
 
     def test_random_sample_selection_04(self):
         size = (5,-1)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
     
     def test_random_sample_selection_05(self):
         size = (5,1.1)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             out_random_points = CVTSampling.random_sample_selection(size[0],size[1])
 
   
@@ -1786,14 +1787,14 @@ class CVTSamplingTestCases(unittest.TestCase):
         v = np.array( [ [5] ])
         expected_output = 2
         output = CVTSampling.eucl_distance(u, v)
-        self.assertEqual(expected_output, output)
+        assert expected_output == output
 
     def test_eucl_distance_02(self):
         u = np.array([ [1, 2] ])
         v = np.array([ [3, 4] ])
         expected_output = 8 ** 0.5
         output = CVTSampling.eucl_distance(u, v)
-        self.assertEqual(expected_output, output)
+        assert expected_output == output
 
     def test_eucl_distance_03(self):
         u = np.array([ [1, 2], [3, 4] ])
@@ -1866,7 +1867,7 @@ class CVTSamplingTestCases(unittest.TestCase):
             input_array = np.array(input_array)
             for i in range(input_array.shape[1]):
                 var_range = input_array[:,i]
-                self.assertTrue((unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all())
+                assert (unique_sample_points[:,i]>=var_range[0]).all() and (unique_sample_points[:,i]<=var_range[1]).all()
             np.testing.assert_array_equal(np.unique(unique_sample_points, axis=0).shape,unique_sample_points.shape)
 
 if __name__ == '__main__':
