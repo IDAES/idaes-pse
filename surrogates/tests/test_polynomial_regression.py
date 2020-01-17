@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 import pyutilib.th as unittest
 from unittest.mock import patch
+import pytest
 
 '''
 coverage run test_polynomial_regression.py
@@ -124,7 +125,7 @@ class FeatureScalingTestCases(unittest.TestCase):
     def test_data_scaling_05(self):
         # TypeError with list
         input_array = self.test_data_numpy_2d.tolist()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             FeatureScaling.data_scaling(input_array)
 
     def test_data_scaling_06(self):
@@ -219,7 +220,7 @@ class FeatureScalingTestCases(unittest.TestCase):
 
         min_array = np.array([[1]])
         max_array = np.array([[5]])
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
     def test_data_unscaling_06(self):
@@ -230,7 +231,7 @@ class FeatureScalingTestCases(unittest.TestCase):
                 
         min_array = np.array([[1,2,3]])
         max_array = np.array([[5,6,7]])
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             FeatureScaling.data_unscaling(output_1, min_array, max_array)
 
 class PolynomialRegressionTestCases(unittest.TestCase):
@@ -434,14 +435,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
 
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
-        self.assertEqual(PolyClass.max_polynomial_order, 5)
-        self.assertEqual(PolyClass.number_of_crossvalidations,3)  # Default number of cross-validations
-        self.assertEqual(PolyClass.no_adaptive_samples, 4)  # Default number of adaptive samples
-        self.assertEqual(PolyClass.fraction_training,0.75)  # Default training split
-        self.assertEqual(PolyClass.max_fraction_training_samples, 0.5)  # Default fraction for the maximum number of training samples
-        self.assertEqual(PolyClass.max_iter, 10)  # Default maximum number of iterations
-        self.assertEqual(PolyClass.solution_method, 'pyomo')  # Default solution_method
-        self.assertEqual(PolyClass.multinomials, 1)  # Default multinomials
+        assert PolyClass.max_polynomial_order == 5
+        assert PolyClass.number_of_crossvalidations == 3  # Default number of cross-validations
+        assert PolyClass.no_adaptive_samples == 4  # Default number of adaptive samples
+        assert PolyClass.fraction_training == 0.75  # Default training split
+        assert PolyClass.max_fraction_training_samples == 0.5  # Default fraction for the maximum number of training samples
+        assert PolyClass.max_iter == 10  # Default maximum number of iterations
+        assert PolyClass.solution_method == 'pyomo'  # Default solution_method
+        assert PolyClass.multinomials == 1  # Default multinomials
     
     def test__init__02(self):       
         original_data_input= self.test_data_pandas
@@ -449,14 +450,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
-        self.assertEqual(PolyClass.max_polynomial_order, 5)
-        self.assertEqual(PolyClass.number_of_crossvalidations,3)  # Default number of cross-validations
-        self.assertEqual(PolyClass.no_adaptive_samples, 4)  # Default number of adaptive samples
-        self.assertEqual(PolyClass.fraction_training,0.75)  # Default training split
-        self.assertEqual(PolyClass.max_fraction_training_samples, 0.5)  # Default fraction for the maximum number of training samples
-        self.assertEqual(PolyClass.max_iter, 10)  # Default maximum number of iterations
-        self.assertEqual(PolyClass.solution_method, 'pyomo')  # Default solution_method
-        self.assertEqual(PolyClass.multinomials, 1)  # Default multinomials
+        assert PolyClass.max_polynomial_order == 5
+        assert PolyClass.number_of_crossvalidations == 3  # Default number of cross-validations
+        assert PolyClass.no_adaptive_samples == 4  # Default number of adaptive samples
+        assert PolyClass.fraction_training == 0.75  # Default training split
+        assert PolyClass.max_fraction_training_samples == 0.5  # Default fraction for the maximum number of training samples
+        assert PolyClass.max_iter == 10  # Default maximum number of iterations
+        assert PolyClass.solution_method == 'pyomo'  # Default solution_method
+        assert PolyClass.multinomials == 1  # Default multinomials
 
     def test__init__03(self):       
         original_data_input= self.test_data_numpy
@@ -464,14 +465,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
 
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
-        self.assertEqual(PolyClass.max_polynomial_order, 5)
-        self.assertEqual(PolyClass.number_of_crossvalidations,3)  # Default number of cross-validations
-        self.assertEqual(PolyClass.no_adaptive_samples, 4)  # Default number of adaptive samples
-        self.assertEqual(PolyClass.fraction_training,0.75)  # Default training split
-        self.assertEqual(PolyClass.max_fraction_training_samples, 0.5)  # Default fraction for the maximum number of training samples
-        self.assertEqual(PolyClass.max_iter, 10)  # Default maximum number of iterations
-        self.assertEqual(PolyClass.solution_method, 'pyomo')  # Default solution_method
-        self.assertEqual(PolyClass.multinomials, 1)  # Default multinomials
+        assert PolyClass.max_polynomial_order == 5
+        assert PolyClass.number_of_crossvalidations == 3  # Default number of cross-validations
+        assert PolyClass.no_adaptive_samples == 4  # Default number of adaptive samples
+        assert PolyClass.fraction_training == 0.75  # Default training split
+        assert PolyClass.max_fraction_training_samples == 0.5  # Default fraction for the maximum number of training samples
+        assert PolyClass.max_iter == 10  # Default maximum number of iterations
+        assert PolyClass.solution_method == 'pyomo'  # Default solution_method
+        assert PolyClass.multinomials == 1  # Default multinomials
 
     def test__init__04(self):       
         original_data_input= self.test_data_pandas
@@ -479,14 +480,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
 
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
-        self.assertEqual(PolyClass.max_polynomial_order, 5)
-        self.assertEqual(PolyClass.number_of_crossvalidations,3)  # Default number of cross-validations
-        self.assertEqual(PolyClass.no_adaptive_samples, 4)  # Default number of adaptive samples
-        self.assertEqual(PolyClass.fraction_training,0.75)  # Default training split
-        self.assertEqual(PolyClass.max_fraction_training_samples, 0.5)  # Default fraction for the maximum number of training samples
-        self.assertEqual(PolyClass.max_iter, 10)  # Default maximum number of iterations
-        self.assertEqual(PolyClass.solution_method, 'pyomo')  # Default solution_method
-        self.assertEqual(PolyClass.multinomials, 1)  # Default multinomials
+        assert PolyClass.max_polynomial_order == 5
+        assert PolyClass.number_of_crossvalidations == 3  # Default number of cross-validations
+        assert PolyClass.no_adaptive_samples == 4  # Default number of adaptive samples
+        assert PolyClass.fraction_training == 0.75  # Default training split
+        assert PolyClass.max_fraction_training_samples == 0.5  # Default fraction for the maximum number of training samples
+        assert PolyClass.max_iter == 10  # Default maximum number of iterations
+        assert PolyClass.solution_method == 'pyomo'  # Default solution_method
+        assert PolyClass.multinomials == 1  # Default multinomials
     
     def test__init__05(self):       
         original_data_input= self.test_data_numpy
@@ -501,92 +502,92 @@ class PolynomialRegressionTestCases(unittest.TestCase):
                                         max_iter=20, 
                                         solution_method='MLe', 
                                         multinomials=0)
-        self.assertEqual(PolyClass.max_polynomial_order, 3)
-        self.assertEqual(PolyClass.number_of_crossvalidations,5)  # Default number of cross-validations
-        self.assertEqual(PolyClass.no_adaptive_samples, 6)  # Default number of adaptive samples
-        self.assertEqual(PolyClass.fraction_training,0.5)  # Default training split
-        self.assertEqual(PolyClass.max_fraction_training_samples, 0.4)  # Default fraction for the maximum number of training samples
-        self.assertEqual(PolyClass.max_iter, 20)  # Default maximum number of iterations
-        self.assertEqual(PolyClass.solution_method, 'mle')  # Default solution_method, doesn't matter lower / upper characters
-        self.assertEqual(PolyClass.multinomials, 0)  # Default multinomials
+        assert PolyClass.max_polynomial_order == 3
+        assert PolyClass.number_of_crossvalidations == 5  # Default number of cross-validations
+        assert PolyClass.no_adaptive_samples == 6  # Default number of adaptive samples
+        assert PolyClass.fraction_training == 0.5  # Default training split
+        assert PolyClass.max_fraction_training_samples == 0.4  # Default fraction for the maximum number of training samples
+        assert PolyClass.max_iter == 20  # Default maximum number of iterations
+        assert PolyClass.solution_method == 'mle'  # Default solution_method, doesn't matter lower / upper characters
+        assert PolyClass.multinomials == 0  # Default multinomials
     
     def test__init__06(self):       
         original_data_input= list(self.test_data_numpy)
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__07(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = list(self.sample_points_numpy)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
 
     def test__init__08(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = list(self.sample_points_numpy)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__09(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_large
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__10(self):       
         original_data_input= self.test_data_numpy_3d
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__11(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy_3d
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__12(self):       
         original_data_input= self.test_data_numpy_1d
         regression_data_input = self.sample_points_numpy_1d
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5)
     
     def test__init__13(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertWarns(Warning):
+        with pytest.warns(Warning):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             number_of_crossvalidations=11)
-            self.assertEqual(PolyClass.number_of_crossvalidations,11)  # Default number of cross-validations
+            assert PolyClass.number_of_crossvalidations == 11  # Default number of cross-validations
     
     def test__init__14(self):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=1.2)
     
     def test__init__15(self):       
         original_data_input= self.test_data_large
         regression_data_input = self.sample_points_large
-        with self.assertWarns(Warning):
+        with pytest.warns(Warning):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=11)
-            self.assertEqual(PolyClass.max_polynomial_order,10)  
+            assert PolyClass.max_polynomial_order == 10  
 
     def test__init__16(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             training_split=1)
@@ -594,7 +595,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__17(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             training_split=-1)
@@ -602,7 +603,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__18(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             max_fraction_training_samples=1.2)
@@ -610,7 +611,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__19(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             max_fraction_training_samples=-1.2)
@@ -621,7 +622,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         PolyClass = PolynomialRegression(regression_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             max_iter=100)
-        self.assertEqual(PolyClass.max_iter,0)
+        assert PolyClass.max_iter == 0
     
     def test__init__21(self):       
         original_data_input= self.test_data_numpy
@@ -630,12 +631,12 @@ class PolynomialRegressionTestCases(unittest.TestCase):
                                             maximum_polynomial_order=5,
                                             no_adaptive_samples=0,
                                             max_iter=100)
-        self.assertEqual(PolyClass.max_iter,0)
+        assert PolyClass.max_iter == 0
 
     def test__init__22(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             number_of_crossvalidations=1.2)
@@ -643,7 +644,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__23(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             no_adaptive_samples=4.2)
@@ -651,7 +652,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__24(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             max_iter=4.2)
@@ -659,14 +660,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__25(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=15)
     
     def test__init__26(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             solution_method=1)
@@ -674,7 +675,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__27(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             solution_method='idaes')
@@ -682,7 +683,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__28(self):       
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=5,
                                             multinomials=3)
@@ -690,14 +691,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__29(self):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=-2)
     
     def test__init__30(self):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=3,
                                             number_of_crossvalidations=-3)
@@ -705,7 +706,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__31(self):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=3,
                                             no_adaptive_samples=-3)
@@ -713,7 +714,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     def test__init__32(self):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=3,
                                             max_iter=-3)
@@ -726,7 +727,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5,
                                         training_split=0.01)
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             training_data, cross_val_data = PolyClass.training_test_data_creation()
     
     def test_training_test_data_creation_02(self):       
@@ -736,7 +737,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                         maximum_polynomial_order=5,
                                         training_split=0.99)
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             training_data, cross_val_data = PolyClass.training_test_data_creation()
     
     def test_training_test_data_creation_03(self):       
@@ -752,12 +753,12 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_test_size = PolyClass.regression_data.shape[0] - expected_training_size
 
 
-        self.assertEqual(len(training_data), PolyClass.number_of_crossvalidations)
-        self.assertEqual(len(cross_val_data), PolyClass.number_of_crossvalidations)
+        assert len(training_data) == PolyClass.number_of_crossvalidations
+        assert len(cross_val_data) == PolyClass.number_of_crossvalidations
 
         for i in range(1,PolyClass.number_of_crossvalidations+1):
-            self.assertEqual(training_data["training_set_"+str(i)].shape[0], expected_training_size)
-            self.assertEqual(cross_val_data["test_set_"+str(i)].shape[0], expected_test_size)
+            assert training_data["training_set_"+str(i)].shape[0] == expected_training_size
+            assert cross_val_data["test_set_"+str(i)].shape[0] == expected_test_size
         
             concat_01 = (np.concatenate((training_data["training_set_"+str(i)], cross_val_data["test_set_"+str(i)]), axis=0))
             sample_data_sorted = regression_data_input[
@@ -785,12 +786,12 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_test_size = PolyClass.regression_data.shape[0] - expected_training_size
 
 
-        self.assertEqual(len(training_data), PolyClass.number_of_crossvalidations)
-        self.assertEqual(len(cross_val_data), PolyClass.number_of_crossvalidations)
+        assert len(training_data) == PolyClass.number_of_crossvalidations
+        assert len(cross_val_data) == PolyClass.number_of_crossvalidations
 
         for i in range(1,PolyClass.number_of_crossvalidations+1):
-            self.assertEqual(training_data["training_set_"+str(i)].shape[0], expected_training_size)
-            self.assertEqual(cross_val_data["test_set_"+str(i)].shape[0], expected_test_size)
+            assert training_data["training_set_"+str(i)].shape[0] == expected_training_size
+            assert cross_val_data["test_set_"+str(i)].shape[0] == expected_test_size
         
             concat_01 = (np.concatenate((training_data["training_set_"+str(i)], cross_val_data["test_set_"+str(i)]), axis=0))
             sample_data_sorted = regression_data_input[
@@ -812,14 +813,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_test_size = PolyClass.regression_data.shape[0] - expected_training_size
 
 
-        self.assertEqual(len(training_data), PolyClass.number_of_crossvalidations*2) 
-        self.assertEqual(len(cross_val_data), PolyClass.number_of_crossvalidations*2) 
+        assert len(training_data) == PolyClass.number_of_crossvalidations*2 
+        assert len(cross_val_data) == PolyClass.number_of_crossvalidations*2 
 
         for i in range(1,PolyClass.number_of_crossvalidations+1):
-            self.assertEqual(training_data["training_set_"+str(i)].shape[0], expected_training_size)
-            self.assertEqual(training_data["training_extras_"+str(i)].shape[0], expected_training_size)
-            self.assertEqual(cross_val_data["test_set_"+str(i)].shape[0], expected_test_size)
-            self.assertEqual(cross_val_data["test_extras_"+str(i)].shape[0], expected_test_size)
+            assert training_data["training_set_"+str(i)].shape[0] == expected_training_size
+            assert training_data["training_extras_"+str(i)].shape[0] == expected_training_size
+            assert cross_val_data["test_set_"+str(i)].shape[0] == expected_test_size
+            assert cross_val_data["test_extras_"+str(i)].shape[0] == expected_test_size
         
             concat_01 = (np.concatenate((training_data["training_set_"+str(i)], cross_val_data["test_set_"+str(i)]), axis=0))
             sample_data_sorted = regression_data_input[
@@ -971,7 +972,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.zeros((x_data_nc, 1))
         expected_value = 6613.875  # Calculated externally as sum(y^2) / 2m
         output_1 = PolynomialRegression.cost_function(theta, x_vector, y, reg_parameter=0)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
     def test_cost_function_02(self):
         x = self.training_data[:, :-1]
@@ -988,7 +989,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.array([[4.5], [3], [3], [1], [1], [0]])  # coefficients in (x1 + 1.5)^2 + (x2 + 1.5) ^ 2
         expected_value = 90.625  # Calculated externally as sum(dy^2) / 2m
         output_1 = PolynomialRegression.cost_function(theta, x_vector, y, reg_parameter=0)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
     def test_cost_function_03(self):
         x = self.training_data[:, :-1]
@@ -1005,7 +1006,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.array([[2], [2], [2], [1], [1], [0]])  # Actual coefficients in (x1 + 1)^2 + (x2 + 1) ^ 2
         expected_value = 0  # Value should return zero for exact solution
         output_1 = PolynomialRegression.cost_function(theta, x_vector, y, reg_parameter=0)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
 
     def test_gradient_function_01(self):
@@ -1080,7 +1081,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.test_data_numpy, input_array, maximum_polynomial_order=5,
                                          solution_method='bfgs')
         output_1 = data_feed.bfgs_parameter_optimization(x_vector, y)
-        self.assertEqual(data_feed.solution_method, 'bfgs')
+        assert data_feed.solution_method == 'bfgs'
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
 
     def test_bfgs_parameter_optimization_02(self):
@@ -1098,7 +1099,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=4,
                                          solution_method='bfgs')
         output_1 = data_feed.bfgs_parameter_optimization(x_vector, y)
-        self.assertEqual(data_feed.solution_method, 'bfgs')
+        assert data_feed.solution_method == 'bfgs'
         np.testing.assert_array_equal(expected_value, np.round(output_1, 4))
 
     
@@ -1167,7 +1168,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.zeros((x_data_nc, 1))
         expected_value = 2 * 6613.875  # Calculated externally as sum(y^2) / m
         output_1 = PolynomialRegression.cross_validation_error_calculation(theta, x_vector, y)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
     def test_cross_validation_error_calculation_02(self):
         x = self.training_data[:, :-1]
@@ -1184,7 +1185,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.array([[4.5], [3], [3], [1], [1], [0]])  # coefficients in (x1 + 1.5)^2 + (x2 + 1.5) ^ 2
         expected_value = 2 * 90.625  # Calculated externally as sum(dy^2) / 2m
         output_1 = PolynomialRegression.cross_validation_error_calculation(theta, x_vector, y)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
     def test_cross_validation_error_calculation_03(self):
         x = self.training_data[:, :-1]
@@ -1201,7 +1202,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         theta = np.array([[2], [2], [2], [1], [1], [0]])  # Actual coefficients in (x1 + 1)^2 + (x2 + 1) ^ 2
         expected_value = 2 * 0  # Value should return zero for exact solution
         output_1 = PolynomialRegression.cross_validation_error_calculation(theta, x_vector, y)
-        self.assertEqual(output_1, expected_value)
+        assert output_1 == expected_value
 
 
     def mock_optimization(self, x, y):
@@ -1260,10 +1261,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_value_4 = 0
         data_feed = PolynomialRegression(self.test_data_numpy, input_array, maximum_polynomial_order=5)
         _, output_1, output_2, output_3, output_4 = data_feed.surrogate_performance(phi_best, order_best)
-        self.assertEqual(output_1, expected_value_1)
-        self.assertEqual(output_2, expected_value_2)
-        self.assertEqual(np.round(output_3, 4), np.round(expected_value_3, 4))
-        self.assertEqual(np.round(output_4, 4), np.round(expected_value_4, 4))
+        assert output_1 == expected_value_1
+        assert output_2 == expected_value_2
+        assert np.round(output_3, 4) == np.round(expected_value_3, 4)
+        assert np.round(output_4, 4) == np.round(expected_value_4, 4)
 
     def test_surrogate_performance_02(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -1276,10 +1277,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_value_4 = 1
         data_feed = PolynomialRegression(self.test_data_numpy, input_array, maximum_polynomial_order=5)
         _, output_1, output_2, output_3, output_4 = data_feed.surrogate_performance(phi_best, order_best)
-        self.assertEqual(output_1, expected_value_1)
-        self.assertEqual(output_2, expected_value_2)
-        self.assertEqual(np.round(output_3, 4), np.round(expected_value_3, 4))
-        self.assertEqual(np.round(output_4, 4), np.round(expected_value_4, 4))
+        assert output_1 == expected_value_1
+        assert output_2 == expected_value_2
+        assert np.round(output_3, 4) == np.round(expected_value_3, 4)
+        assert np.round(output_4, 4) == np.round(expected_value_4, 4)
 
     def test_surrogate_performance_03(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -1292,10 +1293,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         expected_value_4 = 0.931219147
         data_feed = PolynomialRegression(self.test_data_numpy, input_array, maximum_polynomial_order=5)
         _, output_1, output_2, output_3, output_4 = data_feed.surrogate_performance(phi_best, order_best)
-        self.assertEqual(output_1, expected_value_1)
-        self.assertEqual(output_2, expected_value_2)
-        self.assertEqual(np.round(output_3, 4), np.round(expected_value_3, 4))
-        self.assertEqual(np.round(output_4, 4), np.round(expected_value_4, 4))
+        assert output_1 == expected_value_1
+        assert output_2 == expected_value_2
+        assert np.round(output_3, 4) == np.round(expected_value_3, 4)
+        assert np.round(output_4, 4) == np.round(expected_value_4, 4)
 
   
     def test_results_generation_01(self):
@@ -1306,8 +1307,8 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         row_list = np.array([['k'], ['(x_1)^1'], ['(x_2)^1']])
         expected_df = expected_df.append(pd.Series({row_list[0, 0]: beta[0, 0], row_list[1, 0]: beta[1, 0], row_list[2, 0]: beta[2, 0]}))
         output_df = data_feed.results_generation(beta, order)
-        self.assertEqual(output_df.index.to_list(), expected_df.index.to_list())
-        self.assertEqual(expected_df.all(), output_df.all())
+        assert output_df.index.to_list() == expected_df.index.to_list()
+        assert expected_df.all() == output_df.all()
 
     def test_results_generation_02(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=3, multinomials=0)
@@ -1317,8 +1318,8 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         row_list = np.array([['k'], ['(x_1)^1'], ['(x_2)^1'], ['(x_1)^2'], ['(x_2)^2'], ['(x_1)^3'], ['(x_2)^3']])
         expected_df = expected_df.append(pd.Series({row_list[0, 0]: beta[0, 0], row_list[1, 0]: beta[1, 0], row_list[2, 0]: beta[2, 0], row_list[3, 0]: beta[3, 0], row_list[4, 0]: beta[4, 0], row_list[5, 0]: beta[5, 0], row_list[6, 0]: beta[6, 0]}))
         output_df = data_feed.results_generation(beta, order)
-        self.assertEqual(output_df.index.to_list(), expected_df.index.to_list())
-        self.assertEqual(expected_df.all(), output_df.all())
+        assert output_df.index.to_list() == expected_df.index.to_list()
+        assert expected_df.all() == output_df.all()
 
     def test_results_generation_03(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=3, multinomials=1)
@@ -1328,8 +1329,8 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         row_list = np.array([['k'], ['(x_1)^1'], ['(x_2)^1'], ['(x_1)^2'], ['(x_2)^2'], ['(x_1).(x_2)']])
         expected_df = expected_df.append(pd.Series({row_list[0, 0]: beta[0, 0], row_list[1, 0]: beta[1, 0], row_list[2, 0]: beta[2, 0], row_list[3, 0]: beta[3, 0], row_list[4, 0]: beta[4, 0], row_list[5, 0]: beta[5, 0]}))
         output_df = data_feed.results_generation(beta, order)
-        self.assertEqual(output_df.index.to_list(), expected_df.index.to_list())
-        self.assertEqual(expected_df.all(), output_df.all())
+        assert output_df.index.to_list() == expected_df.index.to_list()
+        assert expected_df.all() == output_df.all()
 
         
     def test_error_plotting(self):
@@ -1352,10 +1353,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         np.testing.assert_array_equal(ax4.lines[0].get_xydata(), expected_output_5)
         np.testing.assert_array_equal(ax4.lines[1].get_xydata(), expected_output_6)
         # Compare the expected subplot titles to the actual display
-        self.assertTrue(ax1.title.get_text() == 'Training (green) vs Cross-validation error (red)')
-        self.assertTrue(ax2.title.get_text() == 'MAE')
-        self.assertTrue(ax3.title.get_text() == 'MSE')
-        self.assertTrue(ax4.title.get_text() == 'R-squared (blue) and Adjusted R-squared (red)')
+        assert ax1.title.get_text() == 'Training (green) vs Cross-validation error (red)'
+        assert ax2.title.get_text() == 'MAE'
+        assert ax3.title.get_text() == 'MSE'
+        assert ax4.title.get_text() == 'R-squared (blue) and Adjusted R-squared (red)'
         # Compare the line/curve segments for each line plot to the actual input data
         np.testing.assert_array_equal(ax1.lines[0].get_path()._vertices, expected_output_1)
         np.testing.assert_array_equal(ax1.lines[1].get_path()._vertices, expected_output_2)
@@ -1401,7 +1402,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2,
                                          training_split=split, number_of_crossvalidations=num_cv)
         additional_terms = [np.sin(self.full_data['x1']), np.sin(self.full_data['x2'])]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             data_feed.user_defined_terms(additional_terms)
 
     def test_user_defined_terms_04(self):
@@ -1411,7 +1412,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
                                          training_split=split, number_of_crossvalidations=num_cv)
         p = np.sin(self.training_data[:, 0]).reshape(self.training_data.shape[0], 1)  # 2-D array, should raise error
         additional_terms = [p]
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             data_feed.user_defined_terms(additional_terms)
 
     def test_user_defined_terms_05(self):
@@ -1421,7 +1422,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
                                          training_split=split, number_of_crossvalidations=num_cv)
         p = np.sin(self.training_data[:, 0]).reshape(self.training_data.shape[0], 1)
         additional_terms = p  # Additional terms as array, not list
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             data_feed.user_defined_terms(additional_terms)
 
 
@@ -1429,21 +1430,21 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.polynomial_regression_fitting()
-        self.assertEqual(results.fit_status,'ok')
+        assert results.fit_status == 'ok'
     
     def test_polynomial_regression_fitting_02(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data[:5], maximum_polynomial_order=1)
         data_feed.get_feature_vector()
-        with self.assertWarns(Warning):
+        with pytest.warns(Warning):
             results = data_feed.polynomial_regression_fitting()
-            self.assertEqual(results.fit_status,'poor')
+            assert results.fit_status == 'poor'
 
     def test_polynomial_regression_fitting_03(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.polynomial_regression_fitting()
         x_input_train_data = self.training_data[:, :-1]
-        self.assertEqual(results.fit_status,'ok')
+        assert results.fit_status == 'ok'
     
     def test_polynomial_regression_fitting_04(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
@@ -1451,30 +1452,30 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         additional_regression_features = [np.sin(self.training_data[:, 0]), np.sin(self.training_data[:, 1])]    
         results = data_feed.polynomial_regression_fitting(additional_regression_features)      
         results = data_feed.polynomial_regression_fitting()
-        self.assertEqual(results.fit_status,'ok')
+        assert results.fit_status == 'ok'
 
 
     def test_get_feature_vector_01(self):
         data_feed = PolynomialRegression(self.full_data, self.full_data, maximum_polynomial_order=3, multinomials=0)
         output = data_feed.get_feature_vector()
         expected_dict =  {'x1': 0, 'x2': 0}
-        self.assertDictEqual(expected_dict, output.extract_values())
+        assert expected_dict == output.extract_values()
 
     def test_get_feature_vector_02(self):
         data_feed = PolynomialRegression(self.training_data, self.training_data, maximum_polynomial_order=3, multinomials=0)
         output = data_feed.get_feature_vector()
         expected_dict =  {0: 0, 1: 0}
-        self.assertDictEqual(expected_dict, output.extract_values())
+        assert expected_dict == output.extract_values()
 
     
     def test_set_additional_terms_01(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=3)
         data_feed.set_additional_terms('a')
-        self.assertEqual('a', data_feed.additional_term_expressions)
+        assert 'a' == data_feed.additional_term_expressions
         data_feed.set_additional_terms(1)
-        self.assertEqual(1, data_feed.additional_term_expressions)
+        assert 1 == data_feed.additional_term_expressions
         data_feed.set_additional_terms([1,2])
-        self.assertEqual([1,2], data_feed.additional_term_expressions)
+        assert [1,2] == data_feed.additional_term_expressions
         data_feed.set_additional_terms(np.array([1,2]))
         np.testing.assert_equal(np.array([1,2]), data_feed.additional_term_expressions)
         
@@ -1483,7 +1484,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.poly_training()
-        self.assertEqual(results.fit_status,'ok')
+        assert results.fit_status == 'ok'
         
      
     def test_generate_expression(self):
