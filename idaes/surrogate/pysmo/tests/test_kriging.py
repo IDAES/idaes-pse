@@ -280,7 +280,7 @@ class KrigingModelTestCases(unittest.TestCase):
         
         np.testing.assert_array_equal(y_prediction, y_prediction_exp)
         assert np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0] == ss_error
-        assert np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0] == rmse_error
+        assert np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0] == rmse_error)
         # self.assertEqual(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0],ss_error)
         # self.assertEqual(np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0]),rmse_error)
 
