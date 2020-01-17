@@ -50,24 +50,24 @@ class TestNumpyEvaluator(unittest.TestCase):
         npe = NumpyEvaluator(cMap)
 
         result = npe.walk_expression(sin(m.x))
-        self.assertEqual(result[0], sin(4))
-        self.assertEqual(result[1], sin(5))
-        self.assertEqual(result[2], sin(6))
+        assert result[0] == sin(4)
+        assert result[1] == sin(5)
+        assert result[2] == sin(6)
 
         result = npe.walk_expression(abs(m.x * m.p[1] - m.p[2]))
-        self.assertEqual(result[0], .1)
-        self.assertEqual(result[1], -((-1*5)-.2))
-        self.assertEqual(result[2], (2*6-.3))
+        assert result[0] == .1
+        assert result[1] == -((-1*5)-.2)
+        assert result[2] == (2*6-.3)
 
         result = npe.walk_expression(atan(m.x))
-        self.assertEqual(result[0], atan(4))
-        self.assertEqual(result[1], atan(5))
-        self.assertEqual(result[2], atan(6))
+        assert result[0] == atan(4)
+        assert result[1] == atan(5)
+        assert result[2] == atan(6)
 
         result = npe.walk_expression(atanh(m.p[2]))
-        self.assertEqual(result[0], atanh(.1))
-        self.assertEqual(result[1], atanh(.2))
-        self.assertEqual(result[2], atanh(.3))
+        assert result[0] == atanh(.1)
+        assert result[1] == atanh(.2)
+        assert result[2] == atanh(.3)
 
     def test_eval_constant(self):
         m = ConcreteModel()
@@ -81,8 +81,8 @@ class TestNumpyEvaluator(unittest.TestCase):
         npe = NumpyEvaluator(cMap)
 
         expr = m.p[1] + m.p[2] + m.x + .5
-        self.assertEqual(npe.walk_expression(expr), 6.75)
+        assert npe.walk_expression(expr) == 6.75
 
         m.p[1] = 2
         m.p[2] = 4
-        self.assertEqual(value(expr), 6.75)
+        assert value(expr) == 6.75
