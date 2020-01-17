@@ -29,6 +29,7 @@ import logging
 from operator import attrgetter
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 from tempfile import TemporaryDirectory
@@ -84,6 +85,13 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     type=str,
 )
 @click.option(
+    "--force",
+    "-f",
+    "force_write",
+    help="Do not prompt for remove/overwrite of existing examples",
+    is_flag=True
+)
+@click.option(
     "--no-install", "-I", "no_install", help="Do *not* install examples into 'idaes_examples' package",
     is_flag=True
 )
@@ -113,7 +121,7 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     default=PKG_VERSION,
     show_default=True,
 )
-def get_examples(directory, no_install, list_releases, no_download, version,
+def get_examples(directory, force_write, no_install, list_releases, no_download, version,
                  unstable):
     """Get the examples from Github and put them in a local directory.
     """
@@ -128,14 +136,19 @@ def get_examples(directory, no_install, list_releases, no_download, version,
     if no_download:
         _log.info("skipping download")
     else:
+        stable_ver = re.match(r".*-\w+$", version) is None
+        if not stable_ver and not unstable:
+            click.echo(f"Cannot download unstable version {version} unless you add "
+                       f"the -U/--unstable flag")
+            sys.exit(-1)
         click.echo("Downloading...")
         try:
-            download(get_releases(unstable), target_dir, version)
+            download(get_releases(unstable), target_dir, version, force_write)
         except DownloadError as err:
             _log.fatal(f"abort due to failed download: {err}")
             sys.exit(-1)
         full_dir = os.path.realpath(target_dir)
-        click.echo(f"Downloaded examples to directory '{full_dir}'")
+        click.echo(f"* Downloaded examples to directory '{full_dir}'")
     # install
     if not no_install:
         click.echo("Installing...")
@@ -144,10 +157,10 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         except InstallError as err:
             click.echo(f"Install error: {err}")
             sys.exit(-1)
-        click.echo(f"Installed examples in package {INSTALL_PKG}")
+        click.echo(f"* Installed examples in package {INSTALL_PKG}")
 
 
-def download(releases, target_dir, version):
+def download(releases, target_dir, version, force):
     """Download `version` into `target_dir`.
 
     Raises:
@@ -164,7 +177,7 @@ def download(releases, target_dir, version):
             how = "installed"
             how_ver = " and -V/--version to choose a desired version"
         else:
-            how = "selected"
+            how = f"selected"
             how_ver = ""  # they already did this!
         click.echo(
             f"No release found matching {how} IDAES package version '{version}'."
@@ -173,8 +186,12 @@ def download(releases, target_dir, version):
         raise DownloadError("bad version")
     # check target directory
     if target_dir.exists():
-        click.echo(f"Cannot download: target directory '{target_dir}' already exists.")
-        raise DownloadError("target dir exists")
+        if not force:
+            click.confirm(f"Replace existing directory '{target_dir}'", abort=True)
+        try:
+            shutil.rmtree(target_dir)
+        except Exception as err:
+            raise DownloadError(f"Cannot remove existing directory: {err}")
     # download
     try:
         download_contents(version, target_dir)
