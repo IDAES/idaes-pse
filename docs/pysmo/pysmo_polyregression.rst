@@ -22,7 +22,7 @@ Thus, for a problem with :math:`m` sample points and :math:`n` input variables, 
 Basic Usage
 ------------
 To generate a polynomial model with PySMO, the  *pysmo.polynomial_regression* class is first initialized,
-and then the function *poly_training* is called on the initialized object:
+and then the method ``poly_training`` is called on the initialized object:
 
 .. doctest::
 
@@ -38,18 +38,18 @@ and then the function *poly_training* is called on the initialized object:
    >>> features = pr_init.get_feature_vector()
    >>> polyfit = pr_init.poly_training()
 
-* *xy_data* is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
-* *maximum_polynomial_order* refers to the maximum polynomial order to be considered when training the surrogate.
+* **xy_data** is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
+* **maximum_polynomial_order** refers to the maximum polynomial order to be considered when training the surrogate.
 
 **Optional Arguments**
 
-* *multinomials* - boolean option which determines whether bivariate terms are considered in polynomial generation.
-* *training_split* - option which determines fraction of training data to be used for training (the rest will be for testing). Default is 0.8.
-* *number_of_crossvalidation* - Number of cross-validations during training. Default number is 3.
+* **multinomials** - boolean option which determines whether bivariate terms are considered in polynomial generation.
+* **training_split** - option which determines fraction of training data to be used for training (the rest will be for testing). Default is 0.8.
+* **number_of_crossvalidations** - Number of cross-validations during training. Default number is 3.
 
 *pysmo.polynomial_regression* Output
 ---------------------------------------
-The result of the *pysmo.polynomial_regression method* (*polyfit* in above example) is a python object containing information
+The result of the ``pysmo.polynomial_regression`` method (polyfit in above example) is a python object containing information
 about the optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as
 the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
 object simply passing a list of variables into the function *generate_expression*:
@@ -66,7 +66,7 @@ object simply passing a list of variables into the function *generate_expression
 Prediction with *pysmo.polynomial_regression* models
 -----------------------------------------------------
 Once a polynomial model has been trained, predictions for values at previously unsampled points :math:*x_unsampled* can be evaluated by calling the
-*poly_predict_output()* function on the resulting model object and the unsampled points:
+``poly_predict_output()`` method on the resulting model object and the unsampled points:
 
 .. doctest::
 
@@ -103,7 +103,7 @@ an objective:
    >>> features = pr_init.get_feature_vector()
    >>> polyfit = pr_init.poly_training()
 
-   Use the resulting polynomial as an objective, passing in the Pyomo variable **x**
+   Use the resulting polynomial as an objective, passing in the Pyomo variable x
    >>> m.obj = pyo.Objective(expr=polyfit.generate_expression([m.x[1], m.x[2]]))
 
    Solve the model
@@ -122,7 +122,11 @@ Available Methods
     :members:
 
 .. autoclass:: idaes.surrogate.pysmo.polynomial_regression.PolynomialRegression
-    :members: __init__, get_feature_vector, user_defined_terms, poly_training, poly_predict_output
+    :members: __init__, get_feature_vector, set_additional_terms, poly_training, poly_predict_output
 	
 .. autoclass:: idaes.surrogate.pysmo.polynomial_regression.ResultReport
-    :members: 
+    :members: generate_expression
+
+References:
+----------------
+[1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801

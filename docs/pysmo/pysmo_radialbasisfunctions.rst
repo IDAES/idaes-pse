@@ -108,3 +108,27 @@ Once an RBF model has been trained, predictions for values at previously unsampl
 
 
 Further details about *pysmo.radial_basis_function* module may be found by consulting the examples or reading the paper [...]
+
+.. module:: idaes.surrogate.pysmo.radial_basis_function
+
+Available Methods
+------------------
+
+.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.FeatureScaling
+    :members:
+
+.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.RadialBasisFunctions
+    :members: __init__, get_feature_vector, rbf_training, rbf_predict_output, r2_calculation
+
+.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.ResultReport
+    :members: rbf_generate_expression	
+
+References:
+----------------
+[1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+
+[2] Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions, https://www.tandfonline.com/doi/full/10.1080/03052150500422294
+
+[3] Rippa, S. (1999) Advances in Computational Mathematics, https://doi.org/10.1023/A:1018975909870
+
+[4] Mongillo M.A. (2011) Choosing Basis Functions and Shape Parameters for Radial Basis Function Methods, https://doi.org/10.1137/11S010840

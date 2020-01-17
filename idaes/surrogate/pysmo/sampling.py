@@ -317,44 +317,39 @@ class SamplingMethods:
 
 class LatinHypercubeSampling(SamplingMethods):
     """
-    =====================================================================================================================
-    A class that performs Latin Hypercube Sampling. The function returns LHS samples which have been selected randomly after sample space stratification. Depending on the settings, the algorithm either returns samples from an input dataset
-    which has been selected using Euclidean distance minimization after the LHS samples have been generated, or returns samples from a supplied data range.
+    A class that performs Latin Hypercube Sampling. The function returns LHS samples which have been selected randomly after sample space stratification.
 
-    For further details on Hammersley sampling see:
-     [1] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
-     [2] Webpage on low discrepancy sampling methods: http://planning.cs.uiuc.edu/node210.html
-     [3] Holger Dammertz's webpage titled "Hammersley Points on the Hemisphere" which discusses  Hammersley point set generation in two dimensional spaces, http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+    It should be noted that no minimax criterion has been used in this implementation, so the LHS samples selected will not have space-filling properties.
 
-    To use: call class with inputs, and then sample_points function
-    Example: For the first 10 samples in a 2-D space:
+    To use: call class with inputs, and then run ``sample_points`` method.
+
+    Example: To select 10 LHS samples from "data":
         >>> b = rbf.LatinHypercubeSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
-    ===================================================================================================================
+
     """
 
     def __init__(self, data_input, number_of_samples=None, sampling_type=None):
         """
+        Initialization of **LatinHypercubeSampling** class. Two inputs are required.
 
-        Initialization of LatinHypercubeSampling class. Two inputs are required.
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
+            
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information in this case.
 
-            Inputs:
-                data_input(<np.ndarray>, <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
-                    - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
-                number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
-                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
+            number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
+            sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
-            :returns:
-                self function containing three attributes -
-                    self.data - holds the numpy array containing the data to be sampled
-                    self.x_data - holds the features of the input data. The output data is assumed to be in the last column.
-                    self.number_of_samples - holds the number of samples to be generated.
+        Returns:
+            **self** function containing the input information
 
+        Raises:
+            ValueError: The input data (**data_input**) is the wrong type.
 
-            :raises:
-                ValueError: The input data (data_input) is the wrong type (np.ndarray or pd.DataFrame)
-                Exception: When the number_of_samples is invalid (not an integer, too large, zero, -ve)
+            Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
+
         """
         if sampling_type is None:
             sampling_type = 'creation'
@@ -492,14 +487,15 @@ class LatinHypercubeSampling(SamplingMethods):
 
     def sample_points(self):
         """
+        ``sample_points`` generates or selects Latin Hypercube samples from an input dataset or data range. When called, it:
 
-        This function generates LH samples from an input dataset. When called, it:
-        1. generates samples points from stratified regions by calling the lhs_function_generation_function
-        2. generates potential sample points by random shuffling
-        3. Selects the closest available samples to the theoretical sample points from within the input data by calling the points_selection function.
+            1. generates samples points from stratified regions by calling the ``lhs_points_generation``,
+            2. generates potential sample points by random shuffling, and
+            3. when a dataset is provided, selects the closest available samples to the theoretical sample points from within the input data.
 
-        :returns
-        sample_points(<np.ndarray>): A numpy array containing number_of_samples points selected by LHS from data_input
+        Returns:
+            NumPy Array:     A numpy array containing **number_of_samples** points selected or generated by LHS.
+
         """
 
         vector_of_points = self.lhs_points_generation()  # Assumes [X, Y] data is supplied.
@@ -513,22 +509,18 @@ class LatinHypercubeSampling(SamplingMethods):
 
 class UniformSampling(SamplingMethods):
     """
-    =====================================================================================================================
     A class that performs Uniform Sampling. Depending on the settings, the algorithm either returns samples from an input dataset  which have been selected using Euclidean distance minimization after the uniform samples have been generated,
     or returns samples from a supplied data range.
 
-    Uniform samples are based on the space of each variable randomly and then generating all possible variable combinations.
+    Full-factorial samples are based on dividing the space of each variable randomly and then generating all possible variable combinations.
 
-    The number of points to be sampled per variable needs to be specified in a list.
+    - The number of points to be sampled per variable needs to be specified in a list.
 
-    For further details on Uniform sampling see:
-     [1] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
+    To use: call class with inputs, and then ``sample_points`` function
 
-    To use: call class with inputs, and then uniform_sample_points function
-    Example: For the first 10 samples in a 2-D space:
+    Example: To select 50 samples on a :math:`\\left(10 \\times 5\\right)` grid in a 2-D space:
         >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
         >>> samples = b.sample_points()
-    ===================================================================================================================
 
     """
 
@@ -536,30 +528,28 @@ class UniformSampling(SamplingMethods):
         """
         Initialization of UniformSampling class. Three inputs are required.
 
-        Inputs:
-            data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
-                - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
-            list_of_samples_per_variable(<list>): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a posotve integer variable greater than 1.
-            sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
 
-        :optional:
-            edges(<bool>): Boolean variable representing bow the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information in this case.
 
-        :returns:
-            self function containing three attributes -
-                self.data - holds the numpy array containing the data to be sampled
-                self.x_data - holds the features of the input data. The output data is assumed to be in the last column.
-                self.number_of_samples - holds the number of halton samples to be generated.
+            list_of_samples_per_variable (list): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a positive integer variable greater than 1.
+            sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
+        Keyword Args:
+            edges(bool): Boolean variable representing bow the points should be selected. A value of True (default) indicates the points should be equally spaced edge to edge, otherwise they will be in the centres of the bins filling the unit cube
 
-        :raises:
-            ValueError: The input data (data_input) is the wrong type (np.ndarray or pd.DataFrame)
-                        When list_of_samples_per_variable is of the wrong length
-            Exception: When "edges" entry is not Boolean
-            TypeError: When  list_of_samples_per_variable is not a list or contains elements other than integers
+        Returns:
+            **self** function containing the input information
 
-        ====================================================================================================================
+        Raises:
+            ValueError: The **data_input** is the wrong type
+
+            ValueError: When **list_of_samples_per_variable** is of the wrong length, is not a list or contains elements other than integers
+
+            Exception: When **edges** entry is not Boolean
+
         """
         if sampling_type is None:
             sampling_type = 'creation'
@@ -634,9 +624,10 @@ class UniformSampling(SamplingMethods):
 
     def sample_points(self):
         """
-        =====================================================================================================================
-        Function performing Uniform Sampling.
-        ===================================================================================================================
+        ``sample_points`` generates or selects full-factorial designs from an input dataset or data range.
+
+        Returns:
+            NumPy Array:     A numpy array containing the sample points generated or selected by full-factorial sampling.
 
         """
 
@@ -661,50 +652,45 @@ class UniformSampling(SamplingMethods):
 
 class HaltonSampling(SamplingMethods):
     """
-    =====================================================================================================================
-    A class that performs Halton Sampling. Depending on the settings, the algorithm either returns samples from an input dataset which have been selected using Euclidean distance minimization after the Halton samples have been generated,
-    or returns Halton samples from a supplied data range.
+    A class that performs Halton Sampling.
 
     Halton samples are based on the reversing/flipping the base conversion of numbers using primes.
 
-    To generate n samples in a p-dimensional space, the first p prime numbers are used to generate the samples.
+    To generate n samples in a :math:`p`-dimensional space, the first :math:`p` prime numbers are used to generate the samples.
 
-    Note: Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensionalities, the performance of the sampling method has been shown to degrade.
+    Note: 
+        Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensions, the performance of the sampling method has been shown to degrade.
 
-    For further details on Halton sampling see:
-     [1] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
-     [2] Webpage on low discrepancy sampling methods: http://planning.cs.uiuc.edu/node210.html
+    To use: call class with inputs, and then ``sample_points`` function.
 
-    To use: call class with inputs, and then lh_sample_points function
-    Example: For the first 10 samples in a 2-D space:
+    Example: For the first 10 Halton samples in a 2-D space:
         >>> b = rbf.HaltonSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
-    ===================================================================================================================
 
     """
 
     def __init__(self, data_input, number_of_samples=None, sampling_type=None):
         """
-        ====================================================================================================================
-        Initialization of HaltonSampling class. Two inputs are required.
 
-            Inputs:
-                data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
-                    - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
-                number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
-                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
+        Initialization of **HaltonSampling** class. Two inputs are required.
 
-            :returns:
-                self function containing three attributes -
-                    self.data - holds the numpy array containing the data to be sampled
-                    self.x_data - holds the features of the input data. The output data is assumed to be in the last column.
-                    self.number_of_samples - holds the number of halton samples to be generated.
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list) : The input data set or range to be sampled.
+            
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+            
+            number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
+            sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
+        Returns:
+            **self** function containing the input information.
 
-            :raises:
-                ValueError: The input data (data_input) is the wrong type (np.ndarray or pd.DataFrame)
-                Exception: When the number_of_samples is invalid (not an integer, too large, zero, -ve)
+        Raises:
+            ValueError: The **data_input** is the wrong type.
+            
+            Exception: When the **number_of_samples** is invalid (not an integer, too large, zero or negative.)
+            
         """
         if sampling_type is None:
             sampling_type = 'creation'
@@ -781,15 +767,16 @@ class HaltonSampling(SamplingMethods):
 
     def sample_points(self):
         """
-        ===============================================================================================================
-        Function which generates the Halton sample points.
-        The steps followed here are:
-        1. Determine the number of features in the input data
-        2. Generate the list of primes to be considered by calling prime_number_generator
-        3. Create the first no_samples elements of the Halton sequence for each prime by calling halton_sequence
-        4. Create the Halton samples by combining the corresponding elements of the Halton sequences for each prime
-        5. Find the closest corresponding point in the scaled input dataset using Euclidean distance minimization. This is done by calling the function nearest_neighbours from the LatinHypercubeSampling class.
-        ================================================================================================================
+        The ``sample_points`` method generates the Halton samples. The steps followed here are:
+
+            1. Determine the number of features in the input data.
+            2. Generate the list of primes to be considered by calling ``prime_number_generator`` from the sampling superclass.
+            3. Create the first **number_of_samples** elements of the Halton sequence for each prime.
+            4. Create the Halton samples by combining the corresponding elements of the Halton sequences for each prime.
+            5. When in "selection" mode, determine the closest corresponding point in the input dataset using Euclidean distance minimization. This is done by calling the ``nearest_neighbours`` method in the sampling superclass.
+
+        Returns:
+            NumPy Array:     A numpy array containing **number_of_samples** Halton sample points.
 
         """
         no_features = self.x_data.shape[1]
@@ -807,51 +794,44 @@ class HaltonSampling(SamplingMethods):
 
 class HammersleySampling(SamplingMethods):
     """
-    =====================================================================================================================
-    A class that performs Hammersley Sampling. Depending on the settings, the algorithm either returns samples from an input dataset which have been selected using Euclidean distance minimization after the Hammersley samples have been generated,
-    or returns Hammersley samples from a supplied data range.
+    A class that performs Hammersley Sampling.
 
     Hammersley samples are generated in a similar way to Halton samples - based on the reversing/flipping the base conversion of numbers using primes.
 
-    To generate n samples in a p-dimensional space, the first p-1 prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into no_samples points.
+    To generate :math:`n` samples in a :math:`p`-dimensional space, the first :math:`\\left(p-1\\right)` prime numbers are used to generate the samples. The first dimension is obtained by uniformly dividing the region into **no_samples points**.
 
-    Note: Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensionalities, the performance of the sampling method has been shown to degrade.
+    Note:
+        Use of this method is limited to use in low-dimensionality problems (less than 10 variables). At higher dimensionalities, the performance of the sampling method has been shown to degrade.
 
-    For further details on Hammersley sampling see:
-     [1] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
-     [2] Webpage on low discrepancy sampling methods: http://planning.cs.uiuc.edu/node210.html
-     [3] Holger Dammertz's webpage titled "Hammersley Points on the Hemisphere" which discusses  Hammersley point set generation in two dimensional spaces, http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+    To use: call class with inputs, and then ``sample_points`` function.
 
-    To use: call class with inputs, and then hs_sample_points function
-    Example: For the first 10 samples in a 2-D space:
+    Example: For the first 10 Hammersley samples in a 2-D space:
         >>> b = rbf.HammersleySampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
-    ===================================================================================================================
 
     """
 
     def __init__(self, data_input, number_of_samples=None, sampling_type=None):
         """
-        ====================================================================================================================
-        Initialization of HammersleySampling class. Two inputs are required.
+        Initialization of **HammersleySampling** class. Two inputs are required.
 
-            Inputs:
-                data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
-                    - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
-                number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
-                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
 
-            :returns:
-                self function containing three attributes -
-                    self.data - holds the numpy array containing the data to be sampled
-                    self.x_data - holds the features of the input data. The output data is assumed to be in the last column.
-                    self.number_of_samples - holds the number of halton samples to be generated.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
 
+            number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
+            sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
 
-            :raises:
-                ValueError: The input data (data_input) is the wrong type (np.ndarray or pd.DataFrame)
-                Exception: When the number_of_samples is invalid (not an integer, too large, zero, -ve)
+            Returns:
+                **self** function containing the input information.
+
+            Raises:
+                ValueError: When **data_input** is the wrong type.
+
+                Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
+
         """
         if sampling_type is None:
             sampling_type = 'creation'
@@ -928,16 +908,17 @@ class HammersleySampling(SamplingMethods):
 
     def sample_points(self):
         """
-        ===============================================================================================================
-        Function which generates the Hammersley sample points.
-        The steps followed here are:
-        1. Determine the number of features nf in the input data
-        2. Generate the list of (nf-1) primes to be considered by calling prime_number_generator
-        3. Divide the space [0,no_samples] into no_samples places to obtain the first dimension for the Hammersley sequence
-        4. For the other (nf-1) dimensions, create first no_samples elements of the Hammersley sequence for each of the (nf-1) primes by calling hammersley_sequence
-        5. Create the Hammersley samples by combining the corresponding elements of the Hammersley sequences created in steps 3 and 4
-        6. Find the closest corresponding point in the scaled input dataset using Euclidean distance minimization. This is done by calling the function nearest_neighbours from the LatinHypercubeSampling class.
-        ================================================================================================================
+        The **sampling_type** method generates the Hammersley sample points. The steps followed here are:
+
+            1. Determine the number of features :math:`n_{f}` in the input data.
+            2. Generate the list of :math:`\\left(n_{f}-1\\right)` primes to be considered by calling prime_number_generator.
+            3. Divide the space [0,**number_of_samples**-1] into **number_of_samples** places to obtain the first dimension for the Hammersley sequence.
+            4. For the other :math:`\\left(n_{f}-1\\right)` dimensions, create first **number_of_samples** elements of the Hammersley sequence for each of the :math:`\\left(n_{f}-1\\right)` primes.
+            5. Create the Hammersley samples by combining the corresponding elements of the Hammersley sequences created in steps 3 and 4
+            6. When in "selection" mode, determine the closest corresponding point in the input dataset using Euclidean distance minimization. This is done by calling the ``nearest_neighbours`` method in the sampling superclass.
+
+        Returns:
+            NumPy Array:     A numpy array containing **number_of_samples** Hammersley sample points.
 
         """
         no_features = self.x_data.shape[1]
@@ -958,24 +939,15 @@ class HammersleySampling(SamplingMethods):
 
 class CVTSampling(SamplingMethods):
     """
-    =====================================================================================================================
-    A class that constructs CENTROIDAL VORONOI TESSELLATIONS (CVT) samples. Depending on the settings, the algorithm either returns samples from an input dataset which have been selected using Euclidean distance minimization after the CVT samples have been generated,
-    or returns CVT samples from a supplied data range.
+    A class that constructs Centroidal Voronoi Tessellation (CVT) samples.
 
     CVT sampling is based on the generation of samples in which the generators of the Voronoi tessellations and the mass centroids coincide.
 
-    At its simplest, CVT sampling/clustering is similar to k-means clustering.
+    To use: call class with inputs, and then ``sample_points`` function.
 
-    For more information on CVTs, see:
-     [1] Centroidal Voronoi Tessellations: Applications and Algorithms by Qiang Du, Vance Faber, and Max Gunzburger (https://doi.org/10.1137/S0036144599352836)
-     [2] Loeven et al paper titled "A Probabilistic Radial Basis Function Approach for Uncertainty Quantification"(https://pdfs.semanticscholar.org/48a0/d3797e482e37f73e077893594e01e1c667a2.pdf)
-    The CVT sampling algorithm implemented here is based on McQueen's method which involves a series of random sampling and averaging steps, see http://kmh-lanl.hansonhub.com/uncertainty/meetings/gunz03vgr.pdf.
-
-    To use: call class with inputs, and then lh_sample_points function
-    Example: For the first 10 samples in a 2-D space:
-        >>> b = rbf.CVTSampling(data, 10, tolerance = 1e-5, sampling_type="selection")
+    Example: For the first 10 CVT samples in a 2-D space:
+        >>> b = rbf.CVTSampling(data_bounds, 10, tolerance = 1e-5, sampling_type="creation")
         >>> samples = b.sample_points()
-    ===================================================================================================================
 
     """
 
@@ -984,30 +956,33 @@ class CVTSampling(SamplingMethods):
         ====================================================================================================================
         Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
 
-            Inputs:
-                data_input(<np.ndarray>,  <pd.DataFrame>) or (<list>): The input data set or range to be sampled.
-                    - When the aim is to select a set of samples from an existing dataset, the dataset must be an <np.ndarray> or <pd.dataframe> and sampling_type option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                    - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and sampling_type option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
-                number_of_samples(<int>): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in data_input.
-                sampling_type(<str>) : Option which determines whether the algorithm selects samples from an existing dataset (sampling_type="selection") or attempts to generate sample from a supplied range (sampling_type="creation"). Default is "creation".
+        Args:
+            data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
 
-            :optional:
-                tolerance(<float>): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.
-                                    The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is 1e-7.
+                - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
 
-            :returns:
-                self function containing four attributes -
-                    self.data - holds the numpy array containing the data to be sampled
-                    self.x_data - holds the features of the input data. The output data is assumed to be in the last column.
-                    self.number_of_samples - holds the number of halton samples to be generated.
-                    self.eps -  holds the termination tolerance for the algorithm
+            number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
+            sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
+
+        Keyword Args:
+            tolerance(float): Maximum allowable Euclidean distance between centres from consectutive iterations of the algorithm. Termination condition for algorithm.
+
+                - The smaller the value of tolerance, the better the solution but the longer the algorithm requires to converge. Default value is :math:`10^{-7}`.
+
+        Returns:
+                **self** function containing the input information.
 
 
-            :raises:
-                ValueError: The input data (data_input) is the wrong type (np.ndarray or pd.DataFrame)
-                Exception: When the number_of_samples is invalid (not an integer, too large, zero, -ve)
+        Raises:
+                ValueError: When **data_input** is the wrong type.
+
+                Exception: When the **number_of_samples** is invalid (not an integer, too large, zero, negative)
+
                 Exception: When the tolerance specified is too loose (tolerance > 0.1) or invalid
-                warnings.warn: when the tolerance specified by the user is too tight (tolerance < 1e-9)
+
+                warnings.warn: when the tolerance specified by the user is too tight (tolerance < :math:`10^{-9}`)
+
         """
         if sampling_type is None:
             sampling_type = 'creation'
@@ -1188,23 +1163,14 @@ class CVTSampling(SamplingMethods):
 
     def sample_points(self):
         """
-        ===============================================================================================================
-        Function cvt_sample_points determines the best/optimal centre points (centroids) for a data set. Based on the mimimization of the total distance between points and centres.
-        Iterative procedure based on McQueen's algorithm: Minimize distance, and then re-calculate centres
-        Distance mimimization done by allocating each point to the closest centre point, and calculating total diatsnce
-        Centre re-calculation done as the mean of each data cluster around each centre.
-        Steps:
-        1. Select initial centres - call self.random_sample_selection
-        3. While cost change > self.eps number of iterations < 1000:
-        Generate a set of random points within the design space
-            Calculate minimum distance based on fixed centres (function self.eucl_distance called)
-            Re-calculate centres based on closest points (function create_centres called)
-            Determine solution improvement
-        4. Use nearest neighbour algorithm and data scaling/unscaling to find the closest points to the final mass centroids in the actual input data
+        The ``sample_points`` method determines the best/optimal centre points (centroids) for a data set based on the minimization of the total distance between points and centres.
 
-            :returns:
-                centres(<np.ndarray>): A 2-D array containing the best centres found by the CVT algorithm.
-        ===============================================================================================================
+        Procedure based on McQueen's algorithm: iteratively minimize distance, and re-position centroids.
+        Centre re-calculation done as the mean of each data cluster around each centre.
+
+        Returns:
+            NumPy Array:     A numpy array containing the final **number_of_samples** centroids obbtained by the CVT algorithm.
+
         """
         _, n = self.x_data.shape
         size_multiple = 1000

@@ -49,30 +49,29 @@ However, only one approach is enabled at this time.
 
 
 class ResultReport:
-    """
-
-    A class for creating an object containing the information to be returned to the user.
-
-        :returns:
-			self function containing several attributes:
-				self.optimal_weights_array = np.ndarray containing the coefficients of all terms in the regressed polynomial, including user-specified terms
-				self.polynomial_order = the optimal polynomial order which results in the smallest training and cross-validation errors
-				self.errors = list containing four error/fit measures: the mean absolute error (MAE), mean squared error (MSE), R-squared and adjusted R-squared. The latter error is not always computed.
-				self.number_of_iterations = the number of err-r maximization iterations carried out by th algorithm. Returns an empty list is returned when no iterations are carried out
-				self.iteration_summary = summary of the best results available at each iteration. Can be used to monitor convergence. Returns an empty list is returned when no iterations are carried out
-				self.additional_features_data = np.ndarray containing the vector of additional training features supplied by the user.
-				self.final_training_data = np.ndarray containing the dataset used for regression training at the final iteration.
-				self.dataframe_of_optimal_weights_polynomial = Dataframe containing each polynomial term its the corresponding weight.
-				self.dataframe_of_optimal_weights_extra_terms = Dataframe containing weights for user-specified terms. Returns an empty list when no additional terms have been supplied.
-				self.fit_status = Judgement of performance of algorithm on inputted dataset based on final R-squared value. Returns 'ok' when R2>0.95, 'poor' when it is not.
-			
-    """
 
     def __init__(self, optimal_weight_vector, polynomial_order, multinomials,
                  mae_error, mse_error, R2, adjusted_R2, number_of_iterations,
                  results_vector, additional_features_array,
                  final_regression_data, df_coefficients, extra_terms_coeffs,
                  extra_terms_feature_vector, extra_terms_expressions):
+        """
+        A class for creating an object containing the information to be returned to the user.
+
+        :Returns:
+            self function containing several attributes:
+                - self.optimal_weights_array : np.ndarray containing the coefficients of all terms in the regressed polynomial, including user-specified terms
+                - self.polynomial_order : the optimal polynomial order which results in the smallest training and cross-validation errors
+                - self.errors : list containing four error/fit measures: the mean absolute error (MAE), mean squared error (MSE), R-squared and adjusted R-squared. The latter error is not always computed.
+                - self.number_of_iterations : the number of err-r maximization iterations carried out by th algorithm. Returns an empty list is returned when no iterations are carried out
+                - self.iteration_summary : summary of the best results available at each iteration. Can be used to monitor convergence. Returns an empty list is returned when no iterations are carried out
+                - self.additional_features_data : np.ndarray containing the vector of additional training features supplied by the user.
+                - self.final_training_data : np.ndarray containing the dataset used for regression training at the final iteration.
+                - self.dataframe_of_optimal_weights_polynomial : Dataframe containing each polynomial term its the corresponding weight.
+                - self.dataframe_of_optimal_weights_extra_terms : Dataframe containing weights for user-specified terms. Returns an empty list when no additional terms have been supplied.
+                - self.fit_status : Judgement of performance of algorithm on inputted dataset based on final R-squared value. Returns 'ok' when R2>0.95, 'poor' when it is not.
+
+        """
         self.optimal_weights_array = optimal_weight_vector
         self.polynomial_order = polynomial_order
         self.multinomials = multinomials
@@ -95,15 +94,15 @@ class ResultReport:
     def generate_expression(self, variable_list):
         """
 
-        The generate_expression method returns the Pyomo expression for the polynomial model trained.
-        The expression is constructed based on the supplied variable list and the results of the previous polynomial fitting process.
+        The ``generate_expression`` method returns the Pyomo expression for the polynomial model trained.
 
-        Input arguments:
-            variable_list(<list>)           : List of input variables to be used in generating expression. This can be the a list generated from the results of get_feature_vector.
-                                              The user can also choose to supply a new list of the appropriate length.
+        The expression is constructed based on a supplied list of variables **variable_list** and the output of ``poly_training``.
 
-        : returns
-            ans                              : Pyomo expression of the polynomial model based on the variables provided in variable_list
+        Args:
+            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the results of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
+
+        Returns:
+            Pyomo Expression              : Pyomo expression of the polynomial model based on the variables provided in **variable_list**.
 
         """
         terms = PolynomialRegression.polygeneration(
@@ -129,7 +128,7 @@ class ResultReport:
 class FeatureScaling:
     """
 
-    A class for scaling and unscaling input and output data. The class contains two main functions: data_scaling and data_unscaling
+    A class for scaling and unscaling input and output data. The class contains two main methods: ``data_scaling`` and ``data_unscaling``
     """
     def __init__(self):
         pass
@@ -137,19 +136,21 @@ class FeatureScaling:
     @staticmethod
     def data_scaling(data):
         """
+        ``data_scaling`` performs column-wise minimax scaling on the input dataset.
 
-        This function performs column-wise minimax scaling on the input dataset.
+        Args:
+            data : The input data set to be scaled. Must be a numpy array or dataframe.
 
-            Input Arguments:
-                data (<np.ndarray> or <pd.DataFrame>): The input data set to be scaled. Must be a numpy array or dataframe.
+        Returns:
+            (tuple): tuple containing:
+                - **scaled_data**  : A 2-D Numpy Array containing the scaled data. All array values will be between [0, 1].
+                - **data_minimum** : A 2-D row vector containing the column-wise minimums of the input data.
+                - **data_maximum** : A 2-D row vector containing the column-wise maximums of the input data.
 
-            Returns:
-                scaled_data(<np.ndarray>): A 2-D numpy array containing the scaled data. All array values will be between [0, 1].
-                data_minimum(<np.ndarray>): A 2-D row vector containing the column-wise minimums of the input data
-                data_maximum(<np.ndarray>): A 2-D row vector containing the column-wise maximums of the input data
-
-            Except:
-                TypeError: Raised when the input data is not a numpy array or dataframe
+        Raises:
+            TypeError:
+                Raised when the input data is not a numpy array or dataframe
+                
         """
         # Confirm that data type is an array or DataFrame
         if isinstance(data, np.ndarray):
@@ -181,18 +182,19 @@ class FeatureScaling:
     def data_unscaling(x_scaled, x_min, x_max):
         """
 
-        This function performs column-wise un-scaling on the a minmax-scaled input dataset.
+        ``data_unscaling`` performs column-wise un-scaling on the a minmax-scaled input dataset.
 
-            Input Arguments:
-                x_scaled(<np.ndarray>): The input data set to be un-scaled. Data values should be between 0 and 1.
-                x_min(<np.ndarray>): 1-D or 2-D (n-by-1) vector containing the actual minimum value for each column. Must contain same number of elements as the number of columns in x_scaled.
-                x_max(<np.ndarray>): 1-D or 2-D (n-by-1) vector containing the actual maximum value for each column. Must contain same number of elements as the number of columns in x_scaled.
+        Args:
+            x_scaled (NumPy Array)  : Data to be un-scaled. Data values should be between 0 and 1.
+            x_min (NumPy vector)    : :math:`n \\times 1` vector containing the actual minimum value for each column. Must contain same number of elements as the number of columns in x_scaled.
+            x_max (NumPy vector)    : :math:`n \\times 1` vector vector containing the actual minimum value for each column. Must contain same number of elements as the number of columns in x_scaled.
 
-            Returns:
-                unscaled_data(<np.ndarray>): A 2-D numpy array containing the scaled data, unscaled_data = x_min + x_scaled * (x_max - x_min)
+        Returns:
+            NumPy Array : A 2-D numpy array containing the scaled data, :math:`x_{min} + x_{scaled} * (x_{max} - x_{min})`
 
-            Except:
-                IndexError: Function raises index error when the dimensions of the arrays are inconsistent.
+        Raises:
+            IndexError: Raised when the dimensions of the arrays are inconsistent.
+
         """
         # Check if it can be evaluated. Will return index error if dimensions are wrong
         if x_scaled.ndim == 1:  # Check if 1D, and convert to 2D if required.
@@ -207,14 +209,13 @@ class PolynomialRegression:
     """
 	
     The PolynomialRegression class performs polynomial regression on a training data set.
-    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling poly_training.
+    
+    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling ``poly_training``.
 
-    For a given dataset with n features X = {x1, x2,...xn}, Polyregression is able to consider three types of basis functions:
-        (a) Mononomial terms for all individual features up to degree 10. The maximum degree to be considered can be set by the user (set maximum_polynomial_order)
-        (b) All first order multinomial terms x1.x2, x1.x3 etc. This can be turned on or off by the user (set multinomials)
-        (c) User defined input features, e.g. pyo.sin(x1). These must be Pyomo functions and should be provided as a list by the user using the  set_additional_terms function before the polynomial training is done.
-
-    The function performs polynomial regression fitting for each polynomial degree (1 to maximum_polynomial_order) and determines the best polynomial fitting via cross-validation.
+    For a given dataset with :math:`n` features :math:`x_{1},x_{2},\ldots,x_{n}`, Polyregression is able to consider three types of basis functions:
+        (a) Mononomial terms (:math:`x_{i}^{p},p \leq 10`) for all individual features. The maximum degree to be considered can be set by the user (**maximum_polynomial_order**)
+        (b) All first order interaction terms :math:`x_{1}x_{2}`, :math:`x_{1}x_{3}` etc. This can be turned on or off by the user (set **multinomials**)
+        (c) User defined input features, e.g. :math:`\sin(x_{1})`. These must be Pyomo functions and should be provided as a list by the user calling ``set_additional_terms`` method before the polynomial training is done.
 
     Example:
         >>> d = PolynomialRegression(full_data, training_data, maximum_polynomial_order=2, max_iter=20, multinomials=1, solution_method='pyomo')
@@ -223,87 +224,63 @@ class PolynomialRegression:
         >>> results = d.poly_training()
         >>> predictions = d.poly_predict_output(results, x_test)
 
-    Input Arguments:
-		For PolynomialRegression to work, three inputs are required:
-			- training_data(<np.ndarray> or <pd.DataFrame>): The dataset for regression training. training_data is expected to contain xy_data, with the output values (y) in the last column.
-			- full_data(<np.ndarray> or <pd.DataFrame>): If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided as full_data. Supplying full_data allows the algorithm to improve the polynomial fitting via error maximization and adaptive sampling.
-				When additional data is not available, the same data supplied for training_data can be supplied - this tells the algorithm not to carry out adaptive sampling.
-			- maximum_polynomial_order(<int>): The maximum polynomial order to be considered.
+    Args:
+        training_data (Numpy array or Pandas Dataframe): The dataset for regression training. training_data is expected to contain the features (X) and output (Y) data, with the output values (Y) in the last column.
+        full_data(Numpy array or Pandas Dataframe): If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided as full_data.
+            When additional data is not available, the same data supplied for training_data can be supplied - this tells the algorithm not to carry out adaptive sampling.
+        maximum_polynomial_order(int): The maximum polynomial order to be considered.
 
-    Further details about the optional inputs may be found in the individual functions.
+    Further details about the optional inputs may be found under the ``__init__`` method.
 	
     """
 
     def __init__(self, original_data_input, regression_data_input, maximum_polynomial_order, number_of_crossvalidations=None,
                  no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None):
         """
-		
+	
         Initialization of PolynomialRegression class.
 
-            Inputs:
-                - regression_data_input(<np.ndarray> or <pd.DataFrame>): The dataset for regression training. training_data is expected to contain xy_data, with the output values (y) in the last column.
+        Args:
+            regression_data_input(NumPy Array of Pandas Dataframe) : The dataset for regression training. training_data is expected to contain xy_data, with the output values (y) in the last column.
+            original_data_input(NumPy Array of Pandas Dataframe) : If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided here.
+            maximum_polynomial_order(int) : The maximum polynomial order to be considered.
 
-                - original_data_input(<np.ndarray> or <pd.DataFrame>): If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided here.
-                  Supplying full_data allows the algorithm to improve the polynomial fitting via error maximization and adaptive sampling.
-                  When additional data is not available, the same data supplied for training_data can be supplied - this tells the algorithm not to carry out adaptive sampling.
+        Keyword Args:
+            number_of_crossvalidations(int) : The number of polynomial fittings and cross-validations to be carried out for each polynomial function/expression. Must be a positive, non-zero integer. Default=3.
+            training_split(float): The training/test split to be used for regression_data_input. Must be between 0 and 1. Default = 0.75
+            solution_method(str): The method to be used for solving the least squares optimization problem for polynomial regression. Three options are available:
+                (a) 'mle'  : The mle (maximum likelihood estimate) method solves the least squares problem using linear algebra. Details of the method may be found in Forrester et al.
+                (b) 'BFGS' : This approach solves the least squares problem using scipy's BFGS algorithm.
+                (c) 'pyomo': This option solves the optimization problem in pyomo with IPOPT as solver. This is the default option.
 
-                - maximum_polynomial_order(<int>): The maximum polynomial order to be considered.
+            multinomials(bool):  This option determines whether or not multinomial terms are considered during polynomial fitting. Takes 0 for No and 1 for Yes. Default = 1.
 
-            optional:
-                - number_of_crossvalidations(<int>): The number of polynomial fittings and cross-validations to be carried out for each polynomial function/expression. Must be a positive, non-zero integer. Default=3.
+        Returns:
+            **self** object containing all the input information.
 
-                - no_adaptive_samples(<int>):  The maximum number of training samples from original_data_input that may be added to regression_data_input at each iteration when adaptive sampling is done. The points are chosen by finding the data points in original_data_input with the worst relative prediction errors.
-                    no_adaptive_samples must be a non-negative integer. Default=4.
+        Raises:
+            ValueError:
+                - The input datasets (**original_data_input** or **regression_data_input**) are of the wrong type (not Numpy arrays or Pandas Dataframes)
 
-                - training_split(<float>): The training/test split to be used for regression_data_input. Must be between 0 and 1. Default = 0.75
+            Exception:
+                * **maximum_polynomial_order** is not a positive, non-zero integer or **maximum_polynomial_order** is higher than the number of training samples available
+            Exception:
+                * **solution_method** is not 'mle', 'pyomo' or 'bfgs
+            Exception:
+                - **multinomials** is not binary (0 or 1)
+            Exception:
+                - **training_split** is not between 0 and 1
+            Exception:
+                - **number_of_crossvalidations** is not a positive, non-zero integer
+            Exception:
+                - **max_fraction_training_samples** is not between 0 and 1
+            Exception:
+                - **no_adaptive_samples** is not a positive, non-zero integer
+            Exception:
+                - **max_iter** is not a positive, non-zero integer
 
-                - max_fraction_training_samples(<float>): When adaptive sampling is done, max_fraction_training_samples represents the maximum fraction of original_data_input that may be used for regression training,
-                            maximum number of training samples = int(max_fraction_training_samples * number of sample points in original_data_input)
-                  Must be between 0 and 1. Default = 0.5
-
-                - max_iter(<int>): Maximum number of iterations allowed during adaptive sampling. Default = 10.
-
-                - solution_method(<str>): The method to be used for solving the least squares optimization problem for polynomial regression. Three options are available:
-                    (a) 'mle'  : The mle (maximum likelihood estimate) method solves the least squares problem using linear algebra. Details of the method may be found in Forrester et al.
-                    (b) 'BFGS' : This approach solves the least squares problem using scipy's BFGS algorithm.
-                    (c) 'pyomo': This option solves the optimization problem in pyomo with IPOPT as solver.
-                The default option is 'pyomo'
-
-                - multinomials(<bool>):  This option determines whether or not multinomial terms are considered during polynomial fitting. Takes 0 for No and 1 FOR Yes. Default = 1.
-
-
-            :returns:
-                self object with the following attributes:
-                    - self.original_data:  attribute of type <np.ndarray> containing original_data_input
-                    - self.regression_data: attribute of type <np.ndarray> containing regression_data_input
-                    - self.number_of_crossvalidations: attribute of type <int> containing number_of_crossvalidations
-                    - self.max_polynomial_order: attribute of type <int> containing maximum_polynomial_order
-                    - self.fraction_training: attribute of type <float> containing training_split
-                    - self.no_adaptive_samples: attribute of type <float> containing no_adaptive_samples
-                    - self.max_fraction_training_samples: attribute of type <float> containing max_fraction_training_samples
-                    - self.max_iter: attribute of type <int> containing max_iter
-                    - self.solution_method: attribute of type <str> containing solution_method entry
-                    - self.multinomials: attribute of type <int> containing multinomials
-                    - self.number_of_x_vars: attribute of type <int> representing the number of training features in regression_data
-                    - self.number_of_samples: attribute of type <int> representing the number of training samples in regression_data
-
-
-            :raises:
-                warnings.warn: When the number of cross-validations is too high, i.e. number_of_crossvalidations > 10
-
-                ValueError: The input datasets (original_data_input or regression_data_input) are of the wrong type (not np.ndarray or pd.DataFrame)
-
-                Exception:  - Dimensionality problems/conflicts exist between original_data_input and regression_data_input
-                            - maximum_polynomial_order is not a positive, non-zero integer
-                            - training_split is not between 0 and 1
-                            - max_fraction_training_samples is not between 0 and 1
-                            - number_of_crossvalidations is not a positive, non-zero integer
-                            - no_adaptive_samples is not a positive, non-zero integer
-                            - max_iter is not a positive, non-zero integer
-                            - maximum_polynomial_order is higher than the number of training samples available
-                            - solution_method is not 'mle', 'pyomo' or 'bfgs'
-                            - multinomials is not binary (0 or 1)
-							
+            warnings.warn:
+                - When the number of cross-validations is too high, i.e. number_of_crossvalidations > 10
         """
 
         print('\n===========================Polynomial Regression===============================================\n')
@@ -1125,14 +1102,14 @@ class PolynomialRegression:
     def get_feature_vector(self):
         """
 
-        The get_feature_vector method generates the list of regression features from the column headers of the input dataset.
+        The ``get_feature_vector`` method generates the list of regression features from the column headers of the input dataset.
 
-        :returns
-            p(<IndexedParam>): An indexed parameter list of the variables supplied in the original data
+        Returns:
+            Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
 
 
         Example:
-			Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the PolynomialRegression class and print the column headers for the variables
+			Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the **PolynomialRegression** class and print the column headers for the variables
 			
 				>>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
 				>>> f = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=1, multinomials=True, training_split=0.8)
@@ -1152,14 +1129,14 @@ class PolynomialRegression:
     def set_additional_terms(self, term_list):
         """
 
-        set_additional_terms accepts additional user-defined features for consideration during regression.
+        ``set_additional_terms`` accepts additional user-defined features for consideration during regression.
 
-        Input arguments:
-            term_list               : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
+        Args:
+            term_list (list) : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
 
 
         Example:
-            To add the sine and cosine of a variable with header 'X1' in the dataset xy_data as additional regression features:
+            To add the sine and cosine of a variable with header 'X1' in the dataset **xy_data** as additional regression features:
 
                 >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
                 >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
@@ -1173,15 +1150,15 @@ class PolynomialRegression:
     def poly_training(self):
         """
 
-        The poly_training method trains a polynomial model to an input dataset.
+        The ``poly_training`` method trains a polynomial model to an input dataset.
         It calls the core method which is called in the PolynomialRegression class (polynomial_regression_fitting).
         It accepts no user input, inheriting the information passed in class initialization.
 
-            :returns:
-                results                         : Python object containing the results of the polynomial regression process
-                                                  including the polynomial order (results.polynomial_order), polynomial coefficients
-                                                  (results.optimal_weights_array) and fit errors (results.errors). See information
-                                                  on ResultReport class for details on contents.
+        Returns:
+            tuple   : Python Object (**results**) containing the results of the polynomial regression process including:
+                - the polynomial order  (**self.polynomial_order**)
+                - polynomial coefficients (**self.optimal_weights_array**), and
+                - MAE and MSE errors as well as the :math:`R^{2}` (**results.errors**).
 
         """
 
@@ -1197,14 +1174,14 @@ class PolynomialRegression:
     def poly_predict_output(self, results_vector, x_data):
         """
 
-        The poly_predict_output method generates output predictions for input data x_data based a previously generated polynomial fitting.
+        The ``poly_predict_output`` method generates output predictions for input data x_data based a previously generated polynomial fitting.
 
-            Inputs:
-                results_vector                  : Python object containing results of polynomial fit generated by calling the poly_training function.
-                x_data(<np.ndarray>)            : numpy array of designs for which the output is to be evaluated/predicted.
+        Args:
+            results_vector  : Python object containing results of polynomial fit generated by calling the poly_training function.
+            x_data          : Numpy array of designs for which the output is to be evaluated/predicted.
 
-            :returns:
-                y_eq(<np.ndarray>)              : numpy array containing the output variable predictions based on the polynomial fit.
+        Returns:
+             Numpy Array    : Output variable predictions based on the polynomial fit.
 
         """
         nf = x_data.shape[1]

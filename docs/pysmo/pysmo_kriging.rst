@@ -88,3 +88,21 @@ Once a Kriging model has been trained, predictions for values at previously unsa
    >>> y_unsampled = kriging_init.kriging_predict_output(krg_fit, x_unsampled)
 
 Further details about *pysmo.kriging* module may be found by consulting the examples or reading the paper [...]
+
+
+.. module:: idaes.surrogate.pysmo.kriging
+
+Available Methods
+------------------
+
+.. autoclass:: idaes.surrogate.pysmo.kriging.KrigingModel
+    :members: __init__, get_feature_vector, kriging_training, kriging_predict_output, r2_calculation
+
+.. autoclass:: idaes.surrogate.pysmo.kriging.ResultReport
+    :members: kriging_generate_expression	
+
+References:
+----------------
+[1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+
+[2] D. R. Jones, A taxonomy of global optimization methods based on response surfaces, Journal of Global Optimization, https://link.springer.com/article/10.1023%2FA%3A1012771025575
