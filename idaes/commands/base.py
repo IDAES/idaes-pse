@@ -17,6 +17,7 @@ Base command for 'idaes' commandline script
 __author__ = "John Eslick"
 
 import click
+import logging
 
 # separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")
@@ -41,6 +42,7 @@ def level_from_verbosity(vb):
     elif vb <= -2:
         level = logging.FATAL + 1
     return level
+
 
 @click.group()
 @click.version_option(version=None)
