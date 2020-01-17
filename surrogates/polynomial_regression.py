@@ -1,3 +1,15 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 from __future__ import division
 
 from six import string_types
@@ -39,10 +51,10 @@ However, only one approach is enabled at this time.
 class ResultReport:
     """
 
-    A class for creating an object containing the information ot be returned to the user.
+    A class for creating an object containing the information to be returned to the user.
 
         :returns:
-        self function containing three attributes -
+        self function containing several attributes -
             self.optimal_weights_array = np.ndarray containing the coefficients of all terms in the regressed polynomial, including user-specified terms
             self.polynomial_order = the optimal polynomial order which results in the smallest training and cross-validation errors
             self.errors = list containing four error/fit measures: the mean absolute error (MAE), mean squared error (MSE), R-squared and adjusted R-squared. The latter error is not always computed.
@@ -80,6 +92,19 @@ class ResultReport:
             self.fit_status = 'poor'
 
     def generate_expression(self, variable_list):
+        """
+        ====================================================================================================================
+        The generate_expression method returns the Pyomo expression for the polynomial model trained.
+        The expression is constructed based on the supplied variable list and the results of the previous polynomial fitting process.
+
+        Input arguments:
+            variable_list(<list>)           : List of input variables to be used in generating expression. This can be the a list generated from the results of get_feature_vector.
+                                              The user can also choose to supply a new list of the appropriate length.
+
+        : returns
+            ans                              : Pyomo expression of the polynomial model based on the variables provided in variable_list
+        ====================================================================================================================
+        """
         terms = PolynomialRegression.polygeneration(
             self.polynomial_order, self.multinomials, np.array([variable_list])
         ).transpose()
@@ -181,19 +206,21 @@ class PolynomialRegression:
     """
     ====================================================================================================================
     The PolynomialRegression class performs polynomial regression on a training data set.
-    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling polynomial_regression_fitting.
+    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling poly_training.
 
     For a given dataset with n features X = {x1, x2,...xn}, Polyregression is able to consider three types of basis functions:
         (a) Mononomial terms for all individual features up to degree 10. The maximum degree to be considered can be set by the user (set maximum_polynomial_order)
         (b) All first order multinomial terms x1.x2, x1.x3 etc. This can be turned on or off by the user (set multinomials)
-        (c) User defined input features, e.g. sin(x1). This must be provided by the user when polynomial_regression_fitting is called (set additional_regression_features).
+        (c) User defined input features, e.g. pyo.sin(x1). These must be Pyomo functions and should be provided as a list by the user using the  set_additional_terms function before the polynomial training is done.
 
-    The function performs polynomial regression fitting for each polynomial degree (1 to maximum_polynomial_order)  and determines the best polynomial fitting via cross-validation.
-    Adaptive sampling capabilities are available in PolynomialRegression.
+    The function performs polynomial regression fitting for each polynomial degree (1 to maximum_polynomial_order) and determines the best polynomial fitting via cross-validation.
 
     Example:
-        d = PolynomialRegression(full_data, training_data, maximum_polynomial_order=2, max_iter=20, multinomials=1, solution_method='pyomo')
-        e, f, g = d.polynomial_regression_fitting( [extra_data] )
+        >>> d = PolynomialRegression(full_data, training_data, maximum_polynomial_order=2, max_iter=20, multinomials=1, solution_method='pyomo')
+        >>> p = d.get_feature_vector()
+        >>> d.set_additional_terms([...extra terms...])
+        >>> results = d.poly_training()
+        >>> predictions = d.poly_predict_output(results, x_test)
 
     Input Arguments:
     For PolynomialRegression to work, three inputs are required:
@@ -201,8 +228,6 @@ class PolynomialRegression:
         - full_data(<np.ndarray> or <pd.DataFrame>): If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided as full_data. Supplying full_data allows the algorithm to improve the polynomial fitting via error maximization and adaptive sampling.
             When additional data is not available, the same data supplied for training_data can be supplied - this tells the algorithm not to carry out adaptive sampling.
         - maximum_polynomial_order(<int>): The maximum polynomial order to be considered.
-
-    It should be noted that adaptive sampling is not available when user-defined input features are supplied.
 
     Further details about the optional inputs may be found in the individual functions.
      ====================================================================================================================
@@ -861,8 +886,6 @@ class PolynomialRegression:
         Note: It assumes that each list element is 1D
 
         :argument
-            self
-
             additional_regression_features(<list>): a list of features to be added to the regression problem. Each element of the list must have the same number of entries as self.number_of_samples
 
         :returns
@@ -872,7 +895,7 @@ class PolynomialRegression:
             :exception
                 - when additional_regression_features is not a list
                 - when the entries in additional_regression_features are not of type 1-D <np.ndarray> or pd.Series>
-                when the length os the entries in additional_regression_features do not match the number of rows in self.regression_data
+                - when the length os the entries in additional_regression_features do not match the number of rows in self.regression_data
         ===============================================================================================================
         """
         # Check for list
@@ -933,9 +956,9 @@ class PolynomialRegression:
                                                         It should be noted that adaptive sampling is not available when additional features have been supplied by the user, i.e. when len(additional_regression_features) > 0.
 
          :returns:
-            beta_vector(<np.ndarray>):                  Optimal polynomial regression weights
-            order_opt:                                  Best polynomial order found via regression
-            vector_of_results                           Vector containing the best polynomial orders and errors found at each iteration. Value is None when no iterations are run
+            results:                                    Python object containing the results of the polynomial regression process including the polynomial order
+                                                        (results.polynomial_order), polynomial coefficients (results.optimal_weights_array) and fit errors (results.errors).
+                                                        See information on ResultReport class for details on contents.
         ===============================================================================================================
         """
         # Parameters that represent the best solution found at each iteration based on the cross-validation error
@@ -1097,6 +1120,26 @@ class PolynomialRegression:
             return results
 
     def get_feature_vector(self):
+        """
+        =====================================================================================================================
+        The get_feature_vector method generates the list of regression features from the column headers of the input dataset.
+
+        :returns
+            p(<IndexedParam>): An indexed parameter list of the variables supplied in the original data
+
+
+        Example:
+        ---------
+        Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the PolynomialRegression class and print the column headers for the variables
+            >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
+            >>> f = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=1, multinomials=True, training_split=0.8)
+            >>> p = f.get_feature_vector()
+            >>> for i in p.keys():
+            >>>     print(i)
+            one
+            two
+        =====================================================================================================================
+        """
         p = Param(self.regression_data_columns, mutable=True, initialize=0)
         p.index_set().construct()
         p.construct()
@@ -1104,10 +1147,41 @@ class PolynomialRegression:
         return p
 
     def set_additional_terms(self, term_list):
+        """
+        =====================================================================================================================
+        set_additional_terms accepts additional user-defined features for consideration during regression.
+
+        Input arguments:
+            term_list               : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
+
+
+        Example:
+            To add the sine and cosine of a variable with header 'X1' in the dataset xy_data as additional regression features:
+
+                >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
+                >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
+                >>> p = A.get_feature_vector()
+                >>> A.set_additional_terms([ pyo.sin(p['X1']) , pyo.cos(p['X1']) ])
+        =====================================================================================================================
+        """
         self.additional_term_expressions = term_list
 
     # def fit_surrogate(self):
     def poly_training(self):
+        """
+        =====================================================================================================================
+        The poly_training method trains a polynomial model to an input dataset.
+        It calls the core method which is called in the PolynomialRegression class (polynomial_regression_fitting).
+        It accepts no user input, inheriting the information passed in class initialization.
+
+            :returns:
+                results                         : Python object containing the results of the polynomial regression process
+                                                  including the polynomial order (results.polynomial_order), polynomial coefficients
+                                                  (results.optimal_weights_array) and fit errors (results.errors). See information
+                                                  on ResultReport class for details on contents.
+        =====================================================================================================================
+        """
+
         cMap = ComponentMap()
         for i, col in enumerate(self.regression_data_columns):
             cMap[self.feature_list[col]] = self.regression_data[:, i]
@@ -1118,6 +1192,20 @@ class PolynomialRegression:
         return self.polynomial_regression_fitting(additional_data)
 
     def poly_predict_output(self, results_vector, x_data):
+        """
+        =====================================================================================================================
+
+        The poly_predict_output method generates output predictions for input data x_data based a previously generated polynomial fitting.
+
+            Inputs:
+                results_vector                  : Python object containing results of polynomial fit generated by calling the poly_training function.
+                x_data(<np.ndarray>)            : numpy array of designs for which the output is to be evaluated/predicted.
+
+            :returns:
+                y_eq(<np.ndarray>)              : numpy array containing the output variable predictions based on the polynomial fit.
+
+        =====================================================================================================================
+        """
         nf = x_data.shape[1]
         x_list = [i for i in range(0, nf)]
         import pyomo.environ as aml
