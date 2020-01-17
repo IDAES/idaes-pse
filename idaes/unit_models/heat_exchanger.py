@@ -271,7 +271,7 @@ class HeatExchangerData(UnitModelBlockData):
         )
         self.delta_temperature_out = Var(
             self.flowsheet().config.time,
-            initialize=10.0,
+            initialize=10.1,
             doc="Temperature difference at the hot outlet end",
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
