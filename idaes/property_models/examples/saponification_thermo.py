@@ -15,9 +15,6 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            NonNegativeReals,
@@ -39,13 +36,14 @@ from idaes.core import (declare_process_block_class,
                         EnergyBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+import idaes.logger as idaeslog
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("SaponificationParameterBlock")
@@ -137,17 +135,11 @@ class _StateBlock(StateBlock):
                      temperature : value at which to initialize temperature
                                   (default=None)
             outlvl : sets output level of initialization routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
+                              - True - states have already been fixed and
+                                       initialization does not need to worry
+                                       about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None)
@@ -168,6 +160,7 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
         # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
@@ -188,21 +181,15 @@ class _StateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        # Reactivate conc_water_eqn
-        for k in blk.keys():
-            if not blk[k].config.defined_state:
-                blk[k].conc_water_eqn.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 blk.release_state(flags)
 
-        if outlvl > 0:
-            _log.info('{} Initialization Complete.'.format(blk.name))
+        init_log.info('Initialization Complete.')
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to relase state variables fixed during initialization.
 
@@ -213,14 +200,18 @@ class _StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+
+        # Reactivate conc_water_eqn
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].conc_water_eqn.activate()
+
         if flags is None:
             return
         # Unfix state variables
         revert_state_vars(blk, flags)
-
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} State Released.'.format(blk.name))
+        init_log.info('State Released.')
 
 
 @declare_process_block_class("SaponificationStateBlock",

@@ -45,6 +45,8 @@ Contents
     install/index
     examples
     standards
+    configuration
+    logging
     core/index
     transformations/index
     models/index

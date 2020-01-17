@@ -70,12 +70,6 @@ class BTParameterData(CubicParameterData):
                                      default=298.15,
                                      doc='Reference temperature [K]')
 
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314462618,
-                               doc='Gas Constant [J/mol.K]')
-
         # Critical Properties
         pressure_crit_data = {'benzene': 48.9e5,
                               'toluene': 41.0e5}
