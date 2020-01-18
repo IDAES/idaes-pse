@@ -27,7 +27,9 @@ from pyomo.contrib.parmest.ipopt_solver_wrapper import ipopt_solve_with_stats
 from idaes.core.util.model_serializer import to_json, from_json
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
+_log = idaeslog.getLogger(__name__)
 
 def homotopy(model, variables, targets,
              max_solver_iterations=50, max_solver_time=10,

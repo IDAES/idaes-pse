@@ -87,9 +87,6 @@ class TestParamBlock(object):
         for i in model.rparams.dh_rxn:
             assert value(model.rparams.dh_rxn[i]) == -49000
 
-        assert isinstance(model.rparams.gas_const, Param)
-        assert value(model.rparams.gas_const) == 8.314
-
 
 class TestReactionBlock(object):
     @pytest.fixture(scope="class")

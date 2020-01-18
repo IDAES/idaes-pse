@@ -19,7 +19,7 @@ estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.environ import Param, Set
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -102,23 +102,6 @@ class MethaneParameterData(ActivityCoeffParameterData):
         self.temperature_reference = Param(mutable=True,
                                            default=1500,
                                            doc='Reference temperature [K]')
-
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
-
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        mw_comp_data = {'benzene': 78.1136E-3,
-#                        'toluene': 92.1405E-3,
-#                        'o-xylene': 106.167e-3}
-#
-#        self.mw_comp = Param(self.component_list,
-#                             mutable=False,
-#                             initialize=extract_data(mw_comp_data),
-#                             doc="molecular weight Kg/mol")
 
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)

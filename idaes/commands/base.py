@@ -14,10 +14,7 @@
 
 __author__ = "John Eslick"
 
-import logging
 import click
-
-_log = logging.getLogger(__name__)
 
 
 @click.group()
