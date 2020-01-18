@@ -11,3 +11,4 @@ Power Generation Models
     turbine_stage
     turbine_multistage
     steam_valve
+    boiler_heat_exchanger
