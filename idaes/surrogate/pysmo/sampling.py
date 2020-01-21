@@ -125,7 +125,8 @@ class SamplingMethods:
         3. Selects the sample point in the first row (after sorting) as the closest sample point.
 
         Input arguments:
-            self: contains, among other things, the input data
+            self: contains, among other things, the input data.
+            full_data: refers to the input dataset supplied by the user.
             a: a single row vector containing the sample point we want to find the closest sample to.
 
         :returns:
@@ -337,7 +338,7 @@ class LatinHypercubeSampling(SamplingMethods):
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
             
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
 
             number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
@@ -532,7 +533,7 @@ class UniformSampling(SamplingMethods):
             data_input (NumPy Array, Pandas Dataframe or list) :  The input data set or range to be sampled.
 
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information in this case.
 
             list_of_samples_per_variable (list): The list containing the number of subdivisions for each variable. Each dimension (variable) must be represented by a positive integer variable greater than 1.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
@@ -678,7 +679,7 @@ class HaltonSampling(SamplingMethods):
             data_input (NumPy Array, Pandas Dataframe or list) : The input data set or range to be sampled.
             
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
             
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
@@ -819,7 +820,7 @@ class HammersleySampling(SamplingMethods):
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
 
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
@@ -953,14 +954,13 @@ class CVTSampling(SamplingMethods):
 
     def __init__(self, data_input, number_of_samples=None, tolerance=None, sampling_type=None):
         """
-        ====================================================================================================================
         Initialization of CVTSampling class. Two inputs are required, while an optional option to control the solution accuracy may be specified.
 
         Args:
             data_input (NumPy Array, Pandas Dataframe or list): The input data set or range to be sampled.
 
                 - When the aim is to select a set of samples from an existing dataset, the dataset must be a NumPy Array or a Pandas Dataframe and **sampling_type** option must be set to "selection". The output variable (Y) is assumed to be supplied in the last column.
-                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "selection". It is assumed that no range contains no output variable information  in this case.
+                - When the aim is to generate a set of samples from a data range, the dataset must be a list containing two lists of equal lengths which contain the variable bounds and **sampling_type** option must be set to "creation". It is assumed that no range contains no output variable information  in this case.
 
             number_of_samples(int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type(str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".

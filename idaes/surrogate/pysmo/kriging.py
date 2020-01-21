@@ -403,9 +403,9 @@ class KrigingModel:
         The optimal_parameter_evaluation method  evaluates the values of all the parameters of the final Kriging model.
         For an input set of Kriging parameters var_vector and p, it:
             (1) Generates the covariance matrix by calling covariance_matrix_generator
-            (2) Finds the cobvariance matrix inverse
+            (2) Finds the co-variance matrix inverse
             (3) Evaluates the Kriging mean and variance
-            (4)
+            (4) Evaluates the deviation of each training point from the Kriging mean
 
         Input Arguments:
             var_vector              : Optimal Kriging parameters (weights + regularization parameter)

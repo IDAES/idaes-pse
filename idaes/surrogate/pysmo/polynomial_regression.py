@@ -225,8 +225,8 @@ class PolynomialRegression:
         >>> predictions = d.poly_predict_output(results, x_test)
 
     Args:
-        training_data (Numpy array or Pandas Dataframe): The dataset for regression training. training_data is expected to contain the features (X) and output (Y) data, with the output values (Y) in the last column.
-        full_data(Numpy array or Pandas Dataframe): If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided as full_data.
+        regression_data_input(NumPy Array of Pandas Dataframe) : The dataset for regression training. It is expected to contain the features (X) and output (Y) data, with the output values (Y) in the last column.
+        original_data_input(NumPy Array of Pandas Dataframe) : If **regression_data_input** was drawn from a larger dataset by some sampling approach, the larger dataset may be provided here.
             When additional data is not available, the same data supplied for training_data can be supplied - this tells the algorithm not to carry out adaptive sampling.
         maximum_polynomial_order(int): The maximum polynomial order to be considered.
 
@@ -237,21 +237,23 @@ class PolynomialRegression:
     def __init__(self, original_data_input, regression_data_input, maximum_polynomial_order, number_of_crossvalidations=None,
                  no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None):
         """
-	
         Initialization of PolynomialRegression class.
 
         Args:
-            regression_data_input(NumPy Array of Pandas Dataframe) : The dataset for regression training. training_data is expected to contain xy_data, with the output values (y) in the last column.
-            original_data_input(NumPy Array of Pandas Dataframe) : If training_data was drawn from a larger dataset by some sampling approach, the larger dataset may be provided here.
+            regression_data_input(NumPy Array of Pandas Dataframe) : The dataset for regression training. It is expected to contain features and output data, with the output values (Y) in the last column.
+            original_data_input(NumPy Array of Pandas Dataframe) : If **regression_data_input** was drawn from a larger dataset by some sampling approach, the larger dataset may be provided here.
             maximum_polynomial_order(int) : The maximum polynomial order to be considered.
 
         Keyword Args:
             number_of_crossvalidations(int) : The number of polynomial fittings and cross-validations to be carried out for each polynomial function/expression. Must be a positive, non-zero integer. Default=3.
+
             training_split(float): The training/test split to be used for regression_data_input. Must be between 0 and 1. Default = 0.75
+
             solution_method(str): The method to be used for solving the least squares optimization problem for polynomial regression. Three options are available:
-                (a) 'mle'  : The mle (maximum likelihood estimate) method solves the least squares problem using linear algebra. Details of the method may be found in Forrester et al.
-                (b) 'BFGS' : This approach solves the least squares problem using scipy's BFGS algorithm.
-                (c) 'pyomo': This option solves the optimization problem in pyomo with IPOPT as solver. This is the default option.
+
+                (a) "MLE"  : The mle (maximum likelihood estimate) method solves the least squares problem using linear algebra. Details of the method may be found in Forrester et al.
+                (b) "BFGS" : This approach solves the least squares problem using scipy's BFGS algorithm.
+                (c) "pyomo": This option solves the optimization problem in pyomo with IPOPT as solver. This is the default option.
 
             multinomials(bool):  This option determines whether or not multinomial terms are considered during polynomial fitting. Takes 0 for No and 1 for Yes. Default = 1.
 
@@ -462,6 +464,7 @@ class PolynomialRegression:
 
         :argument:
             polynomial_order(<int>):                    The polynomial order currently under consideration
+            multinomials(<bool>):                       Boolean variable that determines whether or not multinomial terms are considered during polynomial fitting.
             x_input_train_data(<np.ndarray>):           Input data containing features supplied by the user
 
         optional:
@@ -928,10 +931,7 @@ class PolynomialRegression:
          - The preset iteration number given by the user has been reached
          - All available points in self.original_data have been used for training.
 
-         :argument
-            self
-
-         optional:
+         Keyword Args:
             additional_regression_features(<list>):     Additional features the user wants the algorithm to consider during regression.
                                                         It should be noted that adaptive sampling is not available when additional features have been supplied by the user, i.e. when len(additional_regression_features) > 0.
 
