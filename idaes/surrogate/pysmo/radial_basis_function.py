@@ -34,14 +34,13 @@ class ResultReport:
 
     def __init__(self, radial_weights, best_r_value, best_lambda_param, centres, y_training_predictions, rmse_error, x_condition_number, reg_setting, r_square, basis_function, data_min, data_max):
         """
-        ===================================================================================================================
         A class for creating an object containing information about the RBF solution to be returned to the user.
 
         Returns:
         self function containing ten attributes -
 
-            self.weights(<np.ndarray>)              : array containing optimal radial weights (coefficients) for the RBF
-            self.sigma(<float>)                     : best shape parameter found for selected parametric basis function. Will return zero for fixed basis functions.
+            self.weights(NumPy Array)              : array containing optimal radial weights (coefficients) for the RBF
+            self.sigma(float)                     : best shape parameter found for selected parametric basis function. Will return zero for fixed basis functions.
             self.regularization                     : Boolean variable indicating whether regularization was turned on/off for the problem
             self.regularization_parameter           : best regularization parameter found. Will return zero when reqularization is turned off
             self.centres                            : co-ordinates of RBF centres
@@ -51,7 +50,6 @@ class ResultReport:
             self.R2                                 : R2 coefficient-of-fit between the actual output and the surrogate predictions
             self.solution_status                    : Judgement on coefficient matrix conditioning. Returns 'ok' when problem is sufficiently well conditioned (condition number < 1 / eps); 'unstable solution' when the problem is ill-conditioned.
 
-        ===================================================================================================================
         """
         self.weights = radial_weights
         self.sigma = best_r_value
@@ -362,9 +360,8 @@ class RadialBasisFunctions:
 
     def r2_distance(self, c):
         """
-        ===============================================================================================================
         The function r2_distance calculates Euclidean distance from the point or array c.
-        ================================================================================================================
+
         """
         dist = self.x_data - c
         l2_distance = np.sqrt(np.sum((dist ** 2), axis=1))
@@ -373,14 +370,13 @@ class RadialBasisFunctions:
     @staticmethod
     def gaussian_basis_transformation(x, shape_parameter):
         """
-        =====================================================================================================================
         The function gaussian_basis_transformation returns the element-by-element Gaussian transformation of the input data x.
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
-                shape parameter(<float>): Shape parameter of the Gaussian function
+            Args:
+                x(NumPy Array): Input data to be transformed
+                shape parameter(float): Shape parameter of the Gaussian function
 
-            :returns:
-                x_mod(<np.ndarray>): Gaussian transformation of the input data x
+            Returns:
+                x_mod(NumPy Array): Gaussian transformation of the input data x
 
         Examples:
         Gaussian of numbers from 0 to 2 for a shape parameter of 2:
@@ -389,7 +385,7 @@ class RadialBasisFunctions:
 
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
-        =====================================================================================================================
+
         """
         x_mod = np.exp(-1 * ((x * shape_parameter) ** 2))
         return x_mod
@@ -397,14 +393,12 @@ class RadialBasisFunctions:
     @staticmethod
     def linear_transformation(x):
         """
-        =====================================================================================================================
-
         The function linear_transformation returns the element-by-element linear transformation of the input data x.
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
+            Args:
+                x(NumPy Array): Input data to be transformed
 
-            :returns:
-                x_mod(<np.ndarray>): Linear transformation of the input data x, x_mod = x
+            Returns:
+                x_mod(NumPy Array): Linear transformation of the input data x, x_mod = x
 
         Examples:
         Linear transformation of 0, 1 and 2:
@@ -414,7 +408,6 @@ class RadialBasisFunctions:
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
 
-        =====================================================================================================================
         """
         x_mod = x ** 1
         return x_mod
@@ -423,11 +416,11 @@ class RadialBasisFunctions:
     def cubic_transformation(x):
         """
         The function cubic_transformation returns the element-by-element cubic transformation of the input data x.
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
+            Args:
+                x(NumPy Array): Input data to be transformed
 
-            :returns:
-                x_mod(<np.ndarray>): Cubic transformation of the input data x, x_mod = (x ** 3)
+            Returns:
+                x_mod(NumPy Array): Cubic transformation of the input data x, x_mod = (x ** 3)
 
         Examples:
         Cubic transformation of 0, 1 and 2:
@@ -443,15 +436,13 @@ class RadialBasisFunctions:
     @staticmethod
     def multiquadric_basis_transformation(x, shape_parameter):
         """
-        =====================================================================================================================
-
         The function multiquadric_basis_transformation returns the element-by-element Multi-quadric transformation of the input data x.
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
-                shape parameter(<float>): Shape parameter of the Multiquadric function
+            Args:
+                x(NumPy Array): Input data to be transformed
+                shape parameter(float): Shape parameter of the Multiquadric function
 
-            :returns:
-                x_mod(<np.ndarray>): Multiquadric transformation of the input data x; x_mod = sqrt[(1 + (c.x)**2)] where c = shape parameter
+            Returns:
+                x_mod(NumPy Array): Multiquadric transformation of the input data x; x_mod = sqrt[(1 + (c.x)**2)] where c = shape parameter
 
         Examples:
         Multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
@@ -466,7 +457,6 @@ class RadialBasisFunctions:
         In: Tenne Y., Goh CK. (eds) Computational Intelligence in Expensive Optimization Problems.
         https://link.springer.com/chapter/10.1007/978-3-642-10701-6_2
 
-        =====================================================================================================================
         """
         x_mod = np.sqrt(((x * shape_parameter) ** 2) + 1)
         # x_mod = np.sqrt(x**2 + shape_parameter**2)  # Alternative implementation
@@ -475,16 +465,14 @@ class RadialBasisFunctions:
     @staticmethod
     def inverse_multiquadric_basis_transformation(x, shape_parameter):
         """
-        =====================================================================================================================
-
         The function inverse_multiquadric_basis_transformation returns the element-by-element  inverse multiquadric transformation of the input data x.
         Direct inverse of the multiquadric basis transformation
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
-                shape parameter(<float>): Shape parameter of the inverse multiquadric function
+            Args:
+                x(NumPy Array): Input data to be transformed
+                shape_parameter(float): Shape parameter of the inverse multiquadric function
 
-            :returns:
-                x_mod(<np.ndarray>): Inverse multiquadric transformation of the input data x; x_mod =  1 / sqrt[(1 + (c.x)**2)] where c = shape parameter
+            Returns:
+                x_mod(NumPy Array): Inverse multiquadric transformation of the input data x; x_mod =  1 / sqrt[(1 + (c.x)**2)] where c = shape parameter
 
         Examples:
         Inverse multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
@@ -499,8 +487,6 @@ class RadialBasisFunctions:
         In: Tenne Y., Goh CK. (eds) Computational Intelligence in Expensive Optimization Problems.
         https://link.springer.com/chapter/10.1007/978-3-642-10701-6_2
 
-        =====================================================================================================================
-
         """
         x_mod = 1 / np.sqrt(((x * shape_parameter) ** 2) + 1)
         # x_mod = 1 / (np.sqrt(x ** 2 + shape_parameter ** 2))  # Alternative implementation
@@ -509,15 +495,13 @@ class RadialBasisFunctions:
     @staticmethod
     def thin_plate_spline_transformation(x):
         """
-        =====================================================================================================================
-
         The function thin_plate_spline_transformation returns the element-by-element spline transformation of the input data x.
         Direct inverse of the multiquadric basis transformation
-            Inputs:
-                x(<np.ndarray>): Input data to be transformed
+            Args:
+                x(NumPy Array): Input data to be transformed
 
-            :returns:
-                x_mod(<np.ndarray>): Spline transformation of the input data x; x_mod =  (x**2).ln(x)
+            Returns:
+                x_mod(NumPy Array): Spline transformation of the input data x; x_mod =  (x**2).ln(x)
 
             :except:
                 RuntimeWarning: thrown up when ln(x)=0
@@ -535,7 +519,6 @@ class RadialBasisFunctions:
         In: Tenne Y., Goh CK. (eds) Computational Intelligence in Expensive Optimization Problems.
         https://link.springer.com/chapter/10.1007/978-3-642-10701-6_2
 
-        =====================================================================================================================
         """
         x_mod = (x ** 2) * np.log(x)
         x_mod = np.nan_to_num(x_mod)  # handles NaN
@@ -543,21 +526,18 @@ class RadialBasisFunctions:
 
     def basis_generation(self, r):
         """
-    =====================================================================================================================
-
         The function basis_generation converts the input data to the requisite basis specified by the user.
         This is done in two steps:
         1. The Euclidean distance from each of the points to each of the RBF centres is calculated by calling the r2_distance function.
         2. The distances evaluated in step 1 are transformed to the relevant basis selected by the user.
 
-            Inputs:
-                self(<np.ndarray>): contains, among other things, the input data
-                r(<float>)        : The shape parameter required for the Gaussian, Multiquadric and Inverse multiquadric transformations.
+            Args:
+                self(NumPy Array): contains, among other things, the input data
+                r(float)        : The shape parameter required for the Gaussian, Multiquadric and Inverse multiquadric transformations.
 
-            :returns:
-                x_transformed(<np.ndarray>): Array of transformed data based on user-defined transformation function
+            Returns:
+                x_transformed(NumPy Array): Array of transformed data based on user-defined transformation function
 
-        =====================================================================================================================
         """
 
         basis_functions = np.zeros((self.x_data.shape[0], self.centres.shape[0]))
@@ -584,20 +564,19 @@ class RadialBasisFunctions:
     @staticmethod
     def cost_function(theta, x, y):
         """
-         ====================================================================================================================
         This function is an implementation of the cost function for linear regression with BFGS:
                 cost = [sum of square errors over m samples / (2 * m)]
 
         This is the objective function for the BFGS optimization problem.
 
-        Input arguments:
+        Args:
             theta        : polynomial coefficients/weights,  (n x 1) in size
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns:
+        Returns:
             cost_value   : the cost value for the fit, the objective value of the optimization problem
-        ====================================================================================================================
+
         """
         y = y.reshape(y.shape[0], 1)
         y_prediction = np.matmul(x, theta)
@@ -608,7 +587,6 @@ class RadialBasisFunctions:
     @staticmethod
     def gradient_function(theta, x, y):
         """
-         ====================================================================================================================
         This function is an implementation of the gradient function for linear regression:
                 if
                     cost = [(A.x - y)^2 / 2m]
@@ -617,14 +595,14 @@ class RadialBasisFunctions:
 
         This is the gradient function supplied to the BFGS optimization algorithm.
 
-        Input arguments:
+        Args:
             theta        : polynomial coefficients/weights,  (n x 1) in size
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns:
+        Returns:
             grad_values   : the cost gradients for the fit, size (n x 1)
-        ====================================================================================================================
+
         """
         y = y.reshape(y.shape[0], 1)
         y_prediction = np.matmul(x, theta)
@@ -636,11 +614,10 @@ class RadialBasisFunctions:
 
     def bfgs_parameter_optimization(self, x, y):
         """
-        ====================================================================================================================
         This function performs parameter optimization using scipy's BFGS algorithm.
         It takes in the functions pre-defined functions cost_function and gradient_function as the cost and gradient functions.
 
-        Input arguments:
+        Args:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
@@ -648,9 +625,9 @@ class RadialBasisFunctions:
             The initial weights are set to zero,
             init_phi = 0
 
-        :returns
+        Returns:
             phi: The optimal linear regression weights found
-            ====================================================================================================================
+
         """
         """
         Parameter (theta) optimization using BFGS algorithm
@@ -663,7 +640,6 @@ class RadialBasisFunctions:
     @staticmethod
     def explicit_linear_algebra_solution(x, y):
         """
-        ====================================================================================================================
         The function finds the explicit linear algebra solution to the reqularized problem (X+yI).A = B
             If
                 (x + yI).A = B,
@@ -673,15 +649,15 @@ class RadialBasisFunctions:
 
          Numpy's inverse and pseudoinverse functions have been used to calculate the inverse here.
 
-        Input arguments:
+        Args:
             x            : regularized array of features (x + yI), (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns
+        Returns:
             phi          : optimal linear regression weights A
 
          For more details, see to Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
-         ====================================================================================================================
+
         """
         # Find matrix inverse. Use pseudo-inverse if inverse is not available
         try:
@@ -695,7 +671,6 @@ class RadialBasisFunctions:
     @staticmethod
     def pyomo_optimization(x, y):
         """
-        ====================================================================================================================
         Pyomo implementation of least squares optimization problem:
 
                         Minimize cost = (y' - y) ^ 2
@@ -703,13 +678,13 @@ class RadialBasisFunctions:
 
         The problem is solved within Pyomo's framework using IPOPT as solver.
 
-        Input arguments:
+        Args:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns
+        Returns:
             phi: The optimal linear regression weights found
-         ====================================================================================================================
+
         """
         model = ConcreteModel()
 
@@ -761,21 +736,19 @@ class RadialBasisFunctions:
     @staticmethod
     def error_calculation(phi, x, y_data):
         """
-        ===============================================================================================================
         This function calculates the SSE and RMSE errors between the actual and predicted output values,
              ss_error = sum of squared errors / number of samples
              rmse_error = sqrt(sum of squared errors / number of samples)
 
-        Input arguments:
+        Args:
             phi             : weight vector obtained by optimization
             x               : vector of input features
             y               : actual output values
 
-        :returns
+        Returns:
             ss_error        : The average sum of squared errors
             rmse_error      : The root-mean-squared error (RMSE)
             y_prediction    : Predicted values of y, y_prediction = phi.x
-         ==============================================================================================================
 
         """
         y_prediction = np.matmul(x, phi)
@@ -806,8 +779,6 @@ class RadialBasisFunctions:
 
     def loo_error_estimation_with_rippa_method(self, sigma, lambda_reg):
         """
-        =====================================================================================================================
-
         The function loo_error_estimation_with_rippa_method implements the leave-one-out cross-validation (LOOCV) error for square systems
 
         The LOOCV error is calculated analytically using Rippa's equation:
@@ -819,12 +790,12 @@ class RadialBasisFunctions:
             alpha[k] = kth radial weight based on data (kth coefficient of full data interpolation)
             A[kk] = kth diagonal element of data matrix.
 
-            Inputs:
+            Args:
                 self:                           : contains, among other things, the input data
-                sigma(<float>)                  : shape parameter for the parametric bases (Gaussian, Multiquadric, Inverse multiquadric)
-                lambda_reg(<float>)             : regularization parameter
+                sigma(float)                  : shape parameter for the parametric bases (Gaussian, Multiquadric, Inverse multiquadric)
+                lambda_reg(float)             : regularization parameter
 
-            :returns:
+            Returns:
                 condition_number_pure           : condition number of transformed matrix generated from the input data before regularization
                 condition_number_regularized    : condition number of transformed matrix generated from the input data after regularization
                 loo_error_estimate              : norm of the leave-one-out cross-validation error matrix
@@ -837,7 +808,6 @@ class RadialBasisFunctions:
         (2) Mongillo M.A. (2011) Choosing Basis Functions and Shape Parameters for Radial Basis Function Methods
             https://doi.org/10.1137/11S010840
 
-        =====================================================================================================================
         """
         x_transformed = self.basis_generation(sigma)
         condition_number_pure = np.linalg.cond(x_transformed)
@@ -864,24 +834,21 @@ class RadialBasisFunctions:
 
     def leave_one_out_crossvalidation(self):
         """
-        =====================================================================================================================
-
         The function leave_one_out_crossvalidation determines the best hyperparameters (shape and regularization parameters) for a given RBF fitting problem.
         The function cycles through a set of predefined sets to determine the shape parameter and regularization parameter combination which yields the lowest LOOCV error.
         The LOOCV error for each (shape_parameter, regulkarization parameter) pair is evaluated by calling the function loo_error_estimation_with_rippa_method
         The pre-defined shape parameter set considers 24 irregularly spaced values ranging between 0.001 - 1000, while the regularization parameter set considers 21 values ranging between 0.00001 - 1.
 
-            Inputs:
+            Args:
                 self:                           : contains, among other things, the input data
 
-            :returns:
-                r_best(<float>)                 : best found shape parameter
-                lambda_best(<float>)            : best found regularization parameter
+            Returns:
+                r_best(float)                 : best found shape parameter
+                lambda_best(float)            : best found regularization parameter
                 error_best                      : LOOCV error corresponding to be best found hynperparameters
 
         Note: The optimal shape parameter r_best is only evaluated for parametriuc bases (such as the Gaussian basis). For fixed basis (e.g. linear), the value is returned as zero.
 
-        =====================================================================================================================
         """
         """
             Function that determines the best shape parameter (Gaussian, IMQ, MQ bases) using leave-one-out cross-validation

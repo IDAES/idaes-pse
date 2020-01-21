@@ -58,7 +58,7 @@ class ResultReport:
         """
         A class for creating an object containing the information to be returned to the user.
 
-        :Returns:
+        Returns:
             self function containing several attributes:
                 - self.optimal_weights_array : np.ndarray containing the coefficients of all terms in the regressed polynomial, including user-specified terms
                 - self.polynomial_order : the optimal polynomial order which results in the smallest training and cross-validation errors
@@ -409,13 +409,13 @@ class PolynomialRegression:
             - splits off the top num_training samples in each shuffle as individual training sets, and
             - takes the bottom (total number of samples - num_training) samples in each shuffle to create its corresponding test dataset.
 
-        Input Arguments:
+        Args:
             self: containing the number of training samples (self.number_of_samples), training/test split (self.fraction_training) and the required number of cross-validations (self.number_of_crossvalidations).
 
-        optional:
+        Keyword Args:
             additional_features(<np.ndarray>): A numpy array containing additional features provided by the user. When supplied, additional_features is column-appended to self.regression data before the training and tests sets are created.
 
-        :returns:
+        Returns:
             - training_data: Dictionary containing all the training datasets created.
 			
 				* When no additional features have been specified, the dictionary has a length of number_of_crossvalidations.
@@ -462,16 +462,16 @@ class PolynomialRegression:
 
         Thus, the format of the output array is [constant, nmononomials, multinomials, extra terms]
 
-        :argument:
-            polynomial_order(<int>):                    The polynomial order currently under consideration
-            multinomials(<bool>):                       Boolean variable that determines whether or not multinomial terms are considered during polynomial fitting.
-            x_input_train_data(<np.ndarray>):           Input data containing features supplied by the user
+        Args:
+            polynomial_order(int):                    The polynomial order currently under consideration
+            multinomials(bool):                       Boolean variable that determines whether or not multinomial terms are considered during polynomial fitting.
+            x_input_train_data(NumPy Array):           Input data containing features supplied by the user
 
-        optional:
-            additional_x_training_data(<np.ndarray>):   Array containing additional features supplied by the user
+        Keyword Args:
+            additional_x_training_data(NumPy Array):   Array containing additional features supplied by the user
 
-        :returns:
-            x_train_data(<np.ndarray>):                 Array containing all polynomial features to be considered during regression
+        Returns:
+            x_train_data(NumPy Array):                 Array containing all polynomial features to be considered during regression
 
         Example:
 			if polynomial_order=2, numtinomials=1, x_input_train_data = [x1, x2, x3], additional_x_training_data = [sin(x1), tanh(x3)], then x_train_data will contain the regression features
@@ -508,13 +508,13 @@ class PolynomialRegression:
 
         This is the objective function for the BFGS optimization problem.
 
-        Input arguments:
+        Args:
             theta        : polynomial coefficients/weights,  (n x 1) in size
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
             reg_parameter: reqularization parameter, set to
 
-        :returns:
+        Returns:
             cost_value   : the cost value for the fit, the objective value of the optimization problem
 
         """
@@ -539,13 +539,13 @@ class PolynomialRegression:
 
         This is the gradient function supplied to the BFGS optimization algorithm.
 
-        Input arguments:
+        Args:
             theta        : polynomial coefficients/weights,  (n x 1) in size
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
             reg_parameter: reqularization parameter
 
-        :returns:
+        Returns:
             grad_value   : the cost gradients for the fit, size (n x 1)
 
         """
@@ -564,7 +564,7 @@ class PolynomialRegression:
         This function performs parameter optimization using scipy's BFGS algorithm.
         It takes in the functions pre-defined functions cost_function and gradient_function as the cost and gradient functions.
 
-        Input arguments:
+        Args:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
@@ -598,7 +598,7 @@ class PolynomialRegression:
 
         Numpy's pseudoinverse function has been used to calculate the inverse here.
 
-        Input arguments:
+        Args:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
@@ -622,7 +622,7 @@ class PolynomialRegression:
 
         The problem is solved within Pyomo's framework using IPOPT as solver.
 
-        Input arguments:
+        Args:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
@@ -678,12 +678,12 @@ class PolynomialRegression:
         This function calculates the average sum of square errors between the actual and predicted output values,
              ss_error = sum of squared errors / number of samples
 
-        Input arguments:
+        Args:
             phi             : optimal weight vector obtained by optimization
             x_test_data     : vector of features x_test_data
             y_test_data     : actual output values associated with
 
-        :returns
+        Returns:
             ss_error        : The average sum of squared errors
 
         """
@@ -701,16 +701,16 @@ class PolynomialRegression:
             - calls the cross_validation_error_calculation method to calculate the training and cross-validation errors.
 
 
-        :argument:
-            poly_order(<int>)           : The polynomial order currently being considered - between 1 and max_polynomial_order
-            training_data(<np.ndarray>) : The training data to be regressed
-            test_data(<<np.ndarray>)    : The test data to be used to cross-validate the polynomial fit
+        Args:
+            poly_order(int)           : The polynomial order currently being considered - between 1 and max_polynomial_order
+            training_data(NumPy Array) : The training data to be regressed
+            test_data(<NumPy Array)    : The test data to be used to cross-validate the polynomial fit
 
-        optional:
+        Keyword Args:
             additional_x_training_data  : Array containing additional training features based on additional_features list supplied by the user. Will have same number of rows as training_data.
             additional_x_test_data      : Array of additional cross-validation features based on additional_features list supplied by the user. Will have same number of rows as test_data.
 
-        :returns:
+        Returns:
             phi_vector                  : the optimal weight vector for the polynomial considered here, returns zeros when problem is underspecified, i.e number of features > number of training samples.
             training_error              : the average SSE estimate in the training dataset, returns Inf when number of features > number of training samples (DoF < 0).
             crossval_error             : the average SSE estimate on the cross-validation dataset, returns Inf when number of features > number of training samples (DoF < 0).
@@ -867,16 +867,16 @@ class PolynomialRegression:
         This function generates a 2D array of the additional features from the list supplied by the user.
         Note: It assumes that each list element is 1D
 
-        :argument
+        Args:
             additional_regression_features(<list>): a list of features to be added to the regression problem. Each element of the list must have the same number of entries as self.number_of_samples
 
-        :returns
-            additional_features_array(<np.ndarray>): an array of additional training features with len(additional_regression_features) columns to be considered during regression.
+        Returns:
+            additional_features_array(NumPy Array): an array of additional training features with len(additional_regression_features) columns to be considered during regression.
 
         :raise:
             :exception
                 - when additional_regression_features is not a list
-                - when the entries in additional_regression_features are not of type 1-D <np.ndarray> or pd.Series>
+                - when the entries in additional_regression_features are not of type 1-D NumPy Array or Pandas Series
                 - when the length os the entries in additional_regression_features do not match the number of rows in self.regression_data
 
         """
@@ -935,7 +935,7 @@ class PolynomialRegression:
             additional_regression_features(<list>):     Additional features the user wants the algorithm to consider during regression.
                                                         It should be noted that adaptive sampling is not available when additional features have been supplied by the user, i.e. when len(additional_regression_features) > 0.
 
-         :returns:
+         Returns:
             results:                                    Python object containing the results of the polynomial regression process including the polynomial order
                                                         (results.polynomial_order), polynomial coefficients (results.optimal_weights_array) and fit errors (results.errors).
                                                         See information on ResultReport class for details on contents.
