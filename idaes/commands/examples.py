@@ -186,6 +186,10 @@ def download(releases, target_dir, version, force):
         raise DownloadError("bad version")
     # check target directory
     if target_dir.exists():
+        why_illegal = is_illegal_dir(target_dir)
+        if why_illegal:
+            raise DownloadError(f"Refuse to remove directory '{target_dir}': "
+                                f"{why_illegal}")
         if not force:
             click.confirm(f"Replace existing directory '{target_dir}'", abort=True)
         try:
@@ -199,6 +203,18 @@ def download(releases, target_dir, version, force):
         click.echo(f"Download failed: {err}")
         shutil.rmtree(target_dir)  # remove partial download
         raise
+
+
+def is_illegal_dir(d: Path):
+    """Refuse to remove directories for some situations, for safety.
+    """
+    if (d / ".git").exists():
+        return ".git file found"
+    if d.absolute() == Path.home().absolute():
+        return "cannot replace home directory"
+    if d.absolute == Path("/").absolute():
+        return "cannot replace root directory"
+    return None
 
 
 def download_contents(version, target_dir):

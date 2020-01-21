@@ -38,7 +38,7 @@ def test_examples_list_releases():
 def test_examples_download_bad_version():
     releases = [examples.Release("baddate", "badtag", "info")]
     assert pytest.raises(
-        examples.DownloadError, examples.download, releases, "", "1.2.3"
+        examples.DownloadError, examples.download, releases, "", "1.2.3", True
     )
 
 
@@ -46,7 +46,7 @@ def test_examples_download_target_dir_exists():
     releases = [examples.Release("baddate", "1.2.3", "info")]
     curpath = pathlib.Path(os.curdir)
     assert pytest.raises(
-        examples.DownloadError, examples.download, releases, curpath, "1.2.3"
+        examples.DownloadError, examples.download, releases, curpath, "1.2.3", True
     )
 
 
@@ -72,3 +72,16 @@ def test_examples_find_python_directories():
             assert path_i in rel_found_dirs
             for j in ("c", "d"):
                 assert path_i / j in rel_found_dirs
+
+
+def test_illegal_dirs():
+    releases = [examples.Release("baddate", "1.2.3", "info")]
+    with tempfile.TemporaryDirectory() as tmpd:
+        root = pathlib.Path(tmpd)
+        # git
+        (root / ".git").mkdir()
+        try:
+            examples.download(releases, root, "1.2.3", True)
+        except examples.DownloadError as err:
+            assert ".git" in str(err)
+        (root / ".git").rmdir()
