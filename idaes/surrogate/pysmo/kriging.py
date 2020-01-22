@@ -225,8 +225,8 @@ class KrigingModel:
         The kriging_mean method calculates the MLE estimate of the mean.
 
         Args:
-            cov_inv (<np.ndarray)           : Inverse of the co-variance matrix
-            y (<np.ndarray)                 : Output values of the training data
+            cov_inv (NumPy Array)           : Inverse of the co-variance matrix
+            y (NumPy Array)                 : Output values of the training data
 
 
         Returns:
@@ -257,8 +257,8 @@ class KrigingModel:
         The kriging_sd method calculates the MLE estimate of the Kriging variance.
 
         Args:
-            cov_inv (<np.ndarray)           : Inverse of the co-variance matrix
-            y_mu (<np.ndarray)              : Deviation of y from the Kriging mean estimate (y-mean)
+            cov_inv (NumPy Array)           : Inverse of the co-variance matrix
+            y_mu (NumPy Array)              : Deviation of y from the Kriging mean estimate (y-mean)
 
 
         Returns:
@@ -402,7 +402,8 @@ class KrigingModel:
             mean                    : Final MLE estimate of the mean
             variance                : Final MLE estimate of the variance
             cov_mat                 : Co-variance matrix of the final model
-            cov_inv, y_mu           : Inverse of final co-variance matrix
+            cov_inv                 : Inverse of final co-variance matrix
+            y_mu                    : Deviation of each output value in the training data from the Kriging mean.
 
         """
         theta = var_vector[:-1]

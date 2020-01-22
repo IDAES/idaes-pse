@@ -413,7 +413,7 @@ class PolynomialRegression:
             self: containing the number of training samples (self.number_of_samples), training/test split (self.fraction_training) and the required number of cross-validations (self.number_of_crossvalidations).
 
         Keyword Args:
-            additional_features(<np.ndarray>): A numpy array containing additional features provided by the user. When supplied, additional_features is column-appended to self.regression data before the training and tests sets are created.
+            additional_features(NumPy Array): A numpy array containing additional features provided by the user. When supplied, additional_features is column-appended to self.regression data before the training and tests sets are created.
 
         Returns:
             - training_data: Dictionary containing all the training datasets created.
@@ -704,7 +704,7 @@ class PolynomialRegression:
         Args:
             poly_order(int)           : The polynomial order currently being considered - between 1 and max_polynomial_order
             training_data(NumPy Array) : The training data to be regressed
-            test_data(<NumPy Array)    : The test data to be used to cross-validate the polynomial fit
+            test_data(NumPy Array)    : The test data to be used to cross-validate the polynomial fit
 
         Keyword Args:
             additional_x_training_data  : Array containing additional training features based on additional_features list supplied by the user. Will have same number of rows as training_data.
@@ -868,7 +868,7 @@ class PolynomialRegression:
         Note: It assumes that each list element is 1D
 
         Args:
-            additional_regression_features(<list>): a list of features to be added to the regression problem. Each element of the list must have the same number of entries as self.number_of_samples
+            additional_regression_features(list): a list of features to be added to the regression problem. Each element of the list must have the same number of entries as self.number_of_samples
 
         Returns:
             additional_features_array(NumPy Array): an array of additional training features with len(additional_regression_features) columns to be considered during regression.

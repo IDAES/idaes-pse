@@ -1,4 +1,4 @@
-Generating Radial Basis Function models with PySMO
+Generating Radial Basis Function (RBF) models with PySMO
 ===================================================
 
 The *pysmo.radial_basis_function* package has the capability to generate different types of RBF surrogates from data
@@ -129,6 +129,6 @@ References:
 
 [2] Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions, https://www.tandfonline.com/doi/full/10.1080/03052150500422294
 
-[3] Rippa, S. (1999) Advances in Computational Mathematics, https://doi.org/10.1023/A:1018975909870
+[3] Rippa, S. (1999): An algorithm for selecting a good value for the parameter c in radial basis function interpolation, https://doi.org/10.1023/A:1018975909870
 
 [4] Mongillo M.A. (2011) Choosing Basis Functions and Shape Parameters for Radial Basis Function Methods, https://doi.org/10.1137/11S010840
