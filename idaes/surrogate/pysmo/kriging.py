@@ -230,7 +230,7 @@ class KrigingModel:
 
 
         Returns:
-            kriging_mean                    : MLE estimate OF THE Kriging mean
+            kriging_mean                    : MLE estimate of the Kriging mean
 
         Reference:
         [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
@@ -262,7 +262,7 @@ class KrigingModel:
 
 
         Returns:
-            kriging_sd                      : MLE estimate OF THE Kriging variance
+            kriging_sd                      : MLE estimate of the Kriging variance
 
         Reference:
         [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
