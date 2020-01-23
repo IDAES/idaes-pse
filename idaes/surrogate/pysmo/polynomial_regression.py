@@ -29,22 +29,23 @@ from idaes.surrogate.pysmo.utils import NumpyEvaluator
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
-This will be done in two stages. First, lattice hypercube sampling  (LHS) will
-be done to select random samples for generating a surrogate model.
+This will be done in two stages. First, a sampling plan will
+be used to select samples for generating a surrogate model.
 In the second stage, the surrogate model is constructed by fitting to
-different order polynomials. Iterative adaptive sampling is incorporated to improve the model.
-Cross-validation will be done to select the best model at each stage of the iterative process.
+different order polynomials. Long term, an iterative adaptive sampling 
+approach will be incorporated for model improvement.
+Cross-validation is used to select the best model.
 
 
 FeatureScaling:
 Simple script for scaling and un-scaling the input data
 
 Polynomial Regression:
-Initial regression is done with the samples generated from LHS, folloewed by adaptive sampling to improve the solution.
-Two approaches are implemented for evaluating coefficients -
+Three approaches are implemented for evaluating polynomial coefficients -
 a. Moore-Penrose maximum likelihood method (Forrester et al.)
 b. Optimization using the BFGS algorithm.
-However, only one approach is enabled at this time.
+c. Optimization with Pyomo
+The Pyomo optimization approach is enabled as the default at this time.
 """
 
 
@@ -573,7 +574,7 @@ class PolynomialRegression:
             reg_parameter = 0
             init_theta = 0
 
-        :returns
+        Returns:
             theta: The optimal linear regression weights found
 			
         """
@@ -602,7 +603,7 @@ class PolynomialRegression:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns
+        Returns:
             phi: The optimal linear regression weights found
 
          For more details about the maximum likelihood estimate methos, see to Forrester et al.
@@ -626,7 +627,7 @@ class PolynomialRegression:
             x            : array of features, (m x n) in size
             y            : actual output vector, size (m x 1)
 
-        :returns
+        Returns:
             phi: The optimal linear regression weights found
         """
 
@@ -873,11 +874,13 @@ class PolynomialRegression:
         Returns:
             additional_features_array(NumPy Array): an array of additional training features with len(additional_regression_features) columns to be considered during regression.
 
-        :raise:
-            :exception
-                - when additional_regression_features is not a list
-                - when the entries in additional_regression_features are not of type 1-D NumPy Array or Pandas Series
-                - when the length os the entries in additional_regression_features do not match the number of rows in self.regression_data
+        Raises:
+            Exception:
+                * when additional_regression_features is not a list
+            Exception:
+                * when the entries in additional_regression_features are not of type 1-D NumPy Array or Pandas Series
+            Exception:
+                * when the length of the entries in additional_regression_features do not match the number of rows in self.regression_data
 
         """
         # Check for list

@@ -147,6 +147,7 @@ class SamplingMethods:
         Calls the nearest_neighbour function for each row in the input data.
 
         Args:
+            full_data: refers to the input dataset supplied by the user.
             generated_sample_points(NumPy Array): The vector of points (number_of_sample rows) for which the closest points in the original data are to be found. Each row represents a sample point.
 
         Returns:

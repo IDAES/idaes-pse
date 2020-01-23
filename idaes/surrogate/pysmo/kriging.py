@@ -88,6 +88,11 @@ class ResultReport:
 
 
 class MyBounds(object):
+    """
+    The Class MyBounds tests whether the reguularization parameter value is within the expected range.
+     The class is initialized with the preset valies in __init__; the __call__ function returns Booleans indicating whether the regularization parameter value is acceptable.
+     The results of the __call__ function is fed into the Basinhopping algorithm using the accept_test parameter.
+    """
     def __init__(self, xmax=[1], xmin=[1e-6]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
@@ -435,7 +440,7 @@ class KrigingModel:
             x               : Input test data
             y_data          : Actual outputs corresponding to input test data x
 
-        :returns
+        Returns:
             ss_error        : The average sum of squared errors
             rmse_error      : The root-mean-squared error (RMSE)
             y_prediction    : Predicted values of y

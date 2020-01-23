@@ -503,7 +503,7 @@ class RadialBasisFunctions:
             Returns:
                 x_mod(NumPy Array): Spline transformation of the input data x; x_mod =  (x**2).ln(x)
 
-            :except:
+            Except:
                 RuntimeWarning: thrown up when ln(x)=0
 
         Examples:
