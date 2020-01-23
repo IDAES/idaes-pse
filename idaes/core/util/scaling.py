@@ -1,3 +1,20 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+"""
+This module contains utilities to provide variable and expression scaling factors
+by providing an expression to calculate them via a suffix
+"""
+
 import enum
 import pyomo.environ as pyo
 from pyomo.contrib.pynumero.interfaces import PyomoNLP
@@ -8,32 +25,35 @@ _log = idaeslog.getLogger(__name__)
 
 class ScalingBasis(enum.Enum):
     """Basis value type for scaling expression calculations."""
-    VALUE = 1
-    VARSCALE = 2
-    INVVARSCALE = 3
-    LOWER = 4
-    UPPER = 5
-    MID = 6
+    Value = 1 # use the variables current value
+    VarScale = 2 # use the variable scale
+    InverseVarScale = 3 # use 1/(variable scale factor) most common
+    Lower = 4 # use the lower bound
+    Upper = 5 # use the upper bound
+    Mid = 6 # use the bound mid-point
 
 
-def _replace(expr, replacment):
-    """Use the replacment visitor to replace variables in an expression by the
-    basis used for calculating scale factors.
+def _replace(expr, replacement):
+    """Replace variables in an expression by the basis value used for
+    calculating scale factors.
 
     Args:
         expr: expression to replace variables in
-        replacment: a replacment visitor, or None to leave unchanged
+        replacement: a replacement visitor used to walk the expression tree,
+            or None to leave unchanged
     Returns:
         expression"""
-    if replacment is None:
+    if replacement is None:
         return expr
     else:
-        return replacment.dfs_postorder_stack(expr)
+        return replacement.dfs_postorder_stack(expr)
 
 
-def _replacment(m, basis):
-    """Create a replacment visitor for model m to replace variables by the
-    scaling basis.
+def _replacement(m, basis):
+    """Create a replacement visitor for model m to replace variables by the
+    scaling basis.  The replacemnt visitor walks an expression tree and replaces
+    variables, by a value to be used in the scaling calculation.
+
     Args:
         m (Block): model to collect vars from
         basis (list of ScalingBasis): value type to use as basis for scaling calcs
@@ -41,7 +61,7 @@ def _replacment(m, basis):
     Return:
         None or ExpressionReplacementVisitor
     """
-    if basis[0] == ScalingBasis.VALUE:
+    if basis[0] == ScalingBasis.Value:
         return None # no need to replace anything if using value
     else:
         rdict = {}
@@ -49,24 +69,24 @@ def _replacment(m, basis):
             val = 1.0
             for b in basis:
                 try:
-                    if b == ScalingBasis.VARSCALE:
+                    if b == ScalingBasis.VarScale:
                         val = v.parent_block().scaling_factor[v]
                         break
-                    elif b == ScalingBasis.INVVARSCALE:
+                    elif b == ScalingBasis.InverseVarScale:
                         val = 1/v.parent_block().scaling_factor[v]
                         break
-                    elif b == ScalingBasis.VALUE:
+                    elif b == ScalingBasis.Value:
                         val = pyo.value(v)
                         break
-                    elif b == ScalingBasis.MID:
+                    elif b == ScalingBasis.Mid:
                         if v.lb is not None and v.ub is not None:
                             val = (v.ub + v.lb)/2.0
                             break
-                    elif b == ScalingBasis.LOWER:
+                    elif b == ScalingBasis.Lower:
                         if v.lb is not None:
                             val = v.lb
                             break
-                    elif b == ScalingBasis.UPPER:
+                    elif b == ScalingBasis.Upper:
                         if v.ub is not None:
                             val = v.ub
                             break
@@ -80,7 +100,7 @@ def _replacment(m, basis):
         return EXPR.ExpressionReplacementVisitor(substitute=rdict)
 
 
-def _calculate_scale_factors_from_expr(m, replacment, cls):
+def _calculate_scale_factors_from_expr(m, replacement, cls):
     # Calculate scaling factors for each constraint
     for c in m.component_data_objects(cls):
         # Check for a scaling expression.  If there is one, use it to calculate
@@ -94,7 +114,7 @@ def _calculate_scale_factors_from_expr(m, replacment, cls):
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
         #Take scaling expression provided by modeler and put in basis values
-        expr = _replace(c.parent_block().scaling_expression[c], replacment)
+        expr = _replace(c.parent_block().scaling_expression[c], replacement)
         #Add constraint scaling factor by evaluating modeler provided scale expr
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
@@ -102,9 +122,9 @@ def _calculate_scale_factors_from_expr(m, replacment, cls):
 def apply_scaling(
     m,
     basis=(
-        ScalingBasis.INVVARSCALE,
-        ScalingBasis.MID,
-        ScalingBasis.VALUE,
+        ScalingBasis.InverseVarScale,
+        ScalingBasis.Mid,
+        ScalingBasis.Value,
     )
 ):
     """Set scale factors for variables and constraints from expressions, which
@@ -120,12 +140,12 @@ def apply_scaling(
         None
     """
     # Map the scaling expression calculation values to the variables, and get
-    # a replacment visitor to swap vairable values for basis values
+    # a replacement visitor to swap variable values for basis values
     if isinstance(basis, ScalingBasis):
          basis = (basis, )
-    replacment = _replacment(m, basis)
+    replacement = _replacement(m, basis)
 
     # Fist calculate variable scale factors, where expressions where provided
-    _calculate_scale_factors_from_expr(m, replacment=replacment, cls=pyo.Var)
+    _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Var)
     # Then constraints
-    _calculate_scale_factors_from_expr(m, replacment=replacment, cls=pyo.Constraint)
+    _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Constraint)
