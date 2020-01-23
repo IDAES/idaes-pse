@@ -104,7 +104,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
     # Calculate scaling factors for each constraint
     for c in m.component_data_objects(cls):
         # Check for a scaling expression.  If there is one, use it to calculate
-        # a scaling factor.  If use autoscaling.
+        # a scaling factor otherwise use autoscaling.
         if not hasattr(c.parent_block(), "scaling_expression"):
             continue # no scaling expression supplied
         elif c not in c.parent_block().scaling_expression:
@@ -113,9 +113,9 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
             # if there is no scaling_factor Suffix yet make one
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
-        #Take scaling expression provided by modeler and put in basis values
+        # Take scaling expression provided by modeler and put in basis values
         expr = _replace(c.parent_block().scaling_expression[c], replacement)
-        #Add constraint scaling factor by evaluating modeler provided scale expr
+        # Add constraint scaling factor by evaluating modeler provided scale expr
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
 
