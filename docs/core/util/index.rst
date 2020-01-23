@@ -9,4 +9,5 @@ Utility Methods
     initialization
     model_serializer
     model_statistics
+    scaling
     tables

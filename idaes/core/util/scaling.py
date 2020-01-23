@@ -129,12 +129,16 @@ def apply_scaling(
 ):
     """Set scale factors for variables and constraints from expressions, which
     calcualte them based on supplied variable scale factors, values, or bounds.
+    Variable scale factors are calcuated first, variable scaling expressions
+    should be based on varaibles whoes scale factors are suppied directly.
+    Constraint scaling expressions can be based on any varaibles.
 
     Args:
+        m (Block): A Pyomo model or block to apply the scaling expressions to.
         basis: (ScalingBasis or List-like of ScalingBasis): Value to use
-            when evaluating scaling expression either the current variable value.
-            A list can be provided to allow falling back on a differnt value if
-            one is not available.
+            when evaluating scaling expressions. A list-like of ScalingBasis can
+            be used to provide fall-back values in the event that the first
+            choice is not available.  If none of the bases are avaialble, 1 is used.
 
     Returns:
         None
