@@ -520,8 +520,13 @@ class RadialBasisFunctions:
         https://link.springer.com/chapter/10.1007/978-3-642-10701-6_2
 
         """
-        x_mod = (x ** 2) * np.log(x)
-        x_mod = np.nan_to_num(x_mod)  # handles NaN
+        # x_mod = (x ** 2) * np.log(x)
+        # x_mod = np.nan_to_num(x_mod)
+        with np.errstate(divide='ignore'): # catch division warnings in log function due to log(0)~=0
+            log_x = np.log(x)
+        with np.errstate(invalid='ignore'): # catch invalid warnings due to - Inf * 0 evaluations
+            x_mod = (x ** 2) * log_x
+        x_mod = np.nan_to_num(x_mod)
         return x_mod
 
     def basis_generation(self, r):
