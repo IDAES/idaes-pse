@@ -48,10 +48,10 @@ should be created in the same block as the variable or constraint. For example:
     m.scaling_factor[m.conc["Na+"]] = 1e3
     m.scaling_factor[m.conc["Cl-"]] = 1e3
 
-Variables scaling in state blocks are provided by the developer of a state block.
-Model and can be used as a basis for scaling other model variables and constraints.
-Scaling factors can be modified by users to better represent the process they are
-modeling.
+Variable scaling in state blocks is provided by the developer of a state
+block and can be used as a basis for scaling other model variables and
+constraints. Scaling factors can be modified by users to better
+represent the process they are modeling.
 
 Specifying Scaling Factor Expressions
 -------------------------------------

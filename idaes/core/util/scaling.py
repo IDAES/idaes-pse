@@ -51,8 +51,8 @@ def _replace(expr, replacement):
 
 def _replacement(m, basis):
     """Create a replacement visitor for model m to replace variables by the
-    scaling basis.  The replacemnt visitor walks an expression tree and replaces
-    variables, by a value to be used in the scaling calculation.
+    scaling basis. The replacement visitor walks an expression tree and replaces
+    variables by a value to be used in the scaling calculation.
 
     Args:
         m (Block): model to collect vars from
@@ -128,17 +128,17 @@ def apply_scaling(
     )
 ):
     """Set scale factors for variables and constraints from expressions, which
-    calcualte them based on supplied variable scale factors, values, or bounds.
-    Variable scale factors are calcuated first, variable scaling expressions
-    should be based on varaibles whoes scale factors are suppied directly.
-    Constraint scaling expressions can be based on any varaibles.
+    calculate them based on supplied variable scale factors, values, or bounds.
+    Variable scale factors are calculated first, variable scaling expressions
+    should be based on variables whose scale factors are supplied directly.
+    Constraint scaling expressions can be based on any variables.
 
     Args:
         m (Block): A Pyomo model or block to apply the scaling expressions to.
         basis: (ScalingBasis or List-like of ScalingBasis): Value to use
             when evaluating scaling expressions. A list-like of ScalingBasis can
             be used to provide fall-back values in the event that the first
-            choice is not available.  If none of the bases are avaialble, 1 is used.
+            choice is not available.  If none of the bases are available, 1 is used.
 
     Returns:
         None
@@ -149,7 +149,7 @@ def apply_scaling(
          basis = (basis, )
     replacement = _replacement(m, basis)
 
-    # Fist calculate variable scale factors, where expressions where provided
+    # First calculate variable scale factors, where expressions were provided
     _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Var)
     # Then constraints
     _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Constraint)
