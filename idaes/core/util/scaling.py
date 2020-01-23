@@ -91,7 +91,7 @@ def _replacement(m, basis):
                             val = v.ub
                             break
                     else:
-                        _log.warning("Unknown scaling expression basis {}".format(int(b)))
+                        _log.warning("Unknown scaling expression basis {}".format(b))
                 except AttributeError:
                     pass
                 except KeyError:
