@@ -68,8 +68,8 @@ def new_idaes_config_block():
         ),
     )
     d = toml.loads(default_config)
-    write_config.set_value(d)
-    logging.config.dictConfig(write_config["logging"])
+    _config.set_value(d)
+    logging.config.dictConfig(_config["logging"])
     return _config
 
 
