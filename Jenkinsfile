@@ -38,7 +38,7 @@ pipeline {
          export TEMP_LANG=$LANG
          export LC_ALL=en_US.utf-8
          export LANG=en_US.utf-8
-         python setup.py develop
+         python setup.py install
          idaes get-extensions
          export LC_ALL=$TEMP_LC_ALL
          export LANG=$TEMP_LANG
@@ -82,7 +82,7 @@ pipeline {
           sh '''
            source activate idaes3.7
            pylint -E --ignore-patterns="test_.*" idaes || true
-           pytest -c pytest.ini idaes -m "not nocircleci"
+           pytest -c pytest.ini idaes
            source deactivate
            '''
         }
