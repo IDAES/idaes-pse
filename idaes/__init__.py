@@ -5,7 +5,7 @@ Set up logging for the idaes module, and import plugins.
 """
 import os
 import pyomo.common.plugin
-import idaes.config
+from . import config
 import toml
 import idaes.logger as idaeslog
 
