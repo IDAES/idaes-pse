@@ -85,13 +85,17 @@ puts the scaling factor in the ``scaling_factor`` suffix.
 
     m.scaling_factor[m.x] = 1e-5
     m.scaling_factor[m.y] = 1e-5
-    m.scaling_factor[m.z] = 1e-10
+    m.scaling_expression[m.z] = 1/(m.x*m.y)
 
     m.c = Constraint(expr=m.z = m.x*m.y)
     m.scaling_expression[m.c] = 1/(m.x*m.y)
 
     calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
 
+    # Show that the constraint scaling factor is 1/((1/1e-5)*(1/1e-5))
+    assert(m.scaling_factor[m.c] - 1e-10 < 1e-12)
+    # Show that the z variable scaling factor is 1/((1/1e-5)*(1/1e-5))
+    assert(m.scaling_factor[m.c] - 1e-10 < 1e-12)
 
 In the scaling expression the general guideline is that a scaling factor is being
 calculated based on the expected magnitude of the variable values.  The magnitude
@@ -108,6 +112,10 @@ ScalingBasis.Lower:
   Use the lower bound of variables in scaling expressions.
 ScalingBasis.Upper:
   Use the lower bound of variables in scaling expressions.
+ScalingBasis.VarScale:
+  This is less common, but it uses the variable scales directly. This can be
+  used if you are using alternative scaling methods with divide by the scaling
+  factor.
 
 
 .. autofunction:: calculate_scaling_factors
