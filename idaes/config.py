@@ -5,7 +5,6 @@ import os
 import importlib
 import idaes.logger as idaeslog
 
-
 _log = idaeslog.getLogger(__name__)
 
 default_config = """
@@ -50,36 +49,6 @@ def new_idaes_config_block():
             "logging.config.dictConfig() documentation for details.",
         ),
     )
-    _config.declare(
-        "plugins",
-        pyomo.common.config.ConfigBlock(
-            implicit=False,
-            description="Plugin search configuration",
-            doc="Plugin search configuration",
-        ),
-    )
-    _config.plugins.declare(
-        "required",
-        pyomo.common.config.ConfigValue(
-            default=[],
-            description="Modules with required plugins",
-            doc="This is a string list of modules from which to load plugins. "
-            "This will look in {module}.plugins for things to load. Exceptions"
-            "raised while attempting to load these plugins are considered fatal. "
-            "This is used for core plugins.",
-        ),
-    )
-    _config.plugins.declare(
-        "optional",
-        pyomo.common.config.ConfigValue(
-            default=[],
-            description="Modules with optional plugins to load",
-            doc="This is a string list of modules from which to load plugins. "
-            "This will look in {module}.plugins for things to load. Exceptions "
-            "raised while attempting to load these plugins will be logged but "
-            "are nonfatal. This is used for contrib plugins.",
-        ),
-    )
 
     _config.declare(
         "use_idaes_solvers",
@@ -98,6 +67,9 @@ def new_idaes_config_block():
             description="URL from which to download binaries by default",
         ),
     )
+    d = toml.loads(default_config)
+    write_config.set_value(d)
+    logging.config.dictConfig(write_config["logging"])
     return _config
 
 
@@ -140,3 +112,39 @@ def create_dir(d):
         return
     else:
         os.mkdir(d)
+
+
+def get_data_directory():
+    """Return the standard data directory for idaes, based on the OS."""
+    try:
+        if os.name == 'nt':  # Windows
+            data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
+        else:  # any other OS
+            data_directory = os.path.join(os.environ['HOME'], ".idaes")
+    except AttributeError:
+        data_directory = None
+    # Standard location for executable binaries.
+    if data_directory is not None:
+        bin_directory = os.path.join(data_directory, "bin")
+    else:
+        bin_directory = None
+
+    # Standard location for IDAES library files.
+    if data_directory is not None:
+        lib_directory = os.path.join(data_directory, "lib")
+    else:
+        lib_directory = None
+
+    return data_directory, bin_directory, lib_directory
+
+
+def setup_environment(bin_directory, lib_directory, use_idaes_solvers):
+    if use_idaes_solvers:
+        # Add IDAES stuff to the path unless you configure otherwise
+        os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
+        if os.name == 'nt':  # Windows (this is to find MinGW libs)
+            os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
+        else:
+            os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
+                [os.environ.get('LD_LIBRARY_PATH', ''), lib_directory]
+            )
