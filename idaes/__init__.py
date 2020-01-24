@@ -4,7 +4,6 @@
 Set up logging for the idaes module, and import plugins.
 """
 import os
-import toml
 
 from . import config
 import idaes.logger as idaeslog
