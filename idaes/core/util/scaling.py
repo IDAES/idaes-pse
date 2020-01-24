@@ -50,13 +50,14 @@ def _replace(expr, replacement):
 
 
 def _replacement(m, basis):
-    """Create a replacement visitor. The replacemnt visitor is used on user-
+    """Create a replacement visitor. The replacement visitor is used on user-
     provided scaling expressions.  These expressions are written with model
     variables, but you generally don't want to calculate scaling factors based
     on the curent value of the model variables, you want to use their scaling
     factors, so the replacment visitor takes the user-defined scaling expression
-    and replaces the model varible by some scaling factor. There are some options
-    about what value to use for scaling, and that is set by basis.
+    and replaces the model varible by some scaling factor, and returns a new
+    expression. There are some options about what value to use for scaling, and
+    that is set by basis.
 
     Args:
         m (Block): model to collect vars from
@@ -108,7 +109,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
     # Calculate scaling factors for each constraint
     for c in m.component_data_objects(cls):
         # Check for a scaling expression.  If there is one, use it to calculate
-        # a scaling factor.  If use autoscaling.
+        # a scaling factor otherwise use autoscaling.
         if not hasattr(c.parent_block(), "scaling_expression"):
             continue # no scaling expression supplied
         elif c not in c.parent_block().scaling_expression:
@@ -117,9 +118,9 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
             # if there is no scaling_factor Suffix yet make one
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
-        #Take scaling expression provided by modeler and put in basis values
+        # Take scaling expression provided by modeler and put in basis values
         expr = _replace(c.parent_block().scaling_expression[c], replacement)
-        #Add constraint scaling factor by evaluating modeler provided scale expr
+        # Add constraint scaling factor by evaluating modeler provided scale expr
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
 
@@ -132,17 +133,17 @@ def apply_scaling(
     )
 ):
     """Set scale factors for variables and constraints from expressions, which
-    calcualte them based on supplied variable scale factors, values, or bounds.
-    Variable scale factors are calcuated first, variable scaling expressions
-    should be based on varaibles whoes scale factors are suppied directly.
-    Constraint scaling expressions can be based on any varaibles.
+    calculate them based on supplied variable scale factors, values, or bounds.
+    Variable scale factors are calculated first, variable scaling expressions
+    should be based on variables whose scale factors are supplied directly.
+    Constraint scaling expressions can be based on any variables.
 
     Args:
         m (Block): A Pyomo model or block to apply the scaling expressions to.
         basis: (ScalingBasis or List-like of ScalingBasis): Value to use
             when evaluating scaling expressions. A list-like of ScalingBasis can
             be used to provide fall-back values in the event that the first
-            choice is not available.  If none of the bases are avaialble, 1 is used.
+            choice is not available.  If none of the bases are available, 1 is used.
 
     Returns:
         None
@@ -153,7 +154,7 @@ def apply_scaling(
          basis = (basis, )
     replacement = _replacement(m, basis)
 
-    # Fist calculate variable scale factors, where expressions where provided
+    # First calculate variable scale factors, where expressions were provided
     _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Var)
     # Then constraints
     _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Constraint)
