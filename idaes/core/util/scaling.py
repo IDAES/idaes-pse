@@ -124,7 +124,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
 
-def apply_scaling(
+def calculate_scaling_factors(
     m,
     basis=(
         ScalingBasis.InverseVarScale,

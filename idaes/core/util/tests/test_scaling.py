@@ -18,7 +18,7 @@ import pytest
 import pyomo.environ as pyo
 from idaes.core.util.scaling import (
     ScalingBasis,
-    apply_scaling,
+    calculate_scaling_factors,
 )
 
 __author__ = "John Eslick"
@@ -45,7 +45,7 @@ def test_1():
     m.b1.scaling_expression[m.b1.c2] = 1/(m.x*m.y)
 
     # Test value based scaling factor calculations
-    apply_scaling(m, basis=ScalingBasis.Value)
+    calculate_scaling_factors(m, basis=ScalingBasis.Value)
     # check that scaling factors are correctly calculated based on value
     assert m.scaling_factor[m.z[1]] == pytest.approx(1/3)
     assert m.scaling_factor[m.z[2]] == pytest.approx(1/12)
@@ -53,14 +53,14 @@ def test_1():
     assert m.b1.scaling_factor[m.b1.c2] == pytest.approx(1/6)
 
     # Test scaling factor based calculation
-    apply_scaling(m, basis=ScalingBasis.InverseVarScale)
+    calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
     assert m.scaling_factor[m.z[1]] == pytest.approx(1/11)
     assert m.scaling_factor[m.z[2]] == pytest.approx(1/220)
     assert m.b1.scaling_factor[m.b1.c1] == pytest.approx(1/10)
     assert m.b1.scaling_factor[m.b1.c2] == pytest.approx(1/110)
 
     # Test scaling factor based calculation
-    apply_scaling(m, basis=ScalingBasis.VarScale)
+    calculate_scaling_factors(m, basis=ScalingBasis.VarScale)
     assert m.scaling_factor[m.z[1]] == pytest.approx(11)
     assert m.scaling_factor[m.z[2]] == pytest.approx(55)
     assert m.b1.scaling_factor[m.b1.c1] == pytest.approx(10)
@@ -68,7 +68,7 @@ def test_1():
 
     # Test scaling factor based on midpoint of bounds and falling back on scale
     # factor
-    apply_scaling(m, basis=[ScalingBasis.Mid, ScalingBasis.InverseVarScale])
+    calculate_scaling_factors(m, basis=[ScalingBasis.Mid, ScalingBasis.InverseVarScale])
     assert m.scaling_factor[m.z[1]] == pytest.approx(1/11)
     assert m.scaling_factor[m.z[2]] == pytest.approx(1/88)
     assert m.b1.scaling_factor[m.b1.c1] == pytest.approx(1/4)
@@ -76,7 +76,7 @@ def test_1():
 
     # Test scaling factor based on lower bound, falling back on 1 where no lower
     # bound exists
-    apply_scaling(m, basis=ScalingBasis.Lower)
+    calculate_scaling_factors(m, basis=ScalingBasis.Lower)
     assert m.scaling_factor[m.z[1]] == pytest.approx(1/1)
     assert m.scaling_factor[m.z[2]] == pytest.approx(1/2)
     assert m.b1.scaling_factor[m.b1.c1] == pytest.approx(1/1)
@@ -84,7 +84,7 @@ def test_1():
 
     # Test scaling factor based on upper bound, falling back on 1 where no lower
     # bound exists
-    apply_scaling(m, basis=ScalingBasis.Upper)
+    calculate_scaling_factors(m, basis=ScalingBasis.Upper)
     assert m.scaling_factor[m.z[1]] == pytest.approx(1/1)
     assert m.scaling_factor[m.z[2]] == pytest.approx(1/14)
     assert m.b1.scaling_factor[m.b1.c1] == pytest.approx(1/7)

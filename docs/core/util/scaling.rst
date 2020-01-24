@@ -62,7 +62,7 @@ a scaling factor can be provided as a python expression using model variables in
 the ``scaling_expression`` suffix. For variables, generally the expression should
 only depend on variables where scaling factors have been defined.
 
-The ``apply_scaling(m, basis)`` function replaces the variables in the scaling
+The ``calculate_scaling_factors(m, basis)`` function replaces the variables in the scaling
 expression with the specified basis values, calculates the scaling factors, and
 puts the scaling factor in the ``scaling_factor`` suffix.
 
@@ -72,7 +72,7 @@ puts the scaling factor in the ``scaling_factor`` suffix.
     from pyomo.environ import Suffix, ConcreteModel, Var, Constraint
     from idaes.core.util.scaling import (
         ScalingBasis,
-        apply_scaling,
+        calculate_scaling_factors,
     )
 
     m = ConcreteModel()
@@ -90,7 +90,7 @@ puts the scaling factor in the ``scaling_factor`` suffix.
     m.c = Constraint(expr=m.z = m.x*m.y)
     m.scaling_expression[m.c] = 1/(m.x*m.y)
 
-    apply_scaling(m, basis=ScalingBasis.InverseVarScale)
+    calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
 
 
 In the scaling expression the general guideline is that a scaling factor is being
@@ -110,7 +110,7 @@ ScalingBasis.Upper:
   Use the lower bound of variables in scaling expressions.
 
 
-.. autofunction:: apply_scaling
+.. autofunction:: calculate_scaling_factors
 
 
 Scaling with Ipopt
