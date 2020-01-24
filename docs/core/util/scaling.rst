@@ -95,7 +95,7 @@ puts the scaling factor in the ``scaling_factor`` suffix.
     # Show that the constraint scaling factor is 1/((1/1e-5)*(1/1e-5))
     assert(m.scaling_factor[m.c] - 1e-10 < 1e-12)
     # Show that the z variable scaling factor is 1/((1/1e-5)*(1/1e-5))
-    assert(m.scaling_factor[m.c] - 1e-10 < 1e-12)
+    assert(m.scaling_factor[m.z] - 1e-10 < 1e-12)
 
 In the scaling expression the general guideline is that a scaling factor is being
 calculated based on the expected magnitude of the variable values.  The magnitude
