@@ -4,9 +4,8 @@
 Set up logging for the idaes module, and import plugins.
 """
 import os
+import idaes.config
 import toml
-
-from . import config
 import idaes.logger as idaeslog
 
 from .ver import __version__  # noqa
@@ -53,7 +52,7 @@ def _create_lib_dir():
 
 # Set default configuration.  Used TOML string to serve as an example for
 # and definitive guide for IDAES configuration files.
-config.read_config(_config)
+config.read_config(toml.loads(config.default_config), _config)
 
 # Try to read the global IDAES config file.
 # Set where to look for config files
@@ -61,8 +60,8 @@ _global_config_file = os.path.join(data_directory, "idaes.conf")
 _local_config_file = "idaes.conf"
 
 # Try to read global config then local
-config.read_config(_config, _global_config_file)
-config.read_config(_config, _local_config_file, )
+config.read_config(_global_config_file, _config)
+config.read_config(_local_config_file, _config)
 _log.debug("'idaes' logger debug test")
 
 if _config.use_idaes_solvers:

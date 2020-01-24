@@ -14,16 +14,17 @@
 __author__ = "John Eslick"
 
 """Transformation to replace variables with other variables."""
-import pyomo.environ as pyo
 from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.constraint import Constraint
+from pyomo.core.base.expression import Expression
 
 
 def _is_var(v):
-    return isinstance(v, (_GeneralVarData, pyo.Var))
+    return isinstance(v, (_GeneralVarData, Var))
 
 @TransformationFactory.register(
     'replace_variables',
@@ -78,9 +79,9 @@ class ReplaceVariables(NonIsomorphicTransformation):
         vis = EXPR.ExpressionReplacementVisitor(substitute=d)
 
         # Do replacements in Expressions, Constraints, and Objectives
-        for c in instance.component_data_objects(pyo.Constraint, descend_into=True):
+        for c in instance.component_data_objects(Constraint, descend_into=True):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
-        for c in instance.component_data_objects((pyo.Expression, pyo.Objective),
+        for c in instance.component_data_objects((Expression, Objective),
                                                  descend_into=True):
             vis.dfs_postorder_stack(c)
 

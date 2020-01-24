@@ -101,7 +101,7 @@ def new_idaes_config_block():
     return _config
 
 
-def read_config(write_config, read_config=0):
+def read_config(read_config, write_config):
     """Read either a TOML formatted config file or a configuration dictionary.
     Args:
         config: A config file path or dict
@@ -109,9 +109,7 @@ def read_config(write_config, read_config=0):
         None
     """
     config_file = None
-    if read_config == 0:
-        read_config = toml.loads(default_config)
-    elif read_config is None:
+    if read_config is None:
         return
     elif isinstance(read_config, dict):
         pass  # don't worry this catches ConfigBlock too it seems
