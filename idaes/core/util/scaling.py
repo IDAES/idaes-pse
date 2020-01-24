@@ -34,8 +34,8 @@ class ScalingBasis(enum.Enum):
 
 
 def _replace(expr, replacement):
-    """Replace variables in an expression by the basis value used for
-    calculating scale factors.
+    """Replace variables in a scaling expression by the basis value used for
+    calculating scale factors.  (See _replacement below.)
 
     Args:
         expr: expression to replace variables in
@@ -50,9 +50,13 @@ def _replace(expr, replacement):
 
 
 def _replacement(m, basis):
-    """Create a replacement visitor for model m to replace variables by the
-    scaling basis.  The replacemnt visitor walks an expression tree and replaces
-    variables, by a value to be used in the scaling calculation.
+    """Create a replacement visitor. The replacemnt visitor is used on user-
+    provided scaling expressions.  These expressions are written with model
+    variables, but you generally don't want to calculate scaling factors based
+    on the curent value of the model variables, you want to use their scaling
+    factors, so the replacment visitor takes the user-defined scaling expression
+    and replaces the model varible by some scaling factor. There are some options
+    about what value to use for scaling, and that is set by basis.
 
     Args:
         m (Block): model to collect vars from
