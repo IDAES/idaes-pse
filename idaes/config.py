@@ -11,9 +11,6 @@ _log = idaeslog.getLogger(__name__)
 default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 use_idaes_solvers = true
-[plugins]
-  required = ["idaes"]
-  optional = []
 [logging]
   version = 1
   disable_existing_loggers = false
@@ -104,7 +101,7 @@ def new_idaes_config_block():
     return _config
 
 
-def read_config(read_config, write_config):
+def read_config(write_config, read_config=0):
     """Read either a TOML formatted config file or a configuration dictionary.
     Args:
         config: A config file path or dict
@@ -112,7 +109,9 @@ def read_config(read_config, write_config):
         None
     """
     config_file = None
-    if read_config is None:
+    if read_config == 0:
+        read_config = toml.loads(default_config)
+    elif read_config is None:
         return
     elif isinstance(read_config, dict):
         pass  # don't worry this catches ConfigBlock too it seems
@@ -143,22 +142,3 @@ def create_dir(d):
         return
     else:
         os.mkdir(d)
-
-def import_packages(packages, optional=True):
-    """Import plugin package, condensed from pyomo.environ.__init__.py
-    Args:
-        packages: list of packages in which to look for plugins
-        optional: true, log ImportError but continue; false, raise if ImportError
-    Returns:
-        None
-    """
-    for name in packages:
-        pname = name + '.plugins'  # look in plugins sub-package
-        try:
-            pkg = importlib.import_module(pname)
-        except ImportError as e:
-            _log.exception("failed to import plugin: {}".format(pname))
-            if not optional:
-                raise e
-        if hasattr(pkg, 'load'):  # run load function for a module if it exists
-            pkg.load()
