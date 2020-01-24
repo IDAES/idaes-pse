@@ -12,7 +12,17 @@
 ##############################################################################
 """
 This module contains utilities to provide variable and expression scaling factors
-by providing an expression to calculate them via a suffix
+by providing an expression to calculate them via a suffix.
+
+The main purpose of this code is to use the calculate_scaling_factors function to
+calculate scaling factors to be used with the Pyomo scaling transformation or
+with solvers. A user can provide a scaling_expression suffix to calculate scale
+factors from existing variable scaling factors.  This lets scaling factors from
+a small set of fundamental variables to be propagated to the rest of the model.
+
+The scaling_expression suffix contains. Pyomo expressions with model variables
+the expressions can be evaluated with variable scaling factors in place of
+variables to calculate additional scaling factors.
 """
 
 import enum
