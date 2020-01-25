@@ -34,33 +34,20 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 class ScalingBasis(enum.Enum):
-    """Basis value type for scaling expression calculations."""
+    """Basis value type for scaling expression calculations. These are values
+    substituted into the scaling expressions in place of the variables and
+    Expressions in the scaling expressions."""
     Value = 1 # use the variables current value
-    VarScale = 2 # use the variable scale
+    VarScale = 2 # use the variable scale factor
     InverseVarScale = 3 # use 1/(variable scale factor) most common
     Lower = 4 # use the lower bound
     Upper = 5 # use the upper bound
     Mid = 6 # use the bound mid-point
 
 
-def _replace(expr, replacement):
-    """Replace variables in a scaling expression by the basis value used for
-    calculating scale factors.  (See _replacement below.)
-
-    Args:
-        expr: expression to replace variables in
-        replacement: a replacement visitor used to walk the expression tree,
-            or None to leave unchanged
-    Returns:
-        expression"""
-    if replacement is None:
-        return expr
-    else:
-        return replacement.dfs_postorder_stack(expr)
-
-
 def _replacement(m, basis):
-    """Create a replacement visitor. The replacement visitor is used on user-
+    """PRIVATE FUNCTION
+    Create a replacement visitor. The replacement visitor is used on user-
     provided scaling expressions.  These expressions are written with model
     variables, but you generally don't want to calculate scaling factors based
     on the curent value of the model variables, you want to use their scaling
@@ -76,11 +63,13 @@ def _replacement(m, basis):
     Return:
         None or ExpressionReplacementVisitor
     """
+    # These long ifs up front find values to replace variables in the scaling
+    # expressions with.
     if basis[0] == ScalingBasis.Value:
         return None # no need to replace anything if using value
     else:
         rdict = {}
-        for v in m.component_data_objects(pyo.Var):
+        for v in m.component_data_objects((pyo.Var)):
             val = 1.0
             for b in basis:
                 try:
@@ -112,10 +101,51 @@ def _replacement(m, basis):
                 except KeyError:
                     pass
             rdict[id(v)] = val
+        for v in m.component_data_objects((pyo.Expression)):
+            # check for expression scaling factors, while expressions don't
+            # get scaled, the factor can be used in the calculation of other
+            # scale factors.
+            val = 1.0
+            for b in basis:
+                try:
+                    if b == ScalingBasis.VarScale:
+                        val = v.parent_block().scaling_factor[v]
+                        break
+                    elif b == ScalingBasis.InverseVarScale:
+                        val = 1/v.parent_block().scaling_factor[v]
+                        break
+                    elif b == ScalingBasis.Value:
+                        val = pyo.value(v)
+                        break
+                    else: # Expressions don't have bounds
+                        continue
+                except AttributeError:
+                    pass
+                except KeyError:
+                    pass
+            rdict[id(v)] = val
+        # Use the substitutions dictionary from above to make a replacemnt visitor
         return EXPR.ExpressionReplacementVisitor(substitute=rdict)
 
 
 def _calculate_scale_factors_from_expr(m, replacement, cls):
+    """PRIVATE FUNCTION
+    Take the expressions from the scaling_expression suffix and use them to
+    calculate scaling factors for the scaling_factor suffix that is used by Pyomo
+    or the solver to do variable and constraint scaling.  The resulting scaling
+    factors are put into the scaling factor suffix.
+
+    Args:
+        m (Block): a pyomo block to calculate scaling facotrs for
+        replacement (ReplacementVisitor): A pyomo replacment visitor to replace
+            the variale in a scaling factor expression from the scaling_factor
+            suffix and returns a new expression for calcuting scaling factors
+        cls: The class to calculate scaling factors for Var or Constraint
+
+    Returns:
+        None
+    """
+
     # Calculate scaling factors for each constraint
     for c in m.component_data_objects(cls):
         # Check for a scaling expression.  If there is one, use it to calculate
@@ -129,7 +159,13 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
         # Take scaling expression provided by modeler and put in basis values
-        expr = _replace(c.parent_block().scaling_expression[c], replacement)
+        if replacement is None:
+            expr = c.parent_block().scaling_expression[c]
+        else:
+            expr = replacement.dfs_postorder_stack(
+                c.parent_block().scaling_expression[c]
+            )
+
         # Add constraint scaling factor by evaluating modeler provided scale expr
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
@@ -142,11 +178,12 @@ def calculate_scaling_factors(
         ScalingBasis.Value,
     )
 ):
-    """Set scale factors for variables and constraints from expressions, which
-    calculate them based on supplied variable scale factors, values, or bounds.
-    Variable scale factors are calculated first, variable scaling expressions
-    should be based on variables whose scale factors are supplied directly.
-    Constraint scaling expressions can be based on any variables.
+    """Set scale factors for variables and constraints from expressions stored in
+    the scaling_expression suffix. The variables and Expressions in the scaling
+    expressions are replaced by the scaling basis values before calculating
+    the scaling factor. Variable scale factors are calculated first, and variable
+    scaling expressions should be based on variables whose scale factors are
+    supplied directly. Constraint scaling expressions can be based on any variables.
 
     Args:
         m (Block): A Pyomo model or block to apply the scaling expressions to.
