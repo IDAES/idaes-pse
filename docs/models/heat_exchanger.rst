@@ -37,12 +37,12 @@ override the default temperature difference calculation.
 
   model.fs.heat_exchanger.area.fix(1000)
   model.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(100)
-  model.fs.heat_exchanger.inlet_1.flow_mol.fix(100)
-  model.fs.heat_exchanger.inlet_1.pressure.fix(101325)
-  model.fs.heat_exchanger.inlet_1.enth_mol.fix(4000)
-  model.fs.heat_exchanger.inlet_2.flow_mol.fix(100)
-  model.fs.heat_exchanger.inlet_2.pressure.fix(101325)
-  model.fs.heat_exchanger.inlet_2.enth_mol.fix(3000)
+  model.fs.heat_exchanger.shell_inlet.flow_mol.fix(100)
+  model.fs.heat_exchanger.shell_inlet.pressure.fix(101325)
+  model.fs.heat_exchanger.shell_inlet.enth_mol.fix(4000)
+  model.fs.heat_exchanger.tube_inlet.flow_mol.fix(100)
+  model.fs.heat_exchanger.tube_inlet.pressure.fix(101325)
+  model.fs.heat_exchanger.tube_inlet.enth_mol.fix(3000)
 
   # Initialize the model
   model.fs.heat_exchanger.initialize()
@@ -51,38 +51,46 @@ Degrees of Freedom
 ------------------
 
 Aside from the inlet conditions, a heat exchanger model usually has two degrees
-of freedom, which can be fixed for it to be fully specified:
+of freedom, which can be fixed for it to be fully specified. Things that are
+frequently fixed are two of:
 
-* heat transfer area
-* heat transfer coefficient.
+* heat transfer area,
+* heat transfer coefficient, or
+* temperature approach.
 
 The user may also provide constants to calculate the heat transfer coefficient.
 
 Model Structure
 ---------------
 
-The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks (shell and tube),
-which are configured the same as the ``ControlVolume0DBlock`` in the
-:ref:`Heater model <models/heater:Heater>`. The ``HeatExchanger`` model contains additional
-constraints that calculate the amount of heat transferred from shell to tube.
+The ``HeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
+hot side is named ``shell`` and the cold side is named ``tube``. These names are configurable.
+The sign convention is that duty is positive for heat flowing from the hot side to the cold
+side.  Aside from the sign convention there is no requirement that the hot side be hotter
+than the cold side.
 
-The ``HeatExchanger`` has two inlet ports inlet_1 (inlet for shell) and inlet_2
-(outlet for tube), and two outlet ports inlet ports inlet_1 (outlet for shell)
-and outlet_2 (outlet for tube).
+The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
+:ref:`Heater model <models/heater:Heater>`. The ``HeatExchanger`` model contains additional
+constraints that calculate the amount of heat transferred from the hot side to the cold side.
+
+The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
+``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
+supplies different hot and cold side names the inlet and outlets are named accordingly.
 
 Variables
 ---------
 
-=========================== ================== =========== ======================================================================
+=========================== ================== =========== =============================================================================
 Variable                    Symbol             Index Sets  Doc
-=========================== ================== =========== ======================================================================
-heat_duty                   :math:`Q`          t           Heat transferred from shell to tube a reference to tube.heat
+=========================== ================== =========== =============================================================================
+heat_duty                   :math:`Q`          t           Heat transferred from hot side to the cold side
 area                        :math:`A`          None        Heat transfer area
 heat_transfer_coefficient   :math:`U`          t           Heat transfer coefficient
-delta_temperature           :math:`\Delta T`   t           Temperature difference for heat transfer calculations defaults to LMTD
-=========================== ================== =========== ======================================================================
+delta_temperature           :math:`\Delta T`   t           Temperature difference, defaults to LMTD
+=========================== ================== =========== =============================================================================
 
-Note: ``delta_temperature`` may be either a variable or expression depending on the callback used.
+Note: ``delta_temperature`` may be either a variable or expression depending on the callback used.  If the specified cold side is hotter
+than the specified hot side this value will be negative.
 
 Constraints
 -----------
@@ -104,6 +112,12 @@ Temperature difference is an expression:
 
 The heat transfer coefficient is a variable with no associated constraints by default.
 
+Class Documentation
+-------------------
+
+.. Note::
+  The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
+  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <models/heat_exchanger:Example>`.
 
 .. autoclass:: HeatExchanger
    :members:

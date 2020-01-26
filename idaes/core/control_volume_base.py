@@ -15,7 +15,6 @@ Base class for control volumes
 """
 
 # Import Python libraries
-import logging
 from enum import Enum
 
 # Import Pyomo libraries
@@ -31,11 +30,11 @@ from idaes.core.util.config import (is_physical_parameter_block,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "Andrew Lee"
-
-# Set up logger
-_log = logging.getLogger(__name__)
 
 
 # Enumerate options for material balances

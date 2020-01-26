@@ -16,8 +16,6 @@ Basic heater/cooler models
 
 __author__ = "John Eslick"
 
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -31,8 +29,10 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+import idaes.logger as idaeslog
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
+
 
 def _make_heater_control_volume(o, name, config,
                                 dynamic=None, has_holdup=None):

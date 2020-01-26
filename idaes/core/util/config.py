@@ -24,9 +24,10 @@ from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
-import logging
 
-_log = logging.getLogger(__name__)
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
@@ -160,7 +161,7 @@ def is_time_domain(arg):
                                  'of a Pyomo Set or ContinuousSet object')
     return arg
 
-  
+
 def is_transformation_method(arg):
     '''Domain validator for transformation methods
 

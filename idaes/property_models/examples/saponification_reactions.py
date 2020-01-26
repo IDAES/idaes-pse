@@ -15,16 +15,11 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            exp,
                            Param,
-                           PositiveReals,
                            Set,
-                           value,
                            Var)
 
 # Import IDAES cores
@@ -34,13 +29,16 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.constants import Constants as const
+import idaes.logger as idaeslog
+
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("SaponificationReactionParameterBlock")
@@ -93,12 +91,6 @@ class ReactionParameterData(ReactionParameterBlock):
                             initialize=dh_rxn_dict,
                             doc="Heat of reaction [J/mol]")
 
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
-
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
@@ -121,20 +113,16 @@ class _ReactionBlock(ReactionBlockBase):
     """
     def initialize(blk, outlvl=0, **kwargs):
         '''
-        Initialisation routine for reaction package.
+        Initialization routine for reaction package.
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = report after each step
+            outlvl : sets output level of initialization routine
 
         Returns:
             None
         '''
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        init_log.info('Initialization Complete.')
 
 
 @declare_process_block_class("ReactionBlock",
@@ -176,7 +164,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             self.arrhenius_eqn = Constraint(
                     expr=self.k_rxn == self._params.arrhenius *
                     exp(-self._params.energy_activation /
-                        (self._params.gas_const*self.temperature_ref)))
+                        (const.gas_constant*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.k_rxn)
@@ -206,19 +194,4 @@ class ReactionBlockData(ReactionBlockDataBase):
         return MaterialFlowBasis.molar
 
     def model_check(blk):
-        """
-        Model checks for property block
-        """
-        # Check temperature bounds
-        if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
-        if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
-
-        # Check pressure bounds
-        if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
-        if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+        pass

@@ -195,7 +195,7 @@ class TestSaponification(object):
                               for j in sapon.fs.properties.component_list)))
                 <= 1e-6)
 
-        assert (pytest.approx(3904.09, abs=1e-2) == value(
+        assert (pytest.approx(3904.51, abs=1e-2) == value(
                 sapon.fs.unit.control_volume.heat_of_reaction[0]))
         assert abs(value(
                 (sapon.fs.unit.inlet.flow_vol[0] *

@@ -88,7 +88,7 @@ The number of degrees of freedom that need to be fixed to yield a square problem
 
    "Ideal (vapor) - Ideal (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "None", "3 + :math:`N_{c}`"
    "Ideal (vapor) - NRTL (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
-   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac`_comp`", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
 
 Please refer to reference 3 for recommended values for ``tau``.
 
@@ -138,11 +138,11 @@ where :math:`P_c` is the critical pressure, :math:`T_c` is the critical temperat
 
 The specific enthalpy (``enthalpy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
 
-.. math:: h_{i}^{liq} =  \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
+.. math:: h_{i}^{liq} =  \Delta h_{form,Liq,i} + \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
 
 The specific enthalpy (``enthalpy_comp_vap``) for component :math:`i` is computed using the following expression for the vapor phase:
 
-.. math:: h_{i}^{vap} = \Delta h_{vap,298.15,i} + \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
+.. math:: h_{i}^{vap} = \Delta h_{form,Vap,i} + \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
 
 The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are computed using the following expressions for the liquid and vapor phase respectively:
 
@@ -151,17 +151,11 @@ The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are compute
 
 Similarly, specific entropies are calcuated as follows. The specific entropy (``entropy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
 
-.. math:: s_{i}^{liq} =  \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
+.. math:: s_{i}^{liq} =  \Delta s_{form,Liq,i} + \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
 
 The specific entropy (``entropy_comp_vap``) for component :math:`i` is computed using the following expression for the vapor phase:
 
-.. math:: s_{i}^{vap} = \Delta s_{vap,298.15,i} + \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
-
-where:
-
-.. math:: \Delta s_{vap,298.15, i} = \frac{\Delta h_{vap,298.15, i}}{T_{boil, i}}
-
-Here :math:`T_{boil, i}` is the boiling point of component :math:`i` at the reference pressure.
+.. math:: s_{i}^{vap} = \Delta s_{form,Vap,i} + \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
 
 Please refer to references 1 and 2 to get parameters for different components. 
 

@@ -42,7 +42,7 @@ def get_default_solver():
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
         solver.options = {'tol': 1e-6,
-                          'linear_solver': 'mumps'}
+                          'linear_solver': 'ma27'}
     else:
         solver = None
 
@@ -154,7 +154,7 @@ class StateTestBlockData(StateBlockData):
             raise NotImplementedError
 
     def define_state_vars(self):
-        return {"component_flow": self.flow_mol_phase_comp,
+        return {"component_flow_phase": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
@@ -208,7 +208,8 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None, solver=None):
+    def initialize(blk, outlvl=0, optarg=None,
+                   solver=None, state_vars_fixed=False):
         for k in blk.keys():
             blk[k].init_test = True
 

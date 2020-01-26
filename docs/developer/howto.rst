@@ -29,6 +29,13 @@ Examples
     Tutorials from workshops are under the `examples/workshops/` subdirectory.
     
 
+Developer environment
+---------------------
+Development of IDAES will require an extra set of required package not needed by regular users.
+To install those extra developer tools use the command ``pip install -r requirements-dev.txt``
+rather than ``pip install -r requirements.txt``
+
+
 Code style
 ------------
 The code style is not entirely consistent. But some general guidelines are:
@@ -140,6 +147,14 @@ The sources for the documentation are:
 
 Building documentation
 ^^^^^^^^^^^^^^^^^^^^^^
+
+.. note:: To build the documentation locally, you will need to have the Sphinx tools installed.
+       This will be done for you by running ``pip install requirements-dev.txt`` ("developer" setup)
+       as opposed to the regular ``pip install requirements.txt`` ("user" setup).
+
+.. note:: On Windows use the provided ``make.bat`` command (in the ``docs`` dir) rather than `make`
+       in the below examples.
+
 To build the documentation locally, there is a "Makefile" in the `docs/` directory::
 
     cd docs
