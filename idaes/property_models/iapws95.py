@@ -605,6 +605,102 @@ class Iapws95StateBlockData(StateBlockData):
         self.eq_sat = Constraint(expr=P/1000.0 == Psat/1000.0)
         self.eq_sat.deactivate()
 
+    def _set_scale(self, c, v=1, expr=None):
+        if expr is not None:
+            suf = self.scaling_expression
+            v = expr
+        else:
+            suf = self.scaling_factor
+
+        if c.isindexed():
+            for i, co in c.items():
+                suf[co] = v
+        else:
+            suf[c] = v
+
+    def _set_default_scaling(self):
+        """
+        This
+        """
+        self.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        self.scaling_expression = pyo.Suffix()
+
+        self._set_scale(self.temperature_crit, 1e-2)
+        self._set_scale(self.pressure_crit, 1e-6)
+        self._set_scale(self.dens_mass_crit, 1e-2)
+        self._set_scale(self.gas_const, 1e0)
+        self._set_scale(self.mw, 1e3)
+        self._set_scale(self.temperature_sat, 1e-2)
+        self._set_scale(self.flow_mol, 1e-3)
+        self._set_scale(self.flow_mass, 1e0)
+        self._set_scale(self.temperature,1e-1)
+        self._set_scale(self.pressure,1e-6)
+        self._set_scale(self.vapor_frac,1e1)
+        for i, c in self.dens_mass_phase.items():
+            if i == "Liq":
+                self._set_scale(c, 1e-2)
+            elif i == "Vap":
+                self._set_scale(c, 1e1)
+            else: # Mix
+                self._set_scale(c, 1e-1)
+        self._set_scale(self.temperature_red, 1)
+        self._set_scale(self.pressure_sat, 1e-5)
+        self._set_scale(self.energy_internal_mol_phase, 1)
+        self._set_scale(self.enth_mol_phase, 1e-2)
+        self._set_scale(self.entr_mol_phase, 1e-2)
+        self._set_scale(self.cp_mol_phase, 1e-2)
+        self._set_scale(self.cv_mol_phase, 1e-2)
+        self._set_scale(self.speed_sound_phase, 1e-2)
+        self._set_scale(self.dens_mol_phase, 1e-3)
+        for i, c in self.therm_cond_phase.items():
+            if i == "Liq":
+                self._set_scale(c, 1e1)
+            elif i == "Vap":
+                self._set_scale(c, 1e2)
+            else: # Mix
+                self._set_scale(c, 1e2)
+        for i, c in self.self.visc_d_phase.items():
+            if i == "Liq":
+                self._set_scale(c, 1e5)
+            elif i == "Vap":
+                self._set_scale(c, 1e6)
+            else: # Mix
+                self._set_scale(c, 1e6)
+        for i, c in self.visc_k_phase.items():
+            if i == "Liq":
+                self._set_scale(c, 1e5)
+            elif i == "Vap":
+                self._set_scale(c, 1e7)
+            else: # Mix
+                self._set_scale(c, 1e6)
+        self._set_scale(self.phase_frac, 1e1)
+        self._set_scale(self.flow_mol_comp, 1e-3)
+        self._set_scale(self.energy_internal_mol, 1)
+        self._set_scale(self.enth_mol, 1e-3)
+        self._set_scale(self.entr_mol, 1e-1)
+        self._set_scale(self.cp_mol, 1e-2)
+        self._set_scale(self.cv_mol, 1e-2)
+        self._set_scale(self.heat_capacity_ratio, 1)
+        self._set_scale(self.dens_mass, 1)
+        self._set_scale(self.dens_mol, 1e-3)
+        self._set_scale(self.dh_vap_mol, 1e-4)
+
+        # Now set scaling expressions
+        #  don't forget in this expression, assuming you do the normal stuff,
+        #  self.flow_mol and self.phase_frac will be replaces by 1/scale factor
+        for p, c in self.material_flow_terms.items():
+            self._set_scale(c, expr=1/(self.flow_mol*self.phase_frac[p]))
+        for p, c in self.enthalpy_flow_terms.items():
+            self._set_scale(
+                c, expr=1/(self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol))
+        for p, c in self.energy_density_terms.items():
+            self._set_scale(
+                c, expr=1/(self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]))
+
+        self._set_scale(self.eq_complementarity, expr=(10/self.pressure))
+        self._set_scale(self.eq_sat, expr=(1000/self.pressure))
+
+
     def build(self, *args):
         """
         Callable method for Block construction
@@ -950,17 +1046,38 @@ class Iapws95StateBlockData(StateBlockData):
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
+        # Define some expressions for the balance terms returned by functions
+        # This is just to allow assigning scale factors to the expressions
+        # returned
+        #
+        # Marterial flow term exprsssions
+        @self.Expression(phlist)
+        def material_flow_terms(b, p):
+            return self.flow_mol*self.phase_frac[p]
+        # Enthaply flow term expressions
+        @self.Expression(phlist)
+        def enthalpy_flow_terms(b, p):
+            return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
+        # Enthaply flow term expressions
+        @sef.Expression(phlist)
+        def energy_density_terms(b, p):
+            return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
+
+        # Set all the scaling factors
+        self._set_default_scaling()
+
+
     def get_material_flow_terms(self, p, j):
         if p == "Mix":
             return self.flow_mol
         else:
-            return self.flow_mol*self.phase_frac[p]
+            return self.material_flow_terms[p]
 
     def get_enthalpy_flow_terms(self, p):
         if p == "Mix":
             return self.enth_mol*self.flow_mol
         else:
-            return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
+            return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         if p == "Mix":
@@ -972,7 +1089,7 @@ class Iapws95StateBlockData(StateBlockData):
         if p == "Mix":
             return self.dens_mol*self.energy_internal_mol
         else:
-            return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
+            return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
