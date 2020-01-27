@@ -25,7 +25,7 @@ import gzip
 
 # Some more inforation about this module
 __author__ = "John Eslick"
-__format_version__ = 3
+__format_version__ = 4
 
 
 def _set_active(o, d):

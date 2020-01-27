@@ -685,7 +685,6 @@ class Iapws95StateBlockData(StateBlockData):
         self._set_scale(self.dens_mol, 1e-3)
         self._set_scale(self.dh_vap_mol, 1e-4)
 
-        """
         # Now set scaling expressions
         #  don't forget in this expression, assuming you do the normal stuff,
         #  self.flow_mol and self.phase_frac will be replaces by 1/scale factor
@@ -697,11 +696,11 @@ class Iapws95StateBlockData(StateBlockData):
         for p, c in self.energy_density_terms.items():
             self._set_scale(
                 c, expr=1/(self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]))
-                """
-        """
-        self._set_scale(self.eq_complementarity, expr=(10/self.pressure))
-        self._set_scale(self.eq_sat, expr=(1000/self.pressure))
-        """
+        
+        if self.config.parameters.state_vars == StateVars.TPX:
+            self._set_scale(self.eq_complementarity, expr=(10/self.pressure))
+            self._set_scale(self.eq_sat, expr=(1000/self.pressure))
+
 
     def build(self, *args):
         """
@@ -1057,42 +1056,35 @@ class Iapws95StateBlockData(StateBlockData):
         # returned
         #
         # Marterial flow term exprsssions
-        """
-        @self.Expression(phlist)
-        def material_flow_terms(b, p):
-            return self.flow_mol*self.phase_frac[p]
-        """
-        """
+        def rule_material_flow_terms(b, p):
+            if p == "Mix":
+                return self.flow_mol
+            else:
+                return self.flow_mol*self.phase_frac[p]
+        self.material_flow_terms = Expression(phlist, rule=rule_material_flow_terms)
         # Enthaply flow term expressions
-        @self.Expression(phlist)
-        def enthalpy_flow_terms(b, p):
+        def rule_enthalpy_flow_terms(b, p):
             if p == "Mix":
                 return self.enth_mol*self.flow_mol
             else:
                 return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
+        self.enthalpy_flow_terms = Expression(phlist, rule=rule_enthalpy_flow_terms)
         # Enthaply flow term expressions
-        @self.Expression(phlist)
-        def energy_density_terms(b, p):
+        def rule_energy_density_terms(b, p):
             if p == "Mix":
                 return self.dens_mol*self.energy_internal_mol
             else:
                 return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
-        """
+        self.energy_density_terms = Expression(phlist, rule=rule_energy_density_terms)
         # Set all the scaling factors
         self._set_default_scaling()
 
 
     def get_material_flow_terms(self, p, j):
-        if p == "Mix":
-            return self.flow_mol
-        else:
-            return self.flow_mol*self.phase_frac[p]
+        return self.material_flow_terms[p]
 
     def get_enthalpy_flow_terms(self, p):
-        if p == "Mix":
-            return self.enth_mol*self.flow_mol
-        else:
-            return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
+        return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         if p == "Mix":
@@ -1101,10 +1093,7 @@ class Iapws95StateBlockData(StateBlockData):
             return self.dens_mol_phase[p]
 
     def get_energy_density_terms(self, p):
-        if p == "Mix":
-            return self.dens_mol*self.energy_internal_mol
-        else:
-            return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
+        return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
