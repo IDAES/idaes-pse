@@ -423,7 +423,7 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
             sd[oname][a] = getattr(o, a, None)
     sd[oname]["data"] = {} # create a dict for compoent data and subcomponents
     if isinstance(o, Suffix): # if is a suffix, make a list and delay writing
-        if wts.include_suffix and oname != "scaling_expression":        # data until all compoents have an assigned id
+        if wts.include_suffix:        # data until all compoents have an assigned id
             if wts.suffix_filter is None or oname in wts.suffix_filter:
                 suffixes.append(
                     {'sd':sd[oname]["data"], 'o':o, 'wts':wts, 'lookup':lookup})
@@ -634,7 +634,7 @@ def _read_component(sd, o, wts, lookup={}, suffixes={}):
             else:
                 raise(e)
     if isinstance(o, Suffix):
-        if wts.include_suffix and oname != "scaling_expression": # make a dict of suffixes to read at the end
+        if wts.include_suffix: # make a dict of suffixes to read at the end
             if wts.suffix_filter is None or oname in wts.suffix_filter:
                 suffixes[odict['__id__']] = odict["data"] # is populated
     else: # read nonsufix component data
