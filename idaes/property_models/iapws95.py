@@ -599,10 +599,13 @@ class Iapws95StateBlockData(StateBlockData):
         elif not self.config.defined_state:
             self.eq_complementarity = Constraint(
                 expr=0 == (vf*self.P_over_sat - (1 - vf)*self.P_under_sat))
+            self._set_scale(self.eq_complementarity, expr=(10/self.pressure))
+
 
         # eq_sat can activated to force the pressure to be the saturation
         # pressure, if you use this constraint deactivate eq_complementarity
         self.eq_sat = Constraint(expr=P/1000.0 == Psat/1000.0)
+        self._set_scale(self.eq_sat, expr=(1000/self.pressure))
         self.eq_sat.deactivate()
 
     def _set_scale(self, c, v=1, expr=None):
@@ -622,9 +625,6 @@ class Iapws95StateBlockData(StateBlockData):
         """
         This
         """
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-        self.scaling_expression = Suffix()
-
         self._set_scale(self.temperature_crit, 1e-2)
         self._set_scale(self.pressure_crit, 1e-6)
         self._set_scale(self.dens_mass_crit, 1e-2)
@@ -696,10 +696,6 @@ class Iapws95StateBlockData(StateBlockData):
         for p, c in self.energy_density_terms.items():
             self._set_scale(
                 c, expr=1/(self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]))
-        
-        if self.config.parameters.state_vars == StateVars.TPX:
-            self._set_scale(self.eq_complementarity, expr=(10/self.pressure))
-            self._set_scale(self.eq_sat, expr=(1000/self.pressure))
 
 
     def build(self, *args):
@@ -707,6 +703,9 @@ class Iapws95StateBlockData(StateBlockData):
         Callable method for Block construction
         """
         super(Iapws95StateBlockData, self).build(*args)
+
+        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        self.scaling_expression = Suffix()
 
         self.state_vars = self.config.parameters.state_vars
         # parameter aliases for convienient use later
