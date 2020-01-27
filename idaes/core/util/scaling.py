@@ -48,7 +48,7 @@ class ScalingBasis(enum.Enum):
 def _replacement(m, basis):
     """PRIVATE FUNCTION 
     Create a replacement visitor. The replacement visitor is used on
-    user- provided scaling expressions.  These expressions are written
+    user-provided scaling expressions. These expressions are written
     with model variables, but you generally don't want to calculate
     scaling factors based on the curent value of the model variables,
     you want to use their scaling factors, so the replacment visitor
