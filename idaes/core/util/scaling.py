@@ -17,11 +17,11 @@ by providing an expression to calculate them via a suffix.
 The main purpose of this code is to use the calculate_scaling_factors function to
 calculate scaling factors to be used with the Pyomo scaling transformation or
 with solvers. A user can provide a scaling_expression suffix to calculate scale
-factors from existing variable scaling factors.  This lets scaling factors from
+factors from existing variable scaling factors. This allows scaling factors from
 a small set of fundamental variables to be propagated to the rest of the model.
 
-The scaling_expression suffix contains. Pyomo expressions with model variables
-the expressions can be evaluated with variable scaling factors in place of
+The scaling_expression suffix contains Pyomo expressions with model variables.
+The expressions can be evaluated with variable scaling factors in place of
 variables to calculate additional scaling factors.
 """
 
@@ -46,15 +46,15 @@ class ScalingBasis(enum.Enum):
 
 
 def _replacement(m, basis):
-    """PRIVATE FUNCTION
-    Create a replacement visitor. The replacement visitor is used on user-
-    provided scaling expressions.  These expressions are written with model
-    variables, but you generally don't want to calculate scaling factors based
-    on the curent value of the model variables, you want to use their scaling
-    factors, so the replacment visitor takes the user-defined scaling expression
-    and replaces the model varible by some scaling factor, and returns a new
-    expression. There are some options about what value to use for scaling, and
-    that is set by basis.
+    """PRIVATE FUNCTION 
+    Create a replacement visitor. The replacement visitor is used on
+    user- provided scaling expressions.  These expressions are written
+    with model variables, but you generally don't want to calculate
+    scaling factors based on the curent value of the model variables,
+    you want to use their scaling factors, so the replacment visitor
+    takes the user-defined scaling expression and replaces the model
+    varible by some scaling factor, and returns a new expression. The
+    basis argument can be used to specify the basis to use for scaling.
 
     Args:
         m (Block): model to collect vars from
@@ -62,6 +62,7 @@ def _replacement(m, basis):
 
     Return:
         None or ExpressionReplacementVisitor
+
     """
     # These long ifs up front find values to replace variables in the scaling
     # expressions with.
@@ -132,14 +133,14 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
     """PRIVATE FUNCTION
     Take the expressions from the scaling_expression suffix and use them to
     calculate scaling factors for the scaling_factor suffix that is used by Pyomo
-    or the solver to do variable and constraint scaling.  The resulting scaling
+    or the solver to do variable and constraint scaling. The resulting scaling
     factors are put into the scaling factor suffix.
 
     Args:
-        m (Block): a pyomo block to calculate scaling facotrs for
+        m (Block): a pyomo block to calculate scaling factors for
         replacement (ReplacementVisitor): A pyomo replacment visitor to replace
-            the variale in a scaling factor expression from the scaling_factor
-            suffix and returns a new expression for calcuting scaling factors
+            the variable in a scaling factor expression from the scaling_factor
+            suffix and return a new expression for calculating scaling factors
         cls: The class to calculate scaling factors for Var or Constraint
 
     Returns:
