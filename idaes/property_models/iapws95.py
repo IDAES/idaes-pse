@@ -131,7 +131,7 @@ def htpx(T, P=None, x=None):
     """
     if not (P is None) ^ (x is None):
         raise ConfigurationError(
-            "htpx must be provided with one (and only one) of " "arguments P and x."
+            "htpx must be provided with one (and only one) of arguments P and x."
         )
     if not 200 <= T <= 3e3:
         raise ConfigurationError("T out of range. Must be between 2e2 and 3e3")
