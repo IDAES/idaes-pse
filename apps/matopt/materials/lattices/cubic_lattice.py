@@ -11,39 +11,6 @@ from ..tiling import CubicTiling
 class CubicLattice(UnitCellLattice):
     RefIAD = 1
 
-    '''
-    # === AUXILIARY METHODS
-    def __isValidScanPoint(self,P):
-        return True # all integer points are on the cubic lattice
-    '''
-
-    '''
-    def _setupScan(self,ScanMin,ScanMax):
-        self.__ScanMin = ScanMin.astype(int)+np.array([-1,-1,-1],dtype=int)
-        self.__ScanMax = ScanMax.astype(int)+np.array([ 1, 1, 1],dtype=int)
-        self.__ScanP = deepcopy(self.__ScanMin)
-        self.__ScanP[0] -= 1
-        #print('Setting up ScanMin={}'.format(self.__ScanMin))
-        #print('Setting up ScanMax={}'.format(self.__ScanMax))
-        #print('Setting up ScanP={}'.format(self.__ScanP))
-    def _getNextPoint(self):
-        while(self.__ScanP[2]<=self.__ScanMax[2]):
-            while(self.__ScanP[1]<=self.__ScanMax[1]):
-                while(self.__ScanP[0]<=self.__ScanMax[0]):
-                    self.__ScanP[0] += 1
-                    if(self.__ScanP[0]<=self.__ScanMax[0] and
-                       self.__ScanP[1]<=self.__ScanMax[1] and
-                       self.__ScanP[2]<=self.__ScanMax[2]):
-                        #print('Returning P={}'.format(self._getConvertFromReference(self.__ScanP.astype(float))))
-                        return self._getConvertFromReference(self.__ScanP.astype(float))
-                self.__ScanP[0] = self.__ScanMin[0]
-                self.__ScanP[1] += 1
-            self.__ScanP[1] = self.__ScanMin[1]
-            self.__ScanP[2] += 1
-        self.__ScanP[2] = self.__ScanMin[2]
-        return None # only invoked when ScanP is reset to ScanMin
-    '''
-
     # === STANDARD CONSTRUCTOR
     def __init__(self, IAD):
         RefUnitCellShape = Parallelepiped.fromEdgesAndAngles(CubicLattice.RefIAD,
@@ -67,7 +34,6 @@ class CubicLattice(UnitCellLattice):
 
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
-        # TODO: Put some real checks here
         return UnitCellLattice.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
@@ -77,6 +43,7 @@ class CubicLattice(UnitCellLattice):
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS
+    # NOTE: This method is inherited from UnitCellLattice
     # def isOnLattice(self,P):
 
     def areNeighbors(self, P1, P2):
