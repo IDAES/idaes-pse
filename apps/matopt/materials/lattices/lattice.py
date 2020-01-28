@@ -6,41 +6,6 @@ from ..transform_func import TransformFunc, ShiftFunc, ScaleFunc, RotateFunc, Re
 
 
 class Lattice(object):
-    '''
-    # === AUXILIARY METHODS
-    @abstractmethod
-    def _isValidScanPoint(self,P):
-        raise NotImplementedError
-
-    def _setupScan(self,ScanMin,ScanMax):
-        self._ScanMin = ScanMin.astype(int)+np.array([-1,-1,-1],dtype=int)
-        self._ScanMax = ScanMax.astype(int)+np.array([ 1, 1, 1],dtype=int)
-        self._ScanP = deepcopy(self._ScanMin)
-        self._ScanP[0] -= 1
-        #print('Setting up ScanMin={}'.format(self._ScanMin))
-        #print('Setting up ScanMax={}'.format(self._ScanMax))
-        #print('Setting up ScanP={}'.format(self._ScanP))
-
-    def _getNextPoint(self):
-        #import code; code.interact(local=dict(locals(),**globals()));
-        while(self._ScanP[2]<=self._ScanMax[2]):
-            while(self._ScanP[1]<=self._ScanMax[1]):
-                while(self._ScanP[0]<=self._ScanMax[0]):
-                    self._ScanP[0] += 1
-                    if(self._ScanP[0]<=self._ScanMax[0] and
-                       self._ScanP[1]<=self._ScanMax[1] and
-                       self._ScanP[2]<=self._ScanMax[2] and 
-                       self._isValidScanPoint(self._ScanP)):
-                        #print('Returning P={}'.format(self._getConvertFromReference(self._ScanP.astype(float))))
-                        return self._getConvertFromReference(self._ScanP.astype(float))
-                self._ScanP[0] = self._ScanMin[0]
-                self._ScanP[1] += 1
-            self._ScanP[1] = self._ScanMin[1]
-            self._ScanP[2] += 1
-        self._ScanP[2] = self._ScanMin[2]
-        return None # only invoked when ScanP is reset to ScanMin
-    '''
-
     # === DEFAULT CONSTRUCTOR
     def __init__(self):
         self._TransformFuncs = []
