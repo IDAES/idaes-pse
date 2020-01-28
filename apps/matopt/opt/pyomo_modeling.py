@@ -1,4 +1,3 @@
-# from collections import Iterable
 import logging
 import numpy as np
 
@@ -17,22 +16,23 @@ DEFAULT_EPS = DBL_TOL
 # ==========      UTILITY FUNCTIONS     ==========
 # ================================================
 def getLB(e):
-    """
+    """Calculates the lower bound (if possible) of a linear expression.
 
     Args:
-        e:
+        e: A Pyomo expression, Pyomo variable, float, or int. 
 
     Returns:
+        (float) lower bound from interval arithmetic. None if negative infinity.
 
     """
     if (isinstance(e, _GeneralVarData)):
         if (e.is_fixed()):
             return value(e)
-        elif (e.has_lb()):
-            return e.lb
         else:
-            return None
+            return e.lb
     elif (isinstance(e, MonomialTermExpression)):
+        # The assert below is useful just for when the Pyomo object structures change
+        # If the assert fails, we need to reorganize the if blocks here.
         assert (isinstance(e.args[1], pyomo.core.base.var._GeneralVarData))
         if (e.args[0] > 0):
             sub_expr_result = getLB(e.args[1])
@@ -52,30 +52,31 @@ def getLB(e):
     elif (isinstance(e, NegationExpression)):
         elem_ub = getUB(e.args[0])
         return (-elem_ub if elem_ub is not None else None)
-    elif (isinstance(e, float) or isinstance(e, int)):
+    elif (isinstance(e, (float,int))):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Decide what to do in this case...')
+        raise NotImplementedError('Unsupported type. Need to add or restructure getLB cases.')
 
 
 def getUB(e):
-    """
+    """Calculates the upper bound (if possible) of a linear expression.
 
     Args:
-        e:
+        e: A Pyomo expression, Pyomo variable, float, or int. 
 
     Returns:
+        (float) upper bound from interval arithmetic. None if infinity.
 
     """
     if (isinstance(e, _GeneralVarData)):
         if (e.is_fixed()):
             return value(e)
-        elif (e.has_ub()):
-            return e.ub
         else:
-            return None
+            return e.ub
     elif (isinstance(e, MonomialTermExpression)):
+        # The assert below is useful just for when the Pyomo object structures change
+        # If the assert fails, we need to reorganize the if blocks here.
         assert (isinstance(e.args[1], pyomo.core.base.var._GeneralVarData))
         if (e.args[0] > 0):
             sub_expr_result = getUB(e.args[1])
@@ -95,11 +96,11 @@ def getUB(e):
     elif (isinstance(e, NegationExpression)):
         elem_lb = getLB(e.args[0])
         return (-elem_lb if elem_lb is not None else None)
-    elif (isinstance(e, float) or isinstance(e, int)):
+    elif (isinstance(e, (float,int))):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Decide what to do in this case...')
+        raise NotImplementedError('Unsupported type. Need to add or restructure getUB cases.')
 
 
 # ================================================
@@ -310,15 +311,15 @@ def addConsForGeneralVars(m):
     # Defining Ci
     if (len(m.Ci) > 0):
         if (len(m.Xij) > 0 and len(m.Cikl) > 0):
-            # NOTE: Chose to add only one formulation because the second is redundant
             _addConsCiFromCikl(m)
+            # NOTE: Chose to add only one formulation because the second is redundant
             # _addConsCiFromXij(m)
         elif (len(m.Cikl) > 0 or len(m.Xijkl) > 0 or len(m.Yik) > 0):
             _addConsCiFromCikl(m)
         elif (len(m.Xij) > 0 or len(m.Yi) > 0 or len(m.Yik) == 0):
             _addConsCiFromXij(m)
         else:
-            raise NotImplementedError('Decide if Ci should be left free in this case...')
+            raise NotImplementedError('Ci lacks a proper way to be defined.')
     # Defining Cikl
     if (len(m.Cikl) > 0):
         _addConsCiklFromXijkl(m)
@@ -333,7 +334,7 @@ def addConsForGeneralVars(m):
         elif (len(m.Yi) > 0 or len(m.Yik) == 0):
             _addConsXijFromYi(m)
         else:
-            raise NotImplementedError('Decide if Xij should be left free in this case...')
+            raise NotImplementedError('Xij lacks a propper way to be defined.')
     # Defining Xijkl
     if (len(m.Xijkl) > 0):
         _addConsXijklFromYik(m)
@@ -728,7 +729,7 @@ def setDesignFromModel(D, m, blnSetNoneOtherwise=True):
     elif (len(m.Yi) > 0):
         setDesignFromYi(D, m, blnSetNoneOtherwise=blnSetNoneOtherwise)
     else:
-        raise NotImplementedError('Decide what to do in this case...')
+        raise NotImplementedError('No way to interpret model variables as a Design.')
 
 
 def _validYiGivenD(m, D):
@@ -911,14 +912,6 @@ def addConsBoundDescriptorsWithImpl(m, ConName, Descs, Impls, LBs=None, UBs=None
 
     """
     if (LBs is not None):
-        #
-        # NOTE: THIS DOES NOT WORK BECAUSE SimpleParams
-        #       ARE ALSO INSTANCES OF Iterable
-        #
-        # if(not isinstance(LBs,Iterable)):
-        #    # Upgrade singleton LB to list of LBs
-        #    LBs = [LBs]*len(m.I)
-        #
         ConNameLB = ConName + '_ImplLB'
         setattr(m, ConNameLB, Constraint(m.I))
         ConLB = getattr(m, ConNameLB)
@@ -933,14 +926,6 @@ def addConsBoundDescriptorsWithImpl(m, ConName, Descs, Impls, LBs=None, UBs=None
             ConLB.add(index=i, expr=(MLB * (1 - Impls[i]) <= Descs[i] - LBs[i]))
 
     if (UBs is not None):
-        #
-        # NOTE: THIS DOES NOT WORK BECAUSE SimpleParams
-        #       ARE ALSO INSTANCES OF Iterable
-        #
-        # if(not isinstance(UBs,Iterable)):
-        #    # Upgrade singleton UB to list of UBs
-        #    UBs = [UBs]*len(m.I)
-        #
         ConNameUB = ConName + '_ImplUB'
         setattr(m, ConNameUB, Constraint(m.I))
         ConUB = getattr(m, ConNameUB)
