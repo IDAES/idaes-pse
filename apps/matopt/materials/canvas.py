@@ -123,20 +123,11 @@ class Canvas(object):
             if (not result.hasPoint(P) and P in S):
                 PNs = Lat.getNeighbors(P)
                 result.addLocation(P, len(PNs))
-                # NOTE: The lines of code below sound like a good idea,
-                #       but were found to be significantly slower than
-                #       just extending the Stack without these checks.
-                #
-                # for PN in PNs:
-                #    AlreadyInStack = False
-                #    for StackElem in Stack:
-                #         #if(np.allclose(PN,StackElem,rtol=0,atol=Canvas.DBL_TOL)):
-                #         if(myArrayEq(PN,StackElem,Canvas.DBL_TOL)):
-                #            AlreadyInStack = True
-                #            break
-                #    if not AlreadyInStack:
-                #        Stack.append(PN)
-                #
+                # NOTE: At first, we checked if P needed to be added
+                #       (i.e., if it was not alreay in the Stack)
+                #       but doing so was significantly slower than
+                #       just extending the Stack without checks and
+                #       just checking if P was already in the result
                 Stack.extend(PNs)
         result.setNeighborsFromFunc(Lat.getNeighbors)
         return result
