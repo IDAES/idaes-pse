@@ -378,7 +378,7 @@ class Parallelepiped(Polyhedron):
         self._Vy = Vy
         self._Vz = Vz
         if (np.inner(np.cross(Vx, Vy), Vz) < Parallelepiped.DBL_TOL):
-            raise ValueError("Vx,Vy,Vz must have a positive box product. TODO: Understand why...")
+            raise ValueError("Vx,Vy,Vz must have a positive box product.")
             Vx, Vy = Vy, Vx
         if (BotBackLeftCorner is None):
             BotBackLeftCorner = np.array([0, 0, 0], dtype=float)
