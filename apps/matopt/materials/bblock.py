@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 
 class BBlock(object):
-    """ """
+    """An abstract class for material building blocks."""
 
     # === PROPERTY EVALUATION METHODS
     @abstractmethod
