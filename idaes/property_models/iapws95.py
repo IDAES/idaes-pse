@@ -508,24 +508,75 @@ class Iapws95StateBlockData(StateBlockData):
         # initialization
         pass
 
+    def _external_functions(self):
+        """Create ExternalFunction components.  This includeds some external
+        functions that are not usually used for testing purposes."""
+        plib = self.config.parameters.plib
+        self.func_p = EF(library=plib, function="p")
+        self.func_u = EF(library=plib, function="u")
+        self.func_s = EF(library=plib, function="s")
+        self.func_h = EF(library=plib, function="h")
+        self.func_hvpt = EF(library=plib, function="hvpt")
+        self.func_hlpt = EF(library=plib, function="hlpt")
+        self.func_tau = EF(library=plib, function="tau")
+        self.func_vf = EF(library=plib, function="vf")
+        self.func_g = EF(library=plib, function="g")
+        self.func_f = EF(library=plib, function="f")
+        self.func_cv = EF(library=plib, function="cv")
+        self.func_cp = EF(library=plib, function="cp")
+        self.func_w = EF(library=plib, function="w")
+        self.func_delta_liq = EF(library=plib, function="delta_liq")
+        self.func_delta_vap = EF(library=plib, function="delta_vap")
+        self.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
+        self.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
+        self.func_p_sat = EF(library=plib, function="p_sat")
+        self.func_tau_sat = EF(library=plib, function="tau_sat")
+        self.func_phi0 = EF(library=plib, function="phi0")
+        self.func_phi0_delta = EF(library=plib, function="phi0_delta")
+        self.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
+        self.func_phi0_tau = EF(library=plib, function="phi0_tau")
+        self.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
+        self.func_phir = EF(library=plib, function="phir")
+        self.func_phir_delta = EF(library=plib, function="phir_delta")
+        self.func_phir_delta2 = EF(library=plib, function="phir_delta2")
+        self.func_phir_tau = EF(library=plib, function="phir_tau")
+        self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
+        self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
+
     def _state_vars(self):
         """ Create the state variables
         """
         self.flow_mol = Var(initialize=1, domain=NonNegativeReals,
                             doc="Total flow [mol/s]")
-        self.flow_mol.latex_symbol = "F"
 
         if self.state_vars == StateVars.PH:
             self.pressure = Var(domain=PositiveReals,
                                 initialize=1e5,
                                 doc="Pressure [Pa]",
                                 bounds=(1, 1e9))
-            self.pressure.latex_symbol = "P"
-
             self.enth_mol = Var(initialize=1000,
                                 doc="Total molar enthalpy (J/mol)",
                                 bounds=(1, 1e5))
-            self.enth_mol.latex_symbol = "h"
+
+            P = self.pressure/1000.0  # Pressure expr [kPA] (for external func)
+            h_mass = self.enth_mol/self.mw/1000  # enthalpy expr [kJ/kg]
+            phase_set = self.config.parameters.config.phase_presentation
+
+            self.temperature = Expression(
+                expr=self.temperature_crit/self.func_tau(h_mass, P),
+                doc="Temperature (K)")
+            if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
+                self.vapor_frac = Expression(
+                    expr=self.func_vf(h_mass, P),
+                    doc="Vapor mole fraction (mol vapor/mol total)")
+            elif phase_set == PhaseType.L:
+                self.vapor_frac = Expression(
+                    expr=0.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)")
+            elif phase_set == PhaseType.G:
+                self.vapor_frac = Expression(
+                    expr=1.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)")
 
             # For variables that show up in ports specify extensive/intensive
             self.extensive_set = ComponentSet((self.flow_mol,))
@@ -535,17 +586,17 @@ class Iapws95StateBlockData(StateBlockData):
             self.temperature = Var(initialize=300,
                                    doc="Temperature [K]",
                                    bounds=(200, 3e3))
-            self.temperature.latex_symbol = "T"
 
             self.pressure = Var(domain=PositiveReals,
                                 initialize=1e5,
                                 doc="Pressure [Pa]",
                                 bounds=(1, 1e9))
-            self.pressure.latex_symbol = "P"
 
             self.vapor_frac = Var(initialize=0.0,
                                   doc="Vapor fraction [none]")
-            self.vapor_frac.latex_symbol = "x"
+
+            # enth_mol is defined later, since in this case it needs
+            # enth_mol_phase to be defined first
 
             # For variables that show up in ports specify extensive/intensive
             self.extensive_set = ComponentSet((self.flow_mol,))
@@ -685,125 +736,59 @@ class Iapws95StateBlockData(StateBlockData):
         self._set_scale(self.dens_mol, 1e-3)
         self._set_scale(self.dh_vap_mol, 1e-4)
 
-        # Now set scaling expressions
-        #  don't forget in this expression, assuming you do the normal stuff,
-        #  self.flow_mol and self.phase_frac will be replaces by 1/scale factor
-        for p, c in self.material_flow_terms.items():
-            self._set_scale(c, expr=1/(self.flow_mol*self.phase_frac[p]))
-        for p, c in self.enthalpy_flow_terms.items():
-            self._set_scale(
-                c, expr=1/(self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol))
-        for p, c in self.energy_density_terms.items():
-            self._set_scale(
-                c, expr=1/(self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]))
-
-
     def build(self, *args):
         """
         Callable method for Block construction
         """
         super(Iapws95StateBlockData, self).build(*args)
 
+        # Create the scaling suffixes for the state block
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         self.scaling_expression = Suffix()
 
-        self.state_vars = self.config.parameters.state_vars
-        # parameter aliases for convienient use later
-        component_list = self.config.parameters.component_list
-        phlist = self.config.parameters.private_phase_list
-        Tc = self.config.parameters.temperature_crit
-        self.temperature_crit = Expression(expr=Tc)
-        self.pressure_crit = Expression(expr=self.config.parameters.pressure_crit)
-        rhoc = self.config.parameters.dens_mass_crit
-        self.dens_mass_crit = Expression(expr=self.config.parameters.dens_mass_crit)
-        self.gas_const = Expression(expr=self.config.parameters.gas_const)
-        phase_set = self.config.parameters.config.phase_presentation
-
-        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
-
-        self.config.parameters.config.phase_presentation == PhaseType.MIX
-
-        # Set if the IAPWS library is available.
+        # Check if the IAPWS library is available.
         self.available = self.config.parameters.available
         if not self.available:
             _log.error("IAPWS library file not found. Was it compiled?")
 
-        self._state_vars()  # create the appropriate state variables
+        # Add external functions
+        self._external_functions()
 
-        # External Functions (some of these are included only for testing)
-        plib = self.config.parameters.plib
-        self.func_p = EF(library=plib, function="p")
-        self.func_u = EF(library=plib, function="u")
-        self.func_s = EF(library=plib, function="s")
-        self.func_h = EF(library=plib, function="h")
-        self.func_hvpt = EF(library=plib, function="hvpt")
-        self.func_hlpt = EF(library=plib, function="hlpt")
-        self.func_tau = EF(library=plib, function="tau")
-        self.func_vf = EF(library=plib, function="vf")
-        self.func_g = EF(library=plib, function="g")
-        self.func_f = EF(library=plib, function="f")
-        self.func_cv = EF(library=plib, function="cv")
-        self.func_cp = EF(library=plib, function="cp")
-        self.func_w = EF(library=plib, function="w")
-        self.func_delta_liq = EF(library=plib, function="delta_liq")
-        self.func_delta_vap = EF(library=plib, function="delta_vap")
-        self.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
-        self.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
-        self.func_p_sat = EF(library=plib, function="p_sat")
-        self.func_tau_sat = EF(library=plib, function="tau_sat")
-        self.func_phi0 = EF(library=plib, function="phi0")
-        self.func_phi0_delta = EF(library=plib, function="phi0_delta")
-        self.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
-        self.func_phi0_tau = EF(library=plib, function="phi0_tau")
-        self.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
-        self.func_phir = EF(library=plib, function="phir")
-        self.func_phir_delta = EF(library=plib, function="phir_delta")
-        self.func_phir_delta2 = EF(library=plib, function="phir_delta2")
-        self.func_phir_tau = EF(library=plib, function="phir_tau")
-        self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
-        self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
+        # Which state vars to use
+        self.state_vars = self.config.parameters.state_vars
+        # The private phase list contains phases that may be present and is
+        # used internally.  If using the single mixed phase option the phase
+        # list would be mixed while the private phase list would be ["Liq, "Vap"]
+        phlist = self.config.parameters.private_phase_list
+        pub_phlist = self.config.parameters.phase_list
+        component_list = self.config.parameters.component_list
+        phase_set = self.config.parameters.config.phase_presentation
+        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
 
-        # Calculations
+        # Expressions that link to some parameters in the param block, which
+        # are commonly needed, this lets you get the paramters with scale
+        # factors directly from the state block
+        self.temperature_crit = Expression(expr=self.config.parameters.temperature_crit)
+        self.pressure_crit = Expression(expr=self.config.parameters.pressure_crit)
+        self.dens_mass_crit = Expression(expr=self.config.parameters.dens_mass_crit)
+        self.gas_const = Expression(expr=self.config.parameters.gas_const)
+        self.mw = Expression(expr=self.config.parameters.mw, doc="molecular weight [kg/mol]")
 
-        # molecular weight
-        self.mw = Expression(expr=self.config.parameters.mw,
-                             doc="molecular weight [kg/mol]")
+        # create the appropriate state variables
+        self._state_vars()
+
+        # Some parameters/variables show up in several expressions, so to enhance
+        # readability and compactness, give them short aliases
+        Tc = self.config.parameters.temperature_crit
+        rhoc = self.config.parameters.dens_mass_crit
         mw = self.mw
-        mw.latex_symbol = "M"
         P = self.pressure/1000.0  # Pressure expr [kPA] (for external func)
-
-        if self.state_vars == StateVars.PH:
-            # if the state vars are P and H create expressions for T and x
-            h_mass = self.enth_mol/mw/1000  # enthalpy expr [kJ/kg]
-            self.temperature = Expression(
-                expr=Tc/self.func_tau(h_mass, P),
-                doc="Temperature (K)")
-            self.temperature.latex_symbol = "T"
-            if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
-                self.vapor_frac = Expression(
-                    expr=self.func_vf(h_mass, P),
-                    doc="Vapor mole fraction (mol vapor/mol total)")
-            elif phase_set == PhaseType.L:
-                self.vapor_frac = Expression(
-                    expr=0.0,
-                    doc="Vapor mole fraction (mol vapor/mol total)")
-            elif phase_set == PhaseType.G:
-                self.vapor_frac = Expression(
-                    expr=1.0,
-                    doc="Vapor mole fraction (mol vapor/mol total)")
-            self.vapor_frac.latex_symbol = "x"
-        elif self.state_vars == StateVars.TPX:
-            # Need to get enthalpy expressions in here
-            pass
-
-        # Convenient shorter names and expressions
         T = self.temperature
         vf = self.vapor_frac
 
         # Saturation temperature expression
         self.temperature_sat = Expression(expr=Tc/self.func_tau_sat(P),
                                           doc="Stauration temperature (K)")
-        self.temperature_sat.latex_symbol = "T_{sat}"
 
         # Saturation tau (tau = Tc/T)
         self.tau_sat = Expression(expr=self.func_tau_sat(P))
@@ -812,17 +797,13 @@ class Iapws95StateBlockData(StateBlockData):
         self.temperature_red = Expression(
                 expr=T/Tc,
                 doc="reduced temperature T/Tc (unitless)")
-        self.temperature_red.latex_symbol = "T_r"
 
         self.tau = Expression(expr=Tc/T, doc="Tc/T (unitless)")
         tau = self.tau
-        self.tau.latex_symbol = "\\tau"
 
         # Saturation pressure
         self.pressure_sat = Expression(expr=1000*self.func_p_sat(tau),
                                        doc="Saturation pressure (Pa)")
-        self.pressure_sat.latex_symbol = "P_{sat}"
-        self.pressure_sat/1000.0  # expression for Psat in kPA
 
         if self.state_vars == StateVars.PH:
             # If TPx state vars the expressions are given in _tpx_phase_eq
@@ -840,7 +821,6 @@ class Iapws95StateBlockData(StateBlockData):
                     phlist,
                     rule=rule_dens_mass,
                     doc="Mass density by phase (kg/m3)")
-            self.dens_mass_phase.latex_symbol = "\\rho"
 
             # Reduced Density (no _mass_ identifier as mass or mol is same)
             def rule_dens_red(b, p):
@@ -851,7 +831,6 @@ class Iapws95StateBlockData(StateBlockData):
         elif self.state_vars == StateVars.TPX:
             self._tpx_phase_eq()
         delta = self.dens_phase_red  # this shorter name is from IAPWS
-        self.dens_phase_red.latex_symbol = "\\delta"
 
         # Phase property expressions all converted to SI
 
@@ -985,30 +964,19 @@ class Iapws95StateBlockData(StateBlockData):
 
         # Enthalpy
         if self.state_vars == StateVars.TPX:
-            self.enth_mol = Expression(
-                    expr=sum(self.phase_frac[p]*self.enth_mol_phase[p]
-                             for p in phlist))
-            self.enth_mol.latex_symbol = "h"
+            self.enth_mol = Expression(expr=sum(self.phase_frac[p]*self.enth_mol_phase[p] for p in phlist))
         # Internal Energy
-        self.energy_internal_mol = Expression(
-                expr=sum(self.phase_frac[p]*self.energy_internal_mol_phase[p]
-                         for p in phlist))
-        self.energy_internal_mol.latex_symbol = "u"
+        self.energy_internal_mol = Expression(expr=sum(self.phase_frac[p]*self.energy_internal_mol_phase[p]for p in phlist))
         # Entropy
-        self.entr_mol = Expression(
-                expr=sum(self.phase_frac[p]*self.entr_mol_phase[p]
-                         for p in phlist))
-        self.entr_mol.latex_symbol = "s"
+        self.entr_mol = Expression(expr=sum(self.phase_frac[p]*self.entr_mol_phase[p]for p in phlist))
         # cp
         self.cp_mol = Expression(
                 expr=sum(self.phase_frac[p]*self.cp_mol_phase[p]
                          for p in phlist))
-        self.cp_mol.latex_symbol = "c_p"
         # cv
         self.cv_mol = Expression(
                 expr=sum(self.phase_frac[p]*self.cv_mol_phase[p]
                          for p in phlist))
-        self.cv_mol.latex_symbol = "c_v"
         # mass density
         self.dens_mass = Expression(
                 expr=1.0/sum(self.phase_frac[p]*1.0/self.dens_mass_phase[p]
@@ -1056,25 +1024,30 @@ class Iapws95StateBlockData(StateBlockData):
         #
         # Marterial flow term exprsssions
         def rule_material_flow_terms(b, p):
+            self.scaling_expression[b.material_flow_terms[p]] = 1/self.flow_mol
             if p == "Mix":
                 return self.flow_mol
             else:
                 return self.flow_mol*self.phase_frac[p]
-        self.material_flow_terms = Expression(phlist, rule=rule_material_flow_terms)
+        self.material_flow_terms = Expression(pub_phlist, rule=rule_material_flow_terms)
+
         # Enthaply flow term expressions
         def rule_enthalpy_flow_terms(b, p):
+            self.scaling_expression[b.enthalpy_flow_terms[p]] = 1/(self.enth_mol*self.flow_mol)
             if p == "Mix":
                 return self.enth_mol*self.flow_mol
             else:
                 return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
-        self.enthalpy_flow_terms = Expression(phlist, rule=rule_enthalpy_flow_terms)
-        # Enthaply flow term expressions
+        self.enthalpy_flow_terms = Expression(pub_phlist, rule=rule_enthalpy_flow_terms)
+
+        # Energy density term expressions
         def rule_energy_density_terms(b, p):
+            self.scaling_expression[b.energy_density_terms[p]] = 1/(self.enth_mol*self.flow_mol)
             if p == "Mix":
                 return self.dens_mol*self.energy_internal_mol
             else:
                 return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
-        self.energy_density_terms = Expression(phlist, rule=rule_energy_density_terms)
+        self.energy_density_terms = Expression(pub_phlist, rule=rule_energy_density_terms)
         # Set all the scaling factors
         self._set_default_scaling()
 
