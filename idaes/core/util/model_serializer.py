@@ -453,7 +453,6 @@ def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
         # make special provision for writing suffixes.
         for key in o:
             el = o[key]
-            print(key)
             sd[lookup[id(key)]] = el # Asssume keys are Pyomo model components
     else: # rest of compoents with normal componet data structure
         frst = True # on first item when true
