@@ -1033,19 +1033,21 @@ class Iapws95StateBlockData(StateBlockData):
 
         # Enthaply flow term expressions
         def rule_enthalpy_flow_terms(b, p):
-            self.scaling_expression[b.enthalpy_flow_terms[p]] = 1/(self.enth_mol*self.flow_mol)
             if p == "Mix":
+                self.scaling_expression[b.enthalpy_flow_terms[p]] = 1/(self.enth_mol*self.flow_mol)
                 return self.enth_mol*self.flow_mol
             else:
+                self.scaling_expression[b.enthalpy_flow_terms[p]] = 1/(self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol)
                 return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
         self.enthalpy_flow_terms = Expression(pub_phlist, rule=rule_enthalpy_flow_terms)
 
         # Energy density term expressions
         def rule_energy_density_terms(b, p):
-            self.scaling_expression[b.energy_density_terms[p]] = 1/(self.enth_mol*self.flow_mol)
             if p == "Mix":
+                self.scaling_expression[b.energy_density_terms[p]] = 1/(self.energy_internal_mol*self.flow_mol)
                 return self.dens_mol*self.energy_internal_mol
             else:
+                self.scaling_expression[b.energy_density_terms[p]] = 1/(self.dens_mol_phase[p]*self.energy_internal_mol_phase[p])
                 return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
         self.energy_density_terms = Expression(pub_phlist, rule=rule_energy_density_terms)
         # Set all the scaling factors
