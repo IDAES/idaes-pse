@@ -136,8 +136,8 @@ class TestMixPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.prop[1].get_material_flow_terms(p, j) is \
-                    model.prop[1].flow_mol
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == \
+                    value(model.prop[1].flow_mol)
 
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
@@ -1162,8 +1162,8 @@ class TestMixTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.prop[1].get_material_flow_terms(p, j) is \
-                    model.prop[1].flow_mol
+                assert value(model.prop[1].get_material_flow_terms(p, j)) == \
+                    value(model.prop[1].flow_mol)
 
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
