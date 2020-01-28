@@ -2,7 +2,7 @@ from .bblock import BBlock
 
 
 class Atom(BBlock):
-    """ """
+    """A class for representing Atoms."""
 
     NumberToSymbol = {None: '', 1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N',
                       8: 'O', 9: 'F', 10: 'Ne', 11: 'Na', 12: 'Mg', 13: 'Al', 14: 'Si',
@@ -67,6 +67,13 @@ class Atom(BBlock):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, arg=None):
+        """Initialize an Atom object from an atomic number or symbol.
+
+        Args:
+            arg(int/str): if int, interpreted as an atomic number. If str,
+        interpreted as an element symbol. In None, it serves as a placeholder. 
+
+        """
         if (arg is None):
             self._Number = None
         elif (isinstance(arg, int)):
@@ -78,33 +85,37 @@ class Atom(BBlock):
 
     # === PROPERTY EVALUATION METHODS
     def __eq__(self, other):
-        # return isinstance(other,Atom) and self.Number == other.Number
+        """Atom equality operator."""
         return other is not None and self.Number == other.Number
 
     def __ne__(self, other):
+        """Atom not-equal operator."""
         return not self == other
 
     def __lt__(self, other):
+        """Atom less-than operator."""
         return self.Symbol < other.Symbol
 
     def __hash__(self):
+        """Atom hash operator."""
         return self.Number.__hash__()
 
     @property
     def Symbol(self):
-        """ """
+        """Element symbol."""
         return Atom.NumberToSymbol[self.Number]
 
     @property
     def Number(self):
-        """ """
+        """Atomic number."""
         return self._Number
 
     @property
     def Mass(self):
-        """ """
+        """Atomic mass (g/mol)."""
         return Atom.NumberToMass[self.Number]
 
     # === REPORTING METHODS
     def __repr__(self):
+        """Atom representation."""
         return "Atom({})".format(self.Symbol)
