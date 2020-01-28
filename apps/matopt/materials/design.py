@@ -50,7 +50,7 @@ class Design(object):
         neighbors to initialize the Canvas with.
 
         Returns:
-            Design) A new Design.
+            (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromPDB(filename)
@@ -68,7 +68,7 @@ class Design(object):
         neighbors to initialize the Canvas with.
 
         Returns:
-            Design) A new Design.
+            (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromXYZ(filename)
@@ -86,7 +86,7 @@ class Design(object):
         neighbors to initialize the Canvas with.
 
         Returns:
-            Design) A new Design.
+            (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromCFG(filename)
@@ -104,7 +104,7 @@ class Design(object):
         neighbors to initialize the Canvas with.
 
         Returns:
-            Design) A new Design.
+            (Design) A new Design.
 
         """
         Pts, Atoms = readPointsAndAtomsFromPOSCAR(filename)
@@ -129,7 +129,7 @@ class Design(object):
         indices to old indices. (Default value = None)
 
         Returns:
-            Design) Periodically replicated Design.
+            (Design) Periodically replicated Design.
 
         """
         result = cls()
@@ -164,7 +164,7 @@ class Design(object):
         indices to old indices. (Default value = None)
 
         Returns:
-            Design) Periodically replicated Design.
+            (Design) Periodically replicated Design.
 
         """
         result = cls()
