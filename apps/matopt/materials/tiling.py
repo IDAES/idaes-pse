@@ -181,7 +181,6 @@ class PlanarTiling(Tiling):
         if (OldToNewIndices is None and AuxPropMap is not None):
             OldToNewIndices = {}
         if (OldToNewIndices is not None):
-            # del OldToNewIndices[:]
             OldToNewIndices.clear()
             for i in range(len(D)):
                 OldToNewIndices[i] = []
@@ -196,7 +195,6 @@ class PlanarTiling(Tiling):
                         OldToNewIndices[i].append(j)
         if (AuxPropMap is not None):
             for AuxProp in AuxPropMap:
-                # import code; code.interact(local=dict(locals(),**globals()));
                 for i in OldToNewIndices:
                     for j in OldToNewIndices[i]:
                         AuxPropMap[AuxProp][j] = AuxPropMap[AuxProp][i]
@@ -425,26 +423,3 @@ class CubicTiling(Tiling):
         return self._TilingDirections[0]
 
 
-'''
-def makeTiledAuxPropMap(AuxPropMap,OldToNewIndices):
-    """
-
-    Args:
-        AuxPropMap: param OldToNewIndices:
-        OldToNewIndices:
-
-    Returns:
-
-    """
-    result = dict()
-    #import code; code.interact(local=dict(locals(),**globals()));
-    for AuxProp in AuxPropMap:
-        assert(len(AuxPropMap[AuxProp])==len(OldToNewIndices))
-        TiledPropValues = {}
-        for i in OldToNewIndices:
-            TilesPropValues[i] = AuxPropMap[AuxProp][i]
-            for j in OldToNewIndices[i]:
-                TiledPropValues[j] = AuxPropMap[AuxProp][i]
-        result[AuxProp] = TiledPropValues
-    return result
-'''
