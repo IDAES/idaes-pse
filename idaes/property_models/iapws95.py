@@ -686,10 +686,12 @@ class Iapws95StateBlockData(StateBlockData):
 
         # Calculate liquid and vapor density.  If the phase doesn't exist,
         # density will be calculated at the saturation or critical pressure
-        def rule_dens_mass(b, i):
-            if i == "Liq":
+        def rule_dens_mass(b, p):
+            if p == "Liq":
+                self.scaling_factor[self.dens_mass_phase[p]] = 1e-2
                 return rhoc * self.func_delta_liq(P + self.P_under_sat, tau)
             else:
+                self.scaling_factor[self.dens_mass_phase[p]] = 1e1
                 return rhoc * self.func_delta_vap(P - self.P_over_sat, tau)
 
         self.dens_mass_phase = Expression(priv_plist, rule=rule_dens_mass)
@@ -712,12 +714,12 @@ class Iapws95StateBlockData(StateBlockData):
             self.eq_complementarity = Constraint(
                 expr=0 == (vf * self.P_over_sat - (1 - vf) * self.P_under_sat)
             )
-            self._set_scale(self.eq_complementarity, expr=(10 / self.pressure))
+            self.scaling_expression[self.eq_complementarity] = 10 / self.pressure
 
         # eq_sat can activated to force the pressure to be the saturation
         # pressure, if you use this constraint deactivate eq_complementarity
         self.eq_sat = Constraint(expr=P / 1000.0 == Psat / 1000.0)
-        self._set_scale(self.eq_sat, expr=(1000 / self.pressure))
+        self.scaling_expression[self.eq_sat] = 1000 / self.pressure
         self.eq_sat.deactivate()
 
 
@@ -809,8 +811,8 @@ class Iapws95StateBlockData(StateBlockData):
             # depending on whether the temperature is above the critical
             # temperature supercritical fluid is considered to be the liquid
             # phase
-            def rule_dens_mass(b, i):
-                if i == "Liq":
+            def rule_dens_mass(b, p):
+                if p == "Liq":
                     self.scaling_factor[self.dens_mass_phase[p]] = 1e-2
                     return rhoc * self.func_delta_liq(P, tau)
                 else:
@@ -855,7 +857,7 @@ class Iapws95StateBlockData(StateBlockData):
             expr=self.enth_mol_sat_phase["Vap"] - self.enth_mol_sat_phase["Liq"],
             doc="Enthaply of vaporization at pressure and saturation (J/mol)",
         )
-        self.scale_factor[self.dh_vap_mol] = 1e-4
+        self.scaling_factor[self.dh_vap_mol] = 1e-4
 
         # Phase Internal Energy
         def rule_energy_internal_mol_phase(b, p):
@@ -958,9 +960,9 @@ class Iapws95StateBlockData(StateBlockData):
         # Phase Thermal conductiviy
         def rule_tc(b, p):
             if p == "Liq":
-                self.scale_factor[self.therm_cond_phase[p]] = 1e1
+                self.scaling_factor[self.therm_cond_phase[p]] = 1e1
             else:
-                self.scale_factor[self.therm_cond_phase[p]] = 1e2
+                self.scaling_factor[self.therm_cond_phase[p]] = 1e2
             L0 = self.config.parameters.tc_L0
             L1 = self.config.parameters.tc_L1
             return (
@@ -984,9 +986,9 @@ class Iapws95StateBlockData(StateBlockData):
         # Phase dynamic viscosity
         def rule_mu(b, p):
             if p == "Liq":
-                self.scale_factor[self.visc_d_phase[p]] = 1e5
+                self.scaling_factor[self.visc_d_phase[p]] = 1e5
             else:
-                self.scale_factor[self.visc_d_phase[p]] = 1e6
+                self.scaling_factor[self.visc_d_phase[p]] = 1e6
             H0 = self.config.parameters.visc_H0
             H1 = self.config.parameters.visc_H1
             return (
@@ -1010,9 +1012,9 @@ class Iapws95StateBlockData(StateBlockData):
         # Phase kinimatic viscosity
         def rule_nu(b, p):
             if p == "Liq":
-                self.scale_factor[self.visc_k_phase[p]] = 1e5
+                self.scaling_factor[self.visc_k_phase[p]] = 1e5
             else:
-                self.scale_factor[self.visc_k_phase[p]] = 1e7
+                self.scaling_factor[self.visc_k_phase[p]] = 1e7
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
         self.visc_k_phase = Expression(
@@ -1071,22 +1073,22 @@ class Iapws95StateBlockData(StateBlockData):
         self.cv_mol = Expression(
             expr=sum(self.phase_frac[p] * self.cv_mol_phase[p] for p in phlist)
         )
-        self.scaling_factor[cv_mol] = 1e-2
+        self.scaling_factor[self.cv_mol] = 1e-2
         # mass density
         self.dens_mass = Expression(
             expr=1.0
             / sum(self.phase_frac[p] * 1.0 / self.dens_mass_phase[p] for p in phlist)
         )
-        self.scaling_factor[dens_mass] = 1e0
+        self.scaling_factor[self.dens_mass] = 1e0
         # mole density
         self.dens_mol = Expression(
             expr=1.0
             / sum(self.phase_frac[p] * 1.0 / self.dens_mol_phase[p] for p in phlist)
         )
-        self.scaling_factor[dens_mol] = 1e-3
+        self.scaling_factor[self.dens_mol] = 1e-3
         # heat capacity ratio
         self.heat_capacity_ratio = Expression(expr=self.cp_mol / self.cv_mol)
-        self.scaling_factor[heat_capacity_ratio] = 1e1
+        self.scaling_factor[self.heat_capacity_ratio] = 1e1
         # Flows
         self.flow_vol = Expression(
             expr=self.flow_mol / self.dens_mol,
@@ -1174,8 +1176,6 @@ class Iapws95StateBlockData(StateBlockData):
         self.energy_density_terms = Expression(
             pub_phlist, rule=rule_energy_density_terms
         )
-        # Set all the scaling factors
-        self._set_default_scaling()
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_terms[p]
