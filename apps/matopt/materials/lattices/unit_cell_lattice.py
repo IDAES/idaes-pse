@@ -85,7 +85,6 @@ class UnitCell(object):
 class UnitCellLattice(Lattice):
     # === AUXILIARY METHODS
     def ScanRef(self, RefScanMin, RefScanMax):
-        # print('{} {}'.format(RefScanMin,RefScanMax))
         for n1 in range(RefScanMin[0], RefScanMax[0] + 1):
             for n2 in range(RefScanMin[1], RefScanMax[1] + 1):
                 for n3 in range(RefScanMin[2], RefScanMax[2] + 1):
@@ -102,48 +101,15 @@ class UnitCellLattice(Lattice):
             RefScanMin = np.minimum(RefScanMin, self._getConvertToReference(v))
             RefScanMax = np.maximum(RefScanMax, self._getConvertToReference(v))
         # Add some padding to these numbers to handle integer rounding 
-        # import code; code.interact(local=dict(locals(),**globals()));
         RefScanMin = RefScanMin.astype(int) + np.array([-1, -1, -1], dtype=int)
         RefScanMax = RefScanMax.astype(int) + np.array([1, 1, 1], dtype=int)
         for RefP in self.ScanRef(RefScanMin, RefScanMax):
             yield self._getConvertFromReference(RefP)
 
-    '''
-    def _getNextRefPoint(self):
-        #import code; code.interact(local=dict(locals(),**globals()));
-        while(self._InterCellScanP[2]<=self._ScanMax[2]):
-            while(self._InterCellScanP[1]<=self._ScanMax[1]):
-                while(self._InterCellScanP[0]<=self._ScanMax[0]):
-                    if(self._InterCellScanP[0]<=self._ScanMax[0] and
-                       self._InterCellScanP[1]<=self._ScanMax[1] and
-                       self._InterCellScanP[2]<=self._ScanMax[2]):
-                        while(self._IntraCellScanI < len(self.RefUnitCell.FracPositions)):
-                            result = (self._InterCellScanP+
-                                      self.RefUnitCell.FracPositions[self._IntraCellScanI])
-                            self._IntraCellScanI += 1
-                            return result
-                        self._InterCellScanP[0] += 1
-                        self._IntraCellScanI = 0
-                self._InterCellScanP[0] = self._ScanMin[0]
-                self._InterCellScanP[1] += 1
-            self._InterCellScanP[1] = self._ScanMin[1]
-            self._InterCellScanP[2] += 1
-        self._InterCellScanP[2] = self._ScanMin[2]
-        return None # only invoked when ScanP is reset to ScanMin
-    '''
-
     # === STANDARD CONSTRUCTOR
     def __init__(self, RefUnitCell):
         self._RefUnitCell = RefUnitCell
         Lattice.__init__(self)
-        assert (self.isConsistentWithDesign())
-
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign(self):
-        # TODO: Add some real checks here
-        return True
-
-    # === MANIPULATION METHODS
 
     # === PROPERTY EVALUATION METHODS
     def isOnLattice(self, P):
