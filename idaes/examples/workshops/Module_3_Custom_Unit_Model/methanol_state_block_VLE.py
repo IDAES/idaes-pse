@@ -26,9 +26,14 @@ from pyomo.opt import SolverFactory, TerminationCondition
 from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
-                        MaterialFlowBasis)
-from idaes.core.util.initialization import solve_indexed_blocks
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.constants import Constants as const
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -45,20 +50,27 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac=None,
-                   temperature=None, pressure=None,
+    def initialize(blk, state_args=None,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
 
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
-            outlvl : sets output level of initialisation routine
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provied at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+
+                         flow_mol : value at which to initialize component
+                                    flows
+                         pressure : value at which to initialize pressure
+                         temperature : value at which to initialize temperature
+                         mole_frac_comp: value at which to initialize the component
+                                    mixture mole fraction
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -83,49 +95,7 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
         # Fix state variables if not already fixed
-        Fflag = {}
-        Xflag = {}
-        Pflag = {}
-        Tflag = {}
-
-        for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if flow_mol is None:
-                    blk[k].flow_mol.fix(1.0)
-                else:
-                    blk[k].flow_mol.fix(flow_mol)
-
-            for j in blk[k]._params.component_list:
-                if blk[k].mole_frac[j].fixed is True:
-                    Xflag[k, j] = True
-                else:
-                    Xflag[k, j] = False
-                    if mole_frac is None:
-                        blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                _params.component_list))
-                    else:
-                        blk[k].mole_frac[j].fix(mole_frac[j])
-
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(0.101325)
-                else:
-                    blk[k].pressure.fix(pressure)
-
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(3.25)
-                else:
-                    blk[k].temperature.fix(temperature)
+        flags = fix_state_vars(blk, state_args)
 
         # Set solver options
         if outlvl > 1:
@@ -166,15 +136,15 @@ class _IdealStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    _log.info("Initialisation step 1 for "
+                    _log.info("Initialization step 1 for "
                               "{} completed".format(blk.name))
                 else:
-                    _log.warning("Initialisation step 1 for "
+                    _log.warning("Initialization step 1 for "
                                  "{} failed".format(blk.name))
 
         else:
             if outlvl > 0:
-                _log.info("Initialisation step 1 for "
+                _log.info("Initialization step 1 for "
                           "{} skipped".format(blk.name))
 
         for k in blk.keys():
@@ -193,10 +163,10 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                _log.info("Initialisation step 2 for "
+                _log.info("Initialization step 2 for "
                           "{} completed".format(blk.name))
             else:
-                _log.warning("Initialisation step 2 for "
+                _log.warning("Initialization step 2 for "
                              "{} failed".format(blk.name))
 
         for k in blk.keys():
@@ -204,11 +174,6 @@ class _IdealStateBlock(StateBlock):
                 blk[k].eq_mol_frac_out.activate()
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
-        flags = {"Fflag": Fflag,
-                 "Xflag": Xflag,
-                 "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if hold_state is True:
             return flags
         else:
@@ -216,11 +181,11 @@ class _IdealStateBlock(StateBlock):
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+                _log.info('{} Initialization Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -230,16 +195,7 @@ class _IdealStateBlock(StateBlock):
             outlvl : sets output level of of logging
         '''
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -287,7 +243,7 @@ class StateBlockData(StateBlockData):
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
                             doc='Component molar flowrate [kgmol/s]')
-        self.mole_frac = Var(self._params.component_list,
+        self.mole_frac_comp = Var(self._params.component_list,
                              bounds=(0, 1),
                              initialize=1.0 / len(self._params.component_list))
         self.pressure = Var(initialize=0.101325,
@@ -302,7 +258,7 @@ class StateBlockData(StateBlockData):
                                   initialize=0.5,
                                   bounds=(0, None))
 
-        self.mole_frac_phase = Var(self._params.phase_list,
+        self.mole_frac_phase_comp = Var(self._params.phase_list,
                                    self._params.component_list,
                                    initialize=1 / len(self._params.component_list),
                                    bounds=(0, 1))
@@ -313,14 +269,14 @@ class StateBlockData(StateBlockData):
         self.eq_total = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(self, i):
-            return self.flow_mol * self.mole_frac[i] == \
-                self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', i]
+            return self.flow_mol * self.mole_frac_comp[i] == \
+                self.flow_mol_phase['Liq'] * self.mole_frac_phase_comp['Liq', i]
         self.eq_comp = Constraint(self._params.component_list,
                                   rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
+            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac_comp[i]
                                               for i in self._params.component_list)
                                               == 1)
 
@@ -330,14 +286,14 @@ class StateBlockData(StateBlockData):
         self.eq_total = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(self, i):
-            return self.flow_mol * self.mole_frac[i] == \
-                self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', i]
+            return self.flow_mol * self.mole_frac_comp[i] == \
+                self.flow_mol_phase['Vap'] * self.mole_frac_phase_comp['Vap', i]
         self.eq_comp = Constraint(self._params.component_list,
                                   rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
+            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac_comp[i]
                                               for i in self._params.component_list)
                                               == 1)
 
@@ -353,28 +309,28 @@ class StateBlockData(StateBlockData):
         self.eq_total = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(self, i):
-            return self.flow_mol * self.mole_frac[i] == \
-                self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', i] + \
-                self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', i]
+            return self.flow_mol * self.mole_frac_comp[i] == \
+                self.flow_mol_phase['Liq'] * self.mole_frac_phase_comp['Liq', i] + \
+                self.flow_mol_phase['Vap'] * self.mole_frac_phase_comp['Vap', i]
         self.eq_comp = Constraint(self._params.component_list,
                                   rule=rule_comp_mass_balance)
 
         def rule_mole_frac(self):
-            return sum(self.mole_frac_phase['Liq', i]
+            return sum(self.mole_frac_phase_comp['Liq', i]
                        for i in self._params.component_list) -\
-                sum(self.mole_frac_phase['Vap', i]
+                sum(self.mole_frac_phase_comp['Vap', i]
                     for i in self._params.component_list) == 0
         self.eq_sum_mol_frac = Constraint(rule=rule_mole_frac)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
+            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac_comp[i]
                                               for i in self._params.component_list)
                                               == 1)
 
         def rule_Keq(self, i):
-            return self.mole_frac_phase['Vap', i] * self.pressure == \
-                self.vapor_pressure[i] * self.mole_frac_phase['Liq', i]
+            return self.mole_frac_phase_comp['Vap', i] * self.pressure == \
+                self.vapor_pressure[i] * self.mole_frac_phase_comp['Liq', i]
         self.eq_Keq = Constraint(self._params.component_list, rule=rule_Keq)
 
         def rule_P_vap(self, j):
@@ -390,7 +346,7 @@ class StateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return 10.0 * self.pressure == (self.density_mol[p] *
-                                         self._params.gas_constant *
+                                         gas_constant*1e-3 *
                                          self.temperature)
             elif p == "Liq":
                 return self.density_mol[p] == 11.1  # kgmol/m3 # dummy value
@@ -407,9 +363,9 @@ class StateBlockData(StateBlockData):
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
         if (p == "Vap") and (j in self._params.component_list):
-            return self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', j]
+            return self.flow_mol_phase['Vap'] * self.mole_frac_phase_comp['Vap', j]
         elif (p == "Liq") and (j in self._params.component_list):
-            return self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', j]
+            return self.flow_mol_phase['Liq'] * self.mole_frac_phase_comp['Liq', j]
         else:
             return 0
 
@@ -424,12 +380,12 @@ class StateBlockData(StateBlockData):
         """Create material density terms."""
         if p == "Liq":
             if j in self._params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase['Liq', j]
+                return self.density_mol[p] * self.mole_frac_phase_comp['Liq', j]
             else:
                 return 0
         elif p == "Vap":
             if j in self._params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase['Vap', j]
+                return self.density_mol[p] * self.mole_frac_phase_comp['Vap', j]
             else:
                 return 0
 
@@ -439,13 +395,19 @@ class StateBlockData(StateBlockData):
             return self.density_mol[p] * self._params.Cp * self.temperature
         elif p == "Vap":
             return (self.density_mol[p] * (
-                    self._params.Cp - self._params.gas_const) *
+                    self._params.Cp - self._params.gas_constant*1e-3) *
                     self.temperature)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""
         return {"flow_mol": self.flow_mol,
-                "mole_frac": self.mole_frac,
+                "mole_frac_comp": self.mole_frac_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 

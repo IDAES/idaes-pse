@@ -33,34 +33,11 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-alamopy_dir = Path("apps") / "ddm-learning" / "alamo_python" / "alamopy"
-ripe_dir = Path("apps") / "ddm-learning" / "ripe_python" / "ripe"
-
-
-def find_all_packages():
-    test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
-
-    def fp(path, prefix):
-        return [prefix + "." + x for x in find_packages(path, exclude=test_patterns)]
-
-    return (
-        ["idaes"]
-        + fp("idaes", "idaes")
-        + fp(alamopy_dir, "alamopy")
-        + fp(ripe_dir, "ripe")
-    )
-
-
 kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_all_packages(),
-    package_dir={
-        "idaes": "idaes",
-        "alamopy": alamopy_dir,
-        "ripe": ripe_dir,
-    },
+    packages=find_packages(),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
@@ -91,15 +68,23 @@ kwargs = dict(
         "tinydb",
         "toml",
         # alamopy
+        # <nothing>
         # ripe
+        # <nothing>
+        # helmet
         "rbfopt",
     ],
-    entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
+    entry_points={
+        "console_scripts": [
+            "dmf = idaes.dmf.cli:base_command",
+            "idaes = idaes.commands.base:command_base",
+        ]
+    },
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
             "alabaster>=0.7.7",
-            "coverage",
+            "coverage==4.5.4",
             "flake8",
             "flask>=1.0",
             "flask-bower",
@@ -107,6 +92,7 @@ kwargs = dict(
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
+            "pylint",
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
@@ -120,8 +106,7 @@ kwargs = dict(
         "": [
             "*.template",
             "*.json",
-            "*.dll",
-            "*.so",
+            "*.yaml",
             "*.svg",
             "*.png",
             "*.jpg",

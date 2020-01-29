@@ -18,9 +18,6 @@ these parameters are declared as variables here to allow for use in a parameter
 estimation problem if the VLE data is available.
 """
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
 
@@ -30,6 +27,7 @@ from idaes.core.util.misc import extract_data
 
 from idaes.property_models.activity_coeff_models.activity_coeff_prop_pack \
     import ActivityCoeffParameterData
+from idaes.logger import getIdaesLogger
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -37,7 +35,7 @@ __version__ = "0.0.1"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("BTXParameterBlock")
@@ -111,12 +109,6 @@ class BTXParameterData(ActivityCoeffParameterData):
             mutable=False,
             initialize=extract_data(temperature_critical_data),
             doc='Critical temperature [K]')
-
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -193,12 +185,35 @@ class BTXParameterData(ActivityCoeffParameterData):
             initialize=extract_data(pressure_sat_coeff_data),
             doc="parameters to compute Cp_comp")
 
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
-                  'o-xylene': 4.34584e4}
+        # Standard heats of formation
+        # Source: NIST Webbook, https://webbook.nist.gov
+        # Retrieved 25th September 2019
+        dh_form_data = {('Vap', 'benzene'): 82.9e3,
+                        ('Vap', 'toluene'): 50.1e3,
+                        ('Vap', 'o-xylene'): 19.0e3,
+                        ('Liq', 'benzene'): 49.0e3,
+                        ('Liq', 'toluene'): 12.0e3,
+                        ('Liq', 'o-xylene'): -24.4e3}
 
-        self.dh_vap = Param(self.component_list,
-                            mutable=False,
-                            initialize=extract_data(dh_vap),
-                            doc="heat of vaporization (J/mol)")
+        self.dh_form = Param(self.phase_list,
+                             self.component_list,
+                             mutable=False,
+                             initialize=extract_data(dh_form_data),
+                             doc="Standard heats of formation [J/mol]")
+
+        # Standard entropy of formation
+        # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
+        # o-xylene from NIST Webbook, https://webbook.nist.gov
+        # Retrieved 9th October, 2019
+        ds_form_data = {('Vap', 'benzene'): -269,
+                        ('Vap', 'toluene'): -321,
+                        ('Vap', 'o-xylene'): -353.6,
+                        ('Liq', 'benzene'): -173,
+                        ('Liq', 'toluene'): -220,
+                        ('Liq', 'o-xylene'): -246}
+
+        self.ds_form = Param(self.phase_list,
+                             self.component_list,
+                             mutable=False,
+                             initialize=extract_data(ds_form_data),
+                             doc="Standard entropy of formation [J/mol.K]")

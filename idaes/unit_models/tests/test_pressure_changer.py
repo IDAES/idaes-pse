@@ -73,9 +73,9 @@ class TestPressureChanger(object):
         assert len(m.fs.unit.config) == 10
 
         assert m.fs.unit.config.material_balance_type == \
-            MaterialBalanceType.componentPhase
+            MaterialBalanceType.useDefault
         assert m.fs.unit.config.energy_balance_type == \
-            EnergyBalanceType.enthalpyTotal
+            EnergyBalanceType.useDefault
         assert m.fs.unit.config.momentum_balance_type == \
             MomentumBalanceType.pressureTotal
         assert not m.fs.unit.config.has_phase_equilibrium
@@ -204,14 +204,14 @@ class TestBTX_isothermal(object):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet")
         assert len(btx.fs.unit.outlet.vars) == 4
         assert hasattr(btx.fs.unit.outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
@@ -228,8 +228,8 @@ class TestBTX_isothermal(object):
         btx.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(365)  # K
         btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.deltaP.fix(50000)
 
@@ -395,6 +395,16 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, iapws):
+        # Check that outlet and isentropic pressure are equal
+        assert pytest.approx(
+            value(iapws.fs.unit.properties_isentropic[0].pressure), 1e-6) == \
+            value(iapws.fs.unit.outlet.pressure[0])
+
+        # Check that inlet and isentropic entropies are equal
+        assert pytest.approx(
+            value(iapws.fs.unit.properties_isentropic[0].entr_mol), 1e-6) == \
+            value(iapws.fs.unit.control_volume.properties_in[0].entr_mol)
+
         assert pytest.approx(100, abs=1e-5) == \
             value(iapws.fs.unit.outlet.flow_mol[0])
 
@@ -404,11 +414,18 @@ class TestIAPWS(object):
         assert pytest.approx(151325, abs=1e2) == \
             value(iapws.fs.unit.outlet.pressure[0])
 
-        assert pytest.approx(151.5, abs=1e-1) == \
+        assert pytest.approx(101.43796915073504, abs=1e-1) == \
             value(iapws.fs.unit.work_mechanical[0])
 
-        assert pytest.approx(136.4, abs=1e-1) == \
+        assert pytest.approx(91.29417223566153, abs=1e-1) == \
             value(iapws.fs.unit.work_isentropic[0])
+
+        # For verification, check outlet and isentropic temperatures
+        assert pytest.approx(326.170, 1e-5) == \
+            value(iapws.fs.unit.control_volume.properties_out[0].temperature)
+
+        assert pytest.approx(326.170, 1e-5) == \
+            value(iapws.fs.unit.properties_isentropic[0].temperature)
 
     @pytest.mark.initialize
     @pytest.mark.solver

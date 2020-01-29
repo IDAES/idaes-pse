@@ -74,9 +74,9 @@ def test_config():
     assert m.fs.unit.config.shell_side.dynamic == useDefault
     assert not m.fs.unit.config.shell_side.has_holdup
     assert m.fs.unit.config.shell_side.material_balance_type == \
-        MaterialBalanceType.componentTotal
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.shell_side.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.shell_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.shell_side.has_pressure_change
@@ -90,9 +90,9 @@ def test_config():
     assert m.fs.unit.config.tube_side.dynamic == useDefault
     assert not m.fs.unit.config.tube_side.has_holdup
     assert m.fs.unit.config.tube_side.material_balance_type == \
-        MaterialBalanceType.componentTotal
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.tube_side.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.tube_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.tube_side.has_pressure_change
@@ -148,28 +148,28 @@ class TestBTX_cocurrent(object):
         assert hasattr(btx.fs.unit, "shell_inlet")
         assert len(btx.fs.unit.shell_inlet.vars) == 4
         assert hasattr(btx.fs.unit.shell_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.shell_inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.shell_inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.shell_inlet, "temperature")
         assert hasattr(btx.fs.unit.shell_inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "tube_inlet")
         assert len(btx.fs.unit.tube_inlet.vars) == 4
         assert hasattr(btx.fs.unit.tube_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.tube_inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.tube_inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.tube_inlet, "temperature")
         assert hasattr(btx.fs.unit.tube_inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "shell_outlet")
         assert len(btx.fs.unit.shell_outlet.vars) == 4
         assert hasattr(btx.fs.unit.shell_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.shell_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.shell_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.shell_outlet, "temperature")
         assert hasattr(btx.fs.unit.shell_outlet, "pressure")
 
         assert hasattr(btx.fs.unit, "tube_outlet")
         assert len(btx.fs.unit.tube_outlet.vars) == 4
         assert hasattr(btx.fs.unit.tube_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.tube_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.tube_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.tube_outlet, "temperature")
         assert hasattr(btx.fs.unit.tube_outlet, "pressure")
 
@@ -208,14 +208,14 @@ class TestBTX_cocurrent(object):
         btx.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.shell_inlet.temperature[0].fix(365)  # K
         btx.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.shell_inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.shell_inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.tube_inlet.temperature[0].fix(300)  # K
         btx.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -314,28 +314,28 @@ class TestBTX_countercurrent(object):
         assert hasattr(btx.fs.unit, "shell_inlet")
         assert len(btx.fs.unit.shell_inlet.vars) == 4
         assert hasattr(btx.fs.unit.shell_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.shell_inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.shell_inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.shell_inlet, "temperature")
         assert hasattr(btx.fs.unit.shell_inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "tube_inlet")
         assert len(btx.fs.unit.tube_inlet.vars) == 4
         assert hasattr(btx.fs.unit.tube_inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.tube_inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.tube_inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.tube_inlet, "temperature")
         assert hasattr(btx.fs.unit.tube_inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "shell_outlet")
         assert len(btx.fs.unit.shell_outlet.vars) == 4
         assert hasattr(btx.fs.unit.shell_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.shell_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.shell_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.shell_outlet, "temperature")
         assert hasattr(btx.fs.unit.shell_outlet, "pressure")
 
         assert hasattr(btx.fs.unit, "tube_outlet")
         assert len(btx.fs.unit.tube_outlet.vars) == 4
         assert hasattr(btx.fs.unit.tube_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.tube_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.tube_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.tube_outlet, "temperature")
         assert hasattr(btx.fs.unit.tube_outlet, "pressure")
 
@@ -374,14 +374,14 @@ class TestBTX_countercurrent(object):
         btx.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.shell_inlet.temperature[0].fix(365)  # K
         btx.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.shell_inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.shell_inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.tube_inlet.temperature[0].fix(300)  # K
         btx.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -392,7 +392,15 @@ class TestBTX_countercurrent(object):
         orig_fixed_vars = fixed_variables_set(btx)
         orig_act_consts = activated_constraints_set(btx)
 
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
+        # Need some initial guesses to achieve convergence
+        btx.fs.unit.initialize(
+                optarg={'tol': 1e-6},
+                shell_state_args={"flow_mol": 5,
+                                  "temperature": 304,
+                                  "pressure": 101325},
+                tube_state_args={"flow_mol": 1,
+                                 "temperature": 331.5,
+                                 "pressure": 101325})
 
         assert degrees_of_freedom(btx) == 0
 

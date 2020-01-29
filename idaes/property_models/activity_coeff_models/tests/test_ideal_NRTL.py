@@ -61,7 +61,7 @@ m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.state_block_class(
 
 
 def test_build_inlet_state_block():
-    assert len(m.fs.properties_NRTL_vl.config) == 3
+    assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
     assert m.fs.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -74,7 +74,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_NRTL_vl, "eq_mol_frac_out")
 
     # liquid only (NRTL)
-    assert len(m.fs.properties_NRTL_l.config) == 3
+    assert len(m.fs.properties_NRTL_l.config) == 4
 
     assert m.fs.properties_NRTL_l.config.valid_phase == 'Liq'
     assert len(m.fs.properties_NRTL_l.phase_list) == 1
@@ -85,7 +85,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_NRTL_l, "eq_mol_frac_out")
 
     # vapor only (NRTL)
-    assert len(m.fs.properties_NRTL_v.config) == 3
+    assert len(m.fs.properties_NRTL_v.config) == 4
 
     assert m.fs.properties_NRTL_v.config.valid_phase == 'Vap'
     assert len(m.fs.properties_NRTL_v.phase_list) == 1
@@ -102,8 +102,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_NRTL_vl.flow_mol.fix(1)
     m.fs.state_block_NRTL_vl.temperature.fix(368)
     m.fs.state_block_NRTL_vl.pressure.fix(101325)
-    m.fs.state_block_NRTL_vl.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_NRTL_vl.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_NRTL_vl.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_NRTL_vl.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_NRTL_vl) == 6
 
@@ -117,8 +117,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_NRTL_l.flow_mol.fix(1)
     m.fs.state_block_NRTL_l.temperature.fix(368)
     m.fs.state_block_NRTL_l.pressure.fix(101325)
-    m.fs.state_block_NRTL_l.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_NRTL_l.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_NRTL_l.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_NRTL_l.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_NRTL_l) == 0
 
@@ -126,8 +126,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_NRTL_v.flow_mol.fix(1)
     m.fs.state_block_NRTL_v.temperature.fix(368)
     m.fs.state_block_NRTL_v.pressure.fix(101325)
-    m.fs.state_block_NRTL_v.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_NRTL_v.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_NRTL_v.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_NRTL_v.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_NRTL_v) == 0
 
@@ -166,7 +166,7 @@ m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.state_block_class(
 
 
 def test_build_outlet_state_block():
-    assert len(m.fs.properties_NRTL_vl.config) == 3
+    assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
     assert m.fs1.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -179,7 +179,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_NRTL_vl, "eq_mol_frac_out")
 
     # liquid only (NRTL)
-    assert len(m.fs1.properties_NRTL_l.config) == 3
+    assert len(m.fs1.properties_NRTL_l.config) == 4
 
     assert m.fs1.properties_NRTL_l.config.valid_phase == 'Liq'
     assert len(m.fs1.properties_NRTL_l.phase_list) == 1
@@ -190,7 +190,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_NRTL_l, "eq_mol_frac_out")
 
     # vapour only (NRTL)
-    assert len(m.fs1.properties_NRTL_v.config) == 3
+    assert len(m.fs1.properties_NRTL_v.config) == 4
 
     assert m.fs1.properties_NRTL_v.config.valid_phase == 'Vap'
     assert len(m.fs1.properties_NRTL_v.phase_list) == 1
@@ -207,7 +207,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_vl.flow_mol.fix(1)
     m.fs1.state_block_NRTL_vl.temperature.fix(368)
     m.fs1.state_block_NRTL_vl.pressure.fix(101325)
-    m.fs1.state_block_NRTL_vl.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_NRTL_vl.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_NRTL_vl) == 6
 
@@ -215,7 +215,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_l.flow_mol.fix(1)
     m.fs1.state_block_NRTL_l.temperature.fix(368)
     m.fs1.state_block_NRTL_l.pressure.fix(101325)
-    m.fs1.state_block_NRTL_l.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_NRTL_l.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_NRTL_l) == 0
 
@@ -223,6 +223,6 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_v.flow_mol.fix(1)
     m.fs1.state_block_NRTL_v.temperature.fix(368)
     m.fs1.state_block_NRTL_v.pressure.fix(101325)
-    m.fs1.state_block_NRTL_v.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_NRTL_v.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_NRTL_v) == 0

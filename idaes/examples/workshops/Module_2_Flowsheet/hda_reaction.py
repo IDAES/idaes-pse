@@ -83,12 +83,6 @@ class HDAReactionParameterData(ReactionParameterBlock):
                             initialize=dh_rxn_dict,
                             doc="Heat of reaction [J/mol]")
 
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
-
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
@@ -111,10 +105,10 @@ class ReactionBlock(ReactionBlockBase):
     """
     def initialize(blk, outlvl=0, **kwargs):
         '''
-        Initialisation routine for reaction package.
+        Initialization routine for reaction package.
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = report after each step
@@ -123,7 +117,7 @@ class ReactionBlock(ReactionBlockBase):
             None
         '''
         if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialization Complete.'.format(blk.name))
 
 
 @declare_process_block_class("HDAReactionBlock",

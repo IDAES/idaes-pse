@@ -8,7 +8,6 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    modelvis
     vis_hx
     vis_prof
 
@@ -19,11 +18,6 @@ Contents
 
 Overview
 --------
-
-The JupyterLab Model Visualization Tool is composed of a JupyterLab extension 
-that displays a complete flowsheet. The tool is used in conjunction with the 
-`idaes.dmf.ui` subpackage, which serializes the model as a `.idaes.vis` file 
-which is read by the JupyterLab extension.
 
 The `idaes.vis` subpackage contains the framework and implementation
 of plots that are expected to be of general utility within the IDAES

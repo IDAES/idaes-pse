@@ -55,7 +55,7 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.flash_type == FlashType.isothermal
     assert m.fs.unit.config.property_package is m.fs.properties
 
@@ -79,29 +79,29 @@ class TestBTXIdeal(object):
     @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "flow_mol")
-        assert hasattr(btx.fs.unit, "mole_frac")
+        assert hasattr(btx.fs.unit, "mole_frac_comp")
         assert hasattr(btx.fs.unit, "temperature")
         assert hasattr(btx.fs.unit, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet")
         assert len(btx.fs.unit.outlet.vars) == 4
         assert hasattr(btx.fs.unit.outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
         assert hasattr(btx.fs.unit, "isothermal")
 
-        assert number_variables(btx) == 36
-        assert number_total_constraints(btx) == 31
+        assert number_variables(btx) == 34
+        assert number_total_constraints(btx) == 29
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
         btx.fs.unit.flow_mol.fix(1)
         btx.fs.unit.temperature.fix(368)
         btx.fs.unit.pressure.fix(101325)
-        btx.fs.unit.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -188,8 +188,8 @@ class TestIAPWS(object):
 
         assert hasattr(iapws.fs.unit, "isenthalpic")
 
-        assert number_variables(iapws) == 7
-        assert number_total_constraints(iapws) == 4
+        assert number_variables(iapws) == 6
+        assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):

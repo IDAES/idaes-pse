@@ -44,14 +44,18 @@ Contents
 
     install/index
     standards
+    configuration
+    logging
     core/index
+    transformations/index
     models/index
     property_models/index
     vis/index
     dmf/index
-    apps/index	      
+    apps/index
     version
     tutorials
+    jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary

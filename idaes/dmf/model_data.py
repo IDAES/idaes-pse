@@ -249,15 +249,14 @@ def unit_convert(
                 " No conversion.".format(frm),
                 UserWarning,
             )
-            return (x, frm)
+            return x, frm
     if to is None:
-        y = q(x, ureg.parse_expression(frm)).to_base_units()
+        y = q(np.array(x), ureg.parse_expression(frm)).to_base_units()
     else:
-        y = q(x, ureg.parse_expression(frm)).to(to)
+        y = q(np.array(x), ureg.parse_expression(frm)).to(to)
     if gauge:
         # convert gauge pressure to absolute
         y = y + ambient_pressure * ureg.parse_expression(ambient_pressure_unit)
-    print(y)
     return (y.magnitude, str(y.units))
 
 
@@ -331,14 +330,14 @@ def read_data(
                     md["reference"] = pyo.Reference(
                         eval(md["reference_string"], {"m": model})
                     )
-                except:
+                except KeyError:
                     warnings.warn(
                         "Tag reference {} not found".format(md["reference_string"]),
                         UserWarning,
                     )
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
-        if not tag in metadata:
+        if tag not in metadata:
             df.drop(tag, axis=1, inplace=True)
 
     # Check if a data tag was specified to use as ambient pressure in conversion

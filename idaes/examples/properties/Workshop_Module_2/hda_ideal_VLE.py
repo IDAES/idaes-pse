@@ -42,6 +42,8 @@ from idaes.core import (
     PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType
 )
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
@@ -56,8 +58,8 @@ from idaes.dmf.resource import Resource, TidyUnitData
 # Set up logger
 _log = logging.getLogger(__name__)
 
-# Set up DMF (assume in same directory as this file)
-_dmf = DMF(os.path.dirname(__file__))
+# Set up DMF (use working directory, wherever that is)
+_dmf = DMF(".")
 
 
 @declare_process_block_class("HDAParameterBlock")
@@ -262,9 +264,7 @@ class _IdealStateBlock(StateBlock):
 
     def initialize(
         blk,
-        flow_mol_phase_comp=None,
-        temperature=None,
-        pressure=None,
+        state_args=None,
         state_vars_fixed=False,
         hold_state=False,
         outlvl=1,
@@ -272,14 +272,10 @@ class _IdealStateBlock(StateBlock):
         optarg={"tol": 1e-8},
     ):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
-            flow_mol_phase_comp : value at which to initialize phase-component
-                                flows (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
-            outlvl : sets output level of initialisation routine
+            state_args: Initial guess for state variables.
+            outlvl : sets output level of initialization routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
@@ -310,7 +306,7 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
 
-        _log.info("Starting {} initialisation".format(blk.name))
+        _log.info("Starting {} initialization".format(blk.name))
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -325,32 +321,32 @@ class _IdealStateBlock(StateBlock):
                             Fflag[k, p, j] = True
                         else:
                             Fflag[k, p, j] = False
-                            if flow_mol_phase_comp is None:
+                            if state_args is None:
                                 blk[k].flow_mol_phase_comp[p, j].fix(
                                     1 / len(blk[k]._params.component_list)
                                 )
                             else:
                                 blk[k].flow_mol_phase_comp[p, j].fix(
-                                    flow_mol_phase_comp[p, j]
+                                    state_args["flow_mol_phase_comp"][p, j]
                                 )
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
                 else:
                     Pflag[k] = False
-                    if pressure is None:
+                    if state_args is None:
                         blk[k].pressure.fix(101325.0)
                     else:
-                        blk[k].pressure.fix(pressure)
+                        blk[k].pressure.fix(state_args["pressure"])
 
                 if blk[k].temperature.fixed is True:
                     Tflag[k] = True
                 else:
                     Tflag[k] = False
-                    if temperature is None:
+                    if state_args is None:
                         blk[k].temperature.fix(325)
                     else:
-                        blk[k].temperature.fix(temperature)
+                        blk[k].temperature.fix(state_args["temperature"])
 
             # -----------------------------------------------------------------
             # If input block, return flags, else release state
@@ -460,11 +456,11 @@ class _IdealStateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            _log.info("Initialisation completed for {}".format(blk.name))
+            _log.info("Initialization completed for {}".format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -733,6 +729,12 @@ class IdealStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

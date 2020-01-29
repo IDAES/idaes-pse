@@ -28,7 +28,10 @@ from idaes.core import (declare_process_block_class,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 
 
 def get_default_solver():
@@ -39,7 +42,7 @@ def get_default_solver():
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
         solver.options = {'tol': 1e-6,
-                          'linear_solver': 'mumps'}
+                          'linear_solver': 'ma27'}
     else:
         solver = None
 
@@ -66,6 +69,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
+        self.default_balance_switch = 1
 
         self.state_block_class = TestStateBlock
 
@@ -137,8 +141,20 @@ class StateTestBlockData(StateBlockData):
         else:
             return MaterialFlowBasis.other
 
+    def default_material_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return MaterialBalanceType.componentPhase
+        else:
+            raise NotImplementedError
+
+    def default_energy_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return EnergyBalanceType.enthalpyTotal
+        else:
+            raise NotImplementedError
+
     def define_state_vars(self):
-        return {"component_flow": self.flow_mol_phase_comp,
+        return {"component_flow_phase": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
 
@@ -192,7 +208,8 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None, solver=None):
+    def initialize(blk, outlvl=0, optarg=None,
+                   solver=None, state_vars_fixed=False):
         for k in blk.keys():
             blk[k].init_test = True
 

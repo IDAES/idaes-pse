@@ -63,9 +63,9 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_phase_equilibrium
@@ -92,14 +92,14 @@ class TestBTX(object):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet")
         assert len(btx.fs.unit.outlet.vars) == 4
         assert hasattr(btx.fs.unit.outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
@@ -114,8 +114,8 @@ class TestBTX(object):
         btx.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(365)  # K
         btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.heat_duty.fix(-5000)
         btx.fs.unit.deltaP.fix(0)

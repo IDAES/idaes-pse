@@ -65,9 +65,9 @@ def test_config():
     assert len(m.fs.unit.config) == 19
 
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_heat_transfer
@@ -193,7 +193,7 @@ class TestSaponification(object):
                 sapon.fs.unit.outlet.pressure[0].value)
         assert (pytest.approx(303.6, abs=1e-2) ==
                 sapon.fs.unit.outlet.temperature[0].value)
-        assert (pytest.approx(62.31, abs=1e-2) ==
+        assert (pytest.approx(62.29, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
     @pytest.mark.initialize

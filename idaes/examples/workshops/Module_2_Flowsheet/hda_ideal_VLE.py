@@ -20,7 +20,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, Set, Param, sqrt, log10
+    Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -29,12 +29,17 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
-from idaes.core.util.initialization import solve_indexed_blocks
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
                                              number_unfixed_variables
 from idaes.core.util.misc import extract_data
+from idaes.core.util.constants import Constants as const
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -113,12 +118,6 @@ class HDAParameterData(PhysicalParameterBlock):
             mutable=False,
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature [K]')
-
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -284,15 +283,15 @@ class HDAParameterData(PhysicalParameterBlock):
         obj.add_properties(
             {'flow_mol': {'method': None, 'units': 'mol/s'},
              'flow_mol_phase_comp': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'none'},
+             'mole_frac_comp': {'method': None, 'units': 'none'},
              'temperature': {'method': None, 'units': 'K'},
              'pressure': {'method': None, 'units': 'Pa'},
              'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'dens_mol_phase': {'method': '_dens_mol_phase',
                                 'units': 'mol/m^3'},
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
+             'mole_frac_phase_comp': {'method': '_mole_frac_phase',
+                                      'units': 'no unit'},
              'energy_internal_mol_phase_comp': {
                      'method': '_energy_internal_mol_phase_comp',
                      'units': 'J/mol'},
@@ -335,19 +334,24 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol_phase_comp=None,
-                   temperature=None, pressure=None, state_vars_fixed=False,
+    def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
-            flow_mol_phase_comp : value at which to initialize phase-component
-                                flows (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
-            outlvl : sets output level of initialisation routine
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provied at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+
+                         flow_mol_phase_comp : value at which to initialize
+                                               phase component flows
+                         pressure : value at which to initialize pressure
+                         temperature : value at which to initialize temperature
+            outlvl : sets output level of initialization routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
@@ -378,51 +382,11 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
 
-        _log.info('Starting {} initialisation'.format(blk.name))
+        _log.info('Starting {} initialization'.format(blk.name))
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            Fflag = {}
-            Pflag = {}
-            Tflag = {}
-
-            for k in blk.keys():
-                for p in blk[k]._params.phase_list:
-                    for j in blk[k]._params.component_list:
-                        if blk[k].flow_mol_phase_comp[p, j].fixed is True:
-                            Fflag[k, p, j] = True
-                        else:
-                            Fflag[k, p, j] = False
-                            if flow_mol_phase_comp is None:
-                                blk[k].flow_mol_phase_comp[p, j].fix(
-                                    1 / len(blk[k]._params.component_list))
-                            else:
-                                blk[k].flow_mol_phase_comp[p, j].fix(
-                                    flow_mol_phase_comp[p, j])
-
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if pressure is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(pressure)
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if temperature is None:
-                        blk[k].temperature.fix(325)
-                    else:
-                        blk[k].temperature.fix(temperature)
-
-            # -----------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
+            flags = fix_state_vars(blk, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
@@ -517,11 +481,11 @@ class _IdealStateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            _log.info("Initialisation completed for {}".format(blk.name))
+            _log.info("Initialization completed for {}".format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -533,15 +497,7 @@ class _IdealStateBlock(StateBlock):
             return
 
         # Unfix state variables
-        for k in blk.keys():
-            for p in blk[k]._params.phase_list:
-                for j in blk[k]._params.component_list:
-                    if flags['Fflag'][k, p, j] is False:
-                        blk[k].flow_mol_phase_comp[p, j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -589,20 +545,20 @@ class IdealStateBlockData(StateBlockData):
         self.flow_mol = Expression(rule=flow_mol,
                                    doc='Total molar flowrate [mol/s]')
 
-        def mole_frac_phase(b, p, j):
+        def mole_frac_phase_comp(b, p, j):
             return b.flow_mol_phase_comp[p, j]/b.flow_mol_phase[p]
-        self.mole_frac_phase = Expression(
+        self.mole_frac_phase_comp = Expression(
                 self._params.phase_list,
                 self._params.component_list,
-                rule=mole_frac_phase,
+                rule=mole_frac_phase_comp,
                 doc='Phase mole fractions [-]')
 
-        def mole_frac(b, j):
+        def mole_frac_comp(b, j):
             return (sum(b.flow_mol_phase_comp[p, j]
                         for p in b._params.phase_list) / b.flow_mol)
-        self.mole_frac = Expression(self._params.component_list,
-                                    rule=mole_frac,
-                                    doc='Mixture mole fractions [-]')
+        self.mole_frac_comp = Expression(self._params.component_list,
+                                         rule=mole_frac_comp,
+                                         doc='Mixture mole fractions [-]')
 
         # Reaction Stoichiometry
         add_object_reference(self, "phase_equilibrium_list_ref",
@@ -677,8 +633,8 @@ class IdealStateBlockData(StateBlockData):
             if p == 'Vap':
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j] - \
-                        b._params.gas_const*(b.temperature -
-                                             b._params.temeprature_ref)
+                        const.gas_constant*(b.temperature -
+                                            b._params.temeprature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j]
@@ -695,7 +651,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_energy_internal_mol_phase(b, p):
             return b.energy_internal_mol_phase[p] == sum(
                 b.energy_internal_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
+                b.mole_frac_phase_comp[p, i]
                 for i in b._params.component_list)
         self.eq_energy_internal_mol_phase = Constraint(
                 self._params.phase_list,
@@ -727,7 +683,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
                     b.enth_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
+                    b.mole_frac_phase_comp[p, i]
                     for i in b._params.component_list)
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
@@ -756,7 +712,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_entr_mol_phase(b, p):
             return b.entr_mol_phase[p] == sum(
                     b.entr_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
+                    b.mole_frac_phase_comp[p, i]
                     for i in b._params.component_list)
         self.eq_entr_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_entr_mol_phase)
@@ -777,13 +733,19 @@ class IdealStateBlockData(StateBlockData):
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
         if j in self._params.component_list:
-            return self.dens_mol_phase[p] * self.mole_frac_phase[p, j]
+            return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
         else:
             return 0
 
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
@@ -899,7 +861,7 @@ class IdealStateBlockData(StateBlockData):
                                           rule=rule_psat_dew)
 
             def rule_temp_dew(b):
-                return b.pressure * sum(b.mole_frac[i] /
+                return b.pressure * sum(b.mole_frac_comp[i] /
                                         b._p_sat_dewT[i]
                                         for i in ['toluene', 'benzene']) \
                     - 1 == 0
@@ -932,7 +894,7 @@ class IdealStateBlockData(StateBlockData):
 
             def rule_pressure_dew(b):
                 return b.pressure_dew * \
-                    sum(b.mole_frac[i] / b._p_sat_dewP[i]
+                    sum(b.mole_frac_comp[i] / b._p_sat_dewP[i]
                         for i in ['toluene', 'benzene']) \
                     - 1 == 0
             self.eq_pressure_dew = Constraint(rule=rule_pressure_dew)
@@ -947,7 +909,7 @@ class IdealStateBlockData(StateBlockData):
 # Liquid phase properties
     def _dens_mol_liq(b):
         return b.dens_mol_phase['Liq'] == 1e3*sum(
-                b.mole_frac_phase['Liq', j] *
+                b.mole_frac_phase_comp['Liq', j] *
                 b._params.dens_liq_params[j, '1'] /
                 b._params.dens_liq_params[j, '2'] **
                 (1 + (1-b.temperature /
@@ -958,9 +920,9 @@ class IdealStateBlockData(StateBlockData):
     def _fug_liq(self):
         def fug_liq_rule(b, i):
             if i in ['hydrogen', 'methane']:
-                return b.mole_frac_phase['Liq', i]
+                return b.mole_frac_phase_comp['Liq', i]
             else:
-                return b.pressure_sat[i] * b.mole_frac_phase['Liq', i]
+                return b.pressure_sat[i] * b.mole_frac_phase_comp['Liq', i]
         self.fug_liq = Expression(self._params.component_list,
                                   rule=fug_liq_rule)
 
@@ -1002,15 +964,15 @@ class IdealStateBlockData(StateBlockData):
                       (b.temperature - b._params.temperature_ref)
                     + b._params.cp_ig['Liq', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase['Liq', j]*b.pressure /
-                    b._params.pressure_ref))
+                const.gas_constant * log(
+                        b.mole_frac_phase_comp['Liq', j]*b.pressure /
+                        b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
     def _dens_mol_vap(b):
         return b.pressure == (b.dens_mol_phase['Vap'] *
-                              b._params.gas_const *
+                              const.gas_constant *
                               b.temperature)
 
     def _fug_vap(self):
@@ -1018,7 +980,7 @@ class IdealStateBlockData(StateBlockData):
             if i in ['hydrogen', 'methane']:
                 return 1e-6
             else:
-                return b.mole_frac_phase['Vap', i] * b.pressure
+                return b.mole_frac_phase_comp['Vap', i] * b.pressure
         self.fug_vap = Expression(self._params.component_list,
                                   rule=fug_vap_rule)
 
@@ -1066,6 +1028,6 @@ class IdealStateBlockData(StateBlockData):
                       (b.temperature - b._params.temperature_ref)
                     + b._params.cp_ig['Vap', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase['Vap', j]*b.pressure /
-                    b._params.pressure_ref))
+                const.gas_constant * log(
+                        b.mole_frac_phase_comp['Vap', j]*b.pressure /
+                        b._params.pressure_ref))

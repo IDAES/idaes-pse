@@ -16,8 +16,6 @@ Basic heater/cooler models
 
 __author__ = "John Eslick"
 
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -31,8 +29,10 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+import idaes.logger as idaeslog
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
+
 
 def _make_heater_control_volume(o, name, config,
                                 dynamic=None, has_holdup=None):
@@ -77,24 +77,28 @@ def _make_heater_config_block(config):
     Declare configuration options for HeaterData block.
     """
     config.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     config.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,

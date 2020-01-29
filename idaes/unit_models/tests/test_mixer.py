@@ -97,7 +97,7 @@ class TestMixer(object):
         assert mixer_frame.fs.mix.config.mixed_state_block is None
         assert mixer_frame.fs.mix.config.construct_ports is True
         assert mixer_frame.fs.mix.config.material_balance_type == \
-            MaterialBalanceType.componentPhase
+            MaterialBalanceType.useDefault
 
     def test_inherited_methods(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
@@ -274,8 +274,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.componentPhase)
 
         assert isinstance(mixer_frame.fs.mix.material_mixing_equations,
                           Constraint)
@@ -291,8 +291,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.componentPhase)
 
         assert isinstance(mixer_frame.fs.mix.phase_equilibrium_generation,
                           Var)
@@ -316,8 +316,8 @@ class TestMixer(object):
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
         with pytest.raises(PropertyNotSupportedError):
-            mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                             mixed_block)
+            mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.componentPhase)
 
     def test_add_material_mixing_equations_tc(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
@@ -330,8 +330,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.componentTotal)
 
         assert isinstance(mixer_frame.fs.mix.material_mixing_equations,
                           Constraint)
@@ -349,8 +349,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.componentTotal)
 
         assert isinstance(mixer_frame.fs.mix.material_mixing_equations,
                           Constraint)
@@ -367,8 +367,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.total)
 
         assert isinstance(mixer_frame.fs.mix.material_mixing_equations,
                           Constraint)
@@ -386,8 +386,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.total)
 
         assert isinstance(mixer_frame.fs.mix.material_mixing_equations,
                           Constraint)
@@ -406,8 +406,8 @@ class TestMixer(object):
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
         with pytest.raises(ConfigurationError):
-            mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                             mixed_block)
+            mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.elementTotal)
 
     def test_add_material_mixing_equations_none(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
@@ -421,8 +421,8 @@ class TestMixer(object):
         inlet_blocks = mixer_frame.fs.mix.add_inlet_state_blocks(inlet_list)
         mixed_block = mixer_frame.fs.mix.add_mixed_state_block()
 
-        mixer_frame.fs.mix.add_material_mixing_equations(inlet_blocks,
-                                                         mixed_block)
+        mixer_frame.fs.mix.add_material_mixing_equations(
+                inlet_blocks, mixed_block, MaterialBalanceType.none)
 
         assert not hasattr(mixer_frame.fs.mix, "material_mixing_equations")
 
@@ -682,21 +682,21 @@ class TestBTX(object):
         assert hasattr(btx.fs.unit, "inlet_1")
         assert len(btx.fs.unit.inlet_1.vars) == 4
         assert hasattr(btx.fs.unit.inlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet_1, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet_1, "temperature")
         assert hasattr(btx.fs.unit.inlet_1, "pressure")
 
         assert hasattr(btx.fs.unit, "inlet_2")
         assert len(btx.fs.unit.inlet_2.vars) == 4
         assert hasattr(btx.fs.unit.inlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet_2, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet_2, "temperature")
         assert hasattr(btx.fs.unit.inlet_2, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet")
         assert len(btx.fs.unit.outlet.vars) == 4
         assert hasattr(btx.fs.unit.outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
@@ -708,14 +708,14 @@ class TestBTX(object):
         btx.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet_1.temperature[0].fix(365)  # K
         btx.fs.unit.inlet_1.pressure[0].fix(2e5)  # Pa
-        btx.fs.unit.inlet_1.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_1.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.inlet_2.temperature[0].fix(300)  # K
         btx.fs.unit.inlet_2.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet_2.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_2.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 

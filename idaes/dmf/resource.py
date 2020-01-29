@@ -388,7 +388,7 @@ class Resource(object):
             if path.suffix == ".py":
                 return TY_CODE, None
             if path.suffix == ".json":
-                max_bytes = 1e6 # arbitrary limit
+                max_bytes = 1e6  # arbitrary limit
                 # over max_bytes? generic
                 file_size = path.stat().st_size
                 if file_size > max_bytes:

@@ -25,7 +25,7 @@ from pyomo.environ import Param, NonNegativeReals, Set
 from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
-from .ideal_prop_pack_VLE import IdealParameterData
+from ideal_prop_pack_VLE import IdealParameterData
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -107,12 +107,6 @@ class BTXParameterData(IdealParameterData):
             mutable=False,
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature [K]')
-
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid

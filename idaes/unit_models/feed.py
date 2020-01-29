@@ -13,8 +13,6 @@
 """
 Standard IDAES Feed block.
 """
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -25,13 +23,14 @@ from idaes.core import (declare_process_block_class,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.logger as idaeslog
+
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
-
+_log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("Feed")
 class FeedData(UnitModelBlockData):
@@ -108,7 +107,7 @@ see property package for documentation.}"""))
         # Add outlet port
         self.add_port(name="outlet", block=self.properties, doc="Outlet Port")
 
-    def initialize(blk, state_args={}, outlvl=0,
+    def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method calls the initialization method of the state block.
@@ -118,13 +117,7 @@ see property package for documentation.}"""))
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
                            property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -133,14 +126,15 @@ see property package for documentation.}"""))
             None
         '''
         # ---------------------------------------------------------------------
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+
         # Initialize state block
-        blk.properties.initialize(outlvl=outlvl-1,
+        blk.properties.initialize(outlvl=outlvl,
                                   optarg=optarg,
                                   solver=solver,
                                   **state_args)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+        init_log.info('Initialization Complete.')
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
