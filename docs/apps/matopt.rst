@@ -27,24 +27,22 @@ the intended material
 
 Key objects
 
-* matopt.materials.lattices
+.. module:: apps.matopt.materials.lattices.lattice
 
- * matopt.materials.lattices.lattice
- * matopt.materials.lattices.cubic_lattice
- * matopt.materials.lattices.fcc_lattice
- * matopt.materials.lattices.perovskite_lattice
- * matopt.materials.lattices.unit_cell_lattice
+.. autoclass:: Lattice
 
-* matopt.materials.canvas
-* matopt.materials.atom
-* matopt.materials.design
+.. module:: apps.matopt.materials.canvas
 
-Advanced
+.. autoclass:: Canvas
 
-* matopt.materials.geometry
-* matopt.materials.tiling
-* matopt.materials.transform_func
-* matopt.materials.motifs
+.. module:: apps.matopt.materials.atom
+
+.. autoclass:: Atom
+
+.. module:: apps.matopt.materials.design
+
+.. autoclass:: Design
+
 
 For a detailed description of the material representation system, please see **PAPER**
 
@@ -62,17 +60,17 @@ From these, all other material descriptors can be defined.
 +------------+-------------------------------------------------------------------------------------------+
 | Descriptor | Explanation                                                                               |
 +============+===========================================================================================+
-| m.Yik      | Presence of a building block of type k at site i                                          |
+| Yik        | Presence of a building block of type k at site i                                          |
 +------------+-------------------------------------------------------------------------------------------+
-| m.Yi       | Presence of any type of building block at site i                                          |
+| Yi         | Presence of any type of building block at site i                                          |
 +------------+-------------------------------------------------------------------------------------------+
-| m.Xijkl    | Presence of a building block of type k at site i and a building block of type l at site j |
+| Xijkl      | Presence of a building block of type k at site i and a building block of type l at site j |
 +------------+-------------------------------------------------------------------------------------------+
-| m.Xij      | Presence of any building block at site i and any building block at site j                 |
+| Xij        | Presence of any building block at site i and any building block at site j                 |
 +------------+-------------------------------------------------------------------------------------------+
-| m.Cikl     | Count of neighbors of type l next to a building block of type k at site i                 |
+| Cikl       | Count of neighbors of type l next to a building block of type k at site i                 |
 +------------+-------------------------------------------------------------------------------------------+
-| m.Ci       | Count of any type of neighbors next to a building block at site i                         |
+| Ci         | Count of any type of neighbors next to a building block at site i                         |
 +------------+-------------------------------------------------------------------------------------------+
 
 User-specified descriptors are defined by DescriptorRule objects in conjunction with Expr expression objects.
@@ -137,100 +135,10 @@ From the combination of pre-defined descriptors, expressions, and rules, we can 
 Once the model is fully specified, the user can optimize in light of a descriptor.
 Several functions are provided for users to choose from.
 
-* Method to create and optimize the materials design problem.
+.. module:: apps.matopt.opt.mat_modeling
 
-.. code-block:: python
-
- optimize(self,func,sense,nSolns=1,tee=True,disp=1,keepfiles=False, tilim=3600,trelim=None, solver='cplex')
-        """Method to create and optimize the materials design problem.
-
-        This method automatically creates a new optimization model every time it is called. Then, it solves the model via Pyomo with the
-        CPLEX solver.
-
-        If multiple solutions (called a 'solution pool') are desired, then
-        the nSolns argument can be provided and the populate method will
-        be called instead.
-
-        Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        sense (int): flag to indicate the choice to minimize or maximize the
-            functionality of interest.
-            Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
-        nSolns (int): Optional, number of Design objects to return.
-            Default: 1 (See MatOptModel.populate for more information)
-        tee (bool): Optional, flag to turn on solver output.
-            Default: True
-        disp (int): Optional, flag to control level of MatOpt output.
-            Choices: 0: No MatOpt output (other than solver tee)
-                     1: MatOpt output for outer level method
-                     2: MatOpt output for solution pool & individual solns.
-            Default: 1
-        keepfiles (bool): Optional, flag to save temporary pyomo files.
-            Default: True
-        tilim (float): Optional, solver time limit (in seconds).
-            Default: 3600
-        trelim (float): Optional, solver tree memeory limit (in MB).
-            Default: None (i.e., Pyomo/CPLEX default)
-        solver (str): Solver choice. Currently only cplex or
-            neos-cplex are supported
-            Default: cplex
-
-        Returns:
-        (Design/list<Design>) Optimal design or designs, depending on the
-            number of solutions requested by argument nSolns.
-        """
-
-* If multiple solutions (called a 'solution pool') are desired, then the nSolns argument can be provided, and the populate method will be called instead.
-
-.. code-block:: python
-
- populate(self,func,sense,nSolns,tee=True,disp=1,keepfiles=False, tilim=3600,trelim=None, solver='cplex')
-        """Method to a pool of solutions that optimize the material model.
-
-        This method automatically creates a new optimization model every time it is called. Then, it solves the model via Pyomo with the
-        CPLEX solver.
-
-        The populate method iteratively solves the model, interprets the
-        solution as a Design object, creates a constraint to disallow that
-        design, and resolves to find the next best design. We build a pool
-        of Designs that are gauranteed to be the nSolns-best solutions in the
-        material design space.
-
-        Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        sense (int): flag to indicate the choice to minimize or maximize the
-            functionality of interest.
-            Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
-        nSolns (int): Optional, number of Design objects to return.
-            Default: 1 (See MatOptModel.populate for more information)
-        tee (bool): Optional, flag to turn on solver output.
-            Default: True
-        disp (int): Optional, flag to control level of MatOpt output.
-            Choices: 0: No MatOpt output (other than solver tee)
-                     1: MatOpt output for outer level method
-                     2: MatOpt output for solution pool & individual solns.
-            Default: 1
-        keepfiles (bool): Optional, flag to save temporary pyomo files.
-            Default: True
-        tilim (float): Optional, solver time limit (in seconds).
-            Default: 3600
-        trelim (float): Optional, solver tree memeory limit (in MB).
-            Default: None (i.e., Pyomo/CPLEX default)
-        solver (str): Solver choice. Currently only cplex or
-            neos-cplex are supported
-            Default: cplex
-
-        Returns:
-        (list<Design>) A list of optimal Designs in order of decreasing
-            optimality.
-        """
-
-* Wrapper functions for maximization/minimization.
-
-.. code-block:: python
-
- maximize(self,func,**kwargs)
- minimize(self,func,**kwargs)
+.. autoclass:: MatOptModel
+   :members: optimize, populate, maximize, minimize
 
 MatOpt Output
 -------------

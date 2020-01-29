@@ -8,6 +8,7 @@ Data Driven Machine Learning
     alamopy
     ripe
     helmet
+    matopt
 
 .. warning::
     The ddm-learning library is still in active development and we
