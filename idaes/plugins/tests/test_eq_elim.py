@@ -1,0 +1,55 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+"""
+This module contains tests for the variable replace transformation.
+"""
+
+import pytest
+import pyomo.environ as pyo
+import idaes.plugins
+from idaes.core.util.model_statistics import degrees_of_freedom
+
+
+__author__ = "John Eslick"
+
+def test_1():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var([1,2,3,4], initialize=2)
+    m.y = pyo.Var(initialize=3)
+    m.z = pyo.Var([1,2,3,4], initialize=0)
+    m.e = pyo.Expression(expr=m.x[1] + m.x[2])
+    m.z.fix()
+
+    # In the first round this becomes x[1].fix(m.z[1])
+    m.c1 = pyo.Constraint(expr=m.z[1]==m.x[1])
+    # In the first round this beconmes y.fix(m.z[2])
+    m.c2 = pyo.Constraint(expr=m.z[2]==m.y)
+    # In the second round this becomes x[2].fix(m.z[3]-m.x[1])
+    m.c3 = pyo.Constraint(expr=m.z[3]==m.e)
+    # This constraint is nonlinear but m.x[1] will be fixed
+    m.c4 = pyo.Constraint(expr=m.z[4]==m.x[3]**2 + m.x[1])
+    # This constraint is eliminated by a substitution, x[3] and x[4] are not
+    # fixed, so it's a linear equation with two variables.  This should be in the
+    # second round after x[1] becomes fixed in the first
+    m.c5 = pyo.Constraint(expr=m.z[4]==m.x[4] + m.x[1] + m.x[3])
+
+
+    assert degrees_of_freedom(m) == 0
+    elim = pyo.TransformationFactory("simple_equality_eliminator")
+    elim.apply_to(m)
+    assert degrees_of_freedom(m) == 0
+
+    assert len([m.component_data_objects(pyo.Constraint, active=True)]) == 1
+    assert m.x[1].fixed
+    assert m.x[2].fixed
+    assert m.y.fixed
