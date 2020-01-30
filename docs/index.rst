@@ -36,6 +36,7 @@ repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs
 <https://github.com/IDAES/idaes-pse/pulls>`_.  For further enquiries, send an
 email to: <idaes-support@idaes.org>
 
+
 Contents
 --------
 
@@ -43,6 +44,7 @@ Contents
     :maxdepth: 2
 
     install/index
+    extut
     standards
     configuration
     logging
@@ -54,7 +56,6 @@ Contents
     dmf/index
     apps/index
     version
-    tutorials
     jupyterlab/index
     developer/index
     Modules <apidoc/modules>
