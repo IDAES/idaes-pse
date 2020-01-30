@@ -92,10 +92,14 @@ pipeline {
   post {
     success {
       slackSend (color: '#00FF00', message: "SUCCESSFUL - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)")
+      emailext attachLog: true, body: "${currentBuild.result}: ${BUILD_URL}", compressLog: true, replyTo: 'mrshepherd@lbl.gov',
+       subject: "Successful Build: ${JOB_NAME} - Build# ${BUILD_NUMBER} ${currentBuild.result}", to: 'mrshepherd@lbl.gov'
     }
 
     failure {
       slackSend (color: '#FF0000', message: "FAILED - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)")
+      emailext attachLog: true, body: "${currentBuild.result}: ${env.BUILD_URL}", compressLog: true, replyTo: 'mrshepherd@lbl.gov',
+       subject: "Failed Build: ${env.JOB_NAME} - Build ${env.BUILD_NUMBER} ${currentBuild.result}", to: 'mrshepherd@lbl.gov'
     }
   }
 }
