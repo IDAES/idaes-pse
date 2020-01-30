@@ -31,9 +31,6 @@ def getLB(e):
         else:
             return e.lb
     elif (isinstance(e, MonomialTermExpression)):
-        # The assert below is useful just for when the Pyomo object structures change
-        # If the assert fails, we need to reorganize the if blocks here.
-        assert (isinstance(e.args[1], pyomo.core.base.var._GeneralVarData))
         if (e.args[0] > 0):
             sub_expr_result = getLB(e.args[1])
             return e.args[0] * sub_expr_result if sub_expr_result is not None else None
@@ -52,11 +49,11 @@ def getLB(e):
     elif (isinstance(e, NegationExpression)):
         elem_ub = getUB(e.args[0])
         return (-elem_ub if elem_ub is not None else None)
-    elif (isinstance(e, (float,int))):
+    elif (isinstance(e, (float, int))):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Unsupported type. Need to add or restructure getLB cases.')
+        raise NotImplementedError('Unsupported expression type for lower bound calculation. Please check getLB() function in pyomo_modeling.py')
 
 
 def getUB(e):
@@ -75,9 +72,6 @@ def getUB(e):
         else:
             return e.ub
     elif (isinstance(e, MonomialTermExpression)):
-        # The assert below is useful just for when the Pyomo object structures change
-        # If the assert fails, we need to reorganize the if blocks here.
-        assert (isinstance(e.args[1], pyomo.core.base.var._GeneralVarData))
         if (e.args[0] > 0):
             sub_expr_result = getUB(e.args[1])
             return e.args[0] * sub_expr_result if sub_expr_result is not None else None
@@ -96,11 +90,11 @@ def getUB(e):
     elif (isinstance(e, NegationExpression)):
         elem_lb = getLB(e.args[0])
         return (-elem_lb if elem_lb is not None else None)
-    elif (isinstance(e, (float,int))):
+    elif (isinstance(e, (float, int))):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Unsupported type. Need to add or restructure getUB cases.')
+        raise NotImplementedError('Unsupported expression type for upper bound calculation. Please check getUB() function in pyomo_modeling.py')
 
 
 # ================================================
@@ -199,12 +193,6 @@ def makeMyPyomoBaseModel(C, Atoms=None, Confs=None):
 def _addConsCiFromCikl(m):
     m.AssignCiFromCikl = Constraint(m.I)
     for i in m.Ci.keys():
-        # NOTE: Don't use this wildcard expression because there may
-        #       be relevant keys that are not defined yet
-        # m.AssignCiFromCikl.add(index=i,
-        #                       expr=(m.Ci[i]==sum(m.Cikl[i,k,l]
-        #                                          for k,l in m.Cikl[i,:,:].wildcard_keys()
-        #                                          if k is not None and l is not None)))
         m.AssignCiFromCikl.add(index=i,
                                expr=(m.Ci[i] == sum(m.Cikl[i, k, l]
                                                     for k in m.K for l in m.K
@@ -266,12 +254,6 @@ def _addConsXijklFromYik(m):
 def _addConsYiFromYik(m):
     m.AssignYiFromYik = Constraint(m.I)
     for i in m.Yi.keys():
-        # NOTE: Don't use this wildcard expression because there may
-        #       be relevant keys that are not defined yet
-        # m.AssignYiFromYik.add(index=i,
-        #                      expr=(m.Yi[i]==sum(m.Yik[i,k]
-        #                                         for k in m.Yik[i,:].wildcard_keys()
-        #                                         if k is not None)))
         m.AssignYiFromYik.add(index=i,
                               expr=(m.Yi[i] == sum(m.Yik[i, k]
                                                    for k in m.K
@@ -313,13 +295,12 @@ def addConsForGeneralVars(m):
         if (len(m.Xij) > 0 and len(m.Cikl) > 0):
             _addConsCiFromCikl(m)
             # NOTE: Chose to add only one formulation because the second is redundant
-            # _addConsCiFromXij(m)
         elif (len(m.Cikl) > 0 or len(m.Xijkl) > 0 or len(m.Yik) > 0):
             _addConsCiFromCikl(m)
         elif (len(m.Xij) > 0 or len(m.Yi) > 0 or len(m.Yik) == 0):
             _addConsCiFromXij(m)
         else:
-            raise NotImplementedError('Ci lacks a proper way to be defined.')
+            raise NotImplementedError('Ci lacks a proper way to be defined. User should define MaterialDescriptor Ci explicitly using valid DescriptorRule')
     # Defining Cikl
     if (len(m.Cikl) > 0):
         _addConsCiklFromXijkl(m)
@@ -334,7 +315,7 @@ def addConsForGeneralVars(m):
         elif (len(m.Yi) > 0 or len(m.Yik) == 0):
             _addConsXijFromYi(m)
         else:
-            raise NotImplementedError('Xij lacks a propper way to be defined.')
+            raise NotImplementedError('Xij lacks a propper way to be defined. User should define MaterialDescriptor Xij explicitly using valid DescriptorRule')
     # Defining Xijkl
     if (len(m.Xijkl) > 0):
         _addConsXijklFromYik(m)
@@ -729,7 +710,7 @@ def setDesignFromModel(D, m, blnSetNoneOtherwise=True):
     elif (len(m.Yi) > 0):
         setDesignFromYi(D, m, blnSetNoneOtherwise=blnSetNoneOtherwise)
     else:
-        raise NotImplementedError('No way to interpret model variables as a Design.')
+        raise NotImplementedError('User should define MaterialDescriptor Yi or Yik explicitly using valid DescriptorRule')
 
 
 def _validYiGivenD(m, D):
@@ -755,13 +736,13 @@ def _validYikGivenD(m, D):
             if (D.Contents[i] != k):
                 # CASE: Atom of type k should be present, but was not found in Design
                 logging.debug('_validYikGivenD value(m.Yik[{}])={} Contents[i]={}'
-                              .format((i, k), value(m.Yik[i, k]), i, Contents[i]))
+                              .format((i, k), value(m.Yik[i, k]), i, D.Contents[i]))
                 return False
         else:
             if (D.Contents[i] == k):
                 # CASE: Atom of type k should not be present, but was found in Design
                 logging.debug('_validYikGivenD value(m.Yik[{}])={} Contents[i]={}'
-                              .format((i, k), value(m.Yik[i, k]), i, Contents[i]))
+                              .format((i, k), value(m.Yik[i, k]), i, D.Contents[i]))
                 return False
     return True
 
@@ -1021,7 +1002,7 @@ def addConsIndFromDescriptors(m, ConName, Descs, Inds, LBs=None, UBs=None,
                 MUB = -DefaultBigM
             else:
                 MUB = -UBs[i] - Eps + ExprLB
-            ConUB.add(index=i, expr=(Descs[i] >= UBs[i] + Esp + MUB * (IndsUB[i])))
+            ConUB.add(index=i, expr=(Descs[i] >= UBs[i] + Eps + MUB * (IndsUB[i])))
 
 
 def addConsLocalBudgets(m, ConName, Vs, Subsets=None,
