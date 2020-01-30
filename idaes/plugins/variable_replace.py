@@ -14,16 +14,18 @@
 __author__ = "John Eslick"
 
 """Transformation to replace variables with other variables."""
-import pyomo.environ as pyo
 from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.var import _GeneralVarData, Var
+from pyomo.core.base.constraint import Constraint
+from pyomo.core.base.expression import Expression
+from pyomo.core.base.objective import Objective
 
 
 def _is_var(v):
-    return isinstance(v, (_GeneralVarData, pyo.Var))
+    return isinstance(v, (_GeneralVarData, Var))
 
 @TransformationFactory.register(
     'replace_variables',
@@ -77,7 +79,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
         # Replacement Visitor
         vis = EXPR.ExpressionReplacementVisitor(
             substitute=d,
-            descend_into_named_expressions=False,
+            descend_into_named_expressions=True,
             remove_named_expressions=False,
         )
 

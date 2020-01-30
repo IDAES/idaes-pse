@@ -99,7 +99,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
 
             vis = EXPR.ExpressionReplacementVisitor(
                 substitute=subs,
-                descend_into_named_expressions=False,
+                descend_into_named_expressions=True,
                 remove_named_expressions=False,
             )
 
@@ -112,7 +112,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             # where one var is replaced with a linear expression containitng
             # another
             for c in instance.component_data_objects(
-                (pyo.Constraint, pyo.Expression, pyo.Objective),
+                (pyo.Constraint, pyo.Objective),
                 descend_into=True,
                 active=True
             ):
