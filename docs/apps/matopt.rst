@@ -1,29 +1,30 @@
-======================================================
-MatOpt : Material Design via Mathematical Optimization
-======================================================
+=======================================================
+MatOpt : Materials Design via Mathematical Optimization
+=======================================================
 
-The MatOpt (Material design via Mathematical Optimization) module provides simple tools for
-creating Pyomo model objects for nanomaterial optimization-based design problems.
-There are two main sub-modules contained in the package targeting different purposes.
-The matopt.materials module contains objects and methods for efficiently representing and manipulating a nanomaterial and its design space.
-The matopt.opt module contains objects and methods for speeding up the formulation of a Mixed-integer Linear Programming (MILP) model with simplified
-modeling syntax and automatic model formulation. The main goals of this package are as follows.
+The MatOpt (Materials Design via Mathematical Optimization) module provides simple tools for creating Pyomo model objects for nanomaterial optimization-based design problems. There are two main sub-modules contained in the package serving two disctinct purposes:
+* The matopt.materials module contains objects and methods for efficiently representing and manipulating a nanomaterial and its design space.
+* The matopt.opt module contains objects and methods for speeding up the casting of a Mixed-integer Linear Programming (MILP) model with simplified modeling syntax and automatic model formulation.
 
+The main goals of this package are as follows:
 * To simplify the representation of nanostructured materials, streamlining the creation of materials optimization problems.
-* To provide a simple interface so that users do not need to understand the details of building mathematical optimization models or the syntax of the Pyomo package.
-* To automate many of the necessary steps of materials optimization, speeding up the development of new models.
+* To provide a simple interface so that users do not need to handle the details of building efficient mathematical optimization models or the specific Pyomo syntax to do this.
+* To automate many of the necessary steps of materials optimization, speeding up the development of new models and accelerating new materials discovery.
 
-.. warning::
-   MatOpt depends on Pyomo and Numpy. User's access to MILP solvers (*i.e.*, CPLEX, Gurobi, GLPK) through Pyomo is assumed
+Thank you for your interest in MatOpt. We would love to hear your feedback! Please report any thoughts, questions or bugs to: gounaris@cmu.edu
+
+If you are using MatOpt, please consider citing our paper:
+**PAPER**
 
 Basic Usage
 -----------
 
+.. warning::
+   MatOpt depends on Pyomo and Numpy. User access to the MILP solver CPLEX through Pyomo is assumed. For users who do not have access to CPLEX, the use of NEOS-CPLEX is suggested as an alternative.
+
 **Define design canvas**
 
-For formulating a material optimization problem, several pieces of information about the material and design space need to be specified.
-To fulfill the need, matopt.materials module defines generic and simple objects for describing the type of material to be designed and design space (canvas) of
-the intended material
+Several pieces of information about the material and design space need to be specified in order to formulate a materials optimization problem. To fulfill this need, the matopt.materials module defines generic and simple objects for describing the type of material to be designed and its design space, also referred to as "canvas".
 
 Key objects
 
@@ -43,12 +44,11 @@ Key objects
 
 .. autoclass:: Design
 
-
 For a detailed description of the material representation system, please see **PAPER**
 
 **Build model via descriptors**
 
-Material type and design space specified provide indexes, sets, and parameters for an optimization model.
+The material type and design space specified provide indexes, sets, and parameters for an optimization model.
 Users could in principle formulate a mathematical optimization model based on that information via and python-based
 modeling language. MatOpt can accelerate this process by defining a simplified set of objects (matopt.opt.mat_modeling) for users to interact with.
 With simplified syntax, users define a MatOptModel object, which will be translated into a pyomo model object automatically by MatOpt (matopt.opt.pyomo_modeling).
@@ -150,3 +150,8 @@ MatOpt Examples
 ---------------
 Five case studies are provided in idaes.docs.app.matopt
 In each case, a Jupyter notebook with explanation as well as an equivalent Python script is provided.
+
+References
+----------
+
+
