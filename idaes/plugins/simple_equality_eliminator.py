@@ -69,7 +69,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
                 rset.add(id(v0))
                 rset.add(id(v1))
 
-                _log.debug("Sub: {} = {}".format(k, e))
+                _log.debug("Sub: {} = {}".format(v0, subs[id(v0)]))
         return subs, cnstr, fixes
 
 
