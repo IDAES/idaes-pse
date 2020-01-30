@@ -931,7 +931,7 @@ class RadialBasisFunctions:
             radial_weights = self.bfgs_parameter_optimization(x_transformed, self.y_data)
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
-        training_ss_error, rmse_error, y_training_predictions_scaled = self.error_calculation(radial_weights, x_transformed, self.y_data)
+        training_ss_error, rmse_error, y_training_predictions_scaled = self.error_calculation(radial_weights, self.basis_generation(best_r_value), self.y_data)
         r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
         y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
         results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square, self.basis_function, self.data_min, self.data_max)
@@ -981,8 +981,8 @@ class RadialBasisFunctions:
             x_transformed = RadialBasisFunctions.thin_plate_spline_transformation(basis_vector)
 
         # Add regularization shifting?
-        # x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
-        x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
+        # x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         y_prediction_scaled = np.matmul(x_transformed, radial_weights)
         y_prediction_unscaled = results_vector.y_data_min + y_prediction_scaled * (results_vector.y_data_max - results_vector.y_data_min)
         return y_prediction_unscaled
