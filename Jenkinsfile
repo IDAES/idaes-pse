@@ -26,6 +26,8 @@ pipeline {
       steps {
         slackSend (message: "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)")
         sh 'yum install -y gcc g++ git gcc-gfortran libboost-dev make'
+        sh 'pwd'
+        sh 'ls'
       }
     }
     stage('3.6-setup') {
