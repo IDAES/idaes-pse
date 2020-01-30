@@ -30,9 +30,9 @@ _log = idaeslog.getLogger(__name__)
 class SimpleEqualityElimninator(NonIsomorphicTransformation):
 
     def _get_subs(self, instance):
-        subs = {} # Substitute on var for another from a * x + b * y + c = 0
+        subs = {} # Substitute one var for another from a * x + b * y + c = 0
         fixes = [] # fix a variable from a * x + c = 0
-        cnstr = set() # constraints ro deactivate
+        cnstr = set() # constraints to deactivate
         rset = set() # varaibles used in a sub or fixed
         for c in instance.component_data_objects(pyo.Constraint, active=True):
             if (
@@ -51,24 +51,20 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
                 b0 = repn.constant - pyo.value(c.upper)
                 v0 = repn.linear_vars[0]
                 a0 = repn.linear_coefs[0]
-                if len(repn.linear_vars) == 1:
-                    if id(v0) in rset:
-                        continue
+                if id(v0) in rset:
+                    continue
+                elif len(repn.linear_vars) == 1:
                     fixes.append((v0, -b0/a0))
                     rset.add(id(v0))
                     cnstr.add(c)
                     continue
+
                 v1 = repn.linear_vars[1]
                 a1 = repn.linear_coefs[1]
-
-                if id(v0) not in rset and id(v1) not in rset:
-                    k = v0
-                    e = -(b0 + a1 * v1) / a0
-                    v = v1
-                else:
+                if id(v1) in rset:
                     continue
 
-                subs[id(k)] = e
+                subs[id(v0)] = -(b0 + a1 * v1) / a0
                 cnstr.add(c)
                 rset.add(id(v0))
                 rset.add(id(v1))
@@ -77,7 +73,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
         return subs, cnstr, fixes
 
 
-    def _apply_to(self, instance):
+    def _apply_to(self, instance, max_iter=5):
         """
         Apply the transformation.  This is called by ``apply_to`` in the
         superclass, and should not be called directly.  ``apply_to`` takes the
@@ -90,7 +86,8 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             None
         """
         nr_tot = 0
-        for i in range(100): # repeat elimination until no more can be eliminated
+        # repeat elimination until no more can be eliminated or hit max_iter
+        for i in range(max_iter):
             subs, cnstr, fixes = self._get_subs(instance)
             nr = len(cnstr)
             if nr == 0:
@@ -112,7 +109,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             # where one var is replaced with a linear expression containitng
             # another
             for c in instance.component_data_objects(
-                (pyo.Constraint, pyo.Objective),
+                (pyo.Constraint, pyo.Expression, pyo.Objective),
                 descend_into=True,
                 active=True
             ):

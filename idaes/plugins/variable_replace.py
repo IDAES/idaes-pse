@@ -85,7 +85,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
 
         # Do replacements in Expressions, Constraints, and Objectives
         for c in instance.component_data_objects(
-            (pyo.Constraint, pyo.Expression, pyo.Objective),
+            (Constraint, Expression, Objective),
             descend_into=True,
             active=True
         ):
