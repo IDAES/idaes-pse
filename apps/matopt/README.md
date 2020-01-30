@@ -19,4 +19,4 @@ In each case, we provide a Jupyter notebook with explanation as well as an equiv
 2. Numpy 
    We use Numpy arrays to represent geometric points.
 3. CPLEX
-   We have hard-coded CPLEX as the chosen optimization solver. This can be changed by edditing the source code for MatOptModel. We plan to introduce a more flexible interface in a future version. 
+   The tool has been optimized to work with the MIP solver CPLEX. Users who do not have access to CPLEX via Pyomo are advised to use NEOS-CPLEX. This can be selected by edditing the source code for MatOptModel.
