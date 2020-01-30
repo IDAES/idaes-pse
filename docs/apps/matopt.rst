@@ -3,10 +3,12 @@ MatOpt : Materials Design via Mathematical Optimization
 =======================================================
 
 The MatOpt (Materials Design via Mathematical Optimization) module provides simple tools for creating Pyomo model objects for nanomaterial optimization-based design problems. There are two main sub-modules contained in the package serving two disctinct purposes:
-* The matopt.materials module contains objects and methods for efficiently representing and manipulating a nanomaterial and its design space.
-* The matopt.opt module contains objects and methods for speeding up the casting of a Mixed-integer Linear Programming (MILP) model with simplified modeling syntax and automatic model formulation.
+
+* The ``matopt.materials`` module contains objects and methods for efficiently representing and manipulating a nanomaterial and its design space.
+* The ``matopt.opt`` module contains objects and methods for speeding up the casting of a Mixed-integer Linear Programming (MILP) model with simplified modeling syntax and automatic model formulation.
 
 The main goals of this package are as follows:
+
 * To simplify the representation of nanostructured materials, streamlining the creation of materials optimization problems.
 * To provide a simple interface so that users do not need to handle the details of building efficient mathematical optimization models or the specific Pyomo syntax to do this.
 * To automate many of the necessary steps of materials optimization, speeding up the development of new models and accelerating new materials discovery.
@@ -14,7 +16,7 @@ The main goals of this package are as follows:
 Thank you for your interest in MatOpt. We would love to hear your feedback! Please report any thoughts, questions or bugs to: gounaris@cmu.edu
 
 If you are using MatOpt, please consider citing our paper:
-**PAPER**
+*PAPER*
 
 Basic Usage
 -----------
@@ -24,7 +26,7 @@ Basic Usage
 
 **Define design canvas**
 
-Several pieces of information about the material and design space need to be specified in order to formulate a materials optimization problem. To fulfill this need, the matopt.materials module defines generic and simple objects for describing the type of material to be designed and its design space, also referred to as "canvas".
+Several pieces of information about the material and design space need to be specified in order to formulate a materials optimization problem. To fulfill this need, the ``matopt.materials`` module defines generic and simple objects for describing the type of material to be designed and its design space, also referred to as "canvas".
 
 Key objects
 
@@ -44,89 +46,88 @@ Key objects
 
 .. autoclass:: Design
 
-For a detailed description of the material representation system, please see **PAPER**
+For a detailed description of the material representation system, please see *PAPER*
 
 **Build model via descriptors**
 
 The material type and design space specified provide indexes, sets, and parameters for an optimization model.
 Users could in principle formulate a mathematical optimization model based on that information via and python-based
-modeling language. MatOpt can accelerate this process by defining a simplified set of objects (matopt.opt.mat_modeling) for users to interact with.
-With simplified syntax, users define a MatOptModel object, which will be translated into a pyomo model object automatically by MatOpt (matopt.opt.pyomo_modeling).
+modeling language. MatOpt can accelerate this process by defining a simplified set of objects for users to interact with.
+With simplified syntax, users define a ``MatOptModel`` object, which will be translated into a Pyomo ``ConcreteModel`` object automatically.
 
-MatOpt uses MaterialDescriptor objects to represent variables, constraints, and objectives into
-A MatOptModel object holds lists of MaterialDescriptor objects. By default, several universal site descriptors are pre-defined in the model.
-From these, all other material descriptors can be defined.
+MatOpt uses ``MaterialDescriptor`` objects to represent variables, constraints, and objectives. A ``MatOptModel`` object holds lists of ``MaterialDescriptor`` objects. By default, several universal site descriptors are pre-defined in the model.
+From these, all other material descriptors can be defined via ``DescriptorRule`` objects.
 
-+------------+-------------------------------------------------------------------------------------------+
-| Descriptor | Explanation                                                                               |
-+============+===========================================================================================+
-| Yik        | Presence of a building block of type k at site i                                          |
-+------------+-------------------------------------------------------------------------------------------+
-| Yi         | Presence of any type of building block at site i                                          |
-+------------+-------------------------------------------------------------------------------------------+
-| Xijkl      | Presence of a building block of type k at site i and a building block of type l at site j |
-+------------+-------------------------------------------------------------------------------------------+
-| Xij        | Presence of any building block at site i and any building block at site j                 |
-+------------+-------------------------------------------------------------------------------------------+
-| Cikl       | Count of neighbors of type l next to a building block of type k at site i                 |
-+------------+-------------------------------------------------------------------------------------------+
-| Ci         | Count of any type of neighbors next to a building block at site i                         |
-+------------+-------------------------------------------------------------------------------------------+
++----------------+-------------------------------------------------------------------------------------------+
+| Descriptor     | Explanation                                                                               |
++================+===========================================================================================+
+| ``Yik``        | Presence of a building block of type k at site i                                          |
++----------------+-------------------------------------------------------------------------------------------+
+| ``Yi``         | Presence of any type of building block at site i                                          |
++----------------+-------------------------------------------------------------------------------------------+
+| ``Xijkl``      | Presence of a building block of type k at site i and a building block of type l at site j |
++----------------+-------------------------------------------------------------------------------------------+
+| ``Xij``        | Presence of any building block at site i and any building block at site j                 |
++----------------+-------------------------------------------------------------------------------------------+
+| ``Cikl``       | Count of neighbors of type l next to a building block of type k at site i                 |
++----------------+-------------------------------------------------------------------------------------------+
+| ``Ci``         | Count of any type of neighbors next to a building block at site i                         |
++----------------+-------------------------------------------------------------------------------------------+
 
 User-specified descriptors are defined by DescriptorRule objects in conjunction with Expr expression objects.
 Available expressions include:
 
-+--------------------+-----------------------------------------------------------------------------+
-| Expression         | Explanation                                                                 |
-+====================+=============================================================================+
-| LinearExpr         | Multiplication and addition of coefficients to distinct MaterialDescriptors |
-+--------------------+-----------------------------------------------------------------------------+
-| SiteCombination    | Summation of site contributions from two sites                              |
-+--------------------+-----------------------------------------------------------------------------+
-| SumNeighborSites   | Summation of site contributions from all neighboring sites                  |
-+--------------------+-----------------------------------------------------------------------------+
-| SumNeighborBonds   | Summation of bond contributions to all neighboring sites                    |
-+--------------------+-----------------------------------------------------------------------------+
-| SumSites           | Summation across sites                                                      |
-+--------------------+-----------------------------------------------------------------------------+
-| SumBonds           | Summation across bonds                                                      |
-+--------------------+-----------------------------------------------------------------------------+
-| SumSiteTypes       | Summation across site types                                                 |
-+--------------------+-----------------------------------------------------------------------------+
-| SumBondTypes       | Summation across bond types                                                 |
-+--------------------+-----------------------------------------------------------------------------+
-| SumSitesAndTypes   | Summation across sites and site types                                       |
-+--------------------+-----------------------------------------------------------------------------+
-| SumBondsAndTypes   | Summation across bonds and bond types                                       |
-+--------------------+-----------------------------------------------------------------------------+
-| SumConfs           | Summation across conformation types                                         |
-+--------------------+-----------------------------------------------------------------------------+
-| SumSitesAndConfs   | Summation across sites and conformation types                               |
-+--------------------+-----------------------------------------------------------------------------+
++------------------------+-----------------------------------------------------------------------------+
+| Expression             | Explanation                                                                 |
++========================+=============================================================================+
+| ``LinearExpr``         | Multiplication and addition of coefficients to distinct descriptors         |
++------------------------+-----------------------------------------------------------------------------+
+| ``SiteCombination``    | Summation of site contributions from two sites                              |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumNeighborSites``   | Summation of site contributions from all neighboring sites                  |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumNeighborBonds``   | Summation of bond contributions to all neighboring sites                    |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumSites``           | Summation across sites                                                      |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumBonds``           | Summation across bonds                                                      |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumSiteTypes``       | Summation across site types                                                 |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumBondTypes``       | Summation across bond types                                                 |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumSitesAndTypes``   | Summation across sites and site types                                       |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumBondsAndTypes``   | Summation across bonds and bond types                                       |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumConfs``           | Summation across conformation types                                         |
++------------------------+-----------------------------------------------------------------------------+
+| ``SumSitesAndConfs``   | Summation across sites and conformation types                               |
++------------------------+-----------------------------------------------------------------------------+
 
 Several types of DescriptorRules are available.
 
-+-------------------------+---------------------------------------------------------------------------------+
-| Rule                    | Explanation                                                                     |
-+=========================+=================================================================================+
-| LessThan                | Descriptor less than or equal to an expression                                  |
-+-------------------------+---------------------------------------------------------------------------------+
-| EqualTo                 | Descriptor equal to an expression                                               |
-+-------------------------+---------------------------------------------------------------------------------+
-| GreaterThan             | Descriptor greater than or equal to an expression                               |
-+-------------------------+---------------------------------------------------------------------------------+
-| FixedTo                 | Descriptor fixed to a scalar value                                              |
-+-------------------------+---------------------------------------------------------------------------------+
-| PiecewiseLinear         | Descriptor equal to the evaluation of a piecewise linear function               |
-+-------------------------+---------------------------------------------------------------------------------+
-| Implies                 | Indicator descriptor that imposes other constraints if equal to 1               |
-+-------------------------+---------------------------------------------------------------------------------+
-| NegImplies              | Indicator descriptor that imposes other constraints if equal to 0               |
-+-------------------------+---------------------------------------------------------------------------------+
-| ImpliesSiteCombination  | Indicator bond-indexed descriptor that imposes constraints on the two sites     |
-+-------------------------+---------------------------------------------------------------------------------+
-| ImpliesNeighbors        | Indicator site-indexed descriptor that imposes constraints on neighboring sites |
-+-------------------------+---------------------------------------------------------------------------------+
++-----------------------------+---------------------------------------------------------------------------------+
+| Rule                        | Explanation                                                                     |
++=============================+=================================================================================+
+| ``LessThan``                | Descriptor less than or equal to an expression                                  |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``EqualTo``                 | Descriptor equal to an expression                                               |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``GreaterThan``             | Descriptor greater than or equal to an expression                               |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``FixedTo``                 | Descriptor fixed to a scalar value                                              |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``PiecewiseLinear``         | Descriptor equal to the evaluation of a piecewise linear function               |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``Implies``                 | Indicator descriptor that imposes other constraints if equal to 1               |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``NegImplies``              | Indicator descriptor that imposes other constraints if equal to 0               |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``ImpliesSiteCombination``  | Indicator bond-indexed descriptor that imposes constraints on the two sites     |
++-----------------------------+---------------------------------------------------------------------------------+
+| ``ImpliesNeighbors``        | Indicator site-indexed descriptor that imposes constraints on neighboring sites |
++-----------------------------+---------------------------------------------------------------------------------+
 
 From the combination of pre-defined descriptors, expressions, and rules, we can specify a wide variety of other descriptors.
 
@@ -142,16 +143,20 @@ Several functions are provided for users to choose from.
 
 MatOpt Output
 -------------
-Optimization results will be loaded into design objects automatically.
+Optimization results will be loaded into ``Design`` objects automatically.
 Users can then write material design(s) into files for further analysis and visualization.
-MatOpt provides interfaces to several standard crystal structure file formats, including CFG, PDB, POSCAR, and XYZ (matopt.materials.parsers).
+MatOpt provides interfaces to several standard crystal structure file formats, including CFG, PDB, POSCAR, and XYZ.
 
 MatOpt Examples
 ---------------
-Five case studies are provided in idaes.docs.app.matopt
-In each case, a Jupyter notebook with explanation as well as an equivalent Python script is provided.
+Five `case studies
+<https://github.com/IDAES/examples-dev/tree/master/src/matopt>`_ are provided for illustrating detailed usage of MatOpt. In each case, a Jupyter notebook with explanation as well as an equivalent Python script is provided.
 
 References
 ----------
-
+* Hanselman, C.L. and Gounaris, C.E., 2016. A mathematical optimization framework for the design of nanopatterned surfaces. *AIChE Journal*, 62(9), pp.3250-3263.
+* Hanselman, C.L., Alfonso, D.R., Lekse, J.W., Matranga, C., Miller, D.C. and Gounaris, C.E., 2019. A framework for optimizing oxygen vacancy formation in doped perovskites. *Computers & Chemical Engineering*, 126, pp.168-177.
+* Hanselman, C.L., Zhong, W., Tran, K., Ulissi, Z.W. and Gounaris, C.E., 2019. Optimization-Based Design of Active and Stable Nanostructured Surfaces. *The Journal of Physical Chemistry C*, 123(48), pp.29209-29218.
+* Isenberg, N.M., Taylor, M.G., Yan, Z., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. Identification of optimally stable nanocluster geometries via mathematical optimization and density-functional theory. *Molecular Systems Design & Engineering*.
+* Xiangyu, Y., Isenberg, N.M., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. A Mathematical Optimization-based Design Framework for Identifying Stable Bimetallic Nanoclusters. *In preparation*.
 
