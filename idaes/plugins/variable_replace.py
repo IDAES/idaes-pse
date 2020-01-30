@@ -75,14 +75,19 @@ class ReplaceVariables(NonIsomorphicTransformation):
                 d[id(r[0])] = r[1]
 
         # Replacement Visitor
-        vis = EXPR.ExpressionReplacementVisitor(substitute=d)
+        vis = EXPR.ExpressionReplacementVisitor(
+            substitute=d,
+            descend_into_named_expressions=False,
+            remove_named_expressions=False,
+        )
 
         # Do replacements in Expressions, Constraints, and Objectives
-        for c in instance.component_data_objects(pyo.Constraint, descend_into=True):
+        for c in instance.component_data_objects(
+            (pyo.Constraint, pyo.Expression, pyo.Objective),
+            descend_into=True,
+            active=True
+        ):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
-        for c in instance.component_data_objects((pyo.Expression, pyo.Objective),
-                                                 descend_into=True):
-            vis.dfs_postorder_stack(c)
 
 
     def _apply_to(self, instance, **kwds):
