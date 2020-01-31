@@ -2016,16 +2016,16 @@ class MaterialDescriptor(IndexedElem):
 
     Attributes:
         name (string): A unique (otherwise Pyomo will complain) name
-        canv (:class:`Canvas`): The canvas that the descriptor will be indexed over
-        atoms (list<:class:`BBlock`>): The building blocks to index the descriptor over.
-        confDs (list<:class:`Design`>): The designs for conformations to index over.
+        canv (``Canvas``): The canvas that the descriptor will be indexed over
+        atoms (list<``BBlock``>): The building blocks to index the descriptor over.
+        confDs (list<``Design``>): The designs for conformations to index over.
         integer (bool): Flag to indicate if the descriptor takes integer values.
         binary (bool): Flag to indicate if the descriptor takes boolean values.
-        rules (list<:class:`DescriptorRules`>): List of rules to define and constrain the material descriptor design space.
+        rules (list<``DescriptorRules``>): List of rules to define and constrain the material descriptor design space.
         bounds (tuple/dict/func): If tuple, the lower and upper bounds on the descriptor values across all indices. If dict, the bounds can be individually set for each index.
 
-    See :class:`IndexedElem` for more information on indexing.
-    See :class:`DescriptorRule` for information on defining descriptors.
+    See ``IndexedElem`` for more information on indexing.
+    See ``DescriptorRule`` for information on defining descriptors.
     """
     DBL_TOL = 1e-5
 
@@ -2198,10 +2198,10 @@ class MatOptModel(object):
     the conversion to Pyomo optimization models happens automatically. 
 
     Attributes:
-        canv (:class:`Canvas`): The canvas of the material design space
-        atoms (list<:class:`BBlock`>): The list of building blocks to consider.
+        canv (``Canvas``): The canvas of the material design space
+        atoms (list<``BBlock``>): The list of building blocks to consider.
             Note: This list does not need to include a void-atom type. We use 'None' to represent the absence of any building block at a given site.
-        confDs (list<:class:`Design`>): The list of conformations to consider.
+        confDs (list<``Design``>): The list of conformations to consider.
     """
 
     # === STANDARD CONSTRUCTOR
@@ -2209,10 +2209,10 @@ class MatOptModel(object):
         """Standard constructor for materials optimization problems.
 
         Args:
-        canv (:class:`Canvas`): The canvas of the material design space
-        atoms (list<:class:`BBlock`>): The list of building blocks to consider.
+        canv (``Canvas``): The canvas of the material design space
+        atoms (list<``BBlock``>): The list of building blocks to consider.
             Note: This list does not need to include a void-atom type. We use 'None' to represent the absence of any building block at a given site.
-        confDs (list<:class:`Design`>): The list of conformations to consider.
+        confDs (list<``Design``>): The list of conformations to consider.
         """
         self._canv = canv
         self._atoms = atoms
@@ -2525,11 +2525,11 @@ class MatOptModel(object):
         """Method to maximize a target functionality of the material model.
 
         Args:
-            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            func (``MaterialDescriptor``/``Expr``): Material functionality to optimize.
             **kwargs: Arguments to ``MatOptModel.optimize``
 
         Returns:
-            (:class:`Design`/list<:class:`Design`>) Optimal designs.
+            (``Design``/list<``Design``>) Optimal designs.
 
         See ``MatOptModel.optimize`` method for details.
         """
@@ -2539,11 +2539,11 @@ class MatOptModel(object):
         """Method to minimize a target functionality of the material model.
 
         Args:
-            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            func (``MaterialDescriptor``/``Expr``): Material functionality to optimize.
             **kwargs: Arguments to ``MatOptModel.optimize``
 
         Returns:
-            (:class:`Design`/list<:class:`Design`>) Optimal designs.
+            (``Design``/list<``Design``>) Optimal designs.
 
         See ``MatOptModel.optimize`` method for details.
         """
@@ -2564,7 +2564,7 @@ class MatOptModel(object):
         be called instead. 
 
         Args:
-            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            func (``MaterialDescriptor``/``Expr``): Material functionality to optimize.
             sense (int): flag to indicate the choice to minimize or maximize the functionality of interest.
                 Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
             nSolns (int): Optional, number of Design objects to return.
@@ -2584,7 +2584,7 @@ class MatOptModel(object):
                 Default: cplex
 
         Returns:
-            (:class:`Design`/list<:class:`Design`>) Optimal design or designs, depending on the number of solutions requested by argument ``nSolns``.
+            (``Design``/list<``Design``>) Optimal design or designs, depending on the number of solutions requested by argument ``nSolns``.
         """
         if (nSolns > 1):
             return self.populate(func, sense=sense, nSolns=nSolns,
@@ -2612,7 +2612,7 @@ class MatOptModel(object):
         material design space. 
 
         Args:
-            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            func (``MaterialDescriptor``/``Expr``): Material functionality to optimize.
             sense (int): flag to indicate the choice to minimize or maximize the functionality of interest.
                 Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
             nSolns (int): Optional, number of Design objects to return.
@@ -2632,7 +2632,7 @@ class MatOptModel(object):
                 Default: cplex
 
         Returns:
-            (list<:class:`Design`>) A list of optimal Designs in order of decreasing optimality.
+            (list<``Design``>) A list of optimal Designs in order of decreasing optimality.
         """
         # TODO: Use Pyomo solution pool interface, CPLEX solution pool 
         #       interface, or otherwise inform a persistent solver 

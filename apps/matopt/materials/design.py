@@ -14,11 +14,10 @@ from .transform_func import ShiftFunc
 class Design(object):
     """A class used to represent material designs.
 
-    This class combines a Canvas objects and a list of contents.
-    It assigns an element (possibly None) to each point in the Canvas.
+    This class combines a ``Canvas`` objects and a list of contents.
+    It assigns an element (possibly None) to each point in the ``Canvas``.
     This generally works for any type of content, but it is intended
-    to work with Atom objects and can be used to generate POSCAR, PDB,
-    XYZ, and CFG files.
+    to work with ``Atom`` objects and can be used to generate CFG, PDB, POSCAR, and XYZ files.
     """
 
     # === STANDARD CONSTRUCTOR
