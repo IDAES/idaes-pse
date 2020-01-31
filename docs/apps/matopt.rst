@@ -13,7 +13,9 @@ The main goals of this package are as follows:
 Thank you for your interest in MatOpt. We would love to hear your feedback! Please report any thoughts, questions or bugs to: gounaris@cmu.edu
 
 If you are using MatOpt, please consider citing:
+
 * Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2020. MatOpt: A Python package for nanomaterials design using discrete optimization. *In preparation*.
+
 
 Basic Usage
 -----------
@@ -152,4 +154,3 @@ References
 * Isenberg, N.M., Taylor, M.G., Yan, Z., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. Identification of optimally stable nanocluster geometries via mathematical optimization and density-functional theory. *Molecular Systems Design & Engineering*.
 * Yin, X., Isenberg, N.M., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. A mathematical optimization-based design framework for identifying stable bimetallic nanoclusters. *In preparation*.
 * Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2020. MatOpt: A Python package for nanomaterials design using discrete optimization. *In preparation*.
-
