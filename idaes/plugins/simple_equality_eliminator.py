@@ -19,6 +19,7 @@ from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.repn import generate_standard_repn
+from pyomo.core.beta.dict_objects import ComponentDict
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -31,6 +32,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
 
     def _get_subs(self, instance):
         subs = {} # Substitute one var for another from a * x + b * y + c = 0
+        subs_map = {} # id -> var
         fixes = [] # fix a variable from a * x + c = 0
         cnstr = set() # constraints to deactivate
         rset = set() # varaibles used in a sub or fixed
@@ -69,11 +71,14 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
                 rset.add(id(v0))
                 rset.add(id(v1))
 
+                if self.reversible:
+                    subs_map[id(v0)] = v0
+
                 _log.debug("Sub: {} = {}".format(v0, subs[id(v0)]))
-        return subs, cnstr, fixes
+        return subs, cnstr, fixes, subs_map
 
 
-    def _apply_to(self, instance, max_iter=5):
+    def _apply_to(self, instance, max_iter=5, reversible=True):
         """
         Apply the transformation.  This is called by ``apply_to`` in the
         superclass, and should not be called directly.  ``apply_to`` takes the
@@ -85,20 +90,41 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
         Returns:
             None
         """
+        self.reversible = reversible
+        if reversible:
+            self._instance = instance
+            self._all_subs = []
+            self._subs_map = {}
+            self._expr_map = {}
+            self._all_fixes = []
+            self._all_deactivate = []
+            self._original = {}
+
+            # The named expressions could be changed as a side effect of the
+            # constriant expression replacements, so for maximum saftey, just
+            # store all the expressions for Expressions
+            for c in instance.component_data_objects(
+                pyo.Expression,
+                descend_into=True,
+            ):
+                self._original[id(c)] = c.expr
+                self._expr_map[id(c)] = c
+
         nr_tot = 0
         # repeat elimination until no more can be eliminated or hit max_iter
         for i in range(max_iter):
-            subs, cnstr, fixes = self._get_subs(instance)
+            subs, cnstr, fixes, subs_map = self._get_subs(instance)
+
+            if reversible:
+                self._all_fixes += fixes
+                self._all_deactivate += cnstr
+                self._all_subs.append(subs)
+                self._subs_map.update(subs_map)
+
             nr = len(cnstr)
             if nr == 0:
                 break
             nr_tot += nr
-
-            vis = EXPR.ExpressionReplacementVisitor(
-                substitute=subs,
-                descend_into_named_expressions=True,
-                remove_named_expressions=False,
-            )
 
             for c in cnstr: # deactivate constraints that aren't needed
                 c.deactivate()
@@ -108,12 +134,20 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             # Do replacements in Expressions, Constraints, and Objectives
             # where one var is replaced with a linear expression containitng
             # another
+            vis = EXPR.ExpressionReplacementVisitor(
+                substitute=subs,
+                descend_into_named_expressions=True,
+                remove_named_expressions=False,
+            )
             for c in instance.component_data_objects(
-                (pyo.Constraint, pyo.Expression, pyo.Objective),
+                (pyo.Constraint, pyo.Objective),
                 descend_into=True,
                 active=True
             ):
+                self._original[id(c)] = c.expr
+                self._expr_map[id(c)] = c
                 c.set_value(expr=vis.dfs_postorder_stack(c.expr))
+
         _log.info("Eliminated {} variables and constraints".format(nr_tot))
 
     @staticmethod
@@ -124,3 +158,33 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
         if level is not None:
             _log.setLevel(level)
         return _log
+
+    def revert(self):
+        """Revert model to pretransformation state, using substitutions to
+        calcualte values of varaibles that were removed from the problem This
+        applies to the last reversible transformation performed with this object.
+        """
+        try:
+            instance = self._instance
+        except AttributeError:
+            _log.warning("Nothing to revert.")
+
+        for c in self._all_deactivate:
+            c.activate()
+        for c in self._all_fixes:
+            c[0].unfix()
+        for cid in self._original:
+            c = self._expr_map[cid]
+            c.set_value(expr=self._original[cid])
+
+        # The problem should be back, now fill in values for the variables that
+        # where removed
+        for subs in reversed(self._all_subs):
+            for sid in subs:
+                self._subs_map[sid].value = pyo.value(subs[sid])
+
+        del(self._instance)
+        del(self._all_subs)
+        del(self._all_fixes)
+        del(self._all_deactivate)
+        del(self._original)
