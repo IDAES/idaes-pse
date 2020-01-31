@@ -31,7 +31,7 @@ def getLB(e):
         else:
             return e.lb
     elif (isinstance(e, MonomialTermExpression)):
-    	if isinstance(e.args[1], pyomo.core.base.var._GeneralVarData):
+    	if not isinstance(e.args[1], pyomo.core.base.var._GeneralVarData):
     		raise BurntToast("Something completely unexpected happened when calculating an expression's lower bound and you should never see this. Please contact the IDAES developers with this bug at matopt.pyomo_modeling")
         if (e.args[0] > 0):
             sub_expr_result = getLB(e.args[1])
@@ -74,7 +74,7 @@ def getUB(e):
         else:
             return e.ub
     elif (isinstance(e, MonomialTermExpression)):
-    	if isinstance(e.args[1], pyomo.core.base.var._GeneralVarData):
+    	if not isinstance(e.args[1], pyomo.core.base.var._GeneralVarData):
     		raise BurntToast("Something completely unexpected happened when calculating an expression's upper bound and you should never see this. Please contact the IDAES developers with this bug at matopt.pyomo_modeling")
         if (e.args[0] > 0):
             sub_expr_result = getUB(e.args[1])
