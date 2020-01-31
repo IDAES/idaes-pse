@@ -6,6 +6,15 @@ from ..transform_func import TransformFunc, ShiftFunc, ScaleFunc, RotateFunc, Re
 
 
 class Lattice(object):
+    '''A class used to represent crystal lattice locations.
+
+    The class encodes methods for determining which Cartesian coordinates to
+    consider as sites on an infinite crystal lattice. The Lattice can be constructed from
+    a point on the lattice (i.e., a shift from the origin), an alignment (i.e., rotation from a
+    nominal orientation), and appropriate scaling factors. With these attributes, we generally
+    support the translation, rotation, and rescaling of lattices. Additionally, Lattice objects
+    include a method for determining which sites should be considered neighbors.
+    '''
     # === DEFAULT CONSTRUCTOR
     def __init__(self):
         self._TransformFuncs = []

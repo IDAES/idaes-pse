@@ -2015,25 +2015,17 @@ class MaterialDescriptor(IndexedElem):
     descriptor and constraining the design space. 
 
     Attributes:
-    name (string): A unique (otherwise Pyomo will complain) name
-    canv (Canvas): The canvas that the descriptor will be indexed over
-    atoms (list<BBlock>): The building blocks to index the descriptor over. 
-    confDs (list<Design>): The designs for conformations to index over.
-    integer (bool): Flag to indicate if the descriptor takes integer values.
-    binary (bool): Flag to indicate if the descriptor takes boolean values.
-    rules (list<DescriptorRules>): List of rules to define and constrain the
-        material descriptor design space. 
-    bounds (tuple/dict/func): If tuple, the lower and upper bounds on the 
-        descriptor values across all indices. If dict, the bounds can be 
-        individually set for each index. Otherwise, advanced users can 
-        specify a function to be interpreted by Pyomo. 
-    _pyomo_var (Pyomo variable): A reference to the Pyomo variable created
-        when the model is converted to Pyomo. It is attached here, but the
-        data belongs to the Pyomo model object (MatOptModel._pyomo_m)
-    (index information inherited from IndexedElem)
+        name (string): A unique (otherwise Pyomo will complain) name
+        canv (:class:`Canvas`): The canvas that the descriptor will be indexed over
+        atoms (list<:class:`BBlock`>): The building blocks to index the descriptor over.
+        confDs (list<:class:`Design`>): The designs for conformations to index over.
+        integer (bool): Flag to indicate if the descriptor takes integer values.
+        binary (bool): Flag to indicate if the descriptor takes boolean values.
+        rules (list<:class:`DescriptorRules`>): List of rules to define and constrain the material descriptor design space.
+        bounds (tuple/dict/func): If tuple, the lower and upper bounds on the descriptor values across all indices. If dict, the bounds can be individually set for each index.
 
-    See IndexedElem for more information on indexing. 
-    See DescriptorRule for information on defining descriptors. 
+    See :class:`IndexedElem` for more information on indexing.
+    See :class:`DescriptorRule` for information on defining descriptors.
     """
     DBL_TOL = 1e-5
 
@@ -2206,28 +2198,10 @@ class MatOptModel(object):
     the conversion to Pyomo optimization models happens automatically. 
 
     Attributes:
-    canv (Canvas): The canvas of the material design space
-    atoms (list<BBlock>): The list of building blocks to consider. 
-        Note: This list does not need to include a void-atom type. We use 
-              'None' to represent the absence of any building block at a 
-              given site. 
-    confDs (list<Design>): The list of conformations to consider.
-    descriptors (list<MaterialDescriptor>): The list of material descriptors 
-        to consider. 
-        Note: This list can be appended to, but it is generally better to 
-              use the add___Descriptor() methods to attach new descriptors
-              in a consistent way. 
-    Yi (MaterialDescriptor): The presence of any building block at site i.
-    Xij (MaterialDescriptor): The combination of any building block at site i
-        and any building block at site j.
-    Ci (MaterialDescriptor): The count of building blocks neighbor to site i.
-    Yik (MaterialDescriptor): The presence of building block k at site i.
-    Xijkl (MaterialDescriptor): The combination of building block k at site i
-        and building block l at site j.
-    Cikl (MaterialDescriptor): The count of building blocks of type l next to
-        a building block of type k at site i (zero otherwise).
-    Zic (MaterialDescriptor): The presence of a conformation of type c at 
-        site i.
+        canv (:class:`Canvas`): The canvas of the material design space
+        atoms (list<:class:`BBlock`>): The list of building blocks to consider.
+            Note: This list does not need to include a void-atom type. We use 'None' to represent the absence of any building block at a given site.
+        confDs (list<:class:`Design`>): The list of conformations to consider.
     """
 
     # === STANDARD CONSTRUCTOR
@@ -2235,12 +2209,10 @@ class MatOptModel(object):
         """Standard constructor for materials optimization problems.
 
         Args:
-        canv (Canvas): The canvas of the material design space
-        atoms (list<BBlock>): The list of building blocks to consider. 
-            Note: This list does not need to include a void-atom type. We use 
-                  'None' to represent the absence of any building block at a 
-                  given site. 
-        confDs (list<Design>): The list of conformations to consider.
+        canv (:class:`Canvas`): The canvas of the material design space
+        atoms (list<:class:`BBlock`>): The list of building blocks to consider.
+            Note: This list does not need to include a void-atom type. We use 'None' to represent the absence of any building block at a given site.
+        confDs (list<:class:`Design`>): The list of conformations to consider.
         """
         self._canv = canv
         self._atoms = atoms
@@ -2553,13 +2525,13 @@ class MatOptModel(object):
         """Method to maximize a target functionality of the material model.
 
         Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        **kwargs: Arguments to MatOptModel.optimize
+            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            **kwargs: Arguments to ``MatOptModel.optimize``
 
         Returns:
-        (Design/list<Design>) Optimal designs.
+            (:class:`Design`/list<:class:`Design`>) Optimal designs.
 
-        See MatOptModel.optimize method for details.
+        See ``MatOptModel.optimize`` method for details.
         """
         return self.optimize(func, sense=maximize, **kwargs)
 
@@ -2567,13 +2539,13 @@ class MatOptModel(object):
         """Method to minimize a target functionality of the material model.
 
         Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        **kwargs: Arguments to MatOptModel.optimize
+            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            **kwargs: Arguments to ``MatOptModel.optimize``
 
         Returns:
-        (Design/list<Design>) Optimal designs.
+            (:class:`Design`/list<:class:`Design`>) Optimal designs.
 
-        See MatOptModel.optimize method for details.
+        See ``MatOptModel.optimize`` method for details.
         """
         return self.optimize(func, sense=minimize, **kwargs)
 
@@ -2592,32 +2564,27 @@ class MatOptModel(object):
         be called instead. 
 
         Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        sense (int): flag to indicate the choice to minimize or maximize the
-            functionality of interest. 
-            Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
-        nSolns (int): Optional, number of Design objects to return.
-            Default: 1 (See MatOptModel.populate for more information)
-        tee (bool): Optional, flag to turn on solver output. 
-            Default: True
-        disp (int): Optional, flag to control level of MatOpt output.
-            Choices: 0: No MatOpt output (other than solver tee)
-                     1: MatOpt output for outer level method
-                     2: MatOpt output for solution pool & individual solns.
-            Default: 1
-        keepfiles (bool): Optional, flag to save temporary pyomo files. 
-            Default: True
-        tilim (float): Optional, solver time limit (in seconds). 
-            Default: 3600
-        trelim (float): Optional, solver tree memeory limit (in MB).
-            Default: None (i.e., Pyomo/CPLEX default)
-        solver (str): Solver choice. Currently only cplex or 
-            neos-cplex are supported 
-            Default: cplex
+            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            sense (int): flag to indicate the choice to minimize or maximize the functionality of interest.
+                Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
+            nSolns (int): Optional, number of Design objects to return.
+                Default: 1 (See ``MatOptModel.populate`` for more information)
+            tee (bool): Optional, flag to turn on solver output.
+                Default: True
+            disp (int): Optional, flag to control level of MatOpt output.
+                Choices: 0: No MatOpt output (other than solver tee) 1: MatOpt output for outer level method 2: MatOpt output for solution pool & individual solns.
+                Default: 1
+            keepfiles (bool): Optional, flag to save temporary pyomo files.
+                Default: True
+            tilim (float): Optional, solver time limit (in seconds).
+                Default: 3600
+            trelim (float): Optional, solver tree memeory limit (in MB).
+                Default: None (i.e., Pyomo/CPLEX default)
+            solver (str): Solver choice. Currently only cplex or neos-cplex are supported
+                Default: cplex
 
         Returns:
-        (Design/list<Design>) Optimal design or designs, depending on the 
-            number of solutions requested by argument nSolns.
+            (:class:`Design`/list<:class:`Design`>) Optimal design or designs, depending on the number of solutions requested by argument ``nSolns``.
         """
         if (nSolns > 1):
             return self.populate(func, sense=sense, nSolns=nSolns,
@@ -2645,32 +2612,27 @@ class MatOptModel(object):
         material design space. 
 
         Args:
-        func (MaterialDescriptor/Expr): Material functionality to optimize.
-        sense (int): flag to indicate the choice to minimize or maximize the
-            functionality of interest. 
-            Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
-        nSolns (int): Optional, number of Design objects to return.
-            Default: 1 (See MatOptModel.populate for more information)
-        tee (bool): Optional, flag to turn on solver output. 
-            Default: True
-        disp (int): Optional, flag to control level of MatOpt output.
-            Choices: 0: No MatOpt output (other than solver tee)
-                     1: MatOpt output for outer level method
-                     2: MatOpt output for solution pool & individual solns.
-            Default: 1
-        keepfiles (bool): Optional, flag to save temporary pyomo files. 
-            Default: True
-        tilim (float): Optional, solver time limit (in seconds). 
-            Default: 3600
-        trelim (float): Optional, solver tree memeory limit (in MB).
-            Default: None (i.e., Pyomo/CPLEX default)
-        solver (str): Solver choice. Currently only cplex or 
-            neos-cplex are supported 
-            Default: cplex
+            func (:class:`MaterialDescriptor`/:class:`Expr`): Material functionality to optimize.
+            sense (int): flag to indicate the choice to minimize or maximize the functionality of interest.
+                Choices: minimize/maximize (Pyomo constants 1,-1 respectively)
+            nSolns (int): Optional, number of Design objects to return.
+                Default: 1 (See ``MatOptModel.populate`` for more information)
+            tee (bool): Optional, flag to turn on solver output.
+                Default: True
+            disp (int): Optional, flag to control level of MatOpt output.
+                Choices: 0: No MatOpt output (other than solver tee) 1: MatOpt output for outer level method 2: MatOpt output for solution pool & individual solns.
+                Default: 1
+            keepfiles (bool): Optional, flag to save temporary pyomo files.
+                Default: True
+            tilim (float): Optional, solver time limit (in seconds).
+                Default: 3600
+            trelim (float): Optional, solver tree memeory limit (in MB).
+                Default: None (i.e., Pyomo/CPLEX default)
+            solver (str): Solver choice. Currently only cplex or neos-cplex are supported
+                Default: cplex
 
         Returns:
-        (list<Design>) A list of optimal Designs in order of decreasing 
-            optimality.
+            (list<:class:`Design`>) A list of optimal Designs in order of decreasing optimality.
         """
         # TODO: Use Pyomo solution pool interface, CPLEX solution pool 
         #       interface, or otherwise inform a persistent solver 

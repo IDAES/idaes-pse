@@ -30,7 +30,7 @@ There are two main sub-modules contained in the package serving two disctinct pu
 
 Several pieces of information about the material and design space need to be specified in order to formulate a materials optimization problem. To fulfill this need, the ``matopt.materials`` module defines generic and simple objects for describing the type of material to be designed and its design space, also referred to as a "canvas".
 
-Key objects
+Some key objects are listed as follows:
 
 .. module:: apps.matopt.materials.lattices.lattice
 
@@ -39,10 +39,6 @@ Key objects
 .. module:: apps.matopt.materials.canvas
 
 .. autoclass:: Canvas
-
-.. module:: apps.matopt.materials.atom
-
-.. autoclass:: Atom
 
 .. module:: apps.matopt.materials.design
 
@@ -125,6 +121,10 @@ Several types of ``DescriptorRules`` are available.
 +-----------------------------+---------------------------------------------------------------------------------+
 
 From the combination of the above pre-defined descriptors, expressions, and rules, a user can specify a wide variety of other descriptors, as necessary.
+
+.. currentmodule:: apps.matopt.opt.mat_modeling
+
+.. autoclass:: MaterialDescriptor
 
 **Solve optimization model**
 
