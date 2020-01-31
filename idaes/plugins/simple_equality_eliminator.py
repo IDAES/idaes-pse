@@ -19,7 +19,6 @@ from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.repn import generate_standard_repn
-from pyomo.core.beta.dict_objects import ComponentDict
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
