@@ -14,10 +14,10 @@ class Canvas(object):
     """A class for combining geometric points and neighbors.
 
     This class contains a list of Cartesian points coupled with a graph of nodes for sites and arcs
-    for bonds. A Canvas object establishes a mapping from the abstract, mathematical modeling of
+    for bonds. A ``Canvas`` object establishes a mapping from the abstract, mathematical modeling of
     materials as graphs to the geometry of the material lattice. The list of points and neighbor
-    connections necessary to create a Canvas object can be obtained from the combination of
-    Lattice, Shape, and Tiling objects.
+    connections necessary to create a ``Canvas`` object can be obtained from the combination of
+    ``Lattice``, ``Shape``, and ``Tiling`` objects.
     """
     DBL_TOL = 1e-5
 
