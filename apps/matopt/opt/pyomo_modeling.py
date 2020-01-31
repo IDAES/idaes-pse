@@ -53,7 +53,7 @@ def getLB(e):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Unsupported expression type for lower bound calculation. Please check getLB() function in pyomo_modeling.py')
+        raise NotImplementedError('Unsupported expression type for lower bound calculation. Please check getLB() function in pyomo_modeling.py for supported types.')
 
 
 def getUB(e):
