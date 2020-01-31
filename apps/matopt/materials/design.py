@@ -19,11 +19,6 @@ class Design(object):
     This generally works for any type of content, but it is intended
     to work with Atom objects and can be used to generate POSCAR, PDB,
     XYZ, and CFG files.
-
-    Args:
-
-    Returns:
-
     """
 
     # === STANDARD CONSTRUCTOR
