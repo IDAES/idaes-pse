@@ -94,7 +94,7 @@ def getUB(e):
         return e
     else:
         print(type(e))
-        raise NotImplementedError('Unsupported expression type for upper bound calculation. Please check getUB() function in pyomo_modeling.py')
+        raise NotImplementedError('Unsupported expression type for upper bound calculation. Please check getUB() function in pyomo_modeling.py for supported types.')
 
 
 # ================================================
