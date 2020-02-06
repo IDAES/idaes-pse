@@ -1,4 +1,5 @@
-import logging
+from idaes.logger import getModelLogger
+logging = getModelLogger('MatOptModel')
 import numpy as np
 
 from pyomo.environ import *
