@@ -4,6 +4,7 @@ import numpy as np
 from pyomo.environ import *
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.numeric_expr import MonomialTermExpression, SumExpression, NegationExpression
+# from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from ..util.util import isZero, areEqual
 
 DBL_TOL = 1e-5
@@ -18,12 +19,14 @@ def getLB(e):
     """Calculates the lower bound (if possible) of a linear expression.
 
     Args:
-        e: A Pyomo expression, Pyomo variable, float, or int. 
+        e: A Pyomo expression, Pyomo variable, float, or int.
 
     Returns:
         (float) lower bound from interval arithmetic. None if negative infinity.
 
     """
+    # Future work: use Pyomo function to achieve this functionality
+    # return compute_bounds_on_expr(e)[0]
     if (isinstance(e, _GeneralVarData)):
         if (e.is_fixed()):
             return value(e)
@@ -62,12 +65,14 @@ def getUB(e):
     """Calculates the upper bound (if possible) of a linear expression.
 
     Args:
-        e: A Pyomo expression, Pyomo variable, float, or int. 
+        e: A Pyomo expression, Pyomo variable, float, or int.
 
     Returns:
         (float) upper bound from interval arithmetic. None if infinity.
 
     """
+    # Future work: use Pyomo function to achieve this functionality
+    # return compute_bounds_on_expr(e)[1]
     if (isinstance(e, _GeneralVarData)):
         if (e.is_fixed()):
             return value(e)
@@ -337,7 +342,7 @@ def addConsForGeneralVars(m):
         else:
             # Yi can serve as a suitable basic variable if no 'k' index is in the model
             pass
-    # Define Yik          
+    # Define Yik
     # Still need to restrict Yik to be SOS1
     if (len(m.K) > 1):
         _addConsYikSOS1(m)
@@ -1151,11 +1156,11 @@ def addConsGlobalBudgetsByTypes(m, ConName, Vs, Subset=None, Types=None,
     The form of the constraint is:
     BudgetLBs[k] <= sum(Vs[i,k] for i in Subset) <= BudgetUBs[k]
 
-    The variables are assumed to be indexed over Canvas locations 
+    The variables are assumed to be indexed over Canvas locations
     and types.
-    In contrast to addConLocalBudgetsByTypes, this function applies 
-    a single budget constraint written over the entire Canvas. If the 
-    Subsets keyword is provided, then a subset of Canvas locations 
+    In contrast to addConLocalBudgetsByTypes, this function applies
+    a single budget constraint written over the entire Canvas. If the
+    Subsets keyword is provided, then a subset of Canvas locations
     are added.
 
     Args:
