@@ -74,12 +74,17 @@ kwargs = dict(
         # helmet
         "rbfopt",
     ],
-    entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
+    entry_points={
+        "console_scripts": [
+            "dmf = idaes.dmf.cli:base_command",
+            "idaes = idaes.commands.base:command_base",
+        ]
+    },
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
             "alabaster>=0.7.7",
-            "coverage",
+            "coverage==4.5.4",
             "flake8",
             "flask>=1.0",
             "flask-bower",
@@ -101,8 +106,7 @@ kwargs = dict(
         "": [
             "*.template",
             "*.json",
-            "*.dll",
-            "*.so",
+            "*.yaml",
             "*.svg",
             "*.png",
             "*.jpg",

@@ -29,8 +29,11 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.constants import Constants as const
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -51,7 +54,7 @@ class _IdealStateBlock(StateBlock):
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
 
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
@@ -67,7 +70,7 @@ class _IdealStateBlock(StateBlock):
                          temperature : value at which to initialize temperature
                          mole_frac_comp: value at which to initialize the component
                                     mixture mole fraction
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -92,49 +95,7 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
         # Fix state variables if not already fixed
-        Fflag = {}
-        Xflag = {}
-        Pflag = {}
-        Tflag = {}
-
-        for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if state_args is None:
-                    blk[k].flow_mol.fix(1.0)
-                else:
-                    blk[k].flow_mol.fix(state_args["flow_mol"])
-
-            for j in blk[k]._params.component_list:
-                if blk[k].mole_frac_comp[j].fixed is True:
-                    Xflag[k, j] = True
-                else:
-                    Xflag[k, j] = False
-                    if state_args is None:
-                        blk[k].mole_frac_comp[j].fix(1 / len(blk[k].
-                                                _params.component_list))
-                    else:
-                        blk[k].mole_frac_comp[j].fix(state_args["mole_frac_comp"][j])
-
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if state_args is None:
-                    blk[k].pressure.fix(0.101325)
-                else:
-                    blk[k].pressure.fix(state_args["pressure"])
-
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if state_args is None:
-                    blk[k].temperature.fix(3.25)
-                else:
-                    blk[k].temperature.fix(state_args["temperature"])
+        flags = fix_state_vars(blk, state_args)
 
         # Set solver options
         if outlvl > 1:
@@ -175,15 +136,15 @@ class _IdealStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    _log.info("Initialisation step 1 for "
+                    _log.info("Initialization step 1 for "
                               "{} completed".format(blk.name))
                 else:
-                    _log.warning("Initialisation step 1 for "
+                    _log.warning("Initialization step 1 for "
                                  "{} failed".format(blk.name))
 
         else:
             if outlvl > 0:
-                _log.info("Initialisation step 1 for "
+                _log.info("Initialization step 1 for "
                           "{} skipped".format(blk.name))
 
         for k in blk.keys():
@@ -202,10 +163,10 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                _log.info("Initialisation step 2 for "
+                _log.info("Initialization step 2 for "
                           "{} completed".format(blk.name))
             else:
-                _log.warning("Initialisation step 2 for "
+                _log.warning("Initialization step 2 for "
                              "{} failed".format(blk.name))
 
         for k in blk.keys():
@@ -213,11 +174,6 @@ class _IdealStateBlock(StateBlock):
                 blk[k].eq_mol_frac_out.activate()
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
-        flags = {"Fflag": Fflag,
-                 "Xflag": Xflag,
-                 "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if hold_state is True:
             return flags
         else:
@@ -225,11 +181,11 @@ class _IdealStateBlock(StateBlock):
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+                _log.info('{} Initialization Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
@@ -239,16 +195,7 @@ class _IdealStateBlock(StateBlock):
             outlvl : sets output level of of logging
         '''
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -399,7 +346,7 @@ class StateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return 10.0 * self.pressure == (self.density_mol[p] *
-                                         self._params.gas_constant *
+                                         gas_constant*1e-3 *
                                          self.temperature)
             elif p == "Liq":
                 return self.density_mol[p] == 11.1  # kgmol/m3 # dummy value
@@ -448,7 +395,7 @@ class StateBlockData(StateBlockData):
             return self.density_mol[p] * self._params.Cp * self.temperature
         elif p == "Vap":
             return (self.density_mol[p] * (
-                    self._params.Cp - self._params.gas_const) *
+                    self._params.Cp - self._params.gas_constant*1e-3) *
                     self.temperature)
 
     def default_material_balance_type(self):

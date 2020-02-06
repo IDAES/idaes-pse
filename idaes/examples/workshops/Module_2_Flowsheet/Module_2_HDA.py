@@ -212,7 +212,7 @@ def main():
         "pressure": {0: 350000}}
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
-    # Run sequential initialisation
+    # Run sequential initialization
     seq.run(m, function)
 
     # # Create a solver

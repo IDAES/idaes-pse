@@ -30,7 +30,7 @@ def index():
         if not slider_val:
             slider_val = 0
         else:
-            slider_val = int(slider_val) - 1
+            slider_val = int(slider_val)
 
     if file_count != 0:
         date = os.path.splitext(cached_files[slider_val])[0]
@@ -41,7 +41,3 @@ def index():
 
 if __name__ == '__main__':
     app.run()
-
-
-
-    # return render_template("index.html", start_time=start_time, end_time=end_time)

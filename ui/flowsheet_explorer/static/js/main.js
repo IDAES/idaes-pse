@@ -14,17 +14,15 @@ function init()
 
     zoom_in_button.addEventListener('mouseup', zoom_in);
     zoom_out_button.addEventListener('mouseup', zoom_out);
-    // var back_arrow = document.getElementById('back_arrow');
-    // back_arrow.addEventListener('click', back_click);
 }
 
 $(function() {
     // This connects the back button with changing the images
     var form = $('form');
-    $('#back_arrow').click(function(){
-        var sliderVal = slider.value;
-        if (sliderVal - 1 >= 0)
-        {                
+    $('#back_arrow').unbind().click(function(){
+        var sliderVal = $('#slider').val();
+        if ((parseInt(sliderVal) - 1) >= 0)
+        {       
             $.ajax({
                 type: "POST",
                 url: form.action,
@@ -45,8 +43,8 @@ $(function() {
 $(function() {
     // This connects the forward button with changing the images
     var form = $('form');
-    $('#forward_arrow').click(function(){
-        var sliderVal = slider.value;
+    $('#forward_arrow').unbind().click(function(){
+        var sliderVal = $('#slider').val();
         if ((parseInt(sliderVal) + 1) < range)
         {                
             $.ajax({
@@ -69,7 +67,7 @@ $(function() {
 $(function() {
     // This connects the slider changing to changing the images as well
     var form = $('form');
-    $('#slider').on('change mouseup', function(){
+    $('#slider').unbind().on('change mouseup', function(){
         $.ajax({
             type: "POST",
             url: form.action,
@@ -114,7 +112,6 @@ var moveBubble = function(e)
     bubble.innerHTML = slider_labels[sliderVal];
     oldSliderVal = sliderVal;
 }
-
 
 var zoom_in = function(e)
 {
