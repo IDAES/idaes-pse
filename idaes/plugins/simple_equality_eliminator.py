@@ -27,14 +27,14 @@ _log = idaeslog.getLogger(__name__)
 @TransformationFactory.register(
     'simple_equality_eliminator',
     doc="Eliminate simple equalities in the form a*x + b*y = c or a*x = b")
-class SimpleEqualityElimninator(NonIsomorphicTransformation):
+class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
     def _get_subs(self, instance):
         subs = {} # Substitute one var for another from a * x + b * y + c = 0
         subs_map = {} # id -> var
         fixes = [] # fix a variable from a * x + c = 0
         cnstr = set() # constraints to deactivate
-        rset = set() # varaibles used in a sub or fixed
+        rset = set() # variables used in a sub or fixed
         for c in instance.component_data_objects(pyo.Constraint, active=True):
             if (
                 pyo.value(c.lower) is not None and
@@ -100,7 +100,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             self._original = {}
 
             # The named expressions could be changed as a side effect of the
-            # constriant expression replacements, so for maximum saftey, just
+            # constraint expression replacements, so for maximum saftey, just
             # store all the expressions for Expressions
             for c in instance.component_data_objects(
                 pyo.Expression,
@@ -131,7 +131,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
                 v[0].fix(v[1])
 
             # Do replacements in Expressions, Constraints, and Objectives
-            # where one var is replaced with a linear expression containitng
+            # where one var is replaced with a linear expression containing
             # another
             vis = EXPR.ExpressionReplacementVisitor(
                 substitute=subs,
@@ -151,8 +151,8 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
 
     @staticmethod
     def get_logger(level=None):
-        """Return the logger for this, so its a little easier to see the
-        get the debugging output, by changing the level.
+        """Return the logger for this, so its a little easier to get the debugging
+        output, by changing the level.
         """
         if level is not None:
             _log.setLevel(level)
@@ -160,7 +160,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
 
     def revert(self):
         """Revert model to pretransformation state, using substitutions to
-        calcualte values of varaibles that were removed from the problem This
+        calcualte values of varaibles that were removed from the problem. This
         applies to the last reversible transformation performed with this object.
         """
         try:
@@ -177,7 +177,7 @@ class SimpleEqualityElimninator(NonIsomorphicTransformation):
             c.set_value(expr=self._original[cid])
 
         # The problem should be back, now fill in values for the variables that
-        # where removed
+        # were removed
         for subs in reversed(self._all_subs):
             for sid in subs:
                 self._subs_map[sid].value = pyo.value(subs[sid])

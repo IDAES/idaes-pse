@@ -53,7 +53,7 @@ def model():
     m.x[4] = 2
     m.y = 0
 
-    # make a dict to chec variable values against (vars and named expressions)
+    # make a dict to check variable values against (vars and named expressions)
     m.sol = {}
     for v in m.component_data_objects((pyo.Var, pyo.Expression)):
         m.sol[id(v)] = pyo.value(v)
@@ -83,7 +83,7 @@ def test_reverse(model):
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m)
 
-    # mess up the values for all the substiuted vars
+    # mess up the values for all the substituted vars
     for i, v in elim._subs_map.items():
         v = 1e12
     elim.revert()
