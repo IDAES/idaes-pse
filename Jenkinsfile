@@ -68,7 +68,7 @@ pipeline {
     }
     stage('3.6-test') {
       steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
           sh '''
            source activate idaes3.6
            pylint -E --ignore-patterns="test_.*" idaes || true
@@ -80,7 +80,7 @@ pipeline {
     }
     stage('3.7-test') {
       steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
           sh '''
            source activate idaes3.7
            pylint -E --ignore-patterns="test_.*" idaes || true
@@ -93,7 +93,7 @@ pipeline {
   }
   post {
     always {
-      emailext attachLog: true, body: "${currentBuild.result}: ${BUILD_URL}", compressLog: true, replyTo: 'mrshepherd@lbl.gov',
+      emailext attachLog: true, body: "${currentBuild.result}: ${BUILD_URL}", replyTo: 'mrshepherd@lbl.gov',
        subject: "Build Log: ${JOB_NAME} - Build ${BUILD_NUMBER} ${currentBuild.result}", to: 'mrshepherd@lbl.gov'
     }
     // success {
