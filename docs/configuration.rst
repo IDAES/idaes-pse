@@ -15,9 +15,6 @@ provided.
 
   default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
   use_idaes_solvers = true
-  [plugins]
-    required = ["idaes"]
-    optional = []
   [logging]
     version = 1
     disable_existing_loggers = false
