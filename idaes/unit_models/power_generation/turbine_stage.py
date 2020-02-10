@@ -21,9 +21,6 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-import logging
-
-_log = logging.getLogger(__name__)
 
 from pyomo.common.config import In
 from pyomo.environ import Var, Expression, SolverFactory, value
@@ -36,6 +33,9 @@ from idaes.unit_models.pressure_changer import (
 )
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("TurbineStage", doc="Basic steam turbine model")
@@ -88,7 +88,7 @@ class TurbineStageData(PressureChangerData):
     def initialize(
         self,
         state_args={},
-        outlvl=6,
+        outlvl=idaeslog.NOTSET,
         solver="ipopt",
         optarg={"tol": 1e-6, "max_iter": 30},
     ):
@@ -100,13 +100,6 @@ class TurbineStageData(PressureChangerData):
         Args:
             state_args (dict): Initial state for property initialization
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
@@ -163,18 +156,9 @@ class TurbineStageData(PressureChangerData):
             self.outlet.flow_mol[t].value = value(self.inlet.flow_mol[t])
             self.outlet.enth_mol[t].value = value(self.inlet.enth_mol[t] * 0.95)
 
-        # Make sure the initialization problem has no degrees of freedom
-        # This shouldn't happen here unless there is a bug in this
-        dof = degrees_of_freedom(self)
-        try:
-            assert dof == 0
-        except:
-            _log.exception("degrees_of_freedom = {}".format(dof))
-            raise
-
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
-        super(TurbineStageData, self).initialize(
+        super().initialize(
             state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
         )
 

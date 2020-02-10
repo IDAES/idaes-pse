@@ -30,10 +30,7 @@ from pyomo.core.kernel.component_map import ComponentMap
 import sympy
 from IPython.display import display, Markdown
 
-import logging
 import re
-
-_log = logging.getLogger(__name__)
 
 #TODO<jce> Look into things like sum operator and template expressions
 

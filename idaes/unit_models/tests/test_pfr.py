@@ -193,7 +193,7 @@ class TestSaponification(object):
                 sapon.fs.unit.outlet.pressure[0].value)
         assert (pytest.approx(303.6, abs=1e-2) ==
                 sapon.fs.unit.outlet.temperature[0].value)
-        assert (pytest.approx(62.31, abs=1e-2) ==
+        assert (pytest.approx(62.29, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
     @pytest.mark.initialize

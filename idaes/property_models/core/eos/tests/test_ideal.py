@@ -25,7 +25,7 @@ from idaes.property_models.core.eos import ideal
 from idaes.property_models.core.generic.generic_property import (
         GenericParameterData)
 from idaes.property_models.core.generic.tests import dummy_eos
-
+from idaes.core.util.constants import Constants as const
 from idaes.core.util.exceptions import PropertyNotSupportedError
 
 

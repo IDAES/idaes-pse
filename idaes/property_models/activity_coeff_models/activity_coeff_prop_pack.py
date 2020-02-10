@@ -43,8 +43,7 @@ References:
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
-    Set, Expression, Param, sqrt
-from pyomo.opt import SolverFactory, TerminationCondition
+    Set, Expression, Param, sqrt, SolverFactory
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -60,7 +59,9 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+from idaes.core.util.constants import Constants as const
+import idaes.logger as idaeslog
+
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -68,7 +69,7 @@ __version__ = "0.0.2"
 
 
 # Set up logger
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("ActivityCoeffParameterBlock")
@@ -192,7 +193,7 @@ class _ActivityCoeffStateBlock(StateBlock):
     """
 
     def initialize(blk, state_args={}, hold_state=False,
-                   state_vars_fixed=False, outlvl=5,
+                   state_vars_fixed=False, outlvl=idaeslog.NOTSET,
                    solver="ipopt", optarg={"tol": 1e-8}):
         """
         Initialization routine for property package.
@@ -213,13 +214,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                          flow_mol_comp, temperature, pressure.
 
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = "ipopt")
@@ -247,7 +241,9 @@ class _ActivityCoeffStateBlock(StateBlock):
         """
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
-        init_log = getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
+
         for k in blk.keys():
             if (blk[k].config.defined_state is False) and \
                     (blk[k]._params.config.state_vars == "FTPz"):
@@ -301,10 +297,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                     ("Liq", "Vap")) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ("Vap", "Liq")):
-            results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-            init_log.log(4, "Initialization Step 1 {}.".format(condition(results)))
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+
         else:
-            init_log.info(4, "Initialization step 1 skipped")
+            res="skipped"
+        init_log.info("Initialization Step 1 {}.".format(idaeslog.condition(res)))
+
 
         # Continue initialization sequence and activate select constraints
         for k in blk.keys():
@@ -320,8 +320,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.info("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
         # Activate activity coefficient specific constraints
         for k in blk.keys():
@@ -333,8 +334,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                                         "eq_B"]:
                         c.activate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.info("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             if blk[k].config.parameters.config.activity_coeff_model \
@@ -342,8 +344,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_activity_coeff.activate()
                 blk[k].activity_coeff_comp.unfix()
 
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Initialization Step 4 {}.".format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.info("Initialization Step 4 {}.".format(idaeslog.condition(res)))
 
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
@@ -351,18 +354,20 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "eq_entr_mol_phase"]:
                     c.activate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Initialization Step 5 {}.".format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        init_log.info("Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
-                blk.release_state(flags)
+                blk.release_state(flags, outlvl=outlvl)
 
-        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
+        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
-    def release_state(blk, flags, outlvl=6):
+
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
@@ -372,20 +377,20 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         for k in blk.keys():
             if (not blk[k].config.defined_state and
                     blk[k]._params.config.state_vars == "FTPz"):
                 blk[k].eq_mol_frac_out.activate()
 
         if flags is None:
+            init_log.debug("No flags passed to release_state().")
             return
 
         # Unfix state variables
         revert_state_vars(blk, flags)
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info("{} State Released.".format(blk.name))
+        init_log.info("State Released.")
 
 
 @declare_process_block_class("ActivityCoeffStateBlock",
@@ -854,7 +859,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self._params.gas_const *
+                                         const.gas_constant *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 _log.warning("Using a place holder for liquid density "
@@ -896,8 +901,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             if p == "Vap":
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j] - \
-                    b._params.gas_const * (b.temperature -
-                                           b._params.temperature_ref)
+                    const.gas_constant * \
+                    (b.temperature - b._params.temperature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j]
@@ -1035,9 +1040,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                (self.temperature - self._params.temperature_reference)
                 + self._params.CpIG['Vap', j, 'A'] *
                 log(self.temperature / self._params.temperature_reference)) -
-            self._params.gas_const * log(self.mole_frac_phase_comp['Vap', j] *
-                                         self.pressure /
-                                         self._params.pressure_reference))
+            const.gas_constant * log(self.mole_frac_phase_comp['Vap', j] *
+                                     self.pressure /
+                                     self._params.pressure_reference))
 
     def _gibbs_mol_phase_comp(self):
         self.gibbs_mol_phase_comp = Var(

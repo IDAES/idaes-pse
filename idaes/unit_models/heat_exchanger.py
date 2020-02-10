@@ -49,7 +49,7 @@ from idaes.core import (
     useDefault,
 )
 
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.heater import (
@@ -60,7 +60,7 @@ from idaes.unit_models.heater import (
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 class HeatExchangerFlowPattern(Enum):
@@ -271,7 +271,7 @@ class HeatExchangerData(UnitModelBlockData):
         )
         self.delta_temperature_out = Var(
             self.flowsheet().config.time,
-            initialize=10.0,
+            initialize=10.1,
             doc="Temperature difference at the hot outlet end",
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
@@ -394,7 +394,7 @@ class HeatExchangerData(UnitModelBlockData):
         self,
         state_args_1=None,
         state_args_2=None,
-        outlvl=0,
+        outlvl=idaeslog.NOTSET,
         solver="ipopt",
         optarg={"tol": 1e-6},
         duty=1000,
@@ -410,13 +410,6 @@ class HeatExchangerData(UnitModelBlockData):
                 initialization for side_2 (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -428,40 +421,42 @@ class HeatExchangerData(UnitModelBlockData):
 
         """
         # Set solver options
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
         opt = SolverFactory(solver)
         opt.options = optarg
         flags1 = self.side_1.initialize(
-            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_1
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
 
-        init_log.log(4, "Initialization Step 1a (side_1) Complete.")
+        init_log.info_high("Initialization Step 1a (side_1) Complete.")
 
         flags2 = self.side_2.initialize(
-            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_2
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2
         )
 
-        init_log.log(4, "Initialization Step 1b (side_2) Complete.")
+        init_log.info_high("Initialization Step 1b (side_2) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         self.heat_transfer_equation.deactivate()
         self.side_2.heat.fix(duty)
-        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
-        init_log.log(
-            4, "Initialization Step 2 {}.".format(results.solver.termination_condition)
-        )
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
         self.side_2.heat.unfix()
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
-        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(self, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.side_1.release_state(flags1, outlvl + 1)
-        self.side_2.release_state(flags2, outlvl + 1)
+        self.side_1.release_state(flags1, outlvl=outlvl)
+        self.side_2.release_state(flags2, outlvl=outlvl)
 
-        init_log.log(5, "Initialization Completed, {}".format(condition(results)))
+        init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
