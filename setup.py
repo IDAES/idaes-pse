@@ -5,7 +5,7 @@ Institute for the Design of Advanced Energy Systems
 from pathlib import Path
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 
 def warn(s):
@@ -37,7 +37,7 @@ kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_packages(),
+    packages=find_namespace_packages(),
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
@@ -112,6 +112,7 @@ kwargs = dict(
             "*.jpg",
             "*.csv",
             "*.ipynb",
+            "*.txt",
         ]
     },
     include_package_data=True,
