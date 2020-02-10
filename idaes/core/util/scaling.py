@@ -27,7 +27,6 @@ variables to calculate additional scaling factors.
 
 import enum
 import pyomo.environ as pyo
-from pyomo.contrib.pynumero.interfaces import PyomoNLP
 from pyomo.core.expr import current as EXPR
 import idaes.logger as idaeslog
 
@@ -46,7 +45,7 @@ class ScalingBasis(enum.Enum):
 
 
 def _replacement(m, basis):
-    """PRIVATE FUNCTION 
+    """PRIVATE FUNCTION
     Create a replacement visitor. The replacement visitor is used on
     user-provided scaling expressions. These expressions are written
     with model variables, but you generally don't want to calculate
