@@ -16,13 +16,14 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import Block, ConcreteModel, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, Var
 from pyomo.network import Port
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault,
                         ControlVolume0DBlock, MaterialBalanceType)
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.exceptions import (
+        BalanceTypeNotSupportedError, ConfigurationError, DynamicError)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
 
@@ -30,32 +31,6 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 class _Flowsheet(FlowsheetBlockData):
     def build(self):
         super(_Flowsheet, self).build()
-
-
-#@declare_process_block_class("PhysicalParameterTestBlock")
-#class _PhysicalParameterBlock(PhysicalParameterBlock):
-#    def build(self):
-#        super(_PhysicalParameterBlock, self).build()
-#
-#        self.phase_list = Set(initialize=["p1", "p2"])
-#        self.component_list = Set(initialize=["c1", "c2"])
-#
-#        self.state_block_class = TestStateBlock
-#
-#
-#@declare_process_block_class("TestStateBlock", block_class=StateBlock)
-#class StateTestBlockData(StateBlockData):
-#    def build(self):
-#        super(StateTestBlockData, self).build()
-#
-#        self.a = Var(initialize=1)
-#        self.b = Var(initialize=2)
-#        self.c = Var(initialize=3)
-#
-#    def define_state_vars(self):
-#        return {"a": self.a,
-#                "b": self.b,
-#                "c": self.c}
 
 
 @declare_process_block_class("Unit")
@@ -586,5 +561,109 @@ def test_add_state_material_balances_component_phase():
                 state_1=m.fs.u.sb1,
                 state_2=m.fs.u.sb2)
 
+    assert isinstance(m.fs.u.state_material_balances, Constraint)
+    assert len(m.fs.u.state_material_balances) == 4
+    for k in m.fs.u.state_material_balances:
+        assert k in [(0.0, "p1", "c1"), (0.0, "p1", "c2"),
+                     (0.0, "p2", "c1"), (0.0, "p2", "c2")]
 
-# TODO : Need more tests
+
+def test_add_state_material_balances_component_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+
+    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+
+    m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.componentTotal,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)
+
+    assert isinstance(m.fs.u.state_material_balances, Constraint)
+    assert len(m.fs.u.state_material_balances) == 2
+    for k in m.fs.u.state_material_balances:
+        assert k in [(0.0, "c1"), (0.0, "c2")]
+
+
+def test_add_state_material_balances_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+
+    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+
+    m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.total,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)
+
+    assert isinstance(m.fs.u.state_material_balances, Constraint)
+    assert len(m.fs.u.state_material_balances) == 1
+
+
+def test_add_state_material_balances_element_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+
+    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.elementTotal,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)
+
+
+def test_add_state_material_balances_none():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+
+    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.none,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)
+
+
+def test_add_state_material_balances_double_call():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+
+    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
+                                           default={"parameters": m.fs.pp})
+
+    m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.componentPhase,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)
+
+    with pytest.raises(AttributeError):
+        m.fs.u.add_state_material_balances(
+                balance_type=MaterialBalanceType.componentPhase,
+                state_1=m.fs.u.sb1,
+                state_2=m.fs.u.sb2)

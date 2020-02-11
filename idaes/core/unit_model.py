@@ -496,6 +496,15 @@ Must be True if dynamic = True,
                     "{} state_2 argument to add_state_material_balances "
                     "was not an instance of a State Block.".format(self.name))
 
+        # Check that no constraint with the same name exists
+        # We will only support using this method once per Block
+        if hasattr(self, "state_material_balances"):
+            raise AttributeError(
+                    "{} a set of constraints named state_material_balances "
+                    "already exists in the current UnitModel. To avoid "
+                    "confusion, add_state_material_balances is only supported "
+                    "once per UnitModel.".format(self.name))
+
         # Get a representative time point for testing
         rep_time = self.flowsheet().time.first()
         if state_1[rep_time]._params is not state_2[rep_time]._params:
@@ -522,9 +531,9 @@ Must be True if dynamic = True,
                 self.flowsheet().config.time,
                 phase_list,
                 component_list,
-                doc="Material flows for isentropic properties",
+                doc="State material balances",
             )
-            def isentropic_material(b, t, p, j):
+            def state_material_balances(b, t, p, j):
                 return state_1[t].get_material_flow_terms(
                     p, j
                 ) == state_2[t].get_material_flow_terms(p, j)
@@ -534,9 +543,9 @@ Must be True if dynamic = True,
             @self.Constraint(
                 self.flowsheet().config.time,
                 component_list,
-                doc="Material flows for isentropic properties",
+                doc="State material balances",
             )
-            def isentropic_material(b, t, j):
+            def state_material_balances(b, t, j):
                 return sum(
                     state_1[t].get_material_flow_terms(p, j)
                     for p in phase_list
@@ -549,18 +558,18 @@ Must be True if dynamic = True,
 
             @self.Constraint(
                 self.flowsheet().config.time,
-                doc="Material flows for isentropic properties",
+                doc="State material balances",
             )
-            def isentropic_material(b, t, p, j):
+            def state_material_balances(b, t):
                 return sum(
                     sum(
-                        state_1.get_material_flow_terms(p, j)
+                        state_1[t].get_material_flow_terms(p, j)
                         for j in component_list
                     )
                     for p in phase_list
                 ) == sum(
                     sum(
-                        state_2.get_material_flow_terms(p, j)
+                        state_2[t].get_material_flow_terms(p, j)
                         for j in component_list
                     )
                     for p in phase_list
