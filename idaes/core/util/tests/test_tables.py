@@ -53,6 +53,12 @@ def m():
 
 
 def test_create_stream_table_dataframe_from_StateBlock(m):
+    d = arcs_to_stream_dict(m, descend_into=True)
+    assert "stream" in d
+    assert d["stream"] == m.fs.stream
+
+
+def test_create_stream_table_dataframe_from_StateBlock(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out})
 

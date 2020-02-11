@@ -38,12 +38,12 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
-from idaes.logger import getIdaesLogger, getInitLogger
+import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # Diffusion terms need to be added
@@ -1667,7 +1667,7 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=6, optarg=None,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
         Initialization routine for 1D control volume (default solver ipopt)
@@ -1678,13 +1678,6 @@ argument)."""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -1703,7 +1696,7 @@ argument)."""))
             triggered.
         '''
         # Get inlet state if not provided
-        init_log = getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
 
         # Get source block
         if blk._flow_direction == FlowDirection.forward:
@@ -1762,11 +1755,13 @@ argument)."""))
                             state_dict[k].fix(state_args[k])
 
         # Initialize state blocks
-        flags = blk.properties.initialize(state_args=state_args,
-                                          outlvl=outlvl + 1,
-                                          optarg=optarg,
-                                          solver=solver,
-                                          hold_state=True)
+        flags = blk.properties.initialize(
+            state_args=state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+        )
 
         try:
             # TODO: setting state_vars_fixed may not work for heterogeneous
@@ -1774,14 +1769,16 @@ argument)."""))
             # assume those state vars are also fixed. For now, heterogeneous
             # reactions should ignore the state_vars_fixed argument and always
             # check their state_vars.
-            blk.reactions.initialize(outlvl=outlvl + 1,
-                                     optarg=optarg,
-                                     solver=solver,
-                                     state_vars_fixed=True)
+            blk.reactions.initialize(
+                outlvl=outlvl,
+                optarg=optarg,
+                solver=solver,
+                state_vars_fixed=True,
+            )
         except AttributeError:
             pass
 
-        init_log.log(5, 'Initialization Complete')
+        init_log.info('Initialization Complete')
 
         # Unfix state variables except for source block
         blk.properties.release_state(flags)
@@ -1791,7 +1788,7 @@ argument)."""))
         else:
             blk.release_state(source_flags)
 
-    def release_state(blk, flags, outlvl=6):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         '''
         Method to release state variables fixed during initialization.
 

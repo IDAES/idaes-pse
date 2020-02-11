@@ -30,7 +30,7 @@ from pyomo.environ import Reference, Expression, Var, Constraint, \
     TerminationCondition, value
 
 # Import IDAES cores
-from idaes.logger import getIdaesLogger, getInitLogger, condition
+import idaes.logger as idaeslog
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
@@ -43,7 +43,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError
 
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getIdaesLogger(__name__)
 
 
 @declare_process_block_class("Reboiler")
@@ -431,23 +431,19 @@ see property package for documentation.}"""))
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
 
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Initialize the inlet and outlet state blocks
         self.control_volume.initialize(outlvl=outlvl)
 
         if solver is not None:
-            if outlvl > 2:
-                tee = True
-            else:
-                tee = False
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
 
-            solver_output = solver.solve(self, tee=tee)
-
-            if solver_output.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                init_log.log(4, 'Reboiler Initialisation Complete, {}.'
-                             .format(condition(solver_output)))
+            init_log.info(
+                "Initialization Complete, {}.".format(idaeslog.condition(res))
+            )
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
