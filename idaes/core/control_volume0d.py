@@ -191,7 +191,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
 
     def _add_material_balance_common(self,
-                                     mbal_type,
+                                     balance_type,
                                      has_rate_reactions,
                                      has_equilibrium_reactions,
                                      has_phase_equilibrium,
@@ -321,7 +321,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(units['holdup'], units['time']))
 
         # Phase equilibrium generation
-        if has_phase_equilibrium:
+        if has_phase_equilibrium and \
+                balance_type == MaterialBalanceType.componentPhase:
             if not hasattr(self.config.property_package,
                            "phase_equilibrium_idx"):
                 raise PropertyNotSupportedError(
@@ -458,7 +459,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     return Constraint.Skip
 
         # Add custom terms and material balances
-        if mbal_type == MaterialBalanceType.componentPhase:
+        if balance_type == MaterialBalanceType.componentPhase:
             def user_term_mol(b, t, p, j):
                 if custom_molar_term is not None:
                     flow_basis = b.properties_out[t].get_material_flow_basis()
@@ -470,20 +471,20 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     b.properties_out[t].mw[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
-                                    "{} property package does not support "
-                                    "molecular weight (mw), which is required for "
-                                    "using custom terms in material balances."
-                                    .format(self.name))
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
                     else:
                         raise ConfigurationError(
-                                "{} contained a custom_molar_term argument, but "
-                                "the property package used an undefined basis "
-                                "(MaterialFlowBasis.other). Custom terms can "
-                                "only be used when the property package declares "
-                                "a molar or mass flow basis.".format(self.name))
+                            "{} contained a custom_molar_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
                 else:
                     return 0
-    
+
             def user_term_mass(b, t, p, j):
                 if custom_mass_term is not None:
                     flow_basis = b.properties_out[t].get_material_flow_basis()
@@ -495,17 +496,17 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     b.properties_out[t].mw[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
-                                    "{} property package does not support "
-                                    "molecular weight (mw), which is required for "
-                                    "using custom terms in material balances."
-                                    .format(self.name))
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
                     else:
                         raise ConfigurationError(
-                                "{} contained a custom_mass_term argument, but "
-                                "the property package used an undefined basis "
-                                "(MaterialFlowBasis.other). Custom terms can "
-                                "only be used when the property package declares "
-                                "a molar or mass flow basis.".format(self.name))
+                            "{} contained a custom_mass_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
                 else:
                     return 0
 
@@ -523,10 +524,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             equilibrium_term(b, t, p, j) +
                             phase_equilibrium_term(b, t, p, j) +
                             transfer_term(b, t, p, j) +
-                            user_term_mol(b, t, p, j) + user_term_mass(b, t, p, j))
+                            user_term_mol(b, t, p, j) +
+                            user_term_mass(b, t, p, j))
                 else:
                     return Constraint.Skip
-        elif mbal_type == MaterialBalanceType.componentTotal:
+        elif balance_type == MaterialBalanceType.componentTotal:
             def user_term_mol(b, t, j):
                 if custom_molar_term is not None:
                     flow_basis = b.properties_out[t].get_material_flow_basis()
@@ -538,20 +540,20 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     b.properties_out[t].mw[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
-                                    "{} property package does not support "
-                                    "molecular weight (mw), which is required for "
-                                    "using custom terms in material balances."
-                                    .format(self.name))
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
                     else:
                         raise ConfigurationError(
-                                "{} contained a custom_molar_term argument, but "
-                                "the property package used an undefined basis "
-                                "(MaterialFlowBasis.other). Custom terms can "
-                                "only be used when the property package declares "
-                                "a molar or mass flow basis.".format(self.name))
+                            "{} contained a custom_molar_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
                 else:
                     return 0
-    
+
             def user_term_mass(b, t, j):
                 if custom_mass_term is not None:
                     flow_basis = b.properties_out[t].get_material_flow_basis()
@@ -563,17 +565,17 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     b.properties_out[t].mw[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
-                                    "{} property package does not support "
-                                    "molecular weight (mw), which is required for "
-                                    "using custom terms in material balances."
-                                    .format(self.name))
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
                     else:
                         raise ConfigurationError(
-                                "{} contained a custom_mass_term argument, but "
-                                "the property package used an undefined basis "
-                                "(MaterialFlowBasis.other). Custom terms can "
-                                "only be used when the property package declares "
-                                "a molar or mass flow basis.".format(self.name))
+                            "{} contained a custom_mass_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
                 else:
                     return 0
 
@@ -636,7 +638,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             Constraint object representing material balances
         """
         self._add_material_balance_common(
-                mbal_type=MaterialBalanceType.componentPhase,
+                balance_type=MaterialBalanceType.componentPhase,
                 has_rate_reactions=has_rate_reactions,
                 has_equilibrium_reactions=has_equilibrium_reactions,
                 has_phase_equilibrium=has_phase_equilibrium,
@@ -681,7 +683,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             Constraint object representing material balances
         """
         self._add_material_balance_common(
-                mbal_type=MaterialBalanceType.componentTotal,
+                balance_type=MaterialBalanceType.componentTotal,
                 has_rate_reactions=has_rate_reactions,
                 has_equilibrium_reactions=has_equilibrium_reactions,
                 has_phase_equilibrium=has_phase_equilibrium,
