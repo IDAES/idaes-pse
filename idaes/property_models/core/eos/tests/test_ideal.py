@@ -98,8 +98,9 @@ def test_dens_mol_phase_liq(m):
 def test_dens_mol_phase_vap(m):
     m.params.gas_const = Var()
 
-    assert str(ideal.dens_mol_phase(m.props[1], "Vap")) == str(
-        m.props[1].pressure/(m.params.gas_const*m.props[1].temperature))
+    assert str(ideal.dens_mol_phase(m.props[1], "Vap")) == (
+            str(m.props[1].pressure)+"/(8.314462618*J/mol/K*" +
+            str(m.props[1].temperature)+")")
 
 
 def test_dens_mol_phase_invalid_phase(m):
