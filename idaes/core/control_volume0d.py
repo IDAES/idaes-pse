@@ -363,7 +363,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     if has_equilibrium_reactions else 0)
 
         def phase_equilibrium_term(b, t, p, j):
-            if has_phase_equilibrium:
+            if has_phase_equilibrium and \
+                    balance_type == MaterialBalanceType.componentPhase:
                 sd = {}
                 for r in b.config.property_package.phase_equilibrium_idx:
                     if b.config.property_package.\
