@@ -24,7 +24,7 @@ The example below demonstrates the basic Turbine model usage:
   m.fs.unit = Turbine(default={"property_package": m.fs.properties})
 
   m.fs.unit.inlet.flow_mol[0].fix(1000)
-  m.fs.unit.inlet.enth_mol[0].fix(hin = iapws95.htpx(T=800, P=1e7))
+  m.fs.unit.inlet.enth_mol[0].fix(iapws95.htpx(T=800, P=1e7))
   m.fs.unit.inlet.pressure[0].fix(1e7)
   m.fs.unit.deltaP.fix(-2e6)
   m.fs.unit.efficiency_isentropic.fix(0.9)
