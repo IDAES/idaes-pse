@@ -62,17 +62,17 @@ jobs:
       - run:
           name: Install idaes-pse
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             pip install idaes-pse
       - run:
           name: Install idaes extensions
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             idaes get-extensions
       - run:
           name: Run tests
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             pytest --pyargs idaes -W ignore
 
 
@@ -91,5 +91,6 @@ workflows:
             branches:
               only:
                 - master
+                - nightlies
     jobs:
       - "pip-install"
