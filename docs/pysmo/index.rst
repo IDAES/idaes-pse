@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-PySMO: Pyomo-based Surrogate Modelling Objects
-==============================================
+PySMO: Python-based Surrogate Modelling Objects
+=====================================================
 
 The PySMO toolbox provides tools for generating different types of reduced order models. It provides IDAES users with
 a set of surrogate modeling tools which supports flowsheeting and direct integration into an equation-oriented

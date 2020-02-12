@@ -24,16 +24,16 @@ Basic Usage
 To generate a polynomial model with PySMO, the  *pysmo.polynomial_regression* class is first initialized,
 and then the method ``poly_training`` is called on the initialized object:
 
-.. doctest::
+.. code:: python
 
-   Required imports
+   # Required imports
    >>> from idaes.surrogates.pysmo import polynomial_regression
    >>> import pandas as pd
 
-   Load dataset from a csv file
+   # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   Initialize the PolynomialRegression class, extract the list of features and train the model
+   # Initialize the PolynomialRegression class, extract the list of features and train the model
    >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3, *kwargs)
    >>> features = pr_init.get_feature_vector()
    >>> polyfit = pr_init.poly_training()
@@ -54,13 +54,13 @@ about the optimal polynomial order, the polynomial coefficients and different er
 the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
 object simply passing a list of variables into the function *generate_expression*:
 
-.. doctest::
+.. code:: python
 
-   Create a python list from the headers of the dataset supplied for training
+   # Create a python list from the headers of the dataset supplied for training
    >>> list_vars = []
    >>> for i in features.keys():
    >>>     list_vars.append(features[i])
-    Pass list to generate_expression function to obtain a Pyomo expression as output
+   # Pass list to generate_expression function to obtain a Pyomo expression as output
    >>> print(polyfit.generate_expression(list_vars))
 
 Prediction with *pysmo.polynomial_regression* models
@@ -68,9 +68,9 @@ Prediction with *pysmo.polynomial_regression* models
 Once a polynomial model has been trained, predictions for values at previously unsampled points :math:*x_unsampled* can be evaluated by calling the
 ``poly_predict_output()`` method on the resulting model object and the unsampled points:
 
-.. doctest::
+.. code:: python
 
-   Create a python list from the headers of the dataset supplied for training
+   # Create a python list from the headers of the dataset supplied for training
    >>> y_unsampled = pr_init.poly_predict_output(rbf_fit, x_unsampled)
 
 Flowsheet Integration
@@ -80,33 +80,33 @@ The result of the polynomial training process can be passed directly into a proc
 The following code snippet demonstrates how an output polynomial model may be integrated directly into a Pyomo flowsheet as
 an objective:
 
-.. doctest::
+.. code:: python
 
-   Required imports
+   # Required imports
    >>> import pyomo.environ as pyo
    >>> from idaes.surrogates.pysmo import polynomial_regression
    >>> import pandas as pd
 
-   Create a Pyomo model
+   # Create a Pyomo model
    >>> m = pyo.ConcreteModel()
    >>> i = pyo.Set(initialize=[1, 2])
 
-   Create a Pyomo variable with indexed by the 2D-set i with initial values {0, 0}
+   # Create a Pyomo variable with indexed by the 2D-set i with initial values {0, 0}
    >>> init_x = {1: 0, 2: 0}
    >>> def x_init(m, i):
    >>>     return (init_x[i])
    >>> m.x = pyo.Var(i, initialize=x_init)
 
-   Train a simple polynomial model on data available in csv format, resulting in the Python object polyfit
+   # Train a simple polynomial model on data available in csv format, resulting in the Python object polyfit
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
    >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3)
    >>> features = pr_init.get_feature_vector()
    >>> polyfit = pr_init.poly_training()
 
-   Use the resulting polynomial as an objective, passing in the Pyomo variable x
+   # Use the resulting polynomial as an objective, passing in the Pyomo variable x
    >>> m.obj = pyo.Objective(expr=polyfit.generate_expression([m.x[1], m.x[2]]))
 
-   Solve the model
+   # Solve the model
    >>> instance = m
    >>> opt = pyo.SolverFactory("ipopt")
    >>> result = opt.solve(instance, tee=True)
