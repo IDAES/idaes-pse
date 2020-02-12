@@ -1,0 +1,1 @@
+from .properties_interrogator import InterrogatorParameterBlock

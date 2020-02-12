@@ -14,6 +14,7 @@
 Tool to interrogate IDAES flowsheets and list the physical properties
 required to simualte it.
 """
+import sys
 
 # Import Pyomo libraries
 from pyomo.environ import Set, Var
@@ -25,7 +26,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        UnitModelBlockData)
 import idaes.logger as idaeslog
 
 # Some more inforation about this module
@@ -62,13 +64,66 @@ class InterrogatorParameterData(PhysicalParameterBlock):
         # Set up dict to record property calls
         self.required_properties = {}
 
-        # Create dummy Vars to be used in constructing flowsheet
-        self.dummy_var_unindexed = Var(initialize=42)
-        self.dummy_var_phase = Var(self.phase_list, initialize=42)
-        self.dummy_var_comp = Var(self.component_list, initialize=42)
-        self.dummy_var_phase_comp = Var(self.phase_list,
-                                        self.component_list,
-                                        initialize=42)
+        # Dummy phase equilibrium definition so we can handle flash cases
+        self.phase_equilibrium_idx = Set(initialize=[1])
+
+        self.phase_equilibrium_list = \
+            {1: ["A", ("Vap", "Liq")]}
+
+    def list_required_properties(self):
+        return list(self.required_properties)
+
+    def list_models_requiring_property(self, prop):
+        try:
+            return self.required_properties[prop]
+        except KeyError:
+            raise KeyError(
+                    "Property {} does not appear in required_properties. "
+                    "Please check the spelling of the property that you are "
+                    "interested in.".format(prop))
+
+    def print_required_properties(self, ostream=None):
+        if ostream is None:
+            ostream = sys.stdout
+
+        # Write header
+        max_str_length = 74
+        tab = " "*4
+        ostream.write("\n"+"="*max_str_length+"\n")
+        ostream.write("Property Interrogator Summary"+"\n")
+        ostream.write(
+                "\n" +
+                "The Flowsheet requires the following properties " +
+                "(times required):" +
+                "\n"+"\n")
+        for k, v in self.required_properties.items():
+            lead_str = tab + k
+            trail_str = str(len(v))
+            mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
+            ostream.write(lead_str+mid_str+trail_str+"\n")
+
+    def print_models_requiring_property(self, prop, ostream=None):
+        if ostream is None:
+            ostream = sys.stdout
+
+        tab = " "*4
+
+        ostream.write("\n")
+        ostream.write(f"The following models in the Flowsheet "
+                      f"require {prop}:"+"\n")
+
+        for m in self.required_properties[prop]:
+            ostream.write(tab+m+"\n")
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
 
 
 class _InterrogatorStateBlock(StateBlock):
@@ -102,22 +157,33 @@ class InterrogatorStateBlockData(StateBlockData):
         """
         super(InterrogatorStateBlockData, self).build()
 
+        # Add dummy vars for building Ports and returning expressions
+        self._dummy_var = Var(initialize=1)
+        self._dummy_var_phase = Var(self._params.phase_list,
+                                    initialize=1)
+        self._dummy_var_comp = Var(self._params.component_list,
+                                   initialize=1)
+        self._dummy_var_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                initialize=1)
+
     # Define standard methods and log calls before returning dummy variable
     def get_material_flow_terms(self, p, j):
         self._log_call("material flow terms")
-        return self._params.dummy_var_unindexed
+        return self._dummy_var
 
     def get_enthalpy_flow_terms(self, p):
         self._log_call("enthalpy flow terms")
-        return self._params.dummy_var_unindexed
+        return self._dummy_var
 
     def get_material_density_terms(self, p, j):
         self._log_call("material density terms")
-        return self._params.dummy_var_unindexed
+        return self._dummy_var
 
     def get_energy_density_terms(self, p):
         self._log_call("energy density terms")
-        return self._params.dummy_var_unindexed
+        return self._dummy_var
 
     # Set default values for required attributes so construction doesn't fail
     def default_material_balance_type(self):
@@ -127,10 +193,7 @@ class InterrogatorStateBlockData(StateBlockData):
         return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
-        return {"flow_vol": b.flow_vol,
-                "conc_mol_comp": b.conc_mol_comp,
-                "temperature": b.temperature,
-                "pressure": b.pressure}
+        return {"_dummy_var": b._dummy_var}
 
     def define_display_vars(b):
         raise Exception(
@@ -139,16 +202,6 @@ class InterrogatorStateBlockData(StateBlockData):
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
-
-    def _log_call(self, prop):
-        # Log call for prop in required_properties
-        prop_dict = self._params.required_properties
-        try:
-            # Check if current block is already listed for property
-            if self.name not in prop_dict[prop]:
-                prop_dict[prop].append(self.name)
-        except KeyError:
-            prop_dict[prop] = [self.name]
 
     def __getattr__(self, prop):
         """
@@ -160,3 +213,58 @@ class InterrogatorStateBlockData(StateBlockData):
         self._log_call(prop)
 
         # Return dummy var
+        if prop.endswith("_phase_comp"):
+            return self._dummy_var_phase_comp
+        elif prop.endswith("_phase"):
+            return self._dummy_var_phase
+        elif prop.endswith("_comp"):
+            return self._dummy_var_comp
+        else:
+            return self._dummy_var
+
+    def _log_call(self, prop):
+        """
+        Method to log calls for properties in required_properties dict
+        """
+        # Get the required_properties dict from parameter block
+        prop_dict = self._params.required_properties
+
+        # Get name of parent unit to record in required_properties
+        name = self._get_parent_unit_name()
+
+        try:
+            # If name is not listed for current property, add to list
+            if name not in prop_dict[prop]:
+                prop_dict[prop].append(name)
+        except KeyError:
+            # If a KeyError occurs, it means property has not been logged
+            # before, so add new entry to dict
+            prop_dict[prop] = [name]
+
+    def _get_parent_unit_name(self):
+        """
+        Method to find the parent unit of the current StateBlock (if one
+        exists) and return this so it can be logged as in required_properties.
+
+        If current StateBlock has no parent unit, it is a stand-alone
+        StateBlock, so log the name of this instead.
+        """
+        # Start with current block (i.e. a StateBlock)
+        parent = self
+
+        # Search up the parent tree until we find a UnitModel or top of tree
+        while True:
+            if isinstance(parent, UnitModelBlockData):
+                # If parent is a UnitModel, we have found our target
+                # Return parent name
+                return parent.name
+            else:
+                if parent.parent_block() is None:
+                    # Check if the parent object has no parent, i.e. is top of
+                    # tree. If so, we are dealling with a stand-alone
+                    # StateBlock.
+                    # Return name of parent_component to strip indices
+                    return self.parent_component().name
+                else:
+                    # Otherwise continue searching up tree
+                    parent = parent.parent_block()
