@@ -11,31 +11,31 @@ Examples
 
 The following code snippet shows basic usage of the package for generating samples from a set of bounds:
 
-.. doctest::
+.. code:: python
 
-   Required imports
+   # Required imports
    >>> from idaes.surrogates.pysmo import sampling as sp
 
-   Declaration of lower and upper bounds of 3D space to be sampled
+   # Declaration of lower and upper bounds of 3D space to be sampled
    >>> bounds = [[0, 0, 0], [1.2, 0.1, 1]]
 
-   Initialize the Halton sampling method and generate 10 samples
+   # Initialize the Halton sampling method and generate 10 samples
    >>> space_init = sp.HaltonSampling(bounds_list, sampling_type='creation', number_of_samples=10)
    >>> samples = space_init.sample_points()
 
 
 The following code snippet shows basic usage of the package for selecting sample points from an existing dataset:
 
-.. doctest::
+.. code:: python
 
-   Required imports
+   # Required imports
    >>> from idaes.surrogates.pysmo import sampling as sp
    >>> import pandas as pd
 
-   Load dataset from a csv file
+   # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   Initialize the CVT sampling method and generate 25 samples
+   # Initialize the CVT sampling method and generate 25 samples
    >>> space_init = sp.CVTSampling(xy_data, sampling_type='selection', number_of_samples=25)
    >>> samples = space_init.sample_points()
 
