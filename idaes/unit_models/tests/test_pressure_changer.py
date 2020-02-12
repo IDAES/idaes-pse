@@ -317,6 +317,20 @@ class TestIAPWS(object):
 
         return m
 
+    @pytest.fixture(scope="class")
+    def iapws_turb(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "compressor": False})
+
+        return m
+
     @pytest.mark.build
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet.vars) == 3
@@ -408,17 +422,17 @@ class TestIAPWS(object):
         assert pytest.approx(100, abs=1e-5) == \
             value(iapws.fs.unit.outlet.flow_mol[0])
 
-        #assert pytest.approx(4002, abs=1e0) == \
-        #    value(iapws.fs.unit.outlet.enth_mol[0])
+        assert pytest.approx(4002, abs=1e0) == \
+            value(iapws.fs.unit.outlet.enth_mol[0])
 
-        #assert pytest.approx(151325, abs=1e2) == \
-        #    value(iapws.fs.unit.outlet.pressure[0])
+        assert pytest.approx(151325, abs=1e2) == \
+            value(iapws.fs.unit.outlet.pressure[0])
 
-        #assert pytest.approx(101.43796915073504, abs=1e-1) == \
-        #    value(iapws.fs.unit.work_mechanical[0])
+        assert pytest.approx(101.43796915073504, abs=1e-1) == \
+            value(iapws.fs.unit.work_mechanical[0])
 
-        #assert pytest.approx(91.29417223566153, abs=1e-1) == \
-        #    value(iapws.fs.unit.work_isentropic[0])
+        assert pytest.approx(91.29417223566153, abs=1e-1) == \
+            value(iapws.fs.unit.work_isentropic[0])
 
         # For verification, check outlet and isentropic temperatures
         assert pytest.approx(326.170, 1e-5) == \
@@ -443,10 +457,12 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_verify(self, iapws):
+    def test_verify(self, iapws_turb):
+        iapws=iapws_turb
         # Verify the turbine results against 3 known test cases
 
         # Case Data (90% isentropic efficency)
+        # Run with Aspen Plus v10 using iapws-95
         cases = {
             "F": (1000,1000,1000), # mol/s
             "Tin": (500, 800, 400), # K
@@ -474,7 +490,7 @@ class TestIAPWS(object):
             iapws.fs.unit.inlet.pressure[0].fix(Pin)
             iapws.fs.unit.deltaP.fix(Pout - Pin)
             iapws.fs.unit.efficiency_isentropic.fix(0.9)
-
+            iapws.fs.unit.initialize(optarg={'tol': 1e-6})
             results = solver.solve(iapws)
             # Check for optimal solution
             assert results.solver.termination_condition == \

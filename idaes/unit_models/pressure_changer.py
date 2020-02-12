@@ -433,11 +433,11 @@ see property package for documentation.}""",
         def actual_work(b, t):
             if b.config.compressor:
                 return b.sfe * b.work_isentropic[t] == b.sfe * (
-                    b.work_mechanical[t] / b.efficiency_isentropic[t]
+                    b.work_mechanical[t] * b.efficiency_isentropic[t]
                 )
             else:
                 return b.sfe * b.work_mechanical[t] == b.sfe * (
-                    b.work_isentropic[t] / b.efficiency_isentropic[t]
+                    b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
     def model_check(blk):
