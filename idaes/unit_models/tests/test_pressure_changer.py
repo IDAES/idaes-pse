@@ -130,8 +130,8 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentPhase})
 
-        assert isinstance(m.fs.unit.isentropic_material, Constraint)
-        assert len(m.fs.unit.isentropic_material) == 4
+        assert isinstance(m.fs.unit.state_material_balances, Constraint)
+        assert len(m.fs.unit.state_material_balances) == 4
 
     def test_isentropic_comp_total_balances(self):
         m = ConcreteModel()
@@ -144,8 +144,8 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentTotal})
 
-        assert isinstance(m.fs.unit.isentropic_material, Constraint)
-        assert len(m.fs.unit.isentropic_material) == 2
+        assert isinstance(m.fs.unit.state_material_balances, Constraint)
+        assert len(m.fs.unit.state_material_balances) == 2
 
     def test_isentropic_total_balances(self):
         m = ConcreteModel()
@@ -340,7 +340,7 @@ class TestIAPWS(object):
 
         assert hasattr(iapws.fs.unit, "properties_isentropic")
         assert isinstance(iapws.fs.unit.isentropic_pressure, Constraint)
-        assert isinstance(iapws.fs.unit.isentropic_material, Constraint)
+        assert isinstance(iapws.fs.unit.state_material_balances, Constraint)
         assert isinstance(iapws.fs.unit.isentropic, Constraint)
         assert isinstance(iapws.fs.unit.isentropic_energy_balance, Constraint)
         assert isinstance(iapws.fs.unit.actual_work, Constraint)
