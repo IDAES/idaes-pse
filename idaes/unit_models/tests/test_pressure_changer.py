@@ -440,6 +440,59 @@ class TestIAPWS(object):
                  iapws.fs.unit.outlet.enth_mol[0]) +
                 iapws.fs.unit.work_mechanical[0])) <= 1e-6
 
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_verify(self, iapws):
+        # Verify the turbine results against 3 known test cases
+
+        # Case Data (90% isentropic efficency)
+        cases = {
+            "F": (1000,1000,1000), # mol/s
+            "Tin": (500, 800, 400), # K
+            "Pin": (1000, 10000, 200), # kPa
+            "W": (-1224.64, -1911.55, -1010.64), # kW
+            "Tout": (463.435, 742.992, 382.442), # K
+            "Pout": (700, 7000, 140), # kPa
+            "xout": (1.0, 1.0, 0.9886), # vapor fraction
+            "Tisen": (460.149, 738.224, 382.442),
+        }
+
+        for i in [0,1,2]:
+            F = cases["F"][i]
+            Tin = cases["Tin"][i]
+            Tout = cases["Tout"][i]
+            Pin = cases["Pin"][i]*1000
+            Pout = cases["Pout"][i]*1000
+            hin = iapws95.htpx(T=Tin, P=Pin)
+            W = cases["W"][i]*1000
+            Tis = cases["Tisen"][i]
+
+            iapws.fs.unit.inlet.flow_mol[0].fix(F)
+            iapws.fs.unit.inlet.enth_mol[0].fix(hin)
+            iapws.fs.unit.inlet.pressure[0].fix(Pin)
+            iapws.fs.unit.deltaP.fix(Pout - Pin)
+            iapws.fs.unit.efficiency_isentropic.fix(0.9)
+
+            results = solver.solve(iapws)
+            # Check for optimal solution
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert results.solver.status == SolverStatus.ok
+
+            Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
+            W = pytest.approx(cases["W"][i]*1000, rel=1e-2)
+            prop_out = iapws.fs.unit.control_volume.properties_out[0]
+            prop_in = iapws.fs.unit.control_volume.properties_in[0]
+            prop_is = iapws.fs.unit.properties_isentropic[0]
+
+            assert value(prop_in.temperature) == pytest.approx(Tin, rel=1e-3)
+            assert value(prop_is.temperature) == pytest.approx(Tis, rel=1e-3)
+            assert value(iapws.fs.unit.control_volume.work[0]) == W
+            assert value(prop_out.pressure) == Pout
+            assert value(prop_out.temperature) == Tout
+
     @pytest.mark.ui
     def test_report(self, iapws):
         iapws.fs.unit.report()
