@@ -239,9 +239,15 @@ class RadialBasisFunctions:
 
     It should be noted that the all the training points are treated as centres for the RBF, resulting in a square system.
 
-    Example:
+    **Example:**
+    
+    .. code-block:: python
+    
+         # Initialize the class
         >>> d = RadialBasisFunctions(training_data, basis_function='gaussian', solution_method='pyomo', regularization=True))
         >>> p = d.get_feature_vector()
+        
+        # Train RBF model and predict output for an test data x_test
         >>> results = d.rbf_training()
         >>> predictions = d.rbf_predict_output(results, x_test)
 
@@ -298,7 +304,11 @@ class RadialBasisFunctions:
             Exception:
                 - :math:`\lambda` is not boolean.
 
-        Example:
+        **Example:**
+        
+        .. code-block:: python
+        
+            # Specify the gaussian basis transformation
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
 
         """
@@ -995,17 +1005,20 @@ class RadialBasisFunctions:
         Returns:
             Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
 
-
-        Example:
-            Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the **PolynomialRegression** class and print the column headers for the variables
-
-                >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
-                >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
-                >>> p = f.get_feature_vector()
-                >>> for i in p.keys():
-                >>>     print(i)
-                one
-                two
+        **Example:**
+            
+        .. code-block:: python
+        
+            # Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B)
+            >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
+            
+            # Initialize the **RadialBasisFunctions** class with a linear kernel and print the column headers for the variables
+            >>> f = RadialBasisFunctions(xy_data, basis_function='linear')
+            >>> p = f.get_feature_vector()
+            >>> for i in p.keys():
+            >>>     print(i)
+            one
+            two
 
         """
         p = Param(self.x_data_columns, mutable=True, initialize=0)

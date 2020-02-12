@@ -1332,8 +1332,9 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         assert output_df.index.to_list() == expected_df.index.to_list()
         assert expected_df.all() == output_df.all()
 
-        
-    def test_error_plotting(self):
+    @patch("matplotlib.pyplot.show")
+    def test_error_plotting(self, mock_show):
+        mock_show.return_value = None
         # Generate typical data values for eaxch variable in order to test plot function
         plotting_data = np.array(
             [[1, 7, 23.1, 29.2, 0.01, 1300, -1.6, -1.1, 5], [2, 9, 0.0055, 0.0015, 0.006, 159, 0.34, 0.19, 10],
@@ -1431,8 +1432,10 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed.get_feature_vector()
         results = data_feed.polynomial_regression_fitting()
         assert results.fit_status == 'ok'
-    
-    def test_polynomial_regression_fitting_02(self):
+
+    @patch("matplotlib.pyplot.show")
+    def test_polynomial_regression_fitting_02(self, mock_show):
+        mock_show.return_value = None
         data_feed = PolynomialRegression(self.full_data, self.training_data[:5], maximum_polynomial_order=1)
         data_feed.get_feature_vector()
         with pytest.warns(Warning):

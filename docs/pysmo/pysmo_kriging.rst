@@ -28,16 +28,16 @@ Basic Usage
 To generate a Kriging model with PySMO, the  *pysmo.kriging* class is first initialized,
 and then the function *kriging_training* is called on the initialized object:
 
-.. doctest::
+.. code:: python
 
-   Required imports
+   # Required imports
    >>> from idaes.surrogates.pysmo import kriging
    >>> import pandas as pd
 
-   Load dataset from a csv file
+   # Load dataset from a csv file
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
 
-   Initialize the KrigingModel class, extract the list of features and train the model
+   # Initialize the KrigingModel class, extract the list of features and train the model
    >>> krg_init = kriging.KrigingModel(xy_data, *kwargs)
    >>> features = krg_init.get_feature_vector()
    >>> krg_fit = krg_init.kriging_training()
@@ -64,14 +64,14 @@ and different error and quality-of-fit metrics such as the mean-squared-error (M
 A Pyomo expression can be generated from the object simply passing a list of variables into the function
 *kriging_generate_expression*:
 
-.. doctest::
+.. code:: python
 
-   Create a python list from the headers of the dataset supplied for training
+   # Create a python list from the headers of the dataset supplied for training
    >>> list_vars = []
    >>> for i in features.keys():
    >>>     list_vars.append(features[i])
 
-    Pass list to generate_expression function to obtain a Pyomo expression as output
+   # Pass list to generate_expression function to obtain a Pyomo expression as output
    >>> print(krg_fit.kriging_generate_expression(list_vars))
 
 Similar to the *pysmo.polynomial_regression* module, the output of the *kriging_generate_expression* function can be passed
@@ -82,9 +82,9 @@ Prediction with *pysmo.kriging* models
 Once a Kriging model has been trained, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling the
 *kriging_predict_output()* function on the resulting Python object and the unsampled points:
 
-.. doctest::
+.. code:: python
 
-   Create a python list from the headers of the dataset supplied for training
+   # Create a python list from the headers of the dataset supplied for training
    >>> y_unsampled = kriging_init.kriging_predict_output(krg_fit, x_unsampled)
 
 Further details about *pysmo.kriging* module may be found by consulting the examples or reading the paper [...]

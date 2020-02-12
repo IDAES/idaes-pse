@@ -218,10 +218,16 @@ class PolynomialRegression:
         (b) All first order interaction terms :math:`x_{1}x_{2}`, :math:`x_{1}x_{3}` etc. This can be turned on or off by the user (set **multinomials**)
         (c) User defined input features, e.g. :math:`\sin(x_{1})`. These must be Pyomo functions and should be provided as a list by the user calling ``set_additional_terms`` method before the polynomial training is done.
 
-    Example:
+    **Example:**
+
+    .. code-block:: python
+        
+        # Initialize the class and set additional terms 
         >>> d = PolynomialRegression(full_data, training_data, maximum_polynomial_order=2, max_iter=20, multinomials=1, solution_method='pyomo')
         >>> p = d.get_feature_vector()
         >>> d.set_additional_terms([...extra terms...])
+        
+        # Train polynomial model and predict output for an test data x_test
         >>> results = d.poly_training()
         >>> predictions = d.poly_predict_output(results, x_test)
 
@@ -1111,16 +1117,20 @@ class PolynomialRegression:
             Pyomo IndexedParam  : An indexed parameter list of the variables supplied in the original data
 
 
-        Example:
-			Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B), initialize the **PolynomialRegression** class and print the column headers for the variables
-			
-				>>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
-				>>> f = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=1, multinomials=True, training_split=0.8)
-				>>> p = f.get_feature_vector()
-				>>> for i in p.keys():
-				>>>     print(i)
-				one
-				two
+        **Example:**
+            
+        .. code-block:: python
+        
+            # Create a small dataframe with three columns ('one', 'two', 'three') and two rows (A, B)
+            >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['one', 'two', 'three'])
+
+            # Initialize the **PolynomialRegression** class and print the column headers for the variables
+            >>> f = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=1, multinomials=True, training_split=0.8)
+            >>> p = f.get_feature_vector()
+            >>> for i in p.keys():
+            >>>     print(i)
+            one
+            two
 
         """
         p = Param(self.regression_data_columns, mutable=True, initialize=0)
@@ -1138,13 +1148,15 @@ class PolynomialRegression:
             term_list (list) : List of additional terms to be considered as regression features. Each term in the list must be a Pyomo-supported intrinsic function.
 
 
-        Example:
-            To add the sine and cosine of a variable with header 'X1' in the dataset **xy_data** as additional regression features:
-
-                >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
-                >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
-                >>> p = A.get_feature_vector()
-                >>> A.set_additional_terms([ pyo.sin(p['X1']) , pyo.cos(p['X1']) ])
+        **Example:**
+            
+        .. code-block:: python
+        
+            # To add the sine and cosine of a variable with header 'X1' in the dataset as additional regression features:
+            >>> xy_data = pd.DataFrame.from_items([('A', [1, 2, 3]), ('B', [4, 5, 6])], orient='index', columns=['X1', 'X2', 'Y'])
+            >>> A = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=5)
+            >>> p = A.get_feature_vector()
+            >>> A.set_additional_terms([ pyo.sin(p['X1']) , pyo.cos(p['X1']) ])
 
         """
         self.additional_term_expressions = term_list
