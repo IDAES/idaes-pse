@@ -29,8 +29,14 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
-from idaes.unit_models.pressure_changer import (PressureChanger,
-                                                ThermodynamicAssumption)
+from idaes.unit_models.pressure_changer import (
+    PressureChanger,
+    PressureChangerData,
+    Turbine,
+    Compressor,
+    Pump,
+    ThermodynamicAssumption,
+)
 
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
@@ -579,3 +585,81 @@ class TestSaponification(object):
     @pytest.mark.ui
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+class TestTurbine(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Turbine(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert not m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.isentropic
+        assert m.fs.unit.config.property_package is m.fs.properties
+
+class TestCompressor(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Compressor(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.isentropic
+        assert m.fs.unit.config.property_package is m.fs.properties
+
+class TestPump(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Pump(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.pump
+        assert m.fs.unit.config.property_package is m.fs.properties
