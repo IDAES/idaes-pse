@@ -467,6 +467,7 @@ class TestIAPWS(object):
             hin = iapws95.htpx(T=Tin, P=Pin)
             W = cases["W"][i]*1000
             Tis = cases["Tisen"][i]
+            xout = cases["xout"][i]
 
             iapws.fs.unit.inlet.flow_mol[0].fix(F)
             iapws.fs.unit.inlet.enth_mol[0].fix(hin)
@@ -482,7 +483,9 @@ class TestIAPWS(object):
 
             Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
             Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
             W = pytest.approx(cases["W"][i]*1000, rel=1e-2)
+            xout = pytest.approx(xout, rel=1e-2)
             prop_out = iapws.fs.unit.control_volume.properties_out[0]
             prop_in = iapws.fs.unit.control_volume.properties_in[0]
             prop_is = iapws.fs.unit.properties_isentropic[0]
@@ -492,6 +495,8 @@ class TestIAPWS(object):
             assert value(iapws.fs.unit.control_volume.work[0]) == W
             assert value(prop_out.pressure) == Pout
             assert value(prop_out.temperature) == Tout
+            assert value(prop_out.vapor_frac) == xout
+
 
     @pytest.mark.ui
     def test_report(self, iapws):
