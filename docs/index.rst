@@ -51,6 +51,7 @@ Contents
     property_models/index
     vis/index
     dmf/index
+    pysmo/index
     apps/index
     version
     jupyterlab/index
