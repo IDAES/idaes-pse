@@ -398,79 +398,9 @@ see property package for documentation.}""",
             )
 
         # This assumes isentropic composition is the same as outlet
-        mb_type = self.config.material_balance_type
-        if mb_type == MaterialBalanceType.useDefault:
-            mb_type = (
-                self.control_volume._get_representative_property_block().default_material_balance_type()
-            )
-
-        if mb_type == MaterialBalanceType.componentPhase:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, p, j):
-                return b.properties_isentropic[t].get_material_flow_terms(
-                    p, j
-                ) == b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-
-        elif mb_type == MaterialBalanceType.componentTotal:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.config.property_package.component_list,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, j):
-                return sum(
-                    b.properties_isentropic[t].get_material_flow_terms(p, j)
-                    for p in self.config.property_package.phase_list
-                ) == sum(
-                    b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-                    for p in self.config.property_package.phase_list
-                )
-
-        elif mb_type == MaterialBalanceType.total:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, p, j):
-                return sum(
-                    sum(
-                        b.properties_isentropic[t].get_material_flow_terms(p, j)
-                        for j in self.config.property_package.component_list
-                    )
-                    for p in self.config.property_package.phase_list
-                ) == sum(
-                    sum(
-                        b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-                        for j in self.config.property_package.component_list
-                    )
-                    for p in self.config.property_package.phase_list
-                )
-
-        elif mb_type == MaterialBalanceType.elementTotal:
-            raise BalanceTypeNotSupportedError(
-                "{} PressureChanger does not support element balances.".format(
-                    self.name
-                )
-            )
-        elif mb_type == MaterialBalanceType.none:
-            raise BalanceTypeNotSupportedError(
-                "{} PressureChanger does not support material_balance_type"
-                " = none.".format(self.name)
-            )
-        else:
-            raise BurntToast(
-                "{} PressureChanger received an unexpected argument for "
-                "material_balance_type. This should never happen. Please "
-                "contact the IDAES developers with this bug.".format(self.name)
-            )
+        self.add_state_material_balances(self.config.material_balance_type,
+                                         self.properties_isentropic,
+                                         self.control_volume.properties_out)
 
         # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().config.time, doc="Isentropic assumption")
