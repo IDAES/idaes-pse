@@ -111,16 +111,13 @@ def get_derivatives_at(b, time, t):
             continue
         if time not in set(var.get_continuousset_list()):
             continue
-        n = var.index_set().dimen
-        if n == 1:
-            dvlist.append(var[t])
-        elif n >= 2:
-            info = get_index_set_except(var, time)
-            non_time_set = info['set_except']
-            index_getter = info['index_getter']
-            for non_time_index in non_time_set:
-                index = index_getter(non_time_index, t)
-                dvlist.append(var[index])
+
+        info = get_index_set_except(var, time)
+        non_time_set = info['set_except']
+        index_getter = info['index_getter']
+        for non_time_index in non_time_set:
+            index = index_getter(non_time_index, t)
+            dvlist.append(var[index])
     return dvlist
 
 # TODO: should be able to replace this function everywhere
