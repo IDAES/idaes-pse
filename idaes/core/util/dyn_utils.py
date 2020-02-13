@@ -33,21 +33,11 @@ def get_activity_dict(b):
     args:
         b: a block to be searched for active components
     returns:
-        ad: a dictionary mapping id of constraints and blocks
-            to a bool indicating if they are fixed
+        a dictionary mapping id of constraints and blocks
+        to a bool indicating if they are fixed
     """
-    ad = {}
-    for con in b.component_data_objects(Constraint):
-        if con.active:
-            ad[id(con)] = True
-        else:
-            ad[id(con)] = False
-    for blk in b.component_data_objects(Block):
-        if blk.active:
-            ad[id(blk)] = True
-        else:
-            ad[id(blk)] = False
-    return ad
+    return {id(con): con.active 
+                     for con in b.component_data_objects((Constraint, Block))}
 
 def deactivate_model_at(b, cset, pt):
     """
@@ -76,6 +66,7 @@ def deactivate_model_at(b, cset, pt):
                     block[index].deactivate()
                     deactivated.append(block[index])
                 except KeyError:
+                    # except KeyError to allow Block.Skip
                     # TODO: use logger to give a warning here
                     continue                
 
@@ -91,14 +82,17 @@ def deactivate_model_at(b, cset, pt):
                     con[index].deactivate()
                     deactivated.append(con[index])
                 except KeyError:
+                    # except KeyError to allow Constraint.Skip
                     # TODO: use logger to give a warning here
                     continue
                  
     return deactivated
 
 # TODO: get_time_component_dict
-
 # TODO: get_time_derivative_dict
+#       will get components in one pass so I don't have to look through 
+#       component_objects at each step of the integrator
+
 
 def get_derivatives_at(b, time, t):
     """
@@ -131,6 +125,10 @@ def get_derivatives_at(b, time, t):
 
 # TODO: should be able to replace this function everywhere
 #       with getname and find_component
+#       ^ not true. Cannot call find_component from a BlockData object
+#                   Or on a name containing a decimal index
+#       component looks like a similar substitue for BlockDatas, but
+#       cannot seem to call on names including indices at all
 def path_from_block(comp, blk, include_comp=False):
     """
     Returns a list of tuples with (local_name, index) pairs required
@@ -175,7 +173,7 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
 
     Args:
         fs_tgt - target flowsheet
-        fs_scr - source flowsheet
+        fs_src - source flowsheet
         t_target - target time point
         t_source - source time point
         copy_fixed - bool of whether or not to copy over 
