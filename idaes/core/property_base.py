@@ -75,7 +75,7 @@ class PhysicalParameterBlock(ProcessBlockData,
 
     def get_phase_component_set(self):
         """
-        Method to get phase-component set for property package. It a phase-
+        Method to get phase-component set for property package. If a phase-
         component set has not been constructed yet, this method will construct
         one.
 
