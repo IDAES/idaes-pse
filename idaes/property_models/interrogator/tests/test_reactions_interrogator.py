@@ -269,6 +269,26 @@ def test_list_models_requiring_property(model):
         assert model_list == ["fs.R01", "fs.R02"]
 
 
+def test_list_properties_required_by_model_by_name(model):
+    prop_list = model.fs.rxn_params.list_properties_required_by_model("fs.R01")
+
+    assert prop_list == ["dh_rxn",
+                         "reaction_rate"]
+
+
+def test_list_properties_required_by_model_by_object(model):
+    prop_list = model.fs.rxn_params.list_properties_required_by_model(
+            model.fs.R01)
+
+    assert prop_list == ["dh_rxn",
+                         "reaction_rate"]
+
+
+def test_list_properties_required_by_model_invalid_model(model):
+    with pytest.raises(ValueError):
+        model.fs.rxn_params.list_properties_required_by_model("foo")
+
+
 def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
     model.fs.rxn_params.print_required_properties()
@@ -304,4 +324,15 @@ def test_print_models_requiring_property(model, capsys):
 The following models in the Flowsheet require reaction_rate:
     fs.R01
     fs.R02
+"""
+
+
+def test_print_properties_reqruied_by_model(model, capsys):
+    model.fs.rxn_params.print_properties_required_by_model("fs.R01")
+
+    captured = capsys.readouterr()
+    assert captured.out == """
+The following reaction properties are required by model fs.R01:
+    dh_rxn
+    reaction_rate
 """

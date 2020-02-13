@@ -236,6 +236,32 @@ def test_list_models_requiring_property(model):
             assert model_list == ["fs.P01", "fs.HX02", "fs.F03"]
 
 
+def test_list_properties_required_by_model_by_name(model):
+    prop_list = model.fs.params.list_properties_required_by_model("fs.P01")
+    assert prop_list == ["material density terms",
+                         "material flow terms",
+                         "enthalpy flow terms",
+                         "energy density terms",
+                         "pressure",
+                         "entr_mol"]
+
+
+def test_list_properties_required_by_model_by_object(model):
+    prop_list = model.fs.params.list_properties_required_by_model(
+            model.fs.P01)
+    assert prop_list == ["material density terms",
+                         "material flow terms",
+                         "enthalpy flow terms",
+                         "energy density terms",
+                         "pressure",
+                         "entr_mol"]
+
+
+def test_list_properties_required_by_model_invalid_model(model):
+    with pytest.raises(ValueError):
+        model.fs.params.list_properties_required_by_model("foo")
+
+
 def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
 
@@ -265,6 +291,21 @@ The following models in the Flowsheet require pressure:
     fs.P01
     fs.HX02
     fs.F03
+"""
+
+
+def test_print_properties_reqruied_by_model(model, capsys):
+    model.fs.params.print_properties_required_by_model("fs.P01")
+
+    captured = capsys.readouterr()
+    assert captured.out == """
+The following properties are required by model fs.P01:
+    material density terms
+    material flow terms
+    enthalpy flow terms
+    energy density terms
+    pressure
+    entr_mol
 """
 
 

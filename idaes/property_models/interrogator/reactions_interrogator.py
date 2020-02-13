@@ -86,6 +86,22 @@ class ReactionInterrogatorData(ReactionParameterBlock):
                     "Please check the spelling of the property that you are "
                     "interested in.".format(prop))
 
+    def list_properties_required_by_model(self, model):
+        prop_list = []
+        if not isinstance(model, str):
+            model = model.name
+
+        for k, v in self.required_properties.items():
+            if model in v:
+                prop_list.append(k)
+
+        if len(prop_list) < 1:
+            raise ValueError(
+                    "Model {} does not appear in the flowsheet. Please check "
+                    "the spelling of the model provided.")
+        else:
+            return prop_list
+
     def print_required_properties(self, ostream=None):
         if ostream is None:
             ostream = sys.stdout
@@ -117,6 +133,22 @@ class ReactionInterrogatorData(ReactionParameterBlock):
                       f"require {prop}:"+"\n")
 
         for m in self.required_properties[prop]:
+            ostream.write(tab+m+"\n")
+
+    def print_properties_required_by_model(self, model, ostream=None):
+        if not isinstance(model, str):
+            model = model.name
+
+        if ostream is None:
+            ostream = sys.stdout
+
+        tab = " "*4
+
+        ostream.write("\n")
+        ostream.write(f"The following reaction properties are required by "
+                      f"model {model}:"+"\n")
+
+        for m in self.list_properties_required_by_model(model):
             ostream.write(tab+m+"\n")
 
     @classmethod
