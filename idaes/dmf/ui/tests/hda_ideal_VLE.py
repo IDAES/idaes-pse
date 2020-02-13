@@ -17,6 +17,7 @@ Benzene-Toluene-o-Xylene system.
 
 # Import Python libraries
 import logging
+import pathlib
 import os
 
 # Import Pyomo libraries
@@ -58,8 +59,9 @@ from idaes.dmf.resource import Resource, TidyUnitData
 # Set up logger
 _log = logging.getLogger(__name__)
 
-# Set up DMF (use working directory, wherever that is)
-_dmf = DMF(".")
+# Use DMF workspace in this file's directory
+this_dir = pathlib.Path(__file__).parent.absolute()
+_dmf = DMF(str(this_dir))
 
 
 @declare_process_block_class("HDAParameterBlock")
