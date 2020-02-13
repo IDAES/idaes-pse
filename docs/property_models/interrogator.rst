@@ -28,6 +28,9 @@ An example of how Property Interrogator tool is used is shown below:
                              "reaction_package": m.fs.rxn_params,
                              "has_heat_of_reaction": True})
 
+.. note::
+    Flowsheets constructed using the Property Interrogator tools are not solvable flowsheets, and will result in errors if sent to a solver.
+
 Output and Display Methods
 --------------------------
 
