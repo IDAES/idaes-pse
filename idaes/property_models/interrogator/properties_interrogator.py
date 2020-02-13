@@ -71,9 +71,28 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             {1: ["A", ("Vap", "Liq")]}
 
     def list_required_properties(self):
+        """
+        Method to list all thermophysical properties required by the flowsheet.
+
+        Args:
+            None
+
+        Returns:
+            A list of properties required
+        """
         return list(self.required_properties)
 
     def list_models_requiring_property(self, prop):
+        """
+        Method to list all models in the flowsheet requiring the given
+        property.
+
+        Args:
+            prop : the property of interest
+
+        Returns:
+            A list of unit model names which require prop
+        """
         try:
             return self.required_properties[prop]
         except KeyError:
@@ -83,6 +102,17 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                     "interested in.".format(prop))
 
     def list_properties_required_by_model(self, model):
+        """
+        Method to list all thermophysical properties required by a given unit
+        model.
+
+        Args:
+            model : the unit model of interest. Can be given as either a model
+                    component or the unit name as a string
+
+        Returns:
+            A list of thermophysical properties required by model
+        """
         prop_list = []
         if not isinstance(model, str):
             model = model.name
@@ -99,6 +129,17 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             return prop_list
 
     def print_required_properties(self, ostream=None):
+        """
+        Method to print a summary of the thermophysical properties required by
+        the flowsheet.
+
+        Args:
+            ostream : output stream to print to. If not provided will print to
+                      sys.stdout
+
+        Returns:
+            None
+        """
         if ostream is None:
             ostream = sys.stdout
 
@@ -119,6 +160,18 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             ostream.write(lead_str+mid_str+trail_str+"\n")
 
     def print_models_requiring_property(self, prop, ostream=None):
+        """
+        Method to print a summary of the models in the flowsheet requiring a
+        given property.
+
+        Args:
+            prop : the property of interest.
+            ostream : output stream to print to. If not provided will print to
+                      sys.stdout
+
+        Returns:
+            None
+        """
         if ostream is None:
             ostream = sys.stdout
 
@@ -132,6 +185,18 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             ostream.write(tab+m+"\n")
 
     def print_properties_required_by_model(self, model, ostream=None):
+        """
+        Method to print a summary of the thermophysical properties required by
+        a given unit model.
+
+        Args:
+            model : the unit model of interest.
+            ostream : output stream to print to. If not provided will print to
+                      sys.stdout
+
+        Returns:
+            None
+        """
         if not isinstance(model, str):
             model = model.name
 
