@@ -362,7 +362,6 @@ argument)."""))
 
         # Get phase component set and lists
         pc_set = self.config.property_package.get_phase_component_set()
-        phase_component_list = self._get_phase_comp_list()
 
         # Material holdup and accumulation
         if has_holdup:
@@ -537,7 +536,7 @@ argument)."""))
                              pc_set,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, x, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return b.material_holdup[t, x, p, j] == (
                           b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
@@ -560,7 +559,7 @@ argument)."""))
                              pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
@@ -587,7 +586,7 @@ argument)."""))
                              pc_set,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
                         sum(rblock[t, x].config.parameters.
                             equilibrium_reaction_stoichiometry[r, p, j] *
@@ -660,7 +659,7 @@ argument)."""))
                          x == b.length_domain.last())):
                     return Constraint.Skip
                 else:
-                    if j in phase_component_list[p]:
+                    if (p, j) in pc_set:
                         return b.length*accumulation_term(b, t, x, p, j) == (
                             b._flow_direction_term *
                             b.material_flow_dx[t, x, p, j] +
@@ -740,7 +739,7 @@ argument)."""))
                 else:
                     cplist = []
                     for p in self.config.property_package.phase_list:
-                        if j in phase_component_list[p]:
+                        if (p, j) in pc_set:
                             cplist.append(p)
                     return (
                         b.length*sum(accumulation_term(b, t, x, p, j)

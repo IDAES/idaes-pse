@@ -265,7 +265,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get phase component set and lists
         pc_set = self.config.property_package.get_phase_component_set()
-        phase_component_list = self._get_phase_comp_list()
 
         # Material holdup and accumulation
         if has_holdup:
@@ -397,7 +396,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              pc_set,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return b.material_holdup[t, p, j] == (
                           b.volume[t]*self.phase_fraction[t, p] *
                           b.properties_out[t].get_material_density_terms(p, j))
@@ -416,7 +415,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     rparam = rblock[t]._params
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
@@ -440,7 +439,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              pc_set,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return b.equilibrium_reaction_generation[t, p, j] == (
                             sum(rblock[t]._params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
@@ -506,7 +505,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              pc_set,
                              doc="Material balances")
             def material_balances(b, t, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return accumulation_term(b, t, p, j) == (
                             b.properties_in[t].get_material_flow_terms(p, j) -
                             b.properties_out[t].get_material_flow_terms(p, j) +
@@ -577,7 +576,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def material_balances(b, t, j):
                 cplist = []
                 for p in self.config.property_package.phase_list:
-                    if j in phase_component_list[p]:
+                    if (p, j) in pc_set:
                         cplist.append(p)
                 return (
                     sum(accumulation_term(b, t, p, j) for p in cplist) ==
