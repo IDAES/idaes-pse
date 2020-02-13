@@ -13,8 +13,8 @@
 import pytest
 from operator import itemgetter
 
-import idaes.examples.workshops.Module_2_Flowsheet.hda_ideal_VLE as thermo_props
-import idaes.examples.workshops.Module_2_Flowsheet.hda_reaction as reaction_props
+import hda_ideal_VLE as thermo_props
+import hda_reaction as reaction_props
 
 from pyomo.environ import (Constraint,
                            Var,
