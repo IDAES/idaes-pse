@@ -46,7 +46,7 @@ def get_activity_dict(b):
         if blk.active:
             ad[id(blk)] = True
         else:
-            ad[id(blk)] = false
+            ad[id(blk)] = False
     return ad
 
 def deactivate_model_at(b, cset, pt):
@@ -95,6 +95,10 @@ def deactivate_model_at(b, cset, pt):
                     continue
                  
     return deactivated
+
+# TODO: get_time_component_dict
+
+# TODO: get_time_derivative_dict
 
 def get_derivatives_at(b, time, t):
     """
@@ -193,14 +197,6 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
             # Log a warning
             continue
         	
-        #for r in path_from_block(var_target, fs_tgt):
-        #    local_parent = getattr(local_parent, r[0])[r[1]]
-        #try:
-        #    var_source = getattr(local_parent, var_target.local_name)
-        #except AttributeError:
-        #    # Log a warning
-        #    continue
-
         if n == 1:
             if not copy_fixed and var_target[t_target].fixed:
                 continue
@@ -227,10 +223,6 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
         if blk_source is None:
             # log warning
             continue
-        #local_parent = fs_src
-        #for r in path_from_block(blk_target, fs_tgt):
-        #    local_parent = getattr(local_parent, r[0])[r[1]]
-        #blk_source = getattr(local_parent, blk_target.local_name)
 
         if n == 1:
             target_index = t_target
@@ -239,6 +231,7 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
                     blk_target[target_index].component_data_objects(Var)):
                 if not copy_fixed and var_target.fixed:
                     continue
+                # Here, find_component will not work from BlockData object
                 local_parent = blk_source[source_index]
                 for r in path_from_block(var_target, blk_target[target_index]):
                     local_parent = getattr(local_parent, r[0])[r[1]]

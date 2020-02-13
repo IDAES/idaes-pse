@@ -270,6 +270,8 @@ def integrate_flowsheet(fs, time, **kwargs):
     # dict: id(compdata) -> bool (is active?)
     was_originally_active = get_activity_dict(fs)
 
+    # Here, deactivate non-time-indexed components
+
     # Deactivate flowsheet except at t0, solve to ensure consistency
     # of initial conditions.
     comps_at_t = {}
@@ -306,6 +308,7 @@ def integrate_flowsheet(fs, time, **kwargs):
                 if was_originally_active[id(comp)]:
                     comp.activate()
 
+        # This should be done initially for all t, in one pass
         init_deriv_list = get_derivatives_at(fs, time, t_prev)
         init_dv_list = [d.parent_component().get_state_var()[d.index()]
                         for d in init_deriv_list]
@@ -316,14 +319,10 @@ def integrate_flowsheet(fs, time, **kwargs):
             was_originally_fixed[id(drv)] = drv.fixed
             if not drv.value is None:
                 drv.fix()
-            #if not drv.stale:
-            #    drv.fix()
         for dv in init_dv_list:
             was_originally_fixed[id(dv)] = dv.fixed
             if not drv.value is None:
                 dv.fix()
-            #if not dv.stale:
-            #    dv.fix()
 
         # Initialize finite element from its initial conditions
         for t in fe:
