@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tool to interrogate IDAES flowsheets and list the physical properties
+Tool to interrogate IDAES flowsheets and list the reaction properties
 required to simulate it.
 """
 import sys
@@ -22,9 +22,9 @@ from pyomo.environ import Set, Var
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
+                        ReactionParameterBlock,
+                        ReactionBlockDataBase,
+                        ReactionBlockBase,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         UnitModelBlockData)
@@ -38,21 +38,21 @@ __author__ = "Andrew Lee"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("PropertyInterrogatorBlock")
-class PropertyInterrogatorData(PhysicalParameterBlock):
+@declare_process_block_class("ReactionInterrogatorBlock")
+class ReactionInterrogatorData(ReactionParameterBlock):
     """
     Interrogator Parameter Block Class
 
     This class contains the methods and attributes for recording and displaying
-    the properties requried by the flowsheet.
+    the reaction properties requried by the flowsheet.
     """
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(PropertyInterrogatorData, self).build()
+        super(ReactionInterrogatorData, self).build()
 
-        self.state_block_class = InterrogatorStateBlock
+        self.reaction_block_class = InterrogatorReactionBlock
 
         # List of valid phases in property package
         # TODO : Allow users to define a phase list
@@ -64,11 +64,15 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         # Set up dict to record property calls
         self.required_properties = {}
 
-        # Dummy phase equilibrium definition so we can handle flash cases
-        self.phase_equilibrium_idx = Set(initialize=[1])
+        # Dummy reaction definition
+        # Reaction Index
+        self.rate_reaction_idx = Set(initialize=["R1"])
 
-        self.phase_equilibrium_list = \
-            {1: ["A", ("Vap", "Liq")]}
+        # Reaction Stoichiometry
+        self.rate_reaction_stoichiometry = {("R1", "Liq", "A"): -1,
+                                            ("R1", "Liq", "B"): -1,
+                                            ("R1", "Vap", "A"): 1,
+                                            ("R1", "Vap", "B"): 1}
 
     def list_required_properties(self):
         return list(self.required_properties)
@@ -90,10 +94,10 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         max_str_length = 74
         tab = " "*4
         ostream.write("\n"+"="*max_str_length+"\n")
-        ostream.write("Property Interrogator Summary"+"\n")
+        ostream.write("Reaction Property Interrogator Summary"+"\n")
         ostream.write(
                 "\n" +
-                "The Flowsheet requires the following properties " +
+                "The Flowsheet requires the following reaction properties " +
                 "(times required):" +
                 "\n"+"\n")
         for k, v in self.required_properties.items():
@@ -126,28 +130,28 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                                'holdup': 'mol'})
 
 
-class _InterrogatorStateBlock(StateBlock):
+class _InterrogatorReactionBlock(ReactionBlockBase):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to Reaction Blocks as a
+    whole, rather than individual elements of indexed Reaction Blocks.
     """
     def initialize(blk, *args, **kwargs):
         '''
         Dummy initialization routine, This will raise an TypeError if a user
-        tries to initialize a model using the Interrogator Property Package
+        tries to initialize a model using the Interrogator Reaction Package
         and tell them that the model cannot be solved.
         '''
         raise TypeError(
-                "Models constructed using the Property Interrogator package "
+                "Models constructed using the Reaction Interrogator package "
                 "cannot be used to solve a flowsheet. Please rebuild your "
-                "flowsheet using a valid property package.")
+                "flowsheet using a valid reaction package.")
 
 
-@declare_process_block_class("InterrogatorStateBlock",
-                             block_class=_InterrogatorStateBlock)
-class InterrogatorStateBlockData(StateBlockData):
+@declare_process_block_class("InterrogatorReactionBlock",
+                             block_class=_InterrogatorReactionBlock)
+class InterrogatorReactionBlockData(ReactionBlockDataBase):
     """
-    A dummy state block for interrogating flowsheets and recording physical
+    A dummy reaction block for interrogating flowsheets and recording reaction
     properties called for during construction.
     """
 
@@ -155,9 +159,9 @@ class InterrogatorStateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(InterrogatorStateBlockData, self).build()
+        super(InterrogatorReactionBlockData, self).build()
 
-        # Add dummy vars for building Ports and returning expressions
+        # Add dummy vars for returning expressions
         self._dummy_var = Var(initialize=1)
         self._dummy_var_phase = Var(self._params.phase_list,
                                     initialize=1)
@@ -167,40 +171,11 @@ class InterrogatorStateBlockData(StateBlockData):
                 self._params.phase_list,
                 self._params.component_list,
                 initialize=1)
-
-    # Define standard methods and log calls before returning dummy variable
-    def get_material_flow_terms(self, p, j):
-        self._log_call("material flow terms")
-        return self._dummy_var
-
-    def get_enthalpy_flow_terms(self, p):
-        self._log_call("enthalpy flow terms")
-        return self._dummy_var
-
-    def get_material_density_terms(self, p, j):
-        self._log_call("material density terms")
-        return self._dummy_var
-
-    def get_energy_density_terms(self, p):
-        self._log_call("energy density terms")
-        return self._dummy_var
+        self._dummy_reaction_idx = Var(self._params.rate_reaction_idx,
+                                       initialize=1)
 
     # Set default values for required attributes so construction doesn't fail
-    def default_material_balance_type(self):
-        return MaterialBalanceType.componentPhase
-
-    def default_energy_balance_type(self):
-        return EnergyBalanceType.enthalpyTotal
-
-    def define_state_vars(b):
-        return {"_dummy_var": b._dummy_var}
-
-    def define_display_vars(b):
-        raise TypeError(
-                "Models constructed using the Property Interrogator package "
-                "should not be used for report methods.")
-
-    def get_material_flow_basis(b):
+    def get_reaction_rate_basis(b):
         return MaterialFlowBasis.molar
 
     def __getattr__(self, prop):
@@ -213,7 +188,9 @@ class InterrogatorStateBlockData(StateBlockData):
         self._log_call(prop)
 
         # Return dummy var
-        if prop.endswith("_phase_comp"):
+        if prop in ["reaction_rate", "dh_rxn"]:
+            return self._dummy_reaction_idx
+        elif prop.endswith("_phase_comp"):
             return self._dummy_var_phase_comp
         elif prop.endswith("_phase"):
             return self._dummy_var_phase

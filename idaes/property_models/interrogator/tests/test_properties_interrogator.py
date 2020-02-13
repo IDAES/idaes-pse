@@ -14,14 +14,14 @@ from idaes.unit_models import Flash, HeatExchanger1D
 from idaes.unit_models.pressure_changer import (PressureChanger,
                                                 ThermodynamicAssumption)
 from idaes.unit_models.separator import Separator, SplittingType
-from idaes.property_models.interrogator import InterrogatorParameterBlock
+from idaes.property_models.interrogator import PropertyInterrogatorBlock
 
 
 def test_interrogator_parameter_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.params.required_properties, dict)
@@ -32,7 +32,7 @@ def test_interrogator_state_block_methods():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
@@ -49,20 +49,18 @@ def test_interrogator_state_block_methods():
         m.fs.props[0]._dummy_var
 
     # Check that get_term calls were logged correctly
-    assert len(m.fs.params.required_properties) == 4
-    for k, v in m.fs.params.required_properties.items():
-        assert k in ["material flow terms",
-                     "enthalpy flow terms",
-                     "material density terms",
-                     "energy density terms"]
-        assert v == ["fs.props"]
+    assert m.fs.params.required_properties == {
+            "material flow terms": ["fs.props"],
+            "material density terms": ["fs.props"],
+            "enthalpy flow terms": ["fs.props"],
+            "energy density terms": ["fs.props"]}
 
 
 def test_interrogator_state_block_unindexed_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
@@ -77,17 +75,15 @@ def test_interrogator_state_block_unindexed_call():
         m.fs.props[0]._dummy_var
 
     # Check that get_term calls were logged correctly
-    assert len(m.fs.params.required_properties) == 1
-    for k, v in m.fs.params.required_properties.items():
-        assert k in ["prop_unindexed"]
-        assert v == ["fs.props"]
+    assert m.fs.params.required_properties == {
+            "prop_unindexed": ["fs.props"]}
 
 
 def test_interrogator_state_block_phase_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
@@ -100,17 +96,15 @@ def test_interrogator_state_block_phase_call():
         m.fs.props[0]._dummy_var_phase["Vap"]
 
     # Check that get_term calls were logged correctly
-    assert len(m.fs.params.required_properties) == 1
-    for k, v in m.fs.params.required_properties.items():
-        assert k in ["prop_phase"]
-        assert v == ["fs.props"]
+    assert m.fs.params.required_properties == {
+            "prop_phase": ["fs.props"]}
 
 
 def test_interrogator_state_block_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
@@ -123,17 +117,15 @@ def test_interrogator_state_block_comp_call():
         m.fs.props[0]._dummy_var_comp["B"]
 
     # Check that get_term calls were logged correctly
-    assert len(m.fs.params.required_properties) == 1
-    for k, v in m.fs.params.required_properties.items():
-        assert k in ["prop_comp"]
-        assert v == ["fs.props"]
+    assert m.fs.params.required_properties == {
+            "prop_comp": ["fs.props"]}
 
 
 def test_interrogator_state_block_phase_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
@@ -146,24 +138,22 @@ def test_interrogator_state_block_phase_comp_call():
         m.fs.props[0]._dummy_var_phase_comp["Vap", "B"]
 
     # Check that get_term calls were logged correctly
-    assert len(m.fs.params.required_properties) == 1
-    for k, v in m.fs.params.required_properties.items():
-        assert k in ["prop_phase_comp"]
-        assert v == ["fs.props"]
+    assert m.fs.params.required_properties == {
+            "prop_phase_comp": ["fs.props"]}
 
 
 def test_interrogator_report_method():
-    # Display method should return an Exception
+    # Display method should return an TypeError
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
 
-    with pytest.raises(Exception,
+    with pytest.raises(TypeError,
                        match="Models constructed using the Property "
                        "Interrogator package should not be used for report "
                        "methods."):
@@ -171,17 +161,17 @@ def test_interrogator_report_method():
 
 
 def test_interrogator_initialize_method():
-    # Initialize method should return an Exception
+    # Initialize method should return an TypeError
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
 
-    with pytest.raises(Exception,
+    with pytest.raises(TypeError,
                        match="Models constructed using the Property "
                        "Interrogator package cannot be used to solve a "
                        "flowsheet. Please rebuild your flowsheet using a "
@@ -194,7 +184,7 @@ def model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.P01 = PressureChanger(default={
             "property_package": m.fs.params,
@@ -210,38 +200,26 @@ def model():
 
 
 def test_interrogate_flowsheet(model):
-    assert len(model.fs.params.required_properties) == 7
-    for k, v in model.fs.params.required_properties.items():
-        assert k in ["material flow terms",
-                     "enthalpy flow terms",
-                     "material density terms",
-                     "energy density terms",
-                     "pressure",
-                     "temperature",
-                     "entr_mol"]
-
-        if k == "entr_mol":
-            assert v == ["fs.P01"]
-        elif k == "temperature":
-            assert v == ["fs.HX02"]
-        elif k in ["material density terms", "energy density terms"]:
-            assert v == ["fs.P01", "fs.HX02"]
-        else:
-            assert v == ["fs.P01", "fs.HX02", "fs.F03"]
+    assert model.fs.params.required_properties == {
+            "material flow terms": ["fs.P01", "fs.HX02", "fs.F03"],
+            "enthalpy flow terms": ["fs.P01", "fs.HX02", "fs.F03"],
+            "material density terms": ["fs.P01", "fs.HX02"],
+            "energy density terms": ["fs.P01", "fs.HX02"],
+            "pressure": ["fs.P01", "fs.HX02", "fs.F03"],
+            "temperature": ["fs.HX02"],
+            "entr_mol": ["fs.P01"]}
 
 
 def test_list_required_properties(model):
     prop_list = model.fs.params.list_required_properties()
 
-    assert len(prop_list) == 7
-    for i in prop_list:
-        assert i in ["material flow terms",
-                     "enthalpy flow terms",
-                     "material density terms",
-                     "energy density terms",
-                     "pressure",
-                     "temperature",
-                     "entr_mol"]
+    assert prop_list == ["material density terms",
+                         "material flow terms",
+                         "enthalpy flow terms",
+                         "energy density terms",
+                         "pressure",
+                         "entr_mol",
+                         "temperature"]
 
 
 def test_list_models_requiring_property(model):
@@ -268,8 +246,8 @@ Property Interrogator Summary
 
 The Flowsheet requires the following properties (times required):
 
-    material flow terms                                                  3
     material density terms                                               2
+    material flow terms                                                  3
     enthalpy flow terms                                                  3
     energy density terms                                                 2
     pressure                                                             3
@@ -297,7 +275,7 @@ def test_Separator_1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
@@ -318,7 +296,7 @@ def test_Separator_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
@@ -339,7 +317,7 @@ def test_Separator_3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
@@ -360,7 +338,7 @@ def test_ideal_Separator_1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
@@ -381,7 +359,7 @@ def test_ideal_Separator_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
@@ -400,7 +378,7 @@ def test_ideal_Separator_3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.params = InterrogatorParameterBlock()
+    m.fs.params = PropertyInterrogatorBlock()
 
     m.fs.S01 = Separator(default={
                 "property_package": m.fs.params,
