@@ -184,13 +184,22 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
         n = var_target.index_set().dimen
 
         local_parent = fs_src
-        for r in path_from_block(var_target, fs_tgt):
-            local_parent = getattr(local_parent, r[0])[r[1]]
-        try:
-            var_source = getattr(local_parent, var_target.local_name)
-        except AttributeError:
+
+        varname = var_target.getname(fully_qualified=True, relative_to=fs_tgt)
+        # Calling find_component here makes the assumption that fs_src 
+        # is not indexed
+        var_source = fs_src.find_component(varname)
+        if var_source is None:
             # Log a warning
             continue
+        	
+        #for r in path_from_block(var_target, fs_tgt):
+        #    local_parent = getattr(local_parent, r[0])[r[1]]
+        #try:
+        #    var_source = getattr(local_parent, var_target.local_name)
+        #except AttributeError:
+        #    # Log a warning
+        #    continue
 
         if n == 1:
             if not copy_fixed and var_target[t_target].fixed:
@@ -213,10 +222,15 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
             continue
         n = blk_target.index_set().dimen
 
-        local_parent = fs_src
-        for r in path_from_block(blk_target, fs_tgt):
-            local_parent = getattr(local_parent, r[0])[r[1]]
-        blk_source = getattr(local_parent, blk_target.local_name)
+        blkname = blk_target.getname(fully_qualified=True, relative_to=fs_tgt)
+        blk_source = fs_src.find_component(blkname)
+        if blk_source is None:
+            # log warning
+            continue
+        #local_parent = fs_src
+        #for r in path_from_block(blk_target, fs_tgt):
+        #    local_parent = getattr(local_parent, r[0])[r[1]]
+        #blk_source = getattr(local_parent, blk_target.local_name)
 
         if n == 1:
             target_index = t_target
