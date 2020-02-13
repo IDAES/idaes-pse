@@ -112,9 +112,15 @@ class KrigingModel:
 
     **KrigingModel** is able to generate either an interpolating or a regressing Kriging model depending on the settings used during initialization..
 
-    Example:
+    **Example:**
+    
+    .. code-block:: python
+    
+        # Initialize the class 
         >>> d = KrigingModel(training_data, numerical_gradients=True, regularization=True))
         >>> p = d.get_feature_vector()
+        
+        # Train Kriging model and predict output for an test data x_test
         >>> results = d.kriging_training()
         >>> predictions = d.kriging_predict_output(results, x_test)
 
@@ -152,8 +158,12 @@ class KrigingModel:
 
             Exception:  - regularization is not boolean
 
-        Example:
-            >>> d = KrigingModel(XY_data, basis_function='gaussian')
+    **Example:**
+
+    .. code-block:: python
+    
+            # Initialize Kriging class with no numerical gradients - solution algorithm will be Basinhopping
+            >>> d = KrigingModel(XY_data, numerical_gradients=False)
 
         """
 
