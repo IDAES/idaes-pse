@@ -328,8 +328,14 @@ def integrate_flowsheet(fs, time, **kwargs):
         for t in fe:
             copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False)
         # Log that we are solving finite element {i}
-        # TODO: raise exception if solve fails
-        solver.solve(fs, tee=tee)
+        results = solver.solve(fs, tee=tee)
+        solver_results = results['Solver'][0] 
+        term_cond = solver_results['Termination condition'].key
+        if (solver_results['Status'].key != 'ok' or
+            (term_cond != 'optimal' and
+             term_cond != 'acceptable')):
+            msg = 'Unsuccessful solve in integrator'
+            raise Exception(msg)
 
         # Deactivate components that may have been activated
         for t in fe:
