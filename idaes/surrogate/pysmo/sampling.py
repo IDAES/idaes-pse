@@ -325,7 +325,11 @@ class LatinHypercubeSampling(SamplingMethods):
 
     To use: call class with inputs, and then run ``sample_points`` method.
 
-    Example: To select 10 LHS samples from "data":
+    **Example:**
+    
+    .. code-block:: python
+    
+        # To select 10 LHS samples from "data"
         >>> b = rbf.LatinHypercubeSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -520,7 +524,11 @@ class UniformSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function
 
-    Example: To select 50 samples on a :math:`\\left(10 \\times 5\\right)` grid in a 2-D space:
+    **Example:**
+    
+    .. code-block:: python 
+    
+        # To select 50 samples on a (10 x 5) grid in a 2D space:
         >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -665,7 +673,11 @@ class HaltonSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 Halton samples in a 2-D space:
+    **Example:** 
+    
+    .. code-block:: python
+    
+        # For the first 10 Halton samples in a 2-D space:
         >>> b = rbf.HaltonSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -807,7 +819,11 @@ class HammersleySampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 Hammersley samples in a 2-D space:
+    **Example:** 
+    
+    .. code-block:: python
+    
+        # For the first 10 Hammersley samples in a 2-D space:
         >>> b = rbf.HammersleySampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -947,7 +963,11 @@ class CVTSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 CVT samples in a 2-D space:
+    **Example:**
+    
+    .. code-block:: python
+     
+        # For the first 10 CVT samples in a 2-D space:
         >>> b = rbf.CVTSampling(data_bounds, 10, tolerance = 1e-5, sampling_type="creation")
         >>> samples = b.sample_points()
 
