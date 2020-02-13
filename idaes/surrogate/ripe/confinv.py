@@ -33,7 +33,7 @@ def confinv(aterm, targets, results, ccon, ptype, pc, sharedata, sigma):
     # Alpha value defined 95% CI, can be made variable with ease
     alpha = 0.05
     import numpy as np
-    import ripe
+    import idaes.surrogate.ripe as ripe
     # from scipy.optimize import curve_fit
     from scipy.stats.distributions import t
 
