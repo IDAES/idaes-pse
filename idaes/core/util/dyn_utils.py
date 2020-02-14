@@ -23,9 +23,13 @@ from pyomo.dae.set_utils import (is_explicitly_indexed_by,
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import ComponentSet
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 import pdb
 
 __author__ = "Robert Parker"
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def get_activity_dict(b):
@@ -39,7 +43,7 @@ def get_activity_dict(b):
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
 
-def deactivate_model_at(b, cset, pt):
+def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
     """
     Finds any block or constraint in block b, indexed explicitly or implicitly
     by cset, and deactivates each instance at pt
@@ -52,7 +56,7 @@ def deactivate_model_at(b, cset, pt):
     """
     if not pt in cset:
         msg = str(pt) + ' is not in ContinuousSet ' + cset.name
-        raise Exception('')
+        raise ValueError(msg)
     deactivated = []
     
     for block in b.component_objects(Block):
@@ -68,6 +72,9 @@ def deactivate_model_at(b, cset, pt):
                 except KeyError:
                     # except KeyError to allow Block.Skip
                     # TODO: use logger to give a warning here
+                    msg = (block.name + ' has no index ' + str(index))
+                    init_log = idaeslog.getInitLogger(b.name, outlvl)
+                    init_log.warning(msg)
                     continue                
 
     for con in b.component_objects(Constraint):
@@ -84,6 +91,9 @@ def deactivate_model_at(b, cset, pt):
                 except KeyError:
                     # except KeyError to allow Constraint.Skip
                     # TODO: use logger to give a warning here
+                    msg = (con.name + ' has no index ' + str(index))
+                    init_log = idaeslog.getInitLogger(b.name, outlvl)
+                    init_log.warning(msg)
                     continue
                  
     return deactivated
@@ -158,7 +168,8 @@ def path_from_block(comp, blk, include_comp=False):
         route.append((comp.parent_component().local_name, comp.index()))
     return route
 
-def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
+def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
+        copy_fixed=True, outlvl=idaeslog.NOTSET):
     """
     For all variables in fs_tgt (implicitly or explicitly) indexed by time,
     sets the value at t_target to that of the same variable in fs_src
@@ -190,6 +201,9 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
         var_source = fs_src.find_component(varname)
         if var_source is None:
             # Log a warning
+            msg = varname + ' does not exist in ' + fs_src.name
+            init_log = idaeslog.getInitLogger('copy_values logger', outlvl)
+            init_log.warning(msg)
             continue
         	
         if n == 1:
@@ -217,6 +231,9 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, copy_fixed=True):
         blk_source = fs_src.find_component(blkname)
         if blk_source is None:
             # log warning
+            msg = blkname + ' does not exist in ' + fs_src.name
+            init_log = idaeslog.getInitLogger('copy_values logger', outlvl)
+            init_log.warning(msg)
             continue
 
         if n == 1:
