@@ -285,7 +285,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         # This loop is slower than it needs to be
         # Should get comps_at_t all in one component_data_objects
         if t != time.first():
-            comps_at_t[t] = deactivate_model_at(fs, time, t)
+            comps_at_t[t] = deactivate_model_at(fs, time, t, outlvl=idaeslog.ERROR)
 
     # Log that we are solving for initial conditions
 #    init_log.info_high(
@@ -304,7 +304,8 @@ def integrate_flowsheet(fs, time, **kwargs):
         init_log.error('Failed to solve for consistent initial conditions')
         raise ValueError('Solver failed in integrator')
 
-    comps_at_t[time.first()] = deactivate_model_at(fs, time, time.first())
+    comps_at_t[time.first()] = deactivate_model_at(fs, time, time.first(),
+                                                   outlvl=idaeslog.ERROR)
     # Now model is completely inactive
 
     # For each timestep, we need to
@@ -352,7 +353,8 @@ def integrate_flowsheet(fs, time, **kwargs):
 
         # Initialize finite element from its initial conditions
         for t in fe:
-            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False)
+            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False, 
+                                outlvl=idaeslog.ERROR)
         # Log that we are solving finite element {i}
         init_log.info(f'Solving finite element {i}')
         
