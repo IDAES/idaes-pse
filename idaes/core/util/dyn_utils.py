@@ -28,9 +28,6 @@ import pdb
 
 __author__ = "Robert Parker"
 
-# Set up logger
-_log = idaeslog.getLogger(__name__)
-
 
 def get_activity_dict(b):
     """
@@ -43,7 +40,7 @@ def get_activity_dict(b):
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
 
-def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
+def deactivate_model_at(b, cset, pt, outlvl=None):
     """
     Finds any block or constraint in block b, indexed explicitly or implicitly
     by cset, and deactivates each instance at pt
@@ -73,9 +70,9 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
                     # except KeyError to allow Block.Skip
                     # TODO: use logger to give a warning here
                     msg = (block.name + ' has no index ' + str(index))
-                    init_log = idaeslog.getInitLogger(b.name, outlvl)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
                     init_log.warning(msg)
-                    continue                
+                    continue
 
     for con in b.component_objects(Constraint):
         if (is_explicitly_indexed_by(con, cset) and
@@ -92,7 +89,7 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
                     # except KeyError to allow Constraint.Skip
                     # TODO: use logger to give a warning here
                     msg = (con.name + ' has no index ' + str(index))
-                    init_log = idaeslog.getInitLogger(b.name, outlvl)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
                     init_log.warning(msg)
                     continue
                  
@@ -169,7 +166,7 @@ def path_from_block(comp, blk, include_comp=False):
     return route
 
 def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
-        copy_fixed=True, outlvl=idaeslog.NOTSET):
+        copy_fixed=True, outlvl=None):
     """
     For all variables in fs_tgt (implicitly or explicitly) indexed by time,
     sets the value at t_target to that of the same variable in fs_src
@@ -201,8 +198,9 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
         var_source = fs_src.find_component(varname)
         if var_source is None:
             # Log a warning
-            msg = varname + ' does not exist in ' + fs_src.name
-            init_log = idaeslog.getInitLogger('copy_values logger', outlvl)
+            msg = ('Warning copying values: ' + varname + 
+                   ' does not exist in source block ' + fs_src.name)
+            init_log = idaeslog.getInitLogger(__name__, outlvl)
             init_log.warning(msg)
             continue
         	
@@ -231,8 +229,9 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
         blk_source = fs_src.find_component(blkname)
         if blk_source is None:
             # log warning
-            msg = blkname + ' does not exist in ' + fs_src.name
-            init_log = idaeslog.getInitLogger('copy_values logger', outlvl)
+            msg = ('Warning copying values: ' + blkname + 
+                   ' does not exist in source' + fs_src.name)
+            init_log = idaeslog.getInitLogger(__name__, outlvl)
             init_log.warning(msg)
             continue
 

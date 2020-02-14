@@ -15,7 +15,7 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Var
+from pyomo.environ import Block, Var, TerminationCondition
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 
@@ -24,6 +24,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict,
         deactivate_model_at, get_derivatives_at, copy_values_at_time)
+import idaes.logger as idaeslog
 import pdb
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
@@ -222,6 +223,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         time - set along which to integrate
     Kwargs:
         solver - Pyomo solver object initialized with user's desired options
+        outlvl - idaes.logger outlvl
     """
     if not isinstance(fs, FlowsheetBlock):
         raise TypeError('First arg must be a FlowsheetBlock')
@@ -229,8 +231,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         raise TypeError('Second arg must be a ContinuousSet')
 
     if time.get_discretization_info() == {}:
-        # What type of error goes here?
-        raise Exception('ContinuousSet must be discretied')
+        raise ValueError('ContinuousSet must be discretied')
 
     scheme = time.get_discretization_info()['scheme']
     fep_list = time.get_finite_elements()
@@ -241,7 +242,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         ncp = time.get_discretization_info()['ncp']
     elif scheme == 'LAGRANGE-LEGENDRE':
         msg = 'Integrator does not support collocation with Legendre roots'
-        raise Exception(msg)
+        raise ValueError(msg)
     elif scheme == 'BACKWARD Difference':
         ncp = 1
     elif scheme == 'FORWARD Difference':
@@ -250,10 +251,15 @@ def integrate_flowsheet(fs, time, **kwargs):
         raise NotImplementedError(msg)
     elif scheme == 'CENTRAL Difference':
         msg = 'Integrator does not support central finite difference'
-        raise Exception(msg)
+        raise ValueError(msg)
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.
+
+    # Create logger objects
+    outlvl = kwargs.pop('outlvl', None)
+    init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
+    solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     solver = kwargs.pop('solver', None)
     tee = True # <- use logger.tee or something instead of this
@@ -261,11 +267,11 @@ def integrate_flowsheet(fs, time, **kwargs):
     ignore_dof = kwargs.pop('ignore_dof', False)
     if degrees_of_freedom(fs) != 0 and not ignore_dof:
         msg = ''' 
-              Flowsheet provided is not square. Use kwarg ignore_dof 
+              Flowsheet provided is not square. Use kwarg ignore_dof=True
               to proceed anyway.
               '''
-        raise Exception(msg)
-    
+        raise ValueError(msg)
+ 
     # Get mask of constraints/blocks that are already inactive:
     # dict: id(compdata) -> bool (is active?)
     was_originally_active = get_activity_dict(fs)
@@ -280,8 +286,23 @@ def integrate_flowsheet(fs, time, **kwargs):
         # Should get comps_at_t all in one component_data_objects
         if t != time.first():
             comps_at_t[t] = deactivate_model_at(fs, time, t)
-    # Somehow log that we are solving for initial conditions
-    solver.solve(fs, tee=tee)
+
+    # Log that we are solving for initial conditions
+#    init_log.info_high(
+#   'Model is inactive except at t=0. Solving for consistent initial conditions')
+    init_log.info('''
+                  Model is inactive except at t=0. 
+                  Solving for consistent initial conditions.
+                  ''')
+    if outlvl is None:
+        outlvl = idaeslog.DEBUG
+    with idaeslog.solver_log(solver_log, outlvl) as slc:
+        results = solver.solve(fs, tee=slc.tee)
+    if results.solver.termination_condition == TerminationCondition.optimal:
+        init_log.info('Successfully solved for consistent initial conditions')
+    else:
+        init_log.error('Failed to solve for consistent initial conditions')
+        raise ValueError('Solver failed in integrator')
 
     comps_at_t[time.first()] = deactivate_model_at(fs, time, time.first())
     # Now model is completely inactive
@@ -294,12 +315,13 @@ def integrate_flowsheet(fs, time, **kwargs):
     # 4. Revert the model to its prior state
 
     # Perform a solve for 1 -> nfe; i is the index of the finite element
+    init_log.info('Flowsheet has been deactivated. Beginning integration')
     for i in range(1, nfe+1):
         t_prev = time[(i-1)*ncp+1]
         # Non-initial time points in the finite element:
         fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
 
-        # TODO: log some message
+        init_log.info(f'Entering step {i} of integration')
 
         # Activate components of model that were active in the presumably
         # square original system
@@ -317,6 +339,10 @@ def integrate_flowsheet(fs, time, **kwargs):
         was_originally_fixed = {}
         for drv in init_deriv_list:
             was_originally_fixed[id(drv)] = drv.fixed
+            # Cannot fix variables with value None. 
+            # Any variable with value None was not solved for
+            # (either stale or not included in previous solve)
+            # and we don't want to fix it.
             if not drv.value is None:
                 drv.fix()
         for dv in init_dv_list:
@@ -328,14 +354,15 @@ def integrate_flowsheet(fs, time, **kwargs):
         for t in fe:
             copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False)
         # Log that we are solving finite element {i}
-        results = solver.solve(fs, tee=tee)
-        solver_results = results['Solver'][0] 
-        term_cond = solver_results['Termination condition'].key
-        if (solver_results['Status'].key != 'ok' or
-            (term_cond != 'optimal' and
-             term_cond != 'acceptable')):
-            msg = 'Unsuccessful solve in integrator'
-            raise Exception(msg)
+        init_log.info(f'Solving finite element {i}')
+        
+        with idaeslog.solver_log(solver_log, outlvl) as slc:
+            results = solver.solve(fs, tee=slc.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+           init_log.info(f'Successfully solved finite element {i}') 
+        else:
+           init_log.error(f'Failed to solve finite element {i}')
+           raise ValueError('Failure in integration solve')
 
         # Deactivate components that may have been activated
         for t in fe:
@@ -351,6 +378,7 @@ def integrate_flowsheet(fs, time, **kwargs):
                 dv.unfix()
 
         # Log that integration step {i} has been finished
+        init_log.info(f'Integration step {i} complete')
 
     # Reactivate components of the model that were originally active
     for t in time:
@@ -359,3 +387,4 @@ def integrate_flowsheet(fs, time, **kwargs):
                 comp.activate()
 
     # Logger message that integration is finished
+    init_log.info('Integration completed. Model has been reactivated')
