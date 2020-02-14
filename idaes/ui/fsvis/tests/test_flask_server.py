@@ -17,26 +17,29 @@ def app():
 
 def test_app(app):
     App()  # should not run twice
-    j = {"test": 123}
-    jid = b"abcdef"
-    h, p = App().host, App().port
-    url = f"http://{h}:{p}/fs"
+    j = {"test": 123}  # payload
+    jid = b"abcdef"  # id: use un-encoded bytes
+    url = f"http://{app.host}:{app.port}/fs"  # server url
+    # put the JSON payload into the server
     resp = requests.post(url, json=j, params={'id': jid})
     assert resp.status_code == 200
     assert resp.content == jid
+    # get back the payload by its ID
     resp = requests.get(url, params={'id': jid})
     assert resp.json() == j
+    # try an invalid ID
     resp = requests.get(url, params={'id': 'foo'})
     assert resp.status_code == 404
 
 
 def test_app_stop(app):
+    # stop the app
     app.stop()
-    j = {"test": 123}
-    jid = b"abcdef"
-    h, p = app.host, app.port
-    url = f"http://{h}:{p}/fs"
-    # should fail (server stopped)
+    # setup
+    j = {"test": 123}  # payload
+    jid = b"abcdef"  # id: use un-encoded bytes
+    url = f"http://{app.host}:{app.port}/fs"  # server url
+    # should fail (server was stopped)
     pytest.raises((requests.ConnectionError, requests.exceptions.ReadTimeout),
                   requests.post, url, json=j, params={'id': jid}, timeout=1)
 

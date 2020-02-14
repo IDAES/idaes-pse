@@ -9,6 +9,12 @@ visualize a flowsheet, the app will be started like:
     except RuntimeError as err:
         # could not start server..
 
+The server defines one endpoint, "/fs", to which you can post or from which you
+can get a JSON blob. For either operation, supply a unique identifier for the blob
+with the "?id=<value>" query parameter. So, for example, getting JSON blob "abc123"
+would look like: "http://127.0.0.1:5555/fs?id=abc123", and POST would use the same
+URL but provide JSON content. See the tests for programmatic examples using the
+`requests` library.
 """
 # standard library
 from multiprocessing import Process
