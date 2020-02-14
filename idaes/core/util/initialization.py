@@ -257,7 +257,7 @@ def integrate_flowsheet(fs, time, **kwargs):
     # initial value problems.
 
     # Create logger objects
-    outlvl = kwargs.pop('outlvl', None)
+    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
     init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
@@ -294,9 +294,7 @@ def integrate_flowsheet(fs, time, **kwargs):
                   Model is inactive except at t=0. 
                   Solving for consistent initial conditions.
                   ''')
-    if outlvl is None:
-        outlvl = idaeslog.DEBUG
-    with idaeslog.solver_log(solver_log, outlvl) as slc:
+    with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
         results = solver.solve(fs, tee=slc.tee)
     if results.solver.termination_condition == TerminationCondition.optimal:
         init_log.info('Successfully solved for consistent initial conditions')
@@ -340,7 +338,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         was_originally_fixed = {}
         for drv in init_deriv_list:
             was_originally_fixed[id(drv)] = drv.fixed
-            # Cannot fix variables with value None. 
+            # Cannot fix variables with value None.
             # Any variable with value None was not solved for
             # (either stale or not included in previous solve)
             # and we don't want to fix it.
@@ -353,15 +351,15 @@ def integrate_flowsheet(fs, time, **kwargs):
 
         # Initialize finite element from its initial conditions
         for t in fe:
-            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False, 
+            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False,
                                 outlvl=idaeslog.ERROR)
         # Log that we are solving finite element {i}
         init_log.info(f'Solving finite element {i}')
         
-        with idaeslog.solver_log(solver_log, outlvl) as slc:
+        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)
         if results.solver.termination_condition == TerminationCondition.optimal:
-           init_log.info(f'Successfully solved finite element {i}') 
+           init_log.info(f'Successfully solved finite element {i}')
         else:
            init_log.error(f'Failed to solve finite element {i}')
            raise ValueError('Failure in integration solve')
