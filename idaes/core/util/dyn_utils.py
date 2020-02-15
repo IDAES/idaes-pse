@@ -17,16 +17,214 @@ This module contains utility functions for dynamic IDAES models.
 
 from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.set_utils import (is_explicitly_indexed_by,
-        is_implicitly_indexed_by, get_index_set_except)
+#from pyomo.dae.set_utils import (is_explicitly_indexed_by,
+#        is_implicitly_indexed_by, get_index_set_except)
+from pyomo.dae.set_utils import get_index_set_except
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import ComponentSet
-from idaes.core.util.exceptions import ConfigurationError
+from collections import Counter
 import idaes.logger as idaeslog
 import pdb
 
 __author__ = "Robert Parker"
+
+
+def is_explicitly_indexed_by(comp, *sets):
+    """
+    Returns True if component comp is directly indexed by each set in sets.
+    """
+    if not comp.is_indexed():
+        return False
+    n_sets = len(sets)
+    if n_sets == 0:
+        raise ValueError('Must provide at least one set')
+    s_dim = [s.dimen for s in sets]
+    total_s_dim = sum(s_dim)
+    c_dim = comp.dim()
+    if c_dim < total_s_dim:
+        # Cannot be indexed as such if dimension is too low
+        return False
+    elif n_sets == 1 and s_dim[0] == c_dim:
+        # This is the only way the index_set is one of the sets provided.
+        # Otherwise index_set is a _SetProduct
+        return comp.index_set() is sets[0]
+    elif c_dim >= total_s_dim:
+        # Assume the only way to be indexed by all sets is if
+        # we're indexed by a _SetProduct containing all sets
+        if not hasattr(comp.index_set(), 'set_tuple'):
+            return False
+        # Convert set_tuple to a python:set so a different
+        # pyomo:Set with the same elements will not be conflated.
+        set_set = set(comp.index_set().set_tuple)
+        return all([s in set_set for s in sets])
+
+
+# TODO: generalize this to multiple sets s 
+#def is_implicitly_indexed_by(comp, s, stop_at=None):
+#    """
+#    Returns True if any of comp's parent blocks are indexed by s.
+#    
+#    If block stop_at (or its parent_component) is provided, function
+#    will return False if stop_at is reached, regardless of whether 
+#    stop_at is indexed by s. Meant to be an "upper bound" for blocks
+#    to check, like a flowsheet.
+#    """
+#    parent = comp.parent_block()
+#
+#    # Stop when top-level block has been reached
+#    while parent is not None:
+#        # If we have reached our stopping point, quit.
+#        if parent is stop_at:
+#            return False
+#
+#        # Look at the potentially-indexed block containing our component
+#        parent = parent.parent_component()
+#        # Check again for the stopping point in case an IndexedBlock was used
+#        if parent is stop_at:
+#            return False
+#
+#        # Check potentially-indexed block for index s:
+#        if is_explicitly_indexed_by(parent, s):
+#            return True
+#        # Continue up the tree, checking the parent block of our
+#        # potentially-indexed block:
+#        else:
+#            parent = parent.parent_block()
+#    # Return False if top-level block was reached
+#    return False
+
+
+def is_implicitly_indexed_by(comp, s, stop_at=None):
+    """
+    Returns True if any of comp's parent blocks are indexed by s.
+    
+    If block stop_at (or its parent_component) is provided, function
+    will return False if stop_at is reached, regardless of whether 
+    stop_at is indexed by s. Meant to be an "upper bound" for blocks
+    to check, like a flowsheet.
+    """
+    parent = comp.parent_block()
+
+    # Stop when top-level block has been reached
+    while parent is not None:
+        # If we have reached our stopping point, quit.
+        if parent is stop_at:
+            return False
+
+        # Look at the potentially-indexed block containing our component
+        parent = parent.parent_component()
+        # Check again for the stopping point in case an IndexedBlock was used
+        if parent is stop_at:
+            return False
+
+        # Check potentially-indexed block for index s:
+        if is_explicitly_indexed_by(parent, s):
+            return True
+        # Continue up the tree, checking the parent block of our
+        # potentially-indexed block:
+        else:
+            parent = parent.parent_block()
+    # Return False if top-level block was reached
+    return False
+
+def get_index_set_except(comp, *sets):
+    """ 
+    Returns a dictionary:
+      'set_except'   -> Pyomo Set or SetProduct indexing comp, with sets s 
+                        omitted.
+      'index_getter' -> Function to return an index for comp given an index
+                        from set_except and a value from each set s.
+                        Won't check if values are in s, so can be used to get
+                        an index for a component that has different s sets.
+    User should already have checked that comp is (directly) indexed
+    by each set s.
+    """
+    n_set = len(sets)
+    s_set = set(sets)
+    total_s_dim = sum([s.dim for s in sets])
+    info = {}
+
+    if not is_explicitly_indexed_by(comp, *sets):
+        msg = (comp.name + ' is not indexed by at least one of ' + 
+                str([s.name for s in sets]))
+        raise ValueError(msg)
+
+    index_set = comp.index_set()
+    if hasattr(index_set, 'set_tuple'):
+        set_tuple = index_set.set_tuple
+        counter = Counter(set_tuple)
+        for s in sets:
+            if counter[s] != 1:
+                msg = 'Cannot omit sets that appear multiple times'
+                raise ValueError(msg)
+        # Need to know the location of each set within comp's index_set
+        # location will map:
+        #     location_in_comp_index_set -> location_in_sets
+        location = {}
+        other_ind_sets = []
+        for ind_loc, ind_set in enumerate(set_tuple):
+            found_set = False
+            for s_loc, s_set in enumerate(sets):
+                if ind_set is s_set:
+                    location[ind_loc] = s_loc
+                    found_set = True
+                    break
+                if not found_set:
+                    other_ind_sets.append(ind_set)
+
+    else:
+        # If index_set has not set_tuple, it must be a SimpleSet, and 
+        # len(sets) == 1. Location in sets and in comp's indexing set
+        # are the same.
+        location = {0: 0}
+        other_ind_sets = []
+
+    if comp.dim() == total_s_dim: 
+        # comp indexed by all sets and having this dimension
+        # is sufficient to know that comp is only indexed by 
+        # Sets in *sets
+
+        # In this case, return the trivial set_except and index_getter
+
+        # Problem: cannot construct location without a set tuple
+        #          is that a problem with this syntax?
+        #          Here len(newvals) should == 1
+        info['set_except'] = [None]
+        # index_getter returns an index corresponding to the values passed to
+        # it, re-ordered according to order of indexing sets in component.
+        info['index_getter'] = (lambda incomplete_index, *newvals:
+                newvals[0] if len(newvals) <= 1 else
+                tuple([newvals[location[i]] for i in location]))
+        return info
+
+    # Now may assume other_ind_sets is nonempty.
+    if len(other_ind_sets) == 1:
+        set_except = other_ind_sets[0]
+    elif: len(other_ind_sets) >= 2:
+        set_except = other_ind_sets[0].cross(*other_ind_sets[1:])
+    else:
+        raise ValueError('Did not expect this to happen')
+
+    index_getter = (lambda incomplete_index, *newvals:
+            _complete_index(location, incomplete_index, *newvals))
+
+    info['set_except'] = set_except
+    info['index_getter'] = index_getter
+    return info
+
+
+def _complete_index(loc, index, *newvals):
+    """
+    """
+    if not isinstance(index, tuple):
+        index = (index,)
+    keys = sorted(loc.keys())
+    if len(keys) != len(newvals):
+        raise ValueError('Wrong number of values to complete index')
+    for i in sorted(loc.keys()):
+        index = index[0:i] + (newvals[loc[i]],) + index[i:]
+    return index
 
 
 def get_activity_dict(b):
