@@ -61,19 +61,6 @@ class UnitCell(object):
         self.convertToFrac(result, blnDiscardIntPart)
         return result
 
-    def recenter(self, P):
-        while (np.inner(P - PositiveXYZCorner, Nx) > UnitCell.DBL_TOL): P -= Vx
-        while (np.inner(P - NegativeXYZCorner, -Nx) > UnitCell.DBL_TOL): P += Vx
-        while (np.inner(P - PositiveXYZCorner, Ny) > UnitCell.DBL_TOL): P -= Vy
-        while (np.inner(P - NegativeXYZCorner, -Ny) > UnitCell.DBL_TOL): P += Vy
-        while (np.inner(P - PositiveXYZCorner, Nz) > UnitCell.DBL_TOL): P -= Vz
-        while (np.inner(P - NegativeXYZCorner, -Nz) > UnitCell.DBL_TOL): P += Vz
-
-    def getRecentered(self, P):
-        result = deepcopy(P)
-        self.recenter(result)
-        return result
-
     def getPointType(self, P):
         PFrac = self.getConvertToFrac(P, blnDiscardIntPart=True)
         for i, FracPosition in enumerate(self.FracPositions):
