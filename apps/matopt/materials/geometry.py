@@ -1,13 +1,13 @@
 __all__ = ['Parallelepiped', 'RectPrism', 'Cube', 'Rhombohedron', 'Cuboctahedron']
 
-from functools import partial
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from copy import deepcopy
-import numpy as np
 from math import cos, sin, sqrt
 
-from ..util.util import isZero, areEqual
-from .transform_func import TransformFunc, ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
+import numpy as np
+
+from .transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
+from ..util.util import areEqual
 
 
 class Shape(object):
@@ -25,20 +25,20 @@ class Shape(object):
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
         """ """
-        if (self.Anchor is None):
+        if self.Anchor is None:
             print('alpha')
             return False
-        if (type(self.Alignment) is not np.ndarray):
+        if type(self.Alignment) is not np.ndarray:
             print('A')
             return False
-        if (self.Alignment.shape != (3, 3)):
+        if self.Alignment.shape != (3, 3):
             print('B')
             return False
-        if (not areEqual(np.linalg.det(self.Alignment), 1.0, Shape.DBL_TOL)):
+        if not areEqual(np.linalg.det(self.Alignment), 1.0, Shape.DBL_TOL):
             print('C')
             return False
         for AlignmentAxis in self.Alignment:
-            if (not areEqual(np.linalg.norm(AlignmentAxis), 1.0, Shape.DBL_TOL)):
+            if not areEqual(np.linalg.norm(AlignmentAxis), 1.0, Shape.DBL_TOL):
                 print('D')
                 return False
         return True
@@ -74,9 +74,9 @@ class Shape(object):
         Returns:
 
         """
-        if (type(Shift) is ShiftFunc):
+        if type(Shift) is ShiftFunc:
             self.applyTransF(Shift)
-        elif (type(Shift) is np.ndarray):
+        elif type(Shift) is np.ndarray:
             self.applyTransF(ShiftFunc(Shift))
         else:
             raise TypeError
@@ -91,9 +91,9 @@ class Shape(object):
         Returns:
 
         """
-        if (type(Scale) is ScaleFunc):
+        if type(Scale) is ScaleFunc:
             self.applyTransF(Scale)
-        elif (type(Scale) is np.ndarray):
+        elif type(Scale) is np.ndarray:
             self.applyTransF(ScaleFunc(Scale, OriginOfScale))
         elif (type(Scale) is float or
               type(Scale) is int):
@@ -111,9 +111,9 @@ class Shape(object):
         Returns:
 
         """
-        if (type(Rotation) is RotateFunc):
+        if type(Rotation) is RotateFunc:
             self.applyTransF(Rotation)
-        elif (type(Rotation) is np.ndarray):
+        elif type(Rotation) is np.ndarray:
             self.applyTransF(RotateFunc(Rotation, OriginOfRotation))
         else:
             raise TypeError
@@ -127,7 +127,7 @@ class Shape(object):
         Returns:
 
         """
-        if (type(Reflection) is ReflectFunc):
+        if type(Reflection) is ReflectFunc:
             self.applyTransF(Reflection)
         else:
             raise TypeError
@@ -164,7 +164,7 @@ class Shape(object):
         return self._Alignment
 
 
-class Polyhedron(Shape):
+class Polyhedron(Shape, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -179,13 +179,19 @@ class Polyhedron(Shape):
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
         """ """
-        if (type(self.V) is not list): return False
-        if (len(self.V) < 4): return False
-        if (type(self.F) is not list): return False
-        if (len(self.F) < 4): return False
+        if type(self.V) is not list:
+            return False
+        if len(self.V) < 4:
+            return False
+        if type(self.F) is not list:
+            return False
+        if len(self.F) < 4:
+            return False
         for Facet in self.F:
-            if (type(Facet) is not list): return False
-            if (len(Facet) < 3): return False
+            if type(Facet) is not list:
+                return False
+            if len(Facet) < 3:
+                return False
         return Shape.isConsistentWithDesign(self)
 
     # === AUXILIARY METHODS
@@ -220,17 +226,17 @@ class Polyhedron(Shape):
         Returns:
 
         """
-        if (type(TransF) is ShiftFunc):
+        if type(TransF) is ShiftFunc:
             for v in self._V:
                 TransF.transform(v)
-        elif (type(TransF) is ScaleFunc):
+        elif type(TransF) is ScaleFunc:
             for v in self._V:
                 TransF.transform(v)
             for direction in self._FacetDirections:
                 TransF.transform(direction)
             for norm in self._FacetNorms:
                 norm /= TransF.Scale
-        elif (type(TransF) is RotateFunc):
+        elif type(TransF) is RotateFunc:
             for v in self._V:
                 TransF.transform(v)
             for direction in self._FacetDirections:
@@ -255,7 +261,8 @@ class Polyhedron(Shape):
 
         """
         for f in range(len(self.F)):
-            if (not self.satisfiesFacet(P, f, tol)): return False
+            if not self.satisfiesFacet(P, f, tol):
+                return False
         return True
 
     __contains__ = isInShape
@@ -272,7 +279,7 @@ class Polyhedron(Shape):
 
         """
         P01 = P - self.V[self.F[f][0]]
-        return (np.inner(P01, self.FacetNorms[f]) < tol)
+        return np.inner(P01, self.FacetNorms[f]) < tol
 
     def getBounds(self):
         """ """
@@ -305,7 +312,7 @@ class Polyhedron(Shape):
         return self._FacetDirections
 
 
-class Cuboctahedron(Polyhedron):
+class Cuboctahedron(Polyhedron, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -339,7 +346,7 @@ class Cuboctahedron(Polyhedron):
              [5, 9, 8]]
         Polyhedron.__init__(self, V, F, np.array([0, 0, 0], dtype=float))
         self.scale(R / sqrt(2))
-        if (Center is not None):
+        if Center is not None:
             self.shift(Center)
 
     # === MANIPULATION METHODS
@@ -352,8 +359,8 @@ class Cuboctahedron(Polyhedron):
         Returns:
 
         """
-        if (isinstance(TransF, ScaleFunc)):
-            if (TransF.isIsometric):
+        if isinstance(TransF, ScaleFunc):
+            if TransF.isIsometric:
                 self._R *= TransF.Scale[0]
             else:
                 raise ValueError('Cuboctahedron applyTransF: Can only scale isometrically')
@@ -361,7 +368,7 @@ class Cuboctahedron(Polyhedron):
         assert (self.isConsistentWithDesign())
 
 
-class Parallelepiped(Polyhedron):
+class Parallelepiped(Polyhedron, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -369,9 +376,9 @@ class Parallelepiped(Polyhedron):
         self._Vx = Vx
         self._Vy = Vy
         self._Vz = Vz
-        if (np.inner(np.cross(Vx, Vy), Vz) < Parallelepiped.DBL_TOL):
+        if np.inner(np.cross(Vx, Vy), Vz) < Parallelepiped.DBL_TOL:
             raise ValueError("Vx,Vy,Vz must have a positive box product.")
-        if (BotBackLeftCorner is None):
+        if BotBackLeftCorner is None:
             BotBackLeftCorner = np.array([0, 0, 0], dtype=float)
 
         V = [BotBackLeftCorner,
@@ -411,7 +418,6 @@ class Parallelepiped(Polyhedron):
         Vy = np.array([B * np.cos(gamma), B * np.sin(gamma), 0])
         zcomp = np.sqrt(1 - pow(np.cos(alpha), 2) - pow(np.cos(beta), 2))
         Vz = np.array([C * np.cos(alpha), C * np.cos(beta), C * zcomp])
-        # import code; code.interact(local=dict(locals(),**globals()));
         return cls(Vx, Vy, Vz, BotBackLeftCorner)
 
     # === CONSTRUCTOR - From POSCAR file header information
@@ -443,7 +449,6 @@ class Parallelepiped(Polyhedron):
                                 float(VzLine[2])], dtype=float)
         return cls(Vx, Vy, Vz)
 
-
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
         """
@@ -454,7 +459,7 @@ class Parallelepiped(Polyhedron):
         Returns:
 
         """
-        if (isinstance(TransF, ScaleFunc)):
+        if isinstance(TransF, ScaleFunc):
             self._Vx *= TransF.Scale[0]
             self._Vy *= TransF.Scale[1]
             self._Vz *= TransF.Scale[2]
@@ -507,16 +512,16 @@ class Parallelepiped(Polyhedron):
     @property
     def isUnit(self):
         """ """
-        if (not areEqual(np.linalg.norm(self.Vx), 1.0, Shape.DBL_TOL)):
+        if not areEqual(np.linalg.norm(self.Vx), 1.0, Shape.DBL_TOL):
             return False
-        if (not areEqual(np.linalg.norm(self.Vy), 1.0, Shape.DBL_TOL)):
+        if not areEqual(np.linalg.norm(self.Vy), 1.0, Shape.DBL_TOL):
             return False
-        if (not areEqual(np.linalg.norm(self.Vz), 1.0, Shape.DBL_TOL)):
+        if not areEqual(np.linalg.norm(self.Vz), 1.0, Shape.DBL_TOL):
             return False
         return True
 
 
-class Rhombohedron(Parallelepiped):
+class Rhombohedron(Parallelepiped, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -540,8 +545,8 @@ class Rhombohedron(Parallelepiped):
         Returns:
 
         """
-        if (isinstance(TransF, ScaleFunc)):
-            if (TransF.isIsometric):
+        if isinstance(TransF, ScaleFunc):
+            if TransF.isIsometric:
                 self._L *= TransF.Scale[0]
             else:
                 raise ValueError('Rhombohedron applyTransF: Can only scale isometrically')
@@ -561,7 +566,7 @@ class Rhombohedron(Parallelepiped):
         return self._Alpha
 
 
-class RectPrism(Parallelepiped):
+class RectPrism(Parallelepiped, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -605,7 +610,7 @@ class RectPrism(Parallelepiped):
         Returns:
 
         """
-        if (isinstance(TransF, ScaleFunc)):
+        if isinstance(TransF, ScaleFunc):
             self._Lx *= TransF.Scale[0]
             self._Ly *= TransF.Scale[1]
             self._Lz *= TransF.Scale[2]
@@ -630,7 +635,7 @@ class RectPrism(Parallelepiped):
         return self._Lz
 
 
-class Cube(RectPrism):
+class Cube(RectPrism, ABC):
     """ """
 
     # === STANDARD CONSTRUCTOR
@@ -648,8 +653,8 @@ class Cube(RectPrism):
         Returns:
 
         """
-        if (isinstance(TransF, ScaleFunc)):
-            if (TransF.isIsometric):
+        if isinstance(TransF, ScaleFunc):
+            if TransF.isIsometric:
                 self._L *= TransF.Scale[0]
             else:
                 raise ValueError('Cube applyTransF: Can only scale isometrically')

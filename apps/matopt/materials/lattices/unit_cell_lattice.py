@@ -29,7 +29,7 @@ class UnitCell(object):
         self._FracPositions.append(P)
 
     def applyTransF(self, TransF):
-        if (isinstance(TransF, TransformFunc)):
+        if isinstance(TransF, TransformFunc):
             self._Tiling.applyTransF(TransF)
         else:
             raise TypeError
@@ -48,7 +48,7 @@ class UnitCell(object):
                                                blnRelativeToCenter=False,
                                                blnRoundInside=True,
                                                blnPreferZero=True)
-        if (blnDiscardIntPart):
+        if blnDiscardIntPart:
             P -= P.astype(int)
 
     def getConvertToFrac(self, P, blnDiscardIntPart=True):
@@ -59,7 +59,7 @@ class UnitCell(object):
     def getPointType(self, P):
         PFrac = self.getConvertToFrac(P, blnDiscardIntPart=True)
         for i, FracPosition in enumerate(self.FracPositions):
-            if (myArrayEq(FracPosition, PFrac, UnitCell.DBL_TOL)):
+            if myArrayEq(FracPosition, PFrac, UnitCell.DBL_TOL):
                 return i
         return None
 

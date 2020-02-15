@@ -110,7 +110,7 @@ class ScaleFunc(TransformFunc):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, Scale, OriginOfScale=None):
-        if (isinstance(Scale, np.ndarray)):
+        if isinstance(Scale, np.ndarray):
             self._Scale = Scale
         elif (isinstance(Scale, float) or
               isinstance(Scale, int)):
@@ -127,10 +127,10 @@ class ScaleFunc(TransformFunc):
         Returns:
 
         """
-        if (self.OriginOfScale is not None):
+        if self.OriginOfScale is not None:
             P -= self.OriginOfScale
         P *= self.Scale  # element-wise multiplication
-        if (self.OriginOfScale is not None):
+        if self.OriginOfScale is not None:
             P += self.OriginOfScale
 
     def undo(self, P):
@@ -142,10 +142,10 @@ class ScaleFunc(TransformFunc):
         Returns:
 
         """
-        if (self.OriginOfScale is not None):
+        if self.OriginOfScale is not None:
             P -= self.OriginOfScale
         P /= self.Scale  # element-wise division
-        if (self.OriginOfScale is not None):
+        if self.OriginOfScale is not None:
             P += self.OriginOfScale
 
     # === PROPERTY EVALUATION METHODS
@@ -214,17 +214,17 @@ class RotateFunc(TransformFunc):
         """
         RotMat = np.zeros((3, 3), dtype=float)
         Axis /= np.linalg.norm(Axis)
-        C = cos(Angle);
-        S = sin(Angle);
-        RotMat[0][0] = C + pow(Axis[0], 2) * (1 - C);
-        RotMat[0][1] = Axis[0] * Axis[1] * (1 - C) - Axis[2] * S;
-        RotMat[0][2] = Axis[0] * Axis[2] * (1 - C) + Axis[1] * S;
-        RotMat[1][0] = Axis[1] * Axis[0] * (1 - C) + Axis[2] * S;
-        RotMat[1][1] = C + pow(Axis[1], 2) * (1 - C);
-        RotMat[1][2] = Axis[1] * Axis[2] * (1 - C) - Axis[0] * S;
-        RotMat[2][0] = Axis[2] * Axis[0] * (1 - C) - Axis[1] * S;
-        RotMat[2][1] = Axis[2] * Axis[1] * (1 - C) + Axis[0] * S;
-        RotMat[2][2] = C + pow(Axis[2], 2) * (1 - C);
+        C = cos(Angle)
+        S = sin(Angle)
+        RotMat[0][0] = C + pow(Axis[0], 2) * (1 - C)
+        RotMat[0][1] = Axis[0] * Axis[1] * (1 - C) - Axis[2] * S
+        RotMat[0][2] = Axis[0] * Axis[2] * (1 - C) + Axis[1] * S
+        RotMat[1][0] = Axis[1] * Axis[0] * (1 - C) + Axis[2] * S
+        RotMat[1][1] = C + pow(Axis[1], 2) * (1 - C)
+        RotMat[1][2] = Axis[1] * Axis[2] * (1 - C) - Axis[0] * S
+        RotMat[2][0] = Axis[2] * Axis[0] * (1 - C) - Axis[1] * S
+        RotMat[2][1] = Axis[2] * Axis[1] * (1 - C) + Axis[0] * S
+        RotMat[2][2] = C + pow(Axis[2], 2) * (1 - C)
         return cls(RotMat, OriginOfRotation=OriginOfRotation)
 
     # === PROPERTY EVALUATION METHODS
@@ -237,15 +237,15 @@ class RotateFunc(TransformFunc):
         Returns:
 
         """
-        if (isinstance(P, np.ndarray) and P.shape == (3, 3)):
+        if isinstance(P, np.ndarray) and P.shape == (3, 3):
             # Case of Alignment matrix
             np.dot(self.RotMat, P, out=P)
         else:
             # Case of point (np.array)
-            if (self.OriginOfRotation is not None):
+            if self.OriginOfRotation is not None:
                 P -= self.OriginOfRotation
             np.dot(self.RotMat, P, out=P)  # matrix multiplication
-            if (self.OriginOfRotation is not None):
+            if self.OriginOfRotation is not None:
                 P += self.OriginOfRotation
 
     def transformDirection(self, V):
@@ -268,10 +268,10 @@ class RotateFunc(TransformFunc):
         Returns:
 
         """
-        if (self.OriginOfRotation is not None):
+        if self.OriginOfRotation is not None:
             P -= self.OriginOfRotation
         np.dot(self.RevRotMat, P, out=P)
-        if (self.OriginOfRotation is not None):
+        if self.OriginOfRotation is not None:
             P += self.OriginOfRotation
 
     def undoDirection(self, V):
@@ -353,7 +353,7 @@ class ReflectFunc(TransformFunc):
         Returns:
 
         """
-        if (type(P) is np.ndarray and P.shape == (3, 3)):
+        if type(P) is np.ndarray and P.shape == (3, 3):
             # Case of Alignment matrix
             for AlignmentAxis in P:  # i.e., apply to each vector, but do not shift
                 Vperp = np.inner(AlignmentAxis, self.PlaneNorm) * self.PlaneNorm
@@ -426,9 +426,9 @@ class CompoundTransformFunc(TransformFunc):
         return self._TransFs
 
     def __iadd__(self, other):
-        if (isinstance(other, CompoundTransformFunc)):
+        if isinstance(other, CompoundTransformFunc):
             self._TransFs.extend(other.TransFs)
-        elif (isinstance(other, TransformFunc)):
+        elif isinstance(other, TransformFunc):
             self._TransFs.append(other)
         else:
             raise ValueError('Decide how to handle this case!')

@@ -1,7 +1,5 @@
 from copy import deepcopy
-import os
-from matopt.materials.design import Design, loadFromPDBs
-from matopt.util.util import myPointEq
+from ..util.util import myPointEq
 
 
 def areMotifViaTransF(D1, D2, TransF,
@@ -51,6 +49,8 @@ def getEnumConfs(Motifs, TransFs, MotifToConfMap=None, blnPreserveMotifLocs=True
     """
 
     Args:
+        DBL_TOL:
+        blnPreserveMotifLocs:
         Motifs: param TransFs:
         MotifToConfMap: Default value = None)
         TransFs: 
@@ -58,33 +58,33 @@ def getEnumConfs(Motifs, TransFs, MotifToConfMap=None, blnPreserveMotifLocs=True
     Returns:
 
     """
-    if (MotifToConfMap is not None):
+    if MotifToConfMap is not None:
         # del MotifToConfMap[:]
         MotifToConfMap.clear()
     result = []
     for iMotif, Motif in enumerate(Motifs):
-        if (MotifToConfMap is not None):
+        if MotifToConfMap is not None:
             MotifToConfMap.append([len(result)])
         result.append(Motif)
         for TransF in TransFs:
             Conf = Motif.getTransformed(TransF)
             blnUniqueConf = True
             for r in result:
-                if (Conf.isEquivalentTo(r)):
+                if Conf.isEquivalentTo(r):
                     blnUniqueConf = False
                     break
-            if (blnUniqueConf):
-                if (MotifToConfMap is not None):
+            if blnUniqueConf:
+                if MotifToConfMap is not None:
                     MotifToConfMap[iMotif].append(len(result))
                 # NOTE: This section is important if we want to just assume 
                 #       that each index is the same location.
                 #       This is important for use in models. 
-                if (blnPreserveMotifLocs):
+                if blnPreserveMotifLocs:
                     ConfCopy = Conf
                     Conf = deepcopy(Motif)  # So they have the same points<->indexes
                     for l in range(len(Motif)):
                         for l2 in range(len(ConfCopy)):
-                            if (myPointEq(Motif.Canvas.Points[l], ConfCopy.Canvas.Points[l2], DBL_TOL)):
+                            if myPointEq(Motif.Canvas.Points[l], ConfCopy.Canvas.Points[l2], DBL_TOL):
                                 Conf.setContent(l, ConfCopy.Contents[l2])
                                 break
                 result.append(Conf)

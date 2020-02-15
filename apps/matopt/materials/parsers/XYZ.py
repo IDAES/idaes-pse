@@ -8,7 +8,6 @@ def readPointsFromXYZ(filename):
     with open(filename, 'r') as infile:
         nAtoms = int(infile.readline().split()[0])
         _ = next(infile)  # skip the comment line
-        # for line in infile:
         for _ in range(nAtoms):
             line = next(infile).split()
             x = float(line[1])

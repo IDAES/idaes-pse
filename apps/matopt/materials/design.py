@@ -7,8 +7,6 @@ from .parsers.PDB import readPointsAndAtomsFromPDB, writeDesignToPDB
 from .parsers.XYZ import readPointsAndAtomsFromXYZ, writeDesignToXYZ
 from .parsers.CFG import readPointsAndAtomsFromCFG, writeDesignToCFG
 from .parsers.POSCAR import readPointsAndAtomsFromPOSCAR, writeDesignToPOSCAR
-# from .Tiling import PlanarTiling,CubicTiling
-from .transform_func import ShiftFunc
 
 
 class Design(object):
@@ -23,11 +21,11 @@ class Design(object):
     # === STANDARD CONSTRUCTOR
     def __init__(self, Canvas_=None, Contents=None):
         """Initialize a Design object from standard data."""
-        if (Canvas_ is not None and Contents is None):
+        if Canvas_ is not None and Contents is None:
             Contents = [None] * len(Canvas_)
-        elif (Canvas_ is not None and isinstance(Contents, Atom)):
+        elif Canvas_ is not None and isinstance(Contents, Atom):
             Contents = [Contents] * len(Canvas_)
-        elif (Canvas_ is None):
+        elif Canvas_ is None:
             Canvas_ = Canvas()
             Contents = []
         self._Canvas = Canvas_
@@ -205,6 +203,7 @@ class Design(object):
         """Compare equivilancy of two Designs.
 
         Args:
+            blnIgnoreVoid:
             other(Design): other Design to compare against.
             blnPreserveIndexing(bool, optional): Optional, flag to determine if
         index order is considered. (Default value = False)
@@ -217,23 +216,22 @@ class Design(object):
             bool) True if Designs are considered equivalent.
 
         """
-        if (not blnIgnoreVoid and len(self) != len(other)):
+        if not blnIgnoreVoid and len(self) != len(other):
             return False
-        if (blnPreserveIndexing):
+        if blnPreserveIndexing:
             return self == other
         for i, P in enumerate(self.Canvas.Points):
-            if (not other.Canvas.hasPoint(P)):
+            if not other.Canvas.hasPoint(P):
                 return False
             else:
                 j = other.Canvas.getPointIndex(P)
-                if (self.Contents[i] != other.Contents[j]):
+                if self.Contents[i] != other.Contents[j]:
                     return False
         return True
 
     @property
     def NonVoidCount(self):
         """Count number of contents that are not considered void."""
-        # import code; code.interact(local=dict(locals(),**globals()));
         return sum(Elem is not None and Elem != Atom() for Elem in self.Contents)
 
     @property
@@ -284,6 +282,9 @@ class Design(object):
         """Write a Design to CFG file.
 
         Args:
+            blnGroupByType:
+            AuxPropMap:
+            BBox:
             filename(str): CFG file to write to.
             GS(float, optional): Optional, Global scaling to write to file
         (see CFG file format). (Default value = None)
@@ -306,6 +307,9 @@ class Design(object):
         """Write a Design to CFG file.
 
         Args:
+            blnUseDirect:
+            Elems:
+            BBox:
             filename(str): CFG file to write to.
             CommentLine(str, optional): Optional, line to write at top of file. (Default value = None)
             GS(float, optional): Optional, Global scaling to write to file
@@ -341,7 +345,7 @@ def loadFromPDBs(filenames, folder=None):
     """
     result = []
     for filename in filenames:
-        if (folder is not None):
+        if folder is not None:
             filename = os.path.join(folder, filename)
         result.append(Design.fromPDB(filename))
     return result
@@ -361,7 +365,7 @@ def loadFromXYZs(filenames, folder=None):
     """
     result = []
     for filename in filenames:
-        if (folder is not None):
+        if folder is not None:
             filename = os.path.join(folder, filename)
         result.append(Design.fromXYZ(filename))
     return result
@@ -381,7 +385,7 @@ def loadFromCFGs(filenames, folder=None):
     """
     result = []
     for filename in filenames:
-        if (folder is not None):
+        if folder is not None:
             filename = os.path.join(folder, filename)
         result.append(Design.fromCFG(filename))
     return result

@@ -1,13 +1,11 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from itertools import product
 
-from ..util.util import isZero, areEqual
-from .pyomo_modeling import *
-from ..materials.design import Design
-
-from pyomo.environ import *
 from pyomo.core.base.param import SimpleParam
 from pyomo.opt.results import SolutionStatus
+
+from .pyomo_modeling import *
+from ..materials.design import Design
 
 
 class IndexedElem(object):
@@ -73,7 +71,7 @@ class IndexedElem(object):
         """
         LHS, RHS, *args = args
         Comb = cls._fromComb2(LHS, RHS)
-        if (len(args) > 0):
+        if len(args) > 0:
             return cls.fromComb(Comb, *args)
         else:
             return Comb
@@ -93,25 +91,25 @@ class IndexedElem(object):
         (IndexedElem) Index object from combination of indices.
         """
 
-        if (LHS.sites is not None and RHS.sites is not None):
+        if LHS.sites is not None and RHS.sites is not None:
             sites = list(set(LHS.sites) & set(RHS.sites))
         else:
             sites = (LHS.sites if LHS.sites is not None else RHS.sites)
-        if (LHS.bonds is not None and RHS.bonds is not None):
+        if LHS.bonds is not None and RHS.bonds is not None:
             bonds = list(set(LHS.bonds) & set(RHS.bonds))
         else:
             bonds = (LHS.bonds if LHS.bonds is not None else RHS.bonds)
-        if (LHS.site_types is not None and RHS.site_types is not None):
+        if LHS.site_types is not None and RHS.site_types is not None:
             site_types = list(set(LHS.site_types) & set(RHS.site_types))
         else:
             site_types = (LHS.site_types if LHS.site_types is not None
                           else RHS.site_types)
-        if (LHS.bond_types is not None and RHS.bond_types is not None):
+        if LHS.bond_types is not None and RHS.bond_types is not None:
             bond_types = list(set(LHS.bond_types) & set(RHS.bond_types))
         else:
             bond_types = (LHS.bond_types if LHS.bond_types is not None
                           else RHS.bond_types)
-        if (LHS.confs is not None and RHS.confs is not None):
+        if LHS.confs is not None and RHS.confs is not None:
             confs = list(set(LHS.confs) & set(RHS.confs))
         else:
             confs = (LHS.confs if LHS.confs is not None else RHS.confs)
@@ -143,30 +141,30 @@ class IndexedElem(object):
             (tuple<int/BBlock>) index with indices relevant to this object 
                 remaining
         """
-        if (Comb.sites is not None):
+        if Comb.sites is not None:
             i, *index = index
-        if (Comb.bonds is not None):
+        if Comb.bonds is not None:
             i, j, *index = index
-        if (Comb.site_types is not None):
+        if Comb.site_types is not None:
             k, *index = index
-        if (Comb.bond_types is not None):
+        if Comb.bond_types is not None:
             k, l, *index = index
-        if (Comb.confs is not None):
+        if Comb.confs is not None:
             c, *index = index
         result = []
-        if (self.sites is not None):
+        if self.sites is not None:
             result.append(i)
-        if (self.bonds is not None):
+        if self.bonds is not None:
             result.append(i)
             result.append(j)
-        if (self.site_types is not None):
+        if self.site_types is not None:
             result.append(k)
-        if (self.bond_types is not None):
+        if self.bond_types is not None:
             result.append(k)
             result.append(l)
-        if (self.confs is not None):
+        if self.confs is not None:
             result.append(c)
-        if (result == []):
+        if not result:
             result = [None]
         return tuple(result)
 
@@ -201,7 +199,7 @@ class IndexedElem(object):
                               self.site_types,
                               self.bond_types,
                               self.confs) if s is not None]
-        if (result == []):
+        if not result:
             result = [[None]]
         return result
 
@@ -257,9 +255,9 @@ class IndexedElem(object):
         """
 
         index_sets = self.index_sets
-        if (len(index_sets) > 1):
+        if len(index_sets) > 1:
             return product(*self.index_sets)
-        elif (len(index_sets) == 1):
+        elif len(index_sets) == 1:
             return (k for k in index_sets[0])
         else:
             raise NotImplementedError('There should always be at least '
@@ -379,8 +377,8 @@ class LinearExpr(Expr):
         self.coefs = (coefs if type(coefs) is list else [coefs])
         self.descs = (descs if type(descs) is list else [descs])
         self.offset = offset
-        if (descs is not None):
-            if (type(descs) is list):
+        if descs is not None:
+            if type(descs) is list:
                 Comb = IndexedElem.fromComb(*descs)
                 kwargs = {**Comb.index_dict, **kwargs}
             else:
@@ -400,7 +398,7 @@ class LinearExpr(Expr):
         """
         result = self.offset
         for it, desc in enumerate(self.descs):
-            if (desc is not None and self.coefs[it] is not None):
+            if desc is not None and self.coefs[it] is not None:
                 result += self.coefs[it] * desc._pyomo_var[index]
         return result
 
@@ -447,17 +445,17 @@ class SiteCombination(Expr):
         self.descj = (descj if descj is not None else desci)
         self.offset = offset
         self.symmetric_bonds = symmetric_bonds
-        if ('bonds' not in kwargs):
+        if 'bonds' not in kwargs:
             kwargs['bonds'] = [(i, j)
                                for i in desci.sites
                                for j in desci.canv.NeighborhoodIndexes[i]
                                if (j is not None and (not symmetric_bonds
                                                       or j > i))]
-        if ('bond_types' in kwargs):
+        if 'bond_types' in kwargs:
             pass  # use the kwargs bond_types
-        elif (coefi.bond_types is not None):
+        elif coefi.bond_types is not None:
             kwargs['bond_types'] = coefi.bond_types
-        elif (desci.site_types is not None):
+        elif desci.site_types is not None:
             kwargs['bond_types'] = [(k, l)
                                     for k in desci.site_types
                                     for l in desci.site_types]
@@ -474,10 +472,10 @@ class SiteCombination(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (len(index) == 4):
+        if len(index) == 4:
             i, j, k, l = index
-        elif (len(index) == 2):
-            i, j, k, l = index, (), ()
+        elif len(index) == 2:
+            i, j, k, l = index[0], index[1], (), ()
         else:
             raise NotImplementedError('Decide how to split the extra '
                                       'indices in this case...')
@@ -565,7 +563,7 @@ class SumNeighborSites(Expr):
         An instance of a Pyomo expression. 
         """
         i, *index = index
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for n, j in enumerate(self.desc.canv.NeighborhoodIndexes[i]):
@@ -629,12 +627,12 @@ class SumNeighborBonds(Expr):
         An instance of a Pyomo expression. 
         """
         i, *index = index
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for n, j in enumerate(self.desc.canv.NeighborhoodIndexes[i]):
             if j is not None:
-                if (self.symmetric_bonds):
+                if self.symmetric_bonds:
                     i, j = min(i, j), max(i, j)
                 result += (self.coefs if
                            (type(self.coefs) is float or
@@ -695,7 +693,7 @@ class SumSites(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for i in self.sites_to_sum:
@@ -759,7 +757,7 @@ class SumBonds(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for i, j in self.bonds_to_sum:
@@ -828,7 +826,7 @@ class SumSiteTypes(Expr):
         """
         assert (index is not None)
         i, *index = index
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for k in self.site_types_to_sum:
@@ -897,7 +895,7 @@ class SumBondTypes(Expr):
         """
         assert (index is not None)
         i, j, *index = index
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for k, l in self.bond_types_to_sum:
@@ -970,7 +968,7 @@ class SumSitesAndTypes(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for i in self.sites_to_sum:
@@ -1042,7 +1040,7 @@ class SumBondsAndTypes(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for i, j in self.bonds_to_sum:
@@ -1109,7 +1107,7 @@ class SumConfs(Expr):
         An instance of a Pyomo expression. 
         """
         i, *index = index
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for c in self.confs_to_sum:
@@ -1180,7 +1178,7 @@ class SumSitesAndConfs(Expr):
         Returns:
         An instance of a Pyomo expression. 
         """
-        if (index == (None,)):
+        if index == (None,):
             index = ()
         result = self.offset
         for i in self.sites_to_sum:
@@ -1491,14 +1489,14 @@ class Disallow(DescriptorRule):
         Returns:
         An instance of a Pyomo expression.
         """
-        if (var.name == 'Yi'):
+        if var.name == 'Yi':
             result = 0
             for i in range(len(self.D.Canvas)):
                 if self.D.Contents[i] is None:
                     result += var._pyomo_var[i]
                 else:
                     result += (1 - var._pyomo_var[i])
-        elif (var.name == 'Yik'):
+        elif var.name == 'Yik':
             result = 0
             for i in range(len(self.D.Canvas)):
                 for k in self.D.NonVoidElems:
@@ -1666,9 +1664,9 @@ class Implies(DescriptorRule):
                        else Implies.DEFAULT_BIG_M)
                 return d - c <= MUB * (1 - v)
 
-            if (isinstance(conc, LessThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, LessThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_ub))
-            if (isinstance(conc, GreaterThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, GreaterThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_lb))
         return result
 
@@ -1738,11 +1736,11 @@ class NegImplies(DescriptorRule):
                 body_ub = getUB(d - c)
                 MUB = (body_ub if body_ub is not None
                        else NegImplies.DEFAULT_BIG_M)
-                return d - c <= MUB * (v)
+                return d - c <= MUB * v
 
-            if (isinstance(conc, LessThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, LessThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_ub))
-            if (isinstance(conc, GreaterThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, GreaterThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_lb))
         return result
 
@@ -1806,14 +1804,14 @@ class ImpliesSiteCombination(DescriptorRule):
         Combj = IndexedElem.fromComb(*(desc for desc, conc in self.concjs),
                                      *(conc for desc, conc in self.concjs))
         assert (Combi.sites is not None and Combj.sites is not None)
-        if ('bonds' not in kwargs):
+        if 'bonds' not in kwargs:
             kwargs['bonds'] = [(i, j)
                                for i in Combi.sites
                                for j in canv.NeighborhoodIndexes[i]
                                if (j is not None and
                                    j in Combj.sites and
                                    (not symmetric_bonds or j > i))]
-        if (sum(Combi.dims) > 1):
+        if sum(Combi.dims) > 1:
             raise NotImplementedError('Additional indexes are not supported, please contact MatOpt developer for '
                                       'possible feature addition')
         DescriptorRule.__init__(self, **kwargs)
@@ -1858,9 +1856,9 @@ class ImpliesSiteCombination(DescriptorRule):
                         else ImpliesSiteCombination.DEFAULT_BIG_M)
                 return body <= MUBi * (1 - var._pyomo_var[i, j])
 
-            if (isinstance(conci, GreaterThan) or isinstance(conci, EqualTo)):
+            if isinstance(conci, GreaterThan) or isinstance(conci, EqualTo):
                 result.append(Constraint(*Comb.index_sets, rule=rule_i_lb))
-            if (isinstance(conci, LessThan) or isinstance(conci, EqualTo)):
+            if isinstance(conci, LessThan) or isinstance(conci, EqualTo):
                 result.append(Constraint(*Comb.index_sets, rule=rule_i_ub))
         # NOTE: See note above for variable name "expr"
         # for expr,conc in self.concjs:
@@ -1883,9 +1881,9 @@ class ImpliesSiteCombination(DescriptorRule):
                         else ImpliesSiteCombination.DEFAULT_BIG_M)
                 return body <= MUBj * (1 - var._pyomo_var[i, j])
 
-            if (isinstance(concj, GreaterThan) or isinstance(concj, EqualTo)):
+            if isinstance(concj, GreaterThan) or isinstance(concj, EqualTo):
                 result.append(Constraint(*Comb.index_sets, rule=rule_j_lb))
-            if (isinstance(concj, LessThan) or isinstance(concj, EqualTo)):
+            if isinstance(concj, LessThan) or isinstance(concj, EqualTo):
                 result.append(Constraint(*Comb.index_sets, rule=rule_j_ub))
         return result
 
@@ -1992,9 +1990,9 @@ class ImpliesNeighbors(DescriptorRule):
                        else ImpliesNeighbors.DEFAULT_BIG_M)
                 return body <= MUB * (1 - v)
 
-            if (isinstance(conc, GreaterThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, GreaterThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_lb))
-            if (isinstance(conc, LessThan) or isinstance(conc, EqualTo)):
+            if isinstance(conc, LessThan) or isinstance(conc, EqualTo):
                 result.append(Constraint(*ConIndexes.index_sets, rule=rule_ub))
         return result
 
@@ -2063,7 +2061,7 @@ class MaterialDescriptor(IndexedElem):
 
     # === AUXILIARY METHODS
     def _fix_pyomo_var_by_rule(self, r, m):
-        if (self.name in ('Yik', 'Yi', 'Xijkl', 'Xij', 'Cikl', 'Ci', 'Zic')):
+        if self.name in ('Yik', 'Yi', 'Xijkl', 'Xij', 'Cikl', 'Ci', 'Zic'):
             return self.__fix_basic_pyomo_vars_by_rule(r, m)
         else:
             Comb = IndexedElem.fromComb(self, r)
@@ -2072,28 +2070,28 @@ class MaterialDescriptor(IndexedElem):
 
     def __fix_basic_pyomo_vars_by_rule(self, r, m):
         Comb = IndexedElem.fromComb(self, r)
-        if (self.name == 'Yik'):
+        if self.name == 'Yik':
             for i in Comb.sites:
                 for k in Comb.site_types:
                     fixYik(m, i, k, r.val)
-        elif (self.name == 'Yi'):
+        elif self.name == 'Yi':
             for i in Comb.sites:
                 fixYi(m, i, r.val)
-        elif (self.name == 'Xijkl'):
+        elif self.name == 'Xijkl':
             for i, j in Comb.bonds:
                 for k, l in Comb.bond_types:
                     fixXijkl(m, i, j, k, l, r.val)
-        elif (self.name == 'Xij'):
+        elif self.name == 'Xij':
             for i, j in Comb.bonds:
                 fixXij(m, i, j, r.val)
-        elif (self.name == 'Cikl'):
+        elif self.name == 'Cikl':
             for i in Comb.sites:
                 for k, l in Comb.bond_types:
                     fixCikl(m, i, k, l, r.val)
-        elif (self.name == 'Ci'):
+        elif self.name == 'Ci':
             for i in Comb.sites:
                 fixCi(m, i, r.val)
-        elif (self.name == 'Zic'):
+        elif self.name == 'Zic':
             for i in Comb.sites:
                 for c in Comb.confs:
                     fixZic(m, i, c, r.val)
@@ -2103,18 +2101,18 @@ class MaterialDescriptor(IndexedElem):
         """Create a list of Pyomo constraints related to this descriptor."""
         result = []
         for rule in self.rules:
-            if (rule is not None):
+            if rule is not None:
                 result.extend(rule._pyomo_cons(self))
         return result
 
     @property
     def _pyomo_bounds(self):
         """Creates a bound rule/tuple that can interpreted by Pyomo."""
-        if (type(self.bounds) is tuple):
+        if type(self.bounds) is tuple:
             return self.bounds
-        elif (type(self.bounds) is dict):
+        elif type(self.bounds) is dict:
             def rule_gen(m, *args):
-                if (args is not None and len(args) == 1):
+                if args is not None and len(args) == 1:
                     args = args[0]
                 return self.bounds[args]
 
@@ -2579,11 +2577,11 @@ class MatOptModel(object):
         Returns:
             (``Design``/list<``Design``>) Optimal design or designs, depending on the number of solutions requested by argument ``nSolns``.
         """
-        if (nSolns > 1):
+        if nSolns > 1:
             return self.populate(func, sense=sense, nSolns=nSolns,
                                  tee=tee, disp=disp, keepfiles=keepfiles,
                                  tilim=tilim, trelim=trelim, solver=solver)
-        elif (nSolns == 1):
+        elif nSolns == 1:
             self._pyomo_m = self._make_pyomo_model(func, sense)
             return self.__solve_pyomo_model(tee, disp, keepfiles, tilim, trelim,
                                             solver)
@@ -2632,7 +2630,7 @@ class MatOptModel(object):
         self._pyomo_m.IntCuts = Constraint(self._pyomo_m.iSolns)
 
         def dispPrint(*args):
-            if (disp > 0):
+            if disp > 0:
                 print(*args)
             else:
                 pass
@@ -2645,11 +2643,11 @@ class MatOptModel(object):
                 dispPrint('Found solution with objective: {}'.
                           format(value(self._pyomo_m.obj)))
                 Ds.append(D)
-                if (len(self._pyomo_m.Yik) > 0):
+                if len(self._pyomo_m.Yik) > 0:
                     self._pyomo_m.IntCuts.add(
                         index=iSoln,
                         expr=(Disallow(D)._pyomo_expr(self.Yik) >= 1))
-                elif (len(self._pyomo_m.Yi) > 0):
+                elif len(self._pyomo_m.Yi) > 0:
                     self._pyomo_m.IntCuts.add(
                         index=iSoln,
                         expr=(Disallow(D)._pyomo_expr(self.Yi) >= 1))
@@ -2689,7 +2687,7 @@ class MatOptModel(object):
         self.Cikl._pyomo_var = m.Cikl
         self.Zic._pyomo_var = m.Zic
         for desc in self._descriptors:
-            if (desc.name not in ('Yik', 'Yi', 'Xijkl', 'Xij', 'Cikl', 'Ci', 'Zic')):
+            if desc.name not in ('Yik', 'Yi', 'Xijkl', 'Xij', 'Cikl', 'Ci', 'Zic'):
                 v = Var(*desc.index_sets,
                         domain=(Binary if desc.binary
                                 else (Integers if desc.integer else Reals)),
@@ -2700,7 +2698,7 @@ class MatOptModel(object):
         for desc in self._descriptors:
             for c, pyomo_con in enumerate(desc._pyomo_cons(m)):
                 setattr(m, 'Assign{}_{}'.format(desc.name, c), pyomo_con)
-        if (sum(obj_expr.dims) == 0):
+        if sum(obj_expr.dims) == 0:
             m.obj = Objective(expr=obj_expr._pyomo_expr(index=(None,)),
                               sense=sense)
         else:
@@ -2714,7 +2712,7 @@ class MatOptModel(object):
         addConsForGeneralVars(m)
         for desc in self._descriptors:
             for r in desc.rules:
-                if (isinstance(r, FixedTo)):
+                if isinstance(r, FixedTo):
                     desc._fix_pyomo_var_by_rule(r, m)
         return m
 
@@ -2741,24 +2739,24 @@ class MatOptModel(object):
             In the case that the model was infeasible or no solution
             could be identified, the method returns 'None'.
         """
-        if (solver == 'cplex'):
+        if solver == 'cplex':
             opt = SolverFactory('cplex')
             opt.options['mip_tolerances_absmipgap'] = 0.0
             opt.options['mip_tolerances_mipgap'] = 0.0
-            if (tilim is not None):
+            if tilim is not None:
                 opt.options['timelimit'] = tilim
-            if (trelim is not None):
+            if trelim is not None:
                 opt.options['mip_limits_treememory'] = trelim
             res = opt.solve(self._pyomo_m, tee=tee,
                             symbolic_solver_labels=True, keepfiles=keepfiles)
-        elif (solver == 'neos-cplex'):
+        elif solver == 'neos-cplex':
             with SolverManagerFactory('neos') as manager:
                 opt = SolverFactory('cplex')
                 opt.options['absmipgap'] = 0.0  # NOTE: different option names
                 opt.options['mipgap'] = 0.0
-                if (tilim is not None):
+                if tilim is not None:
                     opt.options['timelimit'] = tilim
-                if (trelim is not None):
+                if trelim is not None:
                     opt.options['treememory'] = trelim
                 res = manager.solve(self._pyomo_m, opt=opt)
         else:
@@ -2776,20 +2774,17 @@ class MatOptModel(object):
         #       solution statuses are not flagged correctly all the time. If
         #       solution status was unknown (but actually optimal or feasible)
         #       then this should (hopefully) flag the solution as available
-        if (soln_status == SolutionStatus.unknown):
-            try:
-                value(self._pyomo_m.obj)
-                has_solution = True
-            except:
-                pass
+        if soln_status == SolutionStatus.unknown:
+            value(self._pyomo_m.obj)
+            has_solution = True
 
         def dispPrint(*args):
-            if (disp > 0):
+            if disp > 0:
                 print(*args)
             else:
                 pass
 
-        if (solver_status == SolverStatus.ok):
+        if solver_status == SolverStatus.ok:
             dispPrint('The solver exited normally.')
             if (solver_term == TerminationCondition.optimal or
                     solver_term == TerminationCondition.locallyOptimal or
@@ -2802,7 +2797,7 @@ class MatOptModel(object):
             else:
                 dispPrint('The solver exited due to termination criteria: {}'
                           .format(solver_term))
-                if (has_solution):
+                if has_solution:
                     dispPrint('A feasible (but not provably optimal) '
                               'solution is available.')
                 else:
@@ -2810,7 +2805,7 @@ class MatOptModel(object):
         else:
             dispPrint('The solver did not exit normally. Status: {}'
                       .format(solver_status))
-        if (has_solution):
+        if has_solution:
             dispPrint('The Design has objective: {}'
                       .format(value(self._pyomo_m.obj)))
             result = Design(self.canv)

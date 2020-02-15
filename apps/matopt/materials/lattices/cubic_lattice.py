@@ -1,5 +1,4 @@
 import numpy as np
-from math import sqrt
 from copy import deepcopy
 
 from ..geometry import Parallelepiped
@@ -33,7 +32,7 @@ class CubicLattice(UnitCellLattice):
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
-        if (isinstance(TransF, ScaleFunc)):
+        if isinstance(TransF, ScaleFunc):
             self._IAD *= TransF.Scale
         UnitCellLattice.applyTransF(self, TransF)
 

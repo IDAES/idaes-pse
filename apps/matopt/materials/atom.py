@@ -1,7 +1,9 @@
+from abc import ABC
+
 from .bblock import BBlock
 
 
-class Atom(BBlock):
+class Atom(BBlock, ABC):
     """A class for representing Atoms."""
 
     NumberToSymbol = {None: '', 1: 'H', 2: 'He', 3: 'Li', 4: 'Be', 5: 'B', 6: 'C', 7: 'N',
@@ -74,11 +76,11 @@ class Atom(BBlock):
         interpreted as an element symbol. In None, it serves as a placeholder. 
 
         """
-        if (arg is None):
+        if arg is None:
             self._Number = None
-        elif (isinstance(arg, int)):
+        elif isinstance(arg, int):
             self._Number = arg
-        elif (isinstance(arg, str)):
+        elif isinstance(arg, str):
             self._Number = Atom.SymbolToNumber[arg]
         else:
             raise ValueError('Cannot make an Atom from this argument: {}'.format(arg))

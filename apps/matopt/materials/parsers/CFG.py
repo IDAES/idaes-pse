@@ -16,48 +16,48 @@ def readPointsAndAtomsFromCFG(filename):
     with open(filename, 'r') as infile:
         for line in infile:
             splitLine = line.split()
-            if (len(splitLine) == 0):
+            if len(splitLine) == 0:
                 continue
             blnAtomToAdd = False
             s1 = s2 = s3 = None
             Tagname = splitLine[0]
-            if (Tagname[0] == '#'):
+            if Tagname[0] == '#':
                 continue
-            elif (Tagname == 'A'):
-                GS = GS * float(splitLine[2]);
-            elif (Tagname == 'H0(1,1)'):
+            elif Tagname == 'A':
+                GS = GS * float(splitLine[2])
+            elif Tagname == 'H0(1,1)':
                 Vx[0] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(1,2)'):
+            elif Tagname == 'H0(1,2)':
                 Vx[1] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(1,3)'):
+            elif Tagname == 'H0(1,3)':
                 Vx[2] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(2,1)'):
+            elif Tagname == 'H0(2,1)':
                 Vy[0] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(2,2)'):
+            elif Tagname == 'H0(2,2)':
                 Vy[1] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(2,3)'):
+            elif Tagname == 'H0(2,3)':
                 Vy[2] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(3,1)'):
+            elif Tagname == 'H0(3,1)':
                 Vz[0] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(3,2)'):
+            elif Tagname == 'H0(3,2)':
                 Vz[1] = GS * float(splitLine[2])
-            elif (Tagname == 'H0(3,3)'):
+            elif Tagname == 'H0(3,3)':
                 Vz[2] = GS * float(splitLine[2])
-            elif (Tagname[0].isdigit() and len(splitLine) == 1):
+            elif Tagname[0].isdigit() and len(splitLine) == 1:
                 # Start of new format, line for mol weight
                 line = next(infile)
                 splitLine = line.split()
-                Elem = Atom(Symbol=splitLine[0])
-            elif (Tagname[0].isdigit() and splitLine[1][0].isdigit()):
+                Elem = Atom(splitLine[0])
+            elif Tagname[0].isdigit() and splitLine[1][0].isdigit():
                 # New format atom
                 blnAtomToAdd = True
                 s1 = float(splitLine[0])
                 s2 = float(splitLine[1])
                 s3 = float(splitLine[2])
-            elif (Tagname[0].isdigit() and splitLine[1][0].isalpha()):
+            elif Tagname[0].isdigit() and splitLine[1][0].isalpha():
                 # Old format atom
                 blnAtomToAdd = True
-                Elem = Atom(Symbol=splitLine[1])
+                Elem = Atom(splitLine[1])
                 s1 = float(splitLine[2])
                 s2 = float(splitLine[3])
                 s3 = float(splitLine[4])
@@ -75,7 +75,6 @@ def readPointsAndAtomsFromCFG(filename):
 
 
 def writeDesignToCFG(D, filename, GS=None, BBox=None, AuxPropMap=None, blnGroupByType=True):
-    # import code; code.interact(local=dict(locals(),**globals()));
     if BBox is None:
         BBox = RectPrism.fromPointsBBox(D.Canvas.Points)
         BBox.scale(2.0)
@@ -92,7 +91,7 @@ def writeDesignToCFG(D, filename, GS=None, BBox=None, AuxPropMap=None, blnGroupB
         outfile.write('H0(3,2) = {} A\n'.format(BBox.Vz[1]))
         outfile.write('H0(3,3) = {} A\n'.format(BBox.Vz[2]))
         outfile.write('.NO_VELOCITY.\n')
-        if (AuxPropMap is not None):
+        if AuxPropMap is not None:
             outfile.write('entry_count = {}\n'.format(len(AuxPropMap) + 3))
             for i, AuxProp in enumerate(AuxPropMap):
                 PropName = AuxProp[0]

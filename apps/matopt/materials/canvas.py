@@ -21,12 +21,12 @@ class Canvas(object):
 
     # === STANDARD CONSTRUCTOR
     def __init__(self, Points=None, NeighborhoodIndexes=None, DefaultNN=0):
-        if (Points is None and NeighborhoodIndexes is None):
+        if Points is None and NeighborhoodIndexes is None:
             Points = []
             NeighborhoodIndexes = []
-        elif (Points is None):
+        elif Points is None:
             Points = [None] * len(NeighborhoodIndexes)
-        elif (NeighborhoodIndexes is None):
+        elif NeighborhoodIndexes is None:
             NeighborhoodIndexes = [[None] * DefaultNN for _ in range(len(Points))]
         self._Points = Points
         self._NeighborhoodIndexes = NeighborhoodIndexes
@@ -50,7 +50,7 @@ class Canvas(object):
         """
         Pts, _ = readPointsAndAtomsFromPDB(filename)
         result = cls(Points=Pts, DefaultNN=DefaultNN)
-        if (Lat is not None):
+        if Lat is not None:
             result.setNeighborsFromFunc(Lat.getNeighbors)
         return result
 
@@ -70,7 +70,7 @@ class Canvas(object):
         """
         Pts, _ = readPointsAndAtomsFromXYZ(filename)
         result = cls(Points=Pts, DefaultNN=DefaultNN)
-        if (Lat is not None):
+        if Lat is not None:
             result.setNeighborsFromFunc(Lat.getNeighbors)
         return result
 
@@ -90,7 +90,7 @@ class Canvas(object):
         """
         Pts, _ = readPointsAndAtomsFromCFG(filename)
         result = cls(Points=Pts, DefaultNN=DefaultNN)
-        if (Lat is not None):
+        if Lat is not None:
             result.setNeighborsFromFunc(Lat.getNeighbors)
         return result
 
@@ -106,6 +106,7 @@ class Canvas(object):
         Prefer Canvas.fromLatticeAndShapeScan.
 
         Args:
+            DefaultNN:
             Lat(Lattice): Lattice to provide getNeighbors function.
             S(Shape): Shape to iterate over.
             Seed(numpy.ndarray, optional): Location to begin adding neighbors from.
@@ -125,7 +126,7 @@ class Canvas(object):
         Stack = [Seed]
         while len(Stack) > 0:
             P = Stack.pop()
-            if (not result.hasPoint(P) and P in S):
+            if not result.hasPoint(P) and P in S:
                 PNs = Lat.getNeighbors(P)
                 result.addLocation(P, len(PNs))
                 # NOTE: At first, we checked if P needed to be added
@@ -146,6 +147,7 @@ class Canvas(object):
         method to produce a generator object.
 
         Args:
+            DefaultNN:
             Lat(Lattice): Lattice with has defined Scan method.
             argPolyhedron(Polyhedron: Polyhedron): Shape to iterate over.
         NOTE: A Polyhedron is required because there is a
@@ -175,6 +177,7 @@ class Canvas(object):
         This constructor additionally makes the resulting Canvas periodic.
 
         Args:
+            DefaultNN:
             Lat(Lattice): Lattice to provide getNeighbors function.
             T(Tiling): Tiling which provides a Shape to iterate over.
             Seed(numpy.ndarray, optional): Location to begin adding neighbors from.
@@ -218,7 +221,8 @@ class Canvas(object):
     # === ASSERTION OF CLASS DESIGN
     def isConsistentWithDesign(self):
         """Determine if object is consistent with class assumptions."""
-        if (len(self.Points) != len(self.NeighborhoodIndexes)): return False
+        if len(self.Points) != len(self.NeighborhoodIndexes):
+            return False
         return True
 
     # === MANIPULATION METHODS
@@ -277,7 +281,7 @@ class Canvas(object):
             None.
 
         """
-        if (l is None):
+        if l is None:
             self._NeighborhoodIndexes[i].append(j)
         else:
             self._NeighborhoodIndexes[i][l] = j
@@ -287,6 +291,8 @@ class Canvas(object):
         """Set a (directed) neighbor connection between a Point and index.
 
         Args:
+            blnSetNoneOtherwise:
+            i:
             PN(numpy.ndarray): Canvas Point to set as neighbor.
             l(int): Index of neighbor to set. For example, if
         l=3, then PN is set as the fourth neighbor of i.
@@ -300,7 +306,7 @@ class Canvas(object):
         """
         assert (i < len(self._NeighborhoodIndexes))
         assert (l < len(self._NeighborhoodIndexes[i]))
-        if (self.hasPoint(PN)):
+        if self.hasPoint(PN):
             self._NeighborhoodIndexes[i][l] = self.getPointIndex(PN)
         elif blnSetNoneOtherwise:
             self._NeighborhoodIndexes[i][l] = None
@@ -357,7 +363,7 @@ class Canvas(object):
                     assert (not self.hasPoint(LatNeighbors[l]))  # else, Canvas constructed incorrectly
                     for TilingDirection in argTiling.TilingDirections:
                         PtoTry = LatNeighbors[l] + TilingDirection
-                        if (self.hasPoint(PtoTry)):
+                        if self.hasPoint(PtoTry):
                             self._NeighborhoodIndexes[i][l] = self.getPointIndex(PtoTry)
                             break
 
@@ -433,7 +439,7 @@ class Canvas(object):
 
         """
         for P in other.Points:
-            if (blnAssertNotAlreadyInCanvas):
+            if blnAssertNotAlreadyInCanvas:
                 assert (not self.hasPoint(P))
             self.addLocation(P)
 
@@ -460,7 +466,7 @@ class Canvas(object):
         for Q in self.Points:
             # NOTE: There are several ways to test point membership.
             #       This is optimized for speed.
-            if (myArrayEq(P, Q, Canvas.DBL_TOL)):
+            if myArrayEq(P, Q, Canvas.DBL_TOL):
                 return True
         return False
 
@@ -477,7 +483,7 @@ class Canvas(object):
         for i, Q in enumerate(self.Points):
             # NOTE: There are several ways to test point membership.
             #       This is optimized for speed.
-            if (myArrayEq(P, Q, Canvas.DBL_TOL)):
+            if myArrayEq(P, Q, Canvas.DBL_TOL):
                 return i
         return None
 

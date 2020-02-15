@@ -11,7 +11,7 @@ def isZero(x, atol):
     Returns:
     (bool) true if the number is sufficiently close to zero
     """
-    return x < atol and x > -atol
+    return atol > x > -atol
 
 
 def areEqual(x, y, atol):
@@ -56,10 +56,10 @@ def myPointsEq(x, y, atol):
     Returns:
     (bool) true if the two arrays are equal
     """
-    if (len(x) != len(y)):
+    if len(x) != len(y):
         return False
     for i in range(len(x)):
-        if (not myArrayEq(x[i], y[i], atol)):
+        if not myArrayEq(x[i], y[i], atol):
             return False
     return True
 
@@ -76,5 +76,6 @@ def ListHasPoint(L, P, atol):
     (bool) true if the two arrays are equal
     """
     for l in L:
-        if (myArrayEq(l, P, atol)): return True
+        if myArrayEq(l, P, atol):
+            return True
     return False

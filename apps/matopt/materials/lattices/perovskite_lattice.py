@@ -1,11 +1,11 @@
-import numpy as np
-from math import sqrt
 from copy import deepcopy
 
-from ..geometry import RectPrism
-from ..transform_func import ScaleFunc, RotateFunc, ReflectFunc
+import numpy as np
+
 from .unit_cell_lattice import UnitCell, UnitCellLattice
+from ..geometry import RectPrism
 from ..tiling import CubicTiling
+from ..transform_func import ScaleFunc, RotateFunc, ReflectFunc
 
 
 class PerovskiteLattice(UnitCellLattice):
@@ -36,7 +36,7 @@ class PerovskiteLattice(UnitCellLattice):
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
-        if (isinstance(TransF, ScaleFunc)):
+        if isinstance(TransF, ScaleFunc):
             self._A *= TransF.Scale[0]
             self._B *= TransF.Scale[1]
             self._C *= TransF.Scale[2]
@@ -50,18 +50,18 @@ class PerovskiteLattice(UnitCellLattice):
 
     def getNeighbors(self, P):
         RefP = self._getConvertToReference(P)
-        if (self.isASite(P)):
+        if self.isASite(P):
             return []
-        elif (self.isBSite(P)):
+        elif self.isBSite(P):
             RefNeighs = [np.array([0.5, 0.0, 0.0]),
                          np.array([0.0, 0.5, 0.0]),
                          np.array([0.0, 0.0, 0.5]),
                          np.array([-0.5, 0.0, 0.0]),
                          np.array([0.0, -0.5, 0.0]),
                          np.array([0.0, 0.0, -0.5])]
-        elif (self.isOSite(P)):
+        elif self.isOSite(P):
             PointType = self.RefUnitCell.getPointType(self._getConvertToReference(P))
-            if (PointType == 4):  # i.e., motif aligned with x-axis
+            if PointType == 4:  # i.e., motif aligned with x-axis
                 RefNeighs = [np.array([-0.5, 0.0, 0.0]),
                              np.array([0.5, 0.0, 0.0]),
                              np.array([-0.5, 1.0, 0.0]),
@@ -72,7 +72,7 @@ class PerovskiteLattice(UnitCellLattice):
                              np.array([0.5, 0.0, 1.0]),
                              np.array([0.5, -1.0, 0.0]),
                              np.array([0.5, 0.0, -1.0])]
-            elif (PointType == 3):  # i.e., motif aligned with y-axis
+            elif PointType == 3:  # i.e., motif aligned with y-axis
                 RefNeighs = [np.array([0.0, -0.5, 0.0]),
                              np.array([0.0, 0.5, 0.0]),
                              np.array([1.0, -0.5, 0.0]),
@@ -83,7 +83,7 @@ class PerovskiteLattice(UnitCellLattice):
                              np.array([0.0, 0.5, 1.0]),
                              np.array([-1.0, 0.5, 0.0]),
                              np.array([0.0, 0.5, -1.0])]
-            elif (PointType == 2):  # i.e., motif aligned with z-axis
+            elif PointType == 2:  # i.e., motif aligned with z-axis
                 RefNeighs = [np.array([0.0, 0.0, -0.5]),
                              np.array([0.0, 0.0, 0.5]),
                              np.array([1.0, 0.0, -0.5]),
@@ -97,7 +97,6 @@ class PerovskiteLattice(UnitCellLattice):
             else:
                 raise ValueError('PerovskiteLattice.getNeighbors Should never reach here!')
         else:
-            # import code; code.interact(local=dict(locals(),**globals()));
             raise ValueError('PerovskiteLattice.getNeighbors given point apparently not on lattice')
         result = deepcopy(RefNeighs)
         for NeighP in result:
@@ -117,11 +116,11 @@ class PerovskiteLattice(UnitCellLattice):
 
     def setDesign(self, D, AType, BType, OType):
         for i, P in enumerate(D.Canvas.Points):
-            if (self.isASite(P)):
+            if self.isASite(P):
                 D.setContent(i, AType)
-            elif (self.isBSite(P)):
+            elif self.isBSite(P):
                 D.setContent(i, BType)
-            elif (self.isOSite(P)):
+            elif self.isOSite(P):
                 D.setContent(i, OType)
             else:
                 raise ValueError('setDesign can not set site not on lattice')

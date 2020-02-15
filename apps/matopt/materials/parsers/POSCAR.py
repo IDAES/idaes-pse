@@ -18,8 +18,8 @@ def readPointsAndAtomsFromPOSCAR(filename, ImpliedElems=None):
         VyLine = infile.readline()
         VzLine = infile.readline()
         ElementNamesOrCountsLine = infile.readline().split()
-        if (ElementNamesOrCountsLine[0].isdigit()):
-            if (ImpliedAtoms is not None):
+        if ElementNamesOrCountsLine[0].isdigit():
+            if ImpliedElems is not None:
                 Elems = ImpliedElems
                 ElemCountsLine = ElementNamesOrCountsLine
             else:
@@ -36,7 +36,7 @@ def readPointsAndAtomsFromPOSCAR(filename, ImpliedElems=None):
         for t, Elem in enumerate(Elems):
             for i in range(ElemCounts[t]):
                 XYZLine = infile.readline().split()
-                if (blnIsCartesian):
+                if blnIsCartesian:
                     P = GS * np.array([float(XYZLine[0]), float(XYZLine[1]), float(XYZLine[2])], dtype=float)
                 else:
                     # NOTE: The global scaling GS has already been taken in the BBox
@@ -69,5 +69,5 @@ def writeDesignToPOSCAR(D, filename, CommentLine=None, GS=None, BBox=None,
         for Elem in Elems:
             for i in range(len(D)):
                 P = D.Canvas.Points[i] if blnUseDirect else BBox.getFractionalCoords(D.Canvas.Points[i])
-                if (D.Contents[i] == Elem):
+                if D.Contents[i] == Elem:
                     outfile.write('{} {} {}\n'.format(P[0] / GS, P[1] / GS, P[2] / GS))

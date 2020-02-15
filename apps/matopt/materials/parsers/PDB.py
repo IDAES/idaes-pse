@@ -4,7 +4,7 @@ from ..atom import Atom
 
 
 def isLineAtomRecord(line):
-    return (line[0:4] == 'ATOM')
+    return line[0:4] == 'ATOM'
 
 
 def readPointsFromPDB(filename):
@@ -24,7 +24,6 @@ def readAtomsFromPDB(filename):
     with open(filename, 'r') as infile:
         for line in infile:
             if isLineAtomRecord(line):
-                # import code; code.interact(local=dict(locals(),**globals()));
                 Atoms.append(Atom((line[12:16]).strip()))
     return Atoms
 
@@ -44,4 +43,3 @@ def writeDesignToPDB(D, filename):
                                       D.Canvas.Points[i][1],
                                       D.Canvas.Points[i][2],
                                       ''))
-                # import code; code.interact(local=dict(locals(),**globals()));

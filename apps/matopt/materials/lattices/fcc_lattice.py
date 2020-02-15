@@ -1,11 +1,12 @@
-import numpy as np
-from math import sqrt
 from copy import deepcopy
+from math import sqrt
 
-from ..geometry import Cube, Cuboctahedron
-from ..transform_func import ScaleFunc, RotateFunc, ReflectFunc
+import numpy as np
+
 from .unit_cell_lattice import UnitCell, UnitCellLattice
+from ..geometry import Cube
 from ..tiling import CubicTiling
+from ..transform_func import ScaleFunc, RotateFunc
 
 
 class FCCLattice(UnitCellLattice):
@@ -53,8 +54,8 @@ class FCCLattice(UnitCellLattice):
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
-        if (isinstance(TransF, ScaleFunc)):
-            if (TransF.isIsometric):
+        if isinstance(TransF, ScaleFunc):
+            if TransF.isIsometric:
                 self._IAD *= TransF.Scale[0]
             else:
                 raise ValueError('FCCLattice applyTransF: Can only scale isometrically')
