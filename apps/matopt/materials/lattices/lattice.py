@@ -26,7 +26,7 @@ class Lattice(object):
         else:
             raise TypeError
 
-    def shift(Shift):
+    def shift(self, Shift):
         if (type(Shift) is ShiftFunc):
             self.applyTransF(Shift)
         elif (type(Shift) is np.ndarray):
@@ -34,7 +34,7 @@ class Lattice(object):
         else:
             raise TypeError
 
-    def scale(Scale, OriginOfScale=None):
+    def scale(self, Scale, OriginOfScale=None):
         if (type(Scale) is ScaleFunc):
             self.applyTransF(Scale)
         elif (type(Scale) is np.ndarray):
@@ -42,7 +42,7 @@ class Lattice(object):
         else:
             raise TypeError
 
-    def rotate(Rotation, OriginOfRotation=None):
+    def rotate(self, Rotation, OriginOfRotation=None):
         if (type(Rotation) is RotateFunc):
             self.applyTransF(Rotation)
         elif (type(Rotation) is np.ndarray):
@@ -50,7 +50,7 @@ class Lattice(object):
         else:
             raise TypeError
 
-    def reflect(Reflection):
+    def reflect(self, Reflection):
         if (type(Reflection) is ReflectFunc):
             self.applyTransF(Reflection)
         else:
