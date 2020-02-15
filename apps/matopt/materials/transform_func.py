@@ -239,8 +239,6 @@ class RotateFunc(TransformFunc):
         """
         if (isinstance(P, np.ndarray) and P.shape == (3, 3)):
             # Case of Alignment matrix
-            # for AlignmentAxis in P:
-            #    AlignmentAxis = self.RotMat*AlignmentAxis
             np.dot(self.RotMat, P, out=P)
         else:
             # Case of point (np.array)

@@ -39,9 +39,6 @@ def myArrayEq(x, y, atol):
     Returns:
     (bool) true if the two arrays are equal
     """
-    # return np.allclose(x,y,rtol=0,atol=atol) # SLOW!
-    # return (np.abs(x-y)<atol).all()
-    # return (np.all(np.abs(x-y)<atol))#.all()
     return (np.abs(x - y) < atol).all()
 
 
@@ -79,6 +76,5 @@ def ListHasPoint(L, P, atol):
     (bool) true if the two arrays are equal
     """
     for l in L:
-        # if(np.allclose(l,P)): return True # SLOW!
         if (myArrayEq(l, P, atol)): return True
     return False

@@ -184,7 +184,6 @@ def makeMyPyomoBaseModel(C, Atoms=None, Confs=None):
     m.Zi = Var(m.I, domain=Binary, dense=False)
     # Adding Atoms Set
     m.nK = (len(Atoms) if Atoms is not None else 0)
-    # m.K = Set(initialize=range(m.nK))
     m.K = Set(initialize=Atoms)
     m.Yik = Var(m.I, m.K, domain=Binary, dense=False)
     m.Xijkl = Var(m.I, m.I, m.K, m.K, domain=Binary, dense=False)
@@ -229,12 +228,6 @@ def _addConsCiklFromXijkl(m):
 def _addConsXijFromXijkl(m):
     m.AssignXijFromXijkl = Constraint(m.I, m.I)
     for i, j in m.Xij.keys():
-        # NOTE: Don't use this wildcard expression because there may
-        #       be relevant keys that are not defined yet
-        # m.AssignXijFromXijkl.add(index=(i,j),
-        #                         expr=(m.Xij[i,j]==sum(m.Xijkl[i,j,k,l]
-        #                                               for k,l in m.Xijkl[i,j,:,:].wildcard_keys()
-        #                                               if k is not None and l is not None)))
         m.AssignXijFromXijkl.add(index=(i, j),
                                  expr=(m.Xij[i, j] == sum(m.Xijkl[i, j, k, l]
                                                           for k in m.K for l in m.K
@@ -1281,7 +1274,6 @@ def addConsZicFromYi(m,
     m.AssignZicFromYi2 = Constraint(m.I, m.C)
     for i, c in m.Zic.keys():
         assert (len(m.Ni[i]) == len(m.Confs[c]))
-        # RelaxExpr = Expression() # Apparently, this makes a 'named expression' and is wrong...
         RelaxExpr = 0
         for l, j in enumerate(m.Ni[i]):
             if (j is not None):
@@ -1351,7 +1343,6 @@ def addConsZicFromYiLifted(m,
                 if (m.Confs[c][l] != None):
                     RelaxExpr += m.Yi[j] - 1
                 else:
-                    # assert(m.Confs[c][l]==None)
                     RelaxExpr += -m.Yi[j]
         m.AssignZicFromYiLifted3.add(index=(i, c), expr=(m.Zic[i, c] >= 1 + RelaxExpr))
     if (blnConfsAreMutExc and blnConfsAreColExh):
@@ -1397,7 +1388,6 @@ def addConsZicFromYik(m,
     m.AssignZicFromYik2 = Constraint(m.I, m.C)
     for i, c in m.Zic.keys():
         assert (len(m.Ni[i]) == len(m.Confs[c]))
-        # RelaxExpr = Expression() # Apparently, this makes a 'named expression' and is wrong...
         RelaxExpr = 0
         for l, j in enumerate(m.Ni[i]):
             if (j is not None):
@@ -1457,7 +1447,6 @@ def addConsZicFromYikLifted(m,
                                      if m.Confs[c][l] == k)
                         NegZic = sum(m.Zic[i, c] for c in m.Zic[i, :].wildcard_keys()
                                      if m.Confs[c][l] != k)
-                        # import code; code.interact(local=dict(locals(),**globals()));
                         if (PosZic is not 0):
                             m.AssignZicFromYikLifted1.add(index=(i, j, k), expr=(PosZic <= m.Yik[j, k]))
                         if (NegZic is not 0):

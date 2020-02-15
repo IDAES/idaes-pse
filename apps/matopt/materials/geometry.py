@@ -192,7 +192,6 @@ class Polyhedron(Shape):
     def __calcFacetNorms(self):
         FacetNorms = []
         for Facet in self.F:
-            # import code; code.interact(local=dict(locals(),**globals()));
             Norm = np.cross(self.V[Facet[1]] - self.V[Facet[0]],
                             self.V[Facet[2]] - self.V[Facet[0]])
             Norm /= np.linalg.norm(Norm)
@@ -372,7 +371,6 @@ class Parallelepiped(Polyhedron):
         self._Vz = Vz
         if (np.inner(np.cross(Vx, Vy), Vz) < Parallelepiped.DBL_TOL):
             raise ValueError("Vx,Vy,Vz must have a positive box product.")
-            Vx, Vy = Vy, Vx
         if (BotBackLeftCorner is None):
             BotBackLeftCorner = np.array([0, 0, 0], dtype=float)
 

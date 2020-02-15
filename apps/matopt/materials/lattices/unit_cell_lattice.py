@@ -50,11 +50,6 @@ class UnitCell(object):
                                                blnPreferZero=True)
         if (blnDiscardIntPart):
             P -= P.astype(int)
-            '''
-            P = np.array([P[0]%1,
-                          P[1]%1,
-                          P[2]%1],dtype=float)
-            '''
 
     def getConvertToFrac(self, P, blnDiscardIntPart=True):
         result = deepcopy(P)
@@ -87,7 +82,6 @@ class UnitCellLattice(Lattice):
         for v in argPolyhedron.V:
             RefScanMin = np.minimum(RefScanMin, self._getConvertToReference(v))
             RefScanMax = np.maximum(RefScanMax, self._getConvertToReference(v))
-        # Add some padding to these numbers to handle integer rounding 
         RefScanMin = RefScanMin.astype(int) + np.array([-1, -1, -1], dtype=int)
         RefScanMax = RefScanMax.astype(int) + np.array([1, 1, 1], dtype=int)
         for RefP in self.ScanRef(RefScanMin, RefScanMax):

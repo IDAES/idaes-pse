@@ -143,12 +143,6 @@ class IndexedElem(object):
             (tuple<int/BBlock>) index with indices relevant to this object 
                 remaining
         """
-        # NOTE: The assertion below was removed to enable us to split
-        #       site indexes and site_type indexes out of combinations
-        #       that had bonds and bond_types. In those caes, it returns
-        #       the first index of the pair
-        # assert(all(Comb.dims[d] or not self.dims[d]
-        #           for d in range(len(Comb.dims))))
         if (Comb.sites is not None):
             i, *index = index
         if (Comb.bonds is not None):

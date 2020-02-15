@@ -140,20 +140,6 @@ class PerovskiteLattice(UnitCellLattice):
         return self._C
 
 
-'''
-def setPerovskiteDesign(D,Lat,AType,BType,OType):
-    for i in range(len(D)):
-        if Lat.isASite(D.Canvas.Points[i]):
-            D.setContent(i,AType)
-        elif Lat.isBSite(D.Canvas.Points[i]):
-            D.setContent(i,BType)
-        elif Lat.isOSite(D.Canvas.Points[i]):
-            D.setContent(i,OType)
-        else:
-            raise ValueError('setPerovskiteDesign cannot set site not on perovskite lattice')
-'''
-
-
 def getOxygenSymTransFs():
     result = []
     ReflX = ReflectFunc.acrossX()

@@ -109,78 +109,6 @@ class Design(object):
     """Makes a Design by reading from CONTCAR file.
        See documentation for fromPOSCAR. """
 
-    # === CONSTRUCTOR - From PlanarTiling
-    '''
-    @classmethod
-    def fromPlanarTiling(cls,D,T,nTiles,OldToNewIndices=None):
-        """Make a Design by periodically tiling a smaller Design.
-
-        Args:
-            D(Design): A smaller Design to replicate periodically.
-            T(PlanarTiling): A tiling to dictate how the pattern is replicated.
-            nTiles(int): Number of tiles in each direction.
-            OldToNewIndices(dict, optional): Optional, mapping of new Canvas
-        indices to old indices. (Default value = None)
-
-        Returns:
-            (Design) Periodically replicated Design.
-
-        """
-        result = cls()
-        Vx = T.Vx
-        Vy = T.Vy
-        if(OldToNewIndices is not None):
-            del OldToNewIndices[:]
-            for i in range(len(D)):
-                OldToNewIndices.append([])
-        for nx in range(nTiles):
-            for ny in range(nTiles):
-                Offset = nx*Vx+ny*Vy
-                for i,P in enumerate(D.Canvas.Points):
-                    j = len(result)
-                    result.add(P+Offset,D.Contents[i])
-                    if(OldToNewIndices is not None):
-                        OldToNewIndices[i].append(j)
-        return result
-    '''
-
-    # === CONSTRUCTOR - From CubicTiling
-    '''
-    @classmethod
-    def fromCubicTiling(cls,D,T,nTiles,OldToNewIndices=None):
-        """Make a Design by periodically tiling a smaller Design .
-
-        Args:
-            D(Design): A smaller Design to replicate periodically.
-            T(CubicTiling): A tiling to dictate how the pattern is replicated.
-            nTiles(int): Number of tiles in each direction.
-            OldToNewIndices(dict, optional): Optional, mapping of new Canvas
-        indices to old indices. (Default value = None)
-
-        Returns:
-            (Design) Periodically replicated Design.
-
-        """
-        result = cls()
-        Vx = T.Vx
-        Vy = T.Vy
-        Vz = T.Vz
-        if(OldToNewIndices is not None):
-            del OldToNewIndices[:]
-            for i in range(len(D)):
-                OldToNewIndices.append([])
-        for nx in range(nTiles):
-            for ny in range(nTiles):
-                for nz in range(nTiles):
-                    Offset = nx*Vx+ny*Vy+nz*Vz
-                    for i,P in enumerate(D.Canvas.Points):
-                        j = len(result)
-                        result.add(P+Offset,D.Contents[i])
-                        if(OldToNewIndices is not None):
-                            OldToNewIndices[i].append(j)
-        return result
-    '''
-
     # === MANIPULATION METHODS
     def setContent(self, i, Elem):
         """Set content at a particular location.
@@ -289,10 +217,6 @@ class Design(object):
             bool) True if Designs are considered equivalent.
 
         """
-        # NOTE: The code below is commented out because it was found to
-        #       be significantly slower than just checking the for-loop
-        # if(blnIgnoreVoid and self.NonVoidCount!=other.NonVoidCount):
-        #    return False
         if (not blnIgnoreVoid and len(self) != len(other)):
             return False
         if (blnPreserveIndexing):

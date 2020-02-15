@@ -8,8 +8,6 @@ from .parsers.CFG import readPointsAndAtomsFromCFG
 from .geometry import RectPrism
 
 
-# __all__ = ['Canvas']
-
 class Canvas(object):
     """A class for combining geometric points and neighbors.
 
@@ -462,9 +460,6 @@ class Canvas(object):
         for Q in self.Points:
             # NOTE: There are several ways to test point membership.
             #       This is optimized for speed.
-            # if(np.allclose(P,Q,rtol=0,atol=Canvas.DBL_TOL)):
-            # if(np.isclose(P,Q,rtol=0,atol=Canvas.DBL_TOL).all()):
-            # if((np.abs(P-Q)<Canvas.DBL_TOL).all()):
             if (myArrayEq(P, Q, Canvas.DBL_TOL)):
                 return True
         return False
@@ -482,7 +477,6 @@ class Canvas(object):
         for i, Q in enumerate(self.Points):
             # NOTE: There are several ways to test point membership.
             #       This is optimized for speed.
-            # if(np.allclose(P,Q,rtol=0,atol=Canvas.DBL_TOL)):
             if (myArrayEq(P, Q, Canvas.DBL_TOL)):
                 return i
         return None
