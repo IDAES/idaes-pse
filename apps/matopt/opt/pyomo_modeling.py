@@ -5,7 +5,6 @@ import numpy as np
 from pyomo.environ import *
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.expr.numeric_expr import MonomialTermExpression, SumExpression, NegationExpression
-# from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from ..util.util import isZero, areEqual
 
 DBL_TOL = 1e-5
@@ -34,7 +33,7 @@ def getLB(e):
         else:
             return e.lb
     elif (isinstance(e, MonomialTermExpression)):
-        assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), \
+    	assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), \
             "This code relies on the assumption that the only variable " \
             "in a monomial expression is the second argument"
         if (e.args[0] > 0):
@@ -80,7 +79,7 @@ def getUB(e):
         else:
             return e.ub
     elif (isinstance(e, MonomialTermExpression)):
-        assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), \
+    	assert isinstance(e.args[1], pyomo.core.base.var._GeneralVarData), \
             "This code relies on the assumption that the only variable " \
             "in a monomial expression is the second argument"
         if (e.args[0] > 0):
