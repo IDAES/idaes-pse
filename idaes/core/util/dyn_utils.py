@@ -19,7 +19,7 @@ from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 #from pyomo.dae.set_utils import (is_explicitly_indexed_by,
 #        is_implicitly_indexed_by, get_index_set_except)
-from pyomo.dae.set_utils import get_index_set_except
+#from pyomo.dae.set_utils import get_index_set_except
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import ComponentSet
