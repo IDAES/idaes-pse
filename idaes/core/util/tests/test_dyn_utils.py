@@ -163,9 +163,9 @@ def test_get_index_set_except():
     # Two sets omitted. Now set_except is just set1
     set_except = info['set_except']
     index_getter = info['index_getter']
-    self.assertTrue('a' in set_except)
+    assert ('a' in set_except)
     # index_getter inserts the two new indices in the right order
-    self.assertEqual(index_getter('b', 1.2, 1.1), (1.1, 1.2, 'b'))
+    assert (index_getter('b', 1.2, 1.1) == (1.1, 1.2, 'b'))
 
     # Indexed by four sets
     info = get_index_set_except(m.v4, m.set1, m.space)
@@ -184,3 +184,4 @@ def test_get_index_set_except():
 
 if __name__ == "__main__":
     test_is_indexed_by()
+    test_get_index_set_except()

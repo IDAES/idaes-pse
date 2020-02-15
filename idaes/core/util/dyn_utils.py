@@ -142,11 +142,11 @@ def get_index_set_except(comp, *sets):
     """
     n_set = len(sets)
     s_set = set(sets)
-    total_s_dim = sum([s.dim for s in sets])
+    total_s_dim = sum([s.dimen for s in sets])
     info = {}
 
     if not is_explicitly_indexed_by(comp, *sets):
-        msg = (comp.name + ' is not indexed by at least one of ' + 
+        msg = (comp.name + ' is not indexed by at least one of ' +
                 str([s.name for s in sets]))
         raise ValueError(msg)
 
@@ -170,9 +170,8 @@ def get_index_set_except(comp, *sets):
                     location[ind_loc] = s_loc
                     found_set = True
                     break
-                if not found_set:
-                    other_ind_sets.append(ind_set)
-
+            if not found_set:
+                other_ind_sets.append(ind_set)
     else:
         # If index_set has not set_tuple, it must be a SimpleSet, and 
         # len(sets) == 1. Location in sets and in comp's indexing set
@@ -201,7 +200,7 @@ def get_index_set_except(comp, *sets):
     # Now may assume other_ind_sets is nonempty.
     if len(other_ind_sets) == 1:
         set_except = other_ind_sets[0]
-    elif: len(other_ind_sets) >= 2:
+    elif len(other_ind_sets) >= 2:
         set_except = other_ind_sets[0].cross(*other_ind_sets[1:])
     else:
         raise ValueError('Did not expect this to happen')
