@@ -181,12 +181,6 @@ class Design(object):
         return result
     '''
 
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign(self):
-        """Determine if object is consistent with class assumptions."""
-        if (len(self.Canvas) != len(Contents)): return False
-        return self.Canvas.isConsistentWithDesign()
-
     # === MANIPULATION METHODS
     def setContent(self, i, Elem):
         """Set content at a particular location.

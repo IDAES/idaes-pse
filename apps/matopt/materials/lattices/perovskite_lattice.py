@@ -33,12 +33,6 @@ class PerovskiteLattice(UnitCellLattice):
         self.applyTransF(ScaleFunc(np.array([A / PerovskiteLattice.RefA,
                                              B / PerovskiteLattice.RefB,
                                              C / PerovskiteLattice.RefC])))
-        assert (self.isConsistentWithDesign())
-
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign(self):
-        # TODO: Put some real checks here
-        return UnitCellLattice.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):

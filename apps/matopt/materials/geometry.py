@@ -344,12 +344,6 @@ class Cuboctahedron(Polyhedron):
         if (Center is not None):
             self.shift(Center)
 
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign():
-        """ """
-        # TODO: Actually put something here
-        return Polyhedron.isConsistentWithDesign(self)
-
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
         """
@@ -452,11 +446,6 @@ class Parallelepiped(Polyhedron):
                                 float(VzLine[2])], dtype=float)
         return cls(Vx, Vy, Vz)
 
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithClassDesign(self):
-        """ """
-        # TODO: Add more checks here
-        return Polyhedron.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):

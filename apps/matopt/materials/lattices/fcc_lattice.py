@@ -35,7 +35,6 @@ class FCCLattice(UnitCellLattice):
                                      np.array([0.0, 0.5, -0.5]),
                                      np.array([0.5, 0.5, 0.0])]
         self.applyTransF(ScaleFunc(IAD / FCCLattice.RefIAD))
-        assert (self.isConsistentWithDesign())
 
     # === CONSTRUCTOR - Aligned with FCC {100}
     @classmethod
@@ -58,11 +57,6 @@ class FCCLattice(UnitCellLattice):
         thetaZ = (np.pi * 0.5 if blnTrianglesAlignedWithX else 0)
         result.applyTransF(RotateFunc.fromXYZAngles(thetaX, thetaY, thetaZ))
         return result
-
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign(self):
-        # TODO: Put some real checks here
-        return UnitCellLattice.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):

@@ -30,11 +30,6 @@ class CubicLattice(UnitCellLattice):
                                      np.array([0.0, -1.0, 0.0]),
                                      np.array([0.0, 0.0, -1.0])]
         self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
-        assert (self.isConsistentWithDesign())
-
-    # === ASSERTION OF CLASS DESIGN
-    def isConsistentWithDesign(self):
-        return UnitCellLattice.isConsistentWithDesign(self)
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
