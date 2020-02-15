@@ -109,6 +109,11 @@ def test_get_index_set_except():
     m.v3 = Var(m.time, m.space, m.set1)
     m.v4 = Var(m.time, m.space, m.set1, m.set2)
 
+    # Try a multi-dimensional set
+    m.set3 = Set(initialize=[('a', 1), ('b', 2)])
+    m.v5 = Var(m.set3)
+    m.v6 = Var(m.time, m.space, m.set3)
+
     disc = TransformationFactory('dae.collocation')
     disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
     disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
@@ -181,6 +186,21 @@ def test_get_index_set_except():
         complete_index = index_getter(partial_index, 'a', m.space[2])
         assert (complete_index in index_set)
         # Do something for every index of v4 at 'a' and space[2]
+
+    # Indexed by a multi-dimensional set
+    info = get_index_set_except(m.v5, m.set3)
+    set_except = info['set_except']
+    index_getter = info['index_getter']
+    assert (set_except == [None])
+    assert (index_getter((), ('a', 1)) == ('a', 1))
+
+    info = get_index_set_except(m.v6, m.set3, m.time)
+    set_except = info['set_except']
+    index_getter = info['index_getter']
+    assert (m.space[1] in set_except)
+    assert (index_getter(m.space[1], ('b', 2), m.time[1])
+            == (m.time[1], m.space[1], 'b', 2))
+
 
 if __name__ == "__main__":
     test_is_indexed_by()

@@ -215,23 +215,33 @@ def get_index_set_except(comp, *sets):
 
 def _complete_index(loc, index, *newvals):
     """
+    args:
+        loc - dictionary mapping location in the new index to
+              location in newvals
+        index - partial index
+        newvals - newvalues to insert into index. Can be scalars
+                  or tuples (for higher-dimension sets)
     """
+    # Not sure how isinstance could be avoided here
     if not isinstance(index, tuple):
         index = (index,)
     keys = sorted(loc.keys())
     if len(keys) != len(newvals):
         raise ValueError('Wrong number of values to complete index')
     for i in sorted(loc.keys()):
-        index = index[0:i] + (newvals[loc[i]],) + index[i:]
+        newval = newvals[loc[i]]
+        if not isinstance(newval, tuple):
+            newval = (newval,)
+        index = index[0:i] + newval + index[i:]
     return index
 
 
 def get_activity_dict(b):
     """
     args:
-        b: a block to be searched for active components
+        b - a block to be searched for active components
     returns:
-        a dictionary mapping id of constraints and blocks
+        dictionary mapping id of constraints and blocks
         to a bool indicating if they are fixed
     """
     return {id(con): con.active 
