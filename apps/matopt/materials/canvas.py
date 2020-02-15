@@ -485,7 +485,6 @@ class Canvas(object):
             # if(np.allclose(P,Q,rtol=0,atol=Canvas.DBL_TOL)):
             if (myArrayEq(P, Q, Canvas.DBL_TOL)):
                 return i
-        # TODO: Decide if an exception should be thrown here...
         return None
 
     def getNeighbors(self, P):

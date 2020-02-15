@@ -41,13 +41,6 @@ class FCCLattice(UnitCellLattice):
     def alignedWith100(cls, IAD):
         return cls(IAD)  # Default implementation
 
-    # === CONSTRUCTOR - Aligned with FCC {110}
-    @classmethod
-    def alignedWith110(cls, IAD):
-        result = cls(IAD)
-        raise NotImplementedError('TODO')
-        return result
-
     # === CONSTRUCTOR - Aligned with FCC {111}
     @classmethod
     def alignedWith111(cls, IAD, blnTrianglesAlignedWithX=True):

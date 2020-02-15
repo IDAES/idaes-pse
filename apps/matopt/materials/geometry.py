@@ -238,10 +238,9 @@ class Polyhedron(Shape):
                 TransF.transformDirection(direction)
             for norm in self._FacetNorms:
                 TransF.transformDirection(norm)
-        elif (type(TransF) is ReflectFunc):
-            raise NotImplementedError  # TODO
         else:
-            raise TypeError
+            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
+                            'potential feature addition.')
         Shape.applyTransF(self, TransF)
         assert (self.isConsistentWithDesign())
 

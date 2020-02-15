@@ -1604,7 +1604,6 @@ class PiecewiseLinear(DescriptorRule):
                           pw_repn='MC')]
 
 
-# TODO: Think about how to generally incorporate NOT operator
 class Implies(DescriptorRule):
     """A class for rules that define simple logical implications.
 
@@ -1821,8 +1820,8 @@ class ImpliesSiteCombination(DescriptorRule):
                                    j in Combj.sites and
                                    (not symmetric_bonds or j > i))]
         if (sum(Combi.dims) > 1):
-            raise NotImplementedError('TODO: Decide how to split indexes '
-                                      'additional indexes in this case')
+            raise NotImplementedError('Additional indexes are not supported, please contact MatOpt developer for '
+                                      'possible feature addition')
         DescriptorRule.__init__(self, **kwargs)
 
     def _pyomo_cons(self, var):
@@ -2634,13 +2633,6 @@ class MatOptModel(object):
         Returns:
             (list<``Design``>) A list of optimal Designs in order of decreasing optimality.
         """
-        # TODO: Use Pyomo solution pool interface, CPLEX solution pool 
-        #       interface, or otherwise inform a persistent solver 
-        #       interface to continue with the same branch-and-bound 
-        #       tree when re-optimizing. Currently, CPLEX resolves the 
-        #       whole model from scratch when a new constraint is added 
-        #       to it. Even when we tested the Pyomo persistent solver 
-        #       interfaces. 
         self._pyomo_m = self._make_pyomo_model(func, sense)
         self._pyomo_m.iSolns = Set(initialize=list(range(nSolns)))
         self._pyomo_m.IntCuts = Constraint(self._pyomo_m.iSolns)
@@ -2718,7 +2710,8 @@ class MatOptModel(object):
             m.obj = Objective(expr=obj_expr._pyomo_expr(index=(None,)),
                               sense=sense)
         else:
-            raise TypeError('TODO')
+            raise TypeError('The MaterialDescriptor chosen is not supported to be an objective, please contact MatOpt '
+                            'developer for potential fix')
         # NOTE: The timing of the call to addConsForGeneralVars is important
         #       We need to call it after all user-defined descriptors are
         #       encoded.
@@ -2775,7 +2768,8 @@ class MatOptModel(object):
                     opt.options['treememory'] = trelim
                 res = manager.solve(self._pyomo_m, opt=opt)
         else:
-            raise NotImplementedError('TODO: Implement additional solver choices')
+            raise NotImplementedError('MatOpt is tailored to perform best with CPLEX (locally or through NEOS), '
+                                      'please contact MatOpt developer for additional solver support ')
         solver_status = res.solver.status
         solver_term = res.solver.termination_condition
         soln_status = res.solution.status
@@ -2847,63 +2841,3 @@ class MatOptModel(object):
     @property
     def descriptors(self):
         return self._descriptors
-
-
-'''
-# OLD CODE
-# TODO: Delete or reincorporate?
-class ImpliedByBondTypes(DescriptorRule):
-    DEFAULT_BIG_M = 9999
-
-    def __init__(self,Xijkl,e,**kwargs):
-        assert(isinstance(e,SiteCombination))
-        self.Xijkl = Xijkl
-        self.expr = e
-        kwargs = {**e.index_dict,**kwargs}
-        DescriptorRule.__init__(self,**kwargs)
-
-    def _pyomo_cons(self,Desc):
-        result = []
-        Comb = IndexedElem.fromComb(self.Xijkl,Desc,self.expr)
-
-        def rule_lb(m,*args):
-            d = Desc._pyomo_var[Desc.mask(args,Comb)]
-            e = self.expr._pyomo_expr(index=self.expr.mask(args,Comb))
-            body = d-e
-            body_LB = getLB(body)
-            MLB = (body_LB if body_LB is not None else -ImpliedByBondTypes.DEFAULT_BIG_M)
-            i,j,k,l = args
-            return MLB*(1-m.Xijkl[i,j,k,l]) <= body
-        def rule_ub(m,*args):
-            d = Desc._pyomo_var[Desc.mask(args,Comb)]
-            e = self.expr._pyomo_expr(index=self.expr.mask(args,Comb))
-            body = d-e
-            body_UB = getUB(body)
-            MUB = (body_UB if body_UB is not None else  ImpliedByBondTypes.DEFAULT_BIG_M)
-            i,j,k,l = args
-            return body <= MUB*(1-m.Xijkl[i,j,k,l])
-        def rule_no_bond_lb(m,*args):
-            body = Desc._pyomo_var[args]
-            body_LB = getLB(body)
-            MLB = (body_LB if body_LB is not None else -ImpliedByBondTypes.DEFAULT_BIG_M)
-            if(Desc.bond_types is None):
-                i,j = args
-                return MLB*(m.Xij[i,j]) <= body
-            else:
-                i,j,k,l = args
-                return MLB*(m.Xijkl[i,j,k,l]) <= body
-        def rule_no_bond_ub(m,*args):
-            body = Desc._pyomo_var[args]
-            body_UB = getUB(body)
-            MUB = (body_UB if body_UB is not None else  ImpliedByBondTypes.DEFAULT_BIG_M)
-            if(Desc.bond_types is None):
-                i,j = args
-                return body <= MUB*(m.Xij[i,j])
-            else:
-                i,j,k,l = args
-                return body <= MUB*(m.Xijkl[i,j,k,l])
-        return [Constraint(*Comb.index_sets,rule=rule_lb),
-                Constraint(*Comb.index_sets,rule=rule_ub),
-                Constraint(*Desc.index_sets,rule=rule_no_bond_lb),
-                Constraint(*Desc.index_sets,rule=rule_no_bond_ub)]
-'''
