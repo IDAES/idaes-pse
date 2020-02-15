@@ -640,7 +640,7 @@ class SumNeighborBonds(Expr):
         result = self.offset
         for n, j in enumerate(self.desc.canv.NeighborhoodIndexes[i]):
             if j is not None:
-                if (symmetric_bonds):
+                if (self.symmetric_bonds):
                     i, j = min(i, j), max(i, j)
                 result += (self.coefs if
                            (type(self.coefs) is float or
