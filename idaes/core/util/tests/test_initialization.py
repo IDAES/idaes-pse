@@ -566,3 +566,12 @@ def test_solve_indexed_block_error():
     # Try solve_indexed_block on non-block object
     with pytest.raises(TypeError):
         solve_indexed_blocks(solver=None, blocks=[1, 2, 3])
+
+
+@pytest.make.skipif(solver is None, reason="Solver not available")
+def test_integrate_flowsheet():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={'dynamic': True})
+    # need to import some sample property package
+
+
