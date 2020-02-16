@@ -568,7 +568,7 @@ def test_solve_indexed_block_error():
         solve_indexed_blocks(solver=None, blocks=[1, 2, 3])
 
 
-@pytest.make.skipif(solver is None, reason="Solver not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_integrate_flowsheet():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={'dynamic': True})
