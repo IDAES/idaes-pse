@@ -220,7 +220,7 @@ def test_fix_and_deactivate():
                 rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x])
 
         @b.Block(m.time)
-        def b2_rule(b, t):
+        def b2(b, t):
             b.v = Var(initialize=2)
 
     @m.fs.Block(m.time, m.space)
@@ -286,6 +286,29 @@ def test_fix_and_deactivate():
     assert path == [('b3', 'a'), ('v', 'f')]
     path = path_from_block(m.fs.b1.con[m.time[1], m.space[1]], m.fs)
     assert path == [('b1', None)]
+
+    m.fs.b1.b2[m.time[1]].v.set_value(-1)
+    for x in m.space:
+        m.fs.b1.v[m.time[1], x].set_value(-1)
+        m.fs.b1.dv[m.time[1], x].set_value(-1)
+        for c1 in m.set1:
+            m.fs.b2[m.time[1], x].v[c1].set_value(-1)
+            for c2 in m.set2:
+                m.fs.b2[m.time[1], x].b3[c1].v[c2].set_value(-1)
+
+    copy_values_at_time(m, m, m.time.last(), m.time[1], copy_fixed=False)
+    assert m.fs.b1.b2[m.time.last()].v.value == -1
+    for x in m.space:
+        if x != m.space.first():
+            assert m.fs.b1.v[m.time.last(), x].value == -1
+        else:
+            assert m.fs.b1.v[m.time.last(), x].value == 1
+            assert m.fs.b1.v[m.time.last(), x].fixed
+        assert m.fs.b1.dv[m.time.last(), x].value == -1
+        for c1 in m.set1:
+            assert m.fs.b2[m.time.last(), x].v[c1].value == -1
+            for c2 in m.set2:
+                assert m.fs.b2[m.time[1], x].b3[c1].v[c2].value == -1
 
 
 if __name__ == "__main__":
