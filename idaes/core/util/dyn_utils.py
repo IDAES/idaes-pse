@@ -369,11 +369,14 @@ def path_from_block(comp, blk, include_comp=False):
 
     # Append comp's name and index to the list if desired:
     if include_comp:
-        route.append((comp.parent_component().local_name, comp.index()))
+        if hasattr(comp, 'index'):
+            route.append((comp.parent_component().local_name, comp.index()))
+        else:
+            route.append((comp.parent_component().local_name, None))
     return route
 
 def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
-        copy_fixed=True, outlvl=None):
+        copy_fixed=True, outlvl=idaeslog.NOTSET):
     """
     For all variables in fs_tgt (implicitly or explicitly) indexed by time,
     sets the value at t_target to that of the same variable in fs_src
