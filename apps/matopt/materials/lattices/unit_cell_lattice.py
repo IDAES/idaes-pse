@@ -22,7 +22,7 @@ class UnitCell(object):
                 if (coord < 0.0 - UnitCell.DBL_TOL or
                         coord > 1.0 + UnitCell.DBL_TOL):
                     return False
-        return self.Tiling.isConsistentWithDesign()
+        return True
 
     # === MANIPULATION METHODS
     def addPosition(self, P):
