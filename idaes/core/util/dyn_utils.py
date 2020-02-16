@@ -247,7 +247,7 @@ def get_activity_dict(b):
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
 
-def deactivate_model_at(b, cset, pt, outlvl=None):
+def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
     """
     Finds any block or constraint in block b, indexed explicitly or implicitly
     by cset, and deactivates each instance at pt
