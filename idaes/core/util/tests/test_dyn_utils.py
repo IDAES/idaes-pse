@@ -202,6 +202,93 @@ def test_get_index_set_except():
             == (m.time[1], m.space[1], 'b', 2))
 
 
+def test_fix_and_deactivate():
+    m = ConcreteModel()
+    m.time = ContinuousSet(bounds=(0, 10))
+    m.space = ContinuousSet(bounds=(0, 5))
+    m.set1 = Set(initialize=['a', 'b', 'c'])
+    m.set2 = Set(initialize=['d', 'e', 'f'])
+    m.fs = Block()
+
+    @m.fs.Block()
+    def b1(b):
+        b.v = Var(m.time, m.space, initialize=1) 
+        # All the indices of a DerivativeVar must appear in the variable itself?
+        b.dv = DerivativeVar(b.v, wrt=m.time)
+
+        b.con = Constraint(m.time, m.space, 
+                rule=lambda b, t, x: b.dv[t, x] == 7 - b.v[t, x])
+
+        @b.Block(m.time)
+        def b2_rule(b, t):
+            b.v = Var(initialize=2)
+
+    @m.fs.Block(m.time, m.space)
+    def b2(b, t, x):
+        b.v = Var(m.set1, initialize=2)
+
+        @b.Block(m.set1)
+        def b3(b, c):
+            b.v = Var(m.set2, initialize=3)
+
+            @b.Constraint(m.set2)
+            def con(b, s):
+                return (5*b.v[s] == 
+                        m.fs.b2[m.time.first(), m.space.first()].v[c])
+
+    @m.fs.Constraint(m.time)
+    def con1(fs, t):
+        return fs.b1.v[t, m.space.last()] == 5
+
+    @m.fs.Constraint(m.space)
+    def con2(fs, x):
+        return fs.b1.v[m.time.first(), x] == 1
+
+
+    disc = TransformationFactory('dae.collocation') 
+    disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
+    disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
+
+    for t in m.time:
+        m.fs.b1.v[t, m.space.first()].fix()
+
+    active_dict = get_activity_dict(m.fs)
+    for comp in m.fs.component_data_objects(Constraint, Block):
+        assert active_dict[id(comp)] == True
+
+    deactivate_model_at(m, m.time, m.time[2])
+    assert not m.fs.con1[m.time[2]].active
+    assert m.fs.con2[m.space[1]].active
+    assert not m.fs.b1.con[m.time[2], m.space[1]].active
+    assert not m.fs.b2[m.time[2], m.space.last()].active
+    assert m.fs.b2[m.time[2], m.space.last()].b3['a'].con['e'].active
+
+    derivs = get_derivatives_at(m, m.time, m.time.first())
+    deriv_names = [var.name for var in derivs]
+    # Will this conflate "DerivativeVar-Data" objects with the same values?
+    assert m.fs.b1.dv[m.time.first(), m.space.first()] in derivs
+    assert m.fs.b1.dv[m.time[1], m.space[1]].name in deriv_names
+
+    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
+                           m, include_comp=False)
+    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
+                    ('b3', 'a')]
+    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
+                           m, include_comp=True)
+    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
+                    ('b3', 'a'), ('v', None)]
+    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v['f'],
+                           m, include_comp=True)
+    assert path == [('fs', None), ('b2', (m.time[1], m.space[1])),
+                    ('b3', 'a'), ('v', 'f')]
+    path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v['f'],
+                           m.fs.b2[m.time[1], m.space[1]], include_comp=True)
+    assert path == [('b3', 'a'), ('v', 'f')]
+    path = path_from_block(m.fs.b1.con[m.time[1], m.space[1]], m.fs)
+    assert path == [('b1', None)]
+
+
 if __name__ == "__main__":
     test_is_indexed_by()
     test_get_index_set_except()
+    test_fix_and_deactivate()
