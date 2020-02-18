@@ -2276,7 +2276,7 @@ class TestPHvalues(object):
         return model
 
     def test_tau_sat(self, model):
-        cond = read_data("sat_prop.txt", col=2)
+        cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for c in cond:
             tau = value(model.prop_in.func_tau_sat(c[1]/1000.0))
             T = 647.096/tau
@@ -2284,7 +2284,7 @@ class TestPHvalues(object):
             assert(abs(T-c[0]) < 0.1)
 
     def test_liquid_density_sat(self, model):
-        cond = read_data("sat_prop.txt", col=2)
+        cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for c in cond:
             if c[0] > 645:  # getting very close to critical point
                 tol = 0.05
@@ -2296,7 +2296,7 @@ class TestPHvalues(object):
             assert(abs(rho-c[2])/c[2] < tol)
 
     def test_vapor_density_sat(self, model):
-        cond = read_data("sat_prop.txt", col=14)
+        cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=14)
         for c in cond:
             if c[0] > 645:  # getting very close to critical point
                 tol = 0.01
@@ -2308,7 +2308,7 @@ class TestPHvalues(object):
             assert(abs(rho-c[2])/c[2] < tol)
 
     def test_liquid_enthalpy_sat(self, model):
-        cond = read_data("sat_prop.txt", col=5)
+        cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=5)
         for c in cond:
             if c[0] > 645:  # getting very close to critical point
                 tol = 0.01
@@ -2320,7 +2320,7 @@ class TestPHvalues(object):
             assert(abs((enth-c[2])/c[2]) < tol)
 
     def test_vapor_enthalpy_sat(self, model):
-        cond = read_data("sat_prop.txt", col=17)
+        cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=17)
         for c in cond:
             if c[0] > 645:  # getting very close to critical point
                 tol = 0.01
@@ -2332,8 +2332,8 @@ class TestPHvalues(object):
             assert(abs((enth-c[2])/c[2]) < tol)
 
     def test_enthalpy_of_vaporization(self, model):
-        cond_liq = read_data("sat_prop.txt", col=5)
-        cond_vap = read_data("sat_prop.txt", col=17)
+        cond_liq = read_data("sat_prop_iapws95_nist_webbook.txt", col=5)
+        cond_vap = read_data("sat_prop_iapws95_nist_webbook.txt", col=17)
         for i, c in enumerate(cond_liq):
             if c[0] > 645:  # getting very close to critical point
                 tol = 0.05
@@ -2353,8 +2353,8 @@ class TestPHvalues(object):
         assert(abs(enth) < 0.001)
 
     def test_density(self, model):
-        cond = read_data("prop.txt", col=2)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=2)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -2372,8 +2372,8 @@ class TestPHvalues(object):
             assert(abs(rho-c[2])/c[2] < tol)
 
     def test_enthalpy(self, model):
-        cond = read_data("prop.txt", col=5)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=5)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -2392,8 +2392,8 @@ class TestPHvalues(object):
             assert(abs(h-c[2])/c[2] < tol)
 
     def test_enthalpy_vapor_as_function_of_p_and_tau(self, model):
-        cond = read_data("prop.txt", col=5)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=5)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 continue
@@ -2407,8 +2407,8 @@ class TestPHvalues(object):
             assert(abs(h-c[2])/c[2] < tol)
 
     def test_enthalpy_liquid_as_function_of_p_and_tau(self, model):
-        cond = read_data("prop.txt", col=5)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=5)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             p = phase[i][2]
             if p in ["vapor"]:
@@ -2423,8 +2423,8 @@ class TestPHvalues(object):
             assert(abs(h-c[2])/c[2] < tol)
 
     def test_entropy(self, model):
-        cond = read_data("prop.txt", col=6)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=6)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -2441,8 +2441,8 @@ class TestPHvalues(object):
             assert(abs(s-c[2])/c[2] < tol)
 
     def test_internal_energy(self, model):
-        cond = read_data("prop.txt", col=4)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=4)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -2460,8 +2460,8 @@ class TestPHvalues(object):
             assert(abs(u-c[2])/c[2] < tol)
 
     def test_speed_of_sound(self, model):
-        cond = read_data("prop.txt", col=9)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=9)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if c[2] == "undefined":
                 continue
@@ -2483,8 +2483,8 @@ class TestPHvalues(object):
             assert(abs(w-c[2])/c[2] < tol)
 
     def test_cp(self, model):
-        cond = read_data("prop.txt", col=8)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=8)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if c[2] == "undefined":
                 continue
@@ -2506,8 +2506,8 @@ class TestPHvalues(object):
             assert(abs(cp-c[2])/c[2] < tol)
 
     def test_cv(self, model):
-        cond = read_data("prop.txt", col=7)
-        phase = read_data("prop.txt", col=13)
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=7)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if c[2] == "undefined":
                 continue
