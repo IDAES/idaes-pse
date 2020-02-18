@@ -146,6 +146,49 @@ class TestGenericParameterBlock(object):
 
         assert m.params.configured
 
+        assert isinstance(m.params.component_list, Set)
+        assert len(m.params.component_list) == 3
+        for j in m.params.component_list:
+            assert j in ["a", "b", "c"]
+
+        assert isinstance(m.params.phase_list, Set)
+        assert len(m.params.phase_list) == 2
+        for p in m.params.phase_list:
+            assert p in [1, 2]
+
+        assert isinstance(m.params._phase_component_set, Set)
+        assert len(m.params._phase_component_set) == 6
+        for v in m.params._phase_component_set:
+            assert v[0] in [1, 2]
+            assert v[1] in ["a", "b", "c"]
+
+    def test_configure_phase_comp(self):
+        # Phase-component list with invalid phase
+        m = ConcreteModel()
+
+        m.params = DummyParameterBlock(default={
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"],
+                                         3: ["a", "b", "c"]},
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar", 3: "baz"}})
+
+        assert isinstance(m.params.component_list, Set)
+        assert len(m.params.component_list) == 3
+        for j in m.params.component_list:
+            assert j in ["a", "b", "c"]
+
+        assert isinstance(m.params.phase_list, Set)
+        assert len(m.params.phase_list) == 3
+        for p in m.params.phase_list:
+            assert p in [1, 2, 3]
+
+        assert isinstance(m.params._phase_component_set, Set)
+        assert len(m.params._phase_component_set) == 9
+        for v in m.params._phase_component_set:
+            assert v[0] in [1, 2, 3]
+            assert v[1] in ["a", "b", "c"]
+
     def test_configure_no_components(self):
         m = ConcreteModel()
 
@@ -168,9 +211,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic Property Package provided "
-                           "with invalid phase_component_list. Phase 3 is not "
-                           "a member of phase_list."):
+                           match="params mismatch between phase_list and "
+                            "phase_component_list. Phase 3 appears in "
+                            "phase_component_list but not phase_list."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
@@ -179,24 +222,54 @@ class TestGenericParameterBlock(object):
                                          3: ["a", "b", "c"]}})
 
     def test_configure_invalid_phase_comp_2(self):
+        # Phase-component list with invalid phase
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params mismatch between phase_list and "
+                            "phase_component_list. Phase 3 appears in "
+                            "phase_list but not phase_component_list."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2, 3],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]}})
+
+    def test_configure_invalid_phase_comp_3(self):
         # Phase-component list with invalid component
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic Property Package provided "
-                           "with invalid phase_component_list. Component d in "
-                           "phase 1 is not a members of component_list."):
+                           match="params mismatch between component_list and "
+                                "phase_component_list. Component d appears in "
+                                "phase_component_list but not "
+                                "component_list."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
                 "phase_component_list": {1: ["a", "b", "c", "d"],
                                          2: ["a", "b", "c", "d"]}})
 
+    def test_configure_invalid_phase_comp_4(self):
+        # Phase-component list with invalid component
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params mismatch between component_list and "
+                                "phase_component_list. Component d appears in "
+                                "component_list but not "
+                                "phase_component_list."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c", "d"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]}})
+
     def test_configure_no_state_definition(self):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was not "
+                           match="params Generic Property Package was not "
                            "provided with a state_definition configuration "
                            "argument. Please fix your property parameter "
                            "definition to include this configuration "
@@ -211,7 +284,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was not "
+                           match="params Generic Property Package was not "
                            "provided with an equation_of_state configuration "
                            "argument. Please fix your property parameter "
                            "definition to include this configuration "
@@ -227,7 +300,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was provided"
+                           match="params Generic Property Package was provided"
                            " with an invalid equation_of_state configuration "
                            "argument. Argument must be a dict with phases as "
                            "keys."):
@@ -243,7 +316,7 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property package was provided"
+                           match="params Generic Property Package was provided"
                            " with an invalid equation_of_state configuration "
                            "argument. A value must be present for each "
                            "phase."):
@@ -259,9 +332,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
-                           match="params Generic property unrecognised phase "
-                           "3 in equation_of_state configuration argument. "
-                           "Keys must be valid phases."):
+                           match="params Generic Property Package unrecognised"
+                           " phase 3 in equation_of_state configuration "
+                           "argument. Keys must be valid phases."):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
