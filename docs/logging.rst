@@ -194,7 +194,7 @@ by determining if the solver output would be logged at the given level.
 
 .. testcode::
 
-  import idaes.logging as idaeslog
+  import idaes.logger as idaeslog
   import pyomo.environ as pyo
 
   solver = pyo.SolverFactory("ipopt")

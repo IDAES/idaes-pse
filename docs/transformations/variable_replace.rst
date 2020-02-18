@@ -23,7 +23,7 @@ The following example demonstrates the basic usage of the transformation.
 
 .. testcode::
 
-  import idaes # Load IDAES plugins including the replacement transformation
+  import idaes.plugins # Load IDAES plugins
   import pyomo.environ as pyo
 
   # Use Pyomo's transformation factory to create the transformation object
