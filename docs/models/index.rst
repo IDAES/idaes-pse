@@ -4,6 +4,7 @@ Unit Model Library
 .. toctree::
     :maxdepth: 1
 
+    compressor
     cstr
     equilibrium
     feed
@@ -17,8 +18,10 @@ Unit Model Library
     pfr
     pressure_changer
     product
+    pump
     separator
     statejunction
     stoichiometric_reactor
     translator
+    turbine
     power_generation/index
