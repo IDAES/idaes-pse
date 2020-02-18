@@ -28,6 +28,7 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
+from idaes.core.phases import Phase, PhaseData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
@@ -37,6 +38,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_activated_constraints,
                                               number_activated_blocks)
+import idaes.logger as idaeslog
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -44,6 +46,9 @@ __author__ = "Andrew Lee, John Eslick"
 __all__ = ['StateBlockData',
            'StateBlock',
            'PhysicalParameterBlock']
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 class PhysicalParameterBlock(ProcessBlockData,
@@ -103,6 +108,44 @@ class PhysicalParameterBlock(ProcessBlockData,
             self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
             return self._phase_component_set
+
+    def get_phase(self, phase):
+        obj = getattr(self, phase)
+        if not isinstance(obj, PhaseData):
+            raise PropertyPackageError(
+                    "{} get_phase found a component {}, but it does not "
+                    "appear to be an instance of a Phase object."
+                    .format(self.name, phase))
+        return obj
+
+    def _validate_parameter_block(self):
+        try:
+            # Valdiate that names in phase list have matching Phase objects
+            for p in self.phase_list:
+                try:
+                    obj = getattr(self, str(p))
+                    if not isinstance(obj, PhaseData):
+                        raise PropertyPackageError(
+                                "Property package {} has an object {} whose "
+                                "name appears in phase_list but is not an "
+                                "instance of Phase".format(self.name, p))
+                except AttributeError:
+                    self._make_phase_objects()
+                    break
+        except AttributeError:
+            # No phase list
+            raise PropertyPackageError("Property package {} has not defined a "
+                                       "phase list.".format(self.name))
+
+    def _make_phase_objects(self):
+        _log.warning("{} appears to be an old-style property package. It will "
+                     "be automatically converted to a new-style package, "
+                     "however users are strongly encouraged to convert their "
+                     "property packages to use phase and component objects."
+                     .format(self.name))
+        for p in self.phase_list:
+            # TODO : Add code to populate phase-component lists
+            setattr(self, str(p), Phase())
 
 
 class StateBlock(ProcessBlock):
@@ -270,6 +313,7 @@ should be constructed in this state block,
         """
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
+        self._params._validate_parameter_block()
 
     def define_state_vars(self):
         """

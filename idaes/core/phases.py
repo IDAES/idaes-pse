@@ -46,13 +46,13 @@ class PhaseData(ProcessBlockData):
             return False
 
     def is_solid_phase(self):
-        if "Liq" in self.name:
+        if "Sol" in self.name:
             return True
         else:
             return False
 
     def is_vapor_phase(self):
-        if "Liq" in self.name:
+        if "Vap" in self.name:
             return True
         else:
             return False

@@ -105,11 +105,15 @@ def test_get_phase_component_set_subset():
 # Test StateBlock
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
 class _StateBlockData(StateBlockData):
-    pass
+    def build(self):
+        super(StateBlockData, self).build()
 
 
 @declare_process_block_class("TestStateBlock2", block_class=StateBlock)
 class _StateBlockData(StateBlockData):
+    def build(self):
+        super(StateBlockData, self).build()
+
     def define_state_vars(self):
         return {}
 
@@ -198,6 +202,8 @@ def test_StateBlock_NotImplementedErrors():
 class _Parameters(PhysicalParameterBlock):
     def build(self):
         super(_Parameters, self).build()
+
+        self.phase_list = []
 
     @classmethod
     def define_metadata(cls, obj):
