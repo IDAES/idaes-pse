@@ -3,6 +3,7 @@
 """
 
 """
+import time
 import pytest
 import requests
 
@@ -11,7 +12,9 @@ from idaes.ui.fsvis.flask_server import App
 
 @pytest.fixture()
 def app():
-    yield App()
+    a = App()
+    time.sleep(2)
+    yield a
     App().stop()
 
 
