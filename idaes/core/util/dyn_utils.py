@@ -305,7 +305,7 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
 # TODO: get_time_component_dict
 # TODO: get_time_derivative_dict
 #       will get components in one pass so I don't have to look through 
-#       component_objects at each step of the integrator
+#       component_objects at each step of the element-wise initialization
 
 
 def get_derivatives_at(b, time, t):

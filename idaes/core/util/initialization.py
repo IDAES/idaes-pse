@@ -212,15 +212,15 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     # Return results
     return results
 
-def integrate_flowsheet(fs, time, **kwargs):
+def initialize_by_time_element(fs, time, **kwargs):
     """
-    Function to integrate Flowsheet fs along ContinuousSet time.
+    Function to initialize Flowsheet fs along ContinuousSet time.
     Assumes sufficient initialization/correct degrees of freedom such that
     the first finite element can be solved immediately and each subsequent
     finite element can be solved by fixing differential/derivative variables
     Args:
-        fs - flowsheet to integrate
-        time - set along which to integrate
+        fs - flowsheet to initialize
+        time - set along which to initialize
     Kwargs:
         solver - Pyomo solver object initialized with user's desired options
         outlvl - idaes.logger outlvl
@@ -241,16 +241,16 @@ def integrate_flowsheet(fs, time, **kwargs):
     if scheme == 'LAGRANGE-RADAU':
         ncp = time.get_discretization_info()['ncp']
     elif scheme == 'LAGRANGE-LEGENDRE':
-        msg = 'Integrator does not support collocation with Legendre roots'
+        msg = 'Initialization does not support collocation with Legendre roots'
         raise ValueError(msg)
     elif scheme == 'BACKWARD Difference':
         ncp = 1
     elif scheme == 'FORWARD Difference':
         ncp = 1
-        msg = 'Forward integration (explicit Euler) has not yet been implemented'
+        msg = 'Forward initialization (explicit Euler) has not yet been implemented'
         raise NotImplementedError(msg)
     elif scheme == 'CENTRAL Difference':
-        msg = 'Integrator does not support central finite difference'
+        msg = 'Initialization does not support central finite difference'
         raise ValueError(msg)
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
@@ -300,7 +300,7 @@ def integrate_flowsheet(fs, time, **kwargs):
         init_log.info('Successfully solved for consistent initial conditions')
     else:
         init_log.error('Failed to solve for consistent initial conditions')
-        raise ValueError('Solver failed in integrator')
+        raise ValueError('Solver failed in initialization')
 
     comps_at_t[time.first()] = deactivate_model_at(fs, time, time.first(),
                                                    outlvl=idaeslog.ERROR)
@@ -314,13 +314,13 @@ def integrate_flowsheet(fs, time, **kwargs):
     # 4. Revert the model to its prior state
 
     # Perform a solve for 1 -> nfe; i is the index of the finite element
-    init_log.info('Flowsheet has been deactivated. Beginning integration')
+    init_log.info('Flowsheet has been deactivated. Beginning element-wise initialization')
     for i in range(1, nfe+1):
         t_prev = time[(i-1)*ncp+1]
         # Non-initial time points in the finite element:
         fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
 
-        init_log.info(f'Entering step {i} of integration')
+        init_log.info(f'Entering step {i} of initialization')
 
         # Activate components of model that were active in the presumably
         # square original system
@@ -362,7 +362,7 @@ def integrate_flowsheet(fs, time, **kwargs):
            init_log.info(f'Successfully solved finite element {i}')
         else:
            init_log.error(f'Failed to solve finite element {i}')
-           raise ValueError('Failure in integration solve')
+           raise ValueError('Failure in initialization solve')
 
         # Deactivate components that may have been activated
         for t in fe:
@@ -377,8 +377,8 @@ def integrate_flowsheet(fs, time, **kwargs):
             if not was_originally_fixed[id(dv)]:
                 dv.unfix()
 
-        # Log that integration step {i} has been finished
-        init_log.info(f'Integration step {i} complete')
+        # Log that initialization step {i} has been finished
+        init_log.info(f'Initialization step {i} complete')
 
     # Reactivate components of the model that were originally active
     for t in time:
@@ -386,5 +386,5 @@ def integrate_flowsheet(fs, time, **kwargs):
             if was_originally_active[id(comp)]:
                 comp.activate()
 
-    # Logger message that integration is finished
-    init_log.info('Integration completed. Model has been reactivated')
+    # Logger message that initialization is finished
+    init_log.info('Initialization completed. Model has been reactivated')
