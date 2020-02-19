@@ -21,7 +21,9 @@ from pyomo.network import Arc, Port
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
-        AqueousEnzymeParameterBlock)
+        AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
+        ReactionBlock)
+from idaes.unit_models.cstr import CSTR
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
@@ -572,9 +574,20 @@ def test_solve_indexed_block_error():
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
+    horizon = 120
+    time_set = [0, horizon]
+    ntfe = 60
+    ntcp = 3
     m = ConcreteModel(name='CSTR model for testing')
-    m.fs = FlowsheetBlock(default={'dynamic': True})
+    m.fs = FlowsheetBlock(default={'dynamic': True,
+                                   'time_set': time_set})
     # need to import some sample property package
 
     m.fs.properties = AqueousEnzymeParameterBlock()
+    m.fs.reactions = EnzymeReactionParameterBlock()
+    m.fs.cstr = CSTR(default={"property_packate": m.fs.properties,
+                              "reaction_package": m.fs.reactions})    
     pdb.set_trace()
+
+if __name__ == '__main__':
+    test_initialize_by_time_element()

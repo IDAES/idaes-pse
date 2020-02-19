@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Set, SolverFactory, Var
+from pyomo.environ import Set, SolverFactory, Var, Reals, Constraint, Param
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -243,10 +243,10 @@ class ReactionBlockData(ReactionBlockDataBase):
 @declare_process_block_class("AqueousEnzymeParameterBlock")
 class ParameterData(PhysicalParameterBlock):
     def build(self):
-        super(_PhysicalParameterBlock, self).build()
+        super(ParameterData, self).build()
 
         # all components are in the aqueous phase
-        self.phase_list = Set(initialize['aq'])
+        self.phase_list = Set(initialize=['aq'])
         self.component_list = Set(initialize=['S', 'E', 'C', 'P'])
 
     @classmethod
@@ -258,3 +258,56 @@ class ParameterData(PhysicalParameterBlock):
                                'temperature': 'K',
                                'energy': 'J',
                                'holdup': 'mol'})
+
+class _AqueousEnzymeStateBlock(StateBlock):
+    def initialize(blk):
+        for key in blk.keys():
+            # Isothermal
+            # Probably not the place for this
+            blk[key].temperature.fix()
+        pass
+
+@declare_process_block_class("AqueousEnzymeStateBlock",
+                             block_class=_AqueousEnzymeStateBlock)
+class AqueousEnzymeStateBlockData(StateBlockData):
+    def build(self):
+        super(AqueousEnzymeStateBlockData, self).build()
+
+        self.conc_mol = Var(self._params.component_list,
+                             domain=Reals)
+        self.flow_mol_comp = Var(self._params.component_list,
+                                 domain=Reals)
+        self.temperature = Var(initialize=303,
+                               domain=Reals)
+
+        def get_material_density_terms(b, p, j):
+            return b.conc_mol[j]
+
+@declare_process_block_class('EnzymeReactionParameterBlock')
+class ReactionData(ReactionParameterBlock):
+    def build(self):
+        super(ReactionData, self).build()
+
+        self.rate_reation_idx = Set(initialize=['R1', 'R2', 'R3'])
+        self.rate_reaction_stoichiometry = {}
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({})        
+        pass
+
+class _ReactionBlock(ReactionBlockBase):
+    def initialize(blk):
+        # initialize for reaction rates for each data object
+        pass
+
+@declare_process_block_class('ReactionBlock',
+                             block_class=_ReactionBlock)
+class ReactionBlockData(ReactionBlockDataBase):
+    def build(self):
+        super(ReactionBlockData, self).build()
+
+        self.k_rxn = Var(self._params.rate_reaction_idx,
+                         domain=Reals)
+
+
