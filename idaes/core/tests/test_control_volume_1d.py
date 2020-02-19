@@ -2529,8 +2529,8 @@ def test_add_total_enthalpy_balances_dynamic():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.phase_fraction, Var)
-    assert isinstance(m.fs.cv.enthalpy_holdup, Var)
-    assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
+    assert isinstance(m.fs.cv.energy_holdup, Var)
+    assert isinstance(m.fs.cv.energy_accumulation, Var)
 
 
 def test_add_total_enthalpy_balances_heat_transfer():

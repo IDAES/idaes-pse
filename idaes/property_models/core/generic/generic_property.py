@@ -209,42 +209,114 @@ class GenericParameterData(PhysicalParameterBlock):
         # Build core components
         self.state_block_class = GenericStateBlock
 
-        if self.config.component_list is not None:
-            self.component_list = Set(initialize=self.config.component_list,
-                                      ordered=True)
-        else:
-            raise ConfigurationError(
-                    "{} Generic Property Package was not provided with a "
-                    "component_list.".format(self.name))
+        if self.config.phase_component_list is not None:
+            # Check if phase list provided and cross-validate
+            if self.config.phase_list is not None:
+                # Phase list provided, cross-validate
+                for p in self.config.phase_component_list:
+                    if p not in self.config.phase_list:
+                        raise ConfigurationError(
+                            "{} mismatch between phase_list and "
+                            "phase_component_list. Phase {} appears in "
+                            "phase_component_list but not phase_list."
+                            .format(self.name, p))
 
-        if self.config.phase_list is not None:
+                for p in self.config.phase_list:
+                    if p not in self.config.phase_component_list:
+                        raise ConfigurationError(
+                            "{} mismatch between phase_list and "
+                            "phase_component_list. Phase {} appears in "
+                            "phase_list but not phase_component_list."
+                            .format(self.name, p))
+
+                # Build phase_list if cross-validation passes
+                self.phase_list = Set(initialize=self.config.phase_list,
+                                      ordered=True)
+            else:
+                # No phase_list provided, build from phase_component_list
+                self.phase_list = Set(
+                        initialize=[p for p in
+                                    self.config.phase_component_list],
+                        ordered=True)
+
+            if self.config.component_list is not None:
+                # Component list provided, cross-validate
+                for p in self.config.phase_component_list:
+                    for j in self.config.phase_component_list[p]:
+                        if j not in self.config.component_list:
+                            raise ConfigurationError(
+                                "{} mismatch between component_list and "
+                                "phase_component_list. Component {} appears in"
+                                " phase_component_list but not component_list."
+                                .format(self.name, j))
+                for j in self.config.component_list:
+                    xcheck = False
+                    for p in self.config.phase_component_list:
+                        if j in self.config.phase_component_list[p]:
+                            xcheck = True
+                            break
+                    if not xcheck:
+                        raise ConfigurationError(
+                                "{} mismatch between component_list and "
+                                "phase_component_list. Component {} appears in"
+                                " component_list but not phase_component_list."
+                                .format(self.name, j))
+
+                # Build component_list if cross-validation passes
+                self.component_list = Set(
+                        initialize=self.config.component_list,
+                        ordered=True)
+            else:
+                # No component_list provided, build from phase_component_list
+                c_list = []
+                for p in self.config.phase_component_list:
+                    for j in self.config.phase_component_list[p]:
+                        if j not in c_list:
+                            c_list.append(j)
+                self.component_list = Set(initialize=c_list, ordered=True)
+
+            # All validation passed, build phase_component_set
+            pc_set = []
+            for p in self.config.phase_component_list:
+                for j in self.config.phase_component_list[p]:
+                    pc_set.append((p, j))
+            self._phase_component_set = Set(initialize=pc_set, ordered=True)
+
+        elif (self.config.phase_list is not None and
+              self.config.component_list is not None):
+            # Have phase and component lists
+            # Assume all components in all phases
             self.phase_list = Set(initialize=self.config.phase_list,
                                   ordered=True)
-        else:
-            raise ConfigurationError(
-                    "{} Generic Property Package was not provided with a "
-                    "phase_list.".format(self.name))
+            self.component_list = Set(initialize=self.config.component_list,
+                                      ordered=True)
 
-        # If user provided phase_component_list, validate this now
-        if self.config.phase_component_list is not None:
-            for p in self.config.phase_component_list:
-                if p not in self.config.phase_list:
-                    raise ConfigurationError(
-                            "{} Generic Property Package provided with invalid"
-                            " phase_component_list. Phase {} is not a member "
-                            "of phase_list.".format(self.name, p))
-                for j in self.config.phase_component_list[p]:
-                    if j not in self.config.component_list:
-                        raise ConfigurationError(
-                            "{} Generic Property Package provided with invalid"
-                            " phase_component_list. Component {} in phase {} "
-                            "is not a members of component_list."
-                            .format(self.name, j, p))
+            # Create phase-component set
+            pc_set = []
+            for p in self.phase_list:
+                for j in self.component_list:
+                    pc_set.append((p, j))
+            self._phase_component_set = Set(initialize=pc_set, ordered=True)
+        else:
+            # User has not provided sufficient information.
+            if self.config.component_list is None:
+                raise ConfigurationError(
+                        "{} Generic Property Package was not provided with a "
+                        "component_list or a phase_component_list. Users must "
+                        "provide either at least one of these arguments"
+                        .format(self.name))
+
+            if self.config.phase_list is None:
+                raise ConfigurationError(
+                        "{} Generic Property Package was not provided with a "
+                        "phase_list or a phase_component_list. Users must "
+                        "provide either at least one of these arguments"
+                        .format(self.name))
 
         # Validate state definition
         if self.config.state_definition is None:
             raise ConfigurationError(
-                    "{} Generic property package was not provided with a "
+                    "{} Generic Property Package was not provided with a "
                     "state_definition configuration argument. Please fix "
                     "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
@@ -252,24 +324,24 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate equation of state
         if self.config.equation_of_state is None:
             raise ConfigurationError(
-                    "{} Generic property package was not provided with an "
+                    "{} Generic Property Package was not provided with an "
                     "equation_of_state configuration argument. Please fix "
                     "your property parameter definition to include this "
                     "configuration argument.".format(self.name))
         if not isinstance(self.config.equation_of_state, dict):
             raise ConfigurationError(
-                    "{} Generic property package was provided with an invalid "
+                    "{} Generic Property Package was provided with an invalid "
                     "equation_of_state configuration argument. Argument must "
                     "be a dict with phases as keys.".format(self.name))
         if len(self.config.equation_of_state) != len(self.phase_list):
             raise ConfigurationError(
-                    "{} Generic property package was provided with an invalid "
+                    "{} Generic Property Package was provided with an invalid "
                     "equation_of_state configuration argument. A value must "
                     "be present for each phase.".format(self.name))
         for p in self.config.equation_of_state:
             if p not in self.phase_list:
                 raise ConfigurationError(
-                    "{} Generic property unrecognised phase {} in "
+                    "{} Generic Property Package unrecognised phase {} in "
                     "equation_of_state configuration argument. Keys must be "
                     "valid phases.".format(self.name, p))
 
@@ -742,6 +814,25 @@ class GenericStateBlockData(StateBlockData):
         if (self._params.config.phase_equilibrium_formulation is not None and
                 (not self.config.defined_state or self.always_flash)):
             self._params.config.phase_equilibrium_formulation.phase_equil(self)
+
+    def components_in_phase(self, phase):
+        """
+        Generator method which yields components present in a given phase.
+
+        Args:
+            phase - phase for which to yield components
+
+        Yields:
+            components present in phase.
+        """
+        if self._params.config.phase_component_list is None:
+            # All components in all phases
+            for j in self._params.component_list:
+                yield j
+        else:
+            # Return only components for indicated phase
+            for j in self._params.config.phase_component_list[phase]:
+                yield j
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
