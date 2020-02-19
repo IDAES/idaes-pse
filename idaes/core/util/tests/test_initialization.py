@@ -23,7 +23,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
-        ReactionBlock)
+        EnzymeReactionBlock)
 from idaes.unit_models.cstr import CSTR
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,

@@ -298,13 +298,13 @@ class AqueousEnzymeStateBlockData(StateBlockData):
                 'temperature': b.temperature}
 
 @declare_process_block_class('EnzymeReactionParameterBlock')
-class ReactionData(ReactionParameterBlock):
+class EnzymeReactionParameterData(ReactionParameterBlock):
     '''
     Enzyme reaction:
     S + E <-> C -> P + E
     '''
     def build(self):
-        super(ReactionData, self).build()
+        super(EnzymeReactionParameterData, self).build()
 
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
@@ -320,23 +320,23 @@ class ReactionData(ReactionParameterBlock):
                                             ('R3', 'aq', 'C'): -1,
                                             ('R3', 'aq', 'P'): 1}
 
-        self.reaction_block_class = ReactionBlock
+        self.reaction_block_class = EnzymeReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({})        
         pass
 
-class _ReactionBlock(ReactionBlockBase):
+class _EnzymeReactionBlock(ReactionBlockBase):
     def initialize(blk):
         # initialize for reaction rates for each data object
         pass
 
-@declare_process_block_class('ReactionBlock',
-                             block_class=_ReactionBlock)
-class ReactionBlockData(ReactionBlockDataBase):
+@declare_process_block_class('EnzymeReactionBlock',
+                             block_class=_EnzymeReactionBlock)
+class EnzymeReactionBlockData(ReactionBlockDataBase):
     def build(self):
-        super(ReactionBlockData, self).build()
+        super(EnzymeReactionBlockData, self).build()
 
         self.k_rxn = Var(self._params.rate_reaction_idx,
                          domain=Reals)
