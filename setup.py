@@ -47,6 +47,7 @@ kwargs = dict(
         "bunch",
         "click",
         "colorama",
+        "flask", # for ui/fsvis
         "humanize",
         "jupyter",
         "lxml",
@@ -64,6 +65,7 @@ kwargs = dict(
         "pytest",
         "pyutilib",
         "pyyaml",
+        "requests", # for ui/fsvis
         "sympy",
         "tinydb",
         "toml",
