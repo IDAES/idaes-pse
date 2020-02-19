@@ -17,6 +17,7 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
@@ -32,9 +33,20 @@ class PhaseData(ProcessBlockData):
             description="List of components in phase",
             doc="List of components which are present in phase. This is used "
             "to construct the phase-component Set for the property package."))
+    CONFIG.declare("_phase_list_exists", ConfigValue(
+            default=False,
+            doc="Internal config argument indicating whether phase_list "
+            "needs to be populated."))
 
     def build(self):
         super(PhaseData, self).build()
+
+        # If the phase_list does not exist, add a reference to the new Phase
+        # The IF is mostly for backwards compatability, to allow for old-style
+        # property packages where the phase_list already exists but we need to
+        # add new Phase objects
+        if not self.config._phase_list_exists:
+            self.__add_to_phase_list()
 
     # For the base Phase class, determine phase type based on component name
     # Derived classes will overload these and return the correct type
@@ -56,6 +68,18 @@ class PhaseData(ProcessBlockData):
             return True
         else:
             return False
+
+    def __add_to_phase_list(self):
+        """
+        Method to add reference to new Phase in phase_list
+        """
+        parent = self.parent_block()
+        try:
+            phase_list = getattr(parent, "phase_list")
+            phase_list.add(self.local_name)
+        except AttributeError:
+            # Parent does not have a phase_list yet, so create one
+            parent.phase_list = Set(initialize=[self.local_name])
 
 
 @declare_process_block_class("LiquidPhase")

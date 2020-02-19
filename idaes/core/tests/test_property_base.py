@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Set, Var
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
 from idaes.core.util.exceptions import (PropertyPackageError,
@@ -63,6 +63,9 @@ def test_get_phase_component_set():
     m.p.phase_list = Set(initialize=["1", "2", "3"])
     m.p.component_list = Set(initialize=["a", "b", "c"])
 
+    # Need to call this to trigger build of Phase objects for now
+    m.p._make_phase_objects()
+
     pc_set = m.p.get_phase_component_set()
 
     assert isinstance(m.p._phase_component_set, Set)
@@ -84,19 +87,21 @@ def test_get_phase_component_set_subset():
     m = ConcreteModel()
     m.p = ParameterBlock() 
 
-    m.p.config = ConfigBlock()
-    m.p.config.declare("phase_component_list",
-                       ConfigValue(default={"1": ["a", "b", "c"],
-                                            "2": ["a", "b"],
-                                            "3": ["c"]}))
+    m.p.phase_list = ["1", "2", "3"]
+    m.p.phase_comp = {"1": ["a", "b", "c"],
+                      "2": ["a", "b"],
+                      "3": ["c"]}
+
+    # Need to call this to trigger build of Phase objects for now
+    m.p._make_phase_objects()
 
     pc_set = m.p.get_phase_component_set()
 
     assert isinstance(m.p._phase_component_set, Set)
     assert len(m.p._phase_component_set) == 6
     for v in m.p._phase_component_set:
-        assert v[0] in m.p.config.phase_component_list.keys()
-        assert v[1] in m.p.config.phase_component_list[v[0]]
+        assert v[0] in m.p.phase_comp.keys()
+        assert v[1] in m.p.phase_comp[v[0]]
 
     assert pc_set is m.p._phase_component_set
 

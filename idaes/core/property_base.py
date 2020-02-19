@@ -95,15 +95,14 @@ class PhysicalParameterBlock(ProcessBlockData,
         except AttributeError:
             # Phase-component set does not exist, so create one.
             pc_set = []
-            if hasattr(self.config, "phase_component_list"):
-                for p in self.config.phase_component_list:
-                    for j in self.config.phase_component_list[p]:
-                        pc_set.append((p, j))
-            else:
-                # Otherwise assume all components in all phases
-                for p in self.phase_list:
-                    for j in self.component_list:
-                        pc_set.append((p, j))
+            for p in self.phase_list:
+                p_obj = self.get_phase(p)
+                if p_obj.config.component_list is not None:
+                    c_list = p_obj.config.component_list
+                else:
+                    c_list = self.component_list
+                for j in c_list:
+                    pc_set.append((p, j))
 
             self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
@@ -144,8 +143,13 @@ class PhysicalParameterBlock(ProcessBlockData,
                      "property packages to use phase and component objects."
                      .format(self.name))
         for p in self.phase_list:
-            # TODO : Add code to populate phase-component lists
-            setattr(self, str(p), Phase())
+            try:
+                pc_list = self.phase_comp[p]
+            except AttributeError:
+                pc_list = None
+            setattr(self, str(p), Phase(
+                        default={"component_list": pc_list,
+                                 "_phase_list_exists": True}))
 
 
 class StateBlock(ProcessBlock):
