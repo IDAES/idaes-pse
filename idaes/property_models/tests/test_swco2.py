@@ -97,6 +97,14 @@ class TestSWCO2(object):
         model.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
         return model
 
+    def test_solve_vapor_density(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] == "vapor":
+                rho = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
+                print(T, data["P"][i], rho, data["rho"][i], data["phase"][i])
+                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
+
     def test_functions_of_delta_and_tau(self, model):
         def tau(_T):
             return 304.128/_T
