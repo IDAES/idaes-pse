@@ -238,3 +238,23 @@ class ReactionBlockData(ReactionBlockDataBase):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
+
+# Need a ProcessBlockData for this...
+@declare_process_block_class("AqueousEnzymeParameterBlock")
+class ParameterData(PhysicalParameterBlock):
+    def build(self):
+        super(_PhysicalParameterBlock, self).build()
+
+        # all components are in the aqueous phase
+        self.phase_list = Set(initialize['aq'])
+        self.component_list = Set(initialize=['S', 'E', 'C', 'P'])
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})

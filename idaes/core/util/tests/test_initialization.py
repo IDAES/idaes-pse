@@ -20,12 +20,14 @@ from pyomo.environ import Block, ConcreteModel,  Constraint, Expression, \
 from pyomo.network import Arc, Port
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
+        AqueousEnzymeParameterBlock)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             propagate_state,
                                             solve_indexed_blocks)
+import pdb
 
 __author__ = "Andrew Lee"
 
@@ -569,9 +571,10 @@ def test_solve_indexed_block_error():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_integrate_flowsheet():
-    m = ConcreteModel()
+def test_initialize_by_time_element():
+    m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True})
     # need to import some sample property package
 
-
+    m.fs.properties = AqueousEnzymeParameterBlock()
+    pdb.set_trace()
