@@ -19,7 +19,8 @@ from pyomo.environ import Block, ConcreteModel,  Constraint, Expression, \
                             Set, SolverFactory, Var, value
 from pyomo.network import Arc, Port
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
+        MomentumBalanceType)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         ReactionBlock)
@@ -584,10 +585,13 @@ def test_initialize_by_time_element():
     # need to import some sample property package
 
     m.fs.properties = AqueousEnzymeParameterBlock()
-    m.fs.reactions = EnzymeReactionParameterBlock()
-    m.fs.cstr = CSTR(default={"property_packate": m.fs.properties,
-                              "reaction_package": m.fs.reactions})    
-    pdb.set_trace()
+    m.fs.reactions = EnzymeReactionParameterBlock(
+            default={'property_package': m.fs.properties})
+    m.fs.cstr = CSTR(default={"property_package": m.fs.properties,
+                              "reaction_package": m.fs.reactions,
+                              "material_balance_type": MaterialBalanceType.componentTotal,
+                              "energy_balance_type": EnergyBalanceType.none,
+                              "momentum_balance_type": MomentumBalanceType.none})
 
 if __name__ == '__main__':
     test_initialize_by_time_element()

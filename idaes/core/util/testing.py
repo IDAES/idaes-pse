@@ -201,7 +201,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
                                'temperature': 'K',
                                'energy': 'J',
                                'holdup': 'mol'})
-
+        
     @classmethod
     def get_required_properties(self):
         return {}
@@ -249,6 +249,8 @@ class ParameterData(PhysicalParameterBlock):
         self.phase_list = Set(initialize=['aq'])
         self.component_list = Set(initialize=['S', 'E', 'C', 'P'])
 
+        self.state_block_class = AqueousEnzymeStateBlock
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': 's',
@@ -258,6 +260,7 @@ class ParameterData(PhysicalParameterBlock):
                                'temperature': 'K',
                                'energy': 'J',
                                'holdup': 'mol'})
+
 
 class _AqueousEnzymeStateBlock(StateBlock):
     def initialize(blk):
@@ -280,16 +283,44 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         self.temperature = Var(initialize=303,
                                domain=Reals)
 
-        def get_material_density_terms(b, p, j):
-            return b.conc_mol[j]
+    def get_material_density_terms(b, p, j):
+        return b.conc_mol[j]
+
+    def get_material_flow_terms(b, p, j):
+        return b.flow_mol_comp[j]
+
+    def get_material_flow_basis(b):
+        return MaterialFlowBasis.molar
+
+    def define_state_vars(b):
+        return {'conc_mol': b.conc_mol,
+                'flow_mol_comp': b.flow_mol_comp,
+                'temperature': b.temperature}
 
 @declare_process_block_class('EnzymeReactionParameterBlock')
 class ReactionData(ReactionParameterBlock):
+    '''
+    Enzyme reaction:
+    S + E <-> C -> P + E
+    '''
     def build(self):
         super(ReactionData, self).build()
 
-        self.rate_reation_idx = Set(initialize=['R1', 'R2', 'R3'])
-        self.rate_reaction_stoichiometry = {}
+        self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
+        self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
+                                            ('R1', 'aq', 'E'): -1,
+                                            ('R1', 'aq', 'C'): 1,
+                                            ('R1', 'aq', 'P'): 0,
+                                            ('R2', 'aq', 'S'): 1,
+                                            ('R2', 'aq', 'E'): 1,
+                                            ('R2', 'aq', 'C'): -1,
+                                            ('R2', 'aq', 'P'): 0,
+                                            ('R3', 'aq', 'S'): 0,
+                                            ('R3', 'aq', 'E'): 1,
+                                            ('R3', 'aq', 'C'): -1,
+                                            ('R3', 'aq', 'P'): 1}
+
+        self.reaction_block_class = ReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -309,5 +340,10 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         self.k_rxn = Var(self._params.rate_reaction_idx,
                          domain=Reals)
+        self.reaction_rate = Var(self._params.rate_reaction_idx,
+                                 domain=Reals)
+    
+    def get_reaction_rate_basis(b):
+        return MaterialFlowBasis.molar
 
 
