@@ -59,6 +59,25 @@ def read_data(fname):
             data["phase"].append(row[13])
     return data
 
+def read_sat_data(fname):
+    dfile = os.path.join(this_file_dir(), fname)
+    data = {}
+    data["T"] = [] # T in K col 0
+    data["P"] = [] # P in kPa col 1
+    data["rhol"] = [] # density kg/m3 col 2
+    data["rhov"] = [] # density kg/m3 col 15
+
+    with open(dfile, 'r') as csvfile:
+        dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
+        next(dat)  # skip header
+        for row in dat:
+            data["T"].append(float(row[0]))
+            data["P"].append(float(row[1])*1000)
+            data["rhol"].append(float(row[2]))
+            data["rhov"].append(float(row[14]))
+    return data
+
+
 @pytest.mark.skipif(not swco2_available(), reason="Span-Wagner lib not available")
 class TestSWCO2(object):
     @pytest.fixture(scope="class")
@@ -96,6 +115,32 @@ class TestSWCO2(object):
         model.func_phir_tau2 = EF(library=plib, function="phir_tau2")
         model.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
         return model
+
+    def test_solve_sat_density(self, model):
+        #test saturated liquid and vapor density solve (ciritical part of the
+        #phase equlibrium calc)
+        data = read_sat_data("sat_prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            rhol = value(467.6*model.func_delta_sat_l(304.128/T))
+            rhov = value(467.6*model.func_delta_sat_v(304.128/T))
+            if T > 296:
+                tol = 1e-2 #data needs more sig fig
+            else:
+                tol = 1e-3
+            assert rhol == pytest.approx(data["rhol"][i], rel=tol)
+            assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+
+            # Use the data to check the regular delta(P, T) functions.
+            # unfotunatly the pressure reported in the data doesn't have enough
+            # figures for a really accurate check
+            rhol = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
+            rhov = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
+            if T > 285:
+                tol = 1e-1 #data needs more sig fig
+            print(T, rhol, rhov)
+            assert rhol == pytest.approx(data["rhol"][i], rel=tol)
+            assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+
 
     def test_solve_vapor_density(self, model):
         data = read_data("prop_swco2_nist_webbook.txt")
