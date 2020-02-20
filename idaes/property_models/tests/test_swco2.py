@@ -131,12 +131,11 @@ class TestSWCO2(object):
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
             # Use the data to check the regular delta(P, T) functions.
-            # unfotunatly the pressure reported in the data doesn't have enough
-            # figures for a really accurate check
+            # need not pressure sig figs for liquid, so have to reduce tol more
+            if T > 296:
+                tol = 1e-1 #data needs more sig fig
             rhol = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
             rhov = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
-            if T > 285:
-                tol = 1e-1 #data needs more sig fig
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
