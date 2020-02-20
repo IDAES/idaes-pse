@@ -293,7 +293,7 @@ linked to all inlet states and the mixed state,
 
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().time.first()
+            t_ref = self.flowsheet().config.time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
         if mb_type != MaterialBalanceType.none:
@@ -475,7 +475,7 @@ linked to all inlet states and the mixed state,
         Add material mixing equations.
         """
         # Get phase component list(s)
-        phase_component_list = self._get_phase_comp_list()
+        pc_set = self.config.property_package.get_phase_component_set()
 
         if mb_type == MaterialBalanceType.componentPhase:
             # Create equilibrium generation term and constraints if required
@@ -545,7 +545,7 @@ linked to all inlet states and the mixed state,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
-                if j in phase_component_list[p]:
+                if (p, j) in pc_set:
                     return 0 == (
                         sum(
                             inlet_blocks[i][t].get_material_flow_terms(p, j)
