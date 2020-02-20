@@ -293,7 +293,7 @@ linked to all inlet states and the mixed state,
 
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().time.first()
+            t_ref = self.flowsheet().config.time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
         if mb_type != MaterialBalanceType.none:
