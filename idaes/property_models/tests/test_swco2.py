@@ -137,7 +137,6 @@ class TestSWCO2(object):
             rhov = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
             if T > 285:
                 tol = 1e-1 #data needs more sig fig
-            print(T, rhol, rhov)
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
