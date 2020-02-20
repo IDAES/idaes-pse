@@ -100,9 +100,16 @@ class TestSWCO2(object):
     def test_solve_vapor_density(self, model):
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
-            if data["phase"][i] == "vapor":
+            if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
                 rho = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
-                print(T, data["P"][i], rho, data["rho"][i], data["phase"][i])
+                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
+
+    def test_solve_liquid_density(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
+                rho = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
+                print(T, data["P"][i], data["phase"][i], rho)
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_functions_of_delta_and_tau(self, model):
