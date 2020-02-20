@@ -18,7 +18,8 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Set, SolverFactory, Var, Reals, Constraint, Param
+from pyomo.environ import (Set, SolverFactory, Var, Reals, Constraint, Param,
+        exp)
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -253,13 +254,12 @@ class ParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
+        obj.add_default_units({'time': 'min',
                                'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
+                               'amount': 'kmol',
                                'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+                               'energy': 'kcal',
+                               'holdup': 'kmol'})
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -277,11 +277,25 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         super(AqueousEnzymeStateBlockData, self).build()
 
         self.conc_mol = Var(self._params.component_list,
-                             domain=Reals)
+                             domain=Reals,
+                             doc='Component molar concentration [kmol/m^3]')
+        
         self.flow_mol_comp = Var(self._params.component_list,
-                                 domain=Reals)
-        self.temperature = Var(initialize=303,
-                               domain=Reals)
+                                 domain=Reals, 
+                                 doc='Molar component flow rate [kmol/min]')
+
+        self.flow_rate = Var(domain=Reals,
+                             doc='Volumetric flow rate out of reactor [m^3/min]')
+
+        self.temperature = Var(initialize=303, domain=Reals,
+                               doc='Temperature within reactor [K]')
+
+        def flow_mol_comp_rule(b, j):
+            return b.flow_mol_comp[j] == b.flow_rate*b.conc_mol[j]
+        
+        self.flow_mol_comp_eqn = Constraint(self._params.component_list,
+                rule=flow_mol_comp_rule,
+                doc='Outlet component molar flow rate equation')
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol[j]
@@ -306,6 +320,8 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
+        self.reaction_block_class = EnzymeReactionBlock
+
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
                                             ('R1', 'aq', 'E'): -1,
@@ -320,12 +336,30 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
                                             ('R3', 'aq', 'C'): -1,
                                             ('R3', 'aq', 'P'): 1}
 
+        self.act_energy = Param(self.rate_reaction_idx,
+                initialize={'R1': 8.0e3,
+                            'R2': 9.0e3,
+                            'R3': 1.0e4},
+                doc='Activation energy [kcal/kmol]')
+
+        self.gas_const = Param(initialize=1.987, 
+                doc='Gas constant R [kcal/kmol/K]')
+
+        self.temperature_ref = Param(initialize=300.0, doc='Reference temperature')
+
+        self.k_rxn = Param(self.rate_reaction_idx,
+                initialize={'R1': 3.36e6,
+                            'R2': 1.80e6,
+                            'R3': 5.79e7},
+                doc='Pre-exponential rate constant in Arrhenius expression')
+
         self.reaction_block_class = EnzymeReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({})        
-        pass
+        obj.add_default_units({'time': 'min',
+                               'length': 'm',
+                               'amount': 'kmol'})
 
 class _EnzymeReactionBlock(ReactionBlockBase):
     def initialize(blk):
@@ -338,10 +372,37 @@ class EnzymeReactionBlockData(ReactionBlockDataBase):
     def build(self):
         super(EnzymeReactionBlockData, self).build()
 
-        self.k_rxn = Var(self._params.rate_reaction_idx,
-                         domain=Reals)
+        self.reaction_coef = Var(self._params.rate_reaction_idx,
+                         domain=Reals, doc='Reaction rate coefficient')
+
         self.reaction_rate = Var(self._params.rate_reaction_idx,
-                                 domain=Reals)
+                                 domain=Reals, 
+                                 doc='Reaction rate [kmol/m^3/min]')
+
+        def reaction_rate_rule(b, r):
+            if r == 'R1':
+                return (b.reaction_rate[r] == 
+                        b.reaction_coef[r]*
+                        b.state_ref.conc_mol['S']*b.state_ref.conc_mol['E'])
+            elif r == 'R2':
+                return (b.reaction_rate[r] ==
+                        b.reaction_coef[r]*
+                        b.state_ref.conc_mol['C'])
+            elif r == 'R3':
+                return (b.reaction_rate[r] ==
+                        b.reaction_coef[r]*
+                        b.state_ref.conc_mol['C'])
+
+        self.reaction_rate_eqn = Constraint(self._params.rate_reaction_idx,
+                rule=reaction_rate_rule)
+
+        def arrhenius_rule(b, r):
+            return (b.reaction_coef[r] == b._params.k_rxn[r]*
+                    exp(-b._params.act_energy[r]/b._params.gas_const/
+                        b.state_ref.temperature))
+
+        self.arrhenius_eqn = Constraint(self._params.rate_reaction_idx,
+                rule=arrhenius_rule)
     
     def get_reaction_rate_basis(b):
         return MaterialFlowBasis.molar
