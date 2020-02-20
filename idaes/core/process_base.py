@@ -507,27 +507,3 @@ class ProcessBlockData(_BlockData):
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                         self.config.reaction_package.config.default_arguments[k]
-
-    def _get_phase_comp_list(self):
-        """
-        Method to collect phase-component list from property package.
-        If property package does not define a phase-component list, then it is
-        assumed that all components are present in all phases.
-
-        Args:
-            None
-
-        Returns:
-            phase_component_list
-        """
-        # Get phase component list(s)
-        if hasattr(self.config.property_package, "phase_component_list"):
-            phase_component_list =\
-                self.config.property_package.phase_component_list
-        else:
-            # Otherwise assume all components in all phases
-            phase_component_list = {}
-            for p in self.config.property_package.phase_list:
-                phase_component_list[p] = self.config.property_package.\
-                    component_list
-        return phase_component_list
