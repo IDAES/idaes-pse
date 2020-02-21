@@ -2,9 +2,9 @@ Turbine (Stage)
 ===============
 
 .. index::
-  pair: idaes.unit_models.power_generation.turbine_stage;TurbineStage
+  pair: idaes.power_generation.unit_models.turbine_stage;TurbineStage
 
-.. module:: idaes.unit_models.power_generation.turbine_stage
+.. module:: idaes.power_generation.unit_models.turbine_stage
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
@@ -21,7 +21,7 @@ Example
     from pyomo.environ import ConcreteModel, SolverFactory
 
     from idaes.core import FlowsheetBlock
-    from idaes.unit_models.power_generation import TurbineStage
+    from idaes.power_generation.unit_models import TurbineStage
     from idaes.property_models import iapws95
 
     m = ConcreteModel()

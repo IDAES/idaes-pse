@@ -45,7 +45,7 @@ from idaes.unit_models import (
     EnergySplittingType,
     MomentumMixingType,
 )
-from idaes.unit_models.power_generation import (
+from idaes.power_generation.unit_models import (
     TurbineInletStage,
     TurbineStage,
     TurbineOutletStage,
