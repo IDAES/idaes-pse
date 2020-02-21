@@ -49,6 +49,7 @@ Contents
     transformations/index
     models/index
     property_models/index
+    power_generation/index
     vis/index
     dmf/index
     pysmo/index

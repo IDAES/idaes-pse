@@ -1,5 +1,5 @@
-Power Generation Models
-=======================
+Power Generation Unit Models
+============================
 
 .. toctree::
     :maxdepth: 1
