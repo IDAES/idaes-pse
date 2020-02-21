@@ -20,13 +20,14 @@ If you are using MatOpt, please consider citing:
 Basic Usage
 -----------
 
-There are two main sub-modules contained in the package serving two disctinct purposes:
+There are two main sub-modules contained in the package serving two distinct purposes:
 
 * The ``matopt.materials`` module contains objects and methods for efficiently representing and manipulating a nanomaterial and its design space.
 * The ``matopt.opt`` module contains objects and methods for speeding up the casting of a Mixed-integer Linear Programming (MILP) model with simplified modeling syntax and automatic model formulation.
 
-.. warning::
-   MatOpt depends on Pyomo and Numpy. User access to the MILP solver CPLEX through Pyomo is assumed. For users who do not have access to CPLEX, the use of NEOS-CPLEX is suggested as an alternative.
+**Dependencies**
+
+User access to the MILP solver CPLEX through Pyomo is assumed. For users who do not have access to CPLEX, the use of `NEOS-CPLEX <https://neos-guide.org/neos-interfaces#pyomo>`_ is suggested as an alternative.
 
 **Define design canvas**
 
