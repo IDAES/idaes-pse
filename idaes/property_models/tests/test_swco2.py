@@ -25,7 +25,7 @@ _so = os.path.join(idaes.lib_directory, "swco2_external.so")
 
 def swco2_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
-    the .so extention is still used.
+    the .so extension is still used.
     """
     return os.path.isfile(_so)
 
@@ -41,11 +41,12 @@ def read_data(fname):
     data["cv"] = []
     data["cp"] = []
     data["w"] = []
-    data["phase"] = [] # liquid, vapor, or supercirtical col 13
+    data["phase"] = [] # liquid, vapor, or supercritical col 13
 
     with open(dfile, 'r') as csvfile:
         dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
-        next(dat)  # skip header
+        for i in range(7):
+            next(dat) # skip header
         for row in dat:
             data["T"].append(float(row[0]))
             data["P"].append(float(row[1])*1000)
@@ -69,7 +70,8 @@ def read_sat_data(fname):
 
     with open(dfile, 'r') as csvfile:
         dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
-        next(dat)  # skip header
+        for i in range(7):
+            next(dat) # skip header
         for row in dat:
             data["T"].append(float(row[0]))
             data["P"].append(float(row[1])*1000)
@@ -117,8 +119,8 @@ class TestSWCO2(object):
         return model
 
     def test_solve_sat_density(self, model):
-        #test saturated liquid and vapor density solve (ciritical part of the
-        #phase equlibrium calc)
+        # test saturated liquid and vapor density solve (critical part of the
+        # phase equlibrium calc)
         data = read_sat_data("sat_prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
             rhol = value(467.6*model.func_delta_sat_l(304.128/T))
@@ -133,7 +135,7 @@ class TestSWCO2(object):
             # Use the data to check the regular delta(P, T) functions.
             # need not pressure sig figs for liquid, so have to reduce tol more
             if T > 296:
-                tol = 1e-1 #data needs more sig fig
+                tol = 1e-1 # data needs more sig fig
             rhol = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
             rhov = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)

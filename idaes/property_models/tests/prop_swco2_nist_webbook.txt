@@ -1,3 +1,9 @@
+Eric W. Lemmon, Mark O. McLinden and Daniel G. Friend, "Thermophysical Properties
+     of Fluid Systems" in NIST Chemistry WebBook, NIST Standard Reference Database
+     Number 69, Eds. P.J. Linstrom and W.G. Mallard, National Institute of
+     Standards and Technology, Gaithersburg MD, 20899,
+     https://doi.org/10.18434/T4D303, (retrieved February 18, 2020).
+
 Temperature (K)	Pressure (MPa)	Density (kg/m3)	Volume (m3/kg)	Internal Energy (kJ/kg)	Enthalpy (kJ/kg)	Entropy (J/g*K)	Cv (J/g*K)	Cp (J/g*K)	Sound Spd. (m/s)	Joule-Thomson (K/MPa)	Viscosity (Pa*s)	Therm. Cond. (W/m*K)	Phase
 228.00	15.643	1170.0	0.00085470	92.970	106.34	0.58172	0.97408	1.8840	981.82	-0.16096	0.00023883	0.17812	liquid
 238.00	32.029	1170.0	0.00085470	102.70	130.08	0.62350	0.97179	1.8169	1009.8	-0.18475	0.00023199	0.17878	liquid

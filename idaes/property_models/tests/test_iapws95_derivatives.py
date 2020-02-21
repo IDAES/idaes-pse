@@ -36,7 +36,8 @@ class TestIAPWS95(unittest.TestCase):
         cond = [] # Tuple (T [K],P [Pa], data) pressure in file is MPa
         with open(dfile, 'r') as csvfile:
            dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
-           next(dat) # skip header
+           for i in range(7):
+               next(dat) # skip header
            for row in dat:
                try:
                    x = float(row[col])
