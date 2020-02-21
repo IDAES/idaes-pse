@@ -2522,6 +2522,9 @@ class MatOptModel(object):
         Returns:
             (``Design``/list<``Design``>) Optimal designs.
 
+        Raises:
+            ``pyutilib.ApplicationError`` if MatOpt can not find usable solver (CPLEX or NEOS-CPLEX)
+
         See ``MatOptModel.optimize`` method for details.
         """
         return self.optimize(func, sense=maximize, **kwargs)
@@ -2535,6 +2538,9 @@ class MatOptModel(object):
 
         Returns:
             (``Design``/list<``Design``>) Optimal designs.
+
+        Raises:
+            ``pyutilib.ApplicationError`` if MatOpt can not find usable solver (CPLEX or NEOS-CPLEX)
 
         See ``MatOptModel.optimize`` method for details.
         """
@@ -2576,6 +2582,9 @@ class MatOptModel(object):
 
         Returns:
             (``Design``/list<``Design``>) Optimal design or designs, depending on the number of solutions requested by argument ``nSolns``.
+
+        Raises:
+            ``pyutilib.ApplicationError`` if MatOpt can not find usable solver (CPLEX or NEOS-CPLEX)
         """
         if nSolns > 1:
             return self.populate(func, sense=sense, nSolns=nSolns,
@@ -2624,6 +2633,9 @@ class MatOptModel(object):
 
         Returns:
             (list<``Design``>) A list of optimal Designs in order of decreasing optimality.
+
+        Raises:
+            ``pyutilib.ApplicationError`` if MatOpt can not find usable solver (CPLEX or NEOS-CPLEX)
         """
         self._pyomo_m = self._make_pyomo_model(func, sense)
         self._pyomo_m.iSolns = Set(initialize=list(range(nSolns)))
