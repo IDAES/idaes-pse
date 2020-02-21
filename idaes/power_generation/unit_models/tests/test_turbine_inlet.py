@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.power_generation import TurbineInletStage
+from idaes.power_generation.unit_models import TurbineInletStage
 from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,

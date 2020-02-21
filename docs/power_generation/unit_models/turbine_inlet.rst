@@ -2,9 +2,9 @@ Turbine (Inlet Stage)
 =====================
 
 .. index::
-  pair: idaes.unit_models.power_generation.turbine_inlet;TurbineInletStage
+  pair: idaes.power_generation.unit_models.turbine_inlet;TurbineInletStage
 
-.. module:: idaes.unit_models.power_generation.turbine_inlet
+.. module:: idaes.power_generation.unit_models.turbine_inlet
 
 This is a steam power generation turbine model for the inlet stage.
 The turbine inlet model is based on:
@@ -19,7 +19,7 @@ Example
 
     from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
     from idaes.core import FlowsheetBlock
-    from idaes.unit_models.power_generation import TurbineInletStage
+    from idaes.power_generation.unit_models import TurbineInletStage
     from idaes.property_models import iapws95
 
     m = ConcreteModel()
