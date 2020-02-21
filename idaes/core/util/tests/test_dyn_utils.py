@@ -18,6 +18,7 @@ import pytest
 from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
         TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
+import idaes.logger as idaeslog
 from idaes.core.util.dyn_utils import *
 
 __author__ = "Robert Parker"
@@ -248,17 +249,37 @@ def test_fix_and_deactivate():
         assert active_dict[id(comp)] == True
 
     deactivate_model_at(m, m.time, m.time[2])
+    assert m.fs.con1[m.time[1]].active
     assert not m.fs.con1[m.time[2]].active
     assert m.fs.con2[m.space[1]].active
     assert not m.fs.b1.con[m.time[2], m.space[1]].active
     assert not m.fs.b2[m.time[2], m.space.last()].active
     assert m.fs.b2[m.time[2], m.space.last()].b3['a'].con['e'].active
 
-    derivs = get_derivatives_at(m, m.time, m.time.first())
-    deriv_names = [var.name for var in derivs]
+    deactivate_model_at(m, m.time, [m.time[1], m.time[3]], 
+            outlvl=idaeslog.ERROR)
+    # Higher outlvl threshold as will encounter warning trying to deactivate
+    # disc equations at time.first()
+    assert not m.fs.con1[m.time[1]].active
+    assert not m.fs.con1[m.time[3]].active
+    assert not m.fs.b1.con[m.time[1], m.space[1]].active
+    assert not m.fs.b1.con[m.time[3], m.space[1]].active
 
-    assert m.fs.b1.dv[m.time.first(), m.space.first()] in derivs
-    assert m.fs.b1.dv[m.time[1], m.space[1]].name in deriv_names
+    init_derivs = get_derivatives_at(m, m.time, m.time.first())[m.time.first()]
+    init_deriv_names = [var.name for var in init_derivs]
+
+    assert m.fs.b1.dv[m.time.first(), m.space.first()] in init_derivs
+    assert m.fs.b1.dv[m.time[1], m.space[1]].name in init_deriv_names
+
+    deriv_dict = get_derivatives_at(m, m.time, [m.time.first(), m.time.last()])
+    deriv_name_dict = {t: [d.name for d in deriv_dict[t]] 
+                          for t in deriv_dict.keys()}
+    assert m.time.first() in deriv_name_dict.keys()
+    assert m.time.last() in deriv_name_dict.keys()
+    assert (m.fs.b1.dv[m.time.last(), m.space[1]].name 
+            in deriv_name_dict[m.time.last()])
+    assert (m.fs.b1.dv[m.time.last(), m.space[1]].name 
+            not in deriv_name_dict[m.time.first()])
 
     path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
                            m, include_comp=False)
