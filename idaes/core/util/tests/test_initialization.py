@@ -667,7 +667,7 @@ def test_initialize_by_time_element():
         assert value(con.body) - value(con.upper) < 1e-5
         assert value(con.lower) - value(con.body) < 1e-5
 
-    results = solver.solve(m.fs, tee=True)
+    results = solver.solve(m.fs)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
 if __name__ == '__main__':
