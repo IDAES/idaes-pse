@@ -17,9 +17,6 @@ This module contains utility functions for dynamic IDAES models.
 
 from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
-#from pyomo.dae.set_utils import (is_explicitly_indexed_by,
-#        is_implicitly_indexed_by, get_index_set_except)
-#from pyomo.dae.set_utils import get_index_set_except
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import ComponentSet
@@ -58,42 +55,6 @@ def is_explicitly_indexed_by(comp, *sets):
         # pyomo:Set with the same elements will not be conflated.
         set_set = set(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
-
-
-# TODO: generalize this to multiple sets s 
-#def is_implicitly_indexed_by(comp, s, stop_at=None):
-#    """
-#    Returns True if any of comp's parent blocks are indexed by s.
-#    
-#    If block stop_at (or its parent_component) is provided, function
-#    will return False if stop_at is reached, regardless of whether 
-#    stop_at is indexed by s. Meant to be an "upper bound" for blocks
-#    to check, like a flowsheet.
-#    """
-#    parent = comp.parent_block()
-#
-#    # Stop when top-level block has been reached
-#    while parent is not None:
-#        # If we have reached our stopping point, quit.
-#        if parent is stop_at:
-#            return False
-#
-#        # Look at the potentially-indexed block containing our component
-#        parent = parent.parent_component()
-#        # Check again for the stopping point in case an IndexedBlock was used
-#        if parent is stop_at:
-#            return False
-#
-#        # Check potentially-indexed block for index s:
-#        if is_explicitly_indexed_by(parent, s):
-#            return True
-#        # Continue up the tree, checking the parent block of our
-#        # potentially-indexed block:
-#        else:
-#            parent = parent.parent_block()
-#    # Return False if top-level block was reached
-#    return False
-
 
 def is_implicitly_indexed_by(comp, s, stop_at=None):
     """
@@ -242,7 +203,7 @@ def get_activity_dict(b):
         b - a block to be searched for active components
     returns:
         dictionary mapping id of constraints and blocks
-        to a bool indicating if they are fixed
+        to a bool indicating if they are active
     """
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
@@ -264,7 +225,8 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
     deactivated = []
     
     for block in b.component_objects(Block):
-        if is_explicitly_indexed_by(block, cset):
+        if (is_explicitly_indexed_by(block, cset) and
+                not is_implicitly_indexed_by(block, cset)):
             info = get_index_set_except(block, cset)
             non_cset_set = info['set_except']
             index_getter = info['index_getter']
@@ -275,7 +237,6 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
                     deactivated.append(block[index])
                 except KeyError:
                     # except KeyError to allow Block.Skip
-                    # TODO: use logger to give a warning here
                     msg = (block.name + ' has no index ' + str(index))
                     init_log = idaeslog.getInitLogger(__name__, outlvl)
                     init_log.warning(msg)
@@ -294,7 +255,6 @@ def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
                     deactivated.append(con[index])
                 except KeyError:
                     # except KeyError to allow Constraint.Skip
-                    # TODO: use logger to give a warning here
                     msg = (con.name + ' has no index ' + str(index))
                     init_log = idaeslog.getInitLogger(__name__, outlvl)
                     init_log.warning(msg)

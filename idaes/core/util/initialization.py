@@ -231,7 +231,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         raise TypeError('Second arg must be a ContinuousSet')
 
     if time.get_discretization_info() == {}:
-        raise ValueError('ContinuousSet must be discretied')
+        raise ValueError('ContinuousSet must be discretized')
 
     scheme = time.get_discretization_info()['scheme']
     fep_list = time.get_finite_elements()
@@ -262,7 +262,6 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     solver = kwargs.pop('solver', None)
-    tee = True # <- use logger.tee or something instead of this
 
     ignore_dof = kwargs.pop('ignore_dof', False)
     if degrees_of_freedom(fs) != 0 and not ignore_dof:
