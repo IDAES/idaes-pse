@@ -15,8 +15,9 @@ Tests for math util methods.
 """
 
 import pytest
-from pyomo.environ import Block, ConcreteModel,  Constraint, Expression, \
-                            Set, SolverFactory, Var, value
+from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
+                           Set, SolverFactory, Var, value, 
+                           TransformationFactory)
 from pyomo.network import Arc, Port
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
@@ -24,12 +25,14 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         EnzymeReactionBlock)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.unit_models.cstr import CSTR
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             propagate_state,
-                                            solve_indexed_blocks)
+                                            solve_indexed_blocks,
+                                            initialize_by_time_element)
 import pdb
 
 __author__ = "Andrew Lee"
@@ -575,14 +578,13 @@ def test_solve_indexed_block_error():
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
-    horizon = 120
+    horizon = 5
     time_set = [0, horizon]
-    ntfe = 60
-    ntcp = 3
+    ntfe = 50 # For a finite element every six seconds
+    ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
                                    'time_set': time_set})
-    # need to import some sample property package
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
@@ -592,6 +594,41 @@ def test_initialize_by_time_element():
                               "material_balance_type": MaterialBalanceType.componentTotal,
                               "energy_balance_type": EnergyBalanceType.none,
                               "momentum_balance_type": MomentumBalanceType.none})
+
+    # Time discretization
+    disc = TransformationFactory('dae.collocation')
+    disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
+
+    # Fix geometry variables
+    m.fs.cstr.volume.fix(1.0)
+
+    # Fix initial conditions:
+    for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
+        m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0)
+
+    # Fix inlet conditions
+    for t, j in m.fs.time*m.fs.properties.component_list:
+        if j == 'E':
+            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(11.91*0.1)
+        elif j == 'S':
+            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+        else:
+            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+
+    m.fs.cstr.inlet.flow_rate.fix(2.2)
+    m.fs.cstr.inlet.temperature.fix(300)
+
+    # Fix outlet conditions
+    m.fs.cstr.outlet.flow_rate.fix(2.2)
+    m.fs.cstr.outlet.temperature.fix(300)
+
+    assert degrees_of_freedom(m) == 0
+
+    solver = SolverFactory('ipopt')
+
+    initialize_by_time_element(m.fs, m.fs.time, solver=solver)
+
+    assert degrees_of_freedom(m) == 0
 
 if __name__ == '__main__':
     test_initialize_by_time_element()
