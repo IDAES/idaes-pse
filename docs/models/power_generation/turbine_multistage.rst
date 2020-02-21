@@ -2,9 +2,9 @@ Turbine (Multistage)
 ====================
 
 .. index::
-  pair: idaes.unit_models.power_generation.turbine_multistage;TurbineMultistage
+  pair: idaes.power_generation.unit_models.turbine_multistage;TurbineMultistage
 
-.. module:: idaes.unit_models.power_generation.turbine_multistage
+.. module:: idaes.power_generation.unit_models.turbine_multistage
 
 This is a composite model for a power plant turbine with high, intermediate and
 low pressure sections. This model contains an inlet stage with throttle valves
@@ -42,7 +42,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
-  from idaes.unit_models.power_generation import (
+  from idaes.power_generation.unit_models import (
       TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
   from idaes.property_models import iapws95
 

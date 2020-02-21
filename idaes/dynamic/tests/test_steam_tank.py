@@ -30,7 +30,7 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.unit_models.power_generation import SteamValve
+from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models import Heater
 from idaes.property_models import iapws95

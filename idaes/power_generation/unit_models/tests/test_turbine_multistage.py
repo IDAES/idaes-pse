@@ -23,7 +23,7 @@ from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater
-from idaes.unit_models.power_generation import (
+from idaes.power_generation.unit_models import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import (
