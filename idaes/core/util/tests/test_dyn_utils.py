@@ -20,14 +20,6 @@ from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
 from pyomo.dae import ContinuousSet, DerivativeVar
 from idaes.core.util.dyn_utils import *
 
-#from idaes.core import FlowsheetBlock
-#from idaes.core.util.testing import PhysicalParameterTestBlock
-#from idaes.core.util.exceptions import ConfigurationError
-#from idaes.core.util.initialization import (fix_state_vars,
-#                                            revert_state_vars,
-#                                            propagate_state,
-#                                            solve_indexed_blocks)
-
 __author__ = "Robert Parker"
 
 
@@ -213,7 +205,6 @@ def test_fix_and_deactivate():
     @m.fs.Block()
     def b1(b):
         b.v = Var(m.time, m.space, initialize=1) 
-        # All the indices of a DerivativeVar must appear in the variable itself?
         b.dv = DerivativeVar(b.v, wrt=m.time)
 
         b.con = Constraint(m.time, m.space, 
@@ -265,7 +256,7 @@ def test_fix_and_deactivate():
 
     derivs = get_derivatives_at(m, m.time, m.time.first())
     deriv_names = [var.name for var in derivs]
-    # Will this conflate "DerivativeVar-Data" objects with the same values?
+
     assert m.fs.b1.dv[m.time.first(), m.space.first()] in derivs
     assert m.fs.b1.dv[m.time[1], m.space[1]].name in deriv_names
 

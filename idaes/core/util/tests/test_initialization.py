@@ -33,7 +33,6 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             propagate_state,
                                             solve_indexed_blocks,
                                             initialize_by_time_element)
-import pdb
 
 __author__ = "Andrew Lee"
 

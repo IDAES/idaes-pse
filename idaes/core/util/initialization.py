@@ -224,6 +224,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     Kwargs:
         solver - Pyomo solver object initialized with user's desired options
         outlvl - idaes.logger outlvl
+        ignore_dof - if True, checks for square problems will be skipped
     """
     if not isinstance(fs, FlowsheetBlock):
         raise TypeError('First arg must be a FlowsheetBlock')
@@ -354,6 +355,9 @@ def initialize_by_time_element(fs, time, **kwargs):
                                 outlvl=idaeslog.ERROR)
         # Log that we are solving finite element {i}
         init_log.info(f'Solving finite element {i}')
+
+        if not ignore_dof:
+            assert degrees_of_freedom(fs) == 0
         
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)

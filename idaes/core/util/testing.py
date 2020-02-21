@@ -264,10 +264,6 @@ class ParameterData(PhysicalParameterBlock):
 
 class _AqueousEnzymeStateBlock(StateBlock):
     def initialize(blk):
-        for key in blk.keys():
-            # Isothermal
-            # Probably not the place for this
-            blk[key].temperature.fix()
         pass
 
 @declare_process_block_class("AqueousEnzymeStateBlock",
