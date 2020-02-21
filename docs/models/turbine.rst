@@ -15,10 +15,12 @@ The example below demonstrates the basic Turbine model usage:
 
 .. testcode::
 
-  from idaes.unit_models import Compressor
+  import pyomo.environ as pyo
+  from idaes.core import FlowsheetBlock
+  from idaes.unit_models import Turbine
   from idaes.property_models import iapws95
 
-  m = ConcreteModel()
+  m = pyo.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = iapws95.Iapws95ParameterBlock()
   m.fs.unit = Turbine(default={"property_package": m.fs.properties})
