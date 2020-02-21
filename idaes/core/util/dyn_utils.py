@@ -19,10 +19,8 @@ from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import ComponentSet
 from collections import Counter
 import idaes.logger as idaeslog
-import pdb
 
 __author__ = "Robert Parker"
 
@@ -173,7 +171,6 @@ def get_index_set_except(comp, *sets):
     info['index_getter'] = index_getter
     return info
 
-
 def _complete_index(loc, index, *newvals):
     """
     args:
@@ -196,7 +193,6 @@ def _complete_index(loc, index, *newvals):
         index = index[0:i] + newval + index[i:]
     return index
 
-
 def get_activity_dict(b):
     """
     args:
@@ -208,79 +204,76 @@ def get_activity_dict(b):
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
 
-def deactivate_model_at(b, cset, pt, outlvl=idaeslog.NOTSET):
+def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
     """
-    Finds any block or constraint in block b, indexed explicitly or implicitly
-    by cset, and deactivates each instance at pt
+    Finds any block or constraint in block b, indexed explicitly (and not 
+    implicitly) by cset, and deactivates it. 
     Args:
         b - Block to search
         cset - ContinuousSet of interest
-        pt - value, in ContinuousSet, to deactivate at
+        pts - value or list of values, in ContinuousSet, to deactivate at
     Returns:
-        deactivated - a list of component data that have been deactivated
+        deactivated - a dictionary mapping points in pts to lists of
+                      component data that have been deactivated there
     """
-    if not pt in cset:
-        msg = str(pt) + ' is not in ContinuousSet ' + cset.name
-        raise ValueError(msg)
-    deactivated = []
+    if not type(pts) is list:
+        pts = [pts]
+    for pt in pts:
+        if not pt in cset:
+            msg = str(pt) + ' is not in ContinuousSet ' + cset.name
+            raise ValueError(msg)
+    deactivated = {pt: [] for pt in pts}
     
-    for block in b.component_objects(Block):
-        if (is_explicitly_indexed_by(block, cset) and
-                not is_implicitly_indexed_by(block, cset)):
-            info = get_index_set_except(block, cset)
-            non_cset_set = info['set_except']
-            index_getter = info['index_getter']
-            for non_cset_index in non_cset_set:
-                index = index_getter(non_cset_index, pt)
-                try:
-                    block[index].deactivate()
-                    deactivated.append(block[index])
-                except KeyError:
-                    # except KeyError to allow Block.Skip
-                    msg = (block.name + ' has no index ' + str(index))
-                    init_log = idaeslog.getInitLogger(__name__, outlvl)
-                    init_log.warning(msg)
-                    continue
+    visited = set()
+    for comp in b.component_objects([Block, Constraint], active=True):
+        # Record components that have been visited in case component_objects
+        # contains duplicates (due to references)
+        if id(comp) in visited:
+            continue
+        visited.add(id(comp))
 
-    for con in b.component_objects(Constraint):
-        if (is_explicitly_indexed_by(con, cset) and
-                not is_implicitly_indexed_by(con, cset)):
-            info = get_index_set_except(con, cset)
+        if (is_explicitly_indexed_by(comp, cset) and
+                not is_implicitly_indexed_by(comp, cset)):
+            info = get_index_set_except(comp, cset)
             non_cset_set = info['set_except']
             index_getter = info['index_getter']
+
             for non_cset_index in non_cset_set:
-                index = index_getter(non_cset_index, pt)
-                try:
-                    con[index].deactivate()
-                    deactivated.append(con[index])
-                except KeyError:
-                    # except KeyError to allow Constraint.Skip
-                    msg = (con.name + ' has no index ' + str(index))
-                    init_log = idaeslog.getInitLogger(__name__, outlvl)
-                    init_log.warning(msg)
-                    continue
+                for pt in pts:
+                    index = index_getter(non_cset_index, pt)
+                    try:
+                        comp[index].deactivate()
+                        deactivated[pt].append(comp[index]) 
+                    except KeyError:
+                        # except KeyError to allow Constraint/Block.Skip
+                        msg = (comp.name + ' has no index ' + str(index))
+                        init_log = idaeslog.getInitLogger(__name__, outlvl)
+                        init_log.warning(msg)
+                        continue
                  
     return deactivated
 
-# TODO: get_time_component_dict
-# TODO: get_time_derivative_dict
-#       will get components in one pass so I don't have to look through 
-#       component_objects at each step of the element-wise initialization
-
-
-def get_derivatives_at(b, time, t):
+def get_derivatives_at(b, time, pts):
     """
     Finds derivatives with respect to time at point t.
     No distinction made for multiple derivatives or mixed partials.
     Args:
         b - Block to search for derivatives
         time - ContinuousSet to look for derivatives with respect to 
-        t - point at which to return derivatives
+        pts - point or list of points at which to return derivatives
     Returns:
-        dvlist - list of derivatives found
+        dvdict - dictionary of pt -> list of derivatives for pt in pts 
     """
-    dvlist = [] 
-    for var in ComponentSet(b.component_objects(Var)):
+    if not type(pts) is list:
+        pts = [pts]
+    dvdict = {pt: [] for pt in pts}
+
+    visited = set()
+    for var in b.component_objects(Var):
+        if id(var) in visited:
+            continue
+        visited.add(id(var))
+
         if not isinstance(var, DerivativeVar):
             continue
         if time not in set(var.get_continuousset_list()):
@@ -289,10 +282,12 @@ def get_derivatives_at(b, time, t):
         info = get_index_set_except(var, time)
         non_time_set = info['set_except']
         index_getter = info['index_getter']
-        for non_time_index in non_time_set:
-            index = index_getter(non_time_index, t)
-            dvlist.append(var[index])
-    return dvlist
+        for pt in pts:
+            for non_time_index in non_time_set:
+                index = index_getter(non_time_index, pt)
+                dvdict[pt].append(var[index])
+
+    return dvdict
 
 # TODO: should be able to replace this function everywhere
 #       with getname and find_component
@@ -355,7 +350,12 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
                      fixed variables in target model
     """
     time_target = fs_tgt.time
-    for var_target in ComponentSet(fs_tgt.component_objects(Var)):
+    var_visited = set()
+    for var_target in fs_tgt.component_objects(Var):
+        if id(var_target) in var_visited:
+            continue
+        var_visited.add(id(var_target))
+
         if not is_explicitly_indexed_by(var_target, time_target):
             continue
         n = var_target.index_set().dimen
@@ -390,7 +390,12 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
                 var_target[target_index].set_value(
                         var_source[source_index].value)
 
-    for blk_target in ComponentSet(fs_tgt.component_objects(Block)):
+    blk_visited = set()
+    for blk_target in fs_tgt.component_objects(Block):
+        if id(blk_target) in blk_visited:
+            continue
+        blk_visited.add(id(blk_target))
+
         if not is_explicitly_indexed_by(blk_target, time_target):
             continue
         n = blk_target.index_set().dimen
@@ -408,10 +413,16 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
         if n == 1:
             target_index = t_target
             source_index = t_source
-            for var_target in ComponentSet(
-                    blk_target[target_index].component_data_objects(Var)):
+
+            var_visited = set()
+            for var_target in blk_target[target_index].component_data_objects(Var):
+                if id(var_target) in var_visited:
+                    continue
+                var_visited.add(id(var_target))
+
                 if not copy_fixed and var_target.fixed:
                     continue
+
                 # Here, find_component will not work from BlockData object
                 local_parent = blk_source[source_index]
                 for r in path_from_block(var_target, blk_target[target_index]):
@@ -428,10 +439,16 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
             for non_time_index in non_time_index_set:
                 source_index = index_getter(non_time_index, t_source)
                 target_index = index_getter(non_time_index, t_target)
-                for var_target in ComponentSet(
-                        blk_target[target_index].component_data_objects(Var)):
+
+                var_visited = set()
+                for var_target in blk_target[target_index].component_data_objects(Var):
+                    if id(var_target) in var_visited:
+                        continue
+                    var_visited.add(id(var_target))
+
                     if not copy_fixed and var_target.fixed:
                         continue
+
                     local_parent = blk_source[source_index]
                     for r in path_from_block(var_target,
                                              blk_target[target_index]):

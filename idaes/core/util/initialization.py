@@ -265,14 +265,11 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver = kwargs.pop('solver', None)
 
     ignore_dof = kwargs.pop('ignore_dof', False)
-    if degrees_of_freedom(fs) != 0 and not ignore_dof:
-        msg = ''' 
-              Flowsheet provided is not square. Use kwarg ignore_dof=True
-              to proceed anyway.
-              '''
-        raise ValueError(msg)
+
+    if not ignore_dof:
+        assert degrees_of_freedom(fs) == 0
  
-    # Get mask of constraints/blocks that are already inactive:
+    # Get dict telling which constraints/blocks are already inactive:
     # dict: id(compdata) -> bool (is active?)
     was_originally_active = get_activity_dict(fs)
 
@@ -280,16 +277,10 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     # Deactivate flowsheet except at t0, solve to ensure consistency
     # of initial conditions.
-    comps_at_t = {}
-    for t in time:
-        # This loop is slower than it needs to be
-        # Should get comps_at_t all in one component_data_objects
-        if t != time.first():
-            comps_at_t[t] = deactivate_model_at(fs, time, t, outlvl=idaeslog.ERROR)
+    non_initial_time = [t for t in time]
+    non_initial_time.remove(time.first())
+    deactivated = deactivate_model_at(fs, time, non_initial_time, outlvl=idaeslog.ERROR)
 
-    # Log that we are solving for initial conditions
-#    init_log.info_high(
-#   'Model is inactive except at t=0. Solving for consistent initial conditions')
     init_log.info('''
                   Model is inactive except at t=0. 
                   Solving for consistent initial conditions.
@@ -302,8 +293,9 @@ def initialize_by_time_element(fs, time, **kwargs):
         init_log.error('Failed to solve for consistent initial conditions')
         raise ValueError('Solver failed in initialization')
 
-    comps_at_t[time.first()] = deactivate_model_at(fs, time, time.first(),
-                                                   outlvl=idaeslog.ERROR)
+    deactivated[time.first()] = deactivate_model_at(fs, time, time.first(),
+                                        outlvl=idaeslog.ERROR)[time.first()]
+
     # Now model is completely inactive
 
     # For each timestep, we need to
@@ -312,6 +304,13 @@ def initialize_by_time_element(fs, time, **kwargs):
     #    of finite element
     # 3. Solve the (now) square system
     # 4. Revert the model to its prior state
+
+    # This will make use of the following dictionaries mapping 
+    # time points -> time derivatives and time-differential variables
+    derivs_at_time = get_derivatives_at(fs, time, [t for t in time])
+    dvars_at_time = {t: [d.parent_component().get_state_var()[d.index()]
+                         for d in derivs_at_time[t]]
+                         for t in time}
 
     # Perform a solve for 1 -> nfe; i is the index of the finite element
     init_log.info('Flowsheet has been deactivated. Beginning element-wise initialization')
@@ -325,14 +324,13 @@ def initialize_by_time_element(fs, time, **kwargs):
         # Activate components of model that were active in the presumably
         # square original system
         for t in fe:
-            for comp in comps_at_t[t]:
+            for comp in deactivated[t]:
                 if was_originally_active[id(comp)]:
                     comp.activate()
 
         # This should be done initially for all t, in one pass
-        init_deriv_list = get_derivatives_at(fs, time, t_prev)
-        init_dv_list = [d.parent_component().get_state_var()[d.index()]
-                        for d in init_deriv_list]
+        init_deriv_list = derivs_at_time[t_prev]
+        init_dvar_list = dvars_at_time[t_prev]
 
         # Record original fixed status of each of these variables
         was_originally_fixed = {}
@@ -344,7 +342,7 @@ def initialize_by_time_element(fs, time, **kwargs):
             # and we don't want to fix it.
             if not drv.value is None:
                 drv.fix()
-        for dv in init_dv_list:
+        for dv in init_dvar_list:
             was_originally_fixed[id(dv)] = dv.fixed
             if not drv.value is None:
                 dv.fix()
@@ -369,14 +367,14 @@ def initialize_by_time_element(fs, time, **kwargs):
 
         # Deactivate components that may have been activated
         for t in fe:
-            for comp in comps_at_t[t]:
+            for comp in deactivated[t]:
                 comp.deactivate()
 
         # Unfix variables that have been fixed
         for drv in init_deriv_list:
             if not was_originally_fixed[id(drv)]:
                 drv.unfix()
-        for dv in init_dv_list:
+        for dv in init_dvar_list:
             if not was_originally_fixed[id(dv)]:
                 dv.unfix()
 
@@ -385,7 +383,7 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     # Reactivate components of the model that were originally active
     for t in time:
-        for comp in comps_at_t[t]:
+        for comp in deactivated[t]:
             if was_originally_active[id(comp)]:
                 comp.activate()
 
