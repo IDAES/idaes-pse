@@ -23,7 +23,8 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict,
-        deactivate_model_at, get_derivatives_at, copy_values_at_time)
+        deactivate_model_at, deactivate_constraints_unindexed_by,
+        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time)
 import idaes.logger as idaeslog
 import pdb
 
@@ -273,18 +274,15 @@ def initialize_by_time_element(fs, time, **kwargs):
     # dict: id(compdata) -> bool (is active?)
     was_originally_active = get_activity_dict(fs)
 
-    # Here, deactivate non-time-indexed components
-
     # Deactivate flowsheet except at t0, solve to ensure consistency
     # of initial conditions.
     non_initial_time = [t for t in time]
     non_initial_time.remove(time.first())
-    deactivated = deactivate_model_at(fs, time, non_initial_time, outlvl=idaeslog.ERROR)
+    deactivated = deactivate_model_at(fs, time, non_initial_time, 
+            outlvl=idaeslog.ERROR)
 
-    init_log.info('''
-                  Model is inactive except at t=0. 
-                  Solving for consistent initial conditions.
-                  ''')
+    init_log.info(
+    'Model is inactive except at t=0. Solving for consistent initial conditions.')
     with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
         results = solver.solve(fs, tee=slc.tee)
     if results.solver.termination_condition == TerminationCondition.optimal:
@@ -295,6 +293,11 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     deactivated[time.first()] = deactivate_model_at(fs, time, time.first(),
                                         outlvl=idaeslog.ERROR)[time.first()]
+
+    # Here, deactivate non-time-indexed components. Do this after solve
+    # for initial conditions in case these were used specify initial conditions
+    con_unindexed_by_time = deactivate_constraints_unindexed_by(fs, time)
+    var_unindexed_by_time = fix_vars_unindexed_by(fs, time)
 
     # Now model is completely inactive
 
@@ -328,7 +331,8 @@ def initialize_by_time_element(fs, time, **kwargs):
                 if was_originally_active[id(comp)]:
                     comp.activate()
 
-        # This should be done initially for all t, in one pass
+        # Get lists of derivative and differential variables
+        # at initial time point of finite element
         init_deriv_list = derivs_at_time[t_prev]
         init_dvar_list = dvars_at_time[t_prev]
 
@@ -351,6 +355,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         for t in fe:
             copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False,
                                 outlvl=idaeslog.ERROR)
+
         # Log that we are solving finite element {i}
         init_log.info(f'Solving finite element {i}')
 
@@ -386,6 +391,11 @@ def initialize_by_time_element(fs, time, **kwargs):
         for comp in deactivated[t]:
             if was_originally_active[id(comp)]:
                 comp.activate()
+
+    for con in con_unindexed_by_time:
+        con.activate()
+    for var in var_unindexed_by_time:
+        var.unfix()
 
     # Logger message that initialization is finished
     init_log.info('Initialization completed. Model has been reactivated')

@@ -180,15 +180,14 @@ def _complete_index(loc, index, *newvals):
         newvals - newvalues to insert into index. Can be scalars
                   or tuples (for higher-dimension sets)
     """
-    # Not sure how isinstance could be avoided here
-    if not isinstance(index, tuple):
+    if type(index) is not tuple:
         index = (index,)
     keys = sorted(loc.keys())
     if len(keys) != len(newvals):
         raise ValueError('Wrong number of values to complete index')
     for i in sorted(loc.keys()):
         newval = newvals[loc[i]]
-        if not isinstance(newval, tuple):
+        if type(newval) is not tuple:
             newval = (newval,)
         index = index[0:i] + newval + index[i:]
     return index
@@ -252,6 +251,68 @@ def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
                         continue
                  
     return deactivated
+
+def deactivate_constraints_unindexed_by(b, time):
+    """
+    Searches block b for and constraints not indexed by time
+    and deactivates them. 
+    Args:
+        b - block to search
+        time - set with respect to which to find unindexed constraints
+    Returns:
+        conlist - list of constraints deactivated
+    """
+    conlist = []
+    
+    visited = set()
+    for comp in b.component_objects(Constraint, active=True):
+        if id(comp) in visited:
+            continue
+        visited.add(id(comp))
+
+        if (not is_explicitly_indexed_by(comp, time) and
+                not is_implicitly_indexed_by(comp, time)):
+            for index in comp:
+                compdata = comp[index]
+                if compdata.active:
+                    compdata.deactivate()
+                    conlist.append(compdata)
+
+    return conlist
+
+def fix_vars_unindexed_by(b, time):
+    """
+    Searches block b for variables not indexed by time
+    and fixed them. 
+    Args:
+        b - block to search
+        time - set with respect to which to find unindexed variables
+    Returns:
+        varlist - list of variables fixed
+    """
+    varlist = []
+
+    visited = set()
+    for var in b.component_objects(Var):
+        if id(var) in visited:
+            continue
+        visited.add(id(var))
+
+        if (not is_explicitly_indexed_by(var, time) and
+                not is_implicitly_indexed_by(var, time)):
+            for index in var:
+                vardata = var[index]
+                if (not vardata.fixed and vardata.value is not None):
+                    # Can't fix a variable with a value of None, but this
+                    # should be called after a solve, so any variable with
+                    # value of None is stale and won't be sent to solver,
+                    # so it doesn't need to be fixed to maintain correct
+                    # degrees of freedom
+                    vardata.fix()
+                    varlist.append(vardata)
+
+    return varlist
+
 
 def get_derivatives_at(b, time, pts):
     """

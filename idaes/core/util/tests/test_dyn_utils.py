@@ -203,6 +203,8 @@ def test_fix_and_deactivate():
     m.set2 = Set(initialize=['d', 'e', 'f'])
     m.fs = Block()
 
+    m.fs.v0 = Var(m.space, initialize=1)
+
     @m.fs.Block()
     def b1(b):
         b.v = Var(m.time, m.space, initialize=1) 
@@ -234,7 +236,7 @@ def test_fix_and_deactivate():
 
     @m.fs.Constraint(m.space)
     def con2(fs, x):
-        return fs.b1.v[m.time.first(), x] == 1
+        return fs.b1.v[m.time.first(), x] == fs.v0[x]
 
 
     disc = TransformationFactory('dae.collocation') 
@@ -280,6 +282,15 @@ def test_fix_and_deactivate():
             in deriv_name_dict[m.time.last()])
     assert (m.fs.b1.dv[m.time.last(), m.space[1]].name 
             not in deriv_name_dict[m.time.first()])
+
+    vars_unindexed = fix_vars_unindexed_by(m, m.time)
+    cons_unindexed = deactivate_constraints_unindexed_by(m, m.time)
+    assert m.fs.v0[m.space[1]] in vars_unindexed
+    assert m.fs.b1.b2[m.time[1]].v not in vars_unindexed
+    assert m.fs.con2[m.space[2]] in cons_unindexed
+    assert m.fs.con1[m.time[1]] not in cons_unindexed
+    assert not m.fs.con2[m.space[1]].active
+    assert m.fs.v0[m.space[1]].fixed
 
     path = path_from_block(m.fs.b2[m.time[1], m.space[1]].b3['a'].v,
                            m, include_comp=False)
