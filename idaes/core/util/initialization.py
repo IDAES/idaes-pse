@@ -243,7 +243,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         ncp = time.get_discretization_info()['ncp']
     elif scheme == 'LAGRANGE-LEGENDRE':
         msg = 'Initialization does not support collocation with Legendre roots'
-        raise ValueError(msg)
+        raise NotImplementedError(msg)
     elif scheme == 'BACKWARD Difference':
         ncp = 1
     elif scheme == 'FORWARD Difference':
@@ -252,7 +252,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         raise NotImplementedError(msg)
     elif scheme == 'CENTRAL Difference':
         msg = 'Initialization does not support central finite difference'
-        raise ValueError(msg)
+        raise NotImplementedError(msg)
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.
