@@ -142,16 +142,16 @@ The multistage turbine model contains the models in the table below.  The splitt
 Unit                        Index Sets           Doc
 =========================== ==================== ======================================================================================================================================================
 ``inlet_split``             None                 Splitter to split the main steam feed into steams for each arc (:ref:`Separator <models/separator:Separator>`)
-``throttle_valve``          Admission Arcs       Throttle valves for each admission arc (:ref:`SteamValve <models/power_generation/steam_valve:Steam/Water Valve>`)
-``inlet_stage``             Admission Arcs       Parallel inlet turbine stages that represent admission arcs (:ref:`TurbineInlet <models/power_generation/turbine_inlet:Turbine (Inlet Stage)>`)
+``throttle_valve``          Admission Arcs       Throttle valves for each admission arc (:ref:`SteamValve <power_generation/unit_models/steam_valve:Steam/Water Valve>`)
+``inlet_stage``             Admission Arcs       Parallel inlet turbine stages that represent admission arcs (:ref:`TurbineInlet <power_generation/unit_models/turbine_inlet:Turbine (Inlet Stage)>`)
 ``inlet_mix``               None                 Mixer to combine the streams from each arc back to one stream (:ref:`Mixer <models/mixer:Mixer>`)
-``hp_stages``               HP stages            Turbine stages in the high-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
-``ip_stages``               IP stages            Turbine stages in the intermediate-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
-``lp_stages``               LP stages            Turbine stages in the low-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
+``hp_stages``               HP stages            Turbine stages in the high-pressure section (:ref:`TurbineStage <power_generation/unit_models/turbine_stage:Turbine (Stage)>`)
+``ip_stages``               IP stages            Turbine stages in the intermediate-pressure section (:ref:`TurbineStage <power_generation/unit_models/turbine_stage:Turbine (Stage)>`)
+``lp_stages``               LP stages            Turbine stages in the low-pressure section (:ref:`TurbineStage <power_generation/unit_models/turbine_stage:Turbine (Stage)>`)
 ``hp_splits``               subset of HP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
 ``ip_splits``               subset of IP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
 ``lp_splits``               subset of LP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
-``outlet_stage``            None                 The final stage in the turbine, which calculates exhaust losses (:ref:`TurbineOutlet <models/power_generation/turbine_outlet:Turbine (Outlet Stage)>`)
+``outlet_stage``            None                 The final stage in the turbine, which calculates exhaust losses (:ref:`TurbineOutlet <power_generation/unit_models/turbine_outlet:Turbine (Outlet Stage)>`)
 =========================== ==================== ======================================================================================================================================================
 
 Initialization
