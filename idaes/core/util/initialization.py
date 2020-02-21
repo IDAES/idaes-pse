@@ -15,7 +15,7 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Var, TerminationCondition
+from pyomo.environ import Block, Var, TerminationCondition, SolverFactory
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 
@@ -26,7 +26,6 @@ from idaes.core.util.dyn_utils import (get_activity_dict,
         deactivate_model_at, deactivate_constraints_unindexed_by,
         fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time)
 import idaes.logger as idaeslog
-import pdb
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
@@ -215,17 +214,21 @@ def solve_indexed_blocks(solver, blocks, **kwds):
 
 def initialize_by_time_element(fs, time, **kwargs):
     """
-    Function to initialize Flowsheet fs along ContinuousSet time.
-    Assumes sufficient initialization/correct degrees of freedom such that
-    the first finite element can be solved immediately and each subsequent
-    finite element can be solved by fixing differential/derivative variables
+    Function to initialize Flowsheet fs element-by-element along 
+    ContinuousSet time. Assumes sufficient initialization/correct degrees 
+    of freedom such that the first finite element can be solved immediately 
+    and each subsequent finite element can be solved by fixing differential
+    and derivative variables at the initial time point of that finite element.
     Args:
-        fs - flowsheet to initialize
-        time - set along which to initialize
+        fs - Flowsheet to initialize
+        time - Set whose elements will be solved for individually
+        kwargs - See below
     Kwargs:
         solver - Pyomo solver object initialized with user's desired options
-        outlvl - idaes.logger outlvl
-        ignore_dof - if True, checks for square problems will be skipped
+        outlvl - IDAES logger outlvl
+        ignore_dof - Bool. If True, checks for square problems will be skipped.
+    Returns:
+        None
     """
     if not isinstance(fs, FlowsheetBlock):
         raise TypeError('First arg must be a FlowsheetBlock')
@@ -263,7 +266,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
-    solver = kwargs.pop('solver', None)
+    solver = kwargs.pop('solver', SolverFactory('ipopt'))
 
     ignore_dof = kwargs.pop('ignore_dof', False)
 
