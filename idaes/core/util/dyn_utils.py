@@ -27,7 +27,13 @@ __author__ = "Robert Parker"
 
 def is_explicitly_indexed_by(comp, *sets):
     """
-    Returns True if component comp is directly indexed by each set in sets.
+    Function for determining whether a pyomo component is indexed by a 
+    set or group of sets.
+    Args:
+        comp - some Pyomo component, possibly indexed
+        sets - Pyomo Sets to check indexing by
+    Returns:
+        A bool that is True if comp is directly indexed each set in sets.
     """
     if not comp.is_indexed():
         return False
@@ -56,12 +62,15 @@ def is_explicitly_indexed_by(comp, *sets):
 
 def is_implicitly_indexed_by(comp, s, stop_at=None):
     """
-    Returns True if any of comp's parent blocks are indexed by s.
-    
-    If block stop_at (or its parent_component) is provided, function
-    will return False if stop_at is reached, regardless of whether 
-    stop_at is indexed by s. Meant to be an "upper bound" for blocks
-    to check, like a flowsheet.
+    Function for determining whether a component is contained in a 
+    block that is indexed by a particular set.
+    Args: 
+        comp - Component whose parent blocks are checked
+        s - Set for which indices are checked
+        stop_at - Block at which to stop searching if reached, regardless
+                  of whether or not it is indexed by s
+    Returns:
+        Bool that is true if comp is contained in a block indexed by s
     """
     parent = comp.parent_block()
 
@@ -89,15 +98,20 @@ def is_implicitly_indexed_by(comp, s, stop_at=None):
 
 def get_index_set_except(comp, *sets):
     """ 
-    Returns a dictionary:
-      'set_except'   -> Pyomo Set or SetProduct indexing comp, with sets s 
-                        omitted.
-      'index_getter' -> Function to return an index for comp given an index
-                        from set_except and a value from each set s.
-                        Won't check if values are in s, so can be used to get
-                        an index for a component that has different s sets.
-    User should already have checked that comp is (directly) indexed
-    by each set s.
+    Function for getting indices of a component over a product of its
+    indexing sets other than those specified. Indices for the specified 
+    sets can be used to construct indices of the proper dimension for the 
+    original component via the index_getter function.
+    Args:
+        comp - Component whose indexing sets are to be manipulated
+        sets - Sets to omit from the set_except product
+    Returns:
+        info - Dictionary. Maps 'set_except' to a Pyomo Set or SetProduct
+               of comp's index set, excluding those in sets. Maps
+               'index_getter' to a function that returns an index of the
+               proper dimension for comp, given an element of set_except
+               and a value for each set excluded. These values must be provided
+               in the same order their Sets were provided in the sets argument.
     """
     n_set = len(sets)
     s_set = set(sets)
@@ -173,12 +187,19 @@ def get_index_set_except(comp, *sets):
 
 def _complete_index(loc, index, *newvals):
     """
-    args:
-        loc - dictionary mapping location in the new index to
+    Function for inserting new values into a partial index.
+    Used by get_index_set_except function to construct the 
+    index_getter function for completing indices of a particular
+    component with particular sets excluded.
+    Args:
+        loc - Dictionary mapping location in the new index to
               location in newvals
-        index - partial index
-        newvals - newvalues to insert into index. Can be scalars
+        index - Partial index
+        newvals - New values to insert into index. Can be scalars
                   or tuples (for higher-dimension sets)
+    Returns:
+        index - An index with values from newvals inserted in 
+                locations specified by loc
     """
     if type(index) is not tuple:
         index = (index,)
@@ -194,10 +215,13 @@ def _complete_index(loc, index, *newvals):
 
 def get_activity_dict(b):
     """
-    args:
-        b - a block to be searched for active components
-    returns:
-        dictionary mapping id of constraints and blocks
+    Function that builds a dictionary telling whether or not each
+    ConstraintData and BlockData object in a model is active.
+    Uses the objects' ids as the hash.
+    Args:
+        b - A Pyomo Block to be searched for active components
+    Returns:
+        A dictionary mapping id of constraint and block data objects
         to a bool indicating if they are active
     """
     return {id(con): con.active 
@@ -206,13 +230,15 @@ def get_activity_dict(b):
 def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
     """
     Finds any block or constraint in block b, indexed explicitly (and not 
-    implicitly) by cset, and deactivates it. 
+    implicitly) by cset, and deactivates it at points specified. 
+    Implicitly indexed components are excluded because one of their parent 
+    blocks will be deactivated, so deactivating them too would be redundant.
     Args:
         b - Block to search
         cset - ContinuousSet of interest
-        pts - value or list of values, in ContinuousSet, to deactivate at
+        pts - Value or list of values, in ContinuousSet, to deactivate at
     Returns:
-        deactivated - a dictionary mapping points in pts to lists of
+        deactivated - A dictionary mapping points in pts to lists of
                       component data that have been deactivated there
     """
     if not type(pts) is list:
@@ -257,10 +283,10 @@ def deactivate_constraints_unindexed_by(b, time):
     Searches block b for and constraints not indexed by time
     and deactivates them. 
     Args:
-        b - block to search
-        time - set with respect to which to find unindexed constraints
+        b - Block to search
+        time - Set with respect to which to find unindexed constraints
     Returns:
-        conlist - list of constraints deactivated
+        conlist - List of constraints deactivated
     """
     conlist = []
     
@@ -283,12 +309,12 @@ def deactivate_constraints_unindexed_by(b, time):
 def fix_vars_unindexed_by(b, time):
     """
     Searches block b for variables not indexed by time
-    and fixed them. 
+    and fixes them. 
     Args:
-        b - block to search
-        time - set with respect to which to find unindexed variables
+        b - Block to search
+        time - Set with respect to which to find unindexed variables
     Returns:
-        varlist - list of variables fixed
+        varlist - List of variables fixed
     """
     varlist = []
 
@@ -313,17 +339,18 @@ def fix_vars_unindexed_by(b, time):
 
     return varlist
 
-
 def get_derivatives_at(b, time, pts):
     """
-    Finds derivatives with respect to time at point t.
+    Finds derivatives with respect to time at points specified.
     No distinction made for multiple derivatives or mixed partials.
     Args:
         b - Block to search for derivatives
-        time - ContinuousSet to look for derivatives with respect to 
-        pts - point or list of points at which to return derivatives
-    Returns:
-        dvdict - dictionary of pt -> list of derivatives for pt in pts 
+        time - ContinuousSet to look for derivatives with respect to
+        pts - Value or list of values in time set at which to return 
+              derivatives
+    Returns
+        dvdict - Dictionary mapping time points to lists of derivatives
+                 at those points
     """
     if not type(pts) is list:
         pts = [pts]
@@ -361,12 +388,13 @@ def path_from_block(comp, blk, include_comp=False):
     Returns a list of tuples with (local_name, index) pairs required
     to locate comp from blk
     Args:
-        comp - Component(Data) to locate
+        comp - Component(Data) object to locate
         blk - Block(Data) to locate comp from
-        include_comp - bool of whether or not to include the
+        include_comp - Bool of whether or not to include the
                        local_name, index of the component itself
     Returns:
-        route - A list of string, index tuples
+        route - A list of string, index tuples that can be used to locate
+                comp from blk
     """
     parent_data = comp.parent_block()
     route = []
@@ -394,21 +422,21 @@ def path_from_block(comp, blk, include_comp=False):
 def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
         copy_fixed=True, outlvl=idaeslog.NOTSET):
     """
-    For all variables in fs_tgt (implicitly or explicitly) indexed by time,
-    sets the value at t_target to that of the same variable in fs_src
-    at t_source.
-
-    Currently relies on fact that input blocks are flowsheets.
-    Could extend to apply to non-flowsheet blocks, but would need to
-    pass in the time set as well - could then apply to any set.
-
+    Function to set the values of all (explicitly or implicitly) time-indexed 
+    variables in a flowsheet to similar values (with the same name) but at 
+    different points in time and (potentially) in different flowsheets.
     Args:
-        fs_tgt - target flowsheet
-        fs_src - source flowsheet
-        t_target - target time point
-        t_source - source time point
-        copy_fixed - bool of whether or not to copy over 
-                     fixed variables in target model
+        fs_tgt - Target flowsheet, whose variables' values will get set
+        fs_src - Source flowsheet, whose variables' values will be used to 
+                 set those of the target flowsheet. Could be the target
+                 flowsheet
+        t_target - Target time point
+        t_source - Source time point
+        copy_fixed - Bool of whether or not to copy over fixed variables in 
+                     target model 
+        outlvl - IDAES logger output level
+    Returns:
+        None
     """
     time_target = fs_tgt.time
     var_visited = set()
