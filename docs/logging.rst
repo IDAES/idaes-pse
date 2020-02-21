@@ -204,8 +204,8 @@ by determining if the solver output would be logged at the given level.
   model.x.fix(3)
   model.c = pyo.Constraint(expr=model.y==model.x**2)
 
-  log = idaes.log("solver.demo")
+  log = idaeslog.getSolveLogger("solver.demo")
   log.setLevel(idaeslog.DEBUG)
 
-  with solver_log(log, idaeslog.DEBUG) as slc:
+  with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
       res = solver.solve(model, tee=slc.tee)
