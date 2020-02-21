@@ -17,7 +17,7 @@ Tests for math util methods.
 import pytest
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, 
-                           TransformationFactory)
+                           TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
@@ -577,9 +577,9 @@ def test_solve_indexed_block_error():
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
-    horizon = 5
+    horizon = 6
     time_set = [0, horizon]
-    ntfe = 50 # For a finite element every six seconds
+    ntfe = 60 # For a finite element every six seconds
     ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
@@ -607,12 +607,27 @@ def test_initialize_by_time_element():
 
     # Fix inlet conditions
     for t, j in m.fs.time*m.fs.properties.component_list:
-        if j == 'E':
-            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(11.91*0.1)
-        elif j == 'S':
-            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+        if t <= 2:
+            if j == 'E':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(11.91*0.1)
+            elif j == 'S':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+            else:
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+        elif t <= 4:
+            if j == 'E':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(5.95*0.1)
+            elif j == 'S':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+            else:
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
         else:
-            m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+            if j == 'E':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(8.95*0.1)
+            elif j == 'S':
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(16.75*2.1)
+            else:
+                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
 
     m.fs.cstr.inlet.flow_rate.fix(2.2)
     m.fs.cstr.inlet.temperature.fix(300)
@@ -623,11 +638,37 @@ def test_initialize_by_time_element():
 
     assert degrees_of_freedom(m) == 0
 
-    solver = SolverFactory('ipopt')
-
     initialize_by_time_element(m.fs, m.fs.time, solver=solver)
 
     assert degrees_of_freedom(m) == 0
+
+    # Assert that the result looks how we expect
+    assert m.fs.cstr.outlet.conc_mol[0, 'S'].value == 0
+    assert abs(m.fs.cstr.outlet.conc_mol[2, 'S'].value - 11.076) < 1e-2
+    assert abs(m.fs.cstr.outlet.conc_mol[4, 'P'].value - 0.3577) < 1e-3
+    assert abs(m.fs.cstr.outlet.conc_mol[6, 'E'].value - 0.0286) < 1e-3
+
+    # Assert that model is still fixed and deactivated as expected
+    assert (
+    m.fs.cstr.control_volume.material_holdup[m.fs.time.first(), 'aq', 'S'].fixed)
+    for t in m.fs.time:
+        if t != m.fs.time.first():
+            assert (not 
+    m.fs.cstr.control_volume.material_holdup[t, 'aq', 'S'].fixed)
+        assert (
+    m.fs.cstr.control_volume.material_holdup_calculation[t, 'aq', 'C'].active)
+        assert m.fs.cstr.control_volume.properties_out[t].active
+        assert m.fs.cstr.outlet.temperature[t].fixed
+        assert not m.fs.cstr.outlet.flow_mol_comp[t, 'S'].fixed
+        assert m.fs.cstr.inlet.flow_mol_comp[t, 'S'].fixed
+
+    # Assert that constraints are feasible after initialization
+    for con in m.fs.component_data_objects(Constraint, active=True):
+        assert value(con.body) - value(con.upper) < 1e-5
+        assert value(con.lower) - value(con.body) < 1e-5
+
+    results = solver.solve(m.fs, tee=True)
+    assert results.solver.termination_condition == TerminationCondition.optimal
 
 if __name__ == '__main__':
     test_initialize_by_time_element()
