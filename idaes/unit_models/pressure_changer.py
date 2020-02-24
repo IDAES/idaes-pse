@@ -19,7 +19,7 @@ Standard IDAES pressure changer model.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var
+from pyomo.environ import SolverFactory, value, Var, Block
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -37,6 +37,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 import idaes.logger as idaeslog
+import idaes.core.util.unit_costing as costing
+
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
@@ -682,6 +684,15 @@ see property package for documentation.}""",
             var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
+
+
+    def get_costing(self, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing()
+        self.costing = Block()
+
+        module.pressure_changer_costing(self.costing)
+        
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
 class TurbineData(PressureChangerData):

@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 # =============================================================================
 
@@ -30,6 +30,20 @@ def global_costing_parameters(self, year=None):
     self.CE_index = Param(mutable = True, initialize = ce_index_dic[year],
                           doc= 'CE cost index $ year')
 
+def _make_vars(self):
+    self.base_cost = Var(initialize = 1e5,
+                         bounds=(0, 1e12),
+                         doc='Heat Exchanger Base Cost CB cost in $')
+    self.purchase_cost = Var(initialize =1e4,
+                             bounds = (0,1e12),
+                             doc = 'Heat Exchanger Purchase Cost CP in $')
+    self.FP = Var(initialize = 100,
+                  doc = 'Pressure factor')
+    
+    self.FM = Param(mutable = True, initialize = 3,
+                    doc= 'construction material correction factor')
+    
+    
 def hx_costing(self, hx_type='U-tube', FM='stain_steel', 
                  FL = '12ft'):
     '''
@@ -57,21 +71,15 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel',
         tube length (FL): '8ft'*, '12ft', '16ft', '20ft'
         
         * --> default options
+    
+    Author: MZamarripa (created 9/17/2019; updated 2/21/2020)
     '''
     # ------------------------ Heat Exchanger cost ------------------------
     # heat exchanger cost
-    self.base_cost = Var(initialize = 1e5,
-                         bounds=(0, 1e12),
-                         doc='Heat Exchanger Base Cost CB cost in $')
-    self.purchase_cost = Var(initialize =1e4,
-                             bounds = (0,1e12),
-                             doc = 'Heat Exchanger Purchase Cost CP in $')
-    self.FP = Var(initialize = 100,
-                  doc = 'hx Pressure factor')
+
+    _make_vars(self)
     self.FL = Param(mutable = True, initialize = 1.12,
                     doc='hx tube length correction factor')
-    self.FM = Param(mutable = True, initialize = 3,
-                    doc= 'construction material correction factor')
     
     self.hx_os = Param(mutable = True, initialize = 1.1,
                        doc= 'hx oversize factor 1.1 to 1.5')
@@ -87,8 +95,6 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel',
     # i.e. Carbon Steel/Cr-Mo steel, Cr-Mo steel/Cr-Mo steel, Monel/Monel, 
     # Titanium/titanium, etc.
     
-
-
     #--------------------------------------------------
     # base cost calculation
 #       # select heat exchanger type:
@@ -142,3 +148,86 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel',
         return self.purchase_cost == (self.FP*self.FM*self.FL*
                                       (self.parent_block().flowsheet().costing.CE_index/500)*self.base_cost)
     self.cp_cost_eq = Constraint(rule=hx_CP_rule)
+
+
+def pressure_changer_costing(self, FM="stain_steel", # pump, compressor
+                             mover_type = "compressor", #fan, blower, compressor
+                             compressor_type="centrifugal", # only compressors
+                             driver_mover_type: "electrical" # only compressors
+                             ):
+    '''    
+    Pressure changer costing method
+    Source: Process and Product Design Principles: Synthesis, Analysis, 
+    and Evaluation
+    Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
+    Chapter 22. Cost Accounting and Capital Cost Estimation
+    22.2 Cost Indexes and Capital Investment
+    
+    This method computes the purchase cost (CP) for a pressure changer unit, 
+    and can be used for costing of pumps, fan, blower, compressor, or Turbine.  
+    
+    Author: MZamarripa (created 2/21/2020)
+    
+    Arguments: 
+
+        if config.compressor 
+        if config.compressor is True:
+        mover_type: Fan, Blower, Compressor*
+            Fan_type:
+            Blower_type:
+            Compressor_type: centrifugal*, reciprocating, screw
+                drive_type: electric_motor*, steam_turbine, gas_turbine
+                
+        FM - construction material: 
+            Pump: stain_steel*
+            Compressor: stain_steel*, nickel_alloy 
+    *default option
+    '''
+    _make_vars(self)
+    
+    # if compressor is == False, that means pressure changer in a Turbine
+    if self.parent_block().config.compressor == False:
+        # turbine purchase cost calculation W / 746 = horsepower
+        if(self.parent_block().config.property_package.get_metadata().
+           properties['enth_mol']['units']) == 'J/mol':
+            def CP_rule(self):
+                return self.purchase_cost == 530*(-1*self.parent_block().work_mechanical[0]/746)**0.81
+            self.cp_cost_eq = Constraint(rule=CP_rule)
+        else:
+            raise Exception("units not supported")
+    #if compressor is True (the unit could be a Pump, Fan, Blower, or Compressor)
+    else:
+        #if ThermodynamicAssumption == Pump (the unit is a Pump)
+        if self.parent_block().config.ThermodynamicAssumption == ThermodynamicAssumption.pump:
+            # ToDo: pump costing code
+            print('pump code')
+        else:
+            if mover_type == "compressor":
+                # Compressor Purchase Cost Correlation
+                # compressor drive factor
+                FD_param = {'electrical_motor':1, 'steam_turbine':1.15, 'gas_turbine':1.25}
+                self.FD = Param(mutable = True, 
+                                initialize = FD_param[driver_mover_type],
+                                doc='drive factor')
+                # compressor material factor
+                FM_comp = {'stain_steel':2.5, 'nickel_alloy':5.0}
+                self.FM = FM_comp[FM]
+                c_alf1 = {'centrifugal':7.58,
+                          'reciprocating':7.9661, 
+                          'screw':8.1238}
+                c_alf2 = {'centrifugal':0.8,
+                          'reciprocating':0.8, 
+                          'screw':0.7243}
+                #Purchase cost rule
+                def CP_rule(self):
+                    return self.purchase_cost == exp(alf1[compressor_type])
+                self.cp_cost_eq = Constraint(rule=CP_rule)
+
+            elif mover_type == "Fan":
+                # fan cost correlation
+            elif mover_type == "Blower":
+                #Blower Cost Correlation
+            else:
+                raise Exception('mover type not supported')
+        
+    
