@@ -199,6 +199,7 @@ by determining if the solver output would be logged at the given level.
 
   solver = pyo.SolverFactory("ipopt")
 
+  model = pyo.ConcreteModel()
   model.x = pyo.Var()
   model.y = pyo.Var()
   model.x.fix(3)
@@ -208,4 +209,4 @@ by determining if the solver output would be logged at the given level.
   log.setLevel(idaeslog.DEBUG)
 
   with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
-      res = solver.solve(model, tee=slc.tee)
+    res = solver.solve(model, tee=slc.tee)
