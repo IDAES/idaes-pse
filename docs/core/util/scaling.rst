@@ -87,7 +87,7 @@ puts the scaling factor in the ``scaling_factor`` suffix.
     m.scaling_factor[m.y] = 1e-5
     m.scaling_expression[m.z] = 1/(m.x*m.y)
 
-    m.c = Constraint(expr=m.z = m.x*m.y)
+    m.c = Constraint(expr=m.z == m.x*m.y)
     m.scaling_expression[m.c] = 1/(m.x*m.y)
 
     calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
