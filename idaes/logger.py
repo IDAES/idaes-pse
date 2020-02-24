@@ -162,7 +162,7 @@ def condition(res):
         s = str(res.solver.termination_condition)
 
     try:
-        return "{} - {}".format(s, str(res.solver.message))
+        return "{} - {}".format(s, str(res.solver.message)[18:])
     except:
         return s
 
