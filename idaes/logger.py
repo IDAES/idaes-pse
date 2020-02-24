@@ -217,8 +217,8 @@ def add_log_tag(tag):
     Returns:
         None
     """
-    if m not in _valid_tags:
-        raise ValueError("{} is not a valid logging tag".format(m))
+    if tag not in _valid_tags:
+        raise ValueError("{} is not a valid logging tag".format(tag))
     _config["tags"].add(tag)
 
 def remove_log_tag(tag):
