@@ -27,10 +27,8 @@ variables to calculate additional scaling factors.
 
 import enum
 import pyomo.environ as pyo
-from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.core.expr import current as EXPR
 import idaes.logger as idaeslog
-from pyomo.core.base.var import _GeneralVarData
 
 _log = idaeslog.getLogger(__name__)
 
