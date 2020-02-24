@@ -139,7 +139,6 @@ def _calculate_scale_factors_from_nominal(m):
         None
     """
 
-    # Calculate scaling factors for each constraint
     for c in m.component_data_objects((pyo.Var, pyo.Expression)):
         # Check for a scaling expression.  If there is one, use it to calculate
         # a scaling factor otherwise use autoscaling.
@@ -151,7 +150,7 @@ def _calculate_scale_factors_from_nominal(m):
             # if there is no scaling_factor Suffix yet make one
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
 
-        # Add constraint scaling factor from nominal value
+        # Add scaling factor from nominal value of variables or expressions
         c.parent_block().scaling_factor[c] = 1/c.parent_block().nominal_value[c]
 
 
