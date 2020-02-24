@@ -16,7 +16,7 @@ This module contains tests for the variable replace transformation.
 
 import pytest
 import pyomo.environ as pyo
-import idaes.plugins
+import idaes.core.plugins
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
