@@ -120,6 +120,22 @@ ScalingBasis.VarScale:
 
 .. autofunction:: calculate_scaling_factors
 
+Scaling Utility Functions
+-------------------------
+
+IDAES includes some utility functions to help evaluate model scaling and to
+auto-scale constraints.
+
+.. autofunction:: badly_scaled_var_generator
+
+.. autofunction:: grad_fd
+
+.. autofunction:: scale_constraint
+
+.. autofunction:: constraint_fd_autoscale
+
+.. autofunction:: set_scaling_factor
+
 
 Scaling with Ipopt
 ------------------

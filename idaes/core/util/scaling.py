@@ -388,7 +388,8 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
 
 
 def set_scaling_factor(c, v):
-    """Set a scaling factor for a model component.
+    """Set a scaling factor for a model component.  This function creates the
+    scaling_factor suffix if needed.
 
     Args:
         c: component to supply scaling factor for
