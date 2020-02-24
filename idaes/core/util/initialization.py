@@ -219,14 +219,14 @@ def initialize_by_time_element(fs, time, **kwargs):
     of freedom such that the first finite element can be solved immediately 
     and each subsequent finite element can be solved by fixing differential
     and derivative variables at the initial time point of that finite element.
+
     Args:
-        fs - Flowsheet to initialize
-        time - Set whose elements will be solved for individually
-        kwargs - See below
-    Kwargs:
-        solver - Pyomo solver object initialized with user's desired options
-        outlvl - IDAES logger outlvl
-        ignore_dof - Bool. If True, checks for square problems will be skipped.
+        fs : Flowsheet to initialize
+        time : Set whose elements will be solved for individually
+        solver : Pyomo solver object initialized with user's desired options
+        outlvl : IDAES logger outlvl
+        ignore_dof : Bool. If True, checks for square problems will be skipped.
+
     Returns:
         None
     """
