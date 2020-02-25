@@ -88,6 +88,7 @@ loggers. The user can choose any name they like for these loggers.
 *Example*
 
 .. testcode::
+
   import idaes.logger as idaeslog
 
   _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, tag="model")
