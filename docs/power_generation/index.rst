@@ -7,4 +7,5 @@ The IDAES Process Modeling Framework contains a library of models specifically d
     :maxdepth: 1
 
     unit_models/index
-
+    properties/index
+    flowsheets/index
