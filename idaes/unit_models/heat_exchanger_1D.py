@@ -85,13 +85,14 @@ class HeatExchanger1DData(UnitModelBlockData):
     _SideTemplate.declare(
         "has_holdup",
         ConfigValue(
-            default=False,
-            domain=In([True, False]),
+            default=useDefault,
+            domain=In([useDefault, True, False]),
             description="Holdup construction flag",
             doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
+**useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}""",
         ),
