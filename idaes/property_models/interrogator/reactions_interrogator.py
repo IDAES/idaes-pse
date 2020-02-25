@@ -30,7 +30,7 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData)
 import idaes.logger as idaeslog
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Andrew Lee"
 
 
@@ -161,6 +161,11 @@ class ReactionInterrogatorData(ReactionParameterBlock):
             trail_str = str(len(v))
             mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
             ostream.write(lead_str+mid_str+trail_str+"\n")
+        ostream.write(
+                "\n" +
+                "Note: User constraints may require additional properties " +
+                "which are not reported here." +
+                "\n")
 
     def print_models_requiring_property(self, prop, ostream=None):
         """
