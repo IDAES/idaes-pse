@@ -67,6 +67,7 @@ class UnitModelBlockData(ProcessBlockData):
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
+**useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
 
