@@ -60,12 +60,12 @@ def test_heater_ph_mixed_byphase():
     solver.solve(m)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
-    assert abs(value(prop_in.temperature) - 326.1667075078748) <= 1e-4
-    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
+    assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-6)
+    assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-6)
+    assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-6)
+    assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-6)
 
 
 @pytest.mark.solver
@@ -90,12 +90,12 @@ def test_heater_phmixed_mixed_total():
     solver.solve(m)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
-    assert abs(value(prop_in.temperature) - 326.1667075078748) <= 1e-4
-    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
+    assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-6)
+    assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-6)
+    assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-6)
+    assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-6)
 
 
 @pytest.mark.solver
@@ -120,16 +120,15 @@ def test_heater_ph_lg_total():
     solver.solve(m)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
-    assert abs(value(prop_in.temperature) - 326.1667075078748) <= 1e-4
-    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
+    assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-6)
+    assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-6)
+    assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-6)
+    assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-6)
 
 
 @pytest.mark.initialize
-@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_lg_phase():
@@ -152,7 +151,6 @@ def test_heater_ph_lg_phase():
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*20000)
-    m.fs.heater.initialize()
     assert degrees_of_freedom(m) == -1
 
 
@@ -310,11 +308,12 @@ def test_heater_tpx_lg_total():
     m.fs.heater.initialize(outlvl=5)
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
-    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-2
-    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-2
-    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-2
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-2
+    assert value(prop_in.temperature) == pytest.approx(326.166707, rel=1e-6)
+    assert value(prop_out.temperature) == pytest.approx(373.12429, rel=1e-6)
+    assert value(prop_in.phase_frac["Liq"]) == pytest.approx(1, rel=1e-6)
+    assert value(prop_out.phase_frac["Liq"]) == pytest.approx(0.5953219, rel=1e-6)
+    assert value(prop_in.phase_frac["Vap"]) == pytest.approx(0, abs=1e-6)
+    assert value(prop_out.phase_frac["Vap"]) == pytest.approx(0.4046781, rel=1e-6)
 
 
 @pytest.mark.solver
@@ -351,7 +350,6 @@ def test_heater_tpx_lg_total_2():
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-2
 
 
-@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_tpx_lg_phase():
