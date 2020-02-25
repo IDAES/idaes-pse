@@ -507,7 +507,7 @@ Must be True if dynamic = True,
                     "once per UnitModel.".format(self.name))
 
         # Get a representative time point for testing
-        rep_time = self.flowsheet().time.first()
+        rep_time = self.flowsheet().config.time.first()
         if state_1[rep_time]._params is not state_2[rep_time]._params:
             raise ConfigurationError(
                     "{} add_state_material_balances method was provided with "

@@ -2,9 +2,9 @@ Steam/Water Valve
 =================
 
 .. index::
-  pair: idaes.unit_models.power_generation.valve_steam;SteamValve
+  pair: idaes.power_generation.unit_models.valve_steam;SteamValve
 
-.. module:: idaes.unit_models.power_generation.valve_steam
+.. module:: idaes.power_generation.unit_models.valve_steam
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
@@ -21,7 +21,7 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.unit_models.power_generation import SteamValve
+  from idaes.power_generation.unit_models import SteamValve
   from idaes.property_models import iapws95
   from idaes.ui.report import degrees_of_freedom, active_equalities
 

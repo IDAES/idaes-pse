@@ -1691,8 +1691,8 @@ def test_add_total_enthalpy_balances_dynamic():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.phase_fraction, Var)
-    assert isinstance(m.fs.cv.enthalpy_holdup, Var)
-    assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
+    assert isinstance(m.fs.cv.energy_holdup, Var)
+    assert isinstance(m.fs.cv.energy_accumulation, Var)
 
 
 def test_add_total_enthalpy_balances_dynamic_no_geometry():
@@ -2123,8 +2123,8 @@ def test_get_performance_contents():
         assert k in [
             'Volume', 'Heat Transfer', 'Work Transfer', 'Pressure Change',
             'Phase Fraction [p1]', 'Phase Fraction [p2]',
-            'Enthalpy Holdup [p1]', 'Enthalpy Holdup [p2]',
-            'Enthalpy Accumulation [p1]', 'Enthalpy Accumulation [p2]',
+            'Energy Holdup [p1]', 'Energy Holdup [p2]',
+            'Energy Accumulation [p1]', 'Energy Accumulation [p2]',
             'Material Holdup [p1, c1]', 'Material Holdup [p1, c2]',
             'Material Holdup [p2, c1]', 'Material Holdup [p2, c2]',
             'Material Accumulation [p1, c1]', 'Material Accumulation [p1, c2]',
@@ -2186,8 +2186,8 @@ def test_get_performance_contents_elemental():
         assert k in [
             'Volume', 'Heat Transfer', 'Work Transfer', 'Pressure Change',
             'Phase Fraction [p1]', 'Phase Fraction [p2]',
-            'Enthalpy Holdup [p1]', 'Enthalpy Holdup [p2]',
-            'Enthalpy Accumulation [p1]', 'Enthalpy Accumulation [p2]',
+            'Energy Holdup [p1]', 'Energy Holdup [p2]',
+            'Energy Accumulation [p1]', 'Energy Accumulation [p2]',
             'Elemental Holdup [H]',
             'Elemental Holdup [He]',
             'Elemental Holdup [Li]',

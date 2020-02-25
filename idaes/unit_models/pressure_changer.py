@@ -682,3 +682,33 @@ see property package for documentation.}""",
             var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
+
+@declare_process_block_class("Turbine", doc="Isentropic turbine model")
+class TurbineData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = False
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
+
+@declare_process_block_class("Compressor", doc="Isentropic turbine model")
+class CompressorData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = True
+    CONFIG.get("compressor")._default = True
+    CONFIG.get("compressor")._domain = In([True])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
+
+@declare_process_block_class("Pump", doc="Isentropic turbine model")
+class PumpData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = True
+    CONFIG.get("compressor")._default = True
+    CONFIG.get("compressor")._domain = In([True])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.pump
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.pump
