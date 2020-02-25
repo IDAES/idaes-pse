@@ -306,6 +306,9 @@ The Flowsheet requires the following properties (times required):
     energy density terms                                                 2
     pressure                                                             2
 
+Note: User constraints may require additional properties which are not
+reported here.
+
 ==========================================================================
 Reaction Property Interrogator Summary
 
@@ -313,6 +316,9 @@ The Flowsheet requires the following reaction properties (times required):
 
     dh_rxn                                                               1
     reaction_rate                                                        2
+
+Note: User constraints may require additional properties which are not
+reported here.
 """
 
 

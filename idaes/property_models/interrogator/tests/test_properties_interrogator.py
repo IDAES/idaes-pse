@@ -279,6 +279,9 @@ The Flowsheet requires the following properties (times required):
     pressure                                                             3
     entr_mol                                                             1
     temperature                                                          1
+
+Note: User constraints may require additional properties which are not
+reported here.
 """
 
 
