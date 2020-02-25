@@ -15,8 +15,9 @@
 This is an example supercritical pulverized coal (SCPC) power plant, including 
 steam cycle and boiler heat exchanger network model.  
 
-This simulation model consist of a ~595 MW gross coal fired power plant. The dimensions utilized 
-for this simulation does not represent any specific coal-fired power plant.
+This simulation model consist of a ~595 MW gross coal fired power plant. 
+The dimensions and operating conditions used for this simulation do not 
+represent any specific coal-fired power plant.
 
 This model is for demonstration and tutorial purposes only. Before looking at the
 model, it may be useful to look at the process flow diagram (PFD).
@@ -35,7 +36,7 @@ Main Assumptions:
     
     Boiler heat exchanger network: 
         Water Flow: 
-            Fresh water -> FWH's -> ECONOMIZER -> Water Wall -> Primary SH -> Platen SH -> Finishing Superheate -> HP Turbine -> Reheater -> IP Turbine
+            Fresh water -> FWH's -> Economizer -> Water Wall -> Primary SH -> Platen SH -> Finishing Superheate -> HP Turbine -> Reheater -> IP Turbine
         Flue Gas Flow:
             Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer -> Air Preheater
                                                    -> Primary SH --^ 

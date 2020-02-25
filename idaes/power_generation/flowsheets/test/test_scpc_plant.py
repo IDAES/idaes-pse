@@ -102,9 +102,6 @@ def test_power_plan():
     # Reheater inlet (steam) = HP split 7 outlet (last stage of HP turbine)
     # IP inlet = Reheater outlet steam7
     blr.unfix_inlets(m)
-#    print(degrees_of_freedom(m))
-#    MS.to_json(m, fname = 'SCPC_full.json')
-#    MS.from_json(m, fname = 'SCPC_full.json')
     
     # deactivate constraints linking the FWH8 to HP turbine
     m.fs.boiler_pressure_drop.deactivate()
@@ -114,8 +111,6 @@ def test_power_plan():
     m.fs.turb.constraint_reheat_temp.deactivate()
     m.fs.turb.inlet_split.inlet.enth_mol.unfix()
     m.fs.turb.inlet_split.inlet.pressure.unfix()
-    # user can fix the boiler feed water pump pressure (uncomenting next line)
-#    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
     
     m.fs.FHWtoECON = Arc(source = m.fs.fwh8.desuperheat.outlet_2,
                       destination = m.fs.ECON.side_1_inlet)
@@ -143,18 +138,13 @@ def test_power_plan():
 #    if user has trouble with infeasible solutions, an easy test 
 #    is to deactivate the link to HP turbine (m.fs.Att2HP_expanded "enth_mol and pressure" equalities) 
 #    and fix inlet pressure and enth_mol to turbine (m.fs.turb.inlet_split.inlet)
-#   (then double check the values from m.fs.ATMP1.outlet)
-#    m.fs.Att2HP_expanded.enth_mol_equality.deactivate()
-#    m.fs.Att2HP_expanded.pressure_equality.deactivate()
     m.fs.turb.inlet_split.inlet.pressure.fix(2.423e7)
-#    m.fs.turb.inlet_split.inlet.enth_mol.fix(62710.01)
-
 #   finally, since we want to maintain High Pressure (HP) inlet temperature constant (~866 K)
 #   we need to fix Attemperator enthalpy outlet and unfix heat duty to Platen superheater
 #   note fixing enthalpy to control temperature is only valid because pressure is also fixed
     m.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
-    m.fs.PlSH.heat_duty[:].unfix()#fix(5.5e7)
-#    m.fs.ATMP1.SprayWater.flow_mol[0].unfix()
+    m.fs.PlSH.heat_duty[:].unfix()
+
     
 #    print(degrees_of_freedom(m))
     solver.options = {

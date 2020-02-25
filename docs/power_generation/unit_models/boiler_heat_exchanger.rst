@@ -7,9 +7,9 @@ BoilerHeatExchanger
 .. currentmodule:: idaes.power_generation.unit_models.boiler_heat_exchanger
 
 The BoilerHeatExchanger model can be used to represent boiler heat exchangers in 
-sub-critical and super critical power plant flowsheets (econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.), 
-the model consists of a shell and tube crossflow heat exchanger; in which the shell is used as the gas side and the tube is used as the water or steam side. 
-Rigorous heat transfer calculations (convective and radiative heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
+sub-critical and super critical power plant flowsheets (i.e. econmizer, primary superheater, secondary superheater, finishing superheater, reheater, etc.).  
+The model consists of a shell and tube crossflow heat exchanger, in which the shell is used as the gas side and the tube is used as the water or steam side. 
+Rigorous heat transfer calculations (convective heat transfer for shell side, and convective heat transfer for tube side) and shell and tube pressure drop calculations have been included.
 
 The BoilerHeatExchanger model can be imported from :code:`idaes.power_generation.unit_models`,
 while additional rules and utility functions can be imported from
@@ -36,7 +36,6 @@ and override the default temperature difference calculation.
         DeltaTMethod
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
-    from idaes.unit_models import HeatExchanger
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
     from idaes.property_models import iapws95
 
@@ -143,8 +142,7 @@ Model Structure
 The ``BoilerHeatExchanger`` model contains two ``ControlVolume0DBlock`` blocks. By default the
 gas side is named ``shell`` and the water/steam side is named ``tube``. These names are configurable.
 The sign convention is that duty is positive for heat flowing from the hot side to the cold
-side.  Aside from the sign convention there is no requirement that the hot side be hotter
-than the cold side.
+side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
 :ref:`Heater model <models/heater:Heater>`. The ``BoilerHeatExchanger`` model contains additional
@@ -160,10 +158,10 @@ Variables
 =========================== ================== =========== =============================================================================
 Variable                    Symbol             Index Sets  Doc
 =========================== ================== =========== =============================================================================
-heat_duty                   :math:`Q`          t           Heat transferred from hot side to the cold side
+heat_duty                   :math:`Q`          time        Heat transferred from hot side to the cold side
 area                        :math:`A`          None        Heat transfer area
-U                           :math:`U`          t           Heat transfer coefficient
-delta_temperature           :math:`\Delta T`   t           Temperature difference, defaults to LMTD
+U                           :math:`U`          time        Heat transfer coefficient
+delta_temperature           :math:`\Delta T`   time        Temperature difference, defaults to LMTD
 =========================== ================== =========== =============================================================================
 
 Note: ``delta_temperature`` may be either a variable or expression depending on the callback used.  If the specified cold side is hotter
@@ -233,8 +231,7 @@ where:
 * f_arrangement: tube arrangement factor
 
 Note: 
-by default fcorrection_htc is set to 1, however, this variable can be used to match unit performance (i.e. as a parameter estimation problem using real data). 
-This variable is also called cleanniness factor (when = 1, its considered a clean tube with no fouling).
+by default fcorrection_htc is set to 1, however, this variable can be used to match unit performance (i.e. as a parameter estimation problem using real plant data).
 
 Tube arrangement factor is a config argument with two different type of arrangements supported at the moment: 
 1.- In-line tube arrangement factor (f_arrangement = 0.788), and 2.- Staggered tube arrangement factor (f_arrangement = 1). f_arrangement is a parameter that can be adjusted by the user.
