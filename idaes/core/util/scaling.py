@@ -146,6 +146,7 @@ def _calculate_scale_factors_from_nominal(m):
             continue # no scaling expression supplied
         elif c not in c.parent_block().nominal_value:
             continue # no scaling expression supplied
+
         if not hasattr(c.parent_block(), "scaling_factor"):
             # if there is no scaling_factor Suffix yet make one
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
@@ -180,6 +181,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
             continue # no scaling expression supplied
         elif c not in c.parent_block().scaling_expression:
             continue # no scaling expression supplied
+
         if not hasattr(c.parent_block(), "scaling_factor"):
             # if there is no scaling_factor Suffix yet make one
             c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
@@ -237,14 +239,14 @@ def calculate_scaling_factors(
     _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Constraint)
 
 
-def badly_scaled_var_generator(blk, big=1e4, little=1e-3, zero=1e-10):
+def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
     """This provides a rough check for variables with poor scaling based on their
     current scale factors and values. For each potentially poorly scaled variable
     it returns the var and its current scaled value.
 
     Args:
-        big: Magnitude that is considered to be too big
-        little: Magnitude that is considered to be too little
+        large: Magnitude that is considered to be too large
+        small: Magnitude that is considered to be too small
         zero: Magnitude that is considered to be zero, variables with a value of
             zero are okay, and not reported.
 
@@ -259,18 +261,18 @@ def badly_scaled_var_generator(blk, big=1e4, little=1e-3, zero=1e-10):
         except AttributeError: # no scaling factor suffix
             sf = 1
         sv = abs(pyo.value(v)*sf) # scaled value
-        if sv > big:
+        if sv > large:
             yield v, sv
         elif sv < zero:
             continue
-        elif sv < little:
+        elif sv < small:
             yield v, sv
 
 
 def grad_fd(c, scaled=False, h=1e-6):
     """Finite difference the gradient for a constraint, objective or named
-    expression.  This is only for use in examining scaling.  For more faster
-    more accurate gradients refer to pynumero.
+    expression.  This is only for use in examining scaling.  For faster more
+    accurate gradients refer to pynumero.
 
     Args:
         c: constraint to evaluate
@@ -305,7 +307,7 @@ def grad_fd(c, scaled=False, h=1e-6):
         )
         e = vis.dfs_postorder_stack(ex)
     else:
-        e = c.body
+        e = ex
 
     for i, v in enumerate(vars):
         ov = pyo.value(v) # original variable value
