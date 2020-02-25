@@ -164,8 +164,7 @@ class ReactionInterrogatorData(ReactionParameterBlock):
         ostream.write(
                 "\n" +
                 "Note: User constraints may require additional properties " +
-                "which are not reported here." +
-                "\n")
+                "which are not" + "\n" + "reported here." + "\n")
 
     def print_models_requiring_property(self, prop, ostream=None):
         """
