@@ -72,7 +72,7 @@ def test_config():
     # Check shell side config arguments
     assert len(m.fs.unit.config.shell_side) == 11
     assert m.fs.unit.config.shell_side.dynamic == useDefault
-    assert not m.fs.unit.config.shell_side.has_holdup
+    assert m.fs.unit.config.shell_side.has_holdup == useDefault
     assert m.fs.unit.config.shell_side.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.shell_side.energy_balance_type == \
@@ -88,7 +88,7 @@ def test_config():
     # Check tube side config arguments
     assert len(m.fs.unit.config.tube_side) == 11
     assert m.fs.unit.config.tube_side.dynamic == useDefault
-    assert not m.fs.unit.config.tube_side.has_holdup
+    assert m.fs.unit.config.tube_side.has_holdup == useDefault
     assert m.fs.unit.config.tube_side.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.tube_side.energy_balance_type == \
