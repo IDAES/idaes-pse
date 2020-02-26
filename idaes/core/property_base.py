@@ -124,7 +124,7 @@ class PhysicalParameterBlock(ProcessBlockData,
                 try:
                     obj = getattr(self, str(p))
                     if not isinstance(obj, PhaseData):
-                        raise PropertyPackageError(
+                        raise TypeError(
                                 "Property package {} has an object {} whose "
                                 "name appears in phase_list but is not an "
                                 "instance of Phase".format(self.name, p))

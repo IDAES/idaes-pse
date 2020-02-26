@@ -20,6 +20,7 @@ from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
+from idaes.core.phases import Phase
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
@@ -104,6 +105,64 @@ def test_get_phase_component_set_subset():
         assert v[1] in m.p.phase_comp[v[0]]
 
     assert pc_set is m.p._phase_component_set
+
+
+def test_get_phase():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    with pytest.raises(AttributeError):
+        m.p.get_phase("foo")
+
+    m.p.phase = Phase()
+
+    assert m.p.get_phase("phase") is m.p.phase
+
+    m.p.a = object()
+
+    with pytest.raises(
+            PropertyPackageError,
+            match="p get_phase found a component a, but it does not "
+            "appear to be an instance of a Phase object."):
+        m.p.get_phase("a")
+
+
+def test_make_phase_objects():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.phase_list = Set(initialize=["phase1", "phase2"])
+    m.p.phase_comp = {"phase1": [1, 2, 3],
+                      "phase2": [4, 5, 6]}
+
+    m.p._make_phase_objects()
+
+    assert isinstance(m.p.phase1, Phase)
+    assert isinstance(m.p.phase2, Phase)
+
+    assert m.p.phase1.config.component_list == [1, 2, 3]
+    assert m.p.phase2.config.component_list == [4, 5, 6]
+
+
+def test_validate_parameter_block_no_phase_list():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    with pytest.raises(
+            PropertyPackageError,
+            match="Property package p has not defined a phase list."):
+        m.p._validate_parameter_block()
+
+
+def test_validate_parameter_block_invalid_object():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.phase_list = Set(initialize=["foo"])
+    m.p.foo = object()
+
+    with pytest.raises(TypeError):
+        m.p._validate_parameter_block()
 
 
 # -----------------------------------------------------------------------------
@@ -208,7 +267,7 @@ class _Parameters(PhysicalParameterBlock):
     def build(self):
         super(_Parameters, self).build()
 
-        self.phase_list = []
+        self.phase_list = ["a"]
 
     @classmethod
     def define_metadata(cls, obj):
@@ -234,6 +293,16 @@ def test_param_ref():
     m.p = StateTest(default={"parameters": m.pb})
 
     assert m.p._params == m.p.config.parameters
+
+
+def test_validate_params():
+    # Test that validate params has been triggered
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest(default={"parameters": m.pb})
+
+    # If validation has been triggered, Phase object should exist
+    assert isinstance(m.pb.a, Phase)
 
 
 # -----------------------------------------------------------------------------
