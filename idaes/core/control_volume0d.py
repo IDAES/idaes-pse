@@ -925,17 +925,17 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Create variables
         if has_holdup:
-            self.enthalpy_holdup = Var(
+            self.energy_holdup = Var(
                         self.flowsheet().config.time,
                         self.config.property_package.phase_list,
                         domain=Reals,
                         initialize=1.0,
-                        doc="Enthalpy holdup in unit [{}]"
+                        doc="Energy holdup in unit [{}]"
                         .format(units['energy']))
 
         if dynamic is True:
-            self.enthalpy_accumulation = DerivativeVar(
-                        self.enthalpy_holdup,
+            self.energy_accumulation = DerivativeVar(
+                        self.energy_holdup,
                         wrt=self.flowsheet().config.time,
                         doc="Enthaly holdup in unit [{}/{}]"
                         .format(units['energy'], units['time']))
@@ -991,7 +991,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, p):
-            return b.enthalpy_accumulation[t, p] if dynamic else 0
+            return b.energy_accumulation[t, p] if dynamic else 0
 
         def heat_term(b, t):
             return b.heat[t] if has_heat_transfer else 0
@@ -1035,7 +1035,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              self.config.property_package.phase_list,
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, p):
-                return b.enthalpy_holdup[t, p] == (
+                return b.energy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
                             b.properties_out[t].get_energy_density_terms(p))
 
@@ -1336,8 +1336,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         p_vars = {
             "phase_fraction": "Phase Fraction",
-            "enthalpy_holdup": "Enthalpy Holdup",
-            "enthalpy_accumulation": "Enthalpy Accumulation"}
+            "energy_holdup": "Energy Holdup",
+            "energy_accumulation": "Energy Accumulation"}
 
         for v, n in p_vars.items():
             try:

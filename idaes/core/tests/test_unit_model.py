@@ -392,7 +392,7 @@ def test_fix_unfix_initial_conditions():
 
     fs.b.material_accumulation = Var(fs.time, ["a", "b", "c"])
     fs.b.element_accumulation = Var(fs.time, ["a", "b", "c"])
-    fs.b.enthalpy_accumulation = Var(fs.time)
+    fs.b.energy_accumulation = Var(fs.time)
 
     fs.fix_initial_conditions()
 
@@ -401,11 +401,11 @@ def test_fix_unfix_initial_conditions():
             if t == 0:
                 assert fs.b.material_accumulation[t, j].fixed
                 assert fs.b.element_accumulation[t, j].fixed
-                assert fs.b.enthalpy_accumulation[t].fixed
+                assert fs.b.energy_accumulation[t].fixed
             else:
                 assert fs.b.material_accumulation[t, j].fixed is False
                 assert fs.b.element_accumulation[t, j].fixed is False
-                assert fs.b.enthalpy_accumulation[t].fixed is False
+                assert fs.b.energy_accumulation[t].fixed is False
 
     fs.unfix_initial_conditions()
 
@@ -413,7 +413,7 @@ def test_fix_unfix_initial_conditions():
         for j in ["a", "b", "c"]:
             assert fs.b.material_accumulation[t, j].fixed is False
             assert fs.b.element_accumulation[t, j].fixed is False
-            assert fs.b.enthalpy_accumulation[t].fixed is False
+            assert fs.b.energy_accumulation[t].fixed is False
 
 
 def test_get_stream_table_contents_CV0D():

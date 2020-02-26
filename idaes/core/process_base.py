@@ -179,9 +179,9 @@ class ProcessBlockData(_BlockData):
                 except AttributeError:
                     pass
 
-                # Try to fix enthalpy_accumulation @ first time point
+                # Try to fix energy_accumulation @ first time point
                 try:
-                    obj.enthalpy_accumulation[
+                    obj.energy_accumulation[
                             obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
@@ -214,9 +214,9 @@ class ProcessBlockData(_BlockData):
             except AttributeError:
                 pass
 
-            # Try to fix enthalpy_accumulation @ first time point
+            # Try to fix energy_accumulation @ first time point
             try:
-                obj.enthalpy_accumulation[
+                obj.energy_accumulation[
                         obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
