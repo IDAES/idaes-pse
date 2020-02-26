@@ -102,16 +102,8 @@ def htpx(T, P=None, x=None):
     Returns:
         Total molar enthalpy [J/mol].
     """
-    prop_param = Iapws95ParameterBlock()
-    prop = Iapws95StateBlock(default={"parameters": prop_param})
-
-    return _htpx(
-        T=T,
-        Tmin=200,
-        Tmax=3e3,
-        P=P,
-        x=x,
-        prop=prop,)
+    prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
+    return _htpx(T=T, Tmin=200, Tmax=3e3, P=P, x=x, prop=prop)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
