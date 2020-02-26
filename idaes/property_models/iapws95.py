@@ -111,27 +111,19 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     CONFIG = HelmholtzParameterBlockData.CONFIG()
 
     def build(self):
-        super().build()
-        self.state_block_class = Iapws95StateBlock
-        # Location of the *.so or *.dll file for external functions
-        self.plib = _so
-        self.available = _available(self.plib)
-
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=["H2O"])
-
-        # List of phase equilibrium
-        self.phase_equilibrium_idx = Set(initialize=[1])
-        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
-
-        # Parameters, these should match what's in the C code
-        self.temperature_crit = Param(
-            initialize=647.096, doc="Critical temperature [K]"
+        self._set_parameters(
+            library=_so,
+            state_block_class=Iapws95StateBlock,
+            component_list=Set(initialize=["H2O"]),
+            phase_equilibrium_idx=Set(initialize=[1]),
+            phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
+            mw=Param(initialize=0.01801528, doc="Molecular weight [kg/mol]"),
+            temperature_crit=Param(initialize=647.096, doc="Critical temperature [K]"),
+            pressure_crit=Param(initialize=2.2064e7, doc="Critical pressure [Pa]"),
+            dens_mass_crit=Param(initialize=322, doc="Critical density [kg/m3]"),
+            gas_const=Param(initialize=8.3144598, doc="Gas Constant [J/mol/K]"),
         )
-        self.pressure_crit = Param(initialize=2.2064e7, doc="Critical pressure [Pa]")
-        self.dens_mass_crit = Param(initialize=322, doc="Critical density [kg/m3]")
-        self.gas_const = Param(initialize=8.3144598, doc="Gas Constant [J/mol/K]")
-        self.mw = Param(initialize=0.01801528, doc="Molecular weight [kg/mol]")
+        super().build()
         # Thermal conductivity parameters.
         # "Release on the IAPWS Formulation 2011 for the Thermal Conductivity
         # of Ordinary Water Substance"

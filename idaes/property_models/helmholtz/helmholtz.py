@@ -172,10 +172,44 @@ change.
 **StateVars.TPX** - Temperature-Pressure-Quality}""",
         ),
     )
+    def _set_parameters(
+        self,
+        library,
+        state_block_class,
+        component_list,
+        phase_equilibrium_idx,
+        phase_equilibrium_list,
+        mw,
+        temperature_crit,
+        pressure_crit,
+        dens_mass_crit,
+        gas_const,
+    ):
+        """This function sets the parameters that are required for a Helmholtz
+        equation of state parameter block, and ensures that all required parameters
+        are set.
+
+        """
+        # Location of the *.so or *.dll file for external functions
+        self.plib = library
+        self.state_block_class = state_block_class
+        self.component_list = component_list
+        self.phase_equilibrium_idx = phase_equilibrium_idx
+        self.phase_equilibrium_list = phase_equilibrium_list
+        # Parameters, these should match what's in the C code
+        self.temperature_crit = temperature_crit
+        self.pressure_crit = pressure_crit
+        self.dens_mass_crit = dens_mass_crit
+        self.gas_const = gas_const
+        self.mw = mw
+
+
     def build(self):
         super().build()
         # Location of the *.so or *.dll file for external functions
         # Phase list
+        self.available = _available(self.plib)
+
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
         if self.config.phase_presentation == PhaseType.MIX:
             self.phase_list = Set(initialize=["Mix"])
