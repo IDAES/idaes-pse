@@ -9,9 +9,9 @@ Turbine (Stage)
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
 This model inherits the :ref:`PressureChanger model
-<models/pressure_changer:Pressure Changer>` with the isentropic options. The
+<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>` with the isentropic options. The
 initialization scheme is the same as the :ref:`TurbineInletStage model
-<models/power_generation/turbine_inlet:Turbine (Inlet Stage)>`.
+<model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Inlet Stage)>`.
 
 Example
 -------

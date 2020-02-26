@@ -31,7 +31,7 @@ Configure
 
 The 'configure` method is used to select the sub-models and methods to be used when constructing the `StateBlocks` associated with this property package within a process model. These options define the behavior of the property package, and allow users to customize the property package to their needs.
 
-Configuration options are set by assigning an appropriate method to `self.configure.option_name` within the `configure` method. A full list of the available property options is given :ref:`here<property_models/general/generic_options:Configuration Options>`.
+Configuration options are set by assigning an appropriate method to `self.configure.option_name` within the `configure` method. A full list of the available property options is given :ref:`here<model_libraries/core_library/property_models/general/generic_options:Configuration Options>`.
 
 Build
 -----

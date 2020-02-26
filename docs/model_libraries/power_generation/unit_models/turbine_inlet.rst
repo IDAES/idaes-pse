@@ -52,13 +52,13 @@ Model Structure
 The turbine inlet stage model contains one :ref:`ControlVolume0DBlock block
 <core/control_volume_0d:0D Control Volume Class>` called control\_volume and
 inherits the :ref:`PressureChanger model
-<models/pressure_changer:Pressure Changer>` using the isentropic option.
+<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>` using the isentropic option.
 
 Variables
 ---------
 The variables below are defined in the TurbineInletStage model. Additional variables
 are inherited from the :ref:`PressureChanger model
-<models/pressure_changer:Pressure Changer>` model.
+<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>` model.
 
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
@@ -103,7 +103,7 @@ Constraints
 -----------
 
 In addition to the constraints inherited from the :ref:`PressureChanger model
-<models/pressure_changer:Pressure Changer>` with the isentropic options, this
+<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>` with the isentropic options, this
 model contains two more constraints, one to estimate efficiency and one pressure-flow
 relation.  From the isentropic pressure changer model, these constraints eliminate the
 need to specify efficiency and either inlet flow or outlet pressure.
