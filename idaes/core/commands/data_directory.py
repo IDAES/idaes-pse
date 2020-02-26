@@ -17,7 +17,7 @@ __author__ = "John Eslick"
 import os
 import idaes
 import click
-from idaes.commands import cb
+from idaes.core.commands import cb
 
 @cb.command(name="data-directory", help="Show IDAES data directory")
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
