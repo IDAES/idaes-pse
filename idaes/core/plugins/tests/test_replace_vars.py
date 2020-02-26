@@ -16,7 +16,7 @@ This module contains tests for the variable replace transformation.
 
 import pytest
 import pyomo.environ as pyo
-import idaes.plugins
+import idaes.core.plugins
 
 __author__ = "John Eslick"
 

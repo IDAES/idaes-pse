@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.functions import functions_lib, functions_available
+from idaes.core.util.functions import functions_lib, functions_available
 import pyomo.environ as pyo
 import pytest
 
