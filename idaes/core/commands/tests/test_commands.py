@@ -22,7 +22,7 @@ import tempfile
 import pytest
 
 # package
-from idaes.commands import examples
+from idaes.core.commands import examples
 
 ################
 # get-examples #

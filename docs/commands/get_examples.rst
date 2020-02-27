@@ -1,4 +1,3 @@
-
 idaes get-examples: Fetch example scripts and Jupyter Notebooks
 ===============================================================
 
@@ -26,41 +25,10 @@ idaes get-examples
 
 This subcommand fetches example scripts and Jupyter Notebooks from
 a given release in `Github <https://github.com/IDAES/examples-pse/releases>`_.
-and puts them in a directory of the users' choosing. It also has
-options that allow listing of available releases.
+and puts them in a directory of the users' choosing. If the user does not
+specify a directory, the default is `examples`.
 
 .. program:: idaes get-examples
-
-example usage
-^^^^^^^^^^^^^
-
-idaes get-examples
-    Download examples from release matching release for the ``idaes`` command,
-    install them in the `examples` subdirectory of this directory, and
-    install the modules found under `examples/src` as a package named `idaes_examples`.
-    The `examples` directory must not exist, i.e. the program will refuse to
-    overwrite the contents of an existing directory.
-
-idaes get-examples -d /tmp/examples
-    Same as above, but put downloaded code in `/tmp/examples` instead.
-
-idaes get-examples -d /tmp/examples -I
-    Download to `/tmp/examples`, but do not install.
-
-idaes get-examples -d /tmp/examples -N
-    Install the examples found under `/tmp/examples`.
-
-idaes get-examples --version 1.4.2-pre
-    Download examples from release `1.4.2-pre`,
-    install them in the `examples` subdirectory of this directory, and
-    install the modules found under `examples/src` as a package named `idaes_examples`.
-
-idaes get-examples --list-releases
-    List available releases of the examples in Github repository, `idaes/examples-pse`.
-    Do not attempt to download or install anything.
-
-idaes get-examples --list-releases --unstable
-    Same as above, but include non-stable releases.
 
 options
 ^^^^^^^
@@ -71,7 +39,8 @@ options
 
 .. option:: -d,--dir TEXT
 
-Select the installation target directory.
+Select the installation target directory. See :ref:`get-examples-usage` for
+several examples of this option.
 
 .. _idaes-get-examples-no-install:
 
@@ -113,3 +82,37 @@ Version of examples to download. The default version, which is shown for the
 the `idaes` command is installed. If the version to install is unstable
 (ends with "rcN") then you will need to add the :ref:`--unstable <idaes-get-examples-unstable>`
 option to avoid errors.
+
+.. _get-examples-usage:
+
+example usage
+^^^^^^^^^^^^^
+
+idaes get-examples
+    Download examples from release matching release for the ``idaes`` command,
+    install them in the `examples` subdirectory of this directory, and
+    install the modules found under `examples/src` as a package named `idaes_examples`.
+    The `examples` directory must not exist, i.e. the program will refuse to
+    overwrite the contents of an existing directory.
+
+idaes get-examples -d /tmp/examples
+    Same as above, but put downloaded code in `/tmp/examples` instead.
+
+idaes get-examples -d /tmp/examples -I
+    Download to `/tmp/examples`, but do not install.
+
+idaes get-examples -d /tmp/examples -N
+    Install the examples found under `/tmp/examples`.
+
+idaes get-examples --version 1.4.2-pre
+    Download examples from release `1.4.2-pre`,
+    install them in the `examples` subdirectory of this directory, and
+    install the modules found under `examples/src` as a package named `idaes_examples`.
+
+idaes get-examples --list-releases
+    List available releases of the examples in Github repository, `idaes/examples-pse`.
+    Do not attempt to download or install anything.
+
+idaes get-examples --list-releases --unstable
+    Same as above, but include non-stable releases.
+

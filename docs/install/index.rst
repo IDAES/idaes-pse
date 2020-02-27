@@ -109,6 +109,20 @@ to install the compiled binaries::
 
     idaes get-examples
 
+By default this will install in a folder "examples" in the current directory.
+The command has many options, but an important
+one is `--dir`, which specifies the folder in which to install.
+
+for Mac and Linux users this would look like::
+
+    idaes get-examples --dir ~/idaes/examples
+
+or, for Windows users, it would look like::
+
+    idaes get-examples --dir C:\Users\MyName\IDAES\Examples
+
+Refer to the full :doc:`idaes get-examples command documentation <../commands/get_examples>`
+for more information.
 
 4. Run tests::
 

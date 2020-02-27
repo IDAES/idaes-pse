@@ -41,7 +41,7 @@ import click
 import requests
 
 # package
-from idaes.commands.base import command_base
+from idaes.core.commands.base import command_base
 from idaes.ver import package_version as V
 
 __author__ = "Dan Gunter"
