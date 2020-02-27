@@ -29,8 +29,14 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
-from idaes.unit_models.pressure_changer import (PressureChanger,
-                                                ThermodynamicAssumption)
+from idaes.unit_models.pressure_changer import (
+    PressureChanger,
+    PressureChangerData,
+    Turbine,
+    Compressor,
+    Pump,
+    ThermodynamicAssumption,
+)
 
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
@@ -130,8 +136,8 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentPhase})
 
-        assert isinstance(m.fs.unit.isentropic_material, Constraint)
-        assert len(m.fs.unit.isentropic_material) == 4
+        assert isinstance(m.fs.unit.state_material_balances, Constraint)
+        assert len(m.fs.unit.state_material_balances) == 4
 
     def test_isentropic_comp_total_balances(self):
         m = ConcreteModel()
@@ -144,8 +150,8 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentTotal})
 
-        assert isinstance(m.fs.unit.isentropic_material, Constraint)
-        assert len(m.fs.unit.isentropic_material) == 2
+        assert isinstance(m.fs.unit.state_material_balances, Constraint)
+        assert len(m.fs.unit.state_material_balances) == 2
 
     def test_isentropic_total_balances(self):
         m = ConcreteModel()
@@ -317,6 +323,20 @@ class TestIAPWS(object):
 
         return m
 
+    @pytest.fixture(scope="class")
+    def iapws_turb(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "compressor": False})
+
+        return m
+
     @pytest.mark.build
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet.vars) == 3
@@ -340,7 +360,7 @@ class TestIAPWS(object):
 
         assert hasattr(iapws.fs.unit, "properties_isentropic")
         assert isinstance(iapws.fs.unit.isentropic_pressure, Constraint)
-        assert isinstance(iapws.fs.unit.isentropic_material, Constraint)
+        assert isinstance(iapws.fs.unit.state_material_balances, Constraint)
         assert isinstance(iapws.fs.unit.isentropic, Constraint)
         assert isinstance(iapws.fs.unit.isentropic_energy_balance, Constraint)
         assert isinstance(iapws.fs.unit.actual_work, Constraint)
@@ -439,6 +459,66 @@ class TestIAPWS(object):
                 (iapws.fs.unit.inlet.enth_mol[0] -
                  iapws.fs.unit.outlet.enth_mol[0]) +
                 iapws.fs.unit.work_mechanical[0])) <= 1e-6
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_verify(self, iapws_turb):
+        iapws=iapws_turb
+        # Verify the turbine results against 3 known test cases
+
+        # Case Data (90% isentropic efficency)
+        # Run with Aspen Plus v10 using iapws-95
+        cases = {
+            "F": (1000,1000,1000), # mol/s
+            "Tin": (500, 800, 400), # K
+            "Pin": (1000, 10000, 200), # kPa
+            "W": (-1224.64, -1911.55, -1010.64), # kW
+            "Tout": (463.435, 742.992, 382.442), # K
+            "Pout": (700, 7000, 140), # kPa
+            "xout": (1.0, 1.0, 0.9886), # vapor fraction
+            "Tisen": (460.149, 738.224, 382.442),
+        }
+
+        for i in [0,1,2]:
+            F = cases["F"][i]
+            Tin = cases["Tin"][i]
+            Tout = cases["Tout"][i]
+            Pin = cases["Pin"][i]*1000
+            Pout = cases["Pout"][i]*1000
+            hin = iapws95.htpx(T=Tin, P=Pin)
+            W = cases["W"][i]*1000
+            Tis = cases["Tisen"][i]
+            xout = cases["xout"][i]
+
+            iapws.fs.unit.inlet.flow_mol[0].fix(F)
+            iapws.fs.unit.inlet.enth_mol[0].fix(hin)
+            iapws.fs.unit.inlet.pressure[0].fix(Pin)
+            iapws.fs.unit.deltaP.fix(Pout - Pin)
+            iapws.fs.unit.efficiency_isentropic.fix(0.9)
+            iapws.fs.unit.initialize(optarg={'tol': 1e-6})
+            results = solver.solve(iapws)
+            # Check for optimal solution
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert results.solver.status == SolverStatus.ok
+
+            Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
+            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
+            W = pytest.approx(cases["W"][i]*1000, rel=1e-2)
+            xout = pytest.approx(xout, rel=1e-2)
+            prop_out = iapws.fs.unit.control_volume.properties_out[0]
+            prop_in = iapws.fs.unit.control_volume.properties_in[0]
+            prop_is = iapws.fs.unit.properties_isentropic[0]
+
+            assert value(prop_in.temperature) == pytest.approx(Tin, rel=1e-3)
+            assert value(prop_is.temperature) == pytest.approx(Tis, rel=1e-3)
+            assert value(iapws.fs.unit.control_volume.work[0]) == W
+            assert value(prop_out.pressure) == Pout
+            assert value(prop_out.temperature) == Tout
+            assert value(prop_out.vapor_frac) == xout
+
 
     @pytest.mark.ui
     def test_report(self, iapws):
@@ -579,3 +659,81 @@ class TestSaponification(object):
     @pytest.mark.ui
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+class TestTurbine(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Turbine(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert not m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.isentropic
+        assert m.fs.unit.config.property_package is m.fs.properties
+
+class TestCompressor(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Compressor(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.isentropic
+        assert m.fs.unit.config.property_package is m.fs.properties
+
+class TestPump(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = Pump(default={
+                "property_package": m.fs.properties})
+
+        assert isinstance(m.fs.unit, PressureChangerData)
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
+
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.pump
+        assert m.fs.unit.config.property_package is m.fs.properties

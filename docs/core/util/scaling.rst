@@ -87,7 +87,7 @@ puts the scaling factor in the ``scaling_factor`` suffix.
     m.scaling_factor[m.y] = 1e-5
     m.scaling_expression[m.z] = 1/(m.x*m.y)
 
-    m.c = Constraint(expr=m.z = m.x*m.y)
+    m.c = Constraint(expr=m.z == m.x*m.y)
     m.scaling_expression[m.c] = 1/(m.x*m.y)
 
     calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
@@ -119,6 +119,22 @@ ScalingBasis.VarScale:
 
 
 .. autofunction:: calculate_scaling_factors
+
+Scaling Utility Functions
+-------------------------
+
+IDAES includes some utility functions to help evaluate model scaling and to
+auto-scale constraints.
+
+.. autofunction:: badly_scaled_var_generator
+
+.. autofunction:: grad_fd
+
+.. autofunction:: scale_constraint
+
+.. autofunction:: constraint_fd_autoscale
+
+.. autofunction:: set_scaling_factor
 
 
 Scaling with Ipopt

@@ -6,7 +6,7 @@ from .heater import Heater
 from .heat_exchanger_1D import HeatExchanger1D
 from .mixer import Mixer, MomentumMixingType, MixingType
 from .plug_flow_reactor import PFR
-from .pressure_changer import PressureChanger
+from .pressure_changer import PressureChanger, Turbine, Pump, Compressor
 from .separator import Separator, SplittingType, EnergySplittingType
 from .stoichiometric_reactor import StoichiometricReactor
 from .equilibrium_reactor import EquilibriumReactor

@@ -18,6 +18,7 @@ Authors: Andrew Lee
 
 import pytest
 import types
+from sys import modules
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
@@ -25,10 +26,12 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            value,
                            Var)
-from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.property_models.core.phase_equil import bubble_dew
-from idaes.core.util.misc import add_object_reference
+from idaes.core import declare_process_block_class
+from idaes.property_models.core.generic.generic_property import (
+        GenericParameterData)
+from idaes.property_models.core.generic.tests import dummy_eos
 
 
 # Dummy class to use for Psat calls
@@ -39,38 +42,40 @@ def pressure_sat_comp(b, j, T):
     return Psat[j]
 
 
-# get_method function to mock-up StateBlock
-def get_method(b, config_arg):
-    c_arg = getattr(b._params.config, config_arg)
+@declare_process_block_class("DummyParameterBlock")
+class DummyParameterData(GenericParameterData):
+    def configure(self):
+        self.configured = True
 
-    if isinstance(c_arg, types.ModuleType):
-        print("Here")
-        return getattr(c_arg, config_arg)
-    elif callable(c_arg):
-        print("There")
-        return c_arg
+    def parameters(self):
+        self.parameters_set = True
+
+
+def define_state(b):
+    b.state_defined = True
 
 
 @pytest.fixture(scope="class")
 def frame():
     m = ConcreteModel()
 
-    # Create a dummy parameter block
-    m.params = Block()
-    m.params.config = ConfigBlock()
-    m.params.config.declare("pressure_sat_comp", ConfigValue(
-            default=pressure_sat_comp))
+    # Dummy params block
+    m.params = DummyParameterBlock(default={
+                "component_list": ["H2O", "EtOH"],
+                "phase_list": ["Liq", "Vap"],
+                "state_definition": modules[__name__],
+                "equation_of_state": {"Vap": dummy_eos,
+                                      "Liq": dummy_eos},
+                "pressure_sat_comp": pressure_sat_comp})
 
-    m.params.component_list = Set(initialize=["H2O", "EtOH"])
-    m.params.phase_list = Set(initialize=["Liq", "Vap"])
+    m.props = m.params.state_block_class([1],
+                                         default={"defined_state": False,
+                                         "parameters": m.params})
 
-    # Create a dummy state block
-    m.props = Block([1])
-    add_object_reference(m.props[1], "_params", m.params)
-    m.props[1].get_method = types.MethodType(get_method, m.props[1])
-
+    # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
+    m.props[1]._teq = Var(initialize=300)
     m.props[1].mole_frac_comp = Var(m.params.component_list,
                                     initialize=0.5)
 
