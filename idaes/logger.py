@@ -146,9 +146,11 @@ def getModelLogger(name, level=None, tag=None):
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.model", level=level, tag=tag)
+    return _getLogger(name=name, logger_name="idaes.model",
+                      level=level, tag=tag)
 
-def condition(res):
+
+def condition(res, solver="ipopt"):
     """Get the solver termination condition to log.  This isn't a specifc value
     that you can really depend on, just a message to pass on from the solver for
     the user's benefit. Sometimes the solve is in a try-except, so we'll handle
@@ -162,7 +164,11 @@ def condition(res):
         s = str(res.solver.termination_condition)
 
     try:
-        return "{} - {}".format(s, str(res.solver.message)[18:])
+        if solver == "ipopt":
+            solver_message = " ".join(str(res.solver.message).split(" ")[2:])
+            return "{} - {}".format(s, solver_message)
+        else:
+            return "{} - {}".format(s, str(res.solver.message))
     except:
         return s
 
