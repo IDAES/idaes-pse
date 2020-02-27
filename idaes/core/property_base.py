@@ -29,6 +29,7 @@ from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.phases import Phase, PhaseData
+from idaes.core.components import Component, ComponentData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
@@ -120,6 +121,24 @@ class PhysicalParameterBlock(ProcessBlockData,
     def _validate_parameter_block(self):
         try:
             # Valdiate that names in phase list have matching Phase objects
+            for c in self.component_list:
+                try:
+                    obj = getattr(self, str(c))
+                    if not isinstance(obj, ComponentData):
+                        raise TypeError(
+                                "Property package {} has an object {} whose "
+                                "name appears in component_list but is not an "
+                                "instance of Component".format(self.name, c))
+                except AttributeError:
+                    self._make_component_objects()
+                    break
+        except AttributeError:
+            # No component list
+            raise PropertyPackageError("Property package {} has not defined a "
+                                       "component list.".format(self.name))
+
+        try:
+            # Valdiate that names in phase list have matching Phase objects
             for p in self.phase_list:
                 try:
                     obj = getattr(self, str(p))
@@ -135,6 +154,16 @@ class PhysicalParameterBlock(ProcessBlockData,
             # No phase list
             raise PropertyPackageError("Property package {} has not defined a "
                                        "phase list.".format(self.name))
+
+    def _make_component_objects(self):
+        _log.warning("{} appears to be an old-style property package. It will "
+                     "be automatically converted to a new-style package, "
+                     "however users are strongly encouraged to convert their "
+                     "property packages to use phase and component objects."
+                     .format(self.name))
+        for c in self.component_list:
+            setattr(self, str(c), Component(
+                        default={"_component_list_exists": True}))
 
     def _make_phase_objects(self):
         _log.warning("{} appears to be an old-style property package. It will "

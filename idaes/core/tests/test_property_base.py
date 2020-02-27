@@ -148,6 +148,8 @@ def test_validate_parameter_block_no_phase_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
+    m.p.component_list = Set(initialize=["c1", "c2"])
+
     with pytest.raises(
             PropertyPackageError,
             match="Property package p has not defined a phase list."):
@@ -157,6 +159,8 @@ def test_validate_parameter_block_no_phase_list():
 def test_validate_parameter_block_invalid_object():
     m = ConcreteModel()
     m.p = ParameterBlock()
+
+    m.p.component_list = Set(initialize=["c1", "c2"])
 
     m.p.phase_list = Set(initialize=["foo"])
     m.p.foo = object()
@@ -267,7 +271,8 @@ class _Parameters(PhysicalParameterBlock):
     def build(self):
         super(_Parameters, self).build()
 
-        self.phase_list = ["a"]
+        self.phase_list = ["p1"]
+        self.component_list = ["c1"]
 
     @classmethod
     def define_metadata(cls, obj):
@@ -302,7 +307,7 @@ def test_validate_params():
     m.p = StateTest(default={"parameters": m.pb})
 
     # If validation has been triggered, Phase object should exist
-    assert isinstance(m.pb.a, Phase)
+    assert isinstance(m.pb.p1, Phase)
 
 
 # -----------------------------------------------------------------------------

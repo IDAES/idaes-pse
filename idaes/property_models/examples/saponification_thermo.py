@@ -35,6 +35,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.core.phases import LiquidPhase
+from idaes.core.components import Component
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
@@ -67,11 +68,12 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # Add Phase objects
         self.Liq = LiquidPhase()
 
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2O', 'NaOH',
-                                              'EthylAcetate',
-                                              'SodiumAcetate',
-                                              'Ethanol'])
+        # Add Component objects
+        self.H2O = Component()
+        self.NaOH = Component()
+        self.EthylAcetate = Component()
+        self.SodiumAcetate = Component()
+        self.Ethanol = Component()
 
         # Heat capacity of water
         self.cp_mol = Param(mutable=False,
