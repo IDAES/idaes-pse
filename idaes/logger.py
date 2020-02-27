@@ -150,7 +150,7 @@ def getModelLogger(name, level=None, tag=None):
                       level=level, tag=tag)
 
 
-def condition(res, solver="ipopt"):
+def condition(res):
     """Get the solver termination condition to log.  This isn't a specifc value
     that you can really depend on, just a message to pass on from the solver for
     the user's benefit. Sometimes the solve is in a try-except, so we'll handle
@@ -164,7 +164,7 @@ def condition(res, solver="ipopt"):
         s = str(res.solver.termination_condition)
 
     try:
-        if solver == "ipopt":
+        if "ipopt" in str(res.solver.message).lower():
             solver_message = " ".join(str(res.solver.message).split(" ")[2:])
             return "{} - {}".format(s, solver_message)
         else:
