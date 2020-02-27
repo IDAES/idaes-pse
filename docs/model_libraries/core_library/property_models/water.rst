@@ -2,9 +2,9 @@ Water/Steam - IAPWS95
 ======================
 
 .. index::
-  pair: idaes.property_models.iapws95; Iapws95StateBlock
+  pair: idaes.core_lib.properties.iapws95; Iapws95StateBlock
 
-.. module:: idaes.property_models.iapws95
+.. module:: idaes.core_lib.properties.iapws95
 
 Accurate and thermodynamically consistent steam properties are provided for the
 IDAES framework by implementing the International Association for the Properties
@@ -23,7 +23,7 @@ Theses modules can be imported as:
 
 .. testcode::
 
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
 The Heater unit model :ref:`example <models/heater:Example>`, provides a simple
 example for using water properties.
@@ -33,7 +33,7 @@ example for using water properties.
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, MaterialBalanceType
   from idaes.unit_models import Heater
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()

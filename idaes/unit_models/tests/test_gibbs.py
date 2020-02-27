@@ -24,9 +24,9 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType, MomentumBalanceType
 from idaes.unit_models.gibbs_reactor import GibbsReactor
-#from idaes.property_models.examples.methane_combustion_ideal import (
+#from idaes.core_lib.properties.examples.methane_combustion_ideal import (
 #    MethaneCombustionParameterBlock)
-from idaes.property_models.activity_coeff_models.methane_combustion_ideal \
+from idaes.core_lib.properties.activity_coeff_models.methane_combustion_ideal \
     import MethaneParameterBlock as MethaneCombustionParameterBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,

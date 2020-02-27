@@ -12,12 +12,12 @@ An example of how Property Interrogator tool is used is shown below:
 
 .. testcode::
 
-    import pyomo.environ as pe  # Pyomo environment
+    import pyomo.environ as pyo  # Pyomo environment
     from idaes.core import FlowsheetBlock
     from idaes.unit_models import CSTR
-    from idaes.property_models.interrogator import PropertyInterrogatorBlock, ReactionInterrogatorBlock
+    from idaes.core_lib.properties.interrogator import PropertyInterrogatorBlock, ReactionInterrogatorBlock
 
-    m = ConcreteModel()
+    m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True})
 
     m.fs.params = PropertyInterrogatorBlock()
@@ -51,7 +51,7 @@ Additionally, the `PropertiesInterrogatorBlock` and `ReactionInterrogatorBlock` 
 Class Documentation
 -------------------
 
-.. currentmodule:: idaes.property_models.interrogator.properties_interrogator
+.. currentmodule:: idaes.core_lib.properties.interrogator.properties_interrogator
 
 .. autoclass:: PropertyInterrogatorBlock
    :members:
@@ -59,7 +59,7 @@ Class Documentation
 .. autoclass:: PropertyInterrogatorData
    :members:
 
-.. currentmodule:: idaes.property_models.interrogator.reactions_interrogator
+.. currentmodule:: idaes.core_lib.properties.interrogator.reactions_interrogator
 
 .. autoclass:: ReactionInterrogatorBlock
    :members:

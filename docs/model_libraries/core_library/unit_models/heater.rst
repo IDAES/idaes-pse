@@ -17,7 +17,7 @@ Example
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import Heater
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()

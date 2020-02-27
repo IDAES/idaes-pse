@@ -33,7 +33,7 @@ from pyomo.network import Arc, Port
 from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
 from idaes.core.util.misc import svg_tag  # place numbers/text in an SVG
-from idaes.property_models import iapws95  # steam properties
+from idaes.core_lib.properties import iapws95  # steam properties
 from idaes.power_generation.unit_models import (  # power generation unit models
     TurbineMultistage,
     FWH0D,

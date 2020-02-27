@@ -44,7 +44,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   from idaes.unit_models import Heater
   from idaes.power_generation.unit_models import (
       TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
   solver = SolverFactory('ipopt')
   solver.options = {'tol': 1e-6}
