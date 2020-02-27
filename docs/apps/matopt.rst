@@ -145,7 +145,7 @@ The results of the optimization process will be loaded into ``Design`` objects a
 MatOpt Examples
 ---------------
 Five `case studies
-<https://github.com/xiangyuy/examples-dev/tree/master/src/matopt>`_ are provided to illustrate the detailed usage of MatOpt. In each case, a Jupyter notebook with explanations as well as an equivalent Python script is provided.
+<https://github.com/xiangyuy/matopt-examples>`_ are provided to illustrate the detailed usage of MatOpt. In each case, a Jupyter notebook with explanations as well as an equivalent Python script is provided.
 
 References
 ----------
