@@ -45,11 +45,12 @@ Contents
     standards
     configuration
     logging
+    commands/index
     core/index
     transformations/index
     models/index
     property_models/index
-    commands/index
+    power_generation/index
     vis/index
     dmf/index
     pysmo/index

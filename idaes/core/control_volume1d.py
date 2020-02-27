@@ -1113,7 +1113,7 @@ argument)."""))
                                               "enthalpy flow wrt length")
 
         if has_holdup:
-            self.enthalpy_holdup = Var(
+            self.energy_holdup = Var(
                         self.flowsheet().config.time,
                         self.length_domain,
                         self.config.property_package.phase_list,
@@ -1123,10 +1123,10 @@ argument)."""))
                         .format(units['energy'], units['length']))
 
         if dynamic is True:
-            self.enthalpy_accumulation = DerivativeVar(
-                        self.enthalpy_holdup,
+            self.energy_accumulation = DerivativeVar(
+                        self.energy_holdup,
                         wrt=self.flowsheet().config.time,
-                        doc="Enthalpy accumulation per unit length [{}/{}.{}]"
+                        doc="Energy accumulation per unit length [{}/{}.{}]"
                         .format(units['energy'],
                                 units['length'],
                                 units['time']))
@@ -1191,7 +1191,7 @@ argument)."""))
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, x, p):
-            return b.enthalpy_accumulation[t, x, p] if dynamic else 0
+            return b.energy_accumulation[t, x, p] if dynamic else 0
 
         def heat_term(b, t, x):
             return b.heat[t, x] if has_heat_transfer else 0
@@ -1244,7 +1244,7 @@ argument)."""))
                              self.config.property_package.phase_list,
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, x, p):
-                return b.enthalpy_holdup[t, x, p] == (
+                return b.energy_holdup[t, x, p] == (
                     b._area_func(t, x) * self.phase_fraction[t, x, p] *
                     b.properties[t, x].get_energy_density_terms(p))
 
