@@ -196,8 +196,13 @@ class TestIAPWS(object):
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = Heater(default={"property_package": m.fs.properties})
-
+        m.fs.unit = Heater(
+            default={
+                "property_package": m.fs.properties,
+                "has_pressure_change": True
+            }
+        )
+        m.fs.unit.deltaP.fix(0)
         return m
 
     @pytest.mark.build
@@ -215,7 +220,7 @@ class TestIAPWS(object):
 
         assert hasattr(iapws.fs.unit, "heat_duty")
 
-        assert number_variables(iapws) == 7
+        assert number_variables(iapws) == 8
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
@@ -288,6 +293,58 @@ class TestIAPWS(object):
     @pytest.mark.ui
     def test_report(self, iapws):
         iapws.fs.unit.report()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_verify(self, iapws):
+        # Test the heater model against known test cases
+        # Test cases from Aspen Plus 10 with iapws-95
+        cases = {
+            "F": (1000, 1000, 1000, 1000), # mol/s
+            "Tin": (300, 300, 300, 800), # K
+            "Pin": (1000, 1000, 1000, 1000), # kPa
+            "xin": (0, 0, 0, 1), # vapor fraction
+            "Tout": (400, 400, 453.028, 300), # K
+            "Pout": (1000, 100, 1000, 1000), # kPa
+            "xout": (0, 1, 0.228898, 0), # vapor fraction
+            "duty": (7566.19, 47145, 20000, -61684.4), # kW
+        }
+
+        for i in [0, 1, 2, 3]:
+            F = cases["F"][i]
+            Tin = cases["Tin"][i]
+            Pin = cases["Pin"][i]*1000
+            xin = cases["xin"][i]
+            hin = iapws95.htpx(T=Tin, P=Pin)
+            Tout = cases["Tout"][i]
+            Pout = cases["Pout"][i]*1000
+            xout = cases["xout"][i]
+            duty = cases["duty"][i]*1000
+            if xout != 0 and xout != 1:
+                hout = iapws95.htpx(T=Tout, x=xout)
+            else:
+                hout = iapws95.htpx(T=Tout, P=Pout)
+            prop_in = iapws.fs.unit.control_volume.properties_in[0]
+            prop_out = iapws.fs.unit.control_volume.properties_out[0]
+
+            prop_in.flow_mol = F
+            prop_in.enth_mol = hin
+            prop_in.pressure = Pin
+            iapws.fs.unit.deltaP[0] = Pout - Pin
+            iapws.fs.unit.heat_duty[0] = duty
+            results = solver.solve(iapws)
+
+            # Check for optimal solution
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert results.solver.status == SolverStatus.ok
+
+            assert Tin == pytest.approx(value(prop_in.temperature), rel=1e-3)
+            assert Tout == pytest.approx(value(prop_out.temperature), rel=1e-3)
+            assert Pout == pytest.approx(value(prop_out.pressure), rel=1e-3)
+            assert xout == pytest.approx(value(prop_out.vapor_frac), rel=1e-3)
+
+
 
 
 # -----------------------------------------------------------------------------

@@ -88,6 +88,7 @@ loggers. The user can choose any name they like for these loggers.
 *Example*
 
 .. testcode::
+
   import idaes.logger as idaeslog
 
   _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, tag="model")
@@ -194,18 +195,19 @@ by determining if the solver output would be logged at the given level.
 
 .. testcode::
 
-  import idaes.logging as idaeslog
+  import idaes.logger as idaeslog
   import pyomo.environ as pyo
 
   solver = pyo.SolverFactory("ipopt")
 
+  model = pyo.ConcreteModel()
   model.x = pyo.Var()
   model.y = pyo.Var()
   model.x.fix(3)
   model.c = pyo.Constraint(expr=model.y==model.x**2)
 
-  log = idaes.log("solver.demo")
+  log = idaeslog.getSolveLogger("solver.demo")
   log.setLevel(idaeslog.DEBUG)
 
-  with solver_log(log, idaeslog.DEBUG) as slc:
-      res = solver.solve(model, tee=slc.tee)
+  with idaeslog.solver_log(log, idaeslog.DEBUG) as slc:
+    res = solver.solve(model, tee=slc.tee)

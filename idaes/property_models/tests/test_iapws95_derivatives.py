@@ -36,7 +36,8 @@ class TestIAPWS95(unittest.TestCase):
         cond = [] # Tuple (T [K],P [Pa], data) pressure in file is MPa
         with open(dfile, 'r') as csvfile:
            dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
-           next(dat) # skip header
+           for i in range(7):
+               next(dat) # skip header
            for row in dat:
                try:
                    x = float(row[col])
@@ -136,7 +137,7 @@ class TestIAPWS95(unittest.TestCase):
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_sat_deltal(self):
         model = self.make_model()
-        cond = self.read_data("sat_prop.txt", col=2)
+        cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             f = model.prop_in.func_delta_sat_l
             print(c[0])
@@ -147,7 +148,7 @@ class TestIAPWS95(unittest.TestCase):
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_sat_deltav(self):
         model = self.make_model()
-        cond = self.read_data("sat_prop.txt", col=2)
+        cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             f = model.prop_in.func_delta_sat_v
             print(c[0])
@@ -158,7 +159,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_psat(self):
         model = self.make_model()
-        cond = self.read_data("sat_prop.txt", col=2)
+        cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             f = model.prop_in.func_p_sat
             print(c[0])
@@ -169,7 +170,7 @@ class TestIAPWS95(unittest.TestCase):
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau_sat(self):
         model = self.make_model()
-        cond = self.read_data("sat_prop.txt", col=2)
+        cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             f = model.prop_in.func_tau_sat
             print(c[1])
@@ -181,8 +182,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_dens(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
-        phase = self.read_data("prop.txt", col=13)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
+        phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -201,8 +202,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_hxpt(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
-        phase = self.read_data("prop.txt", col=13)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
+        phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
         for i, c in enumerate(cond):
             if phase[i][2] in ["liquid", "supercritical"]:
                 p = "Liq"
@@ -218,7 +219,7 @@ class TestIAPWS95(unittest.TestCase):
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=5)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_tau
         j = 0
         for i, c in enumerate(cond):
@@ -233,7 +234,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_1phase(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=5)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_vf
         j = 0
         for i, c in enumerate(cond):
@@ -248,8 +249,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_2phase(self):
         model = self.make_model()
-        hvdat = self.read_data("sat_prop.txt", col=17)
-        hldat = self.read_data("sat_prop.txt", col=5)
+        hvdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=17)
+        hldat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_vf
         j = 0
         for i, c in enumerate(hvdat):
@@ -267,7 +268,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phi0(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             delta = c[2]/322.0
             tau = 647.096/c[0]
@@ -290,7 +291,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phir(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             delta = c[2]/322.0
             tau = 647.096/c[0]
@@ -315,7 +316,7 @@ class TestIAPWS95(unittest.TestCase):
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_pushfg(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             delta = c[2]/322.0
             tau = 647.096/c[0]
@@ -340,7 +341,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_cp_cv(self):
         model = self.make_model()
-        cond = self.read_data("prop.txt", col=2)
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
             delta = c[2]/322.0
             tau = 647.096/c[0]

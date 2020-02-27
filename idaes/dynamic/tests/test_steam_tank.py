@@ -30,7 +30,7 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.unit_models.power_generation import SteamValve
+from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models import Heater
 from idaes.property_models import iapws95
@@ -203,10 +203,10 @@ def test_pid():
         if i[0]==5:
             m_dynamic2.fs.tank.control_volume.material_accumulation[i].value =\
                 m_dynamic.fs.tank.control_volume.material_accumulation[i].value
-    for i in m_dynamic2.fs.tank.control_volume.enthalpy_accumulation:
+    for i in m_dynamic2.fs.tank.control_volume.energy_accumulation:
         if i[0]==5:
-            m_dynamic2.fs.tank.control_volume.enthalpy_accumulation[i].value =\
-                m_dynamic.fs.tank.control_volume.enthalpy_accumulation[i].value
+            m_dynamic2.fs.tank.control_volume.energy_accumulation[i].value =\
+                m_dynamic.fs.tank.control_volume.energy_accumulation[i].value
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
     m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i[5]))
     # As a lazy form of initialization, solve the steady state problem before
