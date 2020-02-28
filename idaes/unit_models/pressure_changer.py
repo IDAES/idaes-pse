@@ -686,12 +686,25 @@ see property package for documentation.}""",
         return {"vars": var_dict}
 
 
-    def get_costing(self, module=costing):
+    def get_costing(self, module=costing, FM_mat = "stain_steel",
+                             mover_type = "compressor", 
+                             compressor_type="centrifugal", 
+                             driver_mover_type= "electrical_motor",
+                             pump_type = "centrifugal", #centrifugal, external_gear, reciprocating
+                             pump_type_factor = '1.4',
+                             pump_motor_type_factor = 'open',
+                             year=None):
         if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing()
+            self.flowsheet().get_costing(year=year)
+        
         self.costing = Block()
-
-        module.pressure_changer_costing(self.costing)
+        module.pressure_changer_costing(self.costing, FM_mat = FM_mat,
+                             mover_type = mover_type, 
+                             compressor_type=compressor_type, 
+                             driver_mover_type= driver_mover_type,
+                             pump_type=pump_type,
+                             pump_type_factor=pump_type_factor,
+                             pump_motor_type_factor=pump_motor_type_factor)
         
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")

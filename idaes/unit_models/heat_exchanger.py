@@ -485,9 +485,11 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=costing):
+    def get_costing(self, module=costing, hx_type='U-tube', FM='stain_steel', 
+                 L_factor = '12ft', year=None):
         if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing()
+            self.flowsheet().get_costing(year=year)
+        
         self.costing = Block()
-
-        module.hx_costing(self.costing)
+        module.hx_costing(self.costing, hx_type=hx_type, FM=FM, 
+                 L_factor = L_factor)
