@@ -55,11 +55,9 @@ class _TagFilter(logging.Filter):
             return True
         try:
             if record.tag is None or record.tag in _config["tags"]:
-                print("not filtered {}".format(record.tag))
                 return True
         except AttributeError:
             return True
-        print("filtered {}".format(record.tag))
         return False
 
 
