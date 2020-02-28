@@ -23,8 +23,11 @@ from pyomo.dae.flatten import flatten_dae_variables
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import get_activity_dict, deactivate_model_at
+from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
+        path_from_block)
 import idaes.logger as idaeslog
+
+from collections import OrderedDict
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
@@ -35,8 +38,7 @@ class NMPCSim(object):
     Main class for NMPC simulations of IDAES flowsheets. 
     """
 
-    def __init__(self, plant_model, controller_model, steady_model,
-            initial_inputs, **kwargs):
+    def __init__(self, plant_model, controller_model, initial_inputs, **kwargs):
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
@@ -49,29 +51,76 @@ class NMPCSim(object):
         self.p_mod = plant_model
         self.c_mod = controller_model
 
+        # Validate models
+        self.validate_models(self.p_mod, self.c_mod)
+
+        # Solve for consistent initial conditions
         self.p_mod._originally_active = get_activity_dict(self.p_mod)
         self.solve_initial_conditions(self.p_mod, initial_inputs,
                 activity_dict=self.p_mod._originally_active,
                 solver=solver)
 
+        # Categorize variables in plant model
         self.categorize_variables(self.p_mod, initial_inputs)
+        self.p_mod.initial_inputs = initial_inputs
+        # ^ Add these as an attribute so they can be used later to validate
+        # steady state model
 
-        pdb.set_trace()
+        # Categorize variables in controller model
+        init_controller_inputs = self.validate_inputs(controller_model,
+                plant_model, initial_inputs)
+        self.categorize_variables(self.c_mod, init_controller_inputs)
 
-        pass
 
-    def validate_models(self, plant_model, controller_model, steady_model):
-        if not (isinstance(plant_model, FlowsheetBlock) and 
-                isinstance(controller_model, FlowsheetBlock) and
-                isinstance(steady_model, FlowsheetBlock)):
+    def validate_inputs(self, tgt_model, src_model, src_inputs=None,
+            outlvl=idaeslog.NOTSET):
+        log = idaeslog.getInitLogger(__name__, level=outlvl)
+
+        if not src_inputs:
+            # If source inputs are not specified, assume they
+            # already exist in src_model
+            try:
+                t0 = src_model.time.first()
+                src_inputs = [v[t0] for v in src_model.input_vars]
+            except AttributeError:
+                msg = ('Error validating inputs. Either provide src_inputs '
+                      'or categorize_inputs in the source model first')
+                idaeslog.error(msg)
+                raise
+
+        tgt_inputs = []
+        for inp in src_inputs:
+            local_parent = tgt_model
+            for r in path_from_block(inp, src_model, include_comp=True):
+                try:
+                    local_parent = getattr(local_parent, r[0])[r[1]]
+                except AttributeError:
+                    msg = (f'Error validating input {inp.name}.'
+                           'Could not find component {r[0]} in block '
+                           '{local_parent.name}.')
+                    log.error(msg)
+                    raise
+                except KeyError:
+                    msg = (f'Error validating {inp.name}.'
+                           'Could not find key {r[1]} in component '
+                           '{getattr(local_parent, r[0]).name}.')
+                    log.error(msg)
+                    raise
+            tgt_inputs.append(local_parent)
+        return tgt_inputs
+
+
+    def validate_models(self, m1, m2):
+        if not (isinstance(m1, FlowsheetBlock) and 
+                isinstance(m2, FlowsheetBlock)):
             raise ValueError(
                     'Provided models must be FlowsheetBlocks')
-        if (plant_model.model() is controller_model.model() or
-            plant_model.model() is steady_model.model() or
-            steady_model.model() is controller_model.model()):
+        if m1.model() is m2.model():
             raise ValueError(
                     'Provided models must not live in the same top-level'
                     'ConcreteModel')
+        return True
+
 
     def solve_initial_conditions(self, model, initial_inputs, **kwargs):
         # Record which Constraints/Variables are initially inactive
@@ -133,22 +182,20 @@ class NMPCSim(object):
                     if was_originally_active[id(comp)]:
                         comp.activate()
 
-    def categorize_variables(self, model, initial_inputs):
-        # This is the caveman implementation
-        # Would be much faster to do this during flattening
-        # Seriously. This is sooo slow
-        time = model.time
-        t0 = time.first()
 
-        # Shouldn't search for algebraic variables at time.first()
-        # because some could be fixed as initial conditions instead
-        # of differential variables. 
-        # At any other time, however, anything that is not an input/dv/deriv
-        # and that is not fixed is algebraic. This assumes that the user
-        # has not fixed any algebraic variables (at non-initial time points),
-        # which is fine as doing so will give a degree of freedom error in
-        # the simulation/initialization.
-        t1 = time.get_finite_elements()[1]
+    def categorize_variables(self, model, initial_inputs, **kwargs):
+        # Would probably be much faster to do this categorization
+        # during variable flattening
+        is_steady = kwargs.pop('is_steady', False)
+        time = model.time
+
+        # Works for steady state models as time will be an ordered
+        # (although not continuous) set:
+        t0 = time.first()
+        if is_steady:
+            t1 = t0
+        else:
+            t1 = time.get_finite_elements()[1]
 
         deriv_vars = []
         diff_vars = []
@@ -157,54 +204,158 @@ class NMPCSim(object):
         not_vars = []
 
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
+        # Remove duplicates from these var lists
+        dae_no_dups = list(OrderedDict([(id(v[t0]), v) for v in dae_vars]).values())
+        scalar_no_dups = list(OrderedDict([(id(v), v) for v in scalar_vars]).values())
 
-        # Copy before enumerating so I can safely pop without skipping elements
-        # ^No. Still changes indices. 
-        for i, var in reversed(list(enumerate(dae_vars.copy()))):
-            for ini in initial_inputs:
+        # Remove duplicates from variable lists
+        model.dae_vars = dae_no_dups.copy()
+
+        # Find input variables
+        temp_inps = initial_inputs.copy()
+        for i, var in reversed(list(enumerate(dae_no_dups))):
+            for j, ini in enumerate(temp_inps):
                 if var[t0] is ini:
-                    input_vars.append(dae_vars.pop(i))
+                    assert ini is temp_inps.pop(j)
+                    assert var is dae_no_dups.pop(i)
+                    input_vars.append(var)
                     break
 
-        #other_copy = dae_vars.copy()
-        for i, var in reversed(list(enumerate(dae_vars.copy()))):
+        inputs_remaining = [v.name for v in temp_inps]
+        if inputs_remaining:
+            raise ValueError(
+                f'Could not find variables for initial inputs '
+                '{inputs_remaining}')
+
+        # Find derivative variables
+        init_dv_list = []
+        for i, var in reversed(list(enumerate(dae_no_dups))):
             parent = var[t0].parent_component()
             index = var[t0].index()
             if not isinstance(parent, DerivativeVar):
                 continue
             if time not in ComponentSet(parent.get_continuousset_list()):
                 continue
-            deriv_vars.append(dae_vars.pop(i))
+            assert var is dae_no_dups.pop(i)
+            deriv_vars.append(var)
+            init_dv_list.append(parent.get_state_var()[index])
 
-            # now need to locate the state variable slice in dae_vars
-            # state var:
-            #     var[t0].parent_component().get_state_var()[var[t0].index()]
+        # Find differential variables
+        for i, diffvar in reversed(list(enumerate(dae_no_dups))):
+            for j, dv in enumerate(init_dv_list):
+                # Don't need to reverse here as we intend to break the loop
+                # after the first pop
+                if diffvar[t0] is dv:
+                    assert dv is init_dv_list.pop(j)
+                    assert diffvar is dae_no_dups.pop(i)
+                    diff_vars.append(diffvar)
+                    break
 
-            found = False
-            # Don't need to copy here as only expect to pop one entry in this
-            # loop
-            for j, diffvar in enumerate(dae_vars):
-                if not diffvar[t0] is parent.get_state_var()[index]:
-                    continue
-                found = True
-                diff_vars.append(dae_vars.pop(j))
-                break
+        dvs_remaining = [v.name for v in init_dv_list]
+        if dvs_remaining:
+            raise ValueError(
+                f'Could not find variables for initial states '
+                '{dvs_remaining}')
 
-            if not found:
-                #raise ValueError(
-                print(f'Could not find state for derivative variable {var[t0].name}')
-
-        for i, var in reversed(list(enumerate(dae_vars.copy()))):
+        # Find algebraic variables
+        for i, var in reversed(list(enumerate(dae_no_dups))):
             # If the variable is still in the list of time-indexed vars,
             # it must either be fixed (not a var) or be an algebraic var
+            # - - - 
+            # Check at t1 instead of t0 as algebraic vars might be fixed
+            # at t0 as initial conditions instead of some differential vars
             if var[t1].fixed:
-                not_vars.append(dae_vars.pop(i))
+                not_vars.append(dae_no_dups.pop(i))
             else:
-                alg_vars.append(dae_vars.pop(i))
+                alg_vars.append(dae_no_dups.pop(i))
 
         model.deriv_vars = deriv_vars
         model.diff_vars = diff_vars
-        model.input_vars = input_vars
-        model.alg_vars = alg_vars
-        model.not_vars = not_vars
+        model.n_dv = len(diff_vars)
+        assert model.n_dv == len(deriv_vars)
 
+        model.input_vars = input_vars
+        model.n_iv = len(input_vars)
+
+        model.alg_vars = alg_vars
+        model.n_av = len(alg_vars)
+
+        model.not_vars = not_vars
+        model.n_nv = len(not_vars)
+
+
+    def add_setpoint(self, set_point, **kwargs):
+        skip_validation = kwargs.pop('skip_validation', False)
+        if skip_validation:
+            raise NotImplementedError(
+                    'Maybe one day...')
+        else:
+            steady_model = kwargs.pop('steady_model', None)
+            if not steady_model:
+                raise ValueError(
+                   "'steady_model' required to validate set point")
+            self.steady_model = steady_model
+            self.validate_models(self.steady_model, self.p_mod)
+            # validate set point
+            # return result
+
+
+    def validate_tracking_setpoint(self, set_point, steady_model):
+        steady_inputs = self.validate_inputs(steady_model, self.p_mod)
+        self.categorize_variables(steady_model, steady_inputs)
+        # put set_point into the form of lists of proper dimension
+        # will require map vardata -> (category, location)
+        pass
+
+
+    def construct_objective_function(self, **kwargs):
+        # Read set point from arguments, if provided
+        # State and control set poitns 
+        set_point_state = kwargs.pop('set_point_state',
+                kwargs.pop('set_point', None))
+        set_point_control = kwargs.pop('set_point_control', None)
+
+        # If no set point is provided,
+        if not set_point_state:
+            pass
+        else:
+            assert len(set_point_state) == self.c_mod.n_dv
+
+        if not set_point_control:
+            pass
+        else:
+            assert len(set_point_control) == self.c_mod.n_iv
+
+        # Q and R are p.s.d. matrices that weigh the state and
+        # control norms in the objective function
+        Q_diagonal = kwargs.pop('Q_diagonal', True)
+        R_diagonal = kwargs.pop('R_diagonal', True)
+
+        Q_matrix = kwargs.pop('Q_matrix', None) 
+        R_matrix = kwargs.pop('R_matrix', None)
+
+        state_weight = kwargs.pop('state_weight', 1)
+        control_weight = kwargs.pop('control_weight', 1)
+
+        # User may want to penalize control action, i.e. ||u_i - u_{i-1}||,
+        # or control error (from set point), i.e. ||u_i - u*||
+        # Valid values are 'action' or 'error'
+        control_penalty_type = kwargs.pop('control_penalty_type', 'action')
+        if not (control_penalty_type == 'action' or
+                control_penalty_type == 'error'):
+            raise ValueError(
+                "control_penalty_type argument must be 'action' or 'error'")
+
+        if not Q_diagonal or not R_diagonal:
+            raise NotImplementedError('Q and R must be diagonal for now.')
+
+        if not Q_matrix:
+            # call function to assemble Q matrix from initial conditions 
+            # and set point
+            pass
+        else:
+            assert len(Q_matrix) == self.c_mod.n_dv
+            # Q_matrix is an iterable of proper dimension.
+            # Still require that we can use it to construct a Pyomo expression
+
+        # Add objective to the model
