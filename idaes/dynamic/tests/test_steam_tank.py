@@ -208,7 +208,7 @@ def test_pid():
             m_dynamic2.fs.tank.control_volume.energy_accumulation[i].value =\
                 m_dynamic.fs.tank.control_volume.energy_accumulation[i].value
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
-    m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i[5]))
+    m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i_end))
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
     solver.solve(m_dynamic2, tee=True)

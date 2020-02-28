@@ -16,6 +16,7 @@ Unit Model Library
     heat_exchanger_1D
     mixer
     pfr
+    pid
     pressure_changer
     product
     pump
@@ -24,4 +25,3 @@ Unit Model Library
     stoichiometric_reactor
     translator
     turbine
-
