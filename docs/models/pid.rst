@@ -24,39 +24,39 @@ PID configuration when the object is created.  The ``pv`` and ``output`` variabl
 model variables, expressions, or references pass the PIDBlock in the configuration
 when the object is created.
 
-+-----------------------+--------------------+-------------------------------------------+
-| Symbol                | Name in Model      | Description                               |
-+=======================+====================+===========================================+
-| :math:`v_{sp}(t)`     | ``setpoint[t]``    | Setpoint variable (usually fixed)         |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`v_{mv}(t)`     | ``pv[t]``          | Measured process variable reference       |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`u(t)`          | ``output[t]``      | Controller output variable reference      |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`K_p(t)`        | ``gain[t]``        | Controller gain  (usually fixed)          |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`T_i(t)`        | ``time_i[t]``      | Integral time (usually fixed)             |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`T_d(t)`        | ``time_d[t]``      | Derivative time (usually fixed)           |
-+-----------------------+--------------------+-------------------------------------------+
-| :math:`e(t)`          | ``err[t]``         | Error expression (setpoint - pv)          |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``err_d[t]``       | Derivative error expression               |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``err_i[t]``       | Integral error expression (standard form) |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``err_d0``         | Initial derivative error value (fixed)    |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``err_i0``         | Initial integral error value (fixed)      |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``err_i_end``      | Last initial integral error expression    |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``limits["h"]``    | Upper limit of output parameter           |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``limits["l"]``    | Lower limit of output parameter           |
-+-----------------------+--------------------+-------------------------------------------+
-| --                    | ``smooth_eps``     | Smooth min/max parameter                  |
-+-----------------------+--------------------+-------------------------------------------+
++-------------------------+--------------------+-------------------------------------------+
+| Symbol                  | Name in Model      | Description                               |
++=========================+====================+===========================================+
+| :math:`v_{sp}(t)`       | ``setpoint[t]``    | Setpoint variable (usually fixed)         |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`v_{mv}(t)`       | ``pv[t]``          | Measured process variable reference       |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`u(t)`            | ``output[t]``      | Controller output variable reference      |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`K_p(t)`          | ``gain[t]``        | Controller gain  (usually fixed)          |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`T_i(t)`          | ``time_i[t]``      | Integral time (usually fixed)             |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`T_d(t)`          | ``time_d[t]``      | Derivative time (usually fixed)           |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`e(t)`            | ``err[t]``         | Error expression (setpoint - pv)          |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``err_d[t]``       | Derivative error expression               |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``err_i[t]``       | Integral error expression (standard form) |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``err_d0``         | Initial derivative error value (fixed)    |
++-------------------------+--------------------+-------------------------------------------+
+| :math:`e_{integral}(0)` | ``err_i0``         | Initial integral error value (fixed)      |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``err_i_end``      | Last initial integral error expression    |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``limits["h"]``    | Upper limit of output parameter           |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``limits["l"]``    | Lower limit of output parameter           |
++-------------------------+--------------------+-------------------------------------------+
+| --                      | ``smooth_eps``     | Smooth min/max parameter                  |
++-------------------------+--------------------+-------------------------------------------+
 
 Formulation
 ===========
@@ -90,7 +90,7 @@ The PID equation now must be discretized.
 
   u(t_i) = K_p \left[
     e(t_i) +
-    \frac{1}{T_i} \sum_{j=0}^{i-1} \Delta t_j \frac{e(t_j) + e(t_{j+1})}{2} +
+    \frac{e_{integral}(0)}{T_i} + \frac{1}{T_i} \sum_{j=0}^{i-1} \Delta t_j \frac{e(t_j) + e(t_{j+1})}{2} +
     T_d \frac{e(t_i) - e(t_{i-1})}{\Delta t_{i-1}} \right]
 
 Velocity Formulation
@@ -143,7 +143,7 @@ Now we can discretize the equation using the trapezoid rule for the integral.
 
   u(t + \Delta t) = u(t) + K_p \left[
     e(t + \Delta t) - e(t) +
-    \frac{\Delta t}{T_i} \left(\frac{e(t+\Delta t) + e(t)}{2} \right)+
+    \frac{\Delta t}{T_i} \left(\frac{e(t+\Delta t) + e(t)}{2} \right) +
     T_d \left( \frac{\text{d}e(t+\Delta t)}{\text{d}t} - \frac{\text{d}e(t)}{\text{d}t}\right)
   \right]
 
