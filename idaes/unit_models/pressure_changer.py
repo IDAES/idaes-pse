@@ -398,79 +398,9 @@ see property package for documentation.}""",
             )
 
         # This assumes isentropic composition is the same as outlet
-        mb_type = self.config.material_balance_type
-        if mb_type == MaterialBalanceType.useDefault:
-            mb_type = (
-                self.control_volume._get_representative_property_block().default_material_balance_type()
-            )
-
-        if mb_type == MaterialBalanceType.componentPhase:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, p, j):
-                return b.properties_isentropic[t].get_material_flow_terms(
-                    p, j
-                ) == b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-
-        elif mb_type == MaterialBalanceType.componentTotal:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                self.config.property_package.component_list,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, j):
-                return sum(
-                    b.properties_isentropic[t].get_material_flow_terms(p, j)
-                    for p in self.config.property_package.phase_list
-                ) == sum(
-                    b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-                    for p in self.config.property_package.phase_list
-                )
-
-        elif mb_type == MaterialBalanceType.total:
-
-            @self.Constraint(
-                self.flowsheet().config.time,
-                doc="Material flows for isentropic properties",
-            )
-            def isentropic_material(b, t, p, j):
-                return sum(
-                    sum(
-                        b.properties_isentropic[t].get_material_flow_terms(p, j)
-                        for j in self.config.property_package.component_list
-                    )
-                    for p in self.config.property_package.phase_list
-                ) == sum(
-                    sum(
-                        b.control_volume.properties_out[t].get_material_flow_terms(p, j)
-                        for j in self.config.property_package.component_list
-                    )
-                    for p in self.config.property_package.phase_list
-                )
-
-        elif mb_type == MaterialBalanceType.elementTotal:
-            raise BalanceTypeNotSupportedError(
-                "{} PressureChanger does not support element balances.".format(
-                    self.name
-                )
-            )
-        elif mb_type == MaterialBalanceType.none:
-            raise BalanceTypeNotSupportedError(
-                "{} PressureChanger does not support material_balance_type"
-                " = none.".format(self.name)
-            )
-        else:
-            raise BurntToast(
-                "{} PressureChanger received an unexpected argument for "
-                "material_balance_type. This should never happen. Please "
-                "contact the IDAES developers with this bug.".format(self.name)
-            )
+        self.add_state_material_balances(self.config.material_balance_type,
+                                         self.properties_isentropic,
+                                         self.control_volume.properties_out)
 
         # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().config.time, doc="Isentropic assumption")
@@ -752,3 +682,33 @@ see property package for documentation.}""",
             var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
+
+@declare_process_block_class("Turbine", doc="Isentropic turbine model")
+class TurbineData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = False
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
+
+@declare_process_block_class("Compressor", doc="Isentropic turbine model")
+class CompressorData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = True
+    CONFIG.get("compressor")._default = True
+    CONFIG.get("compressor")._domain = In([True])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
+
+@declare_process_block_class("Pump", doc="Isentropic turbine model")
+class PumpData(PressureChangerData):
+    # Pressure changer with isentropic turbine options
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = True
+    CONFIG.get("compressor")._default = True
+    CONFIG.get("compressor")._domain = In([True])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.pump
+    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.pump

@@ -25,7 +25,7 @@ import gzip
 
 # Some more inforation about this module
 __author__ = "John Eslick"
-__format_version__ = 3
+__format_version__ = 4
 
 
 def _set_active(o, d):
@@ -181,14 +181,18 @@ class StoreSpec(object):
         classes=(
             (Param, ("_mutable",)),
             (Var, ()),
-            (Component, ("active",))),
+            (Expression, ()),
+            (Component, ("active",)),
+        ),
         data_classes=(
             (pyomo.core.base.var._VarData,
                 ("fixed", "stale", "value", "lb", "ub")),
             (pyomo.core.base.param._ParamData, ("value",)),
             (int, ("value",)),
             (float, ("value",)),
-            (pyomo.core.base.component.ComponentData, ("active",))),
+            (pyomo.core.base.expression._ExpressionData, ()),
+            (pyomo.core.base.component.ComponentData, ("active",)),
+        ),
         skip_classes=(ExternalFunction, Set, Port, Expression, RangeSet),
         ignore_missing=True,
         suffix=True,
@@ -350,7 +354,9 @@ class StoreSpec(object):
                 data_classes=(
                     (pyomo.core.base.var._VarData, ("value", "fixed"), _only_fixed),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",))))
+                    (pyomo.core.base.component.ComponentData, ("active",))),
+                suffix=False,
+            )
         else:
             return cls(
                 classes=(
@@ -360,7 +366,9 @@ class StoreSpec(object):
                 data_classes=(
                     (pyomo.core.base.var._VarData, ("value", "fixed")),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",))))
+                    (pyomo.core.base.component.ComponentData, ("active",))),
+                suffix=False
+            )
 
 def _may_have_subcomponents(o):
     """
