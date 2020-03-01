@@ -1,3 +1,4 @@
+import idaes
 import logging
 import bisect
 import threading
@@ -79,7 +80,7 @@ def __add_methods(log, tag=None):
 
 
 def _getLogger(name, logger_name="idaes", level=None, tag=None):
-    assert tag in _valid_tags
+    assert tag in _valid_tags.union({None})
     if name.startswith("idaes."):
         name = name[6:]
     name = ".".join([logger_name, name])
@@ -210,7 +211,7 @@ def set_log_tags(tags):
         None
     """
     for m in tags:
-        if m not in _valid_tags:
+        if m not in _valid_tags.union({None}):
             raise ValueError("{} is not a valid logging tag".format(m))
     _config["tags"] = set(tags)
 
@@ -223,7 +224,7 @@ def add_log_tag(tag):
     Returns:
         None
     """
-    if tag not in _valid_tags:
+    if tag not in _valid_tags.union({None}):
         raise ValueError("{} is not a valid logging tag".format(tag))
     _config["tags"].add(tag)
 
@@ -247,7 +248,7 @@ def valid_log_tags():
     Returns:
         (set) valid tag names
     """
-    return _valid_tags
+    return _valid_tags.union({None})
 
 def add_valid_log_tag(tag):
     """Add a tag name to the list of valid names.
@@ -258,6 +259,7 @@ def add_valid_log_tag(tag):
     Returns:
         None
     """
+    assert isinstance(tag, str)
     _valid_tags.add(tag)
 
 

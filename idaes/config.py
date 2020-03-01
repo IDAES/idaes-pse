@@ -3,22 +3,40 @@ import logging.config
 import toml
 import os
 import importlib
-import idaes.logger as idaeslog
 
-_log = idaeslog.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 use_idaes_solvers = true
+logger_capture_solver = true
+logger_tags = [
+    "framework",
+    "model",
+    "flowsheet",
+    "unit",
+    "control_volume",
+    "properties",
+    "reactions",
+]
+valid_logger_tags = [
+    "framework",
+    "model",
+    "flowsheet",
+    "unit",
+    "control_volume",
+    "properties",
+    "reactions",
+]
 [logging]
   version = 1
   disable_existing_loggers = false
-  [logging.formatters.f1]
-    format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+  [logging.formatters.default_format]
+    format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     datefmt = "%Y-%m-%d %H:%M:%S"
   [logging.handlers.console]
     class = "logging.StreamHandler"
-    formatter = "f1"
+    formatter = "default_format"
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
     level = "INFO"
@@ -54,6 +72,7 @@ def new_idaes_config_block():
         "use_idaes_solvers",
         pyomo.common.config.ConfigValue(
             default=True,
+            domain=bool,
             description="Add the IDAES bin directory to the path.",
             doc="Add the IDAES bin directory to the path such that solvers provided "
             "by IDAES will be used in preference to previously installed solvers.",
@@ -64,9 +83,37 @@ def new_idaes_config_block():
         "default_binary_url",
         pyomo.common.config.ConfigValue(
             default=None,
+            domain=str,
             description="URL from which to download binaries by default",
         ),
     )
+
+    _config.declare(
+        "valid_logger_tags",
+        pyomo.common.config.ConfigValue(
+            default=set(),
+            domain=set,
+            description="List of valid logger tags",
+        ),
+    )
+
+    _config.declare(
+        "logger_tags",
+        pyomo.common.config.ConfigValue(
+            default=set(),
+            domain=set,
+            description="List of logger tags to allow",
+        ),
+    )
+
+    _config.declare(
+        "logger_capture_solver",
+        pyomo.common.config.ConfigValue(
+            default=True,
+            description="Solver output captured by logger?",
+        ),
+    )
+
     d = toml.loads(default_config)
     _config.set_value(d)
     logging.config.dictConfig(_config["logging"])
