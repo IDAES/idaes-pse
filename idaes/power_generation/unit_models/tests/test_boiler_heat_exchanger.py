@@ -35,7 +35,7 @@ from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 
-from idaes.property_models import iapws95
+from idaes.core_lib.properties import iapws95
 
 # import ideal flue gas prop pack
 from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock

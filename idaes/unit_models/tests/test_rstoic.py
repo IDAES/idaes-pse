@@ -28,9 +28,9 @@ from idaes.core import (FlowsheetBlock,
 
 from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
 
-from idaes.property_models.examples.saponification_thermo import (
+from idaes.core_lib.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
-from idaes.property_models.examples.saponification_reactions import (
+from idaes.core_lib.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,

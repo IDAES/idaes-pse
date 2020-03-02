@@ -41,11 +41,11 @@ from idaes.unit_models.separator import (Separator,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 
-from idaes.property_models.examples.saponification_thermo import (
+from idaes.core_lib.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
-from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-from idaes.property_models import iapws95
+from idaes.core_lib.properties import iapws95
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
