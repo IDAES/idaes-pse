@@ -169,7 +169,7 @@ potentially becoming very large.  This potentially has two affects, increasing
 round off error and computation time.  The velocity formulation allows the controller
 output to be calculated based on the previous output.
 
-Frist the usual PID controller equation can be rearranged to solve for the integral
+First the usual PID controller equation can be rearranged to solve for the integral
 error.
 
 .. math::

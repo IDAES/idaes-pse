@@ -1,4 +1,4 @@
-##############################################################################
+variable##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
@@ -27,7 +27,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 class PIDForm(Enum):
-    """Enum to for the pid ``pid_form`` option either standard or velocity form.""" 
+    """Enum to for the pid ``pid_form`` option either standard or velocity form."""
     standard = 1
     velocity = 2
 
@@ -70,9 +70,9 @@ class PIDBlockData(ProcessBlockData):
         description="Velocity or standard form",
         doc="Velocity or standard form"))
     # TODO<jce> options for P, PI, and PD, you can currently do PI by setting
-    #           the derivative time to 0, this class should handel PI and PID
-    #           controlers. Porprtional only controlers are sufficently differnt
-    #           that another class should be implimented.
+    #           the derivative time to 0, this class should handle PI and PID
+    #           controlers. Porprtional only controlers are sufficently different
+    #           that another class should be implemented.
     # TODO<jce> Anti-windup the integral term can keep accumulating error when
     #           the controller output is at a bound. This can cause trouble,
     #           and ways to deal with it should be implemented
@@ -84,7 +84,7 @@ class PIDBlockData(ProcessBlockData):
     #           point change or transition from manual to automatic control.
 
     def _build_standard(self, time_set, t0):
-        # Want to fix the output varaible at the first time step to make
+        # Want to fix the output variable at the first time step to make
         # solving easier. This calculates the initial integral error to line up
         # with the initial output value, keeps the controller from initially
         # jumping.
@@ -99,8 +99,8 @@ class PIDBlockData(ProcessBlockData):
             return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
                                    *(t - time_set.prev(t))/2.0
                                   for t in time_set if t <= t_end and t > t0)
-        # Calculate the unconstrainted controller output
-        @self.Expression(time_set, doc="Unconstrained contorler output")
+        # Calculate the unconstrained controller output
+        @self.Expression(time_set, doc="Unconstrained controller output")
         def unconstrained_output(b, t):
             return b.gain[t]*(
                 b.pterm[t] +

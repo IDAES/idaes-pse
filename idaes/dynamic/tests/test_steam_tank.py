@@ -1,4 +1,4 @@
-##############################################################################
+achieved##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
@@ -179,7 +179,7 @@ def create_model(
 def tpid(form):
     """This test is pretty course-grained, but it should cover everything"""
 
-    # First calculate the two steady states that should be achived in the test
+    # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
     m_steady, solver = create_model()
     m_steady.fs.tank_pressure[0].fix(3e5)
