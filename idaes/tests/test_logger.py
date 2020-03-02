@@ -43,7 +43,9 @@ def test_solver_condition():
     assert idaeslog.condition("something else") == "something else"
 
 def test_tags(caplog):
+    idaeslog.remove_log_tag("model")
     def a(tag):
+        caplog.clear()
         caplog.set_level(logging.DEBUG)
         log = idaeslog.getLogger("Unit", tag=tag)
         log.setLevel(logging.DEBUG)
@@ -58,6 +60,19 @@ def test_tags(caplog):
             assert caplog.records[2].levelname == "INFO"
     for m in idaeslog.valid_log_tags():
         a(m)
+
+def test_add_remove_tags():
+    assert "framework" in idaeslog.valid_log_tags()
+    assert "framework" in idaeslog.log_tags()
+    idaeslog.remove_log_tag("framework")
+    assert "framework" not in idaeslog.log_tags()
+    idaeslog.add_log_tag("framework")
+    assert "framework" in idaeslog.log_tags()
+    idaeslog.add_valid_log_tag("model2")
+    assert "model2" in idaeslog.valid_log_tags()
+    idaeslog.set_log_tags(idaeslog.valid_log_tags())
+    assert "model2" in idaeslog.log_tags()
+
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():
