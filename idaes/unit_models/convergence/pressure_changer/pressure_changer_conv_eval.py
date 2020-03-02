@@ -17,7 +17,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.pressure_changer import PressureChanger
 
 # Import property package for testing
-from idaes.property_models import iapws95 as pp
+from idaes.core_lib.properties import iapws95 as pp
 '''
 This module contains the code for convergence testing of the
 PressureChanger model

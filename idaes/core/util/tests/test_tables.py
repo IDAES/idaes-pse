@@ -27,8 +27,8 @@ from idaes.core.util.tables import (create_stream_table_dataframe,
                                     stream_table_dataframe_to_string,
                                     generate_table)
 
-import idaes.property_models.examples.saponification_thermo as thermo_props
-import idaes.property_models.examples.saponification_reactions as rxn_props
+import idaes.core_lib.properties.examples.saponification_thermo as thermo_props
+import idaes.core_lib.properties.examples.saponification_reactions as rxn_props
 from idaes.unit_models import CSTR
 
 

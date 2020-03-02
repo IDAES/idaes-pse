@@ -18,7 +18,7 @@ The example below demonstrates the basic Compressor model usage:
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Compressor
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
   m = pyo.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})

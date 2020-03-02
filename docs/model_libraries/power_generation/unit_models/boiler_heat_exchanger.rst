@@ -28,7 +28,7 @@ and override the default temperature difference calculation.
     # Import IDAES core
     from idaes.core import FlowsheetBlock
     # Import Unit Model Modules
-    from idaes.property_models import iapws95
+    from idaes.core_lib.properties import iapws95
     # import ideal flue gas prop pack
     from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
     # Import Power Plant HX Unit Model
@@ -37,7 +37,7 @@ and override the default temperature difference calculation.
     import pyomo.environ as pe # Pyomo environment
     from idaes.core import FlowsheetBlock, StateBlock
     from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
-    from idaes.property_models import iapws95
+    from idaes.core_lib.properties import iapws95
 
     # Create a Concrete Model as the top level object
     m = ConcreteModel()
