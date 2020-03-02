@@ -36,7 +36,7 @@ from idaes.unit_models import Heater
 from idaes.property_models import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
-from idaes.dynamic import PIDBlock
+from idaes.dynamic import PIDBlock, PIDForm
 
 solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
@@ -56,7 +56,13 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
         if t >= time:
             m.fs.valve_1.inlet.pressure[t].fix(value)
 
-def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
+def create_model(
+    steady_state=True,
+    time_set=[0,3],
+    nfe=5,
+    calc_integ=True,
+    form=PIDForm.standard
+):
     """ Create a test model and solver
 
     Args:
@@ -67,6 +73,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
         calc_integ (bool): If Ture, calculate in the initial condition for
             the integral term, else use a fixed variable (fs.ctrl.err_i0), flase
             is the better option if you have a value from a previous time period
+        form: whether the equations are written in the standard or velocity form
 
     Returns
         (tuple): (ConcreteModel, Solver)
@@ -125,7 +132,8 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
                                   "output":m.fs.valve_1.valve_opening,
                                   "upper":1.0,
                                   "lower":0.0,
-                                  "calculate_initial_integral":calc_integ})
+                                  "calculate_initial_integral":calc_integ,
+                                  "pid_form":form})
     m.fs.ctrl.deactivate() # Don't want controller turned on by default
     # Fix the input variables
     m.fs.valve_1.inlet.enth_mol.fix(50000)
@@ -158,11 +166,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     # Return the model and solver
     return m, solver
 
-@pytest.mark.slow
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_pid():
+def tpid(form):
     """This test is pretty course-grained, but it should cover everything"""
     # Fisrt calculate the two steady states that should be achived in the test
     # don't worry these steady state problems solve super fast
@@ -176,8 +180,13 @@ def test_pid():
     solver.solve(m_steady, tee=True)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
     # Next create a model for the 0 to 5 sec time period
-    m_dynamic, solver = create_model(steady_state=False,
-                                     time_set=[0,5], nfe=10, calc_integ=True)
+    m_dynamic, solver = create_model(
+        steady_state=False,
+        time_set=[0,5],
+        nfe=10,
+        calc_integ=True,
+        form=form,
+    )
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
@@ -190,8 +199,13 @@ def test_pid():
     # Now create a model for the 5 to 10 second interval and set the inital
     # conditions of the first model to the final (unsteady) state of the
     # previous time interval model
-    m_dynamic2, solver = create_model(steady_state=False,
-                                     time_set=[5,10], nfe=10, calc_integ=False)
+    m_dynamic2, solver = create_model(
+        steady_state=False,
+        time_set=[5,10],
+        nfe=10,
+        calc_integ=False,
+        form=form,
+    )
 
     m_dynamic2.fs.valve_1.valve_opening.fix(
         m_dynamic.fs.valve_1.valve_opening[5].value)
@@ -242,3 +256,19 @@ def test_pid():
         i = j + len(m_dynamic.fs.time)
         assert t == stitch_time[i]
         assert m_dynamic2.fs.valve_1.valve_opening[t] == stitch_valve[i]
+
+@pytest.mark.slow
+@pytest.mark.solver
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_pid_velocity():
+    """This test is pretty course-grained, but it should cover everything"""
+    tpid(PIDForm.velocity)
+
+@pytest.mark.slow
+@pytest.mark.solver
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_pid_standard():
+    """This test is pretty course-grained, but it should cover everything"""
+    tpid(PIDForm.standard)
