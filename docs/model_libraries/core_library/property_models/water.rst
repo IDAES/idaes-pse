@@ -25,7 +25,7 @@ Theses modules can be imported as:
 
   from idaes.core_lib.properties import iapws95
 
-The Heater unit model :ref:`example <models/heater:Example>`, provides a simple
+The Heater unit model :ref:`example <model_libraries/core_library/unit_models/heater:Example>`, provides a simple
 example for using water properties.
 
 .. testcode::
@@ -134,7 +134,7 @@ variables is better.
 
 Although not generally used, the wrapper provides direct access to the
 ExternalFunctions, including intermediate functions. For more information see
-section :ref:`ExternalFunctions <property_models/water:ExternalFunctions>`.
+section :ref:`ExternalFunctions <model_libraries/core_library/property_models/water:ExternalFunctions>`.
 These are mostly available for testing purposes.
 
 Phase Presentation
