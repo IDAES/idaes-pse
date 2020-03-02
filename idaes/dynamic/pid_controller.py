@@ -119,8 +119,8 @@ class PIDBlockData(ProcessBlockData):
                 return b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0]\
                        - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
 
-        # Calculate the unconstrainted controller output
-        @self.Expression(time_set, doc="Unconstrained contorler output")
+        # Calculate the unconstrained controller output
+        @self.Expression(time_set, doc="Unconstrained controller output")
         def unconstrained_output(b, t):
             if t == t0: # do the standard first step so I have a previous time
                         # for the rest of the velocity form
