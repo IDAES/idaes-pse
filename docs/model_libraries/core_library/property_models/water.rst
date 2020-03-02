@@ -142,7 +142,7 @@ Phase Presentation
 
 The property package wrapper can present fluid phase information to the
 IDAES framework in different ways.  See the
-:ref:`class reference <property_models/water:Iapws95ParameterBlock Class>` for details
+:ref:`class reference <model_libraries/core_library/property_models/water:Iapws95ParameterBlock Class>` for details
 on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
 looks like one phase called "Mix" to the IDAES framework. The property
 package will calculate a phase fraction. This will bypass any two phase
