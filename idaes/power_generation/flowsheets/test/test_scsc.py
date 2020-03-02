@@ -21,7 +21,7 @@ import pyomo.environ as pyo
 from idaes.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import main
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
-from idaes.core_lib.properties import iapws95
+from idaes.generic_models.properties import iapws95
 
 
 solver_available = pyo.SolverFactory('ipopt').available()
