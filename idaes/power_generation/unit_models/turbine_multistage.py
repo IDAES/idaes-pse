@@ -38,7 +38,7 @@ from idaes.core import (
     MaterialBalanceType,
     useDefault,
 )
-from idaes.unit_models import (
+from idaes.core_lib.unit_models import (
     Separator,
     Mixer,
     SplittingType,

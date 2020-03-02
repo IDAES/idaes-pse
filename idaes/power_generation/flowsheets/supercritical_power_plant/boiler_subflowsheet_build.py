@@ -59,17 +59,17 @@ from idaes.core.util.misc import svg_tag
 from idaes.core import FlowsheetBlock
 
 # Import Unit Model Modules
-from idaes.property_models import iapws95
+from idaes.core_lib.properties import iapws95
 
 # Import Property Modules
 from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
 
 # Import Unit Model Modules
-from idaes.unit_models import Heater, Mixer
+from idaes.core_lib.unit_models import Heater, Mixer
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
 
-from idaes.unit_models.separator import Separator, SplittingType, \
+from idaes.core_lib.unit_models.separator import Separator, SplittingType, \
                 EnergySplittingType
 from pyomo.common.fileutils import this_file_dir
 from collections import OrderedDict
