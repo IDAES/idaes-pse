@@ -22,9 +22,9 @@ from pyomo.environ import (ConcreteModel,
                            value)
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed import Feed
-from idaes.property_models.examples.saponification_thermo import (
+from idaes.core_lib.properties.examples.saponification_thermo import (
                         SaponificationParameterBlock)
-from idaes.property_models import iapws95
+from idaes.core_lib.properties import iapws95
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
