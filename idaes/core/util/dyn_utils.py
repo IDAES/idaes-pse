@@ -62,6 +62,7 @@ def is_explicitly_indexed_by(comp, *sets):
         set_set = set(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
 
+
 def is_implicitly_indexed_by(comp, s, stop_at=None):
     """
     Function for determining whether a component is contained in a 
@@ -99,6 +100,7 @@ def is_implicitly_indexed_by(comp, s, stop_at=None):
             parent = parent.parent_block()
     # Return False if top-level block was reached
     return False
+
 
 def get_index_set_except(comp, *sets):
     """ 
@@ -191,6 +193,7 @@ def get_index_set_except(comp, *sets):
     info['index_getter'] = index_getter
     return info
 
+
 def _complete_index(loc, index, *newvals):
     """
     Function for inserting new values into a partial index.
@@ -221,6 +224,7 @@ def _complete_index(loc, index, *newvals):
         index = index[0:i] + newval + index[i:]
     return index
 
+
 def get_activity_dict(b):
     """
     Function that builds a dictionary telling whether or not each
@@ -236,6 +240,7 @@ def get_activity_dict(b):
     """
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
+
 
 def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
     """
@@ -290,6 +295,7 @@ def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
                  
     return deactivated
 
+
 def deactivate_constraints_unindexed_by(b, time):
     """
     Searches block b for and constraints not indexed by time
@@ -319,6 +325,7 @@ def deactivate_constraints_unindexed_by(b, time):
                     conlist.append(compdata)
 
     return conlist
+
 
 def fix_vars_unindexed_by(b, time):
     """
@@ -354,6 +361,7 @@ def fix_vars_unindexed_by(b, time):
                     varlist.append(vardata)
 
     return varlist
+
 
 def get_derivatives_at(b, time, pts):
     """
@@ -394,6 +402,7 @@ def get_derivatives_at(b, time, pts):
                 dvdict[pt].append(var[index])
 
     return dvdict
+
 
 # TODO: should be able to replace this function everywhere
 #       with getname and find_component
@@ -438,6 +447,76 @@ def path_from_block(comp, blk, include_comp=False):
         else:
             route.append((comp.parent_component().local_name, None))
     return route
+
+
+def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
+    """
+    Function to set the values of all variables that are not (implicitly
+    or explicitly) indexed by time to their values in a different flowsheet.
+
+    Args:
+        fs_tgt : Flowsheet into which values will be copied.
+        fs_src : Flowsheet from which values will be copied.
+        copy_fixed : Bool marking whether or not to copy over fixed variables
+                     in the target flowsheet.
+
+    Returns:
+        None
+    """
+    time_tgt = fs_tgt.time
+
+    var_visited = set()
+    for var_tgt in fs_tgt.component_objects(Var,
+                                            descend_into=False):
+        if id(var_tgt) in var_visited:
+            continue
+        var_visited.add(id(var_tgt))
+
+        if is_explicitly_indexed_by(var_tgt, time_tgt):
+            continue
+        var_src = fs_src.find_component(var_tgt.local_name)
+        # ^ this find_component is fine because var_tgt is a Var not VarData
+        # and its local_name is used
+        for index in var_tgt:
+            if not copy_fixed and var_tgt[index].fixed:
+                continue
+            var_tgt[index].set_value(var_src.value)
+
+    blk_visited = set()
+    for blk_tgt in fs_tgt.component_objects(Block):
+
+        if id(blk_tgt) in blk_visited:
+            continue
+        blk_visited.add(id(blk_tgt))
+
+        if (is_implicitly_indexed_by(blk_tgt, time_tgt) or 
+                is_explicitly_indexed_by(blk_tgt, time_tgt)):
+            continue
+        # block is not even implicitly indexed by time
+        for b_index in blk_tgt:
+
+            var_visited = set()
+            for var_tgt in blk_tgt[b_index].component_objects(Var,
+                                                     descend_into=False):
+                if id(var_tgt) in var_visited:
+                    continue
+                var_visited.add(id(var_tgt))
+
+                if is_explicitly_indexed_by(var_tgt, time_tgt):
+                    continue
+    
+                # can't used find_component(local_name) here because I might
+                # have decimal indices
+                local_parent = fs_src
+                for r in path_from_block(var_tgt, fs_tgt):
+                    local_parent = getattr(local_parent, r[0])[r[1]]
+                var_src = getattr(local_parent, var_tgt.local_name)
+    
+                for index in var_tgt:
+                    if not copy_fixed and var_tgt[index].fixed:
+                        continue
+                    var_tgt[index].set_value(var_src[index].value)
+
 
 def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
         copy_fixed=True, outlvl=idaeslog.NOTSET):

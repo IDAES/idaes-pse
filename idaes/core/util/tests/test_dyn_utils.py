@@ -333,8 +333,57 @@ def test_fix_and_deactivate():
             for c2 in m.set2:
                 assert m.fs.b2[m.time[1], x].b3[c1].v[c2].value == -1
 
+def test_copy_non_time_indexed_values():
+    m1 = ConcreteModel()
+    m1.time = Set(initialize=[1,2,3,4,5])
+    m1.v1 = Var(m1.time, initialize=1)
+    m1.v2 = Var(initialize=1)
+    @m1.Block(['a','b'])
+    def b1(b, i):
+        b.v3 = Var(initialize=1)
+
+        @b.Block(m1.time)
+        def b2(b, t):
+            b.v4 = Var(initialize=1)
+
+        @b.Block()
+        def b4(b):
+            b.v6 = Var(initialize=1)
+            
+    @m1.Block(m1.time)
+    def b3(b, t):
+        b.v5 = Var(initialize=1)
+
+    m2 = ConcreteModel()
+    m2.time = Set(initialize=[1,2,3,4,5])
+    m2.v1 = Var(m2.time, initialize=2)
+    m2.v2 = Var(initialize=2)
+    @m2.Block(['a','b'])
+    def b1(b):
+        b.v3 = Var(initialize=2)
+
+        @b.Block(m2.time)
+        def b2(b, t):
+            b.v4 = Var(initialize=2)
+
+        @b.Block()
+        def b4(b):
+            b.v6 = Var(initialize=2)
+
+    @m2.Block(m1.time)
+    def b3(b, t):
+        b.v5 = Var(initialize=2)
+
+    copy_non_time_indexed_values(m1, m2)
+    assert m1.v1[1].value != m2.v1[1].value
+    assert m1.v2.value == m2.v2.value == 2
+    assert m1.b1['a'].v3.value == m2.b1['a'].v3.value == 2
+    assert m1.b1['b'].b4.v6.value == m2.b1['b'].b4.v6.value == 2
+    assert m1.b3[3].v5.value != m2.b3[3].v5.value
+
 
 if __name__ == "__main__":
     test_is_indexed_by()
     test_get_index_set_except()
     test_fix_and_deactivate()
+    test_copy_non_time_indexed_values()
