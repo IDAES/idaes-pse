@@ -1,1 +1,1 @@
-from idaes.core_lib.control.pid_controller import PIDBlock
+from idaes.core_lib.control.pid_controller import PIDBlock, PIDForm
