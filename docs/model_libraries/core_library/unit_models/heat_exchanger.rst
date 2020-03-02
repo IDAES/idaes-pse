@@ -2,13 +2,13 @@ HeatExchanger (0D)
 ==================
 
 .. index::
-   pair: idaes.core_lib.unit_models.heat_exchanger;HeatExchanger
+   pair: idaes.generic_models.unit_models.heat_exchanger;HeatExchanger
 
-.. currentmodule:: idaes.core_lib.unit_models.heat_exchanger
+.. currentmodule:: idaes.generic_models.unit_models.heat_exchanger
 
-The HeatExchanger model can be imported from :code:`idaes.core_lib.unit_models`,
+The HeatExchanger model can be imported from :code:`idaes.generic_models.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.core_lib.unit_models.heat_exchanger``.
+``idaes.generic_models.unit_models.heat_exchanger``.
 
 Example
 -------
@@ -20,9 +20,9 @@ override the default temperature difference calculation.
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
-  from idaes.core_lib.unit_models import HeatExchanger
-  from idaes.core_lib.unit_models.heat_exchanger import delta_temperature_amtd_callback
-  from idaes.core_lib.properties import iapws95
+  from idaes.generic_models.unit_models import HeatExchanger
+  from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_amtd_callback
+  from idaes.generic_models.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
@@ -129,7 +129,7 @@ Callbacks
 ---------
 
 A selection of functions for constructing the ``delta_temperature`` variable or
-expression are provided in the ``idaes.core_lib.unit_models.heat_exchanger`` module.
+expression are provided in the ``idaes.generic_models.unit_models.heat_exchanger`` module.
 The user may also provide their own function. These callbacks should all take
 one argument (the HeatExchanger block). With the block argument, the function
 can add any additional variables, constraints, and expressions needed.  The only
