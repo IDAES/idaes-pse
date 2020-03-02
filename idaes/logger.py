@@ -24,7 +24,7 @@ _valid_tags = set(
 
 _config = {
     "solver_capture":True,
-    "tags": set(["framework", "model", "flowsheet", "unit"]),
+    "tags": set(_valid_tags), # by default show all valid tags
 }
 
 
@@ -247,7 +247,7 @@ def valid_log_tags():
     Returns:
         (set) valid tag names
     """
-    return _config["tags"]
+    return _valid_tags
 
 def add_valid_log_tag(tag):
     """Add a tag name to the list of valid names.
@@ -258,7 +258,7 @@ def add_valid_log_tag(tag):
     Returns:
         None
     """
-    _config["tags"].add(tag)
+    _valid_tags.add(tag)
 
 
 class IOToLogTread(threading.Thread):
