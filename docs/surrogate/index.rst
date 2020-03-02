@@ -8,6 +8,7 @@ Surrogate modeling
     alamopy
     ripe
     helmet
+    pysmo/index
 
 
 ALAMOpy, RIPE, and HELMET are
@@ -22,3 +23,7 @@ framework (on which IDAES is also based).
 
 .. image:: ../_images/ddm-software.png
     :width: 600px
+    
+.. image:: pysmo/pysmo-captioned.png
+    :width: 400px
+    :align: center
