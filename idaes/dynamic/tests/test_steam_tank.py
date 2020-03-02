@@ -192,7 +192,6 @@ def tpid(form):
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     # Next create a model for the 0 to 5 sec time period
-<<<<<<< HEAD
     m_dynamic, solver = create_model(
         steady_state=False,
         time_set=[0,5],
@@ -200,11 +199,7 @@ def tpid(form):
         calc_integ=True,
         form=form,
     )
-=======
-    m_dynamic, solver = create_model(steady_state=False,
-                                     time_set=[0,5], nfe=10, calc_integ=True)
 
->>>>>>> 32ef6131ff7a38e21605ece46cc8586155ff351e
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
