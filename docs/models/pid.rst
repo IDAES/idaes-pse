@@ -6,8 +6,78 @@ Proportional-Integral-Derivative (PID) Controller
 
 .. currentmodule:: idaes.dynamic.pid_controller
 
+The IDAES framework contains a basic PID control implementation, which is described
+in this section.
+
+Example
+-------
+
+The following code demonstrated the creation of a PIDBlock, but for simplicity, it does
+not create a dynamic process model.  A full example of a dynamic process with PID control
+is being prepared for the IDAES examples repository and will be referenced here once completed.
+
+The valve opening is the controlled output variable and pressure "1" is the measured variable.
+The controller output for the valve opening is restricted to be between 0 and 1. The measured
+and output variables should be indexed only by time.  Fortunately there is no need to create
+new variables if the variables are in a property block or not indexed only by time. Pyomo's
+Reference objects can be use to create references to existing variables with the proper
+indexing as shown in the example.
+
+The ``calculate_initial_integral`` option calculates the integral error in the first time
+step to match the initial controller output.  This keeps the controller output from
+immediately jumping to a new value.  Unless the initial integral error is known, this option
+should usually be True.
+
+The controller should be added after the DAE expansion is done. There are several variables
+in the controller that are usually meant to be fixed; as shown in the example, they are
+``gain``, ``time_i``, ``time_d``, and ``setpoint``.  For more information about the
+variables, expressions, and parameters in the PIDBlock, model see :ref:`PIDVarsSection`.
+
+.. testcode::
+
+  from idaes.dynamic import PIDBlock, PIDForm
+  from idaes.core import FlowsheetBlock
+  import pyomo.environ as pyo
+
+  m = pyo.ConcreteModel(name="PID Example")
+  m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":[0,10]})
+
+  m.fs.valve_opening = pyo.Var(m.fs.time, doc="Valve opening")
+  m.fs.pressure = pyo.Var(m.fs.time, [1,2], doc="Pressure in unit 1 and 2")
+
+  pyo.TransformationFactory('dae.finite_difference').apply_to(
+      m.fs,
+      nfe=10,
+      wrt=m.fs.time,
+      scheme='BACKWARD',
+  )
+
+  m.fs.measured_variable = pyo.Reference(m.fs.pressure[:,1])
+
+  m.fs.ctrl = PIDBlock(
+      default={
+          "pv":m.fs.measured_variable,
+          "output":m.fs.valve_opening,
+          "upper":1.0,
+          "lower":0.0,
+          "calculate_initial_integral":True,
+          "pid_form":PIDForm.velocity,
+      }
+  )
+
+  m.fs.ctrl.gain.fix(1e-6)
+  m.fs.ctrl.time_i.fix(0.1)
+  m.fs.ctrl.time_d.fix(0.1)
+  m.fs.ctrl.setpoint.fix(3e5)
+
+Controller Windup
+-----------------
+
+The current PID controller model has no integral windup prevention. This will be added
+to the model in the near future.
+
 Class Documentation
-===================
+-------------------
 
 .. autoclass:: PIDBlock
    :members:
@@ -15,14 +85,10 @@ Class Documentation
 .. autoclass:: PIDBlockData
    :members:
 
-Variables and Expressions
-=========================
+.. _PIDVarsSection:
 
-To setup a PID block, once it's created you generally need to set the setpoint, gain,
-integral time, and derivative time.  The controller output limits should be set in the
-PID configuration when the object is created.  The ``pv`` and ``output`` variables should be
-model variables, expressions, or references pass the PIDBlock in the configuration
-when the object is created.
+Variables and Expressions
+-------------------------
 
 +-------------------------+--------------------+-------------------------------------------+
 | Symbol                  | Name in Model      | Description                               |
@@ -59,7 +125,7 @@ when the object is created.
 +-------------------------+--------------------+-------------------------------------------+
 
 Formulation
-===========
+-----------
 
 There are two forms of the PID controller equation.  The standard formulation
 can result in equations with very large summations.  In the velocity form of the
@@ -72,7 +138,7 @@ the default choice. Both forms are provided in case the standard form works bett
 in some situations.
 
 Standard Formulation
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 The PID controller equations are given by the following equations
 
@@ -94,7 +160,7 @@ The PID equation now must be discretized.
     T_d \frac{e(t_i) - e(t_{i-1})}{\Delta t_{i-1}} \right]
 
 Velocity Formulation
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 The velocity formulation of the PID equation may also be useful.  The way the
 equations are written in the PID model, the integral term is a summation expression
@@ -165,14 +231,14 @@ Now the velocity form of the PID controller equation can be calculated at each t
 point from just the state at the previous time point.
 
 Substitution
-------------
+~~~~~~~~~~~~
 
-In both the proportional and integral terms error can be replaced with the negative
+In both the proportional and integral terms, error can be replaced with the negative
 measured process variable yielding equivalent results. This substitution is provided
 by the PID class and is done by default.
 
 Output Limits
--------------
+~~~~~~~~~~~~~
 
 Smooth min and smooth max expressions are used to keep the controller output between
 a minimum and maximum value.
