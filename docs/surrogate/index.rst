@@ -21,8 +21,8 @@ access ALAMO and other solvers through the Python API.
 
 .. image:: ../_images/pysmo-logo.png
     :width: 300px
+    :align: center
 
 Python-based Surrogate Modeling Objects (PySMO) is a framework for general-purpose
 surrogate modeling techniques, integrated with the Pyomo mathematical optimization
 framework (on which IDAES is also based).
-
