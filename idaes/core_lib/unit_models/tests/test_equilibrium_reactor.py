@@ -24,7 +24,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.equilibrium_reactor import EquilibriumReactor
+from idaes.core_lib.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.core_lib.properties.examples.saponification_thermo import (
                         SaponificationParameterBlock)
 from idaes.core_lib.properties.examples.saponification_reactions import (

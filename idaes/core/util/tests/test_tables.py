@@ -29,7 +29,7 @@ from idaes.core.util.tables import (create_stream_table_dataframe,
 
 import idaes.core_lib.properties.examples.saponification_thermo as thermo_props
 import idaes.core_lib.properties.examples.saponification_reactions as rxn_props
-from idaes.unit_models import CSTR
+from idaes.core_lib.unit_models import CSTR
 
 
 @pytest.fixture()

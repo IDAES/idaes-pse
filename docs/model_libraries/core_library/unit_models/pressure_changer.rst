@@ -95,7 +95,7 @@ If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 PressureChanger Class
 ----------------------
 
-.. module:: idaes.unit_models.pressure_changer
+.. module:: idaes.core_lib.unit_models.pressure_changer
 
 .. autoclass:: PressureChanger
   :members:

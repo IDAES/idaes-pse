@@ -45,7 +45,7 @@ where :math:`g_{partial,t,j}` is the partial molar Gibbs energy of component :ma
 GibbsReactor Class
 ------------------
 
-.. module:: idaes.unit_models.gibbs_reactor
+.. module:: idaes.core_lib.unit_models.gibbs_reactor
 
 .. autoclass:: GibbsReactor
   :members:

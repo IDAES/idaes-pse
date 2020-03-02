@@ -29,7 +29,7 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
-from idaes.unit_models.pressure_changer import (
+from idaes.core_lib.unit_models.pressure_changer import (
     PressureChanger,
     PressureChangerData,
     Turbine,

@@ -80,7 +80,7 @@ from idaes.power_generation.unit_models import (  # power generation unit models
     TurbineMultistage,
     FWH0D,
 )
-from idaes.unit_models import (  # basic IDAES unit models, and enum
+from idaes.core_lib.unit_models import (  # basic IDAES unit models, and enum
     Mixer,
     HeatExchanger,
     PressureChanger,
@@ -91,10 +91,10 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
 # Callback used to construct heat exchangers with the Underwood approx. for LMTD
-from idaes.unit_models.heat_exchanger import delta_temperature_underwood_callback
+from idaes.core_lib.unit_models.heat_exchanger import delta_temperature_underwood_callback
 
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
-from idaes.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.core_lib.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
 
 _log = idaeslog.getModelLogger(__name__, logging.INFO)

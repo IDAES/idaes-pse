@@ -23,7 +23,7 @@ Variables
 
 Feed blocks add no additional Variables.
 
-.. module:: idaes.unit_models.feed
+.. module:: idaes.core_lib.unit_models.feed
 
 Feed Class
 ----------

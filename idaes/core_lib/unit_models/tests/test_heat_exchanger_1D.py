@@ -22,9 +22,9 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
-from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
-from idaes.unit_models.heat_exchanger_1D import WallConductionType
-from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.core_lib.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
+from idaes.core_lib.unit_models.heat_exchanger_1D import WallConductionType
+from idaes.core_lib.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock

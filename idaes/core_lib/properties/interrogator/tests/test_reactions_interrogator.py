@@ -10,7 +10,7 @@ import pytest
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models import CSTR, PFR
+from idaes.core_lib.unit_models import CSTR, PFR
 from idaes.core_lib.properties.interrogator import (
         PropertyInterrogatorBlock, ReactionInterrogatorBlock)
 

@@ -21,7 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            value)
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.product import Product
+from idaes.core_lib.unit_models.product import Product
 
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
