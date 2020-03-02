@@ -24,7 +24,7 @@ import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflo
 from idaes.power_generation.flowsheets.supercritical_power_plant.SCPC_full_plant import import_steam_cycle
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
-from idaes.core_lib.properties import iapws95
+from idaes.generic_models.properties import iapws95
 import argparse
 
 solver_available = pyo.SolverFactory('ipopt').available()
