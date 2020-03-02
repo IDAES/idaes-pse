@@ -50,7 +50,6 @@ Contents
     model_libraries/index
     vis/index
     dmf/index
-    pysmo/index
     surrogate/index
     version
     jupyterlab/index
