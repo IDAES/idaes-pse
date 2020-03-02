@@ -117,6 +117,6 @@ This argument allows users to specify a method for calculating the dew pressure 
 Pure Component Property Options
 -------------------------------
 
-The remaining options allow users to select methods to use for calculating each pure component property, and users must provide a selection for every method that will be used within their process flowsheet. A full list of supported pure component properties can be found :ref:`here<property_models/general/pure:Supported Properties>`.
+The remaining options allow users to select methods to use for calculating each pure component property, and users must provide a selection for every method that will be used within their process flowsheet. A full list of supported pure component properties can be found :ref:`here<model_libraries/core_library/property_models/general/pure:Supported Properties>`.
 
 
