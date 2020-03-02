@@ -14,7 +14,7 @@ An example of how Property Interrogator tool is used is shown below:
 
     import pyomo.environ as pyo  # Pyomo environment
     from idaes.core import FlowsheetBlock
-    from idaes.unit_models import CSTR
+    from idaes.core_lib.unit_models import CSTR
     from idaes.core_lib.properties.interrogator import PropertyInterrogatorBlock, ReactionInterrogatorBlock
 
     m = pyo.ConcreteModel()

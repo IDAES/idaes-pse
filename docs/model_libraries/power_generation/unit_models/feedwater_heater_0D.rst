@@ -25,7 +25,7 @@ The example below shows how to setup a feedwater heater with all tree sections. 
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.unit_models.heat_exchanger import (delta_temperature_underwood_callback,
+  from idaes.core_lib.unit_models.heat_exchanger import (delta_temperature_underwood_callback,
       delta_temperature_lmtd_callback)
   from idaes.core_lib.properties import iapws95
   from idaes.power_generation.unit_models import FWH0D
