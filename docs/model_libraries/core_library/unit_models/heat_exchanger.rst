@@ -22,7 +22,7 @@ override the default temperature difference calculation.
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import HeatExchanger
   from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
-  from idaes.property_models import iapws95
+  from idaes.core_lib.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()

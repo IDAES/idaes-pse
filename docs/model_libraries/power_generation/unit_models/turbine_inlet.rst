@@ -20,7 +20,7 @@ Example
     from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
     from idaes.core import FlowsheetBlock
     from idaes.power_generation.unit_models import TurbineInletStage
-    from idaes.property_models import iapws95
+    from idaes.core_lib.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

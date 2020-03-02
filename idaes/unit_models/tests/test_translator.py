@@ -22,9 +22,9 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.translator import Translator
 
-from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-from idaes.property_models.examples.saponification_thermo import \
+from idaes.core_lib.properties.examples.saponification_thermo import \
     SaponificationParameterBlock
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
