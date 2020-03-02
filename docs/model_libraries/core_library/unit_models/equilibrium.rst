@@ -38,7 +38,7 @@ Variable         Name   Notes
 :math:`Q_t`      heat   Only if ``has_heat_transfer`` = ``True``, reference to ``control_volume.heat``
 ================ ====== =========================================================================================================================
 
-.. module:: idaes.core_lib.unit_models.equilibrium_reactor
+.. module:: idaes.generic_models.unit_models.equilibrium_reactor
 
 EquilibriumReactor Class
 ------------------------

@@ -32,13 +32,13 @@ from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
 from idaes.dmf.ui.icon_mapping import icon_mapping
 from idaes.dmf.ui.link_position_mapping import link_position_mapping
 
-from idaes.core_lib.unit_models import (Flash,
+from idaes.generic_models.unit_models import (Flash,
                                PressureChanger,
                                Mixer,
                                Separator as Splitter,
                                Heater,
                                StoichiometricReactor)
-from idaes.core_lib.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
 
 
 def test_serialize_flowsheet():

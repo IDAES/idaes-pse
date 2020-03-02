@@ -92,7 +92,7 @@ If `energy_split_basis` is `enthalpy_split`:
 Separator Class
 ---------------
 
-.. module:: idaes.core_lib.unit_models.separator
+.. module:: idaes.generic_models.unit_models.separator
 
 .. autoclass:: Separator
   :members:
