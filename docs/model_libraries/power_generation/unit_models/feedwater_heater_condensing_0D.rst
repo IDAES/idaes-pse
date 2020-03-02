@@ -6,7 +6,7 @@ Feedwater Heater (Condensing Section 0D)
 
 .. module:: idaes.power_generation.unit_models.feedwater_heater_0D
 
-The condensing feedwater heater is the same as the :ref:`HeatExchanger <model_libraries/core_library/unit_models/heat_exchanger:HeatExchanger (0D)>` model with one additional constraint to calculate the inlet flow rate such that all the entering steam is condensed.  This model is suitable for steady state modeling, and is intended to be used with the :ref:`IAWPS95 <property_models/water:Water/Steam - IAPWS95>` property package.  For dynamic modeling, the 1D feedwater heater models should be used (not yet publicly available).
+The condensing feedwater heater is the same as the :ref:`HeatExchanger <model_libraries/core_library/unit_models/heat_exchanger:HeatExchanger (0D)>` model with one additional constraint to calculate the inlet flow rate such that all the entering steam is condensed.  This model is suitable for steady state modeling, and is intended to be used with the :ref:`IAWPS95 <model_libraries/core_library/property_models/water:Water/Steam - IAPWS95>` property package.  For dynamic modeling, the 1D feedwater heater models should be used (not yet publicly available).
 
 Degrees of Freedom
 ------------------

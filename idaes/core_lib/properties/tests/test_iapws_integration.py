@@ -21,7 +21,7 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models import Heater, HeatExchanger
+from idaes.core_lib.unit_models import Heater, HeatExchanger
 from idaes.core_lib.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType

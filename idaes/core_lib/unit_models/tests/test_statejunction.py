@@ -23,7 +23,7 @@ from pyomo.environ import (ConcreteModel,
                            value)
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.statejunction import StateJunction
+from idaes.core_lib.unit_models.statejunction import StateJunction
 
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock

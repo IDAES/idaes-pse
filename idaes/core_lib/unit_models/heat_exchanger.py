@@ -52,7 +52,7 @@ from idaes.core import (
 import idaes.logger as idaeslog
 from idaes.core.util.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.unit_models.heater import (
+from idaes.core_lib.unit_models.heater import (
     _make_heater_config_block,
     _make_heater_control_volume,
 )

@@ -25,7 +25,7 @@ Theses modules can be imported as:
 
   from idaes.core_lib.properties import iapws95
 
-The Heater unit model :ref:`example <models/heater:Example>`, provides a simple
+The Heater unit model :ref:`example <model_libraries/core_library/unit_models/heater:Example>`, provides a simple
 example for using water properties.
 
 .. testcode::
@@ -134,7 +134,7 @@ variables is better.
 
 Although not generally used, the wrapper provides direct access to the
 ExternalFunctions, including intermediate functions. For more information see
-section :ref:`ExternalFunctions <property_models/water:ExternalFunctions>`.
+section :ref:`ExternalFunctions <model_libraries/core_library/property_models/water:ExternalFunctions>`.
 These are mostly available for testing purposes.
 
 Phase Presentation
@@ -142,7 +142,7 @@ Phase Presentation
 
 The property package wrapper can present fluid phase information to the
 IDAES framework in different ways.  See the
-:ref:`class reference <property_models/water:Iapws95ParameterBlock Class>` for details
+:ref:`class reference <model_libraries/core_library/property_models/water:Iapws95ParameterBlock Class>` for details
 on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
 looks like one phase called "Mix" to the IDAES framework. The property
 package will calculate a phase fraction. This will bypass any two phase

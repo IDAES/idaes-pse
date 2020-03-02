@@ -11,20 +11,23 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for CSTR unit model.
-Authors: Andrew Lee, Vibhav Dabadghao
-"""
+Tests for ControlVolumeBlockData.
 
+Author: Andrew Lee
+"""
 import pytest
+
 from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           Var)
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.cstr import CSTR
+from idaes.core_lib.unit_models.plug_flow_reactor import PFR
+
 from idaes.core_lib.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.core_lib.properties.examples.saponification_reactions import (
@@ -34,7 +37,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               fixed_variables_set,
                                               activated_constraints_set,
-                                              number_unused_variables)
+                                              number_unused_variables,
+                                              number_derivative_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock)
@@ -54,11 +58,11 @@ def test_config():
     m.fs.reactions = ReactionParameterTestBlock(default={
                             "property_package": m.fs.properties})
 
-    m.fs.unit = CSTR(default={"property_package": m.fs.properties,
-                              "reaction_package": m.fs.reactions})
+    m.fs.unit = PFR(default={"property_package": m.fs.properties,
+                             "reaction_package": m.fs.reactions})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
+    assert len(m.fs.unit.config) == 19
 
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.useDefault
@@ -74,6 +78,12 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.reaction_package is m.fs.reactions
 
+    assert m.fs.unit.config.length_domain_set == [0.0, 1.0]
+    assert m.fs.unit.config.transformation_method == "dae.finite_difference"
+    assert m.fs.unit.config.transformation_scheme == "BACKWARD"
+    assert m.fs.unit.config.finite_elements == 20
+    assert m.fs.unit.config.collocation_points == 3
+
 
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
@@ -86,18 +96,17 @@ class TestSaponification(object):
         m.fs.reactions = SaponificationReactionParameterBlock(default={
                                 "property_package": m.fs.properties})
 
-        m.fs.unit = CSTR(default={"property_package": m.fs.properties,
-                                  "reaction_package": m.fs.reactions,
-                                  "has_equilibrium_reactions": False,
-                                  "has_heat_transfer": True,
-                                  "has_heat_of_reaction": True,
-                                  "has_pressure_change": True})
+        m.fs.unit = PFR(default={"property_package": m.fs.properties,
+                                 "reaction_package": m.fs.reactions,
+                                 "has_equilibrium_reactions": False,
+                                 "has_heat_transfer": True,
+                                 "has_heat_of_reaction": True,
+                                 "has_pressure_change": True})
 
         return m
 
     @pytest.mark.build
     def test_build(self, sapon):
-
         assert hasattr(sapon.fs.unit, "inlet")
         assert len(sapon.fs.unit.inlet.vars) == 4
         assert hasattr(sapon.fs.unit.inlet, "flow_vol")
@@ -112,17 +121,21 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit.outlet, "temperature")
         assert hasattr(sapon.fs.unit.outlet, "pressure")
 
-        assert hasattr(sapon.fs.unit, "cstr_performance_eqn")
-        assert hasattr(sapon.fs.unit, "volume")
+        assert isinstance(sapon.fs.unit.area, Var)
+        assert isinstance(sapon.fs.unit.length, Var)
+        assert isinstance(sapon.fs.unit.volume, Var)
+        assert hasattr(sapon.fs.unit, "performance_eqn")
+        assert hasattr(sapon.fs.unit.control_volume, "heat")
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
-        assert number_variables(sapon) == 27
-        assert number_total_constraints(sapon) == 16
-        assert number_unused_variables(sapon) == 0
+        assert number_variables(sapon) == 675
+        assert number_total_constraints(sapon) == 616
+        assert number_unused_variables(sapon) == 9
+        assert number_derivative_variables(sapon) == 0
 
     def test_dof(self, sapon):
-        sapon.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        sapon.fs.unit.inlet.flow_vol.fix(1.0)
         sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
         sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
         sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
@@ -132,7 +145,9 @@ class TestSaponification(object):
         sapon.fs.unit.inlet.temperature.fix(303.15)
         sapon.fs.unit.inlet.pressure.fix(101325.0)
 
-        sapon.fs.unit.volume.fix(1.5e-03)
+        sapon.fs.unit.length.fix(0.5)
+        sapon.fs.unit.area.fix(0.1)
+
         sapon.fs.unit.heat_duty.fix(0)
         sapon.fs.unit.deltaP.fix(0)
 
@@ -175,10 +190,10 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(304.09, abs=1e-2) ==
-                value(sapon.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(20.32, abs=1e-2) ==
+                sapon.fs.unit.outlet.pressure[0].value)
+        assert (pytest.approx(303.6, abs=1e-2) ==
+                sapon.fs.unit.outlet.temperature[0].value)
+        assert (pytest.approx(62.29, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
     @pytest.mark.initialize
@@ -195,8 +210,14 @@ class TestSaponification(object):
                               for j in sapon.fs.properties.component_list)))
                 <= 1e-6)
 
-        assert (pytest.approx(3904.51, abs=1e-2) == value(
-                sapon.fs.unit.control_volume.heat_of_reaction[0]))
+        hrxn = 0
+        for x in sapon.fs.unit.control_volume.length_domain:
+            if x != 0:
+                hrxn += value(
+                    sapon.fs.unit.control_volume.heat_of_reaction[0, x] *
+                    (x-sapon.fs.unit.control_volume.length_domain.prev(x)) *
+                    sapon.fs.unit.control_volume.length)
+        assert (pytest.approx(1847000, abs=1e3) == hrxn)
         assert abs(value(
                 (sapon.fs.unit.inlet.flow_vol[0] *
                  sapon.fs.properties.dens_mol *
@@ -208,7 +229,7 @@ class TestSaponification(object):
                  sapon.fs.properties.cp_mol *
                  (sapon.fs.unit.outlet.temperature[0] -
                   sapon.fs.properties.temperature_ref)) +
-                sapon.fs.unit.control_volume.heat_of_reaction[0])) <= 1e-3
+                hrxn)) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, sapon):

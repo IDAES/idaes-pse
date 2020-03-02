@@ -32,7 +32,7 @@ import pyomo.environ as pyo
 from pyomo.network import Arc
 from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.unit_models import Heater
+from idaes.core_lib.unit_models import Heater
 from idaes.core_lib.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic

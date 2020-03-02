@@ -97,7 +97,7 @@ deltaP         Reference to control_volume.deltaP
 Flash Class
 -----------
 
-.. module:: idaes.unit_models.flash
+.. module:: idaes.core_lib.unit_models.flash
 
 .. autoclass:: Flash
     :members:

@@ -41,7 +41,7 @@ from idaes.core import (
     FlowDirection,
     useDefault,
 )
-from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
+from idaes.core_lib.unit_models.heat_exchanger import HeatExchangerFlowPattern
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError

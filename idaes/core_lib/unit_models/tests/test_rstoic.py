@@ -26,7 +26,7 @@ from idaes.core import (FlowsheetBlock,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
-from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
+from idaes.core_lib.unit_models.stoichiometric_reactor import StoichiometricReactor
 
 from idaes.core_lib.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)

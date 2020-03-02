@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel, TerminationCondition,
 
 from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, \
     MomentumBalanceType
-from idaes.unit_models.distillation import Reboiler
+from idaes.core_lib.unit_models.distillation import Reboiler
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \

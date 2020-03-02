@@ -30,7 +30,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.unit_models.separator import (Separator,
+from idaes.core_lib.unit_models.separator import (Separator,
                                          SplittingType,
                                          EnergySplittingType)
 

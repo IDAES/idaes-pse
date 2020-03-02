@@ -34,7 +34,7 @@ Variable         Name   Notes
 :math:`Q_t`      heat   Only if ``has_heat_transfer`` = ``True``, reference to ``control_volume.heat``
 ================ ====== =========================================================================================================================
 
-.. module:: idaes.unit_models.cstr
+.. module:: idaes.core_lib.unit_models.cstr
 
 CSTR Class
 ----------

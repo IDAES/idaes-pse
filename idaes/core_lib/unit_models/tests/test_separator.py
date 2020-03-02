@@ -34,7 +34,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         StateBlockData,
                         PhysicalParameterBlock)
-from idaes.unit_models.separator import (Separator,
+from idaes.core_lib.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType,
                                          EnergySplittingType)

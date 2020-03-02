@@ -2,13 +2,13 @@ HeatExchanger (0D)
 ==================
 
 .. index::
-   pair: idaes.unit_models.heat_exchanger;HeatExchanger
+   pair: idaes.core_lib.unit_models.heat_exchanger;HeatExchanger
 
-.. currentmodule:: idaes.unit_models.heat_exchanger
+.. currentmodule:: idaes.core_lib.unit_models.heat_exchanger
 
-The HeatExchanger model can be imported from :code:`idaes.unit_models`,
+The HeatExchanger model can be imported from :code:`idaes.core_lib.unit_models`,
 while additional rules and utility functions can be imported from
-``idaes.unit_models.heat_exchanger``.
+``idaes.core_lib.unit_models.heat_exchanger``.
 
 Example
 -------
@@ -20,8 +20,8 @@ override the default temperature difference calculation.
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
-  from idaes.unit_models import HeatExchanger
-  from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
+  from idaes.core_lib.unit_models import HeatExchanger
+  from idaes.core_lib.unit_models.heat_exchanger import delta_temperature_amtd_callback
   from idaes.core_lib.properties import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
@@ -70,7 +70,7 @@ side.  Aside from the sign convention there is no requirement that the hot side 
 than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
-:ref:`Heater model <models/heater:Heater>`. The ``HeatExchanger`` model contains additional
+:ref:`Heater model <model_libraries/core_library/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
 constraints that calculate the amount of heat transferred from the hot side to the cold side.
 
 The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
@@ -95,7 +95,7 @@ than the specified hot side this value will be negative.
 Constraints
 -----------
 
-The default constants can be overridden by providing :ref:`alternative rules <models/heat_exchanger:Callbacks>` for
+The default constants can be overridden by providing :ref:`alternative rules <model_libraries/core_library/unit_models/heat_exchanger:Callbacks>` for
 the heat transfer equation, temperature difference, and heat transfer coefficient. The section
 describes the default constraints.
 
@@ -117,7 +117,7 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <models/heat_exchanger:Example>`.
+  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <model_libraries/core_library/unit_models/heat_exchanger:Example>`.
 
 .. autoclass:: HeatExchanger
    :members:
@@ -129,7 +129,7 @@ Callbacks
 ---------
 
 A selection of functions for constructing the ``delta_temperature`` variable or
-expression are provided in the ``idaes.unit_models.heat_exchanger`` module.
+expression are provided in the ``idaes.core_lib.unit_models.heat_exchanger`` module.
 The user may also provide their own function. These callbacks should all take
 one argument (the HeatExchanger block). With the block argument, the function
 can add any additional variables, constraints, and expressions needed.  The only

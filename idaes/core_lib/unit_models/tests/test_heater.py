@@ -26,7 +26,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models import Heater
+from idaes.core_lib.unit_models import Heater
 
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock

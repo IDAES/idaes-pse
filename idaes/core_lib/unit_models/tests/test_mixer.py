@@ -37,7 +37,7 @@ from idaes.core_lib.properties import iapws95
 from idaes.core_lib.properties.examples.saponification_thermo import \
     SaponificationParameterBlock
 
-from idaes.unit_models.mixer import (Mixer,
+from idaes.core_lib.unit_models.mixer import (Mixer,
                                      MixerData,
                                      MixingType,
                                      MaterialBalanceType,

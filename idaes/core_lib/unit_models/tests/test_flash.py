@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.flash import Flash, EnergySplittingType
+from idaes.core_lib.unit_models.flash import Flash, EnergySplittingType
 from idaes.core_lib.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core_lib.properties import iapws95

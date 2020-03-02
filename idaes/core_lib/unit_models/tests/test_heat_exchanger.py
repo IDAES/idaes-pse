@@ -30,7 +30,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
+from idaes.core_lib.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 

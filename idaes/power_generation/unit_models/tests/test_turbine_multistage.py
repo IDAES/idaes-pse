@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TransformationFactory,
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models import Heater
+from idaes.core_lib.unit_models import Heater
 from idaes.power_generation.unit_models import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.core_lib.properties import iapws95

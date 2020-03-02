@@ -10,10 +10,10 @@ import pytest
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.unit_models import Flash, HeatExchanger1D
-from idaes.unit_models.pressure_changer import (PressureChanger,
+from idaes.core_lib.unit_models import Flash, HeatExchanger1D
+from idaes.core_lib.unit_models.pressure_changer import (PressureChanger,
                                                 ThermodynamicAssumption)
-from idaes.unit_models.separator import Separator, SplittingType
+from idaes.core_lib.unit_models.separator import Separator, SplittingType
 from idaes.core_lib.properties.interrogator import PropertyInterrogatorBlock
 
 

@@ -109,7 +109,7 @@ The `mixture_pressure(t)` and `pressure_equality_constraints(t, i)` can be direc
 Mixer Class
 -----------
 
-.. module:: idaes.unit_models.mixer
+.. module:: idaes.core_lib.unit_models.mixer
 
 .. autoclass:: Mixer
   :members:

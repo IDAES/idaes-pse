@@ -14,7 +14,7 @@ import idaes.core.util.convergence.convergence_base as cb
 import pyomo.environ as pe
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.pressure_changer import PressureChanger
+from idaes.core_lib.unit_models.pressure_changer import PressureChanger
 
 # Import property package for testing
 from idaes.core_lib.properties import iapws95 as pp
