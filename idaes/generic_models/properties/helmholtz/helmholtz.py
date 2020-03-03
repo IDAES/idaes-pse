@@ -58,7 +58,7 @@ _log = idaeslog.getLogger(__name__)
 
 def _available(shared_lib):
     """Make sure the compiled library functions are available. Yes, in Windows
-    the .so extention is still used.
+    the .so extension is still used.
     """
     return os.path.isfile(shared_lib)
 
@@ -85,15 +85,18 @@ class PhaseType(enum.Enum):
 
 def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
     """
-    Convenience function to calculate steam enthalpy from temperature and
-    either pressure or vapor fraction. This function can be used for inlet
-    streams and initialization where temperature is known instead of enthalpy.
+    Convenience function to calculate enthalpy from temperature and either
+    pressure or vapor fraction. This function can be used for inlet streams and
+    initialization where temperature is known instead of enthalpy.
 
-    User must provided values for one (and only one) of arguments P and x.
+    User must provide values for one (and only one) of arguments P and x.
 
     Args:
         T: Temperature [K] (between Tmin and Tmax)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        Tmin: Lower bound on allowed temperatures
+        Tmax: Upper bound on allowed temperatures
+        prop: Property block to use for the enthalpy calcuations
+        P: Pressure [Pa] (between 1 and 1e9), None if saturated
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
@@ -144,7 +147,7 @@ class HelmholtzParameterBlockData(PhysicalParameterBlock):
 appears to the framework to be a mixed phase containing liquid and/or vapor.
 The mixed option can simplify calculations at the unit model level since it can
 be treated as a single phase, but unit models such as flash vessels will not be
-able to treate the phases indepedently. The LG option presents as two sperate
+able to treat the phases independently. The LG option presents as two separate
 phases to the framework. The L or G options can be used if it is known for sure
 that only one phase is present.
 **default** - PhaseType.MIX
@@ -416,17 +419,12 @@ class _StateBlock(StateBlock):
 
 class HelmholtzStateBlockData(StateBlockData):
     """
-    This is a property package for calculating thermophysical properties of
-    water
+    This is a base clase for Helmholtz equations of state using IDAES standard
+    Helmholtz EOS external functions written in C++.
     """
 
-    def initialize(self, *args, **kwargs):
-        # With this particualr property pacakage there is not need for
-        # initialization
-        pass
-
     def _external_functions(self):
-        """Create ExternalFunction components.  This includeds some external
+        """Create ExternalFunction components.  This includes some external
         functions that are not usually used for testing purposes."""
         plib = self.config.parameters.plib
         self.func_p = EF(library=plib, function="p")
@@ -575,7 +573,7 @@ class HelmholtzStateBlockData(StateBlockData):
             priv_plist, rule=rule_dens_red, doc="reduced density [unitless]"
         )
 
-        # If there is only one phase fix the vapor fraction appropriatly
+        # If there is only one phase fix the vapor fraction appropriately
         if len(plist) == 1:
             if "Vap" in plist:
                 self.vapor_frac.fix(1.0)
@@ -607,7 +605,10 @@ class HelmholtzStateBlockData(StateBlockData):
         # Check if the library is available.
         self.available = self.config.parameters.available
         if not self.available:
-            _log.error("Library file not found. Was it compiled?")
+            _log.error("Library file '{}' not found. Was it installed?".format(
+                    self.config.parameter.plib
+                )
+            )
 
         # Add external functions
         self._external_functions()
