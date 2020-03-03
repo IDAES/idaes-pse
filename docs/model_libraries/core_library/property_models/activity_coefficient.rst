@@ -231,7 +231,7 @@ Initialization
 
 Config Block Documentation
 --------------------------
-.. module:: idaes.core_lib.properties.activity_coeff_models.activity_coeff_prop_pack
+.. module:: idaes.generic_models.properties.activity_coeff_models.activity_coeff_prop_pack
 
 .. autoclass:: ActivityCoeffParameterBlock
    :members:
