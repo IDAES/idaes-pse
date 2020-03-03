@@ -61,7 +61,7 @@ _log = logging.getLogger(__name__)
 
 # Use DMF workspace in this file's directory
 this_dir = pathlib.Path(__file__).parent.absolute()
-_dmf = DMF(str(this_dir))
+_dmf = DMF(str(this_dir), create=True)
 
 
 @declare_process_block_class("HDAParameterBlock")

@@ -52,6 +52,7 @@ Contents
     vis/index
     dmf/index
     surrogate/index
+    apps/index
     version
     jupyterlab/index
     developer/index
