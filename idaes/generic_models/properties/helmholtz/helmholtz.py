@@ -423,6 +423,11 @@ class HelmholtzStateBlockData(StateBlockData):
     Helmholtz EOS external functions written in C++.
     """
 
+    def initialize(self, *args, **kwargs):
+        # With this particualr property pacakage there is not need for
+        # initialization
+        pass
+
     def _external_functions(self):
         """Create ExternalFunction components.  This includes some external
         functions that are not usually used for testing purposes."""
