@@ -127,15 +127,15 @@ logger_capture_solver
 If a solver call is done from inside a solver logging context, this setting will
 send the solver output to the logger if ``true``, and not capture the solver output
 for the logger if ``false``.  If solver output is not captured it will be sent to
-screen, and not be logged.
+the screen, and not be logged.
 
 logger_tags
 ~~~~~~~~~~~
 
 Loggers created with the ``idaes.logging`` module can be assigned tags.  Output
-from these loggers is recorded if the loggers tag is the ``logger_tags`` set.
+from these loggers is recorded if the loggers tag is in the ``logger_tags`` set.
 The default behavior can be configured in a configuration file. The tag set can
-also be modified at any time in via functions in the ``idaes.logging`` module.
+also be modified at any time via functions in the ``idaes.logging`` module.
 
 
 valid_log_tags
