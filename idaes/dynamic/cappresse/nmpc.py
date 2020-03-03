@@ -34,6 +34,34 @@ import pdb
 __author__ = "Robert Parker and David Thierry"
 
 
+# TODO: move this to dyn_utils module
+def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
+    """
+    Returns:
+        Component with the same name in the target block
+    """
+    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+    init_log = idaeslog.getInitLogger(__name__, outlvl)
+
+    allow_miss = kwargs.pop('allow_miss', False)
+
+    local_parent = src_block
+    for r in path_from_block(src_comp, src_block, include_comp=True):
+        # Better name for include_comp might be include_leaf
+        try:
+            local_parent = getattr(local_parent, r[0])[r[1]]
+        except AttributeError:
+            init_log.warning('Warning.')
+            if not allow_miss:
+                raise
+        except KeyError:
+            init_log.warning('Warning.')
+            if not allow_miss:
+                raise
+    tgt_comp = local_parent
+    return tgt_comp
+
+
 class VarLocator(object):
     """
     Class for storing information used to locate a VarData object.
