@@ -16,12 +16,22 @@ PID controller block
 
 __author__ = "John Eslick"
 
+from enum import Enum
+
 import pyomo.environ as pyo
 
 from idaes.core import ProcessBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In
 from idaes.core.util.math import smooth_max, smooth_min
 from idaes.core.util.exceptions import ConfigurationError
+from pyomo.dae import ContinuousSet
+
+
+class PIDForm(Enum):
+    """Enum to for the pid ``pid_form`` option either standard or velocity form."""
+    standard = 1
+    velocity = 2
+
 
 @declare_process_block_class("PIDBlock", doc=
     """This is a PID controller block. The PID Controller block must be added
@@ -55,12 +65,15 @@ class PIDBlockData(ProcessBlockData):
                     " otherwise provide a variable err_i0, which can be fixed",
         doc="Calculate the initial integral term value if true, otherwise"
             " provide a variable err_i0, which can be fixed, default=True"))
-    # other options can be added, but this covers the bare minimum
-    #
+    CONFIG.declare("pid_form", ConfigValue(
+        default=PIDForm.velocity,
+        domain=In(PIDForm),
+        description="Velocity or standard form",
+        doc="Velocity or standard form"))
     # TODO<jce> options for P, PI, and PD, you can currently do PI by setting
-    #           the derivative time to 0, but it would be better not to
-    #           add the derivative term at all if not needed.  PD and P are less
-    #           common, but they exist and should be supported
+    #           the derivative time to 0, this class should handle PI and PID
+    #           controllers. Proportional, only controllers are sufficiently
+    #           different that another class should be implemented.
     # TODO<jce> Anti-windup the integral term can keep accumulating error when
     #           the controller output is at a bound. This can cause trouble,
     #           and ways to deal with it should be implemented
@@ -70,16 +83,80 @@ class PIDBlockData(ProcessBlockData):
     #           for the first time point to calculate integral error to keep the
     #           controller output from suddenly jumping in response to a set
     #           point change or transition from manual to automatic control.
-    # TODO<jce> Implement the integral term using variables.  The integral
-    #           expressions are nice because initialization is not required and
-    #           they reduce the total number of variables, but they there is an
-    #           integral expression and each time and the later ones contain a
-    #           very large number of terms.
+
+    def _build_standard(self, time_set, t0):
+        # Want to fix the output variable at the first time step to make
+        # solving easier. This calculates the initial integral error to line up
+        # with the initial output value, keeps the controller from initially
+        # jumping.
+        if self.config.calculate_initial_integral:
+            @self.Expression(doc="Initial integral error")
+            def err_i0(b):
+                return b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0]\
+                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
+        # integral error
+        @self.Expression(time_set, doc="Integral error")
+        def err_i(b, t_end):
+            return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
+                                   *(t - time_set.prev(t))/2.0
+                                  for t in time_set if t <= t_end and t > t0)
+        # Calculate the unconstrained controller output
+        @self.Expression(time_set, doc="Unconstrained controller output")
+        def unconstrained_output(b, t):
+            return b.gain[t]*(
+                b.pterm[t] +
+                1.0/b.time_i[t]*b.err_i[t] +
+                b.time_d[t]*b.err_d[t]
+            )
+
+        @self.Expression(doc="Initial integral error at the end")
+        def err_i_end(b):
+            return b.err_i[time_set.last()]
+
+    def _build_velocity(self, time_set, t0):
+        if self.config.calculate_initial_integral:
+            @self.Expression(doc="Initial integral error")
+            def err_i0(b):
+                return b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0]\
+                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
+
+        # Calculate the unconstrained controller output
+        @self.Expression(time_set, doc="Unconstrained controller output")
+        def unconstrained_output(b, t):
+            if t == t0: # do the standard first step so I have a previous time
+                        # for the rest of the velocity form
+                return b.gain[t]*(
+                    b.pterm[t] +
+                    1.0/b.time_i[t]*b.err_i0 +
+                    b.time_d[t]*b.err_d[t]
+                )
+            tb = time_set.prev(t) # time back a step
+            return self.output[tb] + self.gain[t]*(
+                b.pterm[t] - b.pterm[tb] +
+                (t - tb)/b.time_i[t]*(b.err[t] + b.err[tb])/2 +
+                b.time_d[t]*(b.err_d[t] - b.err_d[tb])
+            )
+
+        @self.Expression(doc="Initial integral error at the end")
+        def err_i_end(b):
+            tl = time_set.last()
+            return b.time_i[tl]*(b.output[tl] - b.gain[tl]*b.pterm[tl]\
+                   - b.gain[tl]*b.time_d[tl]*b.err_d[tl])/b.gain[tl]
+
 
     def build(self):
         """
         Build the PID block
         """
+        if isinstance(self.flowsheet().time, ContinuousSet):
+            # time may not be a continuous set if you have a steady state model
+            # in the steady state model case obviously the controller should
+            # not be active, but you can still add it.
+            if 'scheme' not in self.flowsheet().time.get_discretization_info():
+                # if you have a dynamic model, must do time discretization
+                # before adding the PID model
+                raise RunTimeError("PIDBlock must be added after time discretization")
+
         super().build() # do the ProcessBlockData voodoo for config
         # Check for required config
         if self.config.pv is None:
@@ -136,27 +213,12 @@ class PIDBlockData(ProcessBlockData):
             else:
                 return (b.dterm[t] - b.dterm[time_set.prev(t)])\
                        /(t - time_set.prev(t))
-        # Want to fix the output varaible at the first time step to make
-        # solving easier. This calculates the initial integral error to line up
-        # with the initial output value, keeps the controller from initially
-        # jumping.
-        if self.config.calculate_initial_integral:
-            @self.Expression(doc="Initial integral error")
-            def err_i0(b):
-                return b.time_i[t0]*(b.output[0] - b.gain[t0]*b.pterm[t0]\
-                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
-        # integral error
-        @self.Expression(time_set, doc="Integral error")
-        def err_i(b, t_end):
-            return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
-                                   *(t - time_set.prev(t))/2.0
-                                  for t in time_set if t <= t_end and t > t0)
-        # Calculate the unconstrainted controller output
-        @self.Expression(time_set, doc="Unconstrained contorler output")
-        def unconstrained_output(b, t):
-            return b.gain[t]*(b.pterm[t] +
-                              1.0/b.time_i[t]*b.err_i[t] +
-                              b.time_d[t]*b.err_d[t])
+
+        if self.config.pid_form == PIDForm.standard:
+            self._build_standard(time_set, t0)
+        else:
+            self._build_velocity(time_set, t0)
+
         # Add the controller output constraint and limit it with smooth min/max
         e = self.smooth_eps
         h = self.limits["h"]

@@ -797,7 +797,7 @@ class TidyUnitData:
     into a pandas DataFrame. A convenience method is provided for returning
     the data in a format easily dealt with when creating unit block parameters.
     Note that the keys in the preceding dictionary match the names of the
-    parameters in the constructor (so you can pass this directly in as '**arg').
+    parameters in the constructor (so you can pass this directly in as `**arg`).
 
     Attributes:
         units (list): Units for each column, None where no units are defined

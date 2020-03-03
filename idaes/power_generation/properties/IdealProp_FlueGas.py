@@ -11,8 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Basic property package for flue gas
-main assumptions:
+Basic property package for flue gas.
+
+Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
