@@ -69,7 +69,7 @@ def get_module_version(mod):
     Args:
         mod (module): Python module
     Returns:
-        (str) Version string or None if not found
+        (str): Version string or None if not found
     Raises:
         ValueError if version is found but not valid
     """
@@ -91,7 +91,7 @@ def get_module_author(mod):
     Args:
         mod (module): Python module
     Returns:
-        (str) Author string or None if not found
+        (str): Author string or None if not found
     Raises:
         nothing
     """
@@ -117,8 +117,16 @@ class TempDir(object):
 
 
 def is_jupyter_notebook(filename, check_contents=True):
-    # type: (str) -> bool
+    # type: (str, bool) -> bool
     """See if this is a Jupyter notebook.
+
+    Args:
+        filename (str): Full path to file
+        check_contents (bool): Check contents of filename in addition to
+            if filename extension is `.ipynb`
+
+    Returns:
+        (bool): If filename is a jupyter notebook
     """
     if not filename.endswith(".ipynb"):
         return False
@@ -154,7 +162,7 @@ def is_resource_json(filename, max_bytes=1e6):
              be stored somewhere with a record size limit (like MongoDB).
 
     Returns:
-        (bool) Whether it's a resource JSON file.
+        (bool): Whether it's a resource JSON file.
     """
     if not filename.endswith(".json"):
         return False
@@ -184,7 +192,7 @@ def datetime_timestamp(v):
         v (datetime.datetime): Date/time value
 
     Returns:
-        (float) Floating point timestamp
+        (float): Floating point timestamp
     """
     if hasattr(v, "timestamp"):  # Python 2/3 test
         # Python 2
