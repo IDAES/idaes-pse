@@ -23,7 +23,7 @@ Variables
 
 Product blocks add no additional Variables.
 
-.. module:: idaes.core_lib.unit_models.product
+.. module:: idaes.generic_models.unit_models.product
 
 Product Class
 -------------
