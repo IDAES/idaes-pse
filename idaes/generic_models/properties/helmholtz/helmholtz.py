@@ -57,7 +57,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def _available(shared_lib):
-    """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
+    """Make sure the compiled library functions are available. Yes, in Windows
     the .so extention is still used.
     """
     return os.path.isfile(shared_lib)
@@ -604,7 +604,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
         self.scaling_expression = Suffix()
 
-        # Check if the IAPWS library is available.
+        # Check if the library is available.
         self.available = self.config.parameters.available
         if not self.available:
             _log.error("Library file not found. Was it compiled?")
@@ -705,7 +705,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         elif self.state_vars == StateVars.TPX:
             self._tpx_phase_eq()
-        delta = self.dens_phase_red  # this shorter name is from IAPWS
+        delta = self.dens_phase_red
 
         # Phase property expressions all converted to SI
 
