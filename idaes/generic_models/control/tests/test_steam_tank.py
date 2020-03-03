@@ -36,7 +36,7 @@ from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
-from idaes.generic_models.control import PIDBlock
+from idaes.generic_models.control import PIDBlock, PIDForm
 
 solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
@@ -56,7 +56,13 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
         if t >= time:
             m.fs.valve_1.inlet.pressure[t].fix(value)
 
-def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
+def create_model(
+    steady_state=True,
+    time_set=[0,3],
+    nfe=5,
+    calc_integ=True,
+    form=PIDForm.standard
+):
     """ Create a test model and solver
 
     Args:
@@ -67,6 +73,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
         calc_integ (bool): If Ture, calculate in the initial condition for
             the integral term, else use a fixed variable (fs.ctrl.err_i0), flase
             is the better option if you have a value from a previous time period
+        form: whether the equations are written in the standard or velocity form
 
     Returns
         (tuple): (ConcreteModel, Solver)
@@ -77,6 +84,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     else:
         fs_cfg = {"dynamic":True, "time_set":time_set}
         model_name = "Steam Tank, Dynamic"
+
     m = pyo.ConcreteModel(name=model_name)
     m.fs = FlowsheetBlock(default=fs_cfg)
     # Create a property parameter block
@@ -97,36 +105,44 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
         "has_holdup":False,
         "material_balance_type":MaterialBalanceType.componentTotal,
         "property_package":m.fs.prop_water})
+
     # Connect the models
     m.fs.v1_to_t = Arc(source=m.fs.valve_1.outlet, destination=m.fs.tank.inlet)
     m.fs.t_to_v2 = Arc(source=m.fs.tank.outlet, destination=m.fs.valve_2.inlet)
+
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect
     # liquid to form but who knows. The phase_fraction in the control volume is
-    # volumetric phase fraction hense the densities.
+    # volumetric phase fraction hence the densities.
     @m.fs.tank.Constraint(m.fs.time)
     def vol_frac_vap(b, t):
         return b.control_volume.properties_out[t].phase_frac["Vap"]\
             *b.control_volume.properties_out[t].dens_mol\
             /b.control_volume.properties_out[t].dens_mol_phase["Vap"]\
             == b.control_volume.phase_fraction[t, "Vap"]
+
     # Add the stream constraints and do the DAE transformation
     pyo.TransformationFactory('network.expand_arcs').apply_to(m.fs)
     if not steady_state:
         pyo.TransformationFactory('dae.finite_difference').apply_to(
             m.fs, nfe=nfe, wrt=m.fs.time, scheme='BACKWARD')
+
     # Fix the derivative variables to zero at time 0 (steady state assumption)
     m.fs.fix_initial_conditions()
+
     # A tank pressure reference that's directly time-indexed
     m.fs.tank_pressure = pyo.Reference(
         m.fs.tank.control_volume.properties_out[:].pressure)
+
     # Add a controller
     m.fs.ctrl = PIDBlock(default={"pv":m.fs.tank_pressure,
                                   "output":m.fs.valve_1.valve_opening,
                                   "upper":1.0,
                                   "lower":0.0,
-                                  "calculate_initial_integral":calc_integ})
+                                  "calculate_initial_integral":calc_integ,
+                                  "pid_form":form})
     m.fs.ctrl.deactivate() # Don't want controller turned on by default
+
     # Fix the input variables
     m.fs.valve_1.inlet.enth_mol.fix(50000)
     m.fs.valve_1.inlet.pressure.fix(5e5)
@@ -141,6 +157,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     m.fs.ctrl.time_i.fix(0.1)
     m.fs.ctrl.time_d.fix(0.1)
     m.fs.ctrl.setpoint.fix(3e5)
+
     # Initialize the model
     solver = pyo.SolverFactory("ipopt")
     solver.options = {'tol': 1e-6,
@@ -155,16 +172,14 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     _set_port(m.fs.valve_2.inlet, m.fs.tank.outlet)
     m.fs.valve_2.initialize(outlvl=1)
     solver.solve(m, tee=True)
+
     # Return the model and solver
     return m, solver
 
-@pytest.mark.slow
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_pid():
+def tpid(form):
     """This test is pretty course-grained, but it should cover everything"""
-    # Fisrt calculate the two steady states that should be achived in the test
+
+    # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
     m_steady, solver = create_model()
     m_steady.fs.tank_pressure[0].fix(3e5)
@@ -175,23 +190,37 @@ def test_pid():
     m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
     solver.solve(m_steady, tee=True)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
+
     # Next create a model for the 0 to 5 sec time period
-    m_dynamic, solver = create_model(steady_state=False,
-                                     time_set=[0,5], nfe=10, calc_integ=True)
+    m_dynamic, solver = create_model(
+        steady_state=False,
+        time_set=[0,5],
+        nfe=10,
+        calc_integ=True,
+        form=form,
+    )
+
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
     m_dynamic.fs.valve_1.valve_opening.unfix()
     m_dynamic.fs.valve_1.valve_opening[0].fix()
+
     # Add a step change right at the end of the interval, to make sure we can
     # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
     solver.solve(m_dynamic, tee=True)
+
     # Now create a model for the 5 to 10 second interval and set the inital
     # conditions of the first model to the final (unsteady) state of the
     # previous time interval model
-    m_dynamic2, solver = create_model(steady_state=False,
-                                     time_set=[5,10], nfe=10, calc_integ=False)
+    m_dynamic2, solver = create_model(
+        steady_state=False,
+        time_set=[5,10],
+        nfe=10,
+        calc_integ=False,
+        form=form,
+    )
 
     m_dynamic2.fs.valve_1.valve_opening.fix(
         m_dynamic.fs.valve_1.valve_opening[5].value)
@@ -208,10 +237,12 @@ def test_pid():
             m_dynamic2.fs.tank.control_volume.energy_accumulation[i].value =\
                 m_dynamic.fs.tank.control_volume.energy_accumulation[i].value
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
-    m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i[5]))
+    m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i_end))
+
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
     solver.solve(m_dynamic2, tee=True)
+
     # Now turn on control and solve again.
     m_dynamic2.fs.ctrl.activate()
     m_dynamic2.fs.valve_1.valve_opening.unfix()
@@ -223,6 +254,7 @@ def test_pid():
     t = m_dynamic.fs.time.get_lower_element_boundary(4.45)
     assert s1_valve == pytest.approx(
         pyo.value(m_dynamic.fs.valve_1.valve_opening[t]), abs=5e-3)
+
     # The second should hit steady state pretty quick if the two models
     # line up smoothly.
     t = m_dynamic2.fs.time.get_lower_element_boundary(7)
@@ -242,3 +274,19 @@ def test_pid():
         i = j + len(m_dynamic.fs.time)
         assert t == stitch_time[i]
         assert m_dynamic2.fs.valve_1.valve_opening[t] == stitch_valve[i]
+
+@pytest.mark.slow
+@pytest.mark.solver
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_pid_velocity():
+    """This test is pretty course-grained, but it should cover everything"""
+    tpid(PIDForm.velocity)
+
+@pytest.mark.slow
+@pytest.mark.solver
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_pid_standard():
+    """This test is pretty course-grained, but it should cover everything"""
+    tpid(PIDForm.standard)
