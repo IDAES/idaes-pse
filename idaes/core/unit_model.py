@@ -119,10 +119,10 @@ Must be True if dynamic = True,
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
         Keyword Args:
-            name = name to use for Port object.
-            block = an instance of a StateBlock to use as the source to
+            name : name to use for Port object.
+            block : an instance of a StateBlock to use as the source to
                     populate the Port object
-            doc = doc string for Port object
+            doc : doc string for Port object
         Returns:
             A Pyomo Port object and associated components.
         """
@@ -168,13 +168,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "inlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "inlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the inlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Inlet Port")
+            doc : doc string for Port object (default = "Inlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
@@ -323,13 +323,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "outlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "outlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the outlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Outlet Port")
+            doc : doc string for Port object (default = "Outlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
