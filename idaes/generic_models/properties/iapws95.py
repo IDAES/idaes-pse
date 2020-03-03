@@ -63,7 +63,7 @@ from idaes.core import (
 )
 import idaes
 import idaes.logger as idaeslog
-from idaes.property_models.helmholtz.helmholtz import (
+from idaes.generic_models.properties.helmholtz.helmholtz import (
     _available,
     _htpx,
     HelmholtzParameterBlockData,
