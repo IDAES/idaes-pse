@@ -20,7 +20,7 @@ pressure drop calculations for shell side.
 Note that this model assumes no phase transitions 
 (if user requires phase transitions, they need a general model)
 
-the main config arguments: 
+The main config arguments: 
     - delta T method: counter-current or co-current
     - tube_arrangement: in-line or staggered 
     - has radiation: 
@@ -28,7 +28,8 @@ the main config arguments:
         + Gas emissivity calculated (Gas temperature above 700 K)
     - SI units (consistent with prop pack)
     - heat transfer calc U = f(Nu, Re, Pr)
-    - Pressure drop tube and shell side (fricction factor calc.)
+    - Pressure drop tube and shell side (friction factor calc.)
+
 """
 # Import Python libraries
 import logging

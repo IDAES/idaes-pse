@@ -24,7 +24,7 @@ from pyomo.environ import Var, Expression, Constraint, sqrt, SolverFactory, valu
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
-from idaes.unit_models.pressure_changer import (
+from idaes.generic_models.unit_models.pressure_changer import (
     PressureChangerData,
     ThermodynamicAssumption,
 )

@@ -14,7 +14,7 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.core import FlowsheetBlock
-from idaes.core_lib.properties import iapws95
+from idaes.generic_models.properties import iapws95
 from idaes.power_generation.unit_models import FWH0D
 from idaes.core.util.model_statistics import degrees_of_freedom
 

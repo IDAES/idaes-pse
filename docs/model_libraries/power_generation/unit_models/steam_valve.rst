@@ -22,7 +22,7 @@ Example
 
   from idaes.core import FlowsheetBlock
   from idaes.power_generation.unit_models import SteamValve
-  from idaes.core_lib.properties import iapws95
+  from idaes.generic_models.properties import iapws95
   from idaes.ui.report import degrees_of_freedom, active_equalities
 
   solver = SolverFactory('ipopt')

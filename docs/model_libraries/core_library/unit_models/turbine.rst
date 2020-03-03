@@ -2,10 +2,10 @@ Turbine
 =======
 
 The Turbine model is a
-:ref:`PressureChanger <models/pressure_changer:Pressure Changer>`,
+:ref:`PressureChanger <model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>`,
 where the configuration is set so that the "compressor" option can only be False,
 and the default "thermodynamic_assumption" is "isentropic."  See the
-:ref:`PressureChanger documentation <models/pressure_changer:Pressure Changer>`
+:ref:`PressureChanger documentation <model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>`
 for details.
 
 Example
@@ -17,8 +17,8 @@ The example below demonstrates the basic Turbine model usage:
 
   import pyomo.environ as pyo
   from idaes.core import FlowsheetBlock
-  from idaes.unit_models import Turbine
-  from idaes.core_lib.properties import iapws95
+  from idaes.generic_models.unit_models import Turbine
+  from idaes.generic_models.properties import iapws95
 
   m = pyo.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
