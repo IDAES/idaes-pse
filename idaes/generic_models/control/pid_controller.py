@@ -24,6 +24,7 @@ from idaes.core import ProcessBlockData, declare_process_block_class
 from pyomo.common.config import ConfigValue, In
 from idaes.core.util.math import smooth_max, smooth_min
 from idaes.core.util.exceptions import ConfigurationError
+from pyomo.dae import ContinuousSet
 
 
 class PIDForm(Enum):
@@ -147,8 +148,14 @@ class PIDBlockData(ProcessBlockData):
         """
         Build the PID block
         """
-        if 'scheme' not in self.flowsheet().time.get_discretization_info():
-            raise RunTimeError("PIDBlock must be added after time discretization")
+        if isinstance(self.flowsheet().time, ContinuousSet):
+            # time may not be a continuous set if you have a steady state model
+            # in the stready state model case obiously the controller should
+            # not be active, but you can still add it.
+            if 'scheme' not in self.flowsheet().time.get_discretization_info():
+                # if you have a dynamic model, must do time discretization
+                # before adding the PID model
+                raise RunTimeError("PIDBlock must be added after time discretization")
 
         super().build() # do the ProcessBlockData voodoo for config
         # Check for required config

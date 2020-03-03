@@ -36,7 +36,7 @@ from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
-from idaes.core_lib.control import PIDBlock, PIDForm
+from idaes.generic_models.control import PIDBlock, PIDForm
 
 solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
