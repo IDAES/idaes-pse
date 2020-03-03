@@ -154,6 +154,8 @@ class NMPCSim(object):
 
         self.build_bound_lists(self.c_mod)
 
+        pdb.set_trace()
+
 
     def validate_inputs(self, tgt_model, src_model, src_inputs=None,
             outlvl=idaeslog.NOTSET):
@@ -290,10 +292,15 @@ class NMPCSim(object):
         alg_vars = []
         fixed_vars = []
 
+	ic_vars = []
+
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
+
         # Remove duplicates from these var lists
-        dae_no_dups = list(OrderedDict([(id(v[t0]), v) for v in dae_vars]).values())
-        scalar_no_dups = list(OrderedDict([(id(v), v) for v in scalar_vars]).values())
+        dae_no_dups = list(OrderedDict([(id(v[t0]), v)
+                           for v in dae_vars]).values())
+        scalar_no_dups = list(OrderedDict([(id(v), v)
+                              for v in scalar_vars]).values())
 
         model.scalar_vars = scalar_no_dups
 
@@ -320,14 +327,40 @@ class NMPCSim(object):
         init_dv_list = []
         for i, var in reversed(list(enumerate(dae_no_dups))):
             parent = var[t0].parent_component()
-            index = var[t0].index()
+            index0 = var[t0].index()
+            index1 = var[t1].index()
             if not isinstance(parent, DerivativeVar):
                 continue
             if time not in ComponentSet(parent.get_continuousset_list()):
                 continue
             assert var is dae_no_dups.pop(i)
-            deriv_vars.append(var)
-            init_dv_list.append(parent.get_state_var()[index])
+
+            statevar = var.get_state_var()
+            if statevar[index1].fixed:
+                # Assume state var has been fixed everywhere.
+                # Then derivative is 'not really a derivative'
+                # in the sense that it doesn't specify a differential
+                # variable through some discretization equations.
+                # In this case do nothing.
+                continue
+
+            # If 
+            if var[t1].fixed:
+                # Assume derivative has been fixed everywhere.
+                # It will be added to the list of fixed variables,
+                # and don't want to search for its state variable later.
+                fixed_vars.append(var)
+            elif var[t0].fixed:
+                # In this case the derivative has been used as an
+                # initial condition. Still want to include it in the
+                # list of derivatives, and want to look for its state var.
+                ic_vars.append(var)
+                deriv_vars.append(var)
+                init_dv_list.append(parent.get_state_var()[index0])
+            else:
+                # Neither is fixed. This should be the most common case.
+                deriv_vars.append(var)
+                init_dv_list.append(parent.get_state_var()[index0])
 
         # Find differential variables
         for i, diffvar in reversed(list(enumerate(dae_no_dups))):
@@ -335,6 +368,8 @@ class NMPCSim(object):
                 # Don't need to reverse here as we intend to break the loop
                 # after the first pop
                 if diffvar[t0] is dv:
+                    if diffvar[t0].fixed and not diffvar[t1].fixed:
+                        ic_vars.append(diffvar)
                     assert dv is init_dv_list.pop(j)
                     assert diffvar is dae_no_dups.pop(i)
                     diff_vars.append(diffvar)
@@ -356,12 +391,18 @@ class NMPCSim(object):
             if var[t1].fixed:
                 fixed_vars.append(dae_no_dups.pop(i))
             else:
+                if var[t0].fixed:
+                    ic_vars.append(var)
                 alg_vars.append(dae_no_dups.pop(i))
+
 
         model.deriv_vars = deriv_vars
         model.diff_vars = diff_vars
         model.n_dv = len(diff_vars)
         assert model.n_dv == len(deriv_vars)
+
+	model.ic_vars = ic_vars
+        assert model.n_dv == len(ic_vars)
 
         model.input_vars = input_vars
         model.n_iv = len(input_vars)
