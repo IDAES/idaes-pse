@@ -35,7 +35,7 @@ variables, expressions, and parameters in the PIDBlock, model see :ref:`PIDVarsS
 
 .. testcode::
 
-  from idaes.core_lib.control import PIDBlock, PIDForm
+  from idaes.generic_models.control import PIDBlock, PIDForm
   from idaes.core import FlowsheetBlock
   import pyomo.environ as pyo
 
