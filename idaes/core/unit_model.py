@@ -118,11 +118,13 @@ Must be True if dynamic = True,
         """
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
+
         Keyword Args:
             name : name to use for Port object.
             block : an instance of a StateBlock to use as the source to
                     populate the Port object
             doc : doc string for Port object
+
         Returns:
             A Pyomo Port object and associated components.
         """
