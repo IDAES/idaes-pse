@@ -18,7 +18,7 @@ Main assumptions:
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, Param, RangeSet, PositiveReals, Reals,
+from pyomo.environ import (Constraint, Param, PositiveReals, Reals,
                            Set, value, log, exp, sqrt, Var)
 from pyomo.opt import SolverFactory, TerminationCondition
 
@@ -27,7 +27,6 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType, EnergyBalanceType,\
      MaterialFlowBasis
@@ -46,7 +45,7 @@ logger = logging.getLogger('idaes.unit_model.properties')
 
 
 @declare_process_block_class("FlueGasParameterBlock")
-class PhysicalParameterData(PhysicalParameterBlock):
+class FlueGasParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
 
@@ -54,20 +53,22 @@ class PhysicalParameterData(PhysicalParameterBlock):
     gas. The ideal gas assumption is applied.
 
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(PhysicalParameterData, self).build()
+        super(FlueGasParameterData, self).build()
         self.state_block_class = FlueGasStateBlock
 
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Vap'])
 
         # Component list - a Set of component identifiers
-        self.component_list = Set(initialize=['N2','O2','NO','CO2','H2O','SO2'])
+        self.component_list = Set(
+            initialize=['N2', 'O2', 'NO', 'CO2', 'H2O', 'SO2'])
 
-        #molecular weight
+        # Molecular weight
         self.mw = Param(self.component_list,
                         initialize={'O2': 31.998,
                                     'N2': 28.0134,
@@ -91,22 +92,22 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # Critical Properties
         self.pressure_critical = Param(self.component_list,
                                        within=PositiveReals,
-                                       initialize={'O2':50.45985e5,
-                                                   'N2':33.943875e5,
-                                                   'NO':64.85e5,
-                                                   'CO2':73.8e5,
-                                                   'H2O':220.64e5,
-                                                   'SO2':7.883e6},
+                                       initialize={'O2': 50.45985e5,
+                                                   'N2': 33.943875e5,
+                                                   'NO': 64.85e5,
+                                                   'CO2': 73.8e5,
+                                                   'H2O': 220.64e5,
+                                                   'SO2': 7.883e6},
                                        doc='Critical pressure [Pa]')
 
         self.temperature_critical = Param(self.component_list,
                                           within=PositiveReals,
-                                          initialize={'O2':154.58,
-                                                      'N2':126.19,
-                                                      'NO':180.0,
-                                                      'CO2':304.18,
-                                                      'H2O':647,
-                                                      'SO2':430.8},
+                                          initialize={'O2': 154.58,
+                                                      'N2': 126.19,
+                                                      'NO': 180.0,
+                                                      'CO2': 304.18,
+                                                      'H2O': 647,
+                                                      'SO2': 430.8},
                                           doc='Critical temperature [K]')
 
         # Gas Constant
@@ -115,93 +116,97 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                   doc='Gas Constant [J/mol.K]')
 
         # Constants for specific heat capacity, enthalpy, entropy
-        # calculations for ideal gas (from NIST 
-        #https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&Units=SI&Mask=1#Thermo-Gas)
+        # calculations for ideal gas (from NIST
+        # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&Units=SI&Mask=1#Thermo-Gas)
         # 01/08/2020
         CpIGTab = {
-        ('A','N2') : 19.50583,
-        ('B','N2') : 19.88705,
-        ('C','N2') : -8.598535,
-        ('D','N2') : 1.369784,
-        ('E','N2') : 0.527601,
-        ('F','N2') : -4.935202,
-        ('G','N2') : 212.39,
-        ('H','N2') : 0,
-        ('A','O2') : 30.03235,
-        ('B','O2') : 8.772972,
-        ('C','O2') : -3.98813,
-        ('D','O2') : 0.788313,
-        ('E','O2') : -0.7416,
-        ('F','O2') : -11.3247,
-        ('G','O2') : 236.1663,
-        ('H','O2') : 0,
-        ('A','CO2') : 24.99735,
-        ('B','CO2') : 55.18696,
-        ('C','CO2') : -33.69137,
-        ('D','CO2') : 7.948387,
-        ('E','CO2') : -0.136638,
-        ('F','CO2') : -403.6075,
-        ('G','CO2') : 228.2431,
-        ('H','CO2') : -393.5224,
-        ('A','H2O') : 30.092,
-        ('B','H2O') : 6.832514,
-        ('C','H2O') : 6.793435,
-        ('D','H2O') : -2.53448,
-        ('E','H2O') : 0.082139,
-        ('F','H2O') : -250.881,
-        ('G','H2O') : 223.3967,
-        ('H','H2O') : -241.8264,
-        ('A','NO') : 23.83491,
-        ('B','NO') : 12.58878,
-        ('C','NO') : -1.139011,
-        ('D','NO') : -1.497459,
-        ('E','NO') : 0.214194,
-        ('F','NO') : 83.35783,
-        ('G','NO') : 237.1219,
-        ('H','NO') : 90.29114,
-        ('A','SO2') : 21.43049,
-        ('B','SO2') : 74.35094,
-        ('C','SO2') : -57.75217,
-        ('D','SO2') : 16.35534,
-        ('E','SO2') : 0.086731,
-        ('F','SO2') : -305.7688,
-        ('G','SO2') : 254.8872,
-        ('H','SO2') : -296.8422
-        }
-        # CpIG units: J/(gmol-K)
-        self.CpIG = Param(['A','B','C','D','E','F','G','H'],
-            self.component_list,initialize=CpIGTab,
-            doc='Constants for spec. heat capacity for ideal gas J/(gmol-K)')
+            ('A', 'N2'): 19.50583,
+            ('B', 'N2'): 19.88705,
+            ('C', 'N2'): -8.598535,
+            ('D', 'N2'): 1.369784,
+            ('E', 'N2'): 0.527601,
+            ('F', 'N2'): -4.935202,
+            ('G', 'N2'): 212.39,
+            ('H', 'N2'): 0,
+            ('A', 'O2'): 30.03235,
+            ('B', 'O2'): 8.772972,
+            ('C', 'O2'): -3.98813,
+            ('D', 'O2'): 0.788313,
+            ('E', 'O2'): -0.7416,
+            ('F', 'O2'): -11.3247,
+            ('G', 'O2'): 236.1663,
+            ('H', 'O2'): 0,
+            ('A', 'CO2'): 24.99735,
+            ('B', 'CO2'): 55.18696,
+            ('C', 'CO2'): -33.69137,
+            ('D', 'CO2'): 7.948387,
+            ('E', 'CO2'): -0.136638,
+            ('F', 'CO2'): -403.6075,
+            ('G', 'CO2'): 228.2431,
+            ('H', 'CO2'): -393.5224,
+            ('A', 'H2O'): 30.092,
+            ('B', 'H2O'): 6.832514,
+            ('C', 'H2O'): 6.793435,
+            ('D', 'H2O'): -2.53448,
+            ('E', 'H2O'): 0.082139,
+            ('F', 'H2O'): -250.881,
+            ('G', 'H2O'): 223.3967,
+            ('H', 'H2O'): -241.8264,
+            ('A', 'NO'): 23.83491,
+            ('B', 'NO'): 12.58878,
+            ('C', 'NO'): -1.139011,
+            ('D', 'NO'): -1.497459,
+            ('E', 'NO'): 0.214194,
+            ('F', 'NO'): 83.35783,
+            ('G', 'NO'): 237.1219,
+            ('H', 'NO'): 90.29114,
+            ('A', 'SO2'): 21.43049,
+            ('B', 'SO2'): 74.35094,
+            ('C', 'SO2'): -57.75217,
+            ('D', 'SO2'): 16.35534,
+            ('E', 'SO2'): 0.086731,
+            ('F', 'SO2'): -305.7688,
+            ('G', 'SO2'): 254.8872,
+            ('H', 'SO2'): -296.8422}
 
-        # Vapor pressure coefficients, current use N2 data for 
+        # CpIG units: J/(gmol-K)
+        self.CpIG = Param(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+                          self.component_list,
+                          initialize=CpIGTab,
+                          doc='Constants for spec. heat capacity for ideal '
+                          'gas J/(gmol-K)')
+
+        # Vapor pressure coefficients, current use N2 data for
         # NO since the data for NO are not available
         # NIST Webbook
-#https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&Units=SI&Mask=4#Thermo-Phase
-#       01/08/2020
+        # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&Units=SI&Mask=4#Thermo-Phase
+        # 01/08/2020
         iv_pvap = {
-        ('N2','A'): 3.7362,
-        ('N2','B'): 264.651,
-        ('N2','C'): -6.788,
-        ('O2','A'): 3.9523,
-        ('O2','B'): 340.024,
-        ('O2','C'): -4.144,
-        ('H2O','A'): 3.55959,
-        ('H2O','B'): 643.748,
-        ('H2O','C'): -198.043,
-        ('CO2','A'): 6.81228,
-        ('CO2','B'): 1301.679,
-        ('CO2','C'): -3.494,
-        ('NO','A'): 3.7362,
-        ('NO','B'): 264.651,
-        ('NO','C'):  -6.788,
-        ('SO2','A'): 4.37798,
-        ('SO2','B'): 966.575,
-        ('SO2','C'): -42.071}
-        self.vapor_pressure_coeff = Param(self.component_list, ['A','B','C'], \
-                                initialize=iv_pvap, mutable=True,
-                                doc="Antoine coefficients for vapor pressure"
-                                "P in bar, T in K")
+            ('N2', 'A'): 3.7362,
+            ('N2', 'B'): 264.651,
+            ('N2', 'C'): -6.788,
+            ('O2', 'A'): 3.9523,
+            ('O2', 'B'): 340.024,
+            ('O2', 'C'): -4.144,
+            ('H2O', 'A'): 3.55959,
+            ('H2O', 'B'): 643.748,
+            ('H2O', 'C'): -198.043,
+            ('CO2', 'A'): 6.81228,
+            ('CO2', 'B'): 1301.679,
+            ('CO2', 'C'): -3.494,
+            ('NO', 'A'): 3.7362,
+            ('NO', 'B'): 264.651,
+            ('NO', 'C'): -6.788,
+            ('SO2', 'A'): 4.37798,
+            ('SO2', 'B'): 966.575,
+            ('SO2', 'C'): -42.071}
 
+        self.vapor_pressure_coeff = Param(
+            self.component_list,
+            ['A', 'B', 'C'],
+            initialize=iv_pvap,
+            mutable=True,
+            doc="Antoine coefficients for vapor pressure P in bar, T in K")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -212,30 +217,29 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'temperature': {'method': None, 'units': 'K'},
                 'pressure_critical': {'method': None, 'units': 'Pa'},
                 'temperature_critical': {'method': None, 'units': 'K'},
-                'pressure_reduced': {'method': '_reduced_press_temp', 
+                'pressure_reduced': {'method': '_reduced_press_temp',
                                      'units': None},
-                'temperature_reduced': {'method': '_reduced_press_temp', 
+                'temperature_reduced': {'method': '_reduced_press_temp',
                                         'units': None},
                 'enthalpy': {'method': '_enthalpy_calc', 'units': 'J/mol'},
                 'entropy': {'method': '_entropy_calc', 'units': 'J/mol.K'},
                 'heat_cap': {'method': '_heat_cap_calc', 'units': 'J/mol.K'},
                 'compress_fact': {'method': '_compress_fact', 'units': None},
-                'dens_mol_phase': {'method': '_dens_mol_phase', 
+                'dens_mol_phase': {'method': '_dens_mol_phase',
                                    'units': 'mol/m^3'},
                 'vapor_pressure': {'method': '_vapor_pressure', 'units': 'Pa'},
                 'flow_volume': {'method': '_flow_volume', 'units': 'm^3/s'},
-                'visc_d_mix': {'method':'_therm_cond', 'units': 'kg/m-s'},
-                'therm_cond_mix': {'method':'_therm_cond', 'units': 'W/m-K'},
-#                'mw': {'method': None, 'units': 'g/mol'}
-                    })
+                'visc_d_mix': {'method': '_therm_cond', 'units': 'kg/m-s'},
+                'therm_cond_mix': {'method': '_therm_cond', 'units': 'W/m-K'},
+                })
 
         obj.add_default_units({'time': 's',
-                'length': 'm',
-                'mass': 'g',
-                'amount': 'mol',
-                'temperature': 'K',
-                'energy': 'J',
-                'holdup': 'mol'})
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
 
 
 class _FlueGasStateBlock(StateBlock):
