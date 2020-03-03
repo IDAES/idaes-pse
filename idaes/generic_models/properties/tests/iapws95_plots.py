@@ -14,14 +14,14 @@
 from pyomo.environ import *
 from pyomo.core.base.external import AMPLExternalFunction
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95
+from idaes.generic_models.properties import iapws95
 import numpy as np
 import matplotlib.pyplot as plt
 
 def make_model():
     model = ConcreteModel()
-    model.prop_param = iapws95.PropertyParameterBlock()
-    model.prop_in = iapws95.PropertyBlock(parameters=model.prop_param)
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters": model.prop_param})
     return model
 
 def plot_temperature_vapor_fraction(n=100, h=(0, 6000), p=10000):
