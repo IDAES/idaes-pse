@@ -335,6 +335,8 @@ class TestIAPWS95(unittest.TestCase):
                 model.prop_in.func_f, delta, tau, tol=0.001)
             self.bin_derivs_fd_test(
                 model.prop_in.func_g, delta, tau, tol=0.001)
+            self.bin_derivs_fd_test(
+                model.prop_in.func_w, delta, tau, tol=0.001)
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")

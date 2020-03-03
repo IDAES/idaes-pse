@@ -1,14 +1,14 @@
-=======================================================
-MatOpt : Materials Design via Mathematical Optimization
-=======================================================
+===============================
+MatOpt : Materials Optimization
+===============================
 
-The MatOpt (Materials Design via Mathematical Optimization) module provides simple tools for creating Pyomo model objects for optimization-based nanomaterials design. MatOpt can be used to design crystalline nanostructured materials, including but not limited to particles, surfaces, and periodic bulk structures.
+The MatOpt module provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to design crystalline nanostructured materials, including but not limited to particles, wires, surfaces, and periodic bulk structures.
 
 The main goals of this package are as follows:
 
-* To simplify the representation of nanostructured materials, streamlining the creation of materials optimization problems.
-* To automate many of the necessary steps of materials optimization, speeding up the development of new models and accelerating new materials discovery.
-* To provide a simple interface so that users do not need to handle the details of building efficient mathematical optimization models or the specific Pyomo syntax to do this.
+* To automate many of the steps that are necessary for utilizing mathematical optimization to design materials, speeding up the development of new mathematical models and accelerating new materials discovery.
+* To simplify the representation of nanostructured materials and their structure-function relationships as Pyomo objects, streamlining the creation of materials optimization problems in the Pyomo modeling language.
+* To provide a simple interface so that users need not handle the details of casting efficient mathematical optimization models, invoking mathematical optimization solvers, or utilizing specialized Pyomo syntax to do this.
 
 Thank you for your interest in MatOpt. We would love to hear your feedback! Please report any thoughts, questions or bugs to: gounaris@cmu.edu
 

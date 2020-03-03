@@ -12,20 +12,22 @@
 ##############################################################################
 """
 Power Plant IDAES heat exchanger model.
-The boiler heat exchanger model consist of a cross flow shell and tube hx
-that can be used for any of the boiler components, such as economizer, 
-reheater or superheaters (primary, secondary, etc).
-The model includes shell and tube rigorous heat transfer calculations and 
-pressure drop calculations for shell side.
-Note that this model assumes no phase transitions 
-(if user requires phase transitions, they need a general model)
 
-The main config arguments: 
+The boiler heat exchanger model consist of a cross flow shell and tube hx
+that can be used for any of the boiler components, such as economizer,
+reheater or superheaters (primary, secondary, etc).
+The model includes shell and tube rigorous heat transfer calculations and
+pressure drop calculations for shell side. Note that this model assumes no
+phase transitions (if user requires phase transitions, they need a general
+model)
+
+The main config arguments:
     - delta T method: counter-current or co-current
-    - tube_arrangement: in-line or staggered 
-    - has radiation: 
-        + True if model is used as a reheater or superheater unit
-        + Gas emissivity calculated (Gas temperature above 700 K)
+    - tube_arrangement: in-line or staggered
+    - has radiation: True if model is used as a reheater or superheater unit
+        Gas emissivity calculated (Gas temperature above 700 K)
+
+General assumtpions:
     - SI units (consistent with prop pack)
     - heat transfer calc U = f(Nu, Re, Pr)
     - Pressure drop tube and shell side (friction factor calc.)
@@ -40,7 +42,7 @@ from enum import Enum
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Param, exp, sqrt,\
-    log, sin, cos, PositiveReals, NonNegativeReals
+    log, PositiveReals, NonNegativeReals
 from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
@@ -62,9 +64,11 @@ __version__ = "1.0.0"
 # Set up logger
 _log = logging.getLogger(__name__)
 
+
 class TubeArrangement(Enum):
     inLine = 0
     staggered = 1
+
 
 class DeltaTMethod(Enum):
     counterCurrent = 0
@@ -182,21 +186,22 @@ constructed,
         domain=In(DeltaTMethod),
         description="Flow configuration in unit to compute delta T",
         doc="""Flag indicating type of flow arrangement to use for delta
-             T calculations (default = 'counter-current')
-                - 'counter-current' : counter-current flow arrangement"""))
-    CONFIG.declare("tube_arrangement",ConfigValue(
+**default** - DeltaTMethod.counterCurrent
+**Valid values:** {
+**DeltaTMethod.counterCurrent**}"""))
+    CONFIG.declare("tube_arrangement", ConfigValue(
         default=TubeArrangement.inLine,
         domain=In(TubeArrangement),
         description='tube configuration',
         doc='Tube arrangement could be in-line and staggered'))
-    CONFIG.declare("side_1_water_phase",ConfigValue(
+    CONFIG.declare("side_1_water_phase", ConfigValue(
         default='Liq',
-        domain=In(['Liq','Vap']),
+        domain=In(['Liq', 'Vap']),
         description='side 1 water phase',
         doc='Define water phase for property calls'))
-    CONFIG.declare("has_radiation",ConfigValue(
+    CONFIG.declare("has_radiation", ConfigValue(
         default=False,
-        domain=In([False,True]),
+        domain=In([False, True]),
         description='Has side 2 gas radiation',
         doc='Define if side 2 gas radiation is to be considered'))
 
@@ -215,16 +220,16 @@ constructed,
 
         # Build ControlVolume Block
         self.side_1 = ControlVolume0DBlock(default={
-        "dynamic": self.config.dynamic,
-        "has_holdup": self.config.has_holdup,
-        "property_package": self.config.side_1_property_package,
-        "property_package_args": self.config.side_1_property_package_args})
+            "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
+            "property_package": self.config.side_1_property_package,
+            "property_package_args": self.config.side_1_property_package_args})
 
         self.side_2 = ControlVolume0DBlock(default={
-        "dynamic": self.config.dynamic,
-        "has_holdup": self.config.has_holdup,
-        "property_package": self.config.side_2_property_package,
-        "property_package_args": self.config.side_2_property_package_args})
+            "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
+            "property_package": self.config.side_2_property_package,
+            "property_package_args": self.config.side_2_property_package_args})
 
         # Add Geometry
         self.side_1.add_geometry()

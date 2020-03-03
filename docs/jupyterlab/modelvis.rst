@@ -93,6 +93,7 @@ Miscellany
 - Unit model icons can be rotated by right-clicking on the icon.
 
 .. TODO Doesn't seem to work on my system --PY
+
 - Connections paths between unit models can be moved by clicking on the link, then 
   dragging the link vertex that appears. Double-click the vertex to remove it.
 
