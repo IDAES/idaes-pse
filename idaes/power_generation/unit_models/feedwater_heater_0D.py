@@ -37,8 +37,8 @@ from idaes.core import (
     UnitModelBlockData,
     MaterialBalanceType,
 )
-from idaes.unit_models.heat_exchanger import HeatExchangerData
-from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
+from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
+from idaes.generic_models.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
