@@ -147,6 +147,9 @@ class PIDBlockData(ProcessBlockData):
         """
         Build the PID block
         """
+        if 'scheme' not in self.flowsheet().time.get_discretization_info():
+            raise RunTimeError # time has not been discretized yet
+
         super().build() # do the ProcessBlockData voodoo for config
         # Check for required config
         if self.config.pv is None:
