@@ -25,17 +25,17 @@ The UnitModelBlock class also contains a number of methods designed to facilitat
 Build Inlets Method
 ^^^^^^^^^^^^^^^^^^^
 
-All (or almost all) Unit Models will have inlets and outlets which allow material to flow in and out of the unit being modeled. In order to save the model developer from having to write the code for each inlet themselves, UnitModelBlock contains a method named build_inlet_port which can automatically create an inlet to a specified ControlVolume block (or linked to a specified StateBlock). The build_inlet_port method is described in more detail in the documentation below.
+All (or almost all) Unit Models will have inlets and outlets which allow material to flow in and out of the unit being modeled. In order to save the model developer from having to write the code for each inlet themselves, UnitModelBlock contains a method named `build_inlet_port` which can automatically create an inlet to a specified ControlVolume block (or linked to a specified StateBlock). The `build_inlet_port` method is described in more detail in the documentation below.
 
 Build Outlets Method
 ^^^^^^^^^^^^^^^^^^^^
 
-Similar to build_inlet_port, UnitModelBlock also has a method named build_outlet_port for constructing outlets from Unit models. The build_outlets method is described in more detail in the documentation below.
+Similar to `build_inlet_port`, UnitModelBlock also has a method named `build_outlet_port` for constructing outlets from Unit models. The `build_outlet_port` method is described in more detail in the documentation below.
 
 Model Check Method
 ^^^^^^^^^^^^^^^^^^
 
-In order to support the IDAES Model Check tools, UnitModelBlock contains a simple model_check method which assumes a single Holdup block and calls the model_check method on this block. Model developers are encouraged to create their own model_check methods for their particular applications.
+In order to support the IDAES Model Check tools, UnitModelBlock contains a simple model_check method which assumes a single Holdup block and calls the `model_check` method on this block. Model developers are encouraged to create their own `model_check` methods for their particular applications.
 
 Initialization Routine
 ^^^^^^^^^^^^^^^^^^^^^^

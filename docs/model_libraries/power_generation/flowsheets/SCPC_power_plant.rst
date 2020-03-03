@@ -1,9 +1,6 @@
 Supercritical Coal-Fired Power Plant Flowsheet
 ==============================================
 
-.. index::
-   pair: idaes.power_generation.flowsheets.supercritical_power_plant.SCPC_full_plant
-
 .. currentmodule:: idaes.power_generation.flowsheets.supercritical_power_plant.SCPC_power_plant
 
 This is an example supercritical pulverized coal (SCPC) power plant.This simulation model consist of a ~595 MW gross coal fired power plant. 
