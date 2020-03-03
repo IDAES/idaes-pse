@@ -16,7 +16,7 @@ Class for performing NMPC simulations of IDAES flowsheets
 """
 
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective)
+        SolverFactory, Objective, NonNegativeReals, Reals)
 from pyomo.kernel import ComponentSet
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
@@ -74,9 +74,12 @@ class NMPCSim(object):
         # forced to be a steady state
 
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
+        self.default_solver = solver
 
         # Logger properties:
-        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        # outlvl added as an attribute so it can be referenced later
+        self.outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        init_log = idaeslog.getInitLogger('nmpc', level=self.outlvl)
 
         # Set up attributes
         self.p_mod = plant_model
@@ -92,6 +95,7 @@ class NMPCSim(object):
                 solver=solver)
 
         # Categorize variables in plant model
+        init_log.info('Categorizing variables in plant model') 
         self.categorize_variables(self.p_mod, initial_inputs)
         self.p_mod.initial_inputs = initial_inputs
         # ^ Add these as an attribute so they can be used later to validate
@@ -100,6 +104,7 @@ class NMPCSim(object):
         # Categorize variables in controller model
         init_controller_inputs = self.validate_inputs(controller_model,
                 plant_model, initial_inputs)
+        init_log.info('Categorizing variables in the controller model')
         t1 = timemodule.time() 
         self.categorize_variables(self.c_mod, init_controller_inputs)
         t2 = timemodule.time()
@@ -112,17 +117,19 @@ class NMPCSim(object):
                 fixed=self.c_mod.fixed_vars)
         t3 = timemodule.time()
         print(f'building locator took {t3-t2} seconds')
-        # Only expecting user arguments (set point) in form of control
-        # variables, so only build locator for control variable model
+        # Only expecting user arguments (set point) in form of controller
+        # variables, so only build locator for controller model
         # for now.
         #
         # Not convinced that having a variable locator like this is the
         # best thing to do, but will go with it for now.
 
+        self.build_bound_lists(self.c_mod)
+
 
     def validate_inputs(self, tgt_model, src_model, src_inputs=None,
             outlvl=idaeslog.NOTSET):
-        log = idaeslog.getInitLogger(__name__, level=outlvl)
+        log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         if not src_inputs:
             # If source inputs are not specified, assume they
@@ -185,9 +192,9 @@ class NMPCSim(object):
 
         was_originally_active = kwargs.pop('activity_dict', None)
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
-        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-        solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
-        init_log = idaeslog.getInitLogger(__name__, level=outlvl)
+        outlvl = kwargs.pop('outlvl', self.outlvl)
+        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
 
         toplevel = model.model()
 
@@ -368,21 +375,28 @@ class NMPCSim(object):
             for t in model.time:
                 locator[id(_slice[t])] = VarLocator('fixed', fixed_list, i)
 
-        for i, _slice in enumerate(scalar_list):
+        for i, vardata in enumerate(scalar_list):
             for t in model.time:
-                locator[id(_slice[t])] = VarLocator('scalar', scalar_list, i)
+                locator[id(vardata)] = VarLocator('scalar', scalar_list, i)
 
         model.var_locator = locator
 
 
     def add_setpoint(self, set_point, **kwargs):
         skip_validation = kwargs.pop('skip_validation', False)
+        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        dynamic_weight_overwrite = kwargs.pop('dynamic_weight_overwrite', [])
+        dynamic_weight_tol = kwargs.pop('dynamic_weight_tol', 1e-6)
+
         if skip_validation:
             raise NotImplementedError(
                     'Maybe one day...')
             # In the implementation to 'skip validation', should still
             # get an error if a set_point var is not present in controller
             # model.
+            #
+            # Result should be that setpoint attributes have been added to 
+            # controller model
         else:
             steady_model = kwargs.pop('steady_model', None)
             if not steady_model:
@@ -391,48 +405,37 @@ class NMPCSim(object):
             self.s_mod = steady_model
             self.validate_models(self.s_mod, self.p_mod)
             self.validate_steady_setpoint(set_point, self.s_mod)
-            # return result
+            # ^ result should be that controller now has set point attributes
+            # return result <- what did I mean by this?
 
+        self.construct_objective_weight_matrices(self.c_mod,
+                weight_overwrite=dynamic_weight_overwrite,
+                tol=dynamic_weight_tol)
 
-#    def _location_in_model(self, tgt_model, src_model, vardata, category=None):
-#        """
-#        Given a VarData object in a source model, attempts to find an object
-#        of the same name in a target model. Then returns the object's index
-#        in its target model container.
-#
-#        This uses target model's var_locator, so this must have been defined.
-#        It is intended that the VarDatas in the source model have already been
-#        categorized, so only the index is necessary to locate it in the target
-#        model.
-#
-#        This can then be used to sort source model containers (e.g. alg_vars)
-#        in the same order as the target model.
-#
-#        Has the dual purpose of validating the source model against the target
-#        and sorting the source model's variable lists.
-#        """
-#        if vardata.model() is not src_model:
-#            raise ValueError(
-#            f'{vardata.name} is not a member of source model {src_model.name}')
-#
-#        local_parent = tgt_model
-#        for r in path_from_block(vardata, src_model, include_comp=True):
-#            local_parent = getattr(local_parent, r[0])[r[1]]
-#        var_tgt = local_parent
-#        info = tgt_model.var_locator[id(var_tgt)]
-#
-#        if category and info.category != category:
-#            raise ValueError(
-#                f'{var_tgt.name} is not in the expected category {category} '
-#                'in model {tgt_model}')
-#
-#        return info.location
+        self.add_objective_function(self.c_mod,
+                control_penalty_type='action',
+                name='tracking_objective')
+
+        ### TESTING PURPOSES ONLY ###
+        time = self.c_mod.time
+        for inp in self.c_mod.input_vars:
+            for t in time:
+                if t != time.first():
+                    inp[t].unfix()
+
+        assert (degrees_of_freedom(self.c_mod) == 
+                time.get_discretization_info()['nfe']*self.c_mod.n_iv)
+
+        results = self.default_solver.solve(self.c_mod, tee=True)
+
+        pdb.set_trace()
 
 
     def validate_steady_setpoint(self, set_point, steady_model, **kwargs):
-        solver = kwargs.pop('solver', SolverFactory('ipopt'))
-        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-        init_log = idaeslog.getInitLogger(__name__, level=outlvl)
+        solver = kwargs.pop('solver', self.default_solver)
+        outlvl = kwargs.pop('outlvl', self.outlvl)
+        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
         weight_overwrite = kwargs.pop('weight_overwrite', [])
         weight_tolerance = kwargs.pop('weight_tolerance', 1e-6)
 
@@ -501,50 +504,31 @@ class NMPCSim(object):
         assert len(steady_model.scalar_vars) == len(self.c_mod.scalar_vars)
 
         # Now that steady state model has been validated and initialized,
-        # construct complete (vardata, value) lists for the set_point
-        # argument in construct_objective_weight_matrices.
-        
-        diff_var_sp = [(var[t0], None) for var in steady_model.diff_vars]
-        alg_var_sp = [(var[t0], None) for var in steady_model.alg_vars]
-        input_var_sp = [(var[t0], None) for var in steady_model.input_vars]
+        # construct complete lists for the *_sp attributes
+        diff_var_sp = [None for var in steady_model.diff_vars]
+        alg_var_sp = [None for var in steady_model.alg_vars]
+        input_var_sp = [None for var in steady_model.input_vars]
         # ^ list entries are not actually vars, they are dictionaries...
         # maybe this is too confusing
-        # If I know that these are ordered properly, why do I need to
-        # provide the VarData object? I don't think I do...
 
         # This is where I map user values for set points into lists that
         # I can use to build the objective function (and weight matrices).
         for vardata, value in set_point:
+            # set_point variables should be members of controller model
             info = self.c_mod.var_locator[id(vardata)]
             category = info.category
             location = info.location
-            if category == 'differential':
-                diff_var_sp[location] = (steady_model.diff_vars[location],
-                                         value)
-            elif category == 'algebraic':
-                alg_var_sp[location] = (steady_model.alg_vars[location],
-                                         value)
-            elif category == 'input':
-                input_var_sp[location] = (steady_model.input_vars[location],
-                                         value)
 
-        # If I have the model and the model has attributes for set points
-        # and variables (from which I can get initial values),
-        # why do I need to add anything else to this function.
-        # Still need an option to overwrite for the ambitious user...
-        # If I'm not providing other arguments though, the format for
-        # weight_overwrite is a bit more flexible
-        diff_weights, alg_weights, input_weights = \
-                self.construct_objective_weight_matrices(
-                        diff_var_sp, alg_var_sp, input_var_sp,
-                        overwrite=weight_overwrite,
-                        tol=weight_tolerance)
-        # Need to provide these arguments in order to calculate weights
-        # for a variable number of varlists...
-        # Alternative is to have a flag for include_algebraic
-        # Or can just hasattr(alg_var_sp)...
-        # (And also to just add weights as attributes to model,
-        # not to return them...)
+            # Only allow set point variables from following categories:
+            if category == 'differential':
+                diff_var_sp[location] = value
+            elif category == 'algebraic':
+                alg_var_sp[location] = value
+            elif category == 'input':
+                input_var_sp[location] = value
+            else:
+                raise ValueError('Set point variables (data objects) must be'
+                                 'differential, algebraic, or inputs.')
 
         # Add attributes (with proper names!) to steady model
         # so these values can be accessed later
@@ -552,56 +536,157 @@ class NMPCSim(object):
         steady_model.alg_sp = alg_var_sp
         steady_model.input_sp = input_var_sp
 
-        steady_model.diff_weights = diff_weights
-        steady_model.alg_weights = alg_weights
-        steady_model.input_weights = input_weights
+        self.build_variable_locator(steady_model,
+                differential=steady_model.diff_vars,
+                algebraic=steady_model.alg_vars,
+                inputs=steady_model.input_vars,
+                fixed=steady_model.fixed_vars,
+                scalar=steady_model.scalar_vars)
+        self.construct_objective_weight_matrices(steady_model,
+                overwrite=weight_overwrite,
+                tol=weight_tolerance)
 
-        pdb.set_trace()
+        assert hasattr(steady_model, 'diff_weights')
+        assert hasattr(steady_model, 'alg_weights')
+        assert hasattr(steady_model, 'input_weights')
+
+        assert len(steady_model.diff_weights) == len(steady_model.diff_vars)
+        assert len(steady_model.alg_weights) == len(steady_model.alg_vars)
+        assert len(steady_model.input_weights) == len(steady_model.input_vars)
+
+        # Add objective to steady_model
+        # Add bounds to steady_model (taken from control model)
+        #
+        # Make sure inputs are unfixed - validate degrees of freedom
+        #
+        # solve steady model for set point
+        # add sp attributes to control model
+
+        self.add_objective_function(steady_model,
+                                    control_penalty_type='error',
+                                    name='user_setpoint_objective')
+        self.transfer_bounds(steady_model, self.c_mod)
+
+        for var in steady_model.input_vars:
+            for t in steady_model.time:
+                var[t].unfix()
+
+        assert (degrees_of_freedom(steady_model) ==
+                len(steady_model.input_vars)*len(steady_model.time))
+
+        init_log.info('Solving for steady state set-point.')
+        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+            results = solver.solve(steady_model, tee=slc.tee)
+
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            init_log.info(
+                    'Successfully solved for steady state set-point')
+        else:
+            init_log.error('Failed to solve for steady state set-point')
+            raise ValueError
+
+        c_diff_sp = []
+        for var in steady_model.diff_vars:
+            c_diff_sp.append(var[t0].value)
+        self.c_mod.diff_sp = c_diff_sp
+
+        c_input_sp = []
+        for var in steady_model.input_vars:
+            c_input_sp.append(var[t0].value)
+        self.c_mod.input_sp = c_input_sp
 
 
-    def construct_objective_weight_matrices(self, *setpoints, **kwargs):
+    def construct_objective_weight_matrices(self, model, **kwargs):
         """
         Do I even need the model? 
-        Do I want to allow user to provide a setpoint here?
+        ^ it makes things slightly easier to provide only the model, I think...
 
-        Here each setpoint is a list of (VarData, value) tuples
+        Do I want to allow user to provide a setpoint here?
+        ^ No, but want to allow them to overwrite weights if they want
+
+        Here each setpoint is a list of (VarData, value) tuples.
 
         Overwrite is a lists of (VarData, value) tuples, where 
         this value will directly overwrite the weight of the
-        corresponding VarData.
+        corresponding VarData. (For all time..., what if user
+        provides multiple weights for VarDatas that only differ
+        by time? Raise warning and use last weight provided)
         """
         overwrite = kwargs.pop('overwrite', [])
-        vars_to_overwrite = {id(tpl[0]): tpl[1] for tpl in overwrite}
+
+        # Variables to overwrite must be VarData objects in the model
+        # for whose objective function we are calculating weights
+        
+        weights_to_overwrite = {}
+        for ow_tpl in overwrite:
+            locator = model.var_locator[id(ow_tpl[0])]
+            weights_to_overwrite[(locator.category, locator.location)] = \
+                    ow_tpl[1]
         # dictionary mapping id of VarDatas to overwrite to specified weight
+        # Is the proper way to do this to use suffixes?
+        # But which vardata (time index) is the right one to have the suffix?
+
+        # Given a vardata here, need to know its location so I know which
+        # weight to overwrite
 
         tol = kwargs.pop('tol', 1e-6)
 
+        # Need t0 to get the 'reference' value to compare with set point value
+        # for weight calculation
+        t0 = model.time.first()
+
         matrices = []
-        for sp in setpoints:
+        # Attempt to construct weight for each type of setpoint
+        # that we could allow
+        for name in ['diff', 'alg', 'input']:
+            sp_attrname = name + '_sp'
+            if not hasattr(model, sp_attrname):
+                continue
+            sp = getattr(model, sp_attrname)
+
+            varlist_attrname = name + '_vars'
+            varlist = getattr(model, varlist_attrname)
+
             # construct the (diagonal) matrix (list).
-            matrix = [] 
-            for vardata, value in sp:
+            matrix = []
+            for loc, value in enumerate(sp):
 
-                if id(vardata) in vars_to_overwrite:
-                    weight = vars_to_overwrite[id(vardata)]
-                    matrix.append(weight)
-                    continue
+                # This assumes the vardata in sp is the same one
+                # provided by the user. But these could differ by time
+                # index...
+                # Need to check by location, category here
+                if name == 'diff':
+                    if ('differential', loc) in weights_to_overwrite:
+                        weight = weights_to_overwrite['differential', loc]
+                        matrix.append(weight)
+                        continue
+                elif name == 'alg':
+                    if ('algebraic', loc) in weights_to_overwrite:
+                        weight = weights_to_overwrite['algebraic', loc]
+                        matrix.append(weight)
+                        continue
+                elif name == 'input':
+                    if ('input', loc) in weights_to_overwrite:
+                        weight = weights_to_overwrite['input', loc]
+                        matrix.append(weight)
+                        continue
 
+                # If value is None, but variable was provided as overwrite,
+                # weight can still be non-None. This is okay.
                 if value is None:
                     weight = None
                     matrix.append(weight)
                     continue
 
-                diff = abs(vardata.value - value)
+                diff = abs(varlist[loc][t0].value - value)
                 if diff > tol:
                     weight = 1/diff
                 else:
                     weight = 1/tol
                 matrix.append(weight)
 
-            matrices.append(matrix)
-            
-        return (matrix for matrix in matrices)
+            weight_attrname = name + '_weights'
+            setattr(model, weight_attrname, matrix)
 
 
     def add_objective_function(self, model, **kwargs):
@@ -616,7 +701,10 @@ class NMPCSim(object):
         but could flatten into slices, then assemble into lists based on names. 
         This seems like a lot of extra work though.)
         """
-        name = kwargs.pop(name, 'objective')
+        name = kwargs.pop('name', 'objective')
+        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+
         # Q and R are p.s.d. matrices that weigh the state and
         # control norms in the objective function
         Q_diagonal = kwargs.pop('Q_diagonal', True)
@@ -641,6 +729,7 @@ class NMPCSim(object):
         # This implementation assumes diff_weights/diff_sp are just values
         # TODO: square this with implementation above
         if hasattr(model, 'alg_sp') and hasattr(model, 'alg_weights'):
+            # Lists of time-indexed 'variables' - this is fine
             states = model.diff_vars + model.alg_vars
             Q_entries = model.diff_weights + model.alg_weights
             sp_states = model.diff_sp + model.alg_sp
@@ -653,16 +742,31 @@ class NMPCSim(object):
         R_entries = model.input_weights
         sp_controls = model.input_sp
 
-        state_term = sum(sum(Q_entries[i]*(states[i][t] - sp_states[i])**2
-                for i in range(len(states)) if (Q_entries[i] is not None 
-                                            and sp_states[i] is not None))
-                         for t in model.time)
-        # Should be some check that Q_entries == None <=> sp_states == None
+        time = model.time
 
-        control_term = sum(sum(R_entries[i]*(controls[i][t] = sp_controls[i])**2
+        state_term = sum(sum(Q_entries[i]*(states[i][t] - sp_states[i])**2
+                for i in range(len(states)) if (Q_entries[i] is not None
+                                            and sp_states[i] is not None))
+                         for t in time)
+        # Should be some check that Q_entries == None <=> sp_states == None
+        # Not necessarily true, Q can have an entry due to an overwrite
+
+        if control_penalty_type == 'error':
+            control_term = sum(sum(R_entries[i]*(controls[i][t] - sp_controls[i])**2
+                    for i in range(len(controls)) if (R_entries[i] is not None
+                                                and sp_controls[i] is not None))
+                               for t in time)
+        elif control_penalty_type == 'action':
+            if len(time) == 1:
+                init_log.warning(
+                        'Warning: Control action penalty specfied '
+                        'for a model with a single time point.'
+                        'Control term in objective function will be empty.')
+            control_term = sum(sum(R_entries[i]*
+                                  (controls[i][time[k]] - controls[i][time[k-1]])**2
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None))
-                           for t in model.time)
+                               for k in range(2, len(time)+1))
 
         obj_expr = state_term + control_term
 
@@ -670,3 +774,99 @@ class NMPCSim(object):
         model.add_component(name, obj)
 
 
+    def build_bound_lists(self, model):
+        """
+        Builds lists of lower bound, upper bound tuples as attributes of the 
+        input model, based on the current bounds (and domains) of
+        differential, algebraic, and input variables.
+
+        Args:
+            model : Model whose variables will be checked for bounds.
+
+        Returns:
+            None
+        """
+        time = model.time
+        t0 = time.first()
+
+        model.diff_var_bounds = []
+        for var in model.diff_vars:
+            # Assume desired bounds are given at t0
+            lb = var[t0].lb
+            ub = var[t0].ub
+            if (var[t0].domain == NonNegativeReals and lb is None):
+                lb = 0
+            elif (var[t0].domain == NonNegativeReals and lb < 0):
+                lb = 0
+            for t in time:
+                var[t].setlb(lb)
+                var[t].setub(ub)
+                var[t].domain = Reals
+            model.diff_var_bounds.append((lb, ub))
+
+        model.alg_var_bounds = []
+        for var in model.alg_vars:
+            # Assume desired bounds are given at t0
+            lb = var[t0].lb
+            ub = var[t0].ub
+            if (var[t0].domain == NonNegativeReals and lb is None):
+                lb = 0
+            elif (var[t0].domain == NonNegativeReals and lb < 0):
+                lb = 0
+            for t in time:
+                var[t].setlb(lb)
+                var[t].setub(ub)
+                var[t].domain = Reals
+            model.alg_var_bounds.append((lb, ub))
+
+        model.input_var_bounds = []
+        for var in model.input_vars:
+            # Assume desired bounds are given at t0
+            lb = var[t0].lb
+            ub = var[t0].ub
+            if (var[t0].domain == NonNegativeReals and lb is None):
+                lb = 0
+            elif (var[t0].domain == NonNegativeReals and lb < 0):
+                lb = 0
+            for t in time:
+                var[t].setlb(lb)
+                var[t].setub(ub)
+                var[t].domain = Reals
+            model.input_var_bounds.append((lb, ub))
+
+
+    def transfer_bounds(self, tgt_model, src_model):
+        """
+        Transfers bounds from source model's bound lists
+        to target model's differential, algebraic, and input
+        variables, and sets domain to Reals.
+
+        Args:
+            tgt_model : Model whose variables bounds will be transferred to
+            src_model : Model whose bound lists will be used to set bounds.
+
+        Returns:
+            None
+        """
+        time = tgt_model.time
+
+        diff_var_bounds = src_model.diff_var_bounds
+        for i, var in enumerate(tgt_model.diff_vars):
+            for t in time:
+                var[t].setlb(diff_var_bounds[i][0])
+                var[t].setub(diff_var_bounds[i][1])
+                var[t].domain = Reals
+
+        alg_var_bounds = src_model.alg_var_bounds
+        for i, var in enumerate(tgt_model.alg_vars):
+            for t in time:
+                var[t].setlb(alg_var_bounds[i][0])
+                var[t].setub(alg_var_bounds[i][1])
+                var[t].domain = Reals
+
+        input_var_bounds = src_model.input_var_bounds
+        for i, var in enumerate(tgt_model.input_vars):
+            for t in time:
+                var[t].setlb(input_var_bounds[i][0])
+                var[t].setub(input_var_bounds[i][1])
+                var[t].domain = Reals
