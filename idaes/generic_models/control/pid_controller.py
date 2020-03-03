@@ -72,8 +72,8 @@ class PIDBlockData(ProcessBlockData):
         doc="Velocity or standard form"))
     # TODO<jce> options for P, PI, and PD, you can currently do PI by setting
     #           the derivative time to 0, this class should handle PI and PID
-    #           controlers. Porprtional only controlers are sufficently different
-    #           that another class should be implemented.
+    #           controllers. Proportional, only controllers are sufficiently
+    #           different that another class should be implemented.
     # TODO<jce> Anti-windup the integral term can keep accumulating error when
     #           the controller output is at a bound. This can cause trouble,
     #           and ways to deal with it should be implemented
@@ -150,7 +150,7 @@ class PIDBlockData(ProcessBlockData):
         """
         if isinstance(self.flowsheet().time, ContinuousSet):
             # time may not be a continuous set if you have a steady state model
-            # in the stready state model case obiously the controller should
+            # in the steady state model case obviously the controller should
             # not be active, but you can still add it.
             if 'scheme' not in self.flowsheet().time.get_discretization_info():
                 # if you have a dynamic model, must do time discretization
