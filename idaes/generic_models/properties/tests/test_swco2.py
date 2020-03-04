@@ -164,7 +164,7 @@ class TestSWCO2(object):
             return _rho/467.6
 
         def check(_T, _rho, func, val, rel=1e-4):
-            #print(func.name)
+            print(func.name)
             val = pytest.approx(val, rel=rel)
             assert value(func(delta(_rho), tau(_T))) == val
 

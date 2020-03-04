@@ -118,10 +118,16 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
             mw=Param(initialize=0.01801528, doc="Molecular weight [kg/mol]"),
-            temperature_crit=Param(initialize=647.096, doc="Critical temperature [K]"),
+            temperature_crit=Param(
+                initialize=647.096,
+                doc="Critical temperature [K]",
+            ),
             pressure_crit=Param(initialize=2.2064e7, doc="Critical pressure [Pa]"),
             dens_mass_crit=Param(initialize=322, doc="Critical density [kg/m3]"),
-            gas_const=Param(initialize=8.3144598, doc="Gas Constant [J/mol/K]"),
+            specific_gas_const=Param(
+                initialize=461.51805,
+                doc="Water Specific Gas Constant [J/mol/K]",
+            ),
         )
         super().build()
         # Thermal conductivity parameters.
