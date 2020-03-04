@@ -45,7 +45,7 @@ def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
 
     allow_miss = kwargs.pop('allow_miss', False)
 
-    local_parent = src_block
+    local_parent = tgt_block
     for r in path_from_block(src_comp, src_block, include_comp=True):
         # Better name for include_comp might be include_leaf
         try:
@@ -70,7 +70,7 @@ class VarLocator(object):
     proper container.
     """
 
-    def __init__(self, category, container, location):
+    def __init__(self, category, container, location, is_ic=False):
         # Should this class store the time index of the variable?
         # probably not (a. might not exist, b. should already be known)
         if type(category) is not str:
@@ -90,6 +90,10 @@ class VarLocator(object):
             raise ValueError(
             'location must be a valid index for the container') 
         self.location = location
+
+        if type(is_ic) is not bool:
+            raise ValueError()
+        self.is_ic = is_ic
 
 
 class NMPCSim(object):
@@ -128,9 +132,18 @@ class NMPCSim(object):
         self.p_mod.initial_inputs = initial_inputs
         # ^ Add these as an attribute so they can be used later to validate
         # steady state model
+        self.build_variable_locator(self.p_mod, 
+                differential=self.p_mod.diff_vars,
+                derivative=self.p_mod.deriv_vars,
+                algebraic=self.p_mod.alg_vars,
+                inputs=self.p_mod.input_vars,
+                fixed=self.p_mod.fixed_vars,
+                ic=self.p_mod.ic_vars)
+        # Now adding a locator to the plant model so I can find plant model
+        # variables corresponding to the controller's initial conditions
 
         # Categorize variables in controller model
-        init_controller_inputs = self.validate_inputs(controller_model,
+        init_controller_inputs = self.validate_initial_inputs(controller_model,
                 plant_model, initial_inputs)
         init_log.info('Categorizing variables in the controller model')
         t1 = timemodule.time() 
@@ -142,23 +155,107 @@ class NMPCSim(object):
                 derivative=self.c_mod.deriv_vars,
                 algebraic=self.c_mod.alg_vars,
                 inputs=self.c_mod.input_vars,
-                fixed=self.c_mod.fixed_vars)
+                fixed=self.c_mod.fixed_vars,
+                ic=self.c_mod.ic_vars)
         t3 = timemodule.time()
         print(f'building locator took {t3-t2} seconds')
         # Only expecting user arguments (set point) in form of controller
         # variables, so only build locator for controller model
         # for now.
+        # ^ Not true, see above.
         #
         # Not convinced that having a variable locator like this is the
         # best thing to do, but will go with it for now.
 
+        # Only need to manipulate bounds of controller model. Assume the 
+        # bounds in the plant model should remain in place for simulation.
+        # (Should probably raise a warning if bounds are present...)
         self.build_bound_lists(self.c_mod)
+
+        # Validate inputs in the plant model and initial conditions
+        # in the control model.
+        self.p_mod.controller_ic_vars = self.validate_slices(
+                self.p_mod,
+                self.c_mod,
+                self.c_mod.ic_vars)
+        self.c_mod.plant_input_vars = self.validate_slices(
+                self.c_mod,
+                self.p_mod,
+                self.p_mod.input_vars)
+
+        self.validate_fixedness(self.p_mod)
+        self.validate_fixedness(self.c_mod)
 
         pdb.set_trace()
 
 
-    def validate_inputs(self, tgt_model, src_model, src_inputs=None,
+    def validate_slices(self, tgt_model, src_model, src_slices):
+        """
+        Given list of time-only slices in a source model, attempts to find
+        each of them in the target model and returns a list of the found 
+        slices in the same order.
+        Expects to find a var_locator dictionary attribute in the target
+        model.
+        """
+        # What I need to do is actually a little more complicated...
+        # Because I can't just find the slice that I want in the target model.
+        # That slice doesn't exist in the model, it's essentially just a nice
+        # literary device for iterating over some related variables.
+        # So for every slice provided, extract the first VarData, find it in
+        # the target model, then use the VarLocator to find the corresponding
+        # slice in the target model...
+        t0 = src_model.time.first()
+        tgt_slices = []
+        for _slice in src_slices:
+            init_vardata = _slice[t0]
+            tgt_vardata = find_comp_in_block(tgt_model, 
+                                             src_model, 
+                                             init_vardata)
+            tgt_slice = tgt_model.var_locator[id(tgt_vardata)].container
+            location = tgt_model.var_locator[id(tgt_vardata)].location
+            tgt_slices.append(tgt_slice[location])
+        return tgt_slices
+
+
+    def validate_fixedness(self, model):
+        """
+        Makes sure that assumptions regarding fixedness for different points
+        in time are valid. Differential, algebraic, and derivative variables
+        may be fixed only at t0, only if they are initial conditions.
+        Fixed variables must be fixed at all points in time.
+        """
+        time = model.time
+        t0 = time.first()
+        locator = model.var_locator
+
+        for _slice in model.alg_vars + model.diff_vars + model.deriv_vars:
+            var0 = _slice[t0]
+            if locator[id(var0)].is_ic:
+                assert var0.fixed
+                for t in time:
+                    if t == t0:
+                        continue
+                    assert not _slice[t].fixed
+            else:
+                for t in time:
+                    assert not _slice[t].fixed
+
+        for var in model.fixed_vars:
+            for t in time:
+                # Fixed vars, e.g. those used in boundary conditions,
+                # may "overlap" with initial conditions. It is up to the user
+                # to make sure model has appropriate number of degrees of
+                # freedom
+                if t == t0:
+                    continue
+                assert var[t].fixed
+                    
+
+    def validate_initial_inputs(self, tgt_model, src_model, src_inputs=None,
             outlvl=idaeslog.NOTSET):
+        # Should probably merge with validate_vars, but the functionality is 
+        # slightly different. Here...
+        # Actually seems to do exactly what I want...
         log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         if not src_inputs:
@@ -210,6 +307,14 @@ class NMPCSim(object):
                     'ConcreteModel')
         return True
 
+
+    def read_initial_conditions_from(self, tgt_model, src_model,
+            attrname='ic_vars', **kwargs):
+        t_src = kwargs.pop(t_src, src_model.time.first())
+        t0 = tgt_model.time.first()
+        src_ic_vars = getattr(src_model, attrname)
+        for i, var_tgt in enumerate(tgt_model.ic_vars):
+            var_tgt.fix(src_ic_vars[i][t_src].value)
 
     def solve_initial_conditions(self, model, initial_inputs, **kwargs):
         # Record which Constraints/Variables are initially inactive
@@ -292,7 +397,7 @@ class NMPCSim(object):
         alg_vars = []
         fixed_vars = []
 
-	ic_vars = []
+        ic_vars = []
 
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
 
@@ -335,8 +440,9 @@ class NMPCSim(object):
                 continue
             assert var is dae_no_dups.pop(i)
 
-            statevar = var.get_state_var()
-            if statevar[index1].fixed:
+            # Do The Correct Thing depending on which variables aren't fixed
+            # Should have some robust tests for this behavior
+            if parent.get_state_var()[index1].fixed:
                 # Assume state var has been fixed everywhere.
                 # Then derivative is 'not really a derivative'
                 # in the sense that it doesn't specify a differential
@@ -344,7 +450,6 @@ class NMPCSim(object):
                 # In this case do nothing.
                 continue
 
-            # If 
             if var[t1].fixed:
                 # Assume derivative has been fixed everywhere.
                 # It will be added to the list of fixed variables,
@@ -401,7 +506,7 @@ class NMPCSim(object):
         model.n_dv = len(diff_vars)
         assert model.n_dv == len(deriv_vars)
 
-	model.ic_vars = ic_vars
+        model.ic_vars = ic_vars
         assert model.n_dv == len(ic_vars)
 
         model.input_vars = input_vars
@@ -421,6 +526,7 @@ class NMPCSim(object):
         input_list = kwargs.pop('inputs', []) # note the s. input is reserved
         fixed_list = kwargs.pop('fixed', [])
         scalar_list = kwargs.pop('scalar', [])
+        ic_list = kwargs.pop('ic', [])
 
         locator = {}
 
@@ -447,6 +553,12 @@ class NMPCSim(object):
         for i, vardata in enumerate(scalar_list):
             for t in model.time:
                 locator[id(vardata)] = VarLocator('scalar', scalar_list, i)
+
+        # Since these variables have already VarLocator objects,
+        # just set the desired attribute.
+        for i, _slice in enumerate(ic_list):
+            for t in model.time:
+                locator[id(_slice[t])].is_ic = True
 
         model.var_locator = locator
 
