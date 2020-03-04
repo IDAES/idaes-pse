@@ -54,6 +54,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.misc import extract_data
 from idaes.dmf import DMF
+from idaes.dmf.errors import WorkspaceError
 from idaes.dmf.resource import Resource, TidyUnitData
 
 # Set up logger
@@ -61,7 +62,11 @@ _log = logging.getLogger(__name__)
 
 # Use DMF workspace in this file's directory
 this_dir = pathlib.Path(__file__).parent.absolute()
-_dmf = DMF(str(this_dir), create=True)
+try:
+    _dmf = DMF(str(this_dir), create=True)
+except WorkspaceError as err:
+    _log.warning(f"Using existing DMF workspace at {this_dir}")
+    _dmf = DMF(str(this_dir))
 
 
 @declare_process_block_class("HDAParameterBlock")
