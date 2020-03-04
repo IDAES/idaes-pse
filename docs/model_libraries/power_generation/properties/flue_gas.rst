@@ -2,7 +2,10 @@ Flue Gas Property Package
 =========================
 
 .. index::
-   pair: idaes.power_generation.properties
+   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasParameterBlock
+   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasParameterData
+   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlock
+   pair: idaes.power_generation.properties.IdealProp_FlueGas;FlueGasStateBlockData
 
 .. currentmodule:: idaes.power_generation.properties.IdealProp_FlueGas
 

@@ -221,6 +221,7 @@ def GenerateGDXGamsFiledtlmv():
 
 # GDX Header
 def writeGamsHeaderdtl(num_points, terms, kset, pset, regions=None):
+    # TODO: What is the kset and pset?
     """ Writes the GAMS file Header including the number of terms and data points as well as different thermodynamic properties.
 
         :param num_points: number of data points
@@ -230,7 +231,6 @@ def writeGamsHeaderdtl(num_points, terms, kset, pset, regions=None):
         :param kset: what is this
         :param pset: what is this
 
-        .. todo:: What is the kset and pset?
     """
     # print num_points
     global Combination
