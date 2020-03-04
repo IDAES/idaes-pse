@@ -9,7 +9,7 @@ shared-dev: &shared-dev
     - run: pip install -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
 #          - run: pyomo --version
-#    - run: cd docs && make all
+    - run: cd docs && make all
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
