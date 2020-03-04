@@ -34,10 +34,12 @@ def molData(fluidData, mol, RVal):
 def PVT(x):
     """
     Calculate dimensionless compressibility
-    Inputs:
-        X = [Pressure, Density, Temperature]
-    OutputS:
-        X = [Delta, Tau, Compressibility]
+
+    Args:
+        X: [Pressure, Density, Temperature]
+
+    Returns:
+        [Delta, Tau, Compressibility]
     """
     Pressure = float(x[0])
     Density = float(x[1])
@@ -69,10 +71,12 @@ def P(x):
 def CP(x):
     """
     Calculate dimensionless isobaric heat capacity
-    Inputs:
-        X = [Density, Temperature, Isobaric Heat Capacity]
-    Outputs:
-        X = [Delta, Tau, CP]
+
+    Args:
+        X: [Density, Temperature, Isobaric Heat Capacity]
+
+    Returns:
+        [Delta, Tau, CP]
     """
     Delta = float(x[0]) / float(critD)
     Tau = float(critT) / float(x[1])
@@ -84,24 +88,28 @@ def CP(x):
 def CV(x):
     """
     Calculate dimensionless isochoric heat capacity
-    Inputs:
-        X = [Density, Temperature, Isochoric Heat Capacity]
-    Outputs:
-        X = [Delta, Tau, CV]
+
+    Args:
+        X: [Density, Temperature, Isochoric Heat Capacity]
+
+    Returns:
+        [Delta, Tau, CV]
     """
     Delta = float(x[0]) / float(critD)
     Tau = float(critT) / float(x[1])
-    CV = float(x[2]) / R  
+    CV = float(x[2]) / R
     return [Delta, Tau, CV]
 
 
 def SND(x):
     """
     Calculate dimensionless speed of sound
-    Inputs:
-        X = [Density, Temperature, Speed of Sound]
-    Outputs:
-        X = [Delta, Tau, W]
+
+    Args:
+        X: [Density, Temperature, Speed of Sound]
+
+    Returns:
+        [Delta, Tau, W]
     """
     Delta = float(x[0]) / float(critD)
     Tau = float(critT) / float(x[1])
@@ -121,8 +129,12 @@ def CP0(x):
 def DL(x):
     """
     Calculate Theta and Delta for saturated liquid density
-    Inputs:
-         X = [Density, Temperature]
+
+    Args:
+         X: [Density, Temperature]
+
+    Returns:
+        [Theta, Delta]
     """
     Theta = 1 - float(x[1]) / float(critT)
     Delta = float(x[0]) / float(critD) - 1
@@ -132,8 +144,12 @@ def DL(x):
 def DV(x):
     """
     Calculate Theta and Delta for saturated vapor density
-    Inputs:
-         X = [Density, Temperature]
+
+    Args:
+         X: [Density, Temperature]
+
+    Returns:
+        [Theta, Delta]
     """
     Theta = 1 - float(x[1]) / float(critT)
     Delta = math.log(float(x[0]) / float(critD))
@@ -142,7 +158,7 @@ def DV(x):
 
 def Dsat(x):
     """
-    Calculate dimensionless terms 
+    Calculate dimensionless terms
     """
     Theta = float(critT) / float(x[1])
     Delta = float(x[0]) / float(critD)
@@ -152,8 +168,12 @@ def Dsat(x):
 def PV(x):
     """
     Calculate Theta, Tau, and Psi for saturated liquid density
-    Inputs:
-         X = [Pressure, Temperature]
+
+    Args:
+         X: [Pressure, Temperature]
+
+    Returns:
+        [Tau, Theta, Psi]
     """
     Theta = 1 - float(x[1]) / float(critT)
     Psi = math.log(float(x[0]) / float(critP))

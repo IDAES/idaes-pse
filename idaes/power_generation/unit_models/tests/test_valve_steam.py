@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.unit_models import SteamValve
-from idaes.property_models import iapws95
+from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         activated_equalities_generator)
