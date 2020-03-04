@@ -16,7 +16,8 @@ Class for performing NMPC simulations of IDAES flowsheets
 """
 
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals)
+        SolverFactory, Objective, NonNegativeReals, Reals, 
+        TransformationFactory)
 from pyomo.kernel import ComponentSet
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
@@ -25,6 +26,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block)
+from idaes.core.util.initialization import initialize_by_time_element
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -121,17 +123,22 @@ class NMPCSim(object):
         self.validate_models(self.p_mod, self.c_mod)
 
         # Solve for consistent initial conditions
-        self.p_mod._originally_active = get_activity_dict(self.p_mod)
-        self.solve_initial_conditions(self.p_mod, initial_inputs,
-                activity_dict=self.p_mod._originally_active,
-                solver=solver)
+#        self.p_mod._originally_active = get_activity_dict(self.p_mod)
 
         # Categorize variables in plant model
         init_log.info('Categorizing variables in plant model') 
         self.categorize_variables(self.p_mod, initial_inputs)
+
+        self.solve_initial_conditions(self.p_mod,
+                solver=solver)
+
         self.p_mod.initial_inputs = initial_inputs
         # ^ Add these as an attribute so they can be used later to validate
         # steady state model
+        # ^ What did I mean by this? In what way does steady state model need
+        # to resemble plant model?
+        # Not sure this is still necessary
+
         self.build_variable_locator(self.p_mod, 
                 differential=self.p_mod.diff_vars,
                 derivative=self.p_mod.deriv_vars,
@@ -186,7 +193,47 @@ class NMPCSim(object):
         self.validate_fixedness(self.p_mod)
         self.validate_fixedness(self.c_mod)
 
-        pdb.set_trace()
+        self.load_initial_conditions_into(self.c_mod, self.p_mod,
+                src_attrname='controller_ic_vars')
+#        self.c_mod._originally_active = get_activity_dict(self.c_mod)
+
+        # Should strip bounds before this IC solve, since the controller
+        # model should have bounds
+        self.strip_controller_bounds = TransformationFactory(
+                                       'contrib.strip_var_bounds')
+        self.strip_controller_bounds.apply_to(self.c_mod, reversible=True)
+
+        # Controller model has already been categorized... No need 
+        # to provide init_controller_inputs
+        self.solve_initial_conditions(self.c_mod, solver=solver)
+        #strip_bounds.revert(self.c_mod)
+
+        self.sample_time = kwargs.pop('sample_time', 
+                self.c_mod.time.get_finite_elements()[1] -
+                    self.c_mod.time.get_finite_elements()[0])
+        self.validate_sample_time(self.sample_time, 
+                self.c_mod, self.p_mod)
+
+
+    def validate_sample_time(self, sample_time, *models):
+        for model in models:
+            time = model.time
+            fe_spacing = (time.get_finite_elements()[1] -
+                          time.get_finite_elements()[0])
+            if fe_spacing > sample_time:
+                raise ValueError(
+                    'Sampling time must be at least as long '
+                    'as a finite element in time')
+            if (sample_time / fe_spacing) % 1 != 0:
+                raise ValueError(
+                    'Sampling time must be an integer multiple of '
+                    'finite element spacing for every model')
+
+            horizon_length = time.last() - time.first()
+            if (horizon_length / sample_time) % 1 != 0:
+                raise ValueError(
+                    'Sampling time must be an integer divider of '
+                    'horizon length')
 
 
     def validate_slices(self, tgt_model, src_model, src_slices):
@@ -308,15 +355,57 @@ class NMPCSim(object):
         return True
 
 
-    def read_initial_conditions_from(self, tgt_model, src_model,
-            attrname='ic_vars', **kwargs):
-        t_src = kwargs.pop(t_src, src_model.time.first())
+    def load_initial_conditions_into(self, tgt_model, src_model,
+            src_attrname='ic_vars', **kwargs):
+        t_src = kwargs.pop('t_src', src_model.time.first())
         t0 = tgt_model.time.first()
-        src_ic_vars = getattr(src_model, attrname)
-        for i, var_tgt in enumerate(tgt_model.ic_vars):
-            var_tgt.fix(src_ic_vars[i][t_src].value)
 
-    def solve_initial_conditions(self, model, initial_inputs, **kwargs):
+        # src_attrname provided so we can use controller_ic_vars
+        src_ic_vars = getattr(src_model, src_attrname)
+        for i, var_tgt in enumerate(tgt_model.ic_vars):
+            var_tgt[t0].fix(src_ic_vars[i][t_src].value)
+
+
+    def inject_inputs_into(self, tgt_model, src_model, **kwargs):
+        """
+        Sets the values of the input variables in the target model 
+        over a sampling range to the values of those in the source 
+        model at the specified point in time.
+
+        Args:
+            tgt_model : The target model
+            src_model : The source model
+            src_attrname : The attribute in the source model that contains
+                           variables corresponding to the plant's input 
+                           variables. Default is input_vars, but may want
+                           to use plant_input_vars so as not to assume that
+                           input variables are the same between models.
+            t_src : The point in time from which input values in the source
+                    model will be extracted.
+            t_tgt : The start of the range into which input values will be 
+                    copied.
+            sample_time : The length of the range into which input values will
+                          be copied.
+        """
+        src_attrname = kwargs.pop('src_attrname', 'input_vars')
+        t1 = src_model.time.get_finite_elements()[1]
+        t0 = src_model.time.get_finite_elements()[0]
+        t_src = kwargs.pop('t_src', t1)
+        t_tgt = kwargs.pop('t_tgt', tgt_model.time.first())
+        sample_time = kwargs.pop('sample_time', t1-t0)
+
+        src_inputs = getattr(src_model, src_attrname)
+        tgt_inputs = tgt_model.input_vars
+        for t in tgt_model.time:
+            if t <= t_tgt or t > t_tgt + sample_time:
+                continue
+            for i, inp in enumerate(tgt_inputs):
+                inp[t].set_value(src_inputs[i][t_src].value)
+                # Set values instead of fixing here - inputs should
+                # be fixed already, or at least fixed before solve.
+
+
+    def solve_initial_conditions(self, model, **kwargs):
         # Record which Constraints/Variables are initially inactive
         # deactivate model except at t=0
         # fix initial inputs - raise error if no value
@@ -324,26 +413,37 @@ class NMPCSim(object):
         # re-activate model
         #
         # Later include option to skip solve for consistent initial conditions
+        #
+        # Will only work as written for "True" initial conditions since 
+        # it doesn't try to deactivate discretization equations.
+        #
+        # I do this before categorization, but have no reason to.
+        # If I do it after categorization, I can forgo initial_inputs
+        # in favor of the input_vars attribute
 
-        was_originally_active = kwargs.pop('activity_dict', None)
+#        was_originally_active = kwargs.pop('activity_dict', None)
+        was_originally_active = get_activity_dict(model)
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
         outlvl = kwargs.pop('outlvl', self.outlvl)
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
 
         toplevel = model.model()
+        t0 = model.time.first()
 
         non_initial_time = [t for t in model.time]
-        non_initial_time.remove(model.time.first())
+        non_initial_time.remove(t0)
         deactivated = deactivate_model_at(model, model.time, non_initial_time, 
                 outlvl=idaeslog.ERROR)
 
-        for vardata in initial_inputs:
+        for _slice in model.input_vars:
+       # for vardata in initial_inputs:
+            vardata = _slice[t0]
             if vardata.model() is not toplevel:
                 raise ValueError(
                         f"Trying to fix an input that does not belong to model"
                         " {toplevel.name}. Are 'initial_inputs' arguments"
-                        " contained in the plant model?")
+                        " contained in the proper model?")
             if vardata.value == None:
                 raise ValueError(
                         "Trying to solve for consistent initial conditions with "
@@ -356,8 +456,7 @@ class NMPCSim(object):
             raise ValueError(
                     f"Non-zero degrees of freedom in model {toplevel.name}"
                     " when solving for consistent initial conditions. Have the "
-                    "right number of initial conditions in the plant model been"
-                    " fixed?")
+                    "right number of initial conditions been fixed?")
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(model, tee=slc.tee)
@@ -596,20 +695,20 @@ class NMPCSim(object):
         self.add_objective_function(self.c_mod,
                 control_penalty_type='action',
                 name='tracking_objective')
-
-        ### TESTING PURPOSES ONLY ###
-        time = self.c_mod.time
-        for inp in self.c_mod.input_vars:
-            for t in time:
-                if t != time.first():
-                    inp[t].unfix()
-
-        assert (degrees_of_freedom(self.c_mod) == 
-                time.get_discretization_info()['nfe']*self.c_mod.n_iv)
-
-        results = self.default_solver.solve(self.c_mod, tee=True)
-
-        pdb.set_trace()
+#
+#        ### TESTING PURPOSES ONLY ###
+#        time = self.c_mod.time
+#        for inp in self.c_mod.input_vars:
+#            for t in time:
+#                if t != time.first():
+#                    inp[t].unfix()
+#
+#        assert (degrees_of_freedom(self.c_mod) == 
+#                time.get_discretization_info()['nfe']*self.c_mod.n_iv)
+#
+#        results = self.default_solver.solve(self.c_mod, tee=True)
+#
+#        pdb.set_trace()
 
 
     def validate_steady_setpoint(self, set_point, steady_model, **kwargs):
@@ -1051,3 +1150,106 @@ class NMPCSim(object):
                 var[t].setlb(input_var_bounds[i][0])
                 var[t].setub(input_var_bounds[i][1])
                 var[t].domain = Reals
+
+
+    def add_pwc_constraints(self, **kwargs):
+        model = kwargs.pop('model', self.c_mod)
+        sample_time = kwargs.pop('sample_time', self.sample_time)
+        outlvl = kwargs.pop('outlvl', self.outlvl)
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        init_log.info('Adding piecewise-constant constraints')
+
+        time = model.time
+        t0 = model.time.get_finite_elements()[0]
+        t1 = model.time.get_finite_elements()[1]
+        nfe_spacing = t1-t0
+        nfe_per_sample = sample_time / nfe_spacing 
+        if nfe_per_sample - int(nfe_per_sample) != 0:
+            raise ValueError
+        nfe_per_sample = int(nfe_per_sample)
+
+        pwc_constraints = []
+
+        for i, _slice in enumerate(model.input_vars):
+            def pwc_rule(m, t):
+                # Unless t is at the boundary of a sample, require
+                # input[t] == input[t_next]
+                if (t - time.first()) % sample_time == 0:
+                    return Constraint.Skip
+
+                t_next = time.next(t)
+                return _slice[t_next] == _slice[t]
+
+            name = '_pwc_input_' + str(i)
+            pwc_constraint = Constraint(model.time, rule=pwc_rule)
+            model.add_component(name, pwc_constraint)
+            pwc_constraints.append(getattr(model, name))
+
+        model._pwc_constraints = pwc_constraints
+
+
+    def initialize_control_problem(self, **kwargs):
+        strategy = kwargs.pop('strategy', 'from_previous')
+        solver = kwargs.pop('solver', self.default_solver)
+        solver_options = kwargs.pop('solver_options', None)
+        if solver_options:
+            solver.options = solver_options
+
+        time = self.c_mod.time
+
+        if strategy == 'from_previous':
+            self.initialize_from_previous()
+
+        elif strategy == 'simulate':
+            input_type = kwargs.pop('inputs', 'from_set_point')
+            if input_type == 'from_set_point':
+                for i, _slice in enumerate(self.c_mod.input_vars):
+                    for t in time:
+                        if t != time.first():
+                            _slice[t].fix(self.c_mod.input_sp[i])
+
+            # Deactivate objective function
+            # strip bounds
+            self.c_mod.tracking_objective.deactivate()
+            for con in self.c_mod._pwc_constraints:
+                con.deactivate()
+
+            initialize_by_time_element(self.c_mod, self.c_mod.time,
+                    solver=self.default_solver, outlvl=idaeslog.DEBUG)
+
+            # Reactivate objective, pwc constraints, bounds
+
+            self.c_mod.tracking_objective.activate()
+            for con in self.c_mod._pwc_constraints:
+                con.activate()
+
+            for _slice in self.c_mod.input_vars:
+                for t in time:
+                    _slice[t].unfix()
+
+            self.strip_controller_bounds.revert(self.c_mod)
+
+
+    def initialize_from_previous(self):
+        raise NotImplementedError
+
+    def initialize_from_simulation(self):
+        raise NotImplementedError
+
+    def initialize_from_initial_conditions(self):
+        raise NotImplementedError
+
+    
+    def solve_control_problem(self, **kwargs):
+        solver = kwargs.pop('solver', self.default_solver)
+        outlvl = kwargs.pop('outlvl', self.outlvl) 
+        s_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
+
+# Dof should be n_inputs * horizon/sample_time
+#               n_inputs * n_samples
+# or n_inputs * (n_samples + 1) if inputs at t0 are left as dof
+#        assert degrees_of_freedom(self.c_mod) == 
+
+        with idaeslog.solver_log(s_log, idaeslog.DEBUG) as slc:
+            solver.solve(self.c_mod, tee=slc.tee)
+
