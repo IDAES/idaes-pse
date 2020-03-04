@@ -21,6 +21,7 @@ from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
 from idaes.core.phases import Phase
+from idaes.core.components import Component
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
@@ -107,6 +108,26 @@ def test_get_phase_component_set_subset():
     assert pc_set is m.p._phase_component_set
 
 
+def test_get_component():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    with pytest.raises(AttributeError):
+        m.p.get_component("foo")
+
+    m.p.comp = Component()
+
+    assert m.p.get_component("comp") is m.p.comp
+
+    m.p.a = object()
+
+    with pytest.raises(
+            PropertyPackageError,
+            match="p get_component found a component a, but it does not "
+            "appear to be an instance of a Component object."):
+        m.p.get_component("a")
+
+
 def test_get_phase():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -127,6 +148,18 @@ def test_get_phase():
         m.p.get_phase("a")
 
 
+def test_make_component_objects():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.component_list = Set(initialize=["comp1", "comp2"])
+
+    m.p._make_component_objects()
+
+    assert isinstance(m.p.comp1, Component)
+    assert isinstance(m.p.comp2, Component)
+
+
 def test_make_phase_objects():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -144,6 +177,16 @@ def test_make_phase_objects():
     assert m.p.phase2.config.component_list == [4, 5, 6]
 
 
+def test_validate_parameter_block_no_component_list():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    with pytest.raises(
+            PropertyPackageError,
+            match="Property package p has not defined a component list."):
+        m.p._validate_parameter_block()
+
+
 def test_validate_parameter_block_no_phase_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -156,7 +199,20 @@ def test_validate_parameter_block_no_phase_list():
         m.p._validate_parameter_block()
 
 
-def test_validate_parameter_block_invalid_object():
+def test_validate_parameter_block_invalid_component_object():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.component_list = Set(initialize=["foo"])
+
+    m.p.phase_list = Set(initialize=["p1", "p2"])
+    m.p.foo = object()
+
+    with pytest.raises(TypeError):
+        m.p._validate_parameter_block()
+
+
+def test_validate_parameter_block_invalid_phase_object():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
@@ -306,8 +362,9 @@ def test_validate_params():
     m.pb = Parameters()
     m.p = StateTest(default={"parameters": m.pb})
 
-    # If validation has been triggered, Phase object should exist
+    # If validation has been triggered, Phase & Component objects should exist
     assert isinstance(m.pb.p1, Phase)
+    assert isinstance(m.pb.c1, Component)
 
 
 # -----------------------------------------------------------------------------

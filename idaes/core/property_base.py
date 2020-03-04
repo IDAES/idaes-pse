@@ -89,7 +89,7 @@ class PhysicalParameterBlock(ProcessBlockData,
             None
 
         Returns:
-            Phase-component Set object
+            Phase-Component Set object
         """
         try:
             return self._phase_component_set
@@ -109,7 +109,35 @@ class PhysicalParameterBlock(ProcessBlockData,
 
             return self._phase_component_set
 
+    def get_component(self, comp):
+        """
+        Method to retrieve a Component object based on a name from the
+        component_list.
+
+        Args:
+            comp: name of Component object to retrieve
+
+        Returns:
+            Component object
+        """
+        obj = getattr(self, comp)
+        if not isinstance(obj, ComponentData):
+            raise PropertyPackageError(
+                    "{} get_component found a component {}, but it does not "
+                    "appear to be an instance of a Component object."
+                    .format(self.name, comp))
+        return obj
+
     def get_phase(self, phase):
+        """
+        Method to retrieve a Phase object based on a name from the phase_list.
+
+        Args:
+            phase: name of Phase object to retrieve
+
+        Returns:
+            Phase object
+        """
         obj = getattr(self, phase)
         if not isinstance(obj, PhaseData):
             raise PropertyPackageError(
@@ -120,7 +148,7 @@ class PhysicalParameterBlock(ProcessBlockData,
 
     def _validate_parameter_block(self):
         try:
-            # Valdiate that names in phase list have matching Phase objects
+            # Check names in component list have matching Component objects
             for c in self.component_list:
                 try:
                     obj = getattr(self, str(c))
