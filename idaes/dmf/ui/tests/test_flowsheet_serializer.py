@@ -139,15 +139,19 @@ def test_serialize_flowsheet():
 
     named_edges_results = {}
     edges = fss.get_edges()
-    for edge in edges:
-        named_edges_results[edge.getname()] = [x.getname() for x in edges[edge]]
 
-    named_edges_truth = {'M101': ['H101'], 
-                         'H101': ['R101'], 
-                         'R101': ['F101'], 
-                         'F101': ['S101', 'F102'], 
-                         'S101': ['C101'], 
-                         'C101': ['M101']}
+    for name, end_points in edges.items():
+      named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
+
+    print(named_edges_results)
+
+    named_edges_truth = {'s03': {'source': 'M101', 'dest': 'H101'}, 
+                         's04': {'source': 'H101', 'dest': 'R101'}, 
+                         's05': {'source': 'R101', 'dest': 'F101'}, 
+                         's06': {'source': 'F101', 'dest': 'S101'}, 
+                         's08': {'source': 'S101', 'dest': 'C101'}, 
+                         's09': {'source': 'C101', 'dest': 'M101'}, 
+                         's10': {'source': 'F101', 'dest': 'F102'}}
 
     assert named_edges_results == named_edges_truth
 
@@ -186,33 +190,63 @@ def test_create_link_json():
     dest_anchor = link_position_mapping["mixer"]["inlet_anchors"]
     source_id = "M101"
     dest_id = "F101"
-    link_id = 1
+    link_id = "s03"
+    label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id)
-    print(out_json)
-    assert out_json == {'cells': 
-                        [{
-                            'type': 'standard.Link', 
-                            'source': {
-                                'anchor': {
-                                            'name': 'right', 
-                                            'args': {'rotate': 'false', 'padding': 0}
-                                          }, 
-                                'id': 'M101'
+    fss.create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id, label)
+    assert out_json == {'cells': [{
+                          'type': 'standard.Link', 
+                          'source': {
+                            'anchor': {
+                              'name': 'right', 
+                              'args': {
+                                'rotate': 'false', 
+                                'padding': 0
+                              }
                             }, 
-                            'target': {
-                                'anchor': {
-                                            'name': 'left', 
-                                            'args': {'rotate': 'false', 'padding': 0}
-                                          }, 
-                                'id': 'F101'
+                            'id': 'M101'
+                          },
+                          'target': {
+                            'anchor': {
+                              'name': 'left', 
+                              'args': {
+                                'rotate': 'false', 
+                                'padding': 0
+                              }
                             }, 
-                            'router': {'name': 'orthogonal', 'padding': 10}, 
-                            'connector': {
-                                             'name': 'jumpover', 
-                                             'attrs': {'line': {'stroke': '#6FB1E1'}}
-                                         }, 
-                            'id': 1, 'z': 2
-                        }]
-                       }
+                            'id': 'F101'
+                          }, 
+                          'router': {
+                            'name': 'orthogonal', 
+                            'padding': 10
+                          }, 
+                          'connector': {
+                            'name': 'normal', 
+                            'attrs': {
+                              'line': {
+                                'stroke': '#5c9adb'
+                              }
+                            }
+                          }, 
+                          'id': 's03', 
+                          'labels': [{
+                            'attrs': {
+                              'rect': {
+                                "fill": "#d7dce0", 
+                                "stroke": "#FFFFFF", 
+                                'stroke-width': 1
+                              }, 
+                              'text': {
+                                'text': 'foo', 
+                                'fill': 'black', 
+                                'text-anchor': 'left'
+                              }
+                            }, 
+                            'position': {
+                              'distance': 0.66, 
+                              'offset': -40
+                            }
+                          }], 
+                          'z': 2
+                        }]}
