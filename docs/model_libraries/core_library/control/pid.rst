@@ -4,7 +4,7 @@ Proportional-Integral-Derivative (PID) Controller
 .. index::
    pair: idaes.unit_models.heat_exchanger; Proportional-Integral-Derivative (PID) Controller
 
-.. currentmodule:: idaes.dynamic.pid_controller
+.. currentmodule:: idaes.generic_models.control.pid_controller
 
 The IDAES framework contains a basic PID control implementation, which is described
 in this section.
