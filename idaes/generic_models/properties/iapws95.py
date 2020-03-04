@@ -180,7 +180,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 (3, 5): 0.0,
                 (4, 5): 0.012913842,
             },
-            doc="1st order thermal conductivity prop_iapws95_nist_webbook.txters",
+            doc="1st order thermal conductivity parameters",
         )
         # Viscosity parameters
         # "Release on the IAPWS Formulation 2008 for the Viscosity of
