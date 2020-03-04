@@ -43,7 +43,7 @@ References:
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
-    Set, Expression, Param, sqrt, SolverFactory
+    Expression, Param, sqrt, SolverFactory
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -53,7 +53,9 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        LiquidPhase,
+                        VaporPhase)
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -125,15 +127,16 @@ conditions, and thus corresponding constraints  should be included,
 
         self.state_block_class = ActivityCoeffStateBlock
 
-        # List of valid phases in property package
-        if self.config.valid_phase == ("Liq", "Vap") or \
-                self.config.valid_phase == ("Vap", "Liq"):
-            self.phase_list = Set(initialize=["Liq", "Vap"],
-                                  ordered=True)
-        elif self.config.valid_phase == "Liq":
-            self.phase_list = Set(initialize=["Liq"])
-        else:
-            self.phase_list = Set(initialize=["Vap"])
+        # Create Phase objects
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Liq':
+            self.Liq = LiquidPhase()
+
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Vap':
+            self.Vap = VaporPhase()
 
     @classmethod
     def define_metadata(cls, obj):

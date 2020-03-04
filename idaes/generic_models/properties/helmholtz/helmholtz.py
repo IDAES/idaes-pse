@@ -24,13 +24,10 @@ from pyomo.environ import (
     Expression,
     Param,
     PositiveReals,
-    RangeSet,
     Set,
     value,
     Var,
     NonNegativeReals,
-    exp,
-    sqrt,
     ConcreteModel,
     Suffix,
 )
@@ -40,12 +37,15 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES
 from idaes.core import (
-    declare_process_block_class,
     StateBlock,
     StateBlockData,
     PhysicalParameterBlock,
     MaterialBalanceType,
     EnergyBalanceType,
+    LiquidPhase,
+    VaporPhase,
+    Phase,
+    Component
 )
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
@@ -213,15 +213,22 @@ change.
         # Phase list
         self.available = _available(self.plib)
 
+        # Create Component objects
+        for c in self.component_list:
+            setattr(self, str(c), Component(default={"_component_list_exists": True}))
+
+        # Create Phase objects
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
         if self.config.phase_presentation == PhaseType.MIX:
-            self.phase_list = Set(initialize=["Mix"])
-        elif self.config.phase_presentation == PhaseType.LG:
-            self.phase_list = Set(initialize=["Vap", "Liq"])
-        elif self.config.phase_presentation == PhaseType.L:
-            self.phase_list = Set(initialize=["Liq"])
-        elif self.config.phase_presentation == PhaseType.G:
-            self.phase_list = Set(initialize=["Vap"])
+            self.Mix = Phase()
+
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.L:
+            self.Liq = LiquidPhase()
+
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.G:
+            self.Vap = VaporPhase()
 
         # State var set
         self.state_vars = self.config.state_vars

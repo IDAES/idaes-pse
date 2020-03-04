@@ -19,17 +19,20 @@ Main assumptions:
 """
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Param, PositiveReals, Reals,
-                           Set, value, log, exp, sqrt, Var)
+                           value, log, exp, sqrt, Var)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MaterialFlowBasis,
+                        Component,
+                        VaporPhase)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core import MaterialBalanceType, EnergyBalanceType,\
-     MaterialFlowBasis
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 # Import Python libraries
@@ -61,12 +64,16 @@ class FlueGasParameterData(PhysicalParameterBlock):
         super(FlueGasParameterData, self).build()
         self.state_block_class = FlueGasStateBlock
 
-        # List of valid phases in property package
-        self.phase_list = Set(initialize=['Vap'])
+        # Create Component objects
+        self.N2 = Component()
+        self.O2 = Component()
+        self.NO = Component()
+        self.CO2 = Component()
+        self.H2O = Component()
+        self.SO2 = Component()
 
-        # Component list - a Set of component identifiers
-        self.component_list = Set(
-            initialize=['N2', 'O2', 'NO', 'CO2', 'H2O', 'SO2'])
+        # Create Phase object
+        self.Vap = VaporPhase()
 
         # Molecular weight
         self.mw = Param(self.component_list,
