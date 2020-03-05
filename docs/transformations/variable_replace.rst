@@ -1,7 +1,7 @@
 Variable Replacement
 ====================
 
-.. module:: idaes.plugins.variable_replace
+.. module:: idaes.core.plugins.variable_replace
 
 There are a number of cases where it can be convenient to replace one variable
 for another. IDAES offers a convenient variable replacement transformation. This
@@ -23,7 +23,7 @@ The following example demonstrates the basic usage of the transformation.
 
 .. testcode::
 
-  import idaes.plugins # Load IDAES plugins
+  import idaes.core.plugins # Load IDAES plugins
   import pyomo.environ as pyo
 
   # Use Pyomo's transformation factory to create the transformation object

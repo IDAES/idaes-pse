@@ -178,6 +178,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
             case for Subclassing ProcessBlock is to impliment methods that
             operate on elements of an indexed block.
         doc: Documentation for the class. This should play nice with sphinx.
+
     Returns:
         Decorator function
 

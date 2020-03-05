@@ -25,7 +25,7 @@ from pyomo.environ import (ConcreteModel,
                            Var)
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
