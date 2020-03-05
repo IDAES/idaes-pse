@@ -12,10 +12,7 @@ advanced energy systems through the use of process systems engineering tools
 and approaches. IDAES and its capabilities will be applicable to the development
 of the full range of advanced fossil energy systems, including chemical looping
 and other transformational |CO2| capture technologies, as well as integration with
-other new technologies such as supercritical |CO2|. In addition, the tools and
-capabilities will be applicable to renewable energy development, such as
-biofuels, green chemistry, Nuclear and Environmental Management, such as the
-design of complex, integrated waste treatment facilities.
+other new technologies such as supercritical |CO2|.
 
 Collaborating institutions
 --------------------------
@@ -36,6 +33,7 @@ repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs
 <https://github.com/IDAES/idaes-pse/pulls>`_.  For further enquiries, send an
 email to: <idaes-support@idaes.org>
 
+
 Contents
 --------
 
@@ -43,18 +41,18 @@ Contents
     :maxdepth: 2
 
     install/index
+    extut
     standards
     configuration
     logging
     core/index
     transformations/index
-    models/index
-    property_models/index
+    model_libraries/index
     vis/index
     dmf/index
+    surrogate/index
     apps/index
     version
-    tutorials
     jupyterlab/index
     developer/index
     Modules <apidoc/modules>

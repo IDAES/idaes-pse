@@ -25,12 +25,21 @@ from pyomo.environ import (ConcreteModel,
                            Var)
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.testing import get_default_solver
 
 from idaes.core.util.homotopy import homotopy
+
+
+# Set module level pyest marker
+pytestmark = pytest.mark.solver
+
+# -----------------------------------------------------------------------------
+# Get default solver for testing
+solver = get_default_solver()
 
 
 @pytest.fixture()
@@ -173,6 +182,7 @@ def test_max_eval(model):
 
 # -----------------------------------------------------------------------------
 # Test termination conditions
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic(model):
     tc, prog, ni = homotopy(model, [model.x], [20])
 
@@ -183,6 +193,7 @@ def test_basic(model):
     assert ni == 4
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_overshoot(model):
     # Use a big step such that overshoot will occur if not caught
     tc, prog, ni = homotopy(model, [model.x], [20], step_init=0.6)
@@ -194,6 +205,7 @@ def test_basic_overshoot(model):
     assert ni == 2
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_constraint_violation(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 300)
@@ -208,6 +220,7 @@ def test_basic_constraint_violation(model):
     assert ni == 12
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_max_iter(model):
     tc, prog, ni = homotopy(model, [model.x], [20], max_eval=2)
 
@@ -218,6 +231,7 @@ def test_basic_max_iter(model):
     assert ni == 2
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_infeasible_init(model):
     model.c2 = Constraint(expr=model.y <= 50)
 
@@ -231,6 +245,7 @@ def test_basic_infeasible_init(model):
 # TODO : need tests for convergence with regularisation
 # -----------------------------------------------------------------------------
 # Test that parameters have correct effect
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_step_accel(model):
     # With zero acceleration, should take 10 steps
     tc, prog, ni = homotopy(model, [model.x], [20], step_accel=0)
@@ -242,6 +257,7 @@ def test_basic_step_accel(model):
     assert ni == 10
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_step_init(model):
     # With zero acceleration and initial step of 0.05, should take 20 steps
     tc, prog, ni = homotopy(model, [model.x], [20],
@@ -254,6 +270,7 @@ def test_basic_step_init(model):
     assert ni == 20
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_step_cut(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 196)
@@ -270,6 +287,7 @@ def test_basic_step_cut(model):
     assert ni == 6
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_step_cut_2(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 196)
@@ -286,6 +304,7 @@ def test_basic_step_cut_2(model):
     assert ni == 7
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_iter_target(model):
     # Should take 5 steps
     tc, prog, ni = homotopy(model, [model.x], [20], iter_target=2)
@@ -297,6 +316,7 @@ def test_basic_iter_target(model):
     assert ni == 5
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_basic_max_step(model):
     # With max_step = step_init = 0.1, should take 10 steps
     tc, prog, ni = homotopy(model, [model.x], [20], max_step=0.1)
@@ -338,6 +358,7 @@ def model2():
     return m
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_ideal_prop(model2):
     tc, prog, ni = homotopy(
             model2, [model2.fs.state_block.temperature], [390])
@@ -358,6 +379,7 @@ def test_ideal_prop(model2):
 
 
 # Test max_iter here, as a more complicated model is needed
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_ideal_prop_max_iter(model2):
     tc, prog, ni = homotopy(
             model2, [model2.fs.state_block.temperature], [390],

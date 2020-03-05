@@ -27,9 +27,9 @@ from idaes.core.util.tables import (create_stream_table_dataframe,
                                     stream_table_dataframe_to_string,
                                     generate_table)
 
-import idaes.property_models.examples.saponification_thermo as thermo_props
-import idaes.property_models.examples.saponification_reactions as rxn_props
-from idaes.unit_models import CSTR
+import idaes.generic_models.properties.examples.saponification_thermo as thermo_props
+import idaes.generic_models.properties.examples.saponification_reactions as rxn_props
+from idaes.generic_models.unit_models import CSTR
 
 
 @pytest.fixture()
@@ -50,6 +50,12 @@ def m():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
+
+
+def test_create_stream_table_dataframe_from_StateBlock(m):
+    d = arcs_to_stream_dict(m, descend_into=True)
+    assert "stream" in d
+    assert d["stream"] == m.fs.stream
 
 
 def test_create_stream_table_dataframe_from_StateBlock(m):
