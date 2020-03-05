@@ -20,12 +20,12 @@ def test_interrogator_parameter_block():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     # Check that parameter block has expected attributes
-    assert isinstance(m.fs.rxn_params.required_properties, dict)
-    assert len(m.fs.rxn_params.required_properties) == 0
+    assert isinstance(m.fs.rxnparams.required_properties, dict)
+    assert len(m.fs.rxnparams.required_properties) == 0
 
 
 def test_interrogator_rxn_block_unindexed_call():
@@ -33,15 +33,15 @@ def test_interrogator_rxn_block_unindexed_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -53,7 +53,7 @@ def test_interrogator_rxn_block_unindexed_call():
         m.fs.rxns[0]._dummy_var
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "prop_unindexed": ["fs.rxns"]}
 
 
@@ -62,15 +62,15 @@ def test_interrogator_rxn_block_phase_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -80,7 +80,7 @@ def test_interrogator_rxn_block_phase_call():
         m.fs.rxns[0]._dummy_var_phase["Vap"]
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "prop_phase": ["fs.rxns"]}
 
 
@@ -89,15 +89,15 @@ def test_interrogator_rxn_block_comp_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -107,7 +107,7 @@ def test_interrogator_rxn_block_comp_call():
         m.fs.rxns[0]._dummy_var_comp["B"]
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "prop_comp": ["fs.rxns"]}
 
 
@@ -116,15 +116,15 @@ def test_interrogator_rxn_block_phase_comp_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -134,7 +134,7 @@ def test_interrogator_rxn_block_phase_comp_call():
         m.fs.rxns[0]._dummy_var_phase_comp["Vap", "B"]
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "prop_phase_comp": ["fs.rxns"]}
 
 
@@ -143,15 +143,15 @@ def test_interrogator_rxn_block_reaction_rate_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -161,7 +161,7 @@ def test_interrogator_rxn_block_reaction_rate_call():
         m.fs.rxns[0]._dummy_reaction_idx["R1"]
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "reaction_rate": ["fs.rxns"]}
 
 
@@ -170,15 +170,15 @@ def test_interrogator_rxn_block_dh_rxn_call():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
@@ -188,7 +188,7 @@ def test_interrogator_rxn_block_dh_rxn_call():
         m.fs.rxns[0]._dummy_reaction_idx["R1"]
 
     # Check that get_term calls were logged correctly
-    assert m.fs.rxn_params.required_properties == {
+    assert m.fs.rxnparams.required_properties == {
             "dh_rxn": ["fs.rxns"]}
 
 
@@ -198,15 +198,15 @@ def test_interrogator_initialize_method():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.props = m.fs.params.state_block_class(
             [0],
             default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
+    m.fs.rxns = m.fs.rxnparams.reaction_block_class(
             [0],
-            default={"parameters": m.fs.rxn_params,
+            default={"parameters": m.fs.rxnparams,
                      "state_block": m.fs.props})
 
     with pytest.raises(TypeError,
@@ -223,15 +223,15 @@ def model():
     m.fs = FlowsheetBlock(default={"dynamic": True})
 
     m.fs.params = PropertyInterrogatorBlock()
-    m.fs.rxn_params = ReactionInterrogatorBlock(
+    m.fs.rxnparams = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
     m.fs.R01 = CSTR(default={"property_package": m.fs.params,
-                             "reaction_package": m.fs.rxn_params,
+                             "reaction_package": m.fs.rxnparams,
                              "has_heat_of_reaction": True})
 
     m.fs.R02 = PFR(default={"property_package": m.fs.params,
-                            "reaction_package": m.fs.rxn_params})
+                            "reaction_package": m.fs.rxnparams})
 
     return m
 
@@ -246,7 +246,7 @@ def test_interrogate_flowsheet(model):
             "energy density terms": ["fs.R01", "fs.R02"],
             "pressure": ["fs.R01", "fs.R02"]}
 
-    assert model.fs.rxn_params.required_properties == {
+    assert model.fs.rxnparams.required_properties == {
             "reaction_rate": ["fs.R01", "fs.R02"],
             "dh_rxn": ["fs.R01"]}
 
@@ -259,7 +259,7 @@ def test_list_required_properties(model):
                          "energy density terms",
                          "pressure"]
 
-    rxn_list = model.fs.rxn_params.list_required_properties()
+    rxn_list = model.fs.rxnparams.list_required_properties()
     assert rxn_list == ["dh_rxn", "reaction_rate"]
 
 
@@ -270,14 +270,14 @@ def test_list_models_requiring_property(model):
 
 
 def test_list_properties_required_by_model_by_name(model):
-    prop_list = model.fs.rxn_params.list_properties_required_by_model("fs.R01")
+    prop_list = model.fs.rxnparams.list_properties_required_by_model("fs.R01")
 
     assert prop_list == ["dh_rxn",
                          "reaction_rate"]
 
 
 def test_list_properties_required_by_model_by_object(model):
-    prop_list = model.fs.rxn_params.list_properties_required_by_model(
+    prop_list = model.fs.rxnparams.list_properties_required_by_model(
             model.fs.R01)
 
     assert prop_list == ["dh_rxn",
@@ -286,12 +286,12 @@ def test_list_properties_required_by_model_by_object(model):
 
 def test_list_properties_required_by_model_invalid_model(model):
     with pytest.raises(ValueError):
-        model.fs.rxn_params.list_properties_required_by_model("foo")
+        model.fs.rxnparams.list_properties_required_by_model("foo")
 
 
 def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
-    model.fs.rxn_params.print_required_properties()
+    model.fs.rxnparams.print_required_properties()
 
     captured = capsys.readouterr()
     assert captured.out == """
@@ -323,7 +323,7 @@ reported here.
 
 
 def test_print_models_requiring_property(model, capsys):
-    model.fs.rxn_params.print_models_requiring_property("reaction_rate")
+    model.fs.rxnparams.print_models_requiring_property("reaction_rate")
 
     captured = capsys.readouterr()
     assert captured.out == """
@@ -334,7 +334,7 @@ The following models in the Flowsheet require reaction_rate:
 
 
 def test_print_properties_reqruied_by_model(model, capsys):
-    model.fs.rxn_params.print_properties_required_by_model("fs.R01")
+    model.fs.rxnparams.print_properties_required_by_model("fs.R01")
 
     captured = capsys.readouterr()
     assert captured.out == """

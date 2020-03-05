@@ -36,14 +36,14 @@ from idaes.generic_models.unit_models import CSTR
 def m():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
-    m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params})
+    m.fs.thermoparams = thermo_props.SaponificationParameterBlock()
+    m.fs.reactionparams = rxn_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermoparams})
 
-    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
-    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermoparams,
+                               "reaction_package": m.fs.reactionparams})
+    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermoparams,
+                               "reaction_package": m.fs.reactionparams})
 
     m.fs.stream = Arc(source=m.fs.tank1.outlet,
                       destination=m.fs.tank2.inlet)
@@ -105,14 +105,14 @@ def test_create_stream_table_dataframe_from_StateBlock_orient(m):
 def test_create_stream_table_dataframe_from_StateBlock_time():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [3]})
-    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
-    m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
-        default={"property_package": m.fs.thermo_params})
+    m.fs.thermoparams = thermo_props.SaponificationParameterBlock()
+    m.fs.reactionparams = rxn_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermoparams})
 
-    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
-    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
-                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermoparams,
+                               "reaction_package": m.fs.reactionparams})
+    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermoparams,
+                               "reaction_package": m.fs.reactionparams})
 
     m.fs.stream = Arc(source=m.fs.tank1.outlet,
                       destination=m.fs.tank2.inlet)

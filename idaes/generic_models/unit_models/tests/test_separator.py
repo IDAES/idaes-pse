@@ -1232,31 +1232,31 @@ class IdealTestBlockData(StateBlockData):
         # Add an attribute to allow us to change the state variable definition
         self._state_var_switch = 1
 
-        self.flow_mol_phase_comp = Var(self._params.phase_list,
-                                       self._params.component_list,
+        self.flow_mol_phase_comp = Var(self.params.phase_list,
+                                       self.params.component_list,
                                        initialize=2)
-        self.flow_mol_phase = Var(self._params.phase_list,
+        self.flow_mol_phase = Var(self.params.phase_list,
                                   initialize=2)
-        self.flow_mol_comp = Var(self._params.component_list,
+        self.flow_mol_comp = Var(self.params.component_list,
                                  initialize=2)
         self.flow_mol = Var(initialize=2)
 
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
 
-        self.mole_frac_comp = Var(self._params.component_list,
+        self.mole_frac_comp = Var(self.params.component_list,
                                   initialize=0.5)
-        self.mole_frac_phase_comp = Var(self._params.phase_list,
-                                        self._params.component_list,
+        self.mole_frac_phase_comp = Var(self.params.phase_list,
+                                        self.params.component_list,
                                         initialize=0.5)
 
         self.test_var = Var(initialize=1)
-        self.test_var_comp = Var(self._params.component_list,
+        self.test_var_comp = Var(self.params.component_list,
                                  initialize=1)
-        self.test_var_phase = Var(self._params.phase_list,
+        self.test_var_phase = Var(self.params.phase_list,
                                   initialize=1)
-        self.test_var_phase_comp = Var(self._params.phase_list,
-                                       self._params.component_list,
+        self.test_var_phase_comp = Var(self.params.phase_list,
+                                       self.params.component_list,
                                        initialize=1)
 
         # Set some values to make sure partitioning is correct

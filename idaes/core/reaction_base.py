@@ -199,7 +199,7 @@ should be constructed in this reaction block,
             None
         """
         super(ReactionBlockDataBase, self).build()
-        add_object_reference(self, "_params", self.config.parameters)
+        add_object_reference(self, "params", self.config.parameters)
 
         self._validate_state_block()
 
