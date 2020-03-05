@@ -158,12 +158,12 @@ class KrigingModel:
 
             Exception:  - regularization is not boolean
 
-    **Example:**
-
-    .. code-block:: python
+        **Example:**
     
-            # Initialize Kriging class with no numerical gradients - solution algorithm will be Basinhopping
-            >>> d = KrigingModel(XY_data, numerical_gradients=False)
+        .. code-block:: python
+        
+                # Initialize Kriging class with no numerical gradients - solution algorithm will be Basinhopping
+                >>> d = KrigingModel(XY_data, numerical_gradients=False)
 
         """
 
@@ -248,8 +248,8 @@ class KrigingModel:
             kriging_mean                    : MLE estimate of the Kriging mean
 
         Reference:
-        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
-            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+            [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+                https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
 
         """
         ones_vec = np.ones((y.shape[0], 1))
@@ -280,8 +280,8 @@ class KrigingModel:
             kriging_sd                      : MLE estimate of the Kriging variance
 
         Reference:
-        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
-            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+            [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+                https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
 
         """
         sigma_sq = np.matmul(np.matmul(y_mu.transpose(), cov_inv), y_mu) / ns
@@ -306,8 +306,8 @@ class KrigingModel:
             conc_log_like(float)          : Concentrated likelihood value. Function incurs a large penalty (10000) when co-variance matrix is non-positive definite
 
         Reference:
-        [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
-            https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+            [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide",
+                https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
 
         """
         theta = var_vector[:-1]
@@ -333,9 +333,7 @@ class KrigingModel:
         """
         The numerical_gradient method calculates numerical gradients for the Kriging hyperparameters via central differencing,
 
-            grad(theta) = f(theta + eps) - f(theta - eps)
-                        ---------------------------------
-                                    2 * eps
+        grad(theta) = (f(theta + eps) - f(theta - eps))/(2 * eps)
 
         Args:
             var_vector(NumPy Array)        : Numpy array containing the Kriging paramaters (Kriging weights and regularization parameter)
@@ -436,7 +434,6 @@ class KrigingModel:
     @staticmethod
     def error_calculation(theta, p, mean, cov_inv, y_mu, x, y_data):
         """
-        ===============================================================================================================
         This method calculates the SSE and RMSE errors between the actual and predicted output values,
              ss_error = sum of squared errors / number of samples
              rmse_error = sqrt(sum of squared errors / number of samples)
@@ -454,7 +451,6 @@ class KrigingModel:
             ss_error        : The average sum of squared errors
             rmse_error      : The root-mean-squared error (RMSE)
             y_prediction    : Predicted values of y
-         ==============================================================================================================
 
         """
         y_prediction = np.zeros((x.shape[0], 1))

@@ -86,7 +86,7 @@ apidoc:
 	@ /bin/rm -rf $(SPHINXAPIDOCOUT_I) $(SPHINXAPIDOCOUT_X)
 	@ echo "** API docs are in ./apidoc"
 
-all: apidoc tutorials html
+all: apidoc html
 	@echo "** Build finished"
 
 html:
