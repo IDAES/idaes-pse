@@ -11,14 +11,14 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import numpy as np
-from . import mechs
+from idaes.surrogate.ripe import mechs
 from .shared import sharedata as sd
 # from ripe.shared import debug as debug
 
 consivars = sd["ivars"]
 
 
-def makeaterm(data, stoich, mechs, kwargs, ncons, mechlist, fixarray, sharedata):
+def makeaterm(data, stoich, rxn_mechs, kwargs, ncons, mechlist, fixarray, sharedata):
     # This subroutine constructs an activity matrix that is used to encode
     # considered stoichimetry and mechanisms
     # Input :
@@ -53,8 +53,8 @@ def makeaterm(data, stoich, mechs, kwargs, ncons, mechlist, fixarray, sharedata)
             # index i2 over species
             i3 = 0
             # index i3 over mechanisms
-            for tempi in range(len(mechs)):
-                mechline = mechs[tempi]
+            for tempi in range(len(rxn_mechs)):
+                mechline = rxn_mechs[tempi]
                 for mspec in mechline[1]:
                     for h_ind in list(mechline[0]):
                         # final index over stoichiometries
