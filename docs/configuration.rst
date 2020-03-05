@@ -11,7 +11,7 @@ default configuration is shown below and can be used as a template to create new
 configuration files. This is the configuration used by IDAES if nothing else is
 provided.
 
-.. code-block:: yaml
+.. code-block::
 
   use_idaes_solvers = true
   logger_capture_solver = true
