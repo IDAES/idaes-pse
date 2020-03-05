@@ -66,6 +66,7 @@ try:
     _dmf = DMF(str(this_dir), create=True)
 except WorkspaceError as err:
     _log.warning(f"Using existing DMF workspace at {this_dir}")
+    _dmf = DMF(str(this_dir))
 
 
 @declare_process_block_class("HDAParameterBlock")
