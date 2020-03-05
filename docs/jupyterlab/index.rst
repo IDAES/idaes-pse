@@ -24,7 +24,7 @@ that displays flowsheets serialized with ``flowsheet.serialize()``.
 .. image:: ../_images/modelvis/jupyterlab4.png
     :alt: Flowsheet viewer sample image
 
-.. comment::
+.. note::
     The tool is used in conjunction with the 
     `idaes.dmf.ui` subpackage, which serializes the model as a `.idaes.vis` file 
     which is read by the JupyterLab extension.

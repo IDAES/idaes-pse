@@ -1,30 +1,13 @@
+Applications
+============
 
-Data Driven Machine Learning
-============================
+This section contains applications that can be used in conjunction with the IDAES
+framework and libraries, but which are not closely tied to the implementation.
 
-.. toctree::
-    :maxdepth: 1
-
-    alamopy
-    ripe
-    helmet
-
-.. warning::
-    The ddm-learning library is still in active development and we
-    hope to improve on it in future releases. Please use its
-    functionality at your own discretion.
-
-Overview
+Contents
 --------
 
-The Data Driven Machine Language (ddm-learning) repository contains regression tools for the development of property models for kinetics and thermodynamics of a system. The provided tools include both ALAMOpy and RIPE that can access ALAMO and other solvers through the Python API. Examples for both tool are provided.
+.. toctree::
+    :maxdepth: 2
 
-
-.. image:: ../_images/ddm-software.png
-    :width: 600px
-
-
-Contributing
-------------
-
-By contributing to this software you are agreeing to all the terms laid out in the :ref:`idaes-license` and :ref:`idaes-copyright`.
+    matopt

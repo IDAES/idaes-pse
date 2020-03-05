@@ -23,6 +23,9 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 import idaes.ver
 
+# For importing from apps.<modules..>
+sys.path.insert(0, os.path.abspath('../apps'))
+
 # If running on readthedocs, then run `make apidoc tutorials` to at least
 # generate static versions of the tutorial notebooks.
 if os.environ.get('READTHEDOCS', None):
