@@ -181,7 +181,6 @@ class SamplingMethods:
 
     def prime_number_generator(self, n):
         """
-        ===============================================================================================================
         Function generates a list of the first n prime numbers
 
             Args:
@@ -193,7 +192,6 @@ class SamplingMethods:
         Example: Generate first three prime numbers
             >>  prime_number_generator(3)
             >> [2, 3, 5]
-        ================================================================================================================
 
         """
         # Alternative way of generating primes using list generators
@@ -218,7 +216,6 @@ class SamplingMethods:
 
     def base_conversion(self, a, b):
         """
-        ===============================================================================================================
         Function converts integer a from base 10 to base b
 
             Args:
@@ -234,7 +231,6 @@ class SamplingMethods:
 
             >>  base_conversion(57, 47)
             >> ['1', '10']
-        ================================================================================================================
 
         """
 
@@ -325,7 +321,11 @@ class LatinHypercubeSampling(SamplingMethods):
 
     To use: call class with inputs, and then run ``sample_points`` method.
 
-    Example: To select 10 LHS samples from "data":
+    **Example:**
+    
+    .. code-block:: python
+    
+        # To select 10 LHS samples from "data"
         >>> b = rbf.LatinHypercubeSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -520,7 +520,11 @@ class UniformSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function
 
-    Example: To select 50 samples on a :math:`\\left(10 \\times 5\\right)` grid in a 2-D space:
+    **Example:**
+    
+    .. code-block:: python 
+    
+        # To select 50 samples on a (10 x 5) grid in a 2D space:
         >>> b = rbf.UniformSampling(data, [10, 5], sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -665,7 +669,11 @@ class HaltonSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 Halton samples in a 2-D space:
+    **Example:** 
+    
+    .. code-block:: python
+    
+        # For the first 10 Halton samples in a 2-D space:
         >>> b = rbf.HaltonSampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -807,7 +815,11 @@ class HammersleySampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 Hammersley samples in a 2-D space:
+    **Example:** 
+    
+    .. code-block:: python
+    
+        # For the first 10 Hammersley samples in a 2-D space:
         >>> b = rbf.HammersleySampling(data, 10, sampling_type="selection")
         >>> samples = b.sample_points()
 
@@ -947,7 +959,11 @@ class CVTSampling(SamplingMethods):
 
     To use: call class with inputs, and then ``sample_points`` function.
 
-    Example: For the first 10 CVT samples in a 2-D space:
+    **Example:**
+    
+    .. code-block:: python
+     
+        # For the first 10 CVT samples in a 2-D space:
         >>> b = rbf.CVTSampling(data_bounds, 10, tolerance = 1e-5, sampling_type="creation")
         >>> samples = b.sample_points()
 
@@ -1082,25 +1098,22 @@ class CVTSampling(SamplingMethods):
     @staticmethod
     def random_sample_selection(no_samples, no_features):
         """
-        ===============================================================================================================
         Function generates a the required number of samples (no_samples) within an no_features-dimensional space.
         This is achieved by generating an m x n 2-D array using numpy's random.rand function, where
-            m = number of training samples to be generated, and'
-            n = number of design features/variables (dimensionality of the problem).
 
-            Args:
-                no_samples(int): The number of samples to be generated.
-                no_features(int): Number of design features/variables in the input data.
+            - m = number of training samples to be generated, and'
+            - n = number of design features/variables (dimensionality of the problem).
 
-            Returns:
-                random_points(NumPy Array): 2-D array of size no_samples x no_features generated from a uniform distribution.
+        Args:
+            no_samples(int): The number of samples to be generated.
+            no_features(int): Number of design features/variables in the input data.
+
+        Returns:
+            random_points(NumPy Array): 2-D array of size no_samples x no_features generated from a uniform distribution.
 
         Example: Generate three samples for a two-dimensional problem
             >>  rbf.CVTSampling.random_sample_selection(3, 2)
-            >> array([[0.03149075, 0.70566624],
-                      [0.48319597, 0.03810093],
-                      [0.19962214, 0.57641408]])
-        ================================================================================================================
+            >> array([[0.03149075, 0.70566624], [0.48319597, 0.03810093], [0.19962214, 0.57641408]])
 
         """
         random_points = np.random.rand(no_samples, no_features)
@@ -1109,15 +1122,13 @@ class CVTSampling(SamplingMethods):
     @staticmethod
     def eucl_distance(u, v):
         """
-        ===============================================================================================================
         The function eucl_distance(u,v) calculates Euclidean distance between two points or arrays u and v.
 
-            Args:
-                u, v(NumPy Array): Two points or arrays with the same number of features (same second dimension)
+        Args:
+            u, v (NumPy Array): Two points or arrays with the same number of features (same second dimension)
 
-            Returns:
-                euc_d(NumPy Array): Array of size (u.shape[0] x 1) containing Euclidean distances.
-        ================================================================================================================
+        Returns:
+            euc_d(NumPy Array): Array of size (u.shape[0] x 1) containing Euclidean distances.
 
         """
         d = u - v
@@ -1128,7 +1139,6 @@ class CVTSampling(SamplingMethods):
     @staticmethod
     def create_centres(initial_centres, current_random_points, current_centres, counter):
         """
-        ===============================================================================================================
         The function create_centres generates new mass centroids for the design space based on McQueen's method.
         The mass centroids are created based on the previous mass centroids and the mean of random data sampling the design space.
 
@@ -1145,7 +1155,6 @@ class CVTSampling(SamplingMethods):
         (1) Classify the current random points in current_random_points based on their centres
         (2) Evaluate the mean of the random points in each class
         (3) Create the new centres as the weighted average of the current centres (initial_centres) and the mean data calculated in the second step. The weighting is done based on the number of iterations (counter).
-        ================================================================================================================
 
         """
         centres = np.zeros((initial_centres.shape[0], initial_centres.shape[1]))

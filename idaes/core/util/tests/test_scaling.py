@@ -23,6 +23,19 @@ from idaes.core.util.scaling import (
 
 __author__ = "John Eslick"
 
+
+import pytest
+import pyomo.environ as pyo
+from idaes.core.util.scaling import (
+    ScalingBasis,
+    calculate_scaling_factors,
+    badly_scaled_var_generator,
+    grad_fd,
+    constraint_fd_autoscale,
+)
+
+__author__ = "John Eslick"
+
 def test_1():
     # Test scalar variables
     m = pyo.ConcreteModel()
@@ -37,9 +50,10 @@ def test_1():
 
     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
     m.scaling_expression = pyo.Suffix()
+    m.nominal_value = pyo.Suffix()
     m.b1.scaling_expression = pyo.Suffix()
 
-    m.scaling_factor[m.x] = 1/10
+    m.nominal_value[m.x] = 10
     m.scaling_factor[m.y] = 1/11
     m.scaling_factor[m.e1] = 1/200
     m.scaling_expression[m.z[1]] = 1/m.y
@@ -107,3 +121,114 @@ def test_1():
     assert pyo.value(m.b1.scaling_expression[m.b1.c1]) == pytest.approx(1/2)
     assert pyo.value(m.b1.scaling_expression[m.b1.c2]) == pytest.approx(1/6)
     assert m.scaling_factor[m.c3] == pytest.approx(1)
+
+def test_find_badly_scaled_vars():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=1e6)
+    m.y = pyo.Var(initialize=1e-8)
+    m.z = pyo.Var(initialize=1e-20)
+    m.b = pyo.Block()
+    m.b.w = pyo.Var(initialize=1e10)
+
+    a = [id(v) for v, sv in badly_scaled_var_generator(m)]
+    assert id(m.x) in a
+    assert id(m.y) in a
+    assert id(m.b.w) in a
+    assert id(m.z) not in a
+
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.b.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor[m.x] = 1e-6
+    m.scaling_factor[m.y] = 1e6
+    m.scaling_factor[m.z] = 1
+    m.b.scaling_factor[m.b.w] = 1e-5
+
+    a = [id(v) for v, sv in badly_scaled_var_generator(m)]
+    assert id(m.x) not in a
+    assert id(m.y) not in a
+    assert id(m.b.w) in a
+    assert id(m.z) not in a
+
+def test_grad_fd():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=1e6)
+    m.y = pyo.Var(initialize=1e8)
+    m.z = pyo.Var(initialize=1e4)
+    m.e = pyo.Expression(expr=100 * (m.x / m.z)**2)
+
+    sfx = 1e-6
+    sfy = 1e-7
+    sfz = 1e-4
+
+    m.c1 = pyo.Constraint(expr=0 == 10 * m.x - 4 * m.y + 5)
+    m.c2 = pyo.Constraint(expr=0 == m.e + 5)
+
+    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_expression = pyo.Suffix()
+    m.scaling_factor[m.x] = sfx
+    m.scaling_factor[m.y] = sfy
+    m.scaling_factor[m.z] = sfz
+    m.scaling_expression[m.c2] = 1/(100 * (m.x / m.z)**2)
+    calculate_scaling_factors(m)
+
+    g, v = grad_fd(m.c1, scaled=False)
+    if id(v[0]) == id(m.x):
+        ix = 0
+        iz = 1
+    else:
+        iz = 0
+        ix = 1
+    assert g[ix] == pytest.approx(10, rel=1e-2)
+    assert g[iz] == pytest.approx(-4, rel=1e-2)
+
+    g, v = grad_fd(m.c1, scaled=True)
+    if id(v[0]) == id(m.x):
+        ix = 0
+        iz = 1
+    else:
+        iz = 0
+        ix = 1
+    assert g[ix] == pytest.approx(10/sfx, rel=1e-2)
+    assert g[iz] == pytest.approx(-4/sfy, rel=1e-2)
+
+    g, v = grad_fd(m.c2, scaled=False)
+    if id(v[0]) == id(m.x):
+        ix = 0
+        iz = 1
+    else:
+        iz = 0
+        ix = 1
+    assert g[ix] == pytest.approx(pyo.value(200*m.x/m.z**2), rel=1e-2)
+    assert g[iz] == pytest.approx(pyo.value(-200*m.x**2/m.z**3), rel=1e-2)
+    assert g[ix] == pytest.approx(2, rel=1e-2)
+    assert g[iz] == pytest.approx(-200, rel=1e-3)
+
+    g, v = grad_fd(c=m.c2, scaled=True)
+    if id(v[0]) == id(m.x):
+        ix = 0
+        iz = 1
+    else:
+        iz = 0
+        ix = 1
+    # makesure the replacements and subs in calculating the scaled gradient
+    # didn't have the side affect of changing anything.  Especailly the named
+    # expression
+    assert pyo.value(m.x) == 1e6
+    assert pyo.value(m.z) == 1e4
+    assert pyo.value(m.e) == pytest.approx(pyo.value(100 * (m.x / m.z)**2))
+    assert g[ix] == pytest.approx(
+        pyo.value(200*(sfz/sfx)**2*sfx*m.x/((sfz*m.z)**2))*m.scaling_factor[m.c2],
+        rel=1e-2,
+    )
+    assert g[iz] == pytest.approx(
+        pyo.value(-200*(sfz/sfx)**2*(sfx*m.x)**2/(sfz*m.z)**3)*m.scaling_factor[m.c2],
+        rel=1e-2,
+    )
+    assert g[ix] == pytest.approx(2, rel=1e-2)
+    assert g[iz] == pytest.approx(-2, rel=1e-3)
+
+    # change the constraint scale factor to get the gradient back over 100 and
+    # make sure the auto scale correctly accounts for existing scale factor
+    m.scaling_factor[m.c2] = 1e-1
+    constraint_fd_autoscale(m.c2)
+    assert m.scaling_factor[m.c2] == pytest.approx(5e-5, rel=1e-2)

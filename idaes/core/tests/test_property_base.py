@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Set, Var
-from pyomo.common.config import ConfigBlock
+from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
 from idaes.core.util.exceptions import (PropertyPackageError,
@@ -54,6 +54,51 @@ def test_PhysicalParameter_NotImplementedErrors():
 
     with pytest.raises(NotImplementedError):
         m.p.get_metadata()
+
+
+def test_get_phase_component_set():
+    m = ConcreteModel()
+    m.p = ParameterBlock() 
+
+    m.p.phase_list = Set(initialize=["1", "2", "3"])
+    m.p.component_list = Set(initialize=["a", "b", "c"])
+
+    pc_set = m.p.get_phase_component_set()
+
+    assert isinstance(m.p._phase_component_set, Set)
+    assert len(m.p._phase_component_set) == 9
+    for v in m.p._phase_component_set:
+        assert v[0] in m.p.phase_list
+        assert v[1] in m.p.component_list
+
+    assert pc_set is m.p._phase_component_set
+
+    # Check that method returns existing component
+    # Delete phase list so that build will fail to make sure it isn't rebuilding
+    m.p.del_component(m.p.phase_list)
+
+    assert m.p.get_phase_component_set() is m.p._phase_component_set
+
+
+def test_get_phase_component_set_subset():
+    m = ConcreteModel()
+    m.p = ParameterBlock() 
+
+    m.p.config = ConfigBlock()
+    m.p.config.declare("phase_component_list",
+                       ConfigValue(default={"1": ["a", "b", "c"],
+                                            "2": ["a", "b"],
+                                            "3": ["c"]}))
+
+    pc_set = m.p.get_phase_component_set()
+
+    assert isinstance(m.p._phase_component_set, Set)
+    assert len(m.p._phase_component_set) == 6
+    for v in m.p._phase_component_set:
+        assert v[0] in m.p.config.phase_component_list.keys()
+        assert v[1] in m.p.config.phase_component_list[v[0]]
+
+    assert pc_set is m.p._phase_component_set
 
 
 # -----------------------------------------------------------------------------

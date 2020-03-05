@@ -9,7 +9,7 @@ shared-dev: &shared-dev
     - run: pip install -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
 #          - run: pyomo --version
-#    - run: cd docs && make all
+    - run: cd docs && make all
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -62,17 +62,17 @@ jobs:
       - run:
           name: Install idaes-pse
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             pip install idaes-pse
       - run:
           name: Install idaes extensions
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             idaes get-extensions
       - run:
           name: Run tests
           command: |
-            conda activate idaes-pse
+            source activate idaes-pse
             pytest --pyargs idaes -W ignore
 
 
@@ -91,5 +91,6 @@ workflows:
             branches:
               only:
                 - master
+                - nightlies
     jobs:
       - "pip-install"

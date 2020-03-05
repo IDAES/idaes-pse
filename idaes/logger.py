@@ -24,7 +24,7 @@ _valid_tags = set(
 
 _config = {
     "solver_capture":True,
-    "tags": set(["framework", "model", "flowsheet", "unit"]),
+    "tags": set(_valid_tags), # by default show all valid tags
 }
 
 
@@ -146,7 +146,9 @@ def getModelLogger(name, level=None, tag=None):
     Returns:
         logger
     """
-    return _getLogger(name=name, logger_name="idaes.model", level=level, tag=tag)
+    return _getLogger(name=name, logger_name="idaes.model",
+                      level=level, tag=tag)
+
 
 def condition(res):
     """Get the solver termination condition to log.  This isn't a specifc value
@@ -162,7 +164,11 @@ def condition(res):
         s = str(res.solver.termination_condition)
 
     try:
-        return "{} - {}".format(s, str(res.solver.message))
+        if "ipopt" in str(res.solver.message).lower():
+            solver_message = " ".join(str(res.solver.message).split(" ")[2:])
+            return "{} - {}".format(s, solver_message)
+        else:
+            return "{} - {}".format(s, str(res.solver.message))
     except:
         return s
 
@@ -217,8 +223,8 @@ def add_log_tag(tag):
     Returns:
         None
     """
-    if m not in _valid_tags:
-        raise ValueError("{} is not a valid logging tag".format(m))
+    if tag not in _valid_tags:
+        raise ValueError("{} is not a valid logging tag".format(tag))
     _config["tags"].add(tag)
 
 def remove_log_tag(tag):
@@ -241,7 +247,7 @@ def valid_log_tags():
     Returns:
         (set) valid tag names
     """
-    return _config["tags"]
+    return _valid_tags
 
 def add_valid_log_tag(tag):
     """Add a tag name to the list of valid names.
@@ -252,7 +258,7 @@ def add_valid_log_tag(tag):
     Returns:
         None
     """
-    _config["tags"].add(tag)
+    _valid_tags.add(tag)
 
 
 class IOToLogTread(threading.Thread):

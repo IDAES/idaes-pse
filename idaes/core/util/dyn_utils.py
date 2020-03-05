@@ -29,9 +29,11 @@ def is_explicitly_indexed_by(comp, *sets):
     """
     Function for determining whether a pyomo component is indexed by a 
     set or group of sets.
+
     Args:
-        comp - some Pyomo component, possibly indexed
-        sets - Pyomo Sets to check indexing by
+        comp : some Pyomo component, possibly indexed
+        sets : Pyomo Sets to check indexing by
+
     Returns:
         A bool that is True if comp is directly indexed each set in sets.
     """
@@ -60,15 +62,18 @@ def is_explicitly_indexed_by(comp, *sets):
         set_set = set(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
 
+
 def is_implicitly_indexed_by(comp, s, stop_at=None):
     """
     Function for determining whether a component is contained in a 
     block that is indexed by a particular set.
+
     Args: 
-        comp - Component whose parent blocks are checked
-        s - Set for which indices are checked
-        stop_at - Block at which to stop searching if reached, regardless
+        comp : Component whose parent blocks are checked
+        s : Set for which indices are checked
+        stop_at : Block at which to stop searching if reached, regardless
                   of whether or not it is indexed by s
+                  
     Returns:
         Bool that is true if comp is contained in a block indexed by s
     """
@@ -96,22 +101,25 @@ def is_implicitly_indexed_by(comp, s, stop_at=None):
     # Return False if top-level block was reached
     return False
 
+
 def get_index_set_except(comp, *sets):
     """ 
     Function for getting indices of a component over a product of its
     indexing sets other than those specified. Indices for the specified 
     sets can be used to construct indices of the proper dimension for the 
     original component via the index_getter function.
+
     Args:
-        comp - Component whose indexing sets are to be manipulated
-        sets - Sets to omit from the set_except product
+        comp : Component whose indexing sets are to be manipulated
+        sets : Sets to omit from the set_except product
+
     Returns:
-        info - Dictionary. Maps 'set_except' to a Pyomo Set or SetProduct
-               of comp's index set, excluding those in sets. Maps
-               'index_getter' to a function that returns an index of the
-               proper dimension for comp, given an element of set_except
-               and a value for each set excluded. These values must be provided
-               in the same order their Sets were provided in the sets argument.
+        A dictionary. Maps 'set_except' to a Pyomo Set or SetProduct
+        of comp's index set, excluding those in sets. Maps
+        'index_getter' to a function that returns an index of the
+        proper dimension for comp, given an element of set_except
+        and a value for each set excluded. These values must be provided
+        in the same order their Sets were provided in the sets argument.
     """
     n_set = len(sets)
     s_set = set(sets)
@@ -185,21 +193,24 @@ def get_index_set_except(comp, *sets):
     info['index_getter'] = index_getter
     return info
 
+
 def _complete_index(loc, index, *newvals):
     """
     Function for inserting new values into a partial index.
     Used by get_index_set_except function to construct the 
     index_getter function for completing indices of a particular
     component with particular sets excluded.
+
     Args:
-        loc - Dictionary mapping location in the new index to
+        loc : Dictionary mapping location in the new index to
               location in newvals
-        index - Partial index
-        newvals - New values to insert into index. Can be scalars
+        index : Partial index
+        newvals : New values to insert into index. Can be scalars
                   or tuples (for higher-dimension sets)
+
     Returns:
-        index - An index with values from newvals inserted in 
-                locations specified by loc
+        An index (tuple) with values from newvals inserted in 
+        locations specified by loc
     """
     if type(index) is not tuple:
         index = (index,)
@@ -213,13 +224,16 @@ def _complete_index(loc, index, *newvals):
         index = index[0:i] + newval + index[i:]
     return index
 
+
 def get_activity_dict(b):
     """
     Function that builds a dictionary telling whether or not each
     ConstraintData and BlockData object in a model is active.
     Uses the objects' ids as the hash.
+
     Args:
-        b - A Pyomo Block to be searched for active components
+        b : A Pyomo Block to be searched for active components
+
     Returns:
         A dictionary mapping id of constraint and block data objects
         to a bool indicating if they are active
@@ -227,19 +241,22 @@ def get_activity_dict(b):
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
 
+
 def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
     """
     Finds any block or constraint in block b, indexed explicitly (and not 
     implicitly) by cset, and deactivates it at points specified. 
     Implicitly indexed components are excluded because one of their parent 
     blocks will be deactivated, so deactivating them too would be redundant.
+
     Args:
-        b - Block to search
-        cset - ContinuousSet of interest
-        pts - Value or list of values, in ContinuousSet, to deactivate at
+        b : Block to search
+        cset : ContinuousSet of interest
+        pts : Value or list of values, in ContinuousSet, to deactivate at
+
     Returns:
-        deactivated - A dictionary mapping points in pts to lists of
-                      component data that have been deactivated there
+        A dictionary mapping points in pts to lists of
+        component data that have been deactivated there
     """
     if not type(pts) is list:
         pts = [pts]
@@ -278,15 +295,18 @@ def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
                  
     return deactivated
 
+
 def deactivate_constraints_unindexed_by(b, time):
     """
     Searches block b for and constraints not indexed by time
     and deactivates them. 
+
     Args:
-        b - Block to search
-        time - Set with respect to which to find unindexed constraints
+        b : Block to search
+        time : Set with respect to which to find unindexed constraints
+
     Returns:
-        conlist - List of constraints deactivated
+        List of constraints deactivated
     """
     conlist = []
     
@@ -306,15 +326,18 @@ def deactivate_constraints_unindexed_by(b, time):
 
     return conlist
 
+
 def fix_vars_unindexed_by(b, time):
     """
     Searches block b for variables not indexed by time
     and fixes them. 
+
     Args:
-        b - Block to search
-        time - Set with respect to which to find unindexed variables
+        b : Block to search
+        time : Set with respect to which to find unindexed variables
+
     Returns:
-        varlist - List of variables fixed
+        List of variables fixed
     """
     varlist = []
 
@@ -339,18 +362,21 @@ def fix_vars_unindexed_by(b, time):
 
     return varlist
 
+
 def get_derivatives_at(b, time, pts):
     """
     Finds derivatives with respect to time at points specified.
     No distinction made for multiple derivatives or mixed partials.
+
     Args:
-        b - Block to search for derivatives
-        time - ContinuousSet to look for derivatives with respect to
-        pts - Value or list of values in time set at which to return 
+        b : Block to search for derivatives
+        time : ContinuousSet to look for derivatives with respect to
+        pts : Value or list of values in time set at which to return 
               derivatives
+
     Returns
-        dvdict - Dictionary mapping time points to lists of derivatives
-                 at those points
+        Dictionary mapping time points to lists of derivatives
+        at those points
     """
     if not type(pts) is list:
         pts = [pts]
@@ -377,6 +403,7 @@ def get_derivatives_at(b, time, pts):
 
     return dvdict
 
+
 # TODO: should be able to replace this function everywhere
 #       with getname and find_component
 #       ^ not true. Cannot call find_component from a BlockData object
@@ -387,14 +414,16 @@ def path_from_block(comp, blk, include_comp=False):
     """
     Returns a list of tuples with (local_name, index) pairs required
     to locate comp from blk
+
     Args:
-        comp - Component(Data) object to locate
-        blk - Block(Data) to locate comp from
-        include_comp - Bool of whether or not to include the
+        comp : Component(Data) object to locate
+        blk : Block(Data) to locate comp from
+        include_comp : Bool of whether or not to include the
                        local_name, index of the component itself
+
     Returns:
-        route - A list of string, index tuples that can be used to locate
-                comp from blk
+        A list of string, index tuples that can be used to locate
+        comp from blk
     """
     parent_data = comp.parent_block()
     route = []
@@ -419,22 +448,94 @@ def path_from_block(comp, blk, include_comp=False):
             route.append((comp.parent_component().local_name, None))
     return route
 
+
+def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
+    """
+    Function to set the values of all variables that are not (implicitly
+    or explicitly) indexed by time to their values in a different flowsheet.
+
+    Args:
+        fs_tgt : Flowsheet into which values will be copied.
+        fs_src : Flowsheet from which values will be copied.
+        copy_fixed : Bool marking whether or not to copy over fixed variables
+                     in the target flowsheet.
+
+    Returns:
+        None
+    """
+    time_tgt = fs_tgt.time
+
+    var_visited = set()
+    for var_tgt in fs_tgt.component_objects(Var,
+                                            descend_into=False):
+        if id(var_tgt) in var_visited:
+            continue
+        var_visited.add(id(var_tgt))
+
+        if is_explicitly_indexed_by(var_tgt, time_tgt):
+            continue
+        var_src = fs_src.find_component(var_tgt.local_name)
+        # ^ this find_component is fine because var_tgt is a Var not VarData
+        # and its local_name is used
+        for index in var_tgt:
+            if not copy_fixed and var_tgt[index].fixed:
+                continue
+            var_tgt[index].set_value(var_src.value)
+
+    blk_visited = set()
+    for blk_tgt in fs_tgt.component_objects(Block):
+
+        if id(blk_tgt) in blk_visited:
+            continue
+        blk_visited.add(id(blk_tgt))
+
+        if (is_implicitly_indexed_by(blk_tgt, time_tgt) or 
+                is_explicitly_indexed_by(blk_tgt, time_tgt)):
+            continue
+        # block is not even implicitly indexed by time
+        for b_index in blk_tgt:
+
+            var_visited = set()
+            for var_tgt in blk_tgt[b_index].component_objects(Var,
+                                                     descend_into=False):
+                if id(var_tgt) in var_visited:
+                    continue
+                var_visited.add(id(var_tgt))
+
+                if is_explicitly_indexed_by(var_tgt, time_tgt):
+                    continue
+    
+                # can't used find_component(local_name) here because I might
+                # have decimal indices
+                local_parent = fs_src
+                for r in path_from_block(var_tgt, fs_tgt):
+                    local_parent = getattr(local_parent, r[0])[r[1]]
+                var_src = getattr(local_parent, var_tgt.local_name)
+    
+                for index in var_tgt:
+                    if not copy_fixed and var_tgt[index].fixed:
+                        continue
+                    var_tgt[index].set_value(var_src[index].value)
+
+
 def copy_values_at_time(fs_tgt, fs_src, t_target, t_source, 
         copy_fixed=True, outlvl=idaeslog.NOTSET):
     """
     Function to set the values of all (explicitly or implicitly) time-indexed 
     variables in a flowsheet to similar values (with the same name) but at 
     different points in time and (potentially) in different flowsheets.
+
     Args:
-        fs_tgt - Target flowsheet, whose variables' values will get set
-        fs_src - Source flowsheet, whose variables' values will be used to 
+        fs_tgt : Target flowsheet, whose variables' values will get set
+        fs_src : Source flowsheet, whose variables' values will be used to 
                  set those of the target flowsheet. Could be the target
                  flowsheet
-        t_target - Target time point
-        t_source - Source time point
-        copy_fixed - Bool of whether or not to copy over fixed variables in 
+        t_target : Target time point
+        t_source : Source time point
+        copy_fixed : Bool of whether or not to copy over fixed variables in 
                      target model 
-        outlvl - IDAES logger output level
+        outlvl : IDAES logger output level
+
     Returns:
         None
     """
