@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Run ALAMO.
+Run ALAMO .
 """
 import sys
 import collections
