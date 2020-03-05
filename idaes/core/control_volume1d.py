@@ -31,7 +31,8 @@ from pyutilib.enum import Enum
 from idaes.core import (declare_process_block_class,
                         ControlVolumeBlockData,
                         FlowDirection,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        MaterialBalanceType)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -301,40 +302,14 @@ argument)."""))
                 doc="Reaction properties in control volume",
                 default=tmp_dict)                                               # TODO: Do we need something similar to above to skip equilibrium at bounds?
 
-    def add_phase_component_balances(self,
-                                     has_rate_reactions=False,
-                                     has_equilibrium_reactions=False,
-                                     has_phase_equilibrium=False,
-                                     has_mass_transfer=False,
-                                     custom_molar_term=None,
-                                     custom_mass_term=None):
-        """
-        This method constructs a set of 1D material balances indexed by time,
-        length, phase and component.
-
-        Args:
-            has_rate_reactions: whether default generation terms for rate
-                    reactions should be included in material balances
-            has_equilibrium_reactions: whether generation terms should for
-                    chemical equilibrium reactions should be included in
-                    material balances
-            has_phase_equilibrium: whether generation terms should for phase
-                    equilibrium behaviour should be included in material
-                    balances
-            has_mass_transfer: whether generic mass transfer terms should be
-                    included in material balances
-            custom_molar_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a molar basis.
-                    Expression must be indexed by time, length domain, phase
-                    list and component list
-            custom_mass_term: a Pyomo Expression representing custom terms to
-                    be included in material balances on a mass basis.
-                    Expression must be indexed by time, length domain, phase
-                    list and component list
-
-        Returns:
-            Constraint object representing material balances
-        """
+    def _add_material_balance_common(self,
+                                     balance_type,
+                                     has_rate_reactions,
+                                     has_equilibrium_reactions,
+                                     has_phase_equilibrium,
+                                     has_mass_transfer,
+                                     custom_molar_term,
+                                     custom_mass_term):
         # Get dynamic and holdup flags from config block
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
@@ -478,7 +453,8 @@ argument)."""))
                             units['time']))
 
         # Phase equilibrium generation
-        if has_phase_equilibrium:
+        if has_phase_equilibrium and \
+                balance_type == MaterialBalanceType.componentPhase:
             if not hasattr(self.config.property_package,
                            "phase_equilibrium_idx"):
                 raise PropertyNotSupportedError(
@@ -526,7 +502,8 @@ argument)."""))
                     if has_equilibrium_reactions else 0)
 
         def phase_equilibrium_term(b, t, x, p, j):
-            if has_phase_equilibrium:
+            if has_phase_equilibrium and \
+                    balance_type == MaterialBalanceType.componentPhase:
                 sd = {}
                 for r in b.config.property_package.phase_equilibrium_idx:
                     if b.config.property_package.\
@@ -551,84 +528,6 @@ argument)."""))
         def transfer_term(b, t, x, p, j):
             return (b.mass_transfer_term[t, x, p, j]
                     if has_mass_transfer else 0)
-
-        def user_term_mol(b, t, x, p, j):
-            if custom_molar_term is not None:
-                flow_basis = b.properties[t, x].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.molar:
-                    return custom_molar_term(t, x, p, j)
-                elif flow_basis == MaterialFlowBasis.mass:
-                    try:
-                        return (custom_molar_term(t, x, p, j) *
-                                b.properties[t, x].mw[j])
-                    except AttributeError:
-                        raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances."
-                                .format(self.name))
-                else:
-                    raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name))
-            else:
-                return 0
-
-        def user_term_mass(b, t, x, p, j):
-            if custom_mass_term is not None:
-                flow_basis = b.properties[t, x].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.mass:
-                    return custom_mass_term(t, x, p, j)
-                elif flow_basis == MaterialFlowBasis.molar:
-                    try:
-                        return (custom_mass_term(t, x, p, j) /
-                                b.properties[t, x].mw[j])
-                    except AttributeError:
-                        raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances."
-                                .format(self.name))
-                else:
-                    raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name))
-            else:
-                return 0
-
-        # Add component balances
-        @self.Constraint(self.flowsheet().config.time,
-                         self.length_domain,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Material balances")
-        def material_balances(b, t, x, p, j):
-            if ((b.config.transformation_scheme != "FORWARD" and
-                 x == b.length_domain.first()) or
-                    (b.config.transformation_scheme == "FORWARD" and
-                     x == b.length_domain.last())):
-                return Constraint.Skip
-            else:
-                if j in phase_component_list[p]:
-                    return b.length*accumulation_term(b, t, x, p, j) == (
-                        b._flow_direction_term *
-                        b.material_flow_dx[t, x, p, j] +
-                        b.length*kinetic_term(b, t, x, p, j) *
-                        b._rxn_rate_conv(t, x, j, has_rate_reactions) +
-                        b.length*equilibrium_term(b, t, x, p, j) +
-                        b.length*phase_equilibrium_term(b, t, x, p, j) +
-                        b.length*transfer_term(b, t, x, p, j) +
-#                        #b.area*diffusion_term(b, t, x, p, j)/b.length +
-                        b.length*user_term_mol(b, t, x, p, j) +
-                        b.length*user_term_mass(b, t, x, p, j))
-                else:
-                    return Constraint.Skip
 
         # TODO: Need to set material_holdup = 0 for non-present component-phase
         # pairs. Not ideal, but needed to close DoF. Is there a better way?
@@ -708,6 +607,211 @@ argument)."""))
                 else:
                     return Constraint.Skip
 
+        # Add custom terms and material balances
+        if balance_type == MaterialBalanceType.componentPhase:
+            def user_term_mol(b, t, x, p, j):
+                if custom_molar_term is not None:
+                    flow_basis = b.properties[t, x].get_material_flow_basis()
+                    if flow_basis == MaterialFlowBasis.molar:
+                        return custom_molar_term(t, x, p, j)
+                    elif flow_basis == MaterialFlowBasis.mass:
+                        try:
+                            return (custom_molar_term(t, x, p, j) *
+                                    b.properties[t, x].mw[j])
+                        except AttributeError:
+                            raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                    else:
+                        raise ConfigurationError(
+                            "{} contained a custom_molar_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+                else:
+                    return 0
+
+            def user_term_mass(b, t, x, p, j):
+                if custom_mass_term is not None:
+                    flow_basis = b.properties[t, x].get_material_flow_basis()
+                    if flow_basis == MaterialFlowBasis.mass:
+                        return custom_mass_term(t, x, p, j)
+                    elif flow_basis == MaterialFlowBasis.molar:
+                        try:
+                            return (custom_mass_term(t, x, p, j) /
+                                    b.properties[t, x].mw[j])
+                        except AttributeError:
+                            raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                    else:
+                        raise ConfigurationError(
+                            "{} contained a custom_mass_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+                else:
+                    return 0
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Material balances")
+            def material_balances(b, t, x, p, j):
+                if ((b.config.transformation_scheme != "FORWARD" and
+                     x == b.length_domain.first()) or
+                        (b.config.transformation_scheme == "FORWARD" and
+                         x == b.length_domain.last())):
+                    return Constraint.Skip
+                else:
+                    if j in phase_component_list[p]:
+                        return b.length*accumulation_term(b, t, x, p, j) == (
+                            b._flow_direction_term *
+                            b.material_flow_dx[t, x, p, j] +
+                            b.length*kinetic_term(b, t, x, p, j) *
+                            b._rxn_rate_conv(t, x, j, has_rate_reactions) +
+                            b.length*equilibrium_term(b, t, x, p, j) +
+                            b.length*phase_equilibrium_term(b, t, x, p, j) +
+                            b.length*transfer_term(b, t, x, p, j) +
+                            #b.area*diffusion_term(b, t, x, p, j)/b.length +
+                            b.length*user_term_mol(b, t, x, p, j) +
+                            b.length*user_term_mass(b, t, x, p, j))
+                    else:
+                        return Constraint.Skip
+
+        elif balance_type == MaterialBalanceType.componentTotal:
+            def user_term_mol(b, t, x, j):
+                if custom_molar_term is not None:
+                    flow_basis = b.properties[t, x].get_material_flow_basis()
+                    if flow_basis == MaterialFlowBasis.molar:
+                        return custom_molar_term(t, x, j)
+                    elif flow_basis == MaterialFlowBasis.mass:
+                        try:
+                            return (custom_molar_term(t, x, j) *
+                                    b.properties[t, x].mw[j])
+                        except AttributeError:
+                            raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                    else:
+                        raise ConfigurationError(
+                            "{} contained a custom_molar_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+                else:
+                    return 0
+
+            def user_term_mass(b, t, x, j):
+                if custom_mass_term is not None:
+                    flow_basis = b.properties[t, x].get_material_flow_basis()
+                    if flow_basis == MaterialFlowBasis.mass:
+                        return custom_mass_term(t, x, j)
+                    elif flow_basis == MaterialFlowBasis.molar:
+                        try:
+                            return (custom_mass_term(t, x, j) /
+                                    b.properties[t, x].mw[j])
+                        except AttributeError:
+                            raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                    else:
+                        raise ConfigurationError(
+                            "{} contained a custom_mass_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+                else:
+                    return 0
+
+            # Add component balances
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             self.config.property_package.component_list,
+                             doc="Material balances")
+            def material_balances(b, t, x, j):
+                if ((b.config.transformation_scheme != "FORWARD" and
+                     x == b.length_domain.first()) or
+                        (b.config.transformation_scheme == "FORWARD" and
+                         x == b.length_domain.last())):
+                    return Constraint.Skip
+                else:
+                    cplist = []
+                    for p in self.config.property_package.phase_list:
+                        if j in phase_component_list[p]:
+                            cplist.append(p)
+                    return (
+                        b.length*sum(accumulation_term(b, t, x, p, j)
+                                     for p in cplist) ==
+                        b._flow_direction_term*sum(
+                            b.material_flow_dx[t, x, p, j]
+                            for p in cplist) +
+                        b.length*sum(kinetic_term(b, t, x, p, j)
+                                     for p in cplist) *
+                        b._rxn_rate_conv(t, x, j, has_rate_reactions) +
+                        b.length*sum(equilibrium_term(b, t, x, p, j)
+                                     for p in cplist) +
+                        b.length*sum(transfer_term(b, t, x, p, j)
+                                     for p in cplist) +
+                        b.length*user_term_mol(b, t, x, j) +
+                        b.length*user_term_mass(b, t, x, j))
+
+    def add_phase_component_balances(self,
+                                     has_rate_reactions=False,
+                                     has_equilibrium_reactions=False,
+                                     has_phase_equilibrium=False,
+                                     has_mass_transfer=False,
+                                     custom_molar_term=None,
+                                     custom_mass_term=None):
+        """
+        This method constructs a set of 1D material balances indexed by time,
+        length, phase and component.
+
+        Args:
+            has_rate_reactions: whether default generation terms for rate
+                    reactions should be included in material balances
+            has_equilibrium_reactions: whether generation terms should for
+                    chemical equilibrium reactions should be included in
+                    material balances
+            has_phase_equilibrium: whether generation terms should for phase
+                    equilibrium behaviour should be included in material
+                    balances
+            has_mass_transfer: whether generic mass transfer terms should be
+                    included in material balances
+            custom_molar_term: a Pyomo Expression representing custom terms to
+                    be included in material balances on a molar basis.
+                    Expression must be indexed by time, length domain, phase
+                    list and component list
+            custom_mass_term: a Pyomo Expression representing custom terms to
+                    be included in material balances on a mass basis.
+                    Expression must be indexed by time, length domain, phase
+                    list and component list
+
+        Returns:
+            Constraint object representing material balances
+        """
+        self._add_material_balance_common(
+                balance_type=MaterialBalanceType.componentPhase,
+                has_rate_reactions=has_rate_reactions,
+                has_equilibrium_reactions=has_equilibrium_reactions,
+                has_phase_equilibrium=has_phase_equilibrium,
+                has_mass_transfer=has_mass_transfer,
+                custom_molar_term=custom_molar_term,
+                custom_mass_term=custom_mass_term)
+
         return self.material_balances
 
     def add_total_component_balances(self,
@@ -744,340 +848,14 @@ argument)."""))
         Returns:
             Constraint object representing material balances
         """
-        # Get dynamic and holdup flags from config block
-        dynamic = self.config.dynamic
-        has_holdup = self.config.has_holdup
-
-        # Check that reaction block exists if required
-        if has_rate_reactions or has_equilibrium_reactions:
-            try:
-                rblock = self.reactions
-            except AttributeError:
-                raise ConfigurationError(
-                        "{} does not contain a Reaction Block, but material "
-                        "balances have been set to contain reaction terms. "
-                        "Please construct a reaction block before adding "
-                        "balance equations.".format(self.name))
-
-        if has_equilibrium_reactions:
-            # Check that reaction block is set to calculate equilibrium
-            for t in self.flowsheet().config.time:
-                for x in self.length_domain:
-                    if self.reactions[t, x].config.has_equilibrium is False:
-                        raise ConfigurationError(
-                            "{} material balance was set to include "
-                            "equilibrium reactions, however the associated "
-                            "ReactionBlock was not set to include equilibrium "
-                            "constraints (has_equilibrium_reactions=False). "
-                            "Please correct your configuration arguments."
-                            .format(self.name))
-
-        if has_phase_equilibrium:
-            # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().config.time:
-                for x in self.length_domain:
-                    if not self.properties[t, x].config.has_phase_equilibrium:
-                        raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments."
-                            .format(self.name))
-
-        # Get units from property package
-        units = {}
-        for u in ['length', 'holdup', 'amount', 'time']:
-            try:
-                units[u] = \
-                    self.config.property_package.get_metadata().default_units[u]
-            except KeyError:
-                units[u] = '-'
-
-        # Material holdup and accumulation
-        if has_holdup:
-            self.material_holdup = Var(self.flowsheet().config.time,
-                                       self.length_domain,
-                                       self.config.property_package.phase_list,
-                                       self.config.property_package.
-                                       component_list,
-                                       domain=Reals,
-                                       initialize=1.0,
-                                       doc="Material holdup per unit length "
-                                           "[{}/{}]"
-                                           .format(units['holdup'],
-                                                   units['length']))
-        if dynamic:
-            self.material_accumulation = DerivativeVar(
-                    self.material_holdup,
-                    wrt=self.flowsheet().config.time,
-                    doc="Material accumulation per unit length [{}/{}.{}]"
-                        .format(units['holdup'],
-                                units['length'],
-                                units['time']))
-
-        # Get phase component list(s)
-        phase_component_list = self._get_phase_comp_list()
-
-        # Create material balance terms as required
-        # Flow terms and derivatives
-        self._flow_terms = Var(self.flowsheet().config.time,
-                               self.length_domain,
-                               self.config.property_package.phase_list,
-                               self.config.property_package.component_list,
-                               initialize=1.0,
-                               doc="Flow terms for material balance equations")
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.length_domain,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Material flow linking constraints")
-        def material_flow_linking_constraints(b, t, x, p, j):
-            return b._flow_terms[t, x, p, j] == \
-                b.properties[t, x].get_material_flow_terms(p, j)
-
-        self.material_flow_dx = DerivativeVar(
-                                     self._flow_terms,
-                                     wrt=self.length_domain,
-                                     doc="Parital derivative of material flow "
-                                         "wrt to length {}/{}.{}"
-                                         .format(units['holdup'],
-                                                 units['length'],
-                                                 units['time']))
-
-        # Kinetic reaction generation
-        if has_rate_reactions:
-            if not hasattr(self.config.reaction_package, "rate_reaction_idx"):
-                raise PropertyNotSupportedError(
-                    "{} Reaction package does not contain a list of rate "
-                    "reactions (rate_reaction_idx), thus does not support "
-                    "rate-based reactions.".format(self.name))
-            self.rate_reaction_generation = Var(
-                        self.flowsheet().config.time,
-                        self.length_domain,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
-                        domain=Reals,
-                        initialize=0.0,
-                        doc="Amount of component generated in by kinetic "
-                            "reactions per unit length [{}/{}.{}]"
-                            .format(units['holdup'],
-                                    units['length'],
-                                    units['time']))
-
-        # Equilibrium reaction generation
-        if has_equilibrium_reactions:
-            if not hasattr(self.config.reaction_package,
-                           "equilibrium_reaction_idx"):
-                raise PropertyNotSupportedError(
-                    "{} Reaction package does not contain a list of "
-                    "equilibrium reactions (equilibrium_reaction_idx), thus "
-                    "does not support equilibrium-based reactions."
-                    .format(self.name))
-            self.equilibrium_reaction_generation = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                domain=Reals,
-                initialize=0.0,
-                doc="Amount of component generated by equilibrium "
-                    "reactions per unit length [{}/{}.{}]"
-                    .format(units['holdup'],
-                            units['length'],
-                            units['time']))
-
-        # Material transfer term
-        if has_mass_transfer:
-            self.mass_transfer_term = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
-                domain=Reals,
-                initialize=0.0,
-                doc="Component material transfer into unit per unit "
-                    "length [{}/{}.{}]"
-                    .format(units['holdup'],
-                            units['length'],
-                            units['time']))
-
-        # Create rules to substitute material balance terms
-        # Accumulation term
-        def accumulation_term(b, t, x, p, j):
-            return b.material_accumulation[t, x, p, j] if dynamic else 0
-
-        def kinetic_term(b, t, x, p, j):
-            return (b.rate_reaction_generation[t, x, p, j]
-                    if has_rate_reactions else 0)
-
-        def equilibrium_term(b, t, x, p, j):
-            return (b.equilibrium_reaction_generation[t, x, p, j]
-                    if has_equilibrium_reactions else 0)
-
-        def transfer_term(b, t, x, p, j):
-            return (b.mass_transfer_term[t, x, p, j]
-                    if has_mass_transfer else 0)
-
-        def user_term_mol(b, t, x, j):
-            if custom_molar_term is not None:
-                flow_basis = b.properties[t, x].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.molar:
-                    return custom_molar_term(t, x, j)
-                elif flow_basis == MaterialFlowBasis.mass:
-                    try:
-                        return (custom_molar_term(t, x, j) *
-                                b.properties[t, x].mw[j])
-                    except AttributeError:
-                        raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances."
-                                .format(self.name))
-                else:
-                    raise ConfigurationError(
-                            "{} contained a custom_molar_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name))
-            else:
-                return 0
-
-        def user_term_mass(b, t, x, j):
-            if custom_mass_term is not None:
-                flow_basis = b.properties[t, x].get_material_flow_basis()
-                if flow_basis == MaterialFlowBasis.mass:
-                    return custom_mass_term(t, x, j)
-                elif flow_basis == MaterialFlowBasis.molar:
-                    try:
-                        return (custom_mass_term(t, x, j) /
-                                b.properties[t, x].mw[j])
-                    except AttributeError:
-                        raise PropertyNotSupportedError(
-                                "{} property package does not support "
-                                "molecular weight (mw), which is required for "
-                                "using custom terms in material balances."
-                                .format(self.name))
-                else:
-                    raise ConfigurationError(
-                            "{} contained a custom_mass_term argument, but "
-                            "the property package used an undefined basis "
-                            "(MaterialFlowBasis.other). Custom terms can "
-                            "only be used when the property package declares "
-                            "a molar or mass flow basis.".format(self.name))
-            else:
-                return 0
-
-        # Add component balances
-        @self.Constraint(self.flowsheet().config.time,
-                         self.length_domain,
-                         self.config.property_package.component_list,
-                         doc="Material balances")
-        def material_balances(b, t, x, j):
-            if ((b.config.transformation_scheme != "FORWARD" and
-                 x == b.length_domain.first()) or
-                    (b.config.transformation_scheme == "FORWARD" and
-                     x == b.length_domain.last())):
-                return Constraint.Skip
-            else:
-                cplist = []
-                for p in self.config.property_package.phase_list:
-                    if j in phase_component_list[p]:
-                        cplist.append(p)
-                return (
-                    b.length*sum(accumulation_term(b, t, x, p, j)
-                                 for p in cplist) ==
-                    b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
-                                               for p in cplist) +
-                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) *
-                    b._rxn_rate_conv(t, x, j, has_rate_reactions) +
-                    b.length*sum(equilibrium_term(b, t, x, p, j)
-                                 for p in cplist) +
-                    b.length*sum(transfer_term(b, t, x, p, j)
-                                 for p in cplist) +
-                    b.length*user_term_mol(b, t, x, j) +
-                    b.length*user_term_mass(b, t, x, j))
-
-        # TODO: Need to set material_holdup = 0 for non-present component-phase
-        # pairs. Not ideal, but needed to close DoF. Is there a better way?
-
-        # Material Holdup
-        if has_holdup:
-            if not hasattr(self, "phase_fraction"):
-                self._add_phase_fractions()
-
-            @self.Constraint(self.flowsheet().config.time,
-                             self.length_domain,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
-                             doc="Material holdup calculations")
-            def material_holdup_calculation(b, t, x, p, j):
-                if j in phase_component_list[p]:
-                    return b.material_holdup[t, x, p, j] == (
-                        b._area_func(t, x) * self.phase_fraction[t, x, p] *
-                        b.properties[t, x].get_material_density_terms(p, j))
-                else:
-                    return b.material_holdup[t, x, p, j] == 0
-
-        if has_rate_reactions:
-            # Add extents of reaction and stoichiometric constraints
-            self.rate_reaction_extent = Var(
-                    self.flowsheet().config.time,
-                    self.length_domain,
-                    self.config.reaction_package.rate_reaction_idx,
-                    domain=Reals,
-                    initialize=0.0,
-                    doc="Extent of kinetic reactions at point x [{}/{}.{}]"
-                        .format(units['holdup'],
-                                units['length'],
-                                units['time']))
-
-            @self.Constraint(self.flowsheet().config.time,
-                             self.length_domain,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
-                             doc="Kinetic reaction stoichiometry constraint")
-            def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if j in phase_component_list[p]:
-                    rparam = rblock[t, x].config.parameters
-                    return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
-                            b.rate_reaction_extent[t, x, r] for r in
-                            b.config.reaction_package.rate_reaction_idx))
-                else:
-                    return Constraint.Skip
-
-        if has_equilibrium_reactions:
-            # Add extents of reaction and stoichiometric constraints
-            self.equilibrium_reaction_extent = Var(
-                self.flowsheet().config.time,
-                self.length_domain,
-                self.config.reaction_package.
-                equilibrium_reaction_idx,
-                domain=Reals,
-                initialize=0.0,
-                doc="Extent of equilibrium reactions at point x "
-                    "[{}/{}.{}]".format(units['holdup'],
-                                        units['length'],
-                                        units['time']))
-
-            @self.Constraint(self.flowsheet().config.time,
-                             self.length_domain,
-                             self.config.property_package.phase_list,
-                             self.config.property_package.component_list,
-                             doc="Equilibrium reaction stoichiometry")
-            def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if j in phase_component_list[p]:
-                    return b.equilibrium_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].config.parameters.
-                            equilibrium_reaction_stoichiometry[r, p, j] *
-                            b.equilibrium_reaction_extent[t, x, r]
-                            for r in b.config.reaction_package.
-                            equilibrium_reaction_idx))
-                else:
-                    return Constraint.Skip
+        self._add_material_balance_common(
+                balance_type=MaterialBalanceType.componentTotal,
+                has_rate_reactions=has_rate_reactions,
+                has_equilibrium_reactions=has_equilibrium_reactions,
+                has_phase_equilibrium=has_phase_equilibrium,
+                has_mass_transfer=has_mass_transfer,
+                custom_molar_term=custom_molar_term,
+                custom_mass_term=custom_mass_term)
 
         return self.material_balances
 
