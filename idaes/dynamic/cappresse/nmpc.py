@@ -214,6 +214,18 @@ class NMPCSim(object):
         self.validate_sample_time(self.sample_time, 
                 self.c_mod, self.p_mod)
 
+        scheme = self.c_mod.time.get_discretization_info()['scheme']
+        if scheme == 'LAGRANGE-RADAU':
+            self.c_mod._ncp = time.get_discretization_info()['ncp']
+        elif scheme == 'BACKWARD Difference':
+            self.c_mod._ncp = 1
+        else:
+            raise NotImplementedError
+
+        # Flag for whether controller has been initialized
+        # by a previous solve
+        self.controller_solved = False
+
 
     def validate_sample_time(self, sample_time, *models):
         for model in models:
@@ -228,12 +240,16 @@ class NMPCSim(object):
                 raise ValueError(
                     'Sampling time must be an integer multiple of '
                     'finite element spacing for every model')
+            else:
+                model._fe_per_sample = int(sample_time/fe_spacing)
 
             horizon_length = time.last() - time.first()
             if (horizon_length / sample_time) % 1 != 0:
                 raise ValueError(
                     'Sampling time must be an integer divider of '
                     'horizon length')
+            else:
+                model._samples_per_horizon = int(horizon_length/sample_time)
 
 
     def validate_slices(self, tgt_model, src_model, src_slices):
@@ -392,7 +408,7 @@ class NMPCSim(object):
         t0 = src_model.time.get_finite_elements()[0]
         t_src = kwargs.pop('t_src', t1)
         t_tgt = kwargs.pop('t_tgt', tgt_model.time.first())
-        sample_time = kwargs.pop('sample_time', t1-t0)
+        sample_time = kwargs.pop('sample_time', self.sample_time)
 
         src_inputs = getattr(src_model, src_attrname)
         tgt_inputs = tgt_model.input_vars
@@ -403,6 +419,24 @@ class NMPCSim(object):
                 inp[t].set_value(src_inputs[i][t_src].value)
                 # Set values instead of fixing here - inputs should
                 # be fixed already, or at least fixed before solve.
+
+
+    def inject_inputs_into_plant(self, t_plant, **kwargs):
+
+        sample_time = kwargs.pop('sample_time', self.sample_time)
+        src_attrname = kwargs.pop('src_attrname', 'plant_input_vars')
+
+        # Send inputs to plant that were calculated for the end
+        # of the first sample
+        t_controller = self.c_mod.time.first() + sample_time
+        assert t_controller in self.c_mod.time
+
+        self.inject_inputs_into(self.p_mod,
+                                self.c_mod,
+                                t_tgt=t_plant,
+                                t_src=t_controller,
+                                sample_time=sample_time,
+                                src_attrname=src_attrname)
 
 
     def solve_initial_conditions(self, model, **kwargs):
@@ -416,12 +450,7 @@ class NMPCSim(object):
         #
         # Will only work as written for "True" initial conditions since 
         # it doesn't try to deactivate discretization equations.
-        #
-        # I do this before categorization, but have no reason to.
-        # If I do it after categorization, I can forgo initial_inputs
-        # in favor of the input_vars attribute
 
-#        was_originally_active = kwargs.pop('activity_dict', None)
         was_originally_active = get_activity_dict(model)
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
         outlvl = kwargs.pop('outlvl', self.outlvl)
@@ -437,7 +466,6 @@ class NMPCSim(object):
                 outlvl=idaeslog.ERROR)
 
         for _slice in model.input_vars:
-       # for vardata in initial_inputs:
             vardata = _slice[t0]
             if vardata.model() is not toplevel:
                 raise ValueError(
@@ -1201,12 +1229,18 @@ class NMPCSim(object):
             self.initialize_from_previous()
 
         elif strategy == 'simulate':
-            input_type = kwargs.pop('inputs', 'from_set_point')
-            if input_type == 'from_set_point':
+            input_type = kwargs.pop('inputs', 'set_point')
+            if input_type == 'set_point':
                 for i, _slice in enumerate(self.c_mod.input_vars):
                     for t in time:
                         if t != time.first():
                             _slice[t].fix(self.c_mod.input_sp[i])
+
+            elif input_type == 'initial':
+                for i, _slice in enumerate(self.c_mod.input_vars):
+                    t0 = time.first()
+                    for t in time:
+                        _slice[t].fix(self.c_mod.input_vars[t0].value)
 
             # Deactivate objective function
             # strip bounds
@@ -1229,12 +1263,46 @@ class NMPCSim(object):
 
             self.strip_controller_bounds.revert(self.c_mod)
 
+        elif strategy == 'initial_conditions':
+            self.initialize_from_initial_conditions(self)
 
-    def initialize_from_previous(self):
-        raise NotImplementedError
+
+    def initialize_from_previous_sample(self, model, sample_time, **kwargs):
+        # Should only do this if controller is initialized
+        # from a prior solve.
+        if not self.controller_solved:
+            raise ValueError
+
+        attr_list = kwargs.pop('attr_list', 
+                ['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'])
+        # ^ why not just iterate over dae_vars here?
+        time = model.time
+        steady_t = self.s_mod.time.first()
+
+        for attrname in attr_list:
+            varlist = getattr(model, attrname)
+            if not attrname == 'deriv_vars':
+                steady_varlist = getattr(self.s_mod, attrname))
+            for i, _slice in enumerate(varlist):
+                for t in time:
+                    # If not in last sample:
+                    if (time.last() - t) >= sample_time:
+                        t_next = t + sample_time
+                        assert t_next in time
+                        _slice[t].set_value(_slice[t_next].value)
+                    # Othersie initialize to final steady state
+                    # (Should provide some other options here,
+                    # like copy inputs from set point then simulate)
+                    else:
+                        if not attrname == 'deriv_vars':
+                            _slice[t].set_value(steady_varlist[i][steady_t])
+                        else:
+                            _slice[t].set_value(0)
+
 
     def initialize_from_simulation(self):
         raise NotImplementedError
+
 
     def initialize_from_initial_conditions(self):
         raise NotImplementedError
@@ -1245,11 +1313,92 @@ class NMPCSim(object):
         outlvl = kwargs.pop('outlvl', self.outlvl) 
         s_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
 
-# Dof should be n_inputs * horizon/sample_time
-#               n_inputs * n_samples
-# or n_inputs * (n_samples + 1) if inputs at t0 are left as dof
-#        assert degrees_of_freedom(self.c_mod) == 
+        assert (degrees_of_freedom(self.c_mod) == 
+                self.c_mod.n_iv*(self.c_mod._samples_per_horizon + 1))
 
         with idaeslog.solver_log(s_log, idaeslog.DEBUG) as slc:
-            solver.solve(self.c_mod, tee=slc.tee)
+            results = solver.solve(self.c_mod, tee=slc.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            init_log.info('Successfully solved optimal control problem')
+            self.controller_solved = True
+        else:
+            init_log.error('Failed to solve optimal control problem')
+            raise ValueError
 
+
+    def simulate_over_range(self, model, t_start, t_end, **kwargs):
+        # should use knowledge of variables...
+
+        # deactivate model except at t_start
+        # deactivate disc. equations at t_start
+        # solve for consistent 'initial' conditions at t_start
+
+        # for each finite element in range... which are these?
+        # get indices of finite elements that lie in range
+        # t_start, t_end should correspond to finite elements
+
+        # end by reactivating parts of model that were originally active
+        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
+
+        time = model.time
+        assert t_start in time.get_finite_elements()
+        assert t_end in time.get_finite_elements()
+        assert degrees_of_freedom(model) == 0
+        ncp = model._ncp
+
+        fe_in_range = [i for i, fe in enumerate(time.get_finite_elements())
+                                if fe >= t_start and fe <= t_end]
+        fe_in_range.pop(0)
+        n_fe_in_range = len(fe_in_range)
+
+        was_originally_active = get_activity_dict(model)
+
+        non_initial_time = [t for t in time]
+        non_initial_time.remove(t_start)
+        deactivated = deactivate_model_at(model, time, non_initial_time,
+                outlvl=idaeslog.ERROR)
+
+        for i in fe_in_range:
+            t_prev = time[(i-1)*ncp+1]
+
+            fe = [time[k] for k in range((i-1)*ncp+1, i*ncp+2)]
+
+            for t in fe:
+                for comp in deactivated[t]:
+                    if was_originally_active[id(comp)]:
+                        comp.activate()
+
+            for drv in model.deriv_vars:
+                drv[t_prev].fix()
+            for dv in model.diff_vars:
+                dv[t_prev].fix()
+
+            for t in fe:
+                for _slice in model.dae_vars:
+                    if not _slice[t].fixed:
+                        _slice[t].set_value(_slice[t_prev].value)
+
+            assert degrees_of_freedom(model) == 0
+
+            with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slv:
+                results = solver.solve(fs, tee=slc.tee)
+            if results.solver.termination_condition == TerminationCondition.optimal:
+                pass
+            else:
+                raise ValueError
+
+            for t in fe:
+                for comp in deactivated[t]:
+                    comp.deactivate()
+
+            for drv in model.deriv_vars:
+                drv[t_prev].unfix()
+            for dv in model.diff_vars:
+                dv[t_prev].unfix()
+
+        for t in time:
+            for comp in deactivated[t]:
+                if was_originally_active[id(comp)]:
+                    comp.activate()
