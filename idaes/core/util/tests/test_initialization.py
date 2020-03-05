@@ -26,7 +26,7 @@ from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         EnzymeReactionBlock)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.unit_models.cstr import CSTR
+from idaes.generic_models.unit_models import CSTR
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
