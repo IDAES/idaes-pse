@@ -20,13 +20,15 @@ URL but provide JSON content. See the tests for programmatic examples using the
 from multiprocessing import Process
 import socket
 # third party
-from flask import Flask, request
+from flask import Flask, request, render_template#, send_static_file
 # local
 from idaes.ui.fsvis.server import DataStorage
 
 # globals
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', 
+        static_folder='draft/static', 
+        template_folder='draft/templates')
 db = DataStorage()
 
 # Custom exceptions (handled by Flask error handlers)
@@ -132,6 +134,22 @@ def flowsheet():
         if data is None:
             raise LookupError(id_)
         return data
+
+#@app.route("/test", methods=["GET"])
+#def testpage():
+#    """Quick hello world"""
+#    import testpages
+#    page = testpages.helloworld
+#    return page
+
+@app.route("/app", methods=["GET"])
+def display():
+    """Display the web app."""
+    return render_template('app.html')
+
+#@app.route("/draft")
+#def send_static_draft():
+#    return app.send_static_file('/draft.html')
 
 
 # Flask error handlers
