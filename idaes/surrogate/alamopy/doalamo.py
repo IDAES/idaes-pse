@@ -22,7 +22,7 @@ import os
 from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import almerror
 from idaes.surrogate.alamopy.writethis import writethis
-from idaes.surrogate.alamopy.multos import deletefile
+from idaes.surrogate.alamopy.multos import deletefile, has_alamo
 
 
 def doalamo(xdata, zdata, **kwargs):
@@ -1007,9 +1007,20 @@ def readTraceFile(vargs, data, debug):
                 data["results"]["madpval"] = 0
             return
         else:
-            raise almerror.AlamoError(
-                'Cannot read from trace file "{}": {}'.format(trace_str, err)
-            )
+            b_alamo = has_alamo()
+            lf_logscratch = open("logscratch").read()
+            if not b_alamo:
+                raise almerror.AlamoError(
+                    'Alamo cannot be found. Please check Alamo is installed.'
+                )
+            elif "termination code" in lf_logscratch:
+                raise almerror.AlamoError(
+                    '{}'.format(lf_logscratch)
+                )
+            else:
+                raise almerror.AlamoError(
+                    'Cannot read from trace file "{}": {}'.format(trace_str, err)
+                )
 
     try:
         # import sympy
