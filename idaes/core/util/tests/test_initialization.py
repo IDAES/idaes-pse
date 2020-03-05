@@ -591,8 +591,9 @@ def test_initialize_by_time_element():
     m.fs.cstr = CSTR(default={"property_package": m.fs.properties,
                               "reaction_package": m.fs.reactions,
                               "material_balance_type": MaterialBalanceType.componentTotal,
-                              "energy_balance_type": EnergyBalanceType.none,
-                              "momentum_balance_type": MomentumBalanceType.none})
+                              "energy_balance_type": EnergyBalanceType.enthalpyTotal,
+                              "momentum_balance_type": MomentumBalanceType.none,
+                              "has_heat_of_reaction": True})
 
     # Time discretization
     disc = TransformationFactory('dae.collocation')
@@ -606,6 +607,9 @@ def test_initialize_by_time_element():
         m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0)
 
     # Fix inlet conditions
+    # This is a huge hack because I didn't know that the proper way to
+    # have multiple inlets to a CSTR was to use a mixer.
+    # I 'combine' both my inlet streams before sending them to the CSTR.
     for t, j in m.fs.time*m.fs.properties.component_list:
         if t <= 2:
             if j == 'E':
@@ -634,7 +638,7 @@ def test_initialize_by_time_element():
 
     # Fix outlet conditions
     m.fs.cstr.outlet.flow_rate.fix(2.2)
-    m.fs.cstr.outlet.temperature.fix(300)
+    m.fs.cstr.outlet.temperature[m.fs.time.first()].fix(300)
 
     assert degrees_of_freedom(m) == 0
 
@@ -644,21 +648,25 @@ def test_initialize_by_time_element():
 
     # Assert that the result looks how we expect
     assert m.fs.cstr.outlet.conc_mol[0, 'S'].value == 0
-    assert abs(m.fs.cstr.outlet.conc_mol[2, 'S'].value - 11.076) < 1e-2
-    assert abs(m.fs.cstr.outlet.conc_mol[4, 'P'].value - 0.3577) < 1e-3
-    assert abs(m.fs.cstr.outlet.conc_mol[6, 'E'].value - 0.0286) < 1e-3
+    assert abs(m.fs.cstr.outlet.conc_mol[2, 'S'].value - 11.389) < 1e-2
+    assert abs(m.fs.cstr.outlet.conc_mol[4, 'P'].value - 0.2191) < 1e-3
+    assert abs(m.fs.cstr.outlet.conc_mol[6, 'E'].value - 0.0327) < 1e-3
+    assert abs(m.fs.cstr.outlet.temperature[6].value - 289.7) < 1
 
     # Assert that model is still fixed and deactivated as expected
     assert (
     m.fs.cstr.control_volume.material_holdup[m.fs.time.first(), 'aq', 'S'].fixed)
+
     for t in m.fs.time:
         if t != m.fs.time.first():
             assert (not 
     m.fs.cstr.control_volume.material_holdup[t, 'aq', 'S'].fixed)
+
+            assert not m.fs.cstr.outlet.temperature[t].fixed
         assert (
     m.fs.cstr.control_volume.material_holdup_calculation[t, 'aq', 'C'].active)
+
         assert m.fs.cstr.control_volume.properties_out[t].active
-        assert m.fs.cstr.outlet.temperature[t].fixed
         assert not m.fs.cstr.outlet.flow_mol_comp[t, 'S'].fixed
         assert m.fs.cstr.inlet.flow_mol_comp[t, 'S'].fixed
 

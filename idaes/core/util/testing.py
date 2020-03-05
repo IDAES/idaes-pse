@@ -302,6 +302,12 @@ class AqueousEnzymeStateBlockData(StateBlockData):
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
 
+    def get_enthalpy_flow_terms(b, p):
+        return b.flow_rate*b.temperature
+
+    def get_energy_density_terms(b, p):
+        return b.temperature
+
     def define_state_vars(b):
         return {'conc_mol': b.conc_mol,
                 'flow_mol_comp': b.flow_mol_comp,
@@ -350,13 +356,14 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
                             'R3': 5.79e7},
                 doc='Pre-exponential rate constant in Arrhenius expression')
 
-        self.reaction_block_class = EnzymeReactionBlock
+    #    self.reaction_block_class = EnzymeReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': 'min',
                                'length': 'm',
-                               'amount': 'kmol'})
+                               'amount': 'kmol',
+                               'energy': 'kcal'})
 
 class _EnzymeReactionBlock(ReactionBlockBase):
     def initialize(blk):
@@ -375,6 +382,12 @@ class EnzymeReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = Var(self._params.rate_reaction_idx,
                                  domain=Reals, 
                                  doc='Reaction rate [kmol/m^3/min]')
+
+        self.dh_rxn = Param(self._params.rate_reaction_idx,
+                domain=Reals, doc='Heat of reaction',
+                initialize={'R1': 1e3/900/0.231,
+                            'R2': 1e3/900/0.231,
+                            'R3': 5e3/900/0.231})
 
         def reaction_rate_rule(b, r):
             if r == 'R1':
