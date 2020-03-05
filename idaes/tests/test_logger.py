@@ -52,8 +52,8 @@ def test_tags(caplog):
         log.info_high("Hello!")
         log.info("Hello!")
         log.info_low("Hello!")
-        if tag not in idaeslog.log_tags():
-             assert len(caplog.records) == 0
+        if tag not in idaeslog.log_tags() and tag is not None:
+            assert len(caplog.records) == 0
         else:
             assert caplog.records[0].levelname == "INFO"
             assert caplog.records[1].levelname == "INFO"
