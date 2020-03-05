@@ -270,6 +270,7 @@ should be constructed in this state block,
         """
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
+        add_object_reference(self, "params", self.config.parameters)
 
     def define_state_vars(self):
         """

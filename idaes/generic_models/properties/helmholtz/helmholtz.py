@@ -186,7 +186,7 @@ change.
         temperature_crit,
         pressure_crit,
         dens_mass_crit,
-        specific_gas_const,
+        specific_gas_constant,
     ):
         """This function sets the parameters that are required for a Helmholtz
         equation of state parameter block, and ensures that all required parameters
@@ -203,7 +203,7 @@ change.
         self.temperature_crit = temperature_crit
         self.pressure_crit = pressure_crit
         self.dens_mass_crit = dens_mass_crit
-        self.specific_gas_const = specific_gas_const
+        self.specific_gas_constant = specific_gas_constant
         self.mw = mw
 
 
@@ -240,7 +240,7 @@ change.
                 "temperature_crit": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
-                "specific_gas_const": {"method": None, "units": "J/mol.K"},
+                "specific_gas_constant": {"method": None, "units": "J/mol.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
                 "flow_mol": {"method": None, "units": "mol/s"},

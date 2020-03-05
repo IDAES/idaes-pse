@@ -115,9 +115,9 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             ),
             pressure_crit=Param(initialize=7.377e6, doc="Critical pressure [Pa]"),
             dens_mass_crit=Param(initialize=467.6, doc="Critical density [kg/m3]"),
-            specific_gas_const=Param(
+            specific_gas_constant=Param(
                 initialize=188.9241,
-                doc="Water Specific Gas Constant [J/mol/K]",
+                doc="Water Specific Gas Constant [J/kg/K]",
             ),
         )
         super().build()
