@@ -242,7 +242,6 @@ def initialize_by_time_element(fs, time, **kwargs):
     fep_list = time.get_finite_elements()
     nfe = time.get_discretization_info()['nfe']
 
-    # What types of exceptions go here?:
     if scheme == 'LAGRANGE-RADAU':
         ncp = time.get_discretization_info()['ncp']
     elif scheme == 'LAGRANGE-LEGENDRE':
@@ -257,6 +256,10 @@ def initialize_by_time_element(fs, time, **kwargs):
     elif scheme == 'CENTRAL Difference':
         msg = 'Initialization does not support central finite difference'
         raise NotImplementedError(msg)
+    else:
+        msg = 'Unrecognized discretization scheme. '
+        'Has the model been discretized along the provided ContinuousSet?'
+        raise ValueError(msg)
     # Disallow Central/Legendre discretizations.
     # Neither of these seem to be square by default for multi-finite element
     # initial value problems.
@@ -271,7 +274,12 @@ def initialize_by_time_element(fs, time, **kwargs):
     ignore_dof = kwargs.pop('ignore_dof', False)
 
     if not ignore_dof:
-        assert degrees_of_freedom(fs) == 0
+        if degrees_of_freedom(fs) != 0:
+            msg = ('Model has nonzero degrees of freedom. This was unexpected. '
+                  'Use keyword arg igore_dof=True to skip this check.')
+            init_log.error(msg)
+            raise ValueError('Nonzero degrees of freedom.')
+
  
     # Get dict telling which constraints/blocks are already inactive:
     # dict: id(compdata) -> bool (is active?)
@@ -325,7 +333,7 @@ def initialize_by_time_element(fs, time, **kwargs):
         # Non-initial time points in the finite element:
         fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
 
-        init_log.info(f'Entering step {i} of initialization')
+        init_log.info(f'Entering step {i}/{nfe} of initialization')
 
         # Activate components of model that were active in the presumably
         # square original system
@@ -363,7 +371,11 @@ def initialize_by_time_element(fs, time, **kwargs):
         init_log.info(f'Solving finite element {i}')
 
         if not ignore_dof:
-            assert degrees_of_freedom(fs) == 0
+            if degrees_of_freedom(fs) != 0:
+                msg = ('Model has nonzero degrees of freedom. This was unexpected. '
+                      'Use keyword arg igore_dof=True to skip this check.')
+                init_log.error(msg)
+                raise ValueError('Nonzero degrees of freedom')
         
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(fs, tee=slc.tee)
