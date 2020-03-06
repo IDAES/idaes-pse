@@ -327,12 +327,6 @@ class Surrogate:
         self._b_built = True
         pass
 
-    # def build_model(self, **kwargs):
-    #     if(self._b_built):
-    #         print("Warning: changing configuration of surrogate modeler regression")
-    #         self.settings = kwargs
-    #     # self.build_model()
-    #     pass
 
     def update_model(self):
         self.build_model()
