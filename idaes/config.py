@@ -49,22 +49,22 @@ default_config = """
             "idaes":{
                 "level": "INFO",
                 "propagate": true,
-                "handlers": ["console"],
-                "solve":{
-                    "propagate": false,
-                    "level": "INFO",
-                    "handlers": ["console"]
-                },
-                "init":{
-                    "propagate": false,
-                    "level": "INFO",
-                    "handlers": ["console"]
-                },
-                "model":{
-                    "propagate":false,
-                    "level": "INFO",
-                    "handlers": ["console"]
-                }
+                "handlers": ["console"]
+            },
+            "idaes.solve":{
+                "propagate": false,
+                "level": "INFO",
+                "handlers": ["console"]
+            },
+            "idaes.init":{
+                "propagate": false,
+                "level": "INFO",
+                "handlers": ["console"]
+            },
+            "idaes.model":{
+                "propagate":false,
+                "level": "INFO",
+                "handlers": ["console"]
             }
         }
     }
