@@ -275,11 +275,11 @@ def initialize_by_time_element(fs, time, **kwargs):
 
     if not ignore_dof:
         if degrees_of_freedom(fs) != 0:
-            msg = ('Model has nonzero degrees of freedom. This was unexpected. '
-                  'Use keyword arg igore_dof=True to skip this check.')
+            msg = ('Original model has nonzero degrees of freedom. This was '
+                  'unexpected. Use keyword arg igore_dof=True to skip this '
+                  'check.')
             init_log.error(msg)
             raise ValueError('Nonzero degrees of freedom.')
-
  
     # Get dict telling which constraints/blocks are already inactive:
     # dict: id(compdata) -> bool (is active?)
@@ -291,6 +291,14 @@ def initialize_by_time_element(fs, time, **kwargs):
     non_initial_time.remove(time.first())
     deactivated = deactivate_model_at(fs, time, non_initial_time, 
             outlvl=idaeslog.ERROR)
+
+    if not ignore_dof:
+        if degrees_of_freedom(fs) != 0:
+            msg = ('Model has nonzero degrees of freedom at initial conditions.'
+                  ' This was unexpected. Use keyword arg igore_dof=True to skip' 
+                  ' this check.')
+            init_log.error(msg)
+            raise ValueError('Nonzero degrees of freedom.')
 
     init_log.info(
     'Model is inactive except at t=0. Solving for consistent initial conditions.')
@@ -306,7 +314,8 @@ def initialize_by_time_element(fs, time, **kwargs):
                                         outlvl=idaeslog.ERROR)[time.first()]
 
     # Here, deactivate non-time-indexed components. Do this after solve
-    # for initial conditions in case these were used specify initial conditions
+    # for initial conditions in case these were used to specify initial 
+    # conditions
     con_unindexed_by_time = deactivate_constraints_unindexed_by(fs, time)
     var_unindexed_by_time = fix_vars_unindexed_by(fs, time)
 
@@ -372,7 +381,8 @@ def initialize_by_time_element(fs, time, **kwargs):
 
         if not ignore_dof:
             if degrees_of_freedom(fs) != 0:
-                msg = ('Model has nonzero degrees of freedom. This was unexpected. '
+                msg = (f'Model has nonzero degrees of freedom at finite element'
+                      ' {i}. This was unexpected. '
                       'Use keyword arg igore_dof=True to skip this check.')
                 init_log.error(msg)
                 raise ValueError('Nonzero degrees of freedom')
