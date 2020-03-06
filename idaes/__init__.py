@@ -5,12 +5,12 @@ Set up logging for the idaes module, and import plugins.
 """
 import os
 
-from . import config
-import idaes.logger as idaeslog
+from . import config as cfg
+import logging
 
 from .ver import __version__  # noqa
 
-_log = idaeslog.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 # Standard locations for config file, binary libraries and executables, ...
 data_directory, bin_directory, lib_directory = config.get_data_directory()
@@ -46,3 +46,5 @@ def _create_lib_dir():
     """Create the IDAES directory to store library files in."""
     _create_data_dir()
     config.create_dir(lib_directory)
+
+cfg = _config

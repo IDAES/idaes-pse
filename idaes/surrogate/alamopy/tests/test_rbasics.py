@@ -18,7 +18,7 @@ from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import alamo, almconfidence, almplot, wrapwriter
 from idaes.surrogate.alamopy.multos import deletefile
 import numpy as np
-import idaes.examples.alamo_python as examples
+import examples
 
 has_alamo_flag = alamopy.multos.has_alamo()
 

@@ -26,9 +26,9 @@ _log = logging.getLogger("idaes.commands.extensions")
 @click.option(
     "--url",
     help="URL to download solver",
-    default=idaes._config.default_binary_url)
-def get_extensions(url):
-    verbose = _log.isEnabledFor(logging.INFO)
+    default=idaes.config.default_binary_url)
+@click.option("--verbose", help="Show details", is_flag=True)
+def get_extensions(url, verbose):
     if url is not None:
         click.echo("Getting files...")
         idaes.solvers.download_binaries(url, verbose)

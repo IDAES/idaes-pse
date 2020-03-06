@@ -48,12 +48,10 @@ Contents
     commands/index
     core/index
     transformations/index
-    models/index
-    property_models/index
-    power_generation/index
+    model_libraries/index
     vis/index
     dmf/index
-    pysmo/index
+    surrogate/index
     apps/index
     version
     jupyterlab/index
