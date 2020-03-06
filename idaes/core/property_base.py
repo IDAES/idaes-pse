@@ -330,7 +330,7 @@ should be constructed in this state block,
         the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_flow_terms method. Please '
+                                  ' get_enthalpy_flow_terms method. Please '
                                   'contact the property package developer.')
 
     def get_energy_density_terms(self, *args, **kwargs):
