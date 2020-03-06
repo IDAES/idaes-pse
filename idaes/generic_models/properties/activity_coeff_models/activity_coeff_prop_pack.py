@@ -130,10 +130,38 @@ conditions, and thus corresponding constraints  should be included,
                 self.config.valid_phase == ("Vap", "Liq"):
             self.phase_list = Set(initialize=["Liq", "Vap"],
                                   ordered=True)
+            if self.config.activity_coeff_model == "NRTL":
+                # NRTL Model specific variables (values to be fixed by user
+                # or need to be estimated based on VLE data)
+                # See documentation for suggested or typical values.
+                self.alpha = Var(self.component_list,
+                                 self.component_list,
+                                 initialize=0.3,
+                                 doc="Non-randomness parameter for NRTL model")
+
+                self.tau = Var(self.component_list,
+                               self.component_list,
+                               initialize=1.0,
+                               doc="Binary interaction parameter "
+                               "for NRTL model")
+            if self.config.activity_coeff_model == "Wilson":
+                # Wilson Model specific variables (values to be fixed by
+                # user or need to be estimated based on VLE data)
+                self.vol_mol_comp = Var(self.component_list,
+                                        initialize=1.0,
+                                        doc="Molar volume of component")
+
+                self.tau = Var(self.component_list,
+                               self.component_list,
+                               initialize=1.0,
+                               doc="Binary interaction parameter for "
+                               "Wilson model")
+
         elif self.config.valid_phase == "Liq":
             self.phase_list = Set(initialize=["Liq"])
         else:
             self.phase_list = Set(initialize=["Vap"])
+
 
     @classmethod
     def define_metadata(cls, obj):
@@ -652,19 +680,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _make_NRTL_eq(self):
 
-        # NRTL Model specific variables (values to be fixed by user or need to
-        # be estimated based on VLE data)
-        # See documentation for suggested or typical values.
-        self.alpha = Var(self._params.component_list,
-                         self._params.component_list,
-                         initialize=0.3,
-                         doc="Non-randomness parameter for NRTL model")
-
-        self.tau = Var(self._params.component_list,
-                       self._params.component_list,
-                       initialize=1.0,
-                       doc="Binary interaction parameter for NRTL model")
-
         # NRTL model variables
         self.Gij_coeff = Var(self._params.component_list,
                              self._params.component_list,
@@ -688,8 +703,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_Gij_coeff(self, i, j):
             # i,j component
             if i != j:
-                return self.Gij_coeff[i, j] == exp(-self.alpha[i, j] *
-                                                   self.tau[i, j])
+                return self.Gij_coeff[i, j] == exp(-self._params.alpha[i, j] *
+                                                   self._params.tau[i, j])
             else:
                 self.Gij_coeff[i, j].fix(1)
                 return Constraint.Skip
@@ -701,7 +716,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         # First sum part in the NRTL equation
         def rule_A(self, i):
             value_1 = sum(self.mole_frac_phase_comp["Liq", j] *
-                          self.tau[j, i] * self.Gij_coeff[j, i]
+                          self._params.tau[j, i] * self.Gij_coeff[j, i]
                           for j in self._params.component_list)
             value_2 = sum(self.mole_frac_phase_comp["Liq", k] *
                           self.Gij_coeff[k, i]
@@ -716,9 +731,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                          sum(self.mole_frac_phase_comp["Liq", k] *
                              self.Gij_coeff[k, j]
                              for k in self._params.component_list)) *
-                        (self.tau[i, j] - sum(
+                        (self._params.tau[i, j] - sum(
                                 self.mole_frac_phase_comp["Liq", m] *
-                                self.tau[m, j] *
+                                self._params.tau[m, j] *
                                 self.Gij_coeff[m, j]
                                 for m in self._params.component_list) /
                          sum(self.mole_frac_phase_comp["Liq", k] *
@@ -735,17 +750,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                             rule=rule_activity_coeff)
 
     def _make_Wilson_eq(self):
-
-        # Wilson Model specific variables (values to be fixed by user or need
-        # to be estimated based on VLE data)
-        self.vol_mol_comp = Var(self._params.component_list,
-                                initialize=1.0,
-                                doc="Molar volume of component")
-
-        self.tau = Var(self._params.component_list,
-                       self._params.component_list,
-                       initialize=1.0,
-                       doc="Binary interaction parameter for Wilson model")
 
         # Wilson model variables
         self.Gij_coeff = Var(self._params.component_list,
@@ -771,8 +775,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             # component i,j
             if i != j:
                 return self.Gij_coeff[i, j] == \
-                    (self.vol_mol_comp[i] /
-                     self.vol_mol_comp[j]) * exp(-self.tau[i, j])
+                    (self._params.vol_mol_comp[i] /
+                     self._params.vol_mol_comp[j]) * exp(-self._params.tau[i, j])
             else:
                 self.Gij_coeff[i, j].fix(1)
                 return Constraint.Skip
@@ -1187,7 +1191,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     # NRTL model variables
                     def rule_Gij_coeff_bubble(self, i, j):
                         if i != j:
-                            return exp(-self.alpha[i, j] * self.tau[i, j])
+                            return exp(-self._params.alpha[i, j] * self._params.tau[i, j])
                         else:
                             return 1
 
@@ -1198,7 +1202,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
                     def rule_A_bubble(self, i):
                         value_1 = sum(self.mole_frac_comp[j] *
-                                      self.tau[j, i] *
+                                      self._params.tau[j, i] *
                                       self.Gij_coeff_bubble[j, i]
                                       for j in self._params.component_list)
                         value_2 = sum(self.mole_frac_comp[k] *
@@ -1215,9 +1219,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                  sum(self.mole_frac_comp[k] *
                                      self.Gij_coeff_bubble[k, j]
                                      for k in self._params.component_list)) *
-                                (self.tau[i, j] - sum(
+                                (self._params.tau[i, j] - sum(
                                     self.mole_frac_comp[m] *
-                                    self.tau[m, j] *
+                                    self._params.tau[m, j] *
                                     self.Gij_coeff_bubble[m, j]
                                     for m in self._params.component_list) /
                                  sum(self.mole_frac_comp[k] *
@@ -1242,9 +1246,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 else:
                     def rule_Gij_coeff_bubble(self, i, j):
                         if i != j:
-                            return (self.vol_mol_comp[i] /
-                                    self.vol_mol_comp[j]) * \
-                                exp(-self.tau[i, j])
+                            return (self._params.vol_mol_comp[i] /
+                                    self._params.vol_mol_comp[j]) * \
+                                exp(-self._params.tau[i, j])
                         else:
                             return 1
 
@@ -1332,7 +1336,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     # NRTL model variables
                     def rule_Gij_coeff_dew(self, i, j):
                         if i != j:
-                            return exp(-self.alpha[i, j] * self.tau[i, j])
+                            return exp(-self._params.alpha[i, j] * self._params.tau[i, j])
                         else:
                             return 1
 
@@ -1343,7 +1347,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
                     def rule_A_dew(self, i):
                         value_1 = sum(self.mole_frac_comp[j] *
-                                      self.tau[j, i] * self.Gij_coeff_dew[j, i]
+                                      self._params.tau[j, i] * self.Gij_coeff_dew[j, i]
                                       for j in self._params.component_list)
                         value_2 = sum(self.mole_frac_comp[k] *
                                       self.Gij_coeff_dew[k, i]
@@ -1359,9 +1363,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                  sum(self.mole_frac_comp[k] *
                                      self.Gij_coeff_dew[k, j]
                                      for k in self._params.component_list)) *
-                                (self.tau[i, j] - sum(
+                                (self._params.tau[i, j] - sum(
                                     self.mole_frac_comp[m] *
-                                    self.tau[m, j] *
+                                    self._params.tau[m, j] *
                                     self.Gij_coeff_dew[m, j]
                                     for m in self._params.component_list) /
                                  sum(self.mole_frac_comp[k] *
@@ -1386,9 +1390,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 else:
                     def rule_Gij_coeff_dew(self, i, j):
                         if i != j:
-                            return (self.vol_mol_comp[i] /
-                                    self.vol_mol_comp[j]) * \
-                                exp(-self.tau[i, j])
+                            return (self._params.vol_mol_comp[i] /
+                                    self._params.vol_mol_comp[j]) * \
+                                exp(-self._params.tau[i, j])
                         else:
                             return 1
 
