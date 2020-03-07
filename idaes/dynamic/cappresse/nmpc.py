@@ -1282,7 +1282,7 @@ class NMPCSim(object):
         for attrname in attr_list:
             varlist = getattr(model, attrname)
             if not attrname == 'deriv_vars':
-                steady_varlist = getattr(self.s_mod, attrname))
+                steady_varlist = getattr(self.s_mod, attrname)
             for i, _slice in enumerate(varlist):
                 for t in time:
                     # If not in last sample:
