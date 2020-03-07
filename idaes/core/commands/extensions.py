@@ -15,8 +15,12 @@
 __author__ = "John Eslick"
 
 import click
+import logging
 import idaes.solvers
 from idaes.core.commands import cb
+
+_log = logging.getLogger("idaes.commands.extensions")
+
 
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
