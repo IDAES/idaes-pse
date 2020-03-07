@@ -2,6 +2,7 @@ Logging
 =======
 
 .. module:: idaes.logger
+  :noindex:
 
 IDAES provides some logging extensions to provide finer control over information
 logging and to allow solver output to be logged.
@@ -37,6 +38,7 @@ package already start with ``idaes``, but if an IDAES logger is requested for a
 module outside of the ``idaes`` package ``idaes.`` is prepended to the name.
 
 .. autofunction:: getLogger
+  :noindex:
 
 *Example*
 
@@ -59,6 +61,7 @@ the block name over the module name is that users can see exactly which model
 instance the initialization log messages are coming from.
 
 .. autofunction:: getInitLogger
+  :noindex:
 
 *Example*
 
@@ -84,6 +87,7 @@ because it provides a way to use a standard configuration system for user model
 loggers. The user can choose any name they like for these loggers.
 
 .. autofunction:: getModelLogger
+  :noindex:
 
 *Example*
 
@@ -102,6 +106,7 @@ it can be useful to specify different handlers for the solve logger to
 direct it to a separate file.
 
 .. autofunction:: getSolveLogger
+  :noindex:
 
 Tags
 ----
@@ -121,20 +126,26 @@ The following functions can be used to specify which logging tags to
 display:
 
 .. autofunction:: log_tags
+  :noindex:
 
 .. autofunction:: set_log_tags
+  :noindex:
 
 .. autofunction:: add_log_tag
+  :noindex:
 
 .. autofunction:: remove_log_tag
+  :noindex:
 
 The tags are validated against a list of valid tags to provide error checking
 for typos and to enforce some standard tag names. To provide more flexibility,
 users can add to the list of valid tag names, but cannot remove names.
 
 .. autofunction:: valid_log_tags
+  :noindex:
 
 .. autofunction:: add_valid_log_tag
+  :noindex:
 
 Levels
 ------
@@ -165,6 +176,7 @@ There are some additional utility functions to perform logging tasks that are
 common in the IDAES framework.
 
 .. autofunction:: condition
+  :noindex:
 
 
 Logging Solver Output

@@ -31,14 +31,14 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
+from idaes.generic_models.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 
-from idaes.property_models import iapws95
+from idaes.generic_models.properties import iapws95
 
 # import ideal flue gas prop pack
-from idaes.power_generation.properties.IdealProp_FlueGas import FlueGasParameterBlock
+from idaes.power_generation.properties import FlueGasParameterBlock
 # Import Power Plant HX Unit Model
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
         BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
@@ -110,14 +110,14 @@ def test_boiler_hx():
         "tube_arrangement":TubeArrangement.inLine,
         "side_1_water_phase":"Liq",
         "has_radiation":True})
-    
+
     #   Set inputs
     h = iapws95.htpx(773.15,2.5449e7)
     print(h)
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol
     m.fs.unit.side_1_inlet.pressure[0].fix(2.5449e7)    # Pascals
-    
+
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 28.3876e3*0.18  # mol/s equivalent of ~1930.08 klb/hr
     # Use FG molar composition to set component flow rates (baseline report)
@@ -138,7 +138,7 @@ def test_boiler_hx():
     m.fs.unit.tube_thickness.fix(0.165*ITM)
     m.fs.unit.pitch_x.fix(3*ITM)
     # gas path transverse width 54.78 ft / number of columns
-    m.fs.unit.pitch_y.fix(54.78/108*12*ITM)  
+    m.fs.unit.pitch_y.fix(54.78/108*12*ITM)
     m.fs.unit.tube_length.fix(53.13*12*ITM)
     m.fs.unit.tube_nrow.fix(20*2)
     m.fs.unit.tube_ncol.fix(108)
@@ -146,7 +146,7 @@ def test_boiler_hx():
     m.fs.unit.delta_elevation.fix(50)
     m.fs.unit.tube_r_fouling = 0.000176 # (0.001 h-ft^2-F/BTU)
     m.fs.unit.tube_r_fouling = 0.003131 # (0.03131 - 0.1779 h-ft^2-F/BTU)
-    if m.fs.unit.config.has_radiation is True: 
+    if m.fs.unit.config.has_radiation is True:
         m.fs.unit.emissivity_wall.fix(0.7) # wall emissivity
     #correction factor for overall heat transfer coefficient
     m.fs.unit.fcorrection_htc.fix(1.5)
@@ -165,7 +165,7 @@ def test_boiler_hx():
     assert results.solver.termination_condition == \
             TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
-        
+
     assert value(m.fs.unit.side_1.properties_out[0].temperature) == \
         pytest.approx(588.07,1)
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == \
