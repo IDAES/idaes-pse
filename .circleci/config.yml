@@ -5,11 +5,9 @@ shared-dev: &shared-dev
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install pip==18.0.0
-    - run: pip install -r requirements-dev.txt
+    - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
-#          - run: pyomo --version
-#    - run: cd docs && make all
+    - run: cd docs && make all
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -19,8 +17,7 @@ shared: &shared
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install pip==18.0.0
-    - run: pip install -r requirements.txt
+    - run: pip install --progress-bar=off -r requirements.txt
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
@@ -47,8 +44,7 @@ jobs:
           name: Install and run tests in Python 3.6 Conda environment
           command: |
             source activate idaes36
-            pip install pip==18.0.0
-            pip install -r requirements.txt
+            python -m pip install --progress-bar=off -r requirements.txt
             pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
     docker:
@@ -63,7 +59,7 @@ jobs:
           name: Install idaes-pse
           command: |
             source activate idaes-pse
-            pip install idaes-pse
+            python -m pip install idaes-pse
       - run:
           name: Install idaes extensions
           command: |
