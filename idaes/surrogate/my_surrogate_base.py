@@ -35,18 +35,21 @@ class SurrogateModeler:
                                                             'training_split': float,
                                                             'solution_method': str,
                                                             'multinomials': bool,
-                                                            'additional_features_list': list
+                                                            'additional_features_list': list,
+                                                            'pyomo_vars': list
                                                             }, total=False
                                     )
 
     PysmoRBF = TypedDict('PysmoRBF', {'basis_function': str,
                                       'solution_method': str,
-                                      'regularization': bool
+                                      'regularization': bool,
+                                      'pyomo_vars': list
                                       }, total=False
                          )
 
     PysmoKriging = TypedDict('PysmoKriging', {'numerical_gradients': bool,
-                                              'regularization': bool
+                                              'regularization': bool,
+                                              'pyomo_vars': list
                                               }, total=False
                              )
 
@@ -112,19 +115,15 @@ class SurrogateFactory:
     """ 
     Construct default setting of a tool (CONFIG) 
     Changed by user to Surrogate instance Config
-
-
     Ex.
         alternative_cases = {'run_1': dict(pysmo_polyregression_base, maximum_polynomial_order=3),
                      'run_2': dict(pysmo_polyregression_base, solution_method='mle'),
                      'run_3': dict(pysmo_rbf_base, basis_function='cubic')
                      }
-
         tools = [
             ['pysmo_polygression', 'pysmo_rbf', 'pysmo_kriging', 'pysmo_polygression', 'pysmo_polygression', 'pysmo_rbf'],
             [pysmo_polyregression_base, pysmo_rbf_base, pysmo_kriging_base] + list(alternative_cases.values())
             ]  
-
         user loops:
             Surrogate = new instance()
     """
@@ -305,7 +304,7 @@ class Surrogate:
         self.modeler = None
 
         # Results
-        self._results = None
+        self._results = {}
         self._metrics = None
         self._model = None
         self._b_built = False # flag for regression
@@ -349,7 +348,7 @@ class Surrogate:
     # Data Handling
 
     def get_regressed_data(self):
-    	return (self._rdata_in, self._rdata_out)
+        return (self._rdata_in, self._rdata_out)
 
     def regressed_data(self, r_in, r_out): # 2D Numparray
         self._rdata_in = r_in
@@ -380,5 +379,3 @@ class Surrogate:
             print("Warning: No surrogate model regressed.")
             return
         pass
-
-
