@@ -915,7 +915,7 @@ constructed,
                 b.side_2.properties_in[t].dens_mol_phase["Vap"] * \
                 b.area_flow_shell == \
                 sum(b.side_2.properties_in[t].flow_component[j] 
-                    for j in b.side_2.properties_in[t]._params.component_list)
+                    for j in b.side_2.properties_in[t].params.component_list)
 
         # Reynolds number
         @self.Constraint(self.flowsheet().time, 
@@ -924,9 +924,9 @@ constructed,
             return b.N_Re_shell[t] * b.side_2.properties_in[t].visc_d_mix == \
                 b.do_tube * b.v_shell[t] \
                 * b.side_2.properties_in[t].dens_mol_phase["Vap"] / 1000.0 *\
-                   sum(b.side_2.properties_in[t]._params.mw[c] 
+                   sum(b.side_2.properties_in[t].params.mw[c] 
                    *b.side_2.properties_in[t].mole_frac[c] 
-                   for c in b.side_2.properties_in[t]._params.component_list)
+                   for c in b.side_2.properties_in[t].params.component_list)
 
         if self.config.has_pressure_change is True:
             # Friction factor on shell side
@@ -954,9 +954,9 @@ constructed,
             def deltaP_shell_eqn(b, t):
                 return b.deltaP_shell[t] == -1.4 * b.friction_factor_shell[t] \
                     *b.tube_nrow * b.side_2.properties_in[t].dens_mol_phase["Vap"]\
-                    / 1000.0 * sum(b.side_2.properties_in[t]._params.mw[c]\
+                    / 1000.0 * sum(b.side_2.properties_in[t].params.mw[c]\
                         * b.side_2.properties_in[t].mole_frac[c] 
-                        for c in b.side_2.properties_in[t]._params.component_list) * \
+                        for c in b.side_2.properties_in[t].params.component_list) * \
                        b.v_shell[t]**2
 
         # Prandtl number
@@ -964,9 +964,9 @@ constructed,
                          doc="Prandtl number equation on shell side")
         def N_Pr_shell_eqn(b, t):
             return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond_mix * \
-                sum(b.side_2.properties_in[t]._params.mw[c]\
+                sum(b.side_2.properties_in[t].params.mw[c]\
                     *b.side_2.properties_in[t].mole_frac[c] 
-                    for c in b.side_2.properties_in[t]._params.component_list) == \
+                    for c in b.side_2.properties_in[t].params.component_list) == \
                        b.side_2.properties_in[t].heat_cap *1000 * \
                        b.side_2.properties_in[t].visc_d_mix
 
