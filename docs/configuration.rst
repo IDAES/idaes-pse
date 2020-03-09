@@ -6,59 +6,74 @@ files. IDAES's configuration is obtained by first setting everything to internal
 defaults; then loading a global config file, if it exists; then loading a config
 file from the current working directory, if it exists.
 
-Configuration file are in `TOML format <https://github.com/toml-lang/toml>`_. The
+Configuration file are in `JSON format <https://www.json.org/json-en.html>`_. The
 default configuration is shown below and can be used as a template to create new
 configuration files. This is the configuration used by IDAES if nothing else is
 provided.
 
-.. code-block::
+.. code-block:: json
 
-  use_idaes_solvers = true
-  logger_capture_solver = true
-  logger_tags = [
-      "framework",
-      "model",
-      "flowsheet",
-      "unit",
-      "control_volume",
-      "properties",
-      "reactions",
-  ]
-  valid_logger_tags = [
-      "framework",
-      "model",
-      "flowsheet",
-      "unit",
-      "control_volume",
-      "properties",
-      "reactions",
-  ]
-  [logging]
-    version = 1
-    disable_existing_loggers = false
-    [logging.formatters.default_format]
-      format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-      datefmt = "%Y-%m-%d %H:%M:%S"
-    [logging.handlers.console]
-      class = "logging.StreamHandler"
-      formatter = "default_format"
-      stream = "ext://sys.stdout"
-    [logging.loggers.idaes]
-      level = "INFO"
-      propagate = true
-      handlers = ["console"]
-    [logging.loggers."idaes.solve"]
-      level = "INFO"
-      propagate = false
-      handlers = ["console"]
-    [logging.loggers."idaes.init"]
-      level = "INFO"
-      propagate = false
-      handlers = ["console"]
-    [logging.loggers."idaes.model"]
-      level = "INFO"
-      propagate = false
-      handlers = ["console"]
+  {
+      "use_idaes_solvers":true,
+      "logger_capture_solver":true,
+      "logger_tags":[
+          "framework",
+          "model",
+          "flowsheet",
+          "unit",
+          "control_volume",
+          "properties",
+          "reactions"
+      ],
+      "valid_logger_tags":[
+          "framework",
+          "model",
+          "flowsheet",
+          "unit",
+          "control_volume",
+          "properties",
+          "reactions"
+      ],
+      "logging":{
+          "version":1,
+          "disable_existing_loggers":false,
+          "formatters":{
+              "default_format":{
+                  "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                  "datefmt": "%Y-%m-%d %H:%M:%S"
+              }
+          },
+          "handlers":{
+              "console":{
+                  "class": "logging.StreamHandler",
+                  "formatter": "default_format",
+                  "stream": "ext://sys.stdout"
+              }
+          },
+          "loggers":{
+              "idaes":{
+                  "level": "INFO",
+                  "propagate": true,
+                  "handlers": ["console"]
+              },
+              "idaes.solve":{
+                  "propagate": false,
+                  "level": "INFO",
+                  "handlers": ["console"]
+              },
+              "idaes.init":{
+                  "propagate": false,
+                  "level": "INFO",
+                  "handlers": ["console"]
+              },
+              "idaes.model":{
+                  "propagate":false,
+                  "level": "INFO",
+                  "handlers": ["console"]
+              }
+          }
+      }
+  }
 
 
 Global Configuration
