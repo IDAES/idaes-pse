@@ -269,7 +269,11 @@ should be constructed in this state block,
             None
         """
         super(StateBlockData, self).build()
-        add_object_reference(self, "params", self.config.parameters)
+        add_object_reference(self, "_params", self.config.parameters)
+
+    @property
+    def params(self):
+        return self._params
 
     def define_state_vars(self):
         """
