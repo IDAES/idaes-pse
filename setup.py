@@ -67,7 +67,6 @@ kwargs = dict(
         "requests",
         "sympy",
         "tinydb",
-        "toml",
         # alamopy
         # <nothing>
         # ripe
