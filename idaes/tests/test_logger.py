@@ -25,11 +25,11 @@ def test_get_model_logger(caplog):
     assert isinstance(log, logging.LoggerAdapter)
     assert log.name == "idaes.model.My Model 1"
     caplog.set_level(idaeslog.INFO)
-    log.info_low("Hello! from unit")
-    log.info("Hello! from info")
-    log.info_high("Hello! from unit high")
+    log.info_low("Hello! from INFO_LOW")
+    log.info("Hello! from INFO")
+    log.info_high("Hello! from INFO_HIGH")
     for record in caplog.records:
-        assert record.message in ["Hello! INFO", "Hello! from INFO_LOW"]
+        assert record.message in ["Hello! from INFO", "Hello! from INFO_LOW"]
     log = idaeslog.getModelLogger("idaes.My Model 2")
     assert log.name == "idaes.model.My Model 2"
 
