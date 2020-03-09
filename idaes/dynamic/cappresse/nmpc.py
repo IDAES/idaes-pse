@@ -54,11 +54,15 @@ def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
             local_parent = getattr(local_parent, r[0])[r[1]]
         except AttributeError:
             init_log.warning('Warning.')
-            if not allow_miss:
+            if allow_miss:
+                return None
+            else:
                 raise
         except KeyError:
             init_log.warning('Warning.')
-            if not allow_miss:
+            if allow_miss:
+                return None
+            else:
                 raise
     tgt_comp = local_parent
     return tgt_comp
@@ -216,7 +220,7 @@ class NMPCSim(object):
 
         scheme = self.c_mod.time.get_discretization_info()['scheme']
         if scheme == 'LAGRANGE-RADAU':
-            self.c_mod._ncp = time.get_discretization_info()['ncp']
+            self.c_mod._ncp = self.c_mod.time.get_discretization_info()['ncp']
         elif scheme == 'BACKWARD Difference':
             self.c_mod._ncp = 1
         else:
