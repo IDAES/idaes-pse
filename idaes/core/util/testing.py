@@ -356,7 +356,7 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
                             'R3': 5.79e7},
                 doc='Pre-exponential rate constant in Arrhenius expression')
 
-    #    self.reaction_block_class = EnzymeReactionBlock
+        self.reaction_block_class = EnzymeReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):
