@@ -23,7 +23,8 @@ from idaes.core import (FlowsheetBlock,
                         StateBlock,
                         StateBlockData,
                         declare_process_block_class)
-from idaes.core.util.tables import (create_stream_table_dataframe,
+from idaes.core.util.tables import (arcs_to_stream_dict,
+                                    create_stream_table_dataframe,
                                     stream_table_dataframe_to_string,
                                     generate_table)
 
