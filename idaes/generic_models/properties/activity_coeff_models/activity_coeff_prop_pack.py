@@ -703,8 +703,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_Gij_coeff(self, i, j):
             # i,j component
             if i != j:
-                return self.Gij_coeff[i, j] == exp(-self._params.alpha[i, j] *
-                                                   self._params.tau[i, j])
+                return self.Gij_coeff[i, j] == exp(-self.params.alpha[i, j] *
+                                                   self.params.tau[i, j])
             else:
                 self.Gij_coeff[i, j].fix(1)
                 return Constraint.Skip
@@ -733,7 +733,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                              for k in self.params.component_list)) *
                         (self.params.tau[i, j] - sum(
                                 self.mole_frac_phase_comp["Liq", m] *
-                                self._params.tau[m, j] *
+                                self.params.tau[m, j] *
                                 self.Gij_coeff[m, j]
                                 for m in self.params.component_list) /
                          sum(self.mole_frac_phase_comp["Liq", k] *
@@ -775,8 +775,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
             # component i,j
             if i != j:
                 return self.Gij_coeff[i, j] == \
-                    (self._params.vol_mol_comp[i] /
-                     self._params.vol_mol_comp[j]) * exp(-self._params.tau[i, j])
+                    (self.params.vol_mol_comp[i] /
+                     self.params.vol_mol_comp[j]) * exp(-self.params.tau[i, j])
             else:
                 self.Gij_coeff[i, j].fix(1)
                 return Constraint.Skip
@@ -1191,7 +1191,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     # NRTL model variables
                     def rule_Gij_coeff_bubble(self, i, j):
                         if i != j:
-                            return exp(-self._params.alpha[i, j] * self._params.tau[i, j])
+                            return exp(-self.params.alpha[i, j] * self.params.tau[i, j])
                         else:
                             return 1
 
@@ -1202,7 +1202,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
                     def rule_A_bubble(self, i):
                         value_1 = sum(self.mole_frac_comp[j] *
-                                      self._params.tau[j, i] *
+                                      self.params.tau[j, i] *
                                       self.Gij_coeff_bubble[j, i]
                                       for j in self.params.component_list)
                         value_2 = sum(self.mole_frac_comp[k] *
@@ -1221,7 +1221,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                      for k in self.params.component_list)) *
                                 (self.params.tau[i, j] - sum(
                                     self.mole_frac_comp[m] *
-                                    self._params.tau[m, j] *
+                                    self.params.tau[m, j] *
                                     self.Gij_coeff_bubble[m, j]
                                     for m in self.params.component_list) /
                                  sum(self.mole_frac_comp[k] *
@@ -1246,9 +1246,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 else:
                     def rule_Gij_coeff_bubble(self, i, j):
                         if i != j:
-                            return (self._params.vol_mol_comp[i] /
-                                    self._params.vol_mol_comp[j]) * \
-                                exp(-self._params.tau[i, j])
+                            return (self.params.vol_mol_comp[i] /
+                                    self.params.vol_mol_comp[j]) * \
+                                exp(-self.params.tau[i, j])
                         else:
                             return 1
 
@@ -1336,7 +1336,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     # NRTL model variables
                     def rule_Gij_coeff_dew(self, i, j):
                         if i != j:
-                            return exp(-self._params.alpha[i, j] * self._params.tau[i, j])
+                            return exp(-self.params.alpha[i, j] * self.params.tau[i, j])
                         else:
                             return 1
 
@@ -1365,7 +1365,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                      for k in self.params.component_list)) *
                                 (self.params.tau[i, j] - sum(
                                     self.mole_frac_comp[m] *
-                                    self._params.tau[m, j] *
+                                    self.params.tau[m, j] *
                                     self.Gij_coeff_dew[m, j]
                                     for m in self.params.component_list) /
                                  sum(self.mole_frac_comp[k] *
@@ -1390,9 +1390,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 else:
                     def rule_Gij_coeff_dew(self, i, j):
                         if i != j:
-                            return (self._params.vol_mol_comp[i] /
-                                    self._params.vol_mol_comp[j]) * \
-                                exp(-self._params.tau[i, j])
+                            return (self.params.vol_mol_comp[i] /
+                                    self.params.vol_mol_comp[j]) * \
+                                exp(-self.params.tau[i, j])
                         else:
                             return 1
 
