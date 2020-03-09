@@ -186,7 +186,7 @@ change.
         temperature_crit,
         pressure_crit,
         dens_mass_crit,
-        gas_const,
+        specific_gas_constant,
     ):
         """This function sets the parameters that are required for a Helmholtz
         equation of state parameter block, and ensures that all required parameters
@@ -203,7 +203,7 @@ change.
         self.temperature_crit = temperature_crit
         self.pressure_crit = pressure_crit
         self.dens_mass_crit = dens_mass_crit
-        self.gas_const = gas_const
+        self.specific_gas_constant = specific_gas_constant
         self.mw = mw
 
 
@@ -240,7 +240,7 @@ change.
                 "temperature_crit": {"method": None, "units": "K"},
                 "pressure_crit": {"method": None, "units": "Pa"},
                 "dens_mass_crit": {"method": None, "units": "kg/m^3"},
-                "gas_const": {"method": None, "units": "J/mol.K"},
+                "specific_gas_constant": {"method": None, "units": "J/kg.K"},
                 "mw": {"method": None, "units": "kg/mol"},
                 "temperature_sat": {"method": "None", "units": "K"},
                 "flow_mol": {"method": None, "units": "mol/s"},
@@ -638,8 +638,6 @@ class HelmholtzStateBlockData(StateBlockData):
         self.scaling_factor[self.pressure_crit] = 1e-6
         self.dens_mass_crit = Expression(expr=self.config.parameters.dens_mass_crit)
         self.scaling_factor[self.dens_mass_crit] = 1e-2
-        self.gas_const = Expression(expr=self.config.parameters.gas_const)
-        self.scaling_factor[self.gas_const] = 1e0
         self.mw = Expression(
             expr=self.config.parameters.mw, doc="molecular weight [kg/mol]"
         )
