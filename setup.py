@@ -64,9 +64,9 @@ kwargs = dict(
         "pytest",
         "pyutilib",
         "pyyaml",
+        "requests",
         "sympy",
         "tinydb",
-        "toml",
         # alamopy
         # <nothing>
         # ripe
