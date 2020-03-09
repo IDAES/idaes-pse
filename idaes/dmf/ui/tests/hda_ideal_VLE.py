@@ -176,7 +176,7 @@ class HDAParameterData(PhysicalParameterBlock):
             doc="molecular weight Kg/mol",
         )
 
-        self.dens_liqparams = Param(
+        self.dens_liq_params = Param(
             self.component_list,
             ["1", "2", "3", "4"],
             mutable=False,
@@ -924,12 +924,12 @@ class IdealStateBlockData(StateBlockData):
     def _dens_mol_liq(b):
         return b.dens_mol_phase["Liq"] == 1e3 * sum(
             b.mole_frac_phase["Liq", j]
-            * b.params.dens_liqparams[j, "1"]
-            / b.params.dens_liqparams[j, "2"]
+            * b.params.dens_liq_params[j, "1"]
+            / b.params.dens_liq_params[j, "2"]
             ** (
                 1
-                + (1 - b.temperature / b.params.dens_liqparams[j, "3"])
-                ** b.params.dens_liqparams[j, "4"]
+                + (1 - b.temperature / b.params.dens_liq_params[j, "3"])
+                ** b.params.dens_liq_params[j, "4"]
             )
             for j in ["benzene", "toluene"]
         )  # TODO: Need to include diphenyl here later
