@@ -10,17 +10,64 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""Base command for 'idaes' commandline script"""
+"""
+Base command for 'idaes' commandline script
+"""
 
 __author__ = "John Eslick"
 
 import click
+import logging
+
+# separate command logging from normal IDAES logging
+_log = logging.getLogger("idaes.commands")
+_h = logging.StreamHandler()
+_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+_log.addHandler(_h)
+_log.propagate = False
+
+
+def level_from_verbosity(vb):
+    level = 0  # for pycharm
+    if vb >= 3:
+        level = logging.DEBUG
+    elif vb == 2:
+        level = logging.INFO
+    elif vb == 1:
+        level = logging.WARN
+    elif vb == 0:
+        level = logging.ERROR
+    elif vb == -1:
+        level = logging.FATAL
+    elif vb <= -2:
+        level = logging.FATAL + 1
+    return level
 
 
 @click.group()
 @click.version_option(version=None)
-def command_base():
-    pass
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    help="Increase verbosity. Show warnings if given once, "
+    "then info, and then debugging messages.",
+)
+@click.option(
+    "--quiet",
+    "-q",
+    count=True,
+    help="Increase quietness. If given once, "
+    "only show critical messages. If "
+    "given twice, show no messages.",
+)
+def command_base(verbose, quiet):
+    if quiet > 0 and verbose > 0:
+        raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
+    if verbose > 0:
+        _log.setLevel(level_from_verbosity(verbose))
+    else:
+        _log.setLevel(level_from_verbosity(-quiet))
 
 
 @command_base.command(help="Show IDAES copyright information")
