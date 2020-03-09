@@ -58,10 +58,10 @@ Below is an example method for a method in an equation of state module for calcu
 
     def dens_mol_phase(b, phase):
         if phase == "Vap":
-            return b.pressure/(b._params.gas_const*b.temperature)
+            return b.pressure/(b.params.gas_const*b.temperature)
         elif phase == "Liq":
             return sum(b.mole_frac_phase_comp[phase, j] *
                        get_method(b, "dens_mol_liq_comp")(b, j, b.temperature)
-                       for j in b._params.component_list)
+                       for j in b.params.component_list)
         else:
             raise PropertyNotSupportedError("Phase not supported")

@@ -23,7 +23,8 @@ from idaes.core import (FlowsheetBlock,
                         StateBlock,
                         StateBlockData,
                         declare_process_block_class)
-from idaes.core.util.tables import (create_stream_table_dataframe,
+from idaes.core.util.tables import (arcs_to_stream_dict,
+                                    create_stream_table_dataframe,
                                     stream_table_dataframe_to_string,
                                     generate_table)
 
@@ -58,7 +59,7 @@ def test_create_stream_table_dataframe_from_StateBlock(m):
     assert d["stream"] == m.fs.stream
 
 
-def test_create_stream_table_dataframe_from_StateBlock(m):
+def test_create_stream_table_dataframe_from_StateBlock_2(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out})
 

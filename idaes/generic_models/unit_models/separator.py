@@ -622,10 +622,10 @@ linked the mixed state and all outlet states,
                     sd = {}
                     sblock = mixed_block[t]
                     for r in b.config.property_package.phase_equilibrium_idx:
-                        if sblock._params.phase_equilibrium_list[r][0] == j:
-                            if sblock._params.phase_equilibrium_list[r][1][0] == p:
+                        if sblock.params.phase_equilibrium_list[r][0] == j:
+                            if sblock.params.phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif sblock._params.phase_equilibrium_list[r][1][1] == p:
+                            elif sblock.params.phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
