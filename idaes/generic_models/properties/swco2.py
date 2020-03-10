@@ -78,7 +78,7 @@ def swco2_available():
 
 def htpx(T, P=None, x=None):
     """
-    Convenience function to calculate steam enthalpy from temperature and
+    Convenience function to calculate enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
 
@@ -86,7 +86,7 @@ def htpx(T, P=None, x=None):
 
     Args:
         T: Temperature [K] (between 200 and 3000)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        P: Pressure [Pa] (between 1 and 1e9), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
