@@ -26,7 +26,8 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         EnzymeReactionBlock)
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom, 
+        activated_equalities_generator)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
@@ -126,8 +127,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
     def total_flow_balance(cstr, t):
         return (cstr.inlet.flow_rate[t] == cstr.outlet.flow_rate[t])
 
-    # This is an initial condition specification via an algebraic variable...
-    m.fs.cstr.outlet.temperature[m.fs.time.first()].fix(300)
+    # Specify initial condition for energy
+    m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
 
     # This generates constraints for my arc, but shouldn't I be able to
     # enforce that the variables in mixer.outlet are the same as cstr.inlet,
@@ -178,7 +179,7 @@ def test_find_comp_in_block():
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
 
 
-def test_constructor():
+def test_constructor_1():
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2)
     sample_time = 0.5
@@ -196,87 +197,398 @@ def test_constructor():
     # transparent NLP solver...)
 
     # Check that variables have been categorized properly
+    ##################
+    # In plant model #
+    ##################
     p_mod = nmpc.p_mod
+    assert p_mod is m_plant.fs
     init_input_set = ComponentSet(initial_plant_inputs)
-    init_deriv_set = ComponentSet(
-            [m_plant.fs.cstr.control_volume.material_accumulation[0, 'aq', 'S'],
-             m_plant.fs.cstr.control_volume.material_accumulation[0, 'aq', 'E'],
-             m_plant.fs.cstr.control_volume.material_accumulation[0, 'aq', 'C'],
-             m_plant.fs.cstr.control_volume.material_accumulation[0, 'aq', 'P'],
-             m_plant.fs.cstr.control_volume.energy_accumulation[0, 'aq']])
-    init_diff_set = ComponentSet(
-            [m_plant.fs.cstr.control_volume.material_holdup[0, 'aq', 'S'],
-             m_plant.fs.cstr.control_volume.material_holdup[0, 'aq', 'E'],
-             m_plant.fs.cstr.control_volume.material_holdup[0, 'aq', 'C'],
-             m_plant.fs.cstr.control_volume.material_holdup[0, 'aq', 'P'],
-             m_plant.fs.cstr.control_volume.energy_holdup[0, 'aq']])
-    assert len(p_mod.input_vars) == 2
-    assert p_mod.input_vars[0][0] in init_input_set
-    assert p_mod.input_vars[1][0] in init_input_set
-    assert len(p_mod.deriv_vars) == 5
-    assert p_mod.deriv_vars[0][0] in init_deriv_set
-    assert p_mod.deriv_vars[1][0] in init_deriv_set
-    assert p_mod.deriv_vars[2][0] in init_deriv_set
-    assert p_mod.deriv_vars[3][0] in init_deriv_set
-    assert p_mod.deriv_vars[4][0] in init_deriv_set
-    assert len(p_mod.diff_vars) == 5
-    assert p_mod.diff_vars[0][0] in init_diff_set
-    assert p_mod.diff_vars[1][0] in init_diff_set
-    assert p_mod.diff_vars[2][0] in init_diff_set
-    assert p_mod.diff_vars[3][0] in init_diff_set
-    assert p_mod.diff_vars[4][0] in init_diff_set
 
-    init_alg_set = ComponentSet([
-             m_plant.fs.cstr.outlet.conc_mol[0, 'S'],
-             m_plant.fs.cstr.outlet.conc_mol[0, 'E'],
-             m_plant.fs.cstr.outlet.conc_mol[0, 'C'],
-             m_plant.fs.cstr.outlet.conc_mol[0, 'P'],
-             m_plant.fs.cstr.outlet.flow_mol_comp[0, 'S'],
-             m_plant.fs.cstr.outlet.flow_mol_comp[0, 'E'],
-             m_plant.fs.cstr.outlet.flow_mol_comp[0, 'C'],
-             m_plant.fs.cstr.outlet.flow_mol_comp[0, 'P'],
-             m_plant.fs.cstr.outlet.flow_rate[0],
-             m_plant.fs.cstr.outlet.temperature[0],
-             m_plant.fs.cstr.inlet.conc_mol[0, 'S'],
-             m_plant.fs.cstr.inlet.conc_mol[0, 'E'],
-             m_plant.fs.cstr.inlet.conc_mol[0, 'C'],
-             m_plant.fs.cstr.inlet.conc_mol[0, 'P'],
-             m_plant.fs.cstr.inlet.flow_mol_comp[0, 'S'],
-             m_plant.fs.cstr.inlet.flow_mol_comp[0, 'E'],
-             m_plant.fs.cstr.inlet.flow_mol_comp[0, 'C'],
-             m_plant.fs.cstr.inlet.flow_mol_comp[0, 'P'],
-             m_plant.fs.cstr.inlet.flow_rate[0],
-             m_plant.fs.cstr.inlet.temperature[0],
-             m_plant.fs.mixer.outlet.conc_mol[0, 'S'],
-             m_plant.fs.mixer.outlet.conc_mol[0, 'E'],
-             m_plant.fs.mixer.outlet.conc_mol[0, 'C'],
-             m_plant.fs.mixer.outlet.conc_mol[0, 'P'],
-             m_plant.fs.mixer.outlet.flow_mol_comp[0, 'S'],
-             m_plant.fs.mixer.outlet.flow_mol_comp[0, 'E'],
-             m_plant.fs.mixer.outlet.flow_mol_comp[0, 'C'],
-             m_plant.fs.mixer.outlet.flow_mol_comp[0, 'P'],
-             m_plant.fs.mixer.outlet.flow_rate[0],
-             m_plant.fs.mixer.outlet.temperature[0],
-             m_plant.fs.mixer.inlet.flow_mol_comp[0, 'S'],
-             m_plant.fs.mixer.inlet.flow_mol_comp[0, 'E'],
-             m_plant.fs.mixer.inlet.flow_mol_comp[0, 'C'],
-             m_plant.fs.mixer.inlet.flow_mol_comp[0, 'P'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_coef['R1'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_coef['R2'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_coef['R3'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_rate['R1'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_rate['R2'],
-             m_plant.fs.cstr.control_volume.reactions[0].reaction_rate['R3'],
-             m_plant.fs.cstr.control_volume.rate_reaction_generation[0, 'R1'],
-             m_plant.fs.cstr.control_volume.rate_reaction_generation[0, 'R2'],
-             m_plant.fs.cstr.control_volume.rate_reaction_generation[0, 'R3'],
-             m_plant.fs.cstr.control_volume.rate_reaction_extent[0, 'R1'],
-             m_plant.fs.cstr.control_volume.rate_reaction_extent[0, 'R2'],
-             m_plant.fs.cstr.control_volume.rate_reaction_extent[0, 'R3']
-             ])
-    assert len(p_mod.alg_vars) == 46
-    for i in range(46):
+    init_deriv_list = [p_mod.cstr.control_volume.energy_accumulation[0, 'aq']]
+    init_diff_list = [p_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+    init_fixed_list = [p_mod.cstr.control_volume.volume[0],
+                       p_mod.mixer.E_inlet.temperature[0],
+                       p_mod.mixer.S_inlet.temperature[0]]
+
+    init_ic_list = [p_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+
+    init_alg_list = [
+        p_mod.cstr.outlet.flow_rate[0],
+        p_mod.cstr.outlet.temperature[0],
+        p_mod.cstr.inlet.flow_rate[0],
+        p_mod.cstr.inlet.temperature[0],
+        p_mod.mixer.outlet.flow_rate[0],
+        p_mod.mixer.outlet.temperature[0]
+        ]
+
+    for j in p_mod.properties.component_list:
+        init_deriv_list.append(
+                p_mod.cstr.control_volume.material_accumulation[0, 'aq', j])
+        init_diff_list.append(
+                p_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+        
+        init_fixed_list.append(p_mod.mixer.E_inlet.conc_mol[0, j])
+        init_fixed_list.append(p_mod.mixer.S_inlet.conc_mol[0, j])
+
+        init_ic_list.append(
+                p_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+
+        init_alg_list.extend([
+            p_mod.cstr.outlet.conc_mol[0, j],
+            p_mod.cstr.outlet.flow_mol_comp[0, j],
+            p_mod.cstr.inlet.conc_mol[0, j],
+            p_mod.cstr.inlet.flow_mol_comp[0, j],
+            p_mod.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
+            p_mod.mixer.outlet.conc_mol[0, j],
+            p_mod.mixer.outlet.flow_mol_comp[0, j],
+            p_mod.mixer.E_inlet.flow_mol_comp[0, j],
+            p_mod.mixer.S_inlet.flow_mol_comp[0, j]
+            ])
+
+    for r in p_mod.reactions.rate_reaction_idx:
+        init_alg_list.extend([
+            p_mod.cstr.control_volume.reactions[0].reaction_coef[r],
+            p_mod.cstr.control_volume.reactions[0].reaction_rate[r],
+            p_mod.cstr.control_volume.rate_reaction_extent[0, r]
+            ])
+
+    init_deriv_set = ComponentSet(init_deriv_list)
+    init_diff_set = ComponentSet(init_diff_list)
+    init_fixed_set = ComponentSet(init_fixed_list)
+    init_ic_set = ComponentSet(init_ic_list)
+    init_alg_set = ComponentSet(init_alg_list)
+
+    assert len(p_mod.input_vars) == len(init_input_set)
+    for v in p_mod.input_vars:
+        assert v[0] in init_input_set
+
+    assert len(p_mod.deriv_vars) == len(init_deriv_set)
+    for v in p_mod.deriv_vars:
+        assert v[0] in init_deriv_set
+
+    assert len(p_mod.diff_vars) == len(init_deriv_set)
+    for v in p_mod.diff_vars:
+        assert v[0] in init_diff_set
+
+    assert len(p_mod.fixed_vars) == len(init_fixed_set)
+    for v in p_mod.fixed_vars:
+        assert v[0] in init_fixed_set
+
+    assert len(p_mod.alg_vars) == len(init_alg_set)
+    for v in p_mod.alg_vars:
+        assert v[0] in init_alg_set
+
+    assert len(p_mod.ic_vars) == len(init_ic_set)
+    for v in p_mod.ic_vars:
+        assert v[0] in init_ic_set
+
+    assert len(p_mod.scalar_vars) == 0
+
+    for var in p_mod.deriv_vars:
+        assert len(var) == len(p_mod.time)
+        assert var.index_set() is p_mod.time
+    for var in p_mod.alg_vars:
+        assert len(var) == len(p_mod.time)
+        assert var.index_set() is p_mod.time
+
+    #######################
+    # In controller model #
+    #######################
+    c_mod = nmpc.c_mod
+    assert c_mod is m_controller.fs
+    init_controller_inputs = [c_mod.mixer.E_inlet.flow_rate[0],
+                              c_mod.mixer.S_inlet.flow_rate[0]]
+    init_input_set = ComponentSet(init_controller_inputs)
+
+    init_deriv_list = [c_mod.cstr.control_volume.energy_accumulation[0, 'aq']]
+    init_diff_list = [c_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+    init_fixed_list = [c_mod.cstr.control_volume.volume[0],
+                       c_mod.mixer.E_inlet.temperature[0],
+                       c_mod.mixer.S_inlet.temperature[0]]
+
+    init_ic_list = [c_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+
+    init_alg_list = [
+        c_mod.cstr.outlet.flow_rate[0],
+        c_mod.cstr.outlet.temperature[0],
+        c_mod.cstr.inlet.flow_rate[0],
+        c_mod.cstr.inlet.temperature[0],
+        c_mod.mixer.outlet.flow_rate[0],
+        c_mod.mixer.outlet.temperature[0]
+        ]
+
+    for j in c_mod.properties.component_list:
+        init_deriv_list.append(
+                c_mod.cstr.control_volume.material_accumulation[0, 'aq', j])
+        init_diff_list.append(
+                c_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+        
+        init_fixed_list.append(c_mod.mixer.E_inlet.conc_mol[0, j])
+        init_fixed_list.append(c_mod.mixer.S_inlet.conc_mol[0, j])
+
+        init_ic_list.append(
+                c_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+
+        init_alg_list.extend([
+            c_mod.cstr.outlet.conc_mol[0, j],
+            c_mod.cstr.outlet.flow_mol_comp[0, j],
+            c_mod.cstr.inlet.conc_mol[0, j],
+            c_mod.cstr.inlet.flow_mol_comp[0, j],
+            c_mod.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
+            c_mod.mixer.outlet.conc_mol[0, j],
+            c_mod.mixer.outlet.flow_mol_comp[0, j],
+            c_mod.mixer.E_inlet.flow_mol_comp[0, j],
+            c_mod.mixer.S_inlet.flow_mol_comp[0, j]
+            ])
+
+    for r in c_mod.reactions.rate_reaction_idx:
+        init_alg_list.extend([
+            c_mod.cstr.control_volume.reactions[0].reaction_coef[r],
+            c_mod.cstr.control_volume.reactions[0].reaction_rate[r],
+            c_mod.cstr.control_volume.rate_reaction_extent[0, r]
+            ])
+
+    init_deriv_set = ComponentSet(init_deriv_list)
+    init_diff_set = ComponentSet(init_diff_list)
+    init_fixed_set = ComponentSet(init_fixed_list)
+    init_alg_set = ComponentSet(init_alg_list)
+    init_ic_set = ComponentSet(init_ic_list)
+
+    assert len(c_mod.input_vars) == len(init_input_set)
+    for v in c_mod.input_vars:
+        assert v[0] in init_input_set
+        
+    assert len(c_mod.deriv_vars) == len(init_deriv_set)
+    for v in c_mod.deriv_vars:
+        assert v[0] in init_deriv_set
+
+    assert len(c_mod.diff_vars) == len(init_diff_set)
+    for v in c_mod.diff_vars:
+        assert v[0] in init_diff_set
+
+    assert len(c_mod.fixed_vars) == len(init_fixed_set)
+    for v in c_mod.fixed_vars:
+        assert v[0] in init_fixed_set
+
+    assert len(c_mod.alg_vars) == len(init_alg_set)
+    for v in c_mod.alg_vars:
+        assert v[0] in init_alg_set
+
+    assert len(c_mod.ic_vars) == len(init_ic_set)
+    for v in c_mod.ic_vars:
+        assert v[0] in init_ic_set
+
+    assert len(c_mod.scalar_vars) == 0
+
+    for var in c_mod.deriv_vars:
+        assert len(var) == len(c_mod.time)
+        assert var.index_set() is c_mod.time
+    for var in c_mod.alg_vars:
+        assert len(var) == len(c_mod.time)
+        assert var.index_set() is c_mod.time
+
+    return nmpc
+
+
+def test_constructor_2():
+    m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
+    m_controller = make_model(horizon=3, ntfe=30, ntcp=2)
+    sample_time = 0.5
+    # Six samples per horizon, five elements per sample
+
+    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
+                            m_plant.fs.mixer.E_inlet.flow_rate[0]]
+
+    m_controller.fs.cstr.control_volume.energy_holdup\
+            [m_controller.fs.time.first(), 'aq'].unfix()
+    m_controller.fs.cstr.outlet.temperature[0].fix(300)
+    m_controller.fs.cstr.control_volume.material_holdup\
+            [m_controller.fs.time.first(), 'aq', 'P'].unfix()
+    m_controller.fs.cstr.outlet.conc_mol[m_controller.fs.time.first(), 'P'].fix(0)
+    m_controller.fs.cstr.control_volume.material_holdup\
+            [m_controller.fs.time.first(), 'aq', 'C'].unfix()
+    m_controller.fs.cstr.control_volume.material_accumulation\
+            [m_controller.fs.time.first(), 'aq', 'C'].fix(0)
+
+    nmpc = NMPCSim(m_plant.fs, m_controller.fs, initial_plant_inputs,
+            solver=solver, outlvl=idaeslog.DEBUG, 
+            sample_time=sample_time)
+    pdb.set_trace()
+    # IPOPT output looks a little weird solving for initial conditions here...
+    # has non-zero dual infeasibility, iteration 1 has a non-zero
+    # regularization coefficient. (Would love to debug this with a
+    # transparent NLP solver...)
+
+    # Check that variables have been categorized properly
+    ##################
+    # In plant model #
+    ##################
+    p_mod = nmpc.p_mod
+    assert p_mod is m_plant.fs
+    init_input_set = ComponentSet(initial_plant_inputs)
+
+    init_deriv_list = [p_mod.cstr.control_volume.energy_accumulation[0, 'aq']]
+    init_diff_list = [p_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+    init_fixed_list = [p_mod.cstr.control_volume.volume[0],
+                       p_mod.mixer.E_inlet.temperature[0],
+                       p_mod.mixer.S_inlet.temperature[0]]
+
+    init_alg_list = [
+        p_mod.cstr.outlet.flow_rate[0],
+        p_mod.cstr.outlet.temperature[0],
+        p_mod.cstr.inlet.flow_rate[0],
+        p_mod.cstr.inlet.temperature[0],
+        p_mod.mixer.outlet.flow_rate[0],
+        p_mod.mixer.outlet.temperature[0]
+        ]
+
+    for j in p_mod.properties.component_list:
+        init_deriv_list.append(
+                p_mod.cstr.control_volume.material_accumulation[0, 'aq', j])
+        init_diff_list.append(
+                p_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+        
+        init_fixed_list.append(p_mod.mixer.E_inlet.conc_mol[0, j])
+        init_fixed_list.append(p_mod.mixer.S_inlet.conc_mol[0, j])
+
+        init_alg_list.extend([
+            p_mod.cstr.outlet.conc_mol[0, j],
+            p_mod.cstr.outlet.flow_mol_comp[0, j],
+            p_mod.cstr.inlet.conc_mol[0, j],
+            p_mod.cstr.inlet.flow_mol_comp[0, j],
+            p_mod.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
+            p_mod.mixer.outlet.conc_mol[0, j],
+            p_mod.mixer.outlet.flow_mol_comp[0, j],
+            p_mod.mixer.E_inlet.flow_mol_comp[0, j],
+            p_mod.mixer.S_inlet.flow_mol_comp[0, j]
+            ])
+
+    for r in p_mod.reactions.rate_reaction_idx:
+        init_alg_list.extend([
+            p_mod.cstr.control_volume.reactions[0].reaction_coef[r],
+            p_mod.cstr.control_volume.reactions[0].reaction_rate[r],
+            p_mod.cstr.control_volume.rate_reaction_extent[0, r]
+            ])
+
+    init_deriv_set = ComponentSet(init_deriv_list)
+    init_diff_set = ComponentSet(init_diff_list)
+    init_fixed_set = ComponentSet(init_fixed_list)
+    init_alg_set = ComponentSet(init_alg_list)
+
+    assert len(p_mod.input_vars) == len(init_input_set)
+    for v in p_mod.input_vars:
+        assert v[0] in init_input_set
+
+    assert len(p_mod.deriv_vars) == len(init_deriv_set)
+    for v in p_mod.deriv_vars:
+        assert v[0] in init_deriv_set
+
+    assert len(p_mod.diff_vars) == len(init_deriv_set)
+    for v in p_mod.diff_vars:
+        assert v[0] in init_diff_set
+
+    assert len(p_mod.fixed_vars) == len(init_fixed_set)
+    for v in p_mod.fixed_vars:
+        assert v[0] in init_fixed_set
+
+    assert len(p_mod.alg_vars) == len(init_alg_set)
+    for i in range(len(p_mod.alg_vars)):
         assert p_mod.alg_vars[i][0] in init_alg_set
+
+    assert len(p_mod.scalar_vars) == 0
+
+    for var in p_mod.deriv_vars:
+        assert len(var) == len(p_mod.time)
+        assert var.index_set() is p_mod.time
+    for var in p_mod.alg_vars:
+        assert len(var) == len(p_mod.time)
+        assert var.index_set() is p_mod.time
+
+    #######################
+    # In controller model #
+    #######################
+    c_mod = nmpc.c_mod
+    assert c_mod is m_controller.fs
+    init_controller_inputs = [c_mod.mixer.E_inlet.flow_rate[0],
+                              c_mod.mixer.S_inlet.flow_rate[0]]
+    init_input_set = ComponentSet(init_controller_inputs)
+
+    init_deriv_list = [c_mod.cstr.control_volume.energy_accumulation[0, 'aq']]
+    init_diff_list = [c_mod.cstr.control_volume.energy_holdup[0, 'aq']]
+    init_fixed_list = [c_mod.cstr.control_volume.volume[0],
+                       c_mod.mixer.E_inlet.temperature[0],
+                       c_mod.mixer.S_inlet.temperature[0]]
+
+    init_alg_list = [
+        c_mod.cstr.outlet.flow_rate[0],
+        c_mod.cstr.outlet.temperature[0],
+        c_mod.cstr.inlet.flow_rate[0],
+        c_mod.cstr.inlet.temperature[0],
+        c_mod.mixer.outlet.flow_rate[0],
+        c_mod.mixer.outlet.temperature[0]
+        ]
+
+    for j in c_mod.properties.component_list:
+        init_deriv_list.append(
+                c_mod.cstr.control_volume.material_accumulation[0, 'aq', j])
+        init_diff_list.append(
+                c_mod.cstr.control_volume.material_holdup[0, 'aq', j])
+        
+        init_fixed_list.append(c_mod.mixer.E_inlet.conc_mol[0, j])
+        init_fixed_list.append(c_mod.mixer.S_inlet.conc_mol[0, j])
+
+        init_alg_list.extend([
+            c_mod.cstr.outlet.conc_mol[0, j],
+            c_mod.cstr.outlet.flow_mol_comp[0, j],
+            c_mod.cstr.inlet.conc_mol[0, j],
+            c_mod.cstr.inlet.flow_mol_comp[0, j],
+            c_mod.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
+            c_mod.mixer.outlet.conc_mol[0, j],
+            c_mod.mixer.outlet.flow_mol_comp[0, j],
+            c_mod.mixer.E_inlet.flow_mol_comp[0, j],
+            c_mod.mixer.S_inlet.flow_mol_comp[0, j]
+            ])
+
+    for r in c_mod.reactions.rate_reaction_idx:
+        init_alg_list.extend([
+            c_mod.cstr.control_volume.reactions[0].reaction_coef[r],
+            c_mod.cstr.control_volume.reactions[0].reaction_rate[r],
+            c_mod.cstr.control_volume.rate_reaction_extent[0, r]
+            ])
+
+    init_deriv_set = ComponentSet(init_deriv_list)
+    init_diff_set = ComponentSet(init_diff_list)
+    init_fixed_set = ComponentSet(init_fixed_list)
+    init_alg_set = ComponentSet(init_alg_list)
+
+    assert len(c_mod.input_vars) == len(init_input_set)
+    for v in c_mod.input_vars:
+        assert v[0] in init_input_set
+        
+    assert len(c_mod.deriv_vars) == len(init_deriv_set)
+    for v in c_mod.deriv_vars:
+        assert v[0] in init_deriv_set
+
+    assert len(c_mod.diff_vars) == len(init_diff_set)
+    for v in c_mod.diff_vars:
+        assert v[0] in init_diff_set
+
+    assert len(c_mod.fixed_vars) == len(init_fixed_set)
+    for v in c_mod.fixed_vars:
+        assert v[0] in init_fixed_set
+
+    assert len(c_mod.alg_vars) == len(init_alg_set)
+    for i in range(len(p_mod.alg_vars)):
+        assert c_mod.alg_vars[i][0] in init_alg_set
+
+    assert len(c_mod.scalar_vars) == 0
+
+    for var in c_mod.deriv_vars:
+        assert len(var) == len(c_mod.time)
+        assert var.index_set() is c_mod.time
+    for var in c_mod.alg_vars:
+        assert len(var) == len(c_mod.time)
+        assert var.index_set() is c_mod.time
 
     return nmpc
 
@@ -301,6 +613,8 @@ if __name__ == '__main__':
 
 #    pdb.set_trace()
 
-    nmpc = test_constructor()
+    test_constructor_2()
+
+    nmpc = test_constructor_1()
     
     pdb.set_trace()
