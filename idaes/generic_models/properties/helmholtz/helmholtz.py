@@ -611,7 +611,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.available = self.config.parameters.available
         if not self.available:
             _log.error("Library file '{}' not found. Was it installed?".format(
-                    self.config.parameter.plib
+                    self.config.parameters.plib
                 )
             )
 
