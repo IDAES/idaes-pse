@@ -41,10 +41,11 @@ Contents
     :maxdepth: 2
 
     install/index
-    extut
+    ex
     standards
     configuration
     logging
+    commands/index
     core/index
     transformations/index
     model_libraries/index
@@ -59,6 +60,8 @@ Contents
     glossary
     license
     copyright
+
+.. tutorials
 
 Indices and tables
 ==================

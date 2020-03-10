@@ -97,17 +97,38 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 
     pip install idaes-pse
 
-2. Run the idaes command to install the compiled binaries::
+2. Run the :doc:`idaes get-extensions command <../commands/get_extensions>`
+to install the compiled binaries::
 
     idaes get-extensions
 
    .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
 
-3. Run tests::
+3. Run the :doc:`idaes get-examples command <../commands/get_examples>` to download
+   and install the example files::
+
+    idaes get-examples
+
+By default this will install in a folder "examples" in the current directory.
+The command has many options, but an important
+one is `--dir`, which specifies the folder in which to install.
+
+for Mac and Linux users this would look like::
+
+    idaes get-examples --dir ~/idaes/examples
+
+or, for Windows users, it would look like::
+
+    idaes get-examples --dir C:\Users\MyName\IDAES\Examples
+
+Refer to the full :doc:`idaes get-examples command documentation <../commands/get_examples>`
+for more information.
+
+4. Run tests::
 
     pytest --pyargs idaes -W ignore
 
-4. You should see the tests run and all should pass to ensure the installation worked. You
+5. You should see the tests run and all should pass to ensure the installation worked. You
    may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
    output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
