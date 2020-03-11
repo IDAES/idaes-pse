@@ -561,7 +561,7 @@ see property package for documentation.}"""))
             "Initialization Complete, {}.".format(idaeslog.condition(res))
         )
 
-        if solver_output.solver.termination_condition == \
+        if res.solver.termination_condition == \
                 TerminationCondition.optimal:
             _log.info('{} Mass balance solve successful.'
                       .format(self.name))
@@ -573,23 +573,33 @@ see property package for documentation.}"""))
         self.enthalpy_mixing_equations.activate()
         self.properties_out[:].temperature.unfix()
 
-        solver_output = solver.solve(self)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        )
 
-        if solver_output.solver.termination_condition == \
+        if res.solver.termination_condition == \
                 TerminationCondition.optimal:
-            _log.info('{} Mass/Energy balance solve successful.'
+            _log.info('{} Energy balance solve successful.'
                       .format(self.name))
         else:
-            _log.info('{} Mass/Energy balance solve failed.'
+            _log.info('{} Energy balance solve failed.'
                       .format(self.name))
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
         self.properties_out[:].pressure.unfix()
 
-        solver_output = solver.solve(self)
+        res = solver.solve(self)
 
-        if solver_output.solver.termination_condition == \
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        )
+
+        if res.solver.termination_condition == \
                 TerminationCondition.optimal:
             _log.info('{} Tray initialisation complete.'
                       .format(self.name))
