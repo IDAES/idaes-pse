@@ -18,6 +18,7 @@ from enum import Enum
 from pandas import DataFrame
 
 from pyomo.environ import (
+    Block,
     Constraint,
     Expression,
     Param,
@@ -50,6 +51,7 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -1307,6 +1309,22 @@ linked the mixed state and all outlet states,
             hold_state=True,
         )
 
+        # Solve for split fractions only
+        for c in blk.component_objects((Block, Constraint)):
+            if not c.local_name == "sum_split_frac":
+                c.deactivate()
+
+        if degrees_of_freedom(blk) != 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+                init_log.info(
+                    "Initialization Step 1 Complete: {}"
+                    .format(idaeslog.condition(res))
+                    )
+
+        for c in blk.component_objects((Block, Constraint)):
+            c.activate() 
+
         if blk.config.ideal_separation:
             # If using ideal splitting, initialization should be complete
             return flags
@@ -1389,7 +1407,8 @@ linked the mixed state and all outlet states,
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
             init_log.info(
-                "Initialization Complete: {}".format(idaeslog.condition(res))
+                "Initialization Step 2 Complete: {}"
+                .format(idaeslog.condition(res))
             )
         else:
             init_log.info("Initialization Complete.")
