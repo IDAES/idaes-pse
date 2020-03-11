@@ -179,11 +179,11 @@ see property package for documentation.}"""))
                         sum(self.control_volume.properties_out[t].
                             flow_mol_phase_comp["Liq", i]
                             for i in self.control_volume.properties_out[t].
-                            _params.component_list) == \
+                            params.component_list) == \
                         sum(self.control_volume.properties_out[t].
                             flow_mol_phase_comp["Vap", i]
                             for i in self.control_volume.properties_out[t].
-                            _params.component_list)
+                            params.component_list)
                 else:
                     raise PropertyNotSupportedError(
                         "Unrecognized names for flow variables encountered "

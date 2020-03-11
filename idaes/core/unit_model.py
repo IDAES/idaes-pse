@@ -510,7 +510,7 @@ Must be True if dynamic = True,
 
         # Get a representative time point for testing
         rep_time = self.flowsheet().config.time.first()
-        if state_1[rep_time]._params is not state_2[rep_time]._params:
+        if state_1[rep_time].params is not state_2[rep_time].params:
             raise ConfigurationError(
                     "{} add_state_material_balances method was provided with "
                     "State Blocks are not linked to the same "
@@ -523,8 +523,8 @@ Must be True if dynamic = True,
                 state_1[rep_time].default_material_balance_type()
             )
 
-        phase_list = state_1[rep_time]._params.phase_list
-        component_list = state_1[rep_time]._params.component_list
+        phase_list = state_1[rep_time].params.phase_list
+        component_list = state_1[rep_time].params.component_list
 
         if balance_type == MaterialBalanceType.componentPhase:
             # TODO : Should we include an optional phase equilibrium term here

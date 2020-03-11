@@ -140,10 +140,10 @@ class TestStateBlock(object):
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.props[1].get_enthalpy_flow_terms(p) == (
-                    model.props[1].flow_vol*model.props[1]._params.dens_mol *
-                    model.props[1]._params.cp_mol*(
+                    model.props[1].flow_vol*model.props[1].params.dens_mol *
+                    model.props[1].params.cp_mol*(
                             model.props[1].temperature -
-                            model.props[1]._params.temperature_ref))
+                            model.props[1].params.temperature_ref))
 
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
@@ -154,10 +154,10 @@ class TestStateBlock(object):
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.props[1].get_energy_density_terms(p) == (
-                    model.props[1]._params.dens_mol *
-                    model.props[1]._params.cp_mol*(
+                    model.props[1].params.dens_mol *
+                    model.props[1].params.cp_mol*(
                             model.props[1].temperature -
-                            model.props[1]._params.temperature_ref))
+                            model.props[1].params.temperature_ref))
 
     def test_default_material_balance_type(self, model):
         assert model.props[1].default_material_balance_type() == \

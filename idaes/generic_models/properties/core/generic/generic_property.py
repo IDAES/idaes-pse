@@ -78,7 +78,7 @@ def get_method(self, config_arg):
         A callable method or a ConfigurationError
     """
     try:
-        c_arg = getattr(self._params.config, config_arg)
+        c_arg = getattr(self.params.config, config_arg)
     except AttributeError:
         raise AttributeError("{} Generic Property Package called for invalid "
                              "configuration option {}. Please contact the "
@@ -558,8 +558,8 @@ class _GenericStateBlock(StateBlock):
                 # as it under-predicts next step due to exponential form of
                 # Psat.
                 # Subtract 1 to avoid potential singularities at Tcrit
-                Tbub0 = min(blk[k]._params.temperature_crit_comp[j]
-                            for j in blk[k]._params.component_list) - 1
+                Tbub0 = min(blk[k].params.temperature_crit_comp[j]
+                            for j in blk[k].params.component_list) - 1
 
                 err = 1
                 counter = 0
@@ -568,16 +568,16 @@ class _GenericStateBlock(StateBlock):
                 # Tolerance only needs to be ~1e-1
                 # Iteration limit of 30
                 while err > 1e-1 and counter < 30:
-                    f = value(sum(blk[k]._params.config.pressure_sat_comp
+                    f = value(sum(blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(blk[k], j, Tbub0) *
                                   blk[k].mole_frac_comp[j]
-                                  for j in blk[k]._params.component_list) -
+                                  for j in blk[k].params.component_list) -
                               blk[k].pressure)
                     df = value(sum(
-                           blk[k].mole_frac_comp[j]*blk[k]._params.config
+                           blk[k].mole_frac_comp[j]*blk[k].params.config
                            .pressure_sat_comp.pressure_sat_comp_dT(
                                    blk[k], j, Tbub0)
-                           for j in blk[k]._params.component_list))
+                           for j in blk[k].params.component_list))
 
                     # Limit temperature step to avoid excessive overshoot
                     # Only limit positive steps due to non-linearity
@@ -592,10 +592,10 @@ class _GenericStateBlock(StateBlock):
 
                 blk[k].temperature_bubble.value = Tbub0
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_tbub[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            blk[k]._params.config.pressure_sat_comp
+                            blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(blk[k], j, Tbub0))
 
             # Bubble temperature initialization
@@ -608,8 +608,8 @@ class _GenericStateBlock(StateBlock):
                     # Otherwise, use lowest component critical temperature as
                     # starting point
                     # Subtract 1 to avoid potential singularities at Tcrit
-                    Tdew0 = min(blk[k]._params.temperature_crit_comp[j]
-                                for j in blk[k]._params.component_list) - 1
+                    Tdew0 = min(blk[k].params.temperature_crit_comp[j]
+                                for j in blk[k].params.component_list) - 1
 
                 err = 1
                 counter = 0
@@ -620,18 +620,18 @@ class _GenericStateBlock(StateBlock):
                 while err > 1e-1 and counter < 30:
                     f = value(blk[k].pressure *
                               sum(blk[k].mole_frac_comp[j] /
-                                  blk[k]._params.config.pressure_sat_comp
+                                  blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(blk[k], j, Tdew0)
-                                  for j in blk[k]._params.component_list) - 1)
+                                  for j in blk[k].params.component_list) - 1)
                     df = -value(
                             blk[k].pressure *
                             sum(blk[k].mole_frac_comp[j] /
-                                blk[k]._params.config.pressure_sat_comp
+                                blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(blk[k], j, Tdew0)**2 *
-                                blk[k]._params.config
+                                blk[k].params.config
                                 .pressure_sat_comp.pressure_sat_comp_dT(
                                         blk[k], j, Tdew0)
-                                for j in blk[k]._params.component_list))
+                                for j in blk[k].params.component_list))
 
                     # Limit temperature step to avoid excessive overshoot
                     if f/df < -50:
@@ -645,25 +645,25 @@ class _GenericStateBlock(StateBlock):
 
                 blk[k].temperature_dew.value = Tdew0
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_tdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            blk[k]._params.config.pressure_sat_comp
+                            blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(blk[k], j, Tdew0))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 blk[k].pressure_bubble.value = value(
                         sum(blk[k].mole_frac_comp[j] *
-                            blk[k]._params.config.pressure_sat_comp
+                            blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(
                                           blk[k], j, blk[k].temperature)
-                            for j in blk[k]._params.component_list))
+                            for j in blk[k].params.component_list))
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_pbub[j].value = value(
                         blk[k].mole_frac_comp[j] *
-                        blk[k]._params.config.pressure_sat_comp
+                        blk[k].params.config.pressure_sat_comp
                               .pressure_sat_comp(
                                       blk[k], j, blk[k].temperature) /
                         blk[k].pressure_bubble)
@@ -672,15 +672,15 @@ class _GenericStateBlock(StateBlock):
             if hasattr(blk[k], "_mole_frac_pdew"):
                 blk[k].pressure_dew.value = value(
                         sum(1/(blk[k].mole_frac_comp[j] /
-                               blk[k]._params.config.pressure_sat_comp
+                               blk[k].params.config.pressure_sat_comp
                                .pressure_sat_comp(
                                        blk[k], j, blk[k].temperature))
-                            for j in blk[k]._params.component_list))
+                            for j in blk[k].params.component_list))
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_pdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
-                            blk[k]._params.config.pressure_sat_comp
+                            blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(
                                           blk[k], j, blk[k].temperature))
 
@@ -727,15 +727,15 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
-            blk[k]._params.config.state_definition.state_initialization(blk[k])
+            blk[k].params.config.state_definition.state_initialization(blk[k])
 
         if outlvl > 0:
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k]._params.config.phase_equilibrium_formulation is not None and
+        if (blk[k].params.config.phase_equilibrium_formulation is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
-            blk[k]._params.config.phase_equilibrium_formulation \
+            blk[k].params.config.phase_equilibrium_formulation \
                 .phase_equil_initialization(blk[k])
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -752,7 +752,7 @@ class _GenericStateBlock(StateBlock):
             for c in blk[k].component_objects(Constraint):
                 # Activate all constraints except flagged do_not_initialize
                 if c.local_name not in (
-                        blk[k]._params.config
+                        blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -766,7 +766,7 @@ class _GenericStateBlock(StateBlock):
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 if c.local_name in (
-                        blk[k]._params.config
+                        blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
 
@@ -804,16 +804,16 @@ class GenericStateBlockData(StateBlockData):
         super(GenericStateBlockData, self).build()
 
         # Add state variables and associated methods
-        self._params.config.state_definition.define_state(self)
+        self.params.config.state_definition.define_state(self)
 
         # Create common components for each property package
-        for p in self._params.phase_list:
-            self._params.config.equation_of_state[p].common(self)
+        for p in self.params.phase_list:
+            self.params.config.equation_of_state[p].common(self)
 
         # Add phase equilibrium constraints if necessary
-        if (self._params.config.phase_equilibrium_formulation is not None and
+        if (self.params.config.phase_equilibrium_formulation is not None and
                 (not self.config.defined_state or self.always_flash)):
-            self._params.config.phase_equilibrium_formulation.phase_equil(self)
+            self.params.config.phase_equilibrium_formulation.phase_equil(self)
 
     def components_in_phase(self, phase):
         """
@@ -825,19 +825,19 @@ class GenericStateBlockData(StateBlockData):
         Yields:
             components present in phase.
         """
-        if self._params.config.phase_component_list is None:
+        if self.params.config.phase_component_list is None:
             # All components in all phases
-            for j in self._params.component_list:
+            for j in self.params.component_list:
                 yield j
         else:
             # Return only components for indicated phase
-            for j in self._params.config.phase_component_list[phase]:
+            for j in self.params.config.phase_component_list[phase]:
                 yield j
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
     def _temperature_bubble(b):
-        if b._params.config.temperature_bubble is None:
+        if b.params.config.temperature_bubble is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
         b.temperature_bubble = Var(
@@ -845,15 +845,15 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(b.temperature.lb, b.temperature.ub))
 
         b._mole_frac_tbub = Var(
-                b._params.component_list,
-                initialize=1/len(b._params.component_list),
+                b.params.component_list,
+                initialize=1/len(b.params.component_list),
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble temperature")
 
-        b._params.config.temperature_bubble(b)
+        b.params.config.temperature_bubble(b)
 
     def _temperature_dew(b):
-        if b._params.config.temperature_dew is None:
+        if b.params.config.temperature_dew is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
         b.temperature_dew = Var(
@@ -861,15 +861,15 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(b.temperature.lb, b.temperature.ub))
 
         b._mole_frac_tdew = Var(
-                b._params.component_list,
-                initialize=1/len(b._params.component_list),
+                b.params.component_list,
+                initialize=1/len(b.params.component_list),
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew temperature")
 
-        b._params.config.temperature_dew(b)
+        b.params.config.temperature_dew(b)
 
     def _pressure_bubble(b):
-        if b._params.config.pressure_bubble is None:
+        if b.params.config.pressure_bubble is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
         b.pressure_bubble = Var(
@@ -877,15 +877,15 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(b.pressure.lb, b.pressure.ub))
 
         b._mole_frac_pbub = Var(
-                b._params.component_list,
-                initialize=1/len(b._params.component_list),
+                b.params.component_list,
+                initialize=1/len(b.params.component_list),
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble pressure")
 
-        b._params.config.pressure_bubble(b)
+        b.params.config.pressure_bubble(b)
 
     def _pressure_dew(b):
-        if b._params.config.pressure_dew is None:
+        if b.params.config.pressure_dew is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
         b.pressure_dew = Var(
@@ -893,128 +893,128 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(b.pressure.lb, b.pressure.ub))
 
         b._mole_frac_pdew = Var(
-                b._params.component_list,
-                initialize=1/len(b._params.component_list),
+                b.params.component_list,
+                initialize=1/len(b.params.component_list),
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew pressure")
 
-        b._params.config.pressure_dew(b)
+        b.params.config.pressure_dew(b)
 
     # -------------------------------------------------------------------------
     # Property Methods
     def _dens_mass(self):
         def rule_dens_mass(b):
             return sum(b.dens_mass_phase[p]*b.phase_frac[p]
-                       for p in b._params.phase_list)
+                       for p in b.params.phase_list)
         self.dens_mass = Expression(
                 doc="Mixture mass density",
                 rule=rule_dens_mass)
 
     def _dens_mass_phase(self):
         def rule_dens_mass_phase(b, p):
-            return b._params.config.equation_of_state[p].dens_mass_phase(b, p)
+            return b.params.config.equation_of_state[p].dens_mass_phase(b, p)
         self.dens_mass_phase = Expression(
-                self._params.phase_list,
+                self.params.phase_list,
                 doc="Mass density of each phase",
                 rule=rule_dens_mass_phase)
 
     def _dens_mol(self):
         def rule_dens_mol(b):
             return sum(b.dens_mol_phase[p]*b.phase_frac[p]
-                       for p in b._params.phase_list)
+                       for p in b.params.phase_list)
         self.dens_mol = Expression(
                 doc="Mixture molar density",
                 rule=rule_dens_mol)
 
     def _dens_mol_phase(self):
         def rule_dens_mol_phase(b, p):
-            return b._params.config.equation_of_state[p].dens_mol_phase(b, p)
+            return b.params.config.equation_of_state[p].dens_mol_phase(b, p)
         self.dens_mol_phase = Expression(
-                self._params.phase_list,
+                self.params.phase_list,
                 doc="Molar density of each phase",
                 rule=rule_dens_mol_phase)
 
     def _enth_mol(self):
         def rule_enth_mol(b):
             return sum(b.enth_mol_phase[p]*b.phase_frac[p]
-                       for p in b._params.phase_list)
+                       for p in b.params.phase_list)
         self.enth_mol = Expression(rule=rule_enth_mol,
                                    doc="Mixture molar enthalpy")
 
     def _enth_mol_phase(self):
         def rule_enth_mol_phase(b, p):
-            return b._params.config.equation_of_state[p].enth_mol_phase(b, p)
-        self.enth_mol_phase = Expression(self._params.phase_list,
+            return b.params.config.equation_of_state[p].enth_mol_phase(b, p)
+        self.enth_mol_phase = Expression(self.params.phase_list,
                                          rule=rule_enth_mol_phase)
 
     def _enth_mol_phase_comp(self):
         def rule_enth_mol_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p] \
+            return b.params.config.equation_of_state[p] \
                     .enth_mol_phase_comp(b, p, j)
         self.enth_mol_phase_comp = Expression(
-            self._params.phase_list,
-            self._params.component_list,
+            self.params.phase_list,
+            self.params.component_list,
             rule=rule_enth_mol_phase_comp)
 
     def _entr_mol(self):
         def rule_entr_mol(b):
             return sum(b.entr_mol_phase[p]*b.phase_frac[p]
-                       for p in b._params.phase_list)
+                       for p in b.params.phase_list)
         self.entr_mol = Expression(rule=rule_entr_mol,
                                    doc="Mixture molar entropy")
 
     def _entr_mol_phase(self):
         def rule_entr_mol_phase(b, p):
-            return b._params.config.equation_of_state[p].entr_mol_phase(b, p)
-        self.entr_mol_phase = Expression(self._params.phase_list,
+            return b.params.config.equation_of_state[p].entr_mol_phase(b, p)
+        self.entr_mol_phase = Expression(self.params.phase_list,
                                          rule=rule_entr_mol_phase)
 
     def _entr_mol_phase_comp(self):
         def rule_entr_mol_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p] \
+            return b.params.config.equation_of_state[p] \
                     .entr_mol_phase_comp(b, p, j)
         self.entr_mol_phase_comp = Expression(
-            self._params.phase_list,
-            self._params.component_list,
+            self.params.phase_list,
+            self.params.component_list,
             rule=rule_entr_mol_phase_comp)
 
     def _fug_phase_comp(self):
         def rule_fug_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p] \
+            return b.params.config.equation_of_state[p] \
                 .fug_phase_comp(b, p, j)
-        self.fug_phase_comp = Expression(self._params.phase_list,
-                                         self._params.component_list,
+        self.fug_phase_comp = Expression(self.params.phase_list,
+                                         self.params.component_list,
                                          rule=rule_fug_phase_comp)
 
     def _fug_coeff_phase_comp(self):
         def rule_fug_coeff_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p] \
+            return b.params.config.equation_of_state[p] \
                 .fug_coeff_phase_comp(b, p, j)
         self.fug_coeff_phase_comp = Expression(
-                self._params.phase_list,
-                self._params.component_list,
+                self.params.phase_list,
+                self.params.component_list,
                 rule=rule_fug_coeff_phase_comp)
 
     def _gibbs_mol(self):
         def rule_gibbs_mol(b):
             return sum(b.gibbs_mol_phase[p]*b.phase_frac[p]
-                       for p in b._params.phase_list)
+                       for p in b.params.phase_list)
         self.gibbs_mol = Expression(rule=rule_gibbs_mol,
                                     doc="Mixture molar Gibbs energy")
 
     def _gibbs_mol_phase(self):
         def rule_gibbs_mol_phase(b, p):
-            return b._params.config.equation_of_state[p].gibbs_mol_phase(b, p)
-        self.gibbs_mol_phase = Expression(self._params.phase_list,
+            return b.params.config.equation_of_state[p].gibbs_mol_phase(b, p)
+        self.gibbs_mol_phase = Expression(self.params.phase_list,
                                           rule=rule_gibbs_mol_phase)
 
     def _gibbs_mol_phase_comp(self):
         def rule_gibbs_mol_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p] \
+            return b.params.config.equation_of_state[p] \
                     .gibbs_mol_phase_comp(b, p, j)
         self.gibbs_mol_phase_comp = Expression(
-            self._params.phase_list,
-            self._params.component_list,
+            self.params.phase_list,
+            self.params.component_list,
             rule=rule_gibbs_mol_phase_comp)
 
     def _mw(self):
@@ -1022,16 +1022,16 @@ class GenericStateBlockData(StateBlockData):
                 doc="Average molecular weight",
                 expr=sum(self.phase_frac[p] *
                          sum(self.mole_frac_phase_comp[p, j] *
-                             self._params.mw_comp[j]
-                             for j in self._params.component_list)
-                         for p in self._params.phase_list))
+                             self.params.mw_comp[j]
+                             for j in self.params.component_list)
+                         for p in self.params.phase_list))
 
     def _mw_phase(self):
         def rule_mw_phase(b, p):
-            return sum(b.mole_frac_phase_comp[p, j]*b._params.mw_comp[j]
-                       for j in b._params.component_list)
+            return sum(b.mole_frac_phase_comp[p, j]*b.params.mw_comp[j]
+                       for j in b.params.component_list)
         self.mw_phase = Expression(
-                self._params.phase_list,
+                self.params.phase_list,
                 doc="Average molecular weight of each phase",
                 rule=rule_mw_phase)
 
@@ -1039,5 +1039,5 @@ class GenericStateBlockData(StateBlockData):
         def rule_pressure_sat_comp(b, j):
             return get_method(b, "pressure_sat_comp")(b, j, b.temperature)
         self.pressure_sat_comp = Expression(
-            self._params.component_list,
+            self.params.component_list,
             rule=rule_pressure_sat_comp)

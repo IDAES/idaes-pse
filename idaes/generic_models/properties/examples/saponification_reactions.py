@@ -153,8 +153,8 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         try:
             self.arrhenius_eqn = Constraint(
-                    expr=self.k_rxn == self._params.arrhenius *
-                    exp(-self._params.energy_activation /
+                    expr=self.k_rxn == self.params.arrhenius *
+                    exp(-self.params.energy_activation /
                         (const.gas_constant*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -164,7 +164,7 @@ class ReactionBlockData(ReactionBlockDataBase):
 
     # Rate of reaction method
     def _rxn_rate(self):
-        self.reaction_rate = Var(self._params.rate_reaction_idx,
+        self.reaction_rate = Var(self.params.rate_reaction_idx,
                                  initialize=0,
                                  doc="Rate of reaction [mol/m^3.s]")
 
@@ -173,7 +173,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                 return b.reaction_rate[r] == (
                             b.k_rxn*b.conc_mol_comp_ref["EthylAcetate"] *
                             b.conc_mol_comp_ref["NaOH"])
-            self.rate_expression = Constraint(self._params.rate_reaction_idx,
+            self.rate_expression = Constraint(self.params.rate_reaction_idx,
                                               rule=rate_rule)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later

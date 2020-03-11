@@ -27,17 +27,17 @@ def define_state(b):
 
     # Get bounds if provided
     try:
-        f_bounds = b._params.config.state_bounds["flow_mol"]
+        f_bounds = b.params.config.state_bounds["flow_mol"]
     except KeyError:
         f_bounds = (None, None)
 
     try:
-        t_bounds = b._params.config.state_bounds["temperature"]
+        t_bounds = b.params.config.state_bounds["temperature"]
     except KeyError:
         t_bounds = (None, None)
 
     try:
-        p_bounds = b._params.config.state_bounds["pressure"]
+        p_bounds = b.params.config.state_bounds["pressure"]
     except KeyError:
         p_bounds = (None, None)
 
@@ -86,9 +86,9 @@ def define_state(b):
                      domain=NonNegativeReals,
                      bounds=f_bounds,
                      doc='Component molar flowrate [mol/s]')
-    b.mole_frac_comp = Var(b._params.component_list,
+    b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
-                           initialize=1 / len(b._params.component_list),
+                           initialize=1 / len(b.params.component_list),
                            doc='Mixture mole fractions [-]')
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
@@ -100,22 +100,22 @@ def define_state(b):
                         doc='State temperature [K]')
 
     # Add supporting variables
-    b.flow_mol_phase = Var(b._params.phase_list,
-                           initialize=f_init / len(b._params.phase_list),
+    b.flow_mol_phase = Var(b.params.phase_list,
+                           initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates [mol/s]')
 
     b.mole_frac_phase_comp = Var(
-        b._params.phase_list,
-        b._params.component_list,
-        initialize=1/len(b._params.component_list),
+        b.params.phase_list,
+        b.params.component_list,
+        initialize=1/len(b.params.component_list),
         bounds=(0, None),
         doc='Phase mole fractions [-]')
 
     b.phase_frac = Var(
-        b._params.phase_list,
-        initialize=1/len(b._params.phase_list),
+        b.params.phase_list,
+        initialize=1/len(b.params.phase_list),
         bounds=(0, None),
         doc='Phase fractions [-]')
 
@@ -124,48 +124,48 @@ def define_state(b):
         # applied at outlet only
         b.sum_mole_frac_out = Constraint(
             expr=1 == sum(b.mole_frac_comp[i]
-                          for i in b._params.component_list))
+                          for i in b.params.component_list))
 
-    if len(b._params.phase_list) == 1:
+    if len(b.params.phase_list) == 1:
         def rule_total_mass_balance(b):
-            return b.flow_mol_phase[b._params.phase_list[1]] == b.flow_mol
+            return b.flow_mol_phase[b.params.phase_list[1]] == b.flow_mol
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac_comp[i] == \
-                b.mole_frac_phase_comp[b._params.phase_list[1], i]
-        b.component_flow_balances = Constraint(b._params.component_list,
+                b.mole_frac_phase_comp[b.params.phase_list[1], i]
+        b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p] == 1
-        b.phase_fraction_constraint = Constraint(b._params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.params.phase_list,
                                                  rule=rule_phase_frac)
 
-    elif len(b._params.phase_list) == 2:
+    elif len(b.params.phase_list) == 2:
         # For two phase, use Rachford-Rice formulation
         def rule_total_mass_balance(b):
-            return sum(b.flow_mol_phase[p] for p in b._params.phase_list) == \
+            return sum(b.flow_mol_phase[p] for p in b.params.phase_list) == \
                 b.flow_mol
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b._params.phase_list)
-        b.component_flow_balances = Constraint(b._params.component_list,
+                for p in b.params.phase_list)
+        b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return sum(b.mole_frac_phase_comp[b._params.phase_list[1], i]
-                       for i in b._params.component_list) -\
-                sum(b.mole_frac_phase_comp[b._params.phase_list[2], i]
-                    for i in b._params.component_list) == 0
+            return sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
+                       for i in b.params.component_list) -\
+                sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
+                    for i in b.params.component_list) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
-        b.phase_fraction_constraint = Constraint(b._params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.params.phase_list,
                                                  rule=rule_phase_frac)
 
     else:
@@ -173,26 +173,26 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b._params.phase_list)
-        b.component_flow_balances = Constraint(b._params.component_list,
+                for p in b.params.phase_list)
+        b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
             return sum(b.mole_frac_phase_comp[p, i]
-                       for i in b._params.component_list) == 1
-        b.sum_mole_frac = Constraint(b._params.phase_list,
+                       for i in b.params.component_list) == 1
+        b.sum_mole_frac = Constraint(b.params.phase_list,
                                      rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
-        b.phase_fraction_constraint = Constraint(b._params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.params.phase_list,
                                                  rule=rule_phase_frac)
 
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FTPx(p, j):
         """Create material flow terms for control volume."""
-        if j in b._params.component_list:
+        if j in b.params.component_list:
             return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
@@ -205,7 +205,7 @@ def define_state(b):
 
     def get_material_density_terms_FTPx(p, j):
         """Create material density terms."""
-        if j in b._params.component_list:
+        if j in b.params.component_list:
             return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
@@ -238,8 +238,8 @@ def define_state(b):
 
 
 def state_initialization(b):
-    if len(b._params.phase_list) == 1:
-        for p in b._params.phase_list:
+    if len(b.params.phase_list) == 1:
+        for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
                 b.flow_mol.value
 
@@ -249,9 +249,9 @@ def state_initialization(b):
 
     else:
         # TODO : Try to find some better guesses than this
-        for p in b._params.phase_list:
+        for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b._params.phase_list)
+                b.flow_mol.value / len(b.params.phase_list)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \

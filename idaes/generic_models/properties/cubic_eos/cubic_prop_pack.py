@@ -263,21 +263,21 @@ class _CubicStateBlock(StateBlock):
         # If present, initialize bubble and dew point calculations
         # Antoine equation
         def antoine_P(b, j, T):
-            return 1e5*10**(b._params.antoine[j, '1'] -
-                            b._params.antoine[j, '2'] /
-                            (T + b._params.antoine[j, '3']))
+            return 1e5*10**(b.params.antoine[j, '1'] -
+                            b.params.antoine[j, '2'] /
+                            (T + b.params.antoine[j, '3']))
 
         # Bubble temperature initialization
         for k in blk.keys():
             if hasattr(blk[k], "_mole_frac_tbub"):
                 Tbub0 = 0
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     Tbub0 += value(
                             blk[k].mole_frac_comp[j] *
-                            (blk[k]._params.antoine[j, '2'] /
-                             (blk[k]._params.antoine[j, '1'] -
+                            (blk[k].params.antoine[j, '2'] /
+                             (blk[k].params.antoine[j, '1'] -
                               math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k]._params.antoine[j, '3']))
+                             blk[k].params.antoine[j, '3']))
 
                 err = 1
                 counter = 0
@@ -285,14 +285,14 @@ class _CubicStateBlock(StateBlock):
                 while err > 1e-2 and counter < 100:
                     f = value(sum(antoine_P(blk[k], j, Tbub0) *
                                   blk[k].mole_frac_comp[j]
-                                  for j in blk[k]._params.component_list) -
+                                  for j in blk[k].params.component_list) -
                               blk[k].pressure)
                     df = value(sum(
                             blk[k].mole_frac_comp[j] *
-                            blk[k]._params.antoine[j, '2'] *
+                            blk[k].params.antoine[j, '2'] *
                             math.log(10)*antoine_P(blk[k], j, Tbub0) /
-                            (Tbub0 + blk[k]._params.antoine[j, '3'])**2
-                            for j in blk[k]._params.component_list))
+                            (Tbub0 + blk[k].params.antoine[j, '3'])**2
+                            for j in blk[k].params.component_list))
 
                     if f/df > 20:
                         Tbub1 = Tbub0 - 20
@@ -307,7 +307,7 @@ class _CubicStateBlock(StateBlock):
 
                 blk[k].temperature_bubble.value = Tbub0
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_tbub[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
                             antoine_P(blk[k], j, Tbub0))
@@ -316,13 +316,13 @@ class _CubicStateBlock(StateBlock):
         for k in blk.keys():
             if hasattr(blk[k], "_mole_frac_tdew"):
                 Tdew0 = 0
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     Tdew0 += value(
                             blk[k].mole_frac_comp[j] *
-                            (blk[k]._params.antoine[j, '2'] /
-                             (blk[k]._params.antoine[j, '1'] -
+                            (blk[k].params.antoine[j, '2'] /
+                             (blk[k].params.antoine[j, '1'] -
                               math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k]._params.antoine[j, '3']))
+                             blk[k].params.antoine[j, '3']))
 
                 err = 1
                 counter = 0
@@ -331,14 +331,14 @@ class _CubicStateBlock(StateBlock):
                     f = value(blk[k].pressure *
                               sum(blk[k].mole_frac_comp[j] /
                                   antoine_P(blk[k], j, Tdew0)
-                                  for j in blk[k]._params.component_list) - 1)
+                                  for j in blk[k].params.component_list) - 1)
                     df = -value(blk[k].pressure*math.log(10) *
                                 sum(blk[k].mole_frac_comp[j] *
-                                    blk[k]._params.antoine[j, '2'] /
+                                    blk[k].params.antoine[j, '2'] /
                                     ((Tdew0 +
-                                      blk[k]._params.antoine[j, '3'])**2 *
+                                      blk[k].params.antoine[j, '3'])**2 *
                                     antoine_P(blk[k], j, Tdew0))
-                                    for j in blk[k]._params.component_list))
+                                    for j in blk[k].params.component_list))
 
                     if f/df > 20:
                         Tdew1 = Tdew0 - 20
@@ -353,7 +353,7 @@ class _CubicStateBlock(StateBlock):
 
                 blk[k].temperature_dew.value = Tdew0
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_tdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
                             antoine_P(blk[k], j, Tdew0))
@@ -364,9 +364,9 @@ class _CubicStateBlock(StateBlock):
                 blk[k].pressure_bubble.value = value(
                         sum(blk[k].mole_frac_comp[j] *
                             antoine_P(blk[k], j, blk[k].temperature)
-                            for j in blk[k]._params.component_list))
+                            for j in blk[k].params.component_list))
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_pbub[j].value = value(
                             blk[k].mole_frac_comp[j] *
                             antoine_P(blk[k], j, blk[k].temperature) /
@@ -381,9 +381,9 @@ class _CubicStateBlock(StateBlock):
                 blk[k].pressure_dew.value = value(
                         sum(1/(blk[k].mole_frac_comp[j] /
                                antoine_P(blk[k], j, blk[k].temperature))
-                            for j in blk[k]._params.component_list))
+                            for j in blk[k].params.component_list))
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k]._mole_frac_pdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             antoine_P(blk[k], j, blk[k].temperature))
@@ -416,8 +416,8 @@ class _CubicStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
         for k in blk.keys():
-            if ((blk[k]._params.config.valid_phase == ('Liq', 'Vap')) or
-                    (blk[k]._params.config.valid_phase == ('Vap', 'Liq'))):
+            if ((blk[k].params.config.valid_phase == ('Liq', 'Vap')) or
+                    (blk[k].params.config.valid_phase == ('Vap', 'Liq'))):
                 blk[k]._t1.value = max(blk[k].temperature.value,
                                        blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
@@ -429,19 +429,19 @@ class _CubicStateBlock(StateBlock):
         # TODO : This will need to be generalised more when we move to a
         # modular implementation
         for k in blk.keys():
-            if blk[k]._params.config.valid_phase == "Liq":
+            if blk[k].params.config.valid_phase == "Liq":
                 blk[k].flow_mol_phase['Liq'].value = \
                     blk[k].flow_mol.value
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k].mole_frac_phase_comp['Liq', j].value = \
                         blk[k].mole_frac_comp[j].value
 
-            elif blk[k]._params.config.valid_phase == "Vap":
+            elif blk[k].params.config.valid_phase == "Vap":
                 blk[k].flow_mol_phase['Vap'].value = \
                     blk[k].flow_mol.value
 
-                for j in blk[k]._params.component_list:
+                for j in blk[k].params.component_list:
                     blk[k].mole_frac_phase_comp['Vap', j].value = \
                         blk[k].mole_frac_comp[j].value
 
@@ -452,7 +452,7 @@ class _CubicStateBlock(StateBlock):
                     blk[k].flow_mol_phase["Vap"].value = \
                         1e-5*blk[k].flow_mol.value
 
-                    for j in blk[k]._params.component_list:
+                    for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
                             blk[k].mole_frac_comp[j].value
                         blk[k].mole_frac_phase_comp['Liq', j].value = \
@@ -464,7 +464,7 @@ class _CubicStateBlock(StateBlock):
                         1e-5*blk[k].flow_mol.value
                     blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
 
-                    for j in blk[k]._params.component_list:
+                    for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
                             blk[k]._mole_frac_tbub[j].value
                         blk[k].mole_frac_phase_comp['Liq', j].value = \
@@ -477,7 +477,7 @@ class _CubicStateBlock(StateBlock):
                     blk[k].flow_mol_phase["Vap"].value = \
                         0.5*blk[k].flow_mol.value
 
-                    for j in blk[k]._params.component_list:
+                    for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
                             blk[k].mole_frac_comp[j].value
                         blk[k].mole_frac_phase_comp['Liq', j].value = \
@@ -562,9 +562,9 @@ class CubicStateBlockData(StateBlockData):
                             domain=NonNegativeReals,
                             doc='Component molar flowrate [mol/s]')
         self.mole_frac_comp = Var(
-                self._params.component_list,
+                self.params.component_list,
                 bounds=(0, None),
-                initialize=1/len(self._params.component_list),
+                initialize=1/len(self.params.component_list),
                 doc='Mixture mole fractions [-]')
         self.pressure = Var(initialize=101325,
                             domain=NonNegativeReals,
@@ -574,24 +574,24 @@ class CubicStateBlockData(StateBlockData):
                                doc='State temperature [K]')
 
         # Add supporting variables
-        self.flow_mol_phase = Var(self._params.phase_list,
+        self.flow_mol_phase = Var(self.params.phase_list,
                                   initialize=0.5,
                                   domain=NonNegativeReals,
                                   doc='Phase molar flow rates [mol/s]')
 
         self.mole_frac_phase_comp = Var(
-            self._params.phase_list,
-            self._params.component_list,
-            initialize=1/len(self._params.component_list),
+            self.params.phase_list,
+            self.params.component_list,
+            initialize=1/len(self.params.component_list),
             bounds=(0, None),
             doc='Phase mole fractions [-]')
 
-        if self._params.config.valid_phase == "Liq":
+        if self.params.config.valid_phase == "Liq":
             self._make_liq_phase_eq()
-        elif self._params.config.valid_phase == "Vap":
+        elif self.params.config.valid_phase == "Vap":
             self._make_vap_phase_eq()
-        elif ((self._params.config.valid_phase == ('Liq', 'Vap')) or
-                (self._params.config.valid_phase == ('Vap', 'Liq'))):
+        elif ((self.params.config.valid_phase == ('Liq', 'Vap')) or
+                (self.params.config.valid_phase == ('Vap', 'Liq'))):
             self._make_flash_eq()
         else:
             raise BurntToast("{} found unexpected value for valid_phases. "
@@ -612,14 +612,14 @@ class CubicStateBlockData(StateBlockData):
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac_comp[i] == b.mole_frac_phase_comp['Liq', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
+        self.component_flow_balances = Constraint(self.params.component_list,
                                                   rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
             self.sum_mole_frac_out = Constraint(
                 expr=1 == sum(self.mole_frac_comp[i]
-                              for i in self._params.component_list))
+                              for i in self.params.component_list))
 
     def _make_vap_phase_eq(self):
         # Add equilibrium temperature - in this case the state temperature
@@ -634,14 +634,14 @@ class CubicStateBlockData(StateBlockData):
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac_comp[i] == b.mole_frac_phase_comp['Vap', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
+        self.component_flow_balances = Constraint(self.params.component_list,
                                                   rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
             self.sum_mole_frac_out = \
                 Constraint(expr=1 == sum(self.mole_frac_comp[i]
-                           for i in self._params.component_list))
+                           for i in self.params.component_list))
 
     def _make_flash_eq(self):
         """
@@ -657,21 +657,21 @@ class CubicStateBlockData(StateBlockData):
             return b.flow_mol*b.mole_frac_comp[i] == \
                 b.flow_mol_phase['Liq']*b.mole_frac_phase_comp['Liq', i] + \
                 b.flow_mol_phase['Vap']*b.mole_frac_phase_comp['Vap', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
+        self.component_flow_balances = Constraint(self.params.component_list,
                                                   rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
             return sum(b.mole_frac_phase_comp['Liq', i]
-                       for i in b._params.component_list) -\
+                       for i in b.params.component_list) -\
                 sum(b.mole_frac_phase_comp['Vap', i]
-                    for i in b._params.component_list) == 0
+                    for i in b.params.component_list) == 0
         self.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         if self.config.defined_state is False:
             # applied at outlet only
             self.sum_mole_frac_out = \
                 Constraint(expr=1 == sum(self.mole_frac_comp[i]
-                           for i in self._params.component_list))
+                           for i in self.params.component_list))
 
         # Definition of equilibrium temperature for smooth VLE
         self._teq = Var(initialize=self.temperature.value,
@@ -707,8 +707,8 @@ class CubicStateBlockData(StateBlockData):
         self._teq_constraint = Constraint(rule=rule_teq)
 
         def rule_tr_eq(b, i):
-            return b._teq / b._params.temperature_crit[i]
-        self._tr_eq = Expression(self._params.component_list,
+            return b._teq / b.params.temperature_crit[i]
+        self._tr_eq = Expression(self.params.component_list,
                                  rule=rule_tr_eq,
                                  doc='Component reduced temperatures [-]')
 
@@ -716,12 +716,12 @@ class CubicStateBlockData(StateBlockData):
             return (b._log_equilibrium_cubic("Vap", i) ==
                     b._log_equilibrium_cubic("Liq", i))
         self.equilibrium_constraint = \
-            Constraint(self._params.component_list, rule=rule_equilibrium)
+            Constraint(self.params.component_list, rule=rule_equilibrium)
 
 # -----------------------------------------------------------------------------
 # Property Methods
     def _dens_mol_phase(self):
-        self.dens_mol_phase = Var(self._params.phase_list,
+        self.dens_mol_phase = Var(self.params.phase_list,
                                   doc="Molar density [mol/m^3]")
 
         def rule_dens_mol_phase(b, p):
@@ -729,11 +729,11 @@ class CubicStateBlockData(StateBlockData):
                 return b._dens_mol_vap()
             else:
                 return b._dens_mol_liq()
-        self.eq_dens_mol_phase = Constraint(self._params.phase_list,
+        self.eq_dens_mol_phase = Constraint(self.params.phase_list,
                                             rule=rule_dens_mol_phase)
 
     def _dens_mass_phase(self):
-        self.dens_mass_phase = Var(self._params.phase_list,
+        self.dens_mass_phase = Var(self.params.phase_list,
                                    doc="Mass density [kg/m^3]")
 
         def rule_dens_mass_phase(b, p):
@@ -741,12 +741,12 @@ class CubicStateBlockData(StateBlockData):
                 return b._dens_mass_vap()
             else:
                 return b._dens_mass_liq()
-        self.eq_dens_mass_phase = Constraint(self._params.phase_list,
+        self.eq_dens_mass_phase = Constraint(self.params.phase_list,
                                              rule=rule_dens_mass_phase)
 
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
-            self._params.phase_list,
+            self.params.phase_list,
             doc='Phase molar specific enthalpies [J/mol]')
 
         def rule_enth_mol_phase(b, p):
@@ -754,7 +754,7 @@ class CubicStateBlockData(StateBlockData):
                 return b.enth_mol_phase[p] == b._enth_mol_vap()
             else:
                 return b.enth_mol_phase[p] == b._enth_mol_liq()
-        self.eq_enth_mol_phase = Constraint(self._params.phase_list,
+        self.eq_enth_mol_phase = Constraint(self.params.phase_list,
                                             rule=rule_enth_mol_phase)
 
     def _enth_mol(self):
@@ -764,7 +764,7 @@ class CubicStateBlockData(StateBlockData):
         def rule_enth_mol(b):
             return b.enth_mol*b.flow_mol == sum(
                     b.flow_mol_phase[p]*b.enth_mol_phase[p]
-                    for p in b._params.phase_list)
+                    for p in b.params.phase_list)
         self.eq_enth_mol = Constraint(rule=rule_enth_mol)
 
     def _entr_mol(self):
@@ -774,12 +774,12 @@ class CubicStateBlockData(StateBlockData):
         def rule_entr_mol(b):
             return b.entr_mol*b.flow_mol == sum(
                     b.flow_mol_phase[p]*b.entr_mol_phase[p]
-                    for p in b._params.phase_list)
+                    for p in b.params.phase_list)
         self.eq_entr_mol = Constraint(rule=rule_entr_mol)
 
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
-            self._params.phase_list,
+            self.params.phase_list,
             doc='Phase molar specific entropies [J/mol.K]')
 
         def rule_entr_mol_phase(b, p):
@@ -787,7 +787,7 @@ class CubicStateBlockData(StateBlockData):
                 return b.entr_mol_phase[p] == b._entr_mol_vap()
             else:
                 return b.entr_mol_phase[p] == b._entr_mol_liq()
-        self.eq_entr_mol_phase = Constraint(self._params.phase_list,
+        self.eq_entr_mol_phase = Constraint(self.params.phase_list,
                                             rule=rule_entr_mol_phase)
 
     def _fug_phase(self):
@@ -796,8 +796,8 @@ class CubicStateBlockData(StateBlockData):
                 return b._fug_vap(j)
             else:
                 return b._fug_liq(j)
-        self.fug_phase_comp = Expression(self._params.phase_list,
-                                         self._params.component_list,
+        self.fug_phase_comp = Expression(self.params.phase_list,
+                                         self.params.component_list,
                                          rule=rule_fug_phase)
 
     def _fug_coeff_phase(self):
@@ -806,38 +806,38 @@ class CubicStateBlockData(StateBlockData):
                 return b._fug_coeff_vap(j)
             else:
                 return b._fug_coeff_liq(j)
-        self.fug_coeff_phase_comp = Expression(self._params.phase_list,
-                                               self._params.component_list,
+        self.fug_coeff_phase_comp = Expression(self.params.phase_list,
+                                               self.params.component_list,
                                                rule=rule_fug_coeff_phase)
 
     def _gibbs_mol_phase(self):
         self.gibbs_mol_phase = Var(
-            self._params.phase_list,
+            self.params.phase_list,
             doc='Phase molar specific Gibbs energy [J/mol]')
 
         def rule_gibbs_mol_phase(b, p):
             return b.gibbs_mol_phase[p] == (
                     b.enth_mol_phase[p] - b.temperature*b.entr_mol_phase[p])
-        self.eq_gibbs_mol_phase = Constraint(self._params.phase_list,
+        self.eq_gibbs_mol_phase = Constraint(self.params.phase_list,
                                              rule=rule_gibbs_mol_phase)
 
     def _mw(self):
         def rule_mw(b):
-            return sum(b.mw_phase[p] for p in b._params.phase_list)
+            return sum(b.mw_phase[p] for p in b.params.phase_list)
         self.mw = Expression(rule=rule_mw)
 
     def _mw_phase(self):
         def rule_mw_phase(b, p):
-            return sum(b.mole_frac_phase_comp[p, j]*b._params.mw_comp[j]
-                       for j in b._params.component_list)
-        self.mw_phase = Expression(self._params.phase_list,
+            return sum(b.mole_frac_phase_comp[p, j]*b.params.mw_comp[j]
+                       for j in b.params.component_list)
+        self.mw_phase = Expression(self.params.phase_list,
                                    rule=rule_mw_phase)
 
 # -----------------------------------------------------------------------------
 # General Methods
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if j in self._params.component_list:
+        if j in self.params.component_list:
             return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
         else:
             return 0
@@ -848,7 +848,7 @@ class CubicStateBlockData(StateBlockData):
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
-        if j in self._params.component_list:
+        if j in self.params.component_list:
             return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
         else:
             return 0
@@ -902,19 +902,19 @@ class CubicStateBlockData(StateBlockData):
                 doc="Bubble point temperature (K)")
 
         self._mole_frac_tbub = Var(
-                self._params.component_list,
-                initialize=1/len(self._params.component_list),
+                self.params.component_list,
+                initialize=1/len(self.params.component_list),
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble point")
 
         self._sum_mole_frac_tbub = Constraint(
                 expr=1e3 == 1e3*sum(self._mole_frac_tbub[j]
-                                    for j in self._params.component_list))
+                                    for j in self.params.component_list))
 
         def rule_bubble_temp(b, j):
             return log(b.mole_frac_comp[j]) + log(b.bubble_temp_liq(j)) == \
                     log(b._mole_frac_tbub[j]) + log(b.bubble_temp_vap(j))
-        self.eq_temperature_bubble = Constraint(self._params.component_list,
+        self.eq_temperature_bubble = Constraint(self.params.component_list,
                                                 rule=rule_bubble_temp)
 
     def _temperature_dew(self):
@@ -922,19 +922,19 @@ class CubicStateBlockData(StateBlockData):
                 doc="Dew point temperature (K)")
 
         self._mole_frac_tdew = Var(
-                self._params.component_list,
-                initialize=1/len(self._params.component_list),
+                self.params.component_list,
+                initialize=1/len(self.params.component_list),
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew point")
 
         self._sum_mole_frac_tdew = Constraint(
                 expr=1e3 == 1e3*sum(self._mole_frac_tdew[j]
-                                    for j in self._params.component_list))
+                                    for j in self.params.component_list))
 
         def rule_dew_temp(b, j):
             return log(b._mole_frac_tdew[j]) + log(b.dew_temp_liq(j)) == \
                     log(b.mole_frac_comp[j]) + log(b.dew_temp_vap(j))
-        self.eq_temperature_dew = Constraint(self._params.component_list,
+        self.eq_temperature_dew = Constraint(self.params.component_list,
                                              rule=rule_dew_temp)
 
     def _pressure_bubble(self):
@@ -943,19 +943,19 @@ class CubicStateBlockData(StateBlockData):
                 doc="Bubble point pressure (Pa)")
 
         self._mole_frac_pbub = Var(
-                self._params.component_list,
-                initialize=1/len(self._params.component_list),
+                self.params.component_list,
+                initialize=1/len(self.params.component_list),
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble point")
 
         self._sum_mole_frac_pbub = Constraint(
                 expr=1e3 == 1e3*sum(self._mole_frac_pbub[j]
-                                    for j in self._params.component_list))
+                                    for j in self.params.component_list))
 
         def rule_bubble_pres(b, j):
             return log(b.mole_frac_comp[j]) + log(b.bubble_pres_liq(j)) == \
                     log(b._mole_frac_pbub[j]) + log(b.bubble_pres_vap(j))
-        self.eq_pressure_bubble = Constraint(self._params.component_list,
+        self.eq_pressure_bubble = Constraint(self.params.component_list,
                                              rule=rule_bubble_pres)
 
     def _pressure_dew(self):
@@ -964,19 +964,19 @@ class CubicStateBlockData(StateBlockData):
                 doc="Dew point pressure (Pa)")
 
         self._mole_frac_pdew = Var(
-                self._params.component_list,
-                initialize=1/len(self._params.component_list),
+                self.params.component_list,
+                initialize=1/len(self.params.component_list),
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew point")
 
         self._sum_mole_frac_pdew = Constraint(
                 expr=1e3 == 1e3*sum(self._mole_frac_pdew[j]
-                                    for j in self._params.component_list))
+                                    for j in self.params.component_list))
 
         def rule_dew_press(b, j):
             return log(b._mole_frac_pdew[j]) + log(b.dew_press_liq(j)) == \
                     log(b.mole_frac_comp[j]) + log(b.dew_press_vap(j))
-        self.eq_pressure_dew = Constraint(self._params.component_list,
+        self.eq_pressure_dew = Constraint(self.params.component_list,
                                           rule=rule_dew_press)
 
 # -----------------------------------------------------------------------------
@@ -1011,23 +1011,23 @@ class CubicStateBlockData(StateBlockData):
     def bubble_temp_liq(b, j):
         def a(k):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[k])**2 /
-                              b._params.pressure_crit[k]) *
+                               b.params.temperature_crit[k])**2 /
+                              b.params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_bubble /
-                                 b._params.temperature_crit[k])))**2))
+                                 b.params.temperature_crit[k])))**2))
 
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
-                     sqrt(a(i)*a(j))*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(a(i)*a(j))*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure/(const.gas_constant*b.temperature_bubble)**2
         B = bm*b.pressure/(const.gas_constant*b.temperature_bubble)
 
         delta = (2*sqrt(a(j))/am *
-                 sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
@@ -1040,23 +1040,23 @@ class CubicStateBlockData(StateBlockData):
     def dew_temp_liq(b, j):
         def a(k):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[k])**2 /
-                              b._params.pressure_crit[k]) *
+                               b.params.temperature_crit[k])**2 /
+                              b.params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_dew /
-                                 b._params.temperature_crit[k])))**2))
+                                 b.params.temperature_crit[k])))**2))
 
         am = sum(sum(b._mole_frac_tdew[i]*b._mole_frac_tdew[j] *
-                     sqrt(a(i)*a(j))*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b._mole_frac_tdew[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(a(i)*a(j))*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b._mole_frac_tdew[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure/(const.gas_constant*b.temperature_dew)**2
         B = bm*b.pressure/(const.gas_constant*b.temperature_dew)
 
         delta = (2*sqrt(a(j))/am *
-                 sum(b._mole_frac_tdew[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b._mole_frac_tdew[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
@@ -1068,17 +1068,17 @@ class CubicStateBlockData(StateBlockData):
 
     def bubble_pres_liq(b, j):
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
-                     sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(b.a[i]*b.a[j])*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure_bubble/(const.gas_constant*b.temperature)**2
         B = bm*b.pressure_bubble/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
-                 sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
@@ -1090,18 +1090,18 @@ class CubicStateBlockData(StateBlockData):
 
     def dew_press_liq(b, j):
         am = sum(sum(b._mole_frac_pdew[i]*b._mole_frac_pdew[j] *
-                     sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b._mole_frac_pdew[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(b.a[i]*b.a[j])*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b._mole_frac_pdew[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure_dew/(const.gas_constant*b.temperature)**2
         B = bm*b.pressure_dew/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b._mole_frac_pdew[i]*sqrt(b.a[i]) *
-                     (1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                     (1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
@@ -1143,23 +1143,23 @@ class CubicStateBlockData(StateBlockData):
     def bubble_temp_vap(b, j):
         def a(k):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[k])**2 /
-                              b._params.pressure_crit[k]) *
+                               b.params.temperature_crit[k])**2 /
+                              b.params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_bubble /
-                                 b._params.temperature_crit[k])))**2))
+                                 b.params.temperature_crit[k])))**2))
 
         am = sum(sum(b._mole_frac_tbub[i]*b._mole_frac_tbub[j] *
-                     sqrt(a(i)*a(j))*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b._mole_frac_tbub[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(a(i)*a(j))*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b._mole_frac_tbub[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure/(const.gas_constant*b.temperature_bubble)**2
         B = bm*b.pressure/(const.gas_constant*b.temperature_bubble)
 
         delta = (2*sqrt(a(j))/am *
-                 sum(b._mole_frac_tbub[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b._mole_frac_tbub[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
@@ -1172,23 +1172,23 @@ class CubicStateBlockData(StateBlockData):
     def dew_temp_vap(b, j):
         def a(k):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[k])**2 /
-                              b._params.pressure_crit[k]) *
+                               b.params.temperature_crit[k])**2 /
+                              b.params.pressure_crit[k]) *
                     ((1+b.fw[k]*(1-sqrt(b.temperature_dew /
-                                 b._params.temperature_crit[k])))**2))
+                                 b.params.temperature_crit[k])))**2))
 
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
-                     sqrt(a(i)*a(j))*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(a(i)*a(j))*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure/(const.gas_constant*b.temperature_dew)**2
         B = bm*b.pressure/(const.gas_constant*b.temperature_dew)
 
         delta = (2*sqrt(a(j))/am *
-                 sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b.mole_frac_comp[i]*sqrt(a(i))*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
@@ -1200,18 +1200,18 @@ class CubicStateBlockData(StateBlockData):
 
     def bubble_pres_vap(b, j):
         am = sum(sum(b._mole_frac_pbub[i]*b._mole_frac_pbub[j] *
-                     sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b._mole_frac_pbub[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(b.a[i]*b.a[j])*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b._mole_frac_pbub[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure_bubble/(const.gas_constant*b.temperature)**2
         B = bm*b.pressure_bubble/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
                  sum(b._mole_frac_pbub[i]*sqrt(b.a[i]) *
-                     (1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                     (1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
@@ -1223,17 +1223,17 @@ class CubicStateBlockData(StateBlockData):
 
     def dew_press_vap(b, j):
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
-                     sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-                     for j in b._params.component_list)
-                 for i in b._params.component_list)
-        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b._params.component_list)
+                     sqrt(b.a[i]*b.a[j])*(1-b.params.kappa[i, j])
+                     for j in b.params.component_list)
+                 for i in b.params.component_list)
+        bm = sum(b.mole_frac_comp[i]*b.b[i] for i in b.params.component_list)
 
         A = am*b.pressure_dew/(const.gas_constant*b.temperature)**2
         B = bm*b.pressure_dew/(const.gas_constant*b.temperature)
 
         delta = (2*sqrt(b.a[j])/am *
-                 sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b._params.kappa[j, i])
-                     for i in b._params.component_list))
+                 sum(b.mole_frac_comp[i]*sqrt(b.a[i])*(1-b.params.kappa[j, i])
+                     for i in b.params.component_list))
 
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
@@ -1251,97 +1251,97 @@ class CubicStateBlockData(StateBlockData):
         if hasattr(blk, "omegaA"):
             return
 
-        blk.omegaA = EoS_param[blk._params.cubic_type]['omegaA']
+        blk.omegaA = EoS_param[blk.params.cubic_type]['omegaA']
 
-        blk.EoS_Bc = EoS_param[blk._params.cubic_type]['coeff_b']
-        blk.EoS_u = EoS_param[blk._params.cubic_type]['u']
-        blk.EoS_w = EoS_param[blk._params.cubic_type]['w']
+        blk.EoS_Bc = EoS_param[blk.params.cubic_type]['coeff_b']
+        blk.EoS_u = EoS_param[blk.params.cubic_type]['u']
+        blk.EoS_w = EoS_param[blk.params.cubic_type]['w']
         blk.EoS_p = sqrt(blk.EoS_u**2 - 4*blk.EoS_w)
 
         # Create expressions for coefficients
         def func_fw(b, j):
-            if b._params.cubic_type == CubicEoS.PR:
-                return 0.37464 + 1.54226*b._params.omega[j] - \
-                       0.26992*b._params.omega[j]**2
-            elif b._params.cubic_type == CubicEoS.SRK:
-                return 0.48 + 1.574*b._params.omega[j] - \
-                       0.176*b._params.omega[j]**2
+            if b.params.cubic_type == CubicEoS.PR:
+                return 0.37464 + 1.54226*b.params.omega[j] - \
+                       0.26992*b.params.omega[j]**2
+            elif b.params.cubic_type == CubicEoS.SRK:
+                return 0.48 + 1.574*b.params.omega[j] - \
+                       0.176*b.params.omega[j]**2
             else:
                 raise BurntToast(
                         "{} received unrecognised cubic type. This should "
                         "never happen, so please contact the IDAES developers "
                         "with this bug.".format(b.name))
-        blk.fw = Param(blk._params.component_list,
+        blk.fw = Param(blk.params.component_list,
                        initialize=func_fw,
                        doc='EoS S factor')
 
         def func_b(b, j):
             return b.EoS_Bc*const.gas_constant *\
-                   b._params.temperature_crit[j]/b._params.pressure_crit[j]
-        blk.b = Param(blk._params.component_list,
+                   b.params.temperature_crit[j]/b.params.pressure_crit[j]
+        blk.b = Param(blk.params.component_list,
                       initialize=func_b,
                       doc='Component b coefficient')
 
         def func_a(b, j):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[j])**2 /
-                              b._params.pressure_crit[j]) *
+                               b.params.temperature_crit[j])**2 /
+                              b.params.pressure_crit[j]) *
                     ((1+b.fw[j]*(1-sqrt(b.temperature /
-                                        b._params.temperature_crit[j])))**2))
-        blk.a = Expression(blk._params.component_list,
+                                        b.params.temperature_crit[j])))**2))
+        blk.a = Expression(blk.params.component_list,
                            rule=func_a,
                            doc='Component a coefficient')
 
         def func_a_eq(b, j):
             return (b.omegaA*((const.gas_constant *
-                               b._params.temperature_crit[j])**2 /
-                              b._params.pressure_crit[j]) *
+                               b.params.temperature_crit[j])**2 /
+                              b.params.pressure_crit[j]) *
                     ((1+b.fw[j]*(1-sqrt(b._teq /
-                                        b._params.temperature_crit[j])))**2))
-        blk._a_eq = Expression(blk._params.component_list,
+                                        b.params.temperature_crit[j])))**2))
+        blk._a_eq = Expression(blk.params.component_list,
                                rule=func_a_eq,
                                doc='Component a coefficient at Teq')
 
         def rule_am(b, p):
             return sum(sum(
                 b.mole_frac_phase_comp[p, i]*b.mole_frac_phase_comp[p, j] *
-                sqrt(b.a[i]*b.a[j])*(1-b._params.kappa[i, j])
-                for j in b._params.component_list)
-                for i in b._params.component_list)
-        blk.am = Expression(blk._params.phase_list, rule=rule_am)
+                sqrt(b.a[i]*b.a[j])*(1-b.params.kappa[i, j])
+                for j in b.params.component_list)
+                for i in b.params.component_list)
+        blk.am = Expression(blk.params.phase_list, rule=rule_am)
 
         def rule_am_eq(b, p):
             return sum(sum(
                 b.mole_frac_phase_comp[p, i]*b.mole_frac_phase_comp[p, j] *
-                sqrt(b._a_eq[i]*b._a_eq[j])*(1-b._params.kappa[i, j])
-                for j in b._params.component_list)
-                for i in b._params.component_list)
-        blk._am_eq = Expression(blk._params.phase_list, rule=rule_am_eq)
+                sqrt(b._a_eq[i]*b._a_eq[j])*(1-b.params.kappa[i, j])
+                for j in b.params.component_list)
+                for i in b.params.component_list)
+        blk._am_eq = Expression(blk.params.phase_list, rule=rule_am_eq)
 
         def rule_bm(b, p):
             return sum(b.mole_frac_phase_comp[p, i]*b.b[i]
-                       for i in b._params.component_list)
-        blk.bm = Expression(blk._params.phase_list, rule=rule_bm)
+                       for i in b.params.component_list)
+        blk.bm = Expression(blk.params.phase_list, rule=rule_bm)
 
         def rule_A(b, p):
             return (b.am[p]*b.pressure /
                     (const.gas_constant*b.temperature)**2)
-        blk.A = Expression(blk._params.phase_list, rule=rule_A)
+        blk.A = Expression(blk.params.phase_list, rule=rule_A)
 
         def rule_B(b, p):
             return (b.bm[p]*b.pressure /
                     (const.gas_constant*b.temperature))
-        blk.B = Expression(blk._params.phase_list, rule=rule_B)
+        blk.B = Expression(blk.params.phase_list, rule=rule_B)
 
         def rule_A_eq(b, p):
             return (b._am_eq[p]*b.pressure /
                     (const.gas_constant*b._teq)**2)
-        blk._A_eq = Expression(blk._params.phase_list, rule=rule_A_eq)
+        blk._A_eq = Expression(blk.params.phase_list, rule=rule_A_eq)
 
         def rule_B_eq(b, p):
             return (b.bm[p]*b.pressure /
                     (const.gas_constant*b._teq))
-        blk._B_eq = Expression(blk._params.phase_list, rule=rule_B_eq)
+        blk._B_eq = Expression(blk.params.phase_list, rule=rule_B_eq)
 
         blk.proc_Z_liq = ExternalFunction(library=_so,
                                           function="ceos_z_liq")
@@ -1356,20 +1356,20 @@ class CubicStateBlockData(StateBlockData):
             # See pg. 145 in Properties of Gases and Liquids
             return (2*sqrt(blk.a[i])/b.am[p] *
                     sum(b.mole_frac_phase_comp[p, j]*sqrt(blk.a[j]) *
-                        (1-b._params.kappa[i, j])
-                        for j in b._params.component_list))
-        blk.delta = Expression(blk._params.phase_list,
-                               blk._params.component_list,
+                        (1-b.params.kappa[i, j])
+                        for j in b.params.component_list))
+        blk.delta = Expression(blk.params.phase_list,
+                               blk.params.component_list,
                                rule=rule_delta)
 
         def rule_delta_eq(b, p, i):
             # See pg. 145 in Properties of Gases and Liquids
             return (2*sqrt(blk._a_eq[i])/b._am_eq[p] *
                     sum(b.mole_frac_phase_comp[p, j]*sqrt(blk._a_eq[j]) *
-                        (1-b._params.kappa[i, j])
-                        for j in b._params.component_list))
-        blk._delta_eq = Expression(blk._params.phase_list,
-                                   blk._params.component_list,
+                        (1-b.params.kappa[i, j])
+                        for j in b.params.component_list))
+        blk._delta_eq = Expression(blk.params.phase_list,
+                                   blk.params.component_list,
                                    rule=rule_delta_eq)
 
         def rule_dadT(b, p):
@@ -1377,26 +1377,26 @@ class CubicStateBlockData(StateBlockData):
             return -((const.gas_constant/2)*sqrt(b.omegaA) *
                      sum(sum(b.mole_frac_phase_comp[p, i] *
                              b.mole_frac_phase_comp[p, j] *
-                             (1-b._params.kappa[i, j]) *
+                             (1-b.params.kappa[i, j]) *
                              (b.fw[j]*sqrt(b.a[i] *
-                                           b._params.temperature_crit[j] /
-                                           b._params.pressure_crit[j]) +
+                                           b.params.temperature_crit[j] /
+                                           b.params.pressure_crit[j]) +
                               b.fw[i]*sqrt(b.a[j] *
-                                           b._params.temperature_crit[i] /
-                                           b._params.pressure_crit[i]))
-                             for j in b._params.component_list)
-                         for i in b._params.component_list) /
+                                           b.params.temperature_crit[i] /
+                                           b.params.pressure_crit[i]))
+                             for j in b.params.component_list)
+                         for i in b.params.component_list) /
                      sqrt(b.temperature))
-        blk.dadT = Expression(blk._params.phase_list, rule=rule_dadT)
+        blk.dadT = Expression(blk.params.phase_list, rule=rule_dadT)
 
-        blk._ext_func_param = Param(default=blk._params.cubic_type.value)
+        blk._ext_func_param = Param(default=blk.params.cubic_type.value)
 
         def rule_compress_fact(b, p):
             if p == "Vap":
                 return b.proc_Z_vap(b._ext_func_param, b.A[p], b.B[p])
             else:
                 return b.proc_Z_liq(b._ext_func_param, b.A[p], b.B[p])
-        blk.compress_fact_phase = Expression(blk._params.phase_list,
+        blk.compress_fact_phase = Expression(blk.params.phase_list,
                                              rule=rule_compress_fact)
 
         def rule_compress_fact_eq(b, p):
@@ -1404,7 +1404,7 @@ class CubicStateBlockData(StateBlockData):
                 return b.proc_Z_vap(b._ext_func_param, b._A_eq[p], b._B_eq[p])
             else:
                 return b.proc_Z_liq(b._ext_func_param, b._A_eq[p], b._B_eq[p])
-        blk._compress_fact_eq = Expression(blk._params.phase_list,
+        blk._compress_fact_eq = Expression(blk.params.phase_list,
                                            rule=rule_compress_fact_eq)
 
     def _vol_mol_cubic(b, p):
@@ -1459,8 +1459,8 @@ class CubicStateBlockData(StateBlockData):
 
     def _enth_mol_ig(b, p):
         return sum(b.mole_frac_phase_comp[p, j] *
-                   (b._enth_mol_comp_ig(j) + b._params.enth_mol_form_ref[j])
-                   for j in b._params.component_list)
+                   (b._enth_mol_comp_ig(j) + b.params.enth_mol_form_ref[j])
+                   for j in b.params.component_list)
 
     def _entr_mol_cubic(b, p):
         # See pg. 102 in Properties of Gases and Liquids
@@ -1468,7 +1468,7 @@ class CubicStateBlockData(StateBlockData):
                     (b.compress_fact_phase[p]-b.B[p]) /
                     b.compress_fact_phase[p])*b.bm[p]*b.EoS_p +
                  const.gas_constant*log(b.compress_fact_phase[p] *
-                                  b._params.pressure_ref/b.pressure) *
+                                  b.params.pressure_ref/b.pressure) *
                  b.bm[p]*b.EoS_p +
                  b.dadT[p]*log((2*b.compress_fact_phase[p] +
                                 b.B[p]*(b.EoS_u + b.EoS_p)) /
@@ -1478,28 +1478,28 @@ class CubicStateBlockData(StateBlockData):
 
     def _entr_mol_ig(b, p):
         return sum(b.mole_frac_phase_comp[p, j] *
-                   (b._entr_mol_comp_ig(j) + b._params.entr_mol_form_ref[j])
-                   for j in b._params.component_list)
+                   (b._entr_mol_comp_ig(j) + b.params.entr_mol_form_ref[j])
+                   for j in b.params.component_list)
 
 # -----------------------------------------------------------------------------
 # Pure component properties
     def _enth_mol_comp_ig(b, j):
         return (
-            (b._params.cp_ig[j, "4"]/4) *
-            (b.temperature**4-b._params.temperature_ref**4) +
-            (b._params.cp_ig[j, "3"]/3) *
-            (b.temperature**3-b._params.temperature_ref**3) +
-            (b._params.cp_ig[j, "2"]/2) *
-            (b.temperature**2-b._params.temperature_ref**2) +
-            b._params.cp_ig[j, "1"] *
-            (b.temperature-b._params.temperature_ref))
+            (b.params.cp_ig[j, "4"]/4) *
+            (b.temperature**4-b.params.temperature_ref**4) +
+            (b.params.cp_ig[j, "3"]/3) *
+            (b.temperature**3-b.params.temperature_ref**3) +
+            (b.params.cp_ig[j, "2"]/2) *
+            (b.temperature**2-b.params.temperature_ref**2) +
+            b.params.cp_ig[j, "1"] *
+            (b.temperature-b.params.temperature_ref))
 
     def _entr_mol_comp_ig(b, j):
-        return ((b._params.cp_ig[j, '4']/3) *
-                (b.temperature**3-b._params.temperature_ref**3) +
-                (b._params.cp_ig[j, '3']/2) *
-                (b.temperature**2-b._params.temperature_ref**2) +
-                b._params.cp_ig[j, '2'] *
-                (b.temperature-b._params.temperature_ref) +
-                b._params.cp_ig[j, '1'] *
-                log(b.temperature/b._params.temperature_ref))
+        return ((b.params.cp_ig[j, '4']/3) *
+                (b.temperature**3-b.params.temperature_ref**3) +
+                (b.params.cp_ig[j, '3']/2) *
+                (b.temperature**2-b.params.temperature_ref**2) +
+                b.params.cp_ig[j, '2'] *
+                (b.temperature-b.params.temperature_ref) +
+                b.params.cp_ig[j, '1'] *
+                log(b.temperature/b.params.temperature_ref))

@@ -353,7 +353,7 @@ def test_param_ref():
     m.pb = Parameters()
     m.p = StateTest(default={"parameters": m.pb})
 
-    assert m.p._params == m.p.config.parameters
+    assert m.p.params == m.p.config.parameters
 
 
 def test_validate_params():
