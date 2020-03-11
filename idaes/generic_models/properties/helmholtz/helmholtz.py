@@ -187,6 +187,9 @@ change.
         pressure_crit,
         dens_mass_crit,
         specific_gas_constant,
+        pressure_bounds,
+        temperature_bounds,
+        enthalpy_bounds,
     ):
         """This function sets the parameters that are required for a Helmholtz
         equation of state parameter block, and ensures that all required parameters
@@ -205,6 +208,10 @@ change.
         self.dens_mass_crit = dens_mass_crit
         self.specific_gas_constant = specific_gas_constant
         self.mw = mw
+        self.default_pressure_bounds = pressure_bounds
+        self.default_enthalpy_bounds = enthalpy_bounds
+        self.default_temperature_bounds = temperature_bounds
+
 
 
     def build(self):
@@ -466,8 +473,11 @@ class HelmholtzStateBlockData(StateBlockData):
     def _state_vars(self):
         """ Create the state variables
         """
+        params = self.config.parameters
+
         self.flow_mol = Var(
-            initialize=1, domain=NonNegativeReals, doc="Total flow [mol/s]"
+            initialize=1,
+            doc="Total flow [mol/s]"
         )
         self.scaling_factor[self.flow_mol] = 1e-3
 
@@ -476,16 +486,18 @@ class HelmholtzStateBlockData(StateBlockData):
                 domain=PositiveReals,
                 initialize=1e5,
                 doc="Pressure [Pa]",
-                bounds=(1, 1e9),
+                bounds=params.default_pressure_bounds,
             )
             self.enth_mol = Var(
-                initialize=1000, doc="Total molar enthalpy (J/mol)", bounds=(1, 1e5)
+                initialize=1000,
+                doc="Total molar enthalpy (J/mol)",
+                bounds=params.default_enthalpy_bounds,
             )
             self.scaling_factor[self.enth_mol] = 1e-3
 
             P = self.pressure / 1000.0  # Pressure expr [kPA] (for external func)
             h_mass = self.enth_mol / self.mw / 1000  # enthalpy expr [kJ/kg]
-            phase_set = self.config.parameters.config.phase_presentation
+            phase_set = params.config.phase_presentation
 
             self.temperature = Expression(
                 expr=self.temperature_crit / self.func_tau(h_mass, P),
@@ -498,11 +510,13 @@ class HelmholtzStateBlockData(StateBlockData):
                 )
             elif phase_set == PhaseType.L:
                 self.vapor_frac = Expression(
-                    expr=0.0, doc="Vapor mole fraction (mol vapor/mol total)"
+                    expr=0.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             elif phase_set == PhaseType.G:
                 self.vapor_frac = Expression(
-                    expr=1.0, doc="Vapor mole fraction (mol vapor/mol total)"
+                    expr=1.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)",
                 )
 
             # For variables that show up in ports specify extensive/intensive
@@ -511,17 +525,23 @@ class HelmholtzStateBlockData(StateBlockData):
 
         elif self.state_vars == StateVars.TPX:
             self.temperature = Var(
-                initialize=300, doc="Temperature [K]", bounds=(200, 3e3)
+                domain=PositiveReals,
+                initialize=300,
+                doc="Temperature [K]",
+                bounds=params.default_temperature_bounds
             )
-
             self.pressure = Var(
                 domain=PositiveReals,
                 initialize=1e5,
                 doc="Pressure [Pa]",
-                bounds=(1, 1e9),
+                bounds=params.default_pressure_bounds,
             )
-
-            self.vapor_frac = Var(initialize=0.0, doc="Vapor fraction [none]")
+            self.vapor_frac = Var(
+                initialize=0.0,
+                doc="Vapor fraction [none]"
+                # No bounds here, since it is often (usually) on it's bound
+                # and that's not the best for IPOPT
+            )
 
             # enth_mol is defined later, since in this case it needs
             # enth_mol_phase to be defined first

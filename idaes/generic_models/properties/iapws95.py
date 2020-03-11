@@ -128,6 +128,9 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 initialize=461.51805,
                 doc="Water Specific Gas Constant [J/kg/K]",
             ),
+            pressure_bounds=(0.1, 1e9),
+            temperature_bounds=(250, 2500),
+            enthalpy_bounds=(0, 1e5),
         )
         super().build()
         # Thermal conductivity parameters.
