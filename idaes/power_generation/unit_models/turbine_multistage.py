@@ -708,8 +708,7 @@ class TurbineMultistageData(UnitModelBlockData):
                 t
             ].value = self.outlet_stage.inlet.flow_mol[t].value
 
-
-        self.inlet_split.inlet.flow_mol.unfix()
+        """
         dof = degrees_of_freedom(self)
         try:
             assert dof == 0
@@ -727,6 +726,7 @@ class TurbineMultistageData(UnitModelBlockData):
                 flow_guess, self.outlet_stage.inlet.flow_mol[0].value
             ),
         )
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        """
+        init_log.info("Initialization Complete")
 
         from_json(self, sd=istate, wts=sp)

@@ -190,6 +190,9 @@ change.
         pressure_bounds,
         temperature_bounds,
         enthalpy_bounds,
+        pressure_value=1e5,
+        temperature_value=300,
+        enthalpy_value=1000,
     ):
         """This function sets the parameters that are required for a Helmholtz
         equation of state parameter block, and ensures that all required parameters
@@ -211,8 +214,9 @@ change.
         self.default_pressure_bounds = pressure_bounds
         self.default_enthalpy_bounds = enthalpy_bounds
         self.default_temperature_bounds = temperature_bounds
-
-
+        self.default_pressure_value = pressure_value
+        self.default_temperature_value = temperature_value
+        self.default_enthalpy_value = enthalpy_value
 
     def build(self):
         super().build()
@@ -484,12 +488,12 @@ class HelmholtzStateBlockData(StateBlockData):
         if self.state_vars == StateVars.PH:
             self.pressure = Var(
                 domain=PositiveReals,
-                initialize=1e5,
+                initialize=params.default_pressure_value,
                 doc="Pressure [Pa]",
                 bounds=params.default_pressure_bounds,
             )
             self.enth_mol = Var(
-                initialize=1000,
+                initialize=params.default_enthalpy_value,
                 doc="Total molar enthalpy (J/mol)",
                 bounds=params.default_enthalpy_bounds,
             )
@@ -526,13 +530,13 @@ class HelmholtzStateBlockData(StateBlockData):
         elif self.state_vars == StateVars.TPX:
             self.temperature = Var(
                 domain=PositiveReals,
-                initialize=300,
+                initialize=params.default_temperature_value,
                 doc="Temperature [K]",
                 bounds=params.default_temperature_bounds
             )
             self.pressure = Var(
                 domain=PositiveReals,
-                initialize=1e5,
+                initialize=params.default_pressure_value,
                 doc="Pressure [Pa]",
                 bounds=params.default_pressure_bounds,
             )
