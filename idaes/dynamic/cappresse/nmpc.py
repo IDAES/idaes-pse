@@ -569,7 +569,6 @@ class NMPCSim(object):
                 continue
             if time not in ComponentSet(parent.get_continuousset_list()):
                 continue
-            assert var is dae_no_dups.pop(i)
 
             # Do The Correct Thing depending on which variables aren't fixed
             # Should have some robust tests for this behavior
@@ -578,8 +577,15 @@ class NMPCSim(object):
                 # Then derivative is 'not really a derivative'
                 # in the sense that it doesn't specify a differential
                 # variable through some discretization equations.
-                # In this case do nothing.
+                
+                # In this case do not pop var from dae_no_dups
+                # It needs to be found in the search for alg vars later
+                #
+                # Don't /need/ to add state var to fixed_vars, it will be 
+                # found and added later
                 continue
+
+            assert var is dae_no_dups.pop(i)
 
             if var[t1].fixed:
                 # Assume derivative has been fixed everywhere.
