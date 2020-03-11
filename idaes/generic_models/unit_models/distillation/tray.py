@@ -505,8 +505,6 @@ see property package for documentation.}"""))
         init_log.info("Begin initialization.")
 
         if solver is None:
-            # TODO:log warning that initialize method
-            # uses default solver
             init_log.warning("Solver not provided. Default solver(ipopt) "
                              " being used for initialization.")
             solver = get_default_solver()
@@ -557,17 +555,9 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info(
-            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        init_log.info_high(
+            "Mass balance solve {}.".format(idaeslog.condition(res))
         )
-
-        if res.solver.termination_condition == \
-                TerminationCondition.optimal:
-            _log.info('{} Mass balance solve successful.'
-                      .format(self.name))
-        else:
-            _log.info('{} Mass balance solve failed.'
-                      .format(self.name))
 
         # Activate energy balance
         self.enthalpy_mixing_equations.activate()
@@ -575,34 +565,19 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info(
-            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        init_log.info_high(
+            "Mass and energy balance solve {}.".format(idaeslog.condition(res))
         )
-
-        if res.solver.termination_condition == \
-                TerminationCondition.optimal:
-            _log.info('{} Energy balance solve successful.'
-                      .format(self.name))
-        else:
-            _log.info('{} Energy balance solve failed.'
-                      .format(self.name))
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
         self.properties_out[:].pressure.unfix()
 
-        res = solver.solve(self)
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
+        init_log.info_high(
+            "Mass, energy and pressure balance solve {}.".
+            format(idaeslog.condition(res)))
         init_log.info(
-            "Initialization Complete, {}.".format(idaeslog.condition(res))
-        )
-
-        if res.solver.termination_condition == \
-                TerminationCondition.optimal:
-            _log.info('{} Tray initialisation complete.'
-                      .format(self.name))
-        else:
-            _log.info('{} Mass/Energy/Pressure balance solve failed.'
-                      .format(self.name))
+            "Initialization complete, status {}.".
+            format(idaeslog.condition(res)))
