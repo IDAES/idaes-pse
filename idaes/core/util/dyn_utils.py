@@ -391,7 +391,7 @@ def get_derivatives_at(b, time, pts):
 
         if not isinstance(var, DerivativeVar):
             continue
-        if time not in set(var.get_continuousset_list()):
+        if time not in ComponentSet(var.get_continuousset_list()):
             continue
 
         info = get_index_set_except(var, time)
@@ -477,7 +477,17 @@ def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
             continue
         var_src = fs_src.find_component(var_tgt.local_name)
         # ^ this find_component is fine because var_tgt is a Var not VarData
-        # and its local_name is used
+        # and its local_name is used. Assumes that there are no other decimal
+        # indices in between fs_src and var_src
+
+        if var_src is None:
+            # Log a warning
+            msg = ('Warning copying values: ' + varname + 
+                   ' does not exist in source block ' + fs_src.name)
+            init_log = idaeslog.getInitLogger(__name__, outlvl)
+            init_log.warning(msg)
+            continue
+
         for index in var_tgt:
             if not copy_fixed and var_tgt[index].fixed:
                 continue
@@ -508,9 +518,25 @@ def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
     
                 # can't used find_component(local_name) here because I might
                 # have decimal indices
-                local_parent = fs_src
-                for r in path_from_block(var_tgt, fs_tgt):
-                    local_parent = getattr(local_parent, r[0])[r[1]]
+                try:
+                    local_parent = fs_src
+                    for r in path_from_block(var_tgt, fs_tgt):
+                        local_parent = getattr(local_parent, r[0])[r[1]]
+                except AttributeError:
+                    # log warning
+                    msg = ('Warning copying values: ' + r[0] + 
+                           ' does not exist in source' + local_parent.name)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
+                    init_log.warning(msg)
+                    continue
+                except KeyError:
+                    msg = ('Warning copying values: ' + str(r[1]) + 
+                           ' is not a valid index for' + 
+                           getattr(local_parent, r[0]).name)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
+                    init_log.warning(msg)
+                    continue
+
                 var_src = getattr(local_parent, var_tgt.local_name)
     
                 for index in var_tgt:
@@ -554,8 +580,8 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
         local_parent = fs_src
 
         varname = var_target.getname(fully_qualified=True, relative_to=fs_tgt)
-        # Calling find_component here makes the assumption that fs_src 
-        # is not indexed
+        # Calling find_component here makes the assumption that varname does not 
+        # contain decimal indices.
         var_source = fs_src.find_component(varname)
         if var_source is None:
             # Log a warning

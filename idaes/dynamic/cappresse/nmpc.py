@@ -160,7 +160,6 @@ class NMPCSim(object):
         t1 = timemodule.time() 
         self.categorize_variables(self.c_mod, init_controller_inputs)
         t2 = timemodule.time()
-        print(f'categorizing controller variables took {t2-t1} seconds')
         self.build_variable_locator(self.c_mod, 
                 differential=self.c_mod.diff_vars,
                 derivative=self.c_mod.deriv_vars,
@@ -169,7 +168,6 @@ class NMPCSim(object):
                 fixed=self.c_mod.fixed_vars,
                 ic=self.c_mod.ic_vars)
         t3 = timemodule.time()
-        print(f'building locator took {t3-t2} seconds')
         # Only expecting user arguments (set point) in form of controller
         # variables, so only build locator for controller model
         # for now.
@@ -182,6 +180,7 @@ class NMPCSim(object):
         # bounds in the plant model should remain in place for simulation.
         # (Should probably raise a warning if bounds are present...)
         self.build_bound_lists(self.c_mod)
+        # ^ This may be removed in favor of strip_bounds transformation
 
         # Validate inputs in the plant model and initial conditions
         # in the control model.
@@ -703,6 +702,8 @@ class NMPCSim(object):
     def add_setpoint(self, set_point, **kwargs):
         skip_validation = kwargs.pop('skip_validation', False)
         outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        weight_overwrite = kwargs.pop('steady_weight_overwrite', [])
+        weight_tolerance = kwargs.pop('steady_weight_tolerance', 1e-6)
         dynamic_weight_overwrite = kwargs.pop('dynamic_weight_overwrite', [])
         dynamic_weight_tol = kwargs.pop('dynamic_weight_tol', 1e-6)
 
@@ -724,7 +725,6 @@ class NMPCSim(object):
             self.validate_models(self.s_mod, self.p_mod)
             self.validate_steady_setpoint(set_point, self.s_mod)
             # ^ result should be that controller now has set point attributes
-            # return result <- what did I mean by this?
 
         self.construct_objective_weight_matrices(self.c_mod,
                 weight_overwrite=dynamic_weight_overwrite,
@@ -1085,6 +1085,9 @@ class NMPCSim(object):
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None))
                                for k in range(2, len(time)+1))
+            # Note: This term is only non-zero at the boundary between sampling
+            # times. Could use this info to make the expression more compact
+            # (TODO)
 
         obj_expr = state_term + control_term
 
@@ -1260,6 +1263,8 @@ class NMPCSim(object):
 
             initialize_by_time_element(self.c_mod, self.c_mod.time,
                     solver=self.default_solver, outlvl=idaeslog.DEBUG)
+
+            solver.solve(self.c_mod, tee=True)
 
             # Reactivate objective, pwc constraints, bounds
 
