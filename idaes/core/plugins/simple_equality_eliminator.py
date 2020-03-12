@@ -66,13 +66,14 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                     continue
 
                 subs[id(v0)] = -(b0 + a1 * v1) / a0
-                if v1.lb is not None:
-                    b1 = -(b0 + a1 * v1.lb) / a0
+
+                if v0.lb is not None:
+                    b1 = -(b0 + a0 * v0.lb) / a1
                 else:
                     b1 = None
 
-                if v1.ub is not None:
-                    b2 = -(b0 + a1 * v1.ub) / a0
+                if v0.ub is not None:
+                    b2 = -(b0 + a0 * v0.ub) / a1
                 else:
                     b2 = None
 
@@ -83,13 +84,12 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                     lb = b2
                     ub = b1
 
-
                 if lb is not None:
-                    if v0.lb is None or lb < v0.lb:
-                        v0.setlb(lb)
+                    if v1.lb is None or lb < v1.lb:
+                        v1.setlb(lb)
                 if ub is not None:
-                    if v0.ub is None or ub > v0.ub:
-                        v0.setub(ub)
+                    if v1.ub is None or ub > v1.ub:
+                        v1.setub(ub)
 
                 cnstr.add(c)
                 rset.add(id(v0))
