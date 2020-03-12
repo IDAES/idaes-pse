@@ -53,7 +53,20 @@ class TrayData(UnitModelBlockData):
     """
     Tray unit for distillation model.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = ConfigBlock()
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Flash units do not support dynamic behavior."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Indicates whether holdup terms should be constructed or not.
+**default** - False. Flash units do not have defined volume, thus
+this must be False."""))
     CONFIG.declare("is_feed_tray", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -150,8 +163,6 @@ see property package for documentation.}"""))
 
             setattr(self, "properties_in_" + i, state_obj)
 
-        # add mixed outlet state blocks which is the feed to the tray
-
         # Create a dict to set up the mixed outlet state blocks
         mixed_block_args = dict(**self.config.property_package_args)
         mixed_block_args["has_phase_equilibrium"] = True
@@ -194,7 +205,7 @@ see property package for documentation.}"""))
         """Method to construct the energy balance equation."""
 
         if self.config.has_heat_transfer:
-            self.heat_duty = Var(initialize=0,
+            self.heat_duty = Var(self.flowsheet().config.time, initialize=0,
                                  doc="heat duty for the tray")
 
         @self.Constraint(self.flowsheet().config.time, doc="energy balance")
@@ -214,7 +225,7 @@ see property package for documentation.}"""))
                         sum(self.properties_out[t].
                             get_enthalpy_flow_terms(p)
                             for p in b.config.property_package.phase_list)) + \
-                        self.heat_duty
+                        self.heat_duty[t]
                 else:
                     return 0 == (
                         sum(self.properties_in_feed[t].
@@ -241,7 +252,7 @@ see property package for documentation.}"""))
                         sum(self.properties_out[t].
                             get_enthalpy_flow_terms(p)
                             for p in b.config.property_package.phase_list)) + \
-                        self.heat_duty
+                        self.heat_duty[t]
                 else:
                     return 0 == (
                         sum(self.properties_in_liq[t].
@@ -257,7 +268,7 @@ see property package for documentation.}"""))
     def _add_pressure_balance(self):
         """Method to construct the pressure balance."""
         if self.config.has_pressure_change:
-            self.deltaP = Var(initialize=0,
+            self.deltaP = Var(self.flowsheet().config.time, initialize=0,
                               doc="pressure drop across tray")
 
         @self.Constraint(self.flowsheet().config.time,
@@ -265,7 +276,7 @@ see property package for documentation.}"""))
         def pressure_drop_equation(self, t):
             if self.config.has_pressure_change:
                 return self.properties_out[t].pressure == \
-                    self.properties_in_vap[t].pressure - self.deltaP
+                    self.properties_in_vap[t].pressure - self.deltaP[t]
             else:
                 return self.properties_out[t].pressure == \
                     self.properties_in_vap[t].pressure
