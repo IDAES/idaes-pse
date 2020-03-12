@@ -130,6 +130,15 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             for v in fixes: # fix variables that can be fixed
                 v[0].fix(v[1])
 
+            for sub in subs:
+                # set bounds to most restirictive
+                if sub[1].lb is not None:
+                    if sub[0].lb is None or sub[1].lb < sub[0].lb:
+                        sub[0].setlb(sub[1].lb)
+                if sub[1].ub is not None:
+                    if sub[0].ub is None or sub[1].ub > sub[0].ub:
+                        sub[0].setub(sub[1].ub)
+
             # Do replacements in Expressions, Constraints, and Objectives
             # where one var is replaced with a linear expression containing
             # another
