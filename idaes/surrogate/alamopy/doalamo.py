@@ -996,51 +996,25 @@ def readTraceFile(vargs, data, debug):
         lf = open(trace_str).read()
     except (IOError, FileNotFoundError) as err:
         if debug["mock"]:
-            data["results"]["clrtime"] = "0"
-            data["results"]["size"] = "6"
-            data["results"]["numolr"] = "16960"
-            data["results"]["othertime"] = "0.8799995E-01"
-            data["results"]["olrtime"] = "0.10800002"
-            data["results"]["miptime"] = "0"
-            data["results"]["version"] = "2018.4.3"
-            data["results"]["status"] = "0"
-            data["results"]["R2"] = "1"
-            data["results"]["numclr"] = "0"
-            data["results"]["nummip"] = "0"
-            data["results"]["ssr"] = "0.169E-21"
-            data["results"]["pymodel"] = "cam6alm"
-            data["results"]["totaltime"] = "0.1760001"
-            data["results"]["rmse"] = "0.255E-11"
-            data["results"]["madp"] = "0.814E-09"
-            data["results"][
-                "model"
-            ] = "  z1 = 3.9999999999884194856747 * x1^2 \
-                 - 3.9999999999873385725380 * x2^2 - 2.0999999999876837186719 \
-                 * x1^4 + 3.9999999999879496392907 * x2^4 + 0.33333333333014281141260 \
-                 * x1^6 + 1.0000000000008837375276 * x1*x2"
-            data["results"]["nbas"] = "15"
-
-            if debug["expandoutput"]:
-                data["results"]["ssrval"] = 0
-                data["results"]["R2val"] = 0
-                data["results"]["rmseval"] = 0
-                data["results"]["madpval"] = 0
+            _construct_mock(data)
             return
         else:
-            b_alamo = has_alamo()
-            lf_logscratch = open("logscratch").read()
-            if not b_alamo:
-                raise almerror.AlamoError(
-                    'Alamo cannot be found. Please check Alamo is installed.'
-                )
-            elif "termination code" in lf_logscratch:
-                raise almerror.AlamoError(
-                    '{}'.format(lf_logscratch)
-                )
-            else:
-                raise almerror.AlamoError(
-                    'Cannot read from trace file "{}": {}'.format(trace_str, err)
-                )
+            error_message = _diagnose_alamo_failure(trace_str, err)
+            raise almerror.AlamoError(error_message)
+            # b_alamo = has_alamo()
+            # lf_logscratch = open("logscratch").read()
+            # if not b_alamo:
+            #     raise almerror.AlamoError(
+            #         'Alamo cannot be found. Please check Alamo is installed.'
+            #     )
+            # elif "termination code" in lf_logscratch:
+            #     raise almerror.AlamoError(
+            #         '{}'.format(lf_logscratch)
+            #     )
+            # else:
+            #     raise almerror.AlamoError(
+            #         'Cannot read from trace file "{}": {}'.format(trace_str, err)
+            #     )
 
     try:
         # import sympy
@@ -1237,6 +1211,52 @@ def cleanFiles(data, debug, pywrite=False, **kwargs):
     if debug["simwrap"]:
         deletefile("simwrapper.py")
 
+
+def _construct_mock(data):
+    data["results"]["clrtime"] = "0"
+    data["results"]["size"] = "6"
+    data["results"]["numolr"] = "16960"
+    data["results"]["othertime"] = "0.8799995E-01"
+    data["results"]["olrtime"] = "0.10800002"
+    data["results"]["miptime"] = "0"
+    data["results"]["version"] = "2018.4.3"
+    data["results"]["status"] = "0"
+    data["results"]["R2"] = "1"
+    data["results"]["numclr"] = "0"
+    data["results"]["nummip"] = "0"
+    data["results"]["ssr"] = "0.169E-21"
+    data["results"]["pymodel"] = "cam6alm"
+    data["results"]["totaltime"] = "0.1760001"
+    data["results"]["rmse"] = "0.255E-11"
+    data["results"]["madp"] = "0.814E-09"
+    data["results"][
+        "model"
+    ] = "  z1 = 3.9999999999884194856747 * x1^2 \
+         - 3.9999999999873385725380 * x2^2 - 2.0999999999876837186719 \
+         * x1^4 + 3.9999999999879496392907 * x2^4 + 0.33333333333014281141260 \
+         * x1^6 + 1.0000000000008837375276 * x1*x2"
+    data["results"]["nbas"] = "15"
+
+    if debug["expandoutput"]:
+        data["results"]["ssrval"] = 0
+        data["results"]["R2val"] = 0
+        data["results"]["rmseval"] = 0
+        data["results"]["madpval"] = 0
+
+
+def _diagnose_alamo_failure(trace_output, error):
+    error_message = None
+    b_alamo = has_alamo()
+    lf_logscratch = open("logscratch").read()
+    if not b_alamo:
+        error_message = 'Alamo cannot be found. Please check Alamo is installed.'
+    elif "termination code" in lf_logscratch:
+        error_message = '{}'.format(lf_logscratch)
+        
+    else:
+        error_message = 'Cannot read from trace file "{}": {}'.format(trace_output, error)
+    return error_message
+        
 
 def get_alamo_version():
     x = [0, 1]
