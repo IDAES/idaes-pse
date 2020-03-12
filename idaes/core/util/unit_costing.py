@@ -12,12 +12,10 @@
 ##############################################################################
 # =============================================================================
 
-from pyomo.environ import (Constraint,
-                           Expression,
-                           Var,
-                           Param,
-                           exp,
-                           log10, log)
+from pyomo.environ import (Constraint, Var, Param, exp, log)
+
+# Some more information about this module
+__author__ = "Miguel Zamarripa"
 
 
 def global_costing_parameters(self, year=None):
@@ -102,17 +100,11 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     # --------------------------------------------------
     # base cost calculation
 #       # select heat exchanger type:
-    alf1 = {'floating_head': 11.9052,
-            'fixed_head': 11.2927,
-            'U-tube': 11.3852,
+    alf1 = {'floating_head': 11.9052, 'fixed_head': 11.2927, 'U-tube': 11.3852,
             'Kettle_vap': 12.2052}
-    alf2 = {'floating_head': 0.8709,
-            'fixed_head': 0.8228,
-            'U-tube': 0.9186,
+    alf2 = {'floating_head': 0.8709, 'fixed_head': 0.8228, 'U-tube': 0.9186,
             'Kettle_vap': 0.8709}
-    alf3 = {'floating_head': 0.09005,
-            'fixed_head': 0.09861,
-            'U-tube': 0.09790,
+    alf3 = {'floating_head': 0.09005, 'fixed_head': 0.09861, 'U-tube': 0.09790,
             'Kettle_vap': 0.09005}
 
     if (self.parent_block().config.tube.property_package.get_metadata().
@@ -222,6 +214,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         if(self.parent_block().config.property_package.get_metadata().
            properties['enth_mol']['units']) == 'J/mol':
             work_hp = w/746  # assuming work is in J/s
+            # work_hp = u.convert(w*u.J/u.s,u.hp) # unit convert tool
 
         elif(self.parent_block().config.property_package.get_metadata().
              properties['enth_mol']['units']) == 'kJ/kmol':
@@ -248,221 +241,234 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         # if ThermodynamicAssumption == Pump (the unit is a Pump)
         if self.parent_block().config.thermodynamic_assumption.name == 'pump':
             # assign work fluid  = to w
-            w = self.parent_block().work_fluid[self.parent_block().flowsheet().config.time.first()]
+            w = self.parent_block().work_fluid[self.parent_block().
+                                               flowsheet().config.time.first()]
 
-            #new variables only used by pump costing
-            self.pump_head = Var(initialize = 10,
-                  doc = 'Pump Head in feet of fluid '
-                  'flowing (Pressure rise/dens)')
+            # new variables only used by pump costing
+            self.pump_head = Var(initialize=10,
+                                 doc='Pump Head in feet of fluid '
+                                 'flowing (Pressure rise/dens)')
 
-            self.size_factor = Var(initialize = 10000,
-                                   doc='pump size factor, f(Q,pump_head) in gpm*ft^0.5')
-            
-            self.motor_base_cost = Var(initialize = 10000, 
-                                       doc = 'motor base purchase cost in $')
-            
-            self.pump_purchase_cost = Var(initialize = 100000, 
-                                       doc = 'pump purchase cost in $')
-            
-            self.motor_purchase_cost = Var(initialize = 100000, 
-                                       doc = 'motor purchase cost in $')
-            
-            self.FT = Param(mutable = True, initialize = 1, 
-                          doc='pump-type factor')
-            #work units
+            self.size_factor = Var(initialize=10000,
+                                   doc='pump size factor,'
+                                   'f(Q,pump_head) in gpm*ft^0.5')
+
+            self.motor_base_cost = Var(initialize=10000,
+                                       doc='motor base purchase cost in $')
+
+            self.pump_purchase_cost = Var(initialize=100000,
+                                          doc='pump purchase cost in $')
+
+            self.motor_purchase_cost = Var(initialize=100000,
+                                           doc='motor purchase cost in $')
+
+            self.FT = Param(mutable=True, initialize=1,
+                            doc='pump-type factor')
+            # work units
             if(self.parent_block().config.property_package.get_metadata().
                properties['enth_mol']['units']) == 'J/mol':
                 work_hp = w/746  # assuming W is in J/s
-        
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'kJ/kmol':
+                 properties['enth_mol']['units']) == 'kJ/kmol':
                 work_hp = w*0.0003725  # assuming W is in kJ/hr
-            
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'cal/mol':
-                work_hp = w*0.00561 # assuming W is in cal/s
-            
+                 properties['enth_mol']['units']) == 'cal/mol':
+                work_hp = w*0.00561  # assuming W is in cal/s
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'cal/kmol':
+                 properties['enth_mol']['units']) == 'cal/kmol':
                 work_hp = w/641186.48  # assuming W is in cal/hr
-            #end work units
+            # end work units
             else:
                 raise Exception('work units are not supported')
-            
-            # Pressure units    
+
+            # Pressure units
             if(self.parent_block().config.property_package.get_metadata().
-                 properties['pressure']['units']) == 'Pa' and (
-                self.parent_block().config.property_package.get_metadata().
-                 properties['dens_mass']['units']) =='kg/m^3':
-                                                      # Pa to psi = lb/in^2  1ft^2 = 144 in^2
-                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 0.00014503773 * 144
-                                                                                    # kg/m^3  1 kg= 2.2 lb  1m3 = 35.3147 ft^3
-                dens_mass_lb_ft3 = self.parent_block().control_volume.properties_in[0].dens_mass * 2.2 / 35.3147
-            # 1 bar = 2088.5472 lbf/ft2
-            
+                properties['pressure']['units']) == 'Pa' and (
+                self.parent_block().config.property_package.
+                    get_metadata().properties['dens_mass']['units']) == \
+                    'kg/m^3':
+                #                        Pa to psi = lb/in^2  1ft^2 = 144 in^2
+                deltaP_lb_ft2 = self.parent_block().deltaP[0] \
+                    * 0.00014503773 * 144
+                #                   kg/m^3  1 kg= 2.2 lb  1m3 = 35.3147 ft^3
+                dens_mass_lb_ft3 = self.parent_block().control_volume.\
+                    properties_in[0].dens_mass * 2.2 / 35.3147
+            # 1 bar = 2088.5472 lbf/ft2 (To Do)
             # end pressure units
             else:
                 raise Exception('Pa and/or mass density - units not supported')
-            
+
             # volumetric flow units
             if(self.parent_block().config.property_package.get_metadata().
-                 properties['flow_vol']['units']) == 'm^3/s':
+               properties['flow_vol']['units']) == 'm^3/s':
                 # 1 m3/s = 15850.32314 gal(US)/min
                 Q_gpm = self.parent_block().control_volume.\
                     properties_in[0].flow_vol * 15850.32314
-                
 #                @self.Expression(self)
 #                def Q_gpm(self):
-#                    return self.parent_block().control_volume.properties_in[0].flow_vol * 15850.32314
-            #end volumetric flow units
+#                    return self.parent_block().control_volume.\
+#                               properties_in[0].flow_vol * 15850.32314
+            # end volumetric flow units
             else:
                 raise Exception('flow vol units not supported')
 
             # build pump_head equation
             def p_head_rule(self):
                 return self.pump_head == deltaP_lb_ft2 / dens_mass_lb_ft3
-            self.p_head_eq = Constraint(rule = p_head_rule)
-            
+            self.p_head_eq = Constraint(rule=p_head_rule)
+
             # S  = Q(H)**0.5 (S = Size factor for pump)
             # Q = is the flow rate through the pump in gallons per minute
             # H = pump head in feet of flowing (pressure rise/liquid density)
             # build Size Factor equation
             def p_s_factor_rule(self):
                 return self.size_factor == Q_gpm*(self.pump_head**0.5)
-            self.s_factor_eq = Constraint(rule = p_s_factor_rule)
-            
+            self.s_factor_eq = Constraint(rule=p_s_factor_rule)
 
-            #Base cost and Purchase cost for centrifugal pump
-            # material factor dictionary for centrifugal pumps and external gear pumps
-            material_factor_dic = {'cast_iron'   :1.00,
-                                   'ductile_iron':1.15,
-                                   'cast_steel'  :1.35,
-                                   'bronze'      :1.90,
-                                   'stain_steel' :2.00,
-                                   'hastelloy_c' :2.95,
-                                   'monel'       :3.30,
-                                   'nickel'      :3.50,
-                                   'titanium'    :9.70}
+            # Base cost and Purchase cost for centrifugal pump
+            # material factor dictionary for
+            #                       centrifugal pumps and external gear pumps
+            material_factor_dic = {'cast_iron':    1.00,
+                                   'ductile_iron': 1.15,
+                                   'cast_steel':   1.35,
+                                   'bronze':       1.90,
+                                   'stain_steel':  2.00,
+                                   'hastelloy_c':  2.95,
+                                   'monel':        3.30,
+                                   'nickel':       3.50,
+                                   'titanium':     9.70}
             # material factor dictionary for Reciprocating Plunger pumps
             material_factor_reciprocal_pumps = {'ductile_iron': 1.00,
                                                 'Ni_Al_Bronze': 1.15,
                                                 'carbon_steel': 1.50,
                                                 'stain_steel': 2.20}
-            
             # pump type factor dictionary (only used by centrifugal pumps)
-            pump_type_factor_dic = {'1.1':1.00,
-                                    '1.2':1.50,
-                                    '1.3':1.70,
-                                    '1.4':2.00,
-                                    '2.1':2.70,
-                                    '2.2':8.90}
-            
+            pump_type_factor_dic = {'1.1': 1.00,
+                                    '1.2': 1.50,
+                                    '1.3': 1.70,
+                                    '1.4': 2.00,
+                                    '2.1': 2.70,
+                                    '2.2': 8.90}
+
             if pump_type == 'centrifugal':
                 self.FM = material_factor_dic[FM_mat]
                 self.FT = pump_type_factor_dic[pump_type_factor]
-            
+
             elif pump_type == 'external_gear':
                 self.FM = material_factor_dic[FM_mat]
                 self.FT = 1
-                
+
             elif pump_type == 'reciprocating':
                 self.FM = material_factor_reciprocal_pumps[FM_mat]
                 self.FT = 1
             else:
                 raise Exception('pump type is not supported')
-               
+
             # pump cost correlations ---------------------------------
             def base_pump_rule(self):
                 if pump_type == 'centrifugal':
-                    return self.base_cost == exp(9.7171 
-                                             - 0.6019*log(self.size_factor)
-                                             + 0.0519*log(self.size_factor)**2)
+                    return self.base_cost == exp(9.7171
+                                                 - 0.6019*log(self.size_factor)
+                                                 + 0.0519*log(self.
+                                                              size_factor)**2)
                 elif pump_type == 'external_gear':
                     return self.base_cost == exp(7.6964
-                                                 +0.1986*log(Q_gpm)
-                                                 +0.0291*log(Q_gpm)**2
-                                                 )
+                                                 + 0.1986*log(Q_gpm)
+                                                 + 0.0291*log(Q_gpm)**2)
+
                 elif pump_type == 'reciprocating':
-                    #brake horsepower with efficiency np typically = 90%
-                    PB = (Q_gpm*self.pump_head*dens_mass_lb_ft3/7.48052)/(33000*0.90)
-                    
+                    # brake horsepower with efficiency np typically = 90%
+                    PB = (Q_gpm*self.pump_head
+                          * dens_mass_lb_ft3/7.48052)/(33000*0.90)
                     return self.base_cost == exp(7.8103
                                                  + 0.26986*log(PB)
-                                                 + 0.06718*log(PB)**2
-                                                 )
+                                                 + 0.06718*log(PB)**2)
                 else:
                     raise Exception('pump type not supported')
             self.base_pump_cost_eq = Constraint(rule=base_pump_rule)
-        
+
             def CP_pump_rule(self):
-                return self.pump_purchase_cost == (self.FT*self.FM*
-                                  (self.parent_block().flowsheet().costing.CE_index/394)*self.base_cost)
+                return self.pump_purchase_cost == \
+                    (self.FT * self.FM *
+                     (self.parent_block().flowsheet().
+                      costing.CE_index/394)*self.base_cost)
             self.cp_pump_cost_eq = Constraint(rule=CP_pump_rule)
-            
+
             # electric motor cost correlations ------------------------------
-            pump_motor_type_dic = {'open':1,
-                                   'enclosed':1.4,
-                                   'explosion_proof':1.8}
+            pump_motor_type_dic = {'open': 1,
+                                   'enclosed': 1.4,
+                                   'explosion_proof': 1.8}
             self.motor_FT = Param(mutable=True,
-                                  initialize=pump_motor_type_dic[pump_motor_type_factor],
+                                  initialize=pump_motor_type_dic
+                                  [pump_motor_type_factor],
                                   doc='motor type factor')
-            
-            #pump fractional efficiency
+
+            # pump fractional efficiency
             np = -0.316 + 0.24015*log(Q_gpm) - 0.01199*log(Q_gpm)**2
-            
             # fractional efficiency of the electric motor
             nm = 0.80 + 0.0319*log(work_hp) - 0.00182*log(work_hp)**2
-            
-            #power consumption in horsepower
+
+            # power consumption in horsepower
             @self.Expression()
             def power_consumption_hp(self):
-                return (Q_gpm*self.pump_head*dens_mass_lb_ft3/7.48052)/(33000*np*nm)
-            
+                return (Q_gpm*self.pump_head
+                        * dens_mass_lb_ft3/7.48052)/(33000*np*nm)
+
             def base_motor_cost_rule(self):
-                return self.motor_base_cost == exp(5.8259 
-                                 + 0.13141*log(self.power_consumption_hp)
-                                 + 0.053255*log(self.power_consumption_hp)**2
-                                 + 0.028628*log(self.power_consumption_hp)**3
-                                 + 0.0035549*log(self.power_consumption_hp)**4
-                                 )
+                return self.motor_base_cost == \
+                    exp(5.8259 + 0.13141*log(self.power_consumption_hp)
+                        + 0.053255*log(self.power_consumption_hp)**2
+                        + 0.028628*log(self.power_consumption_hp)**3
+                        + 0.0035549*log(self.power_consumption_hp)**4)
             self.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
-            
+
             def CP_motor_rule(self):
-                return self.motor_purchase_cost == (self.motor_FT
-                        *self.parent_block().flowsheet().costing.CE_index/394
-                        *self.motor_base_cost)
-            self.cp_motor_cost_eq = Constraint(rule = CP_motor_rule)
-            
+                return self.motor_purchase_cost == \
+                    (self.motor_FT * self.parent_block().
+                     flowsheet().costing.CE_index/394 * self.motor_base_cost)
+            self.cp_motor_cost_eq = Constraint(rule=CP_motor_rule)
+
             # Total pump cost (pump + electrical motor)
             def cp_cost_rule(self):
-                return self.purchase_cost ==  self.motor_purchase_cost + self.pump_purchase_cost 
+                return self.purchase_cost == self.motor_purchase_cost \
+                    + self.pump_purchase_cost
             self.total_cost_eq = Constraint(rule=cp_cost_rule)
         # ends pump costing code
-        
-        # compressor = True, and using isothermal assumption (costing not needed)
-        elif self.parent_block().config.thermodynamic_assumption.name == 'isothermal':
-            raise Exception('compressors/blowers/fan with isthoermal assmption are two simple to be costed')
-        
+
+        # compressor = True, and using isothermal assumption
+        # (costing not needed)
+        elif (self.parent_block().config.
+              thermodynamic_assumption.name) == 'isothermal':
+            raise Exception('compressors '
+                            'blowers/fan with isthoermal assmption '
+                            'are two simple to be costed')
+
         # if config.compressor is = True
-        # if thermodynamic_assumption is not = Pump (pressure changer could be a Fan, Blower, or Compressor)
+        # if thermodynamic_assumption is not = Pump
+        # (pressure changer could be a Fan, Blower, or Compressor)
         else:
-            w = self.parent_block().work_mechanical[self.parent_block().flowsheet().config.time.first()]
-            # check the units 
+            w = self.parent_block().\
+                work_mechanical[self.parent_block().flowsheet().
+                                config.time.first()]
+            # check the units
             if(self.parent_block().config.property_package.get_metadata().
                properties['enth_mol']['units']) == 'J/mol':
                 work_hp = w/746  # assuming W is in J/s
                 print(work_hp)
-        
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'kJ/kmol':
+                 properties['enth_mol']['units']) == 'kJ/kmol':
                 work_hp = w*0.0003725  # assuming W is in kJ/hr
-            
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'cal/mol':
-                work_hp = w*0.00561 # assuming W is in cal/s
-            
+                 properties['enth_mol']['units']) == 'cal/mol':
+                work_hp = w*0.00561  # assuming W is in cal/s
+
             elif(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'cal/kmol':
+                 properties['enth_mol']['units']) == 'cal/kmol':
                 work_hp = w/641186.48  # assuming W is in cal/hr
             # finish checking the units
             else:
@@ -472,40 +478,45 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
             # The user has to select mover_type [compressor or Fan or Blower]
             if mover_type == "compressor":
                 # Compressor Purchase Cost Correlation
-                
-                FD_param = {'electrical_motor':1, 'steam_turbine':1.15, 'gas_turbine':1.25}
-                self.FD = Param(mutable = True, 
-                                initialize = FD_param[driver_mover_type],
+
+                FD_param = {'electrical_motor': 1, 'steam_turbine': 1.15,
+                            'gas_turbine': 1.25}
+                self.FD = Param(mutable=True,
+                                initialize=FD_param[driver_mover_type],
                                 doc='drive factor')
                 # compressor material factor dictionary
-                material_factor_dic = {'carbon_steel':1,'stain_steel':2.5, 'nickel_alloy':5.0}
-                
+                material_factor_dic = {'carbon_steel': 1, 'stain_steel': 2.5,
+                                       'nickel_alloy': 5.0}
+
                 self.FM = material_factor_dic[FM_mat]
-                
-                c_alf1 = {'centrifugal':7.58,
-                          'reciprocating':7.9661, 
-                          'screw':8.1238}
-                
-                c_alf2 = {'centrifugal':0.8,
-                          'reciprocating':0.8, 
-                          'screw':0.7243}
-                
-                #Purchase cost rule
+
+                c_alf1 = {'centrifugal': 7.58,
+                          'reciprocating': 7.9661,
+                          'screw': 8.1238}
+
+                c_alf2 = {'centrifugal': 0.8,
+                          'reciprocating': 0.8,
+                          'screw': 0.7243}
+
+                # Purchase cost rule
                 def CB_rule(self):
-                    return self.base_cost == exp(c_alf1[compressor_type]
-                                        + c_alf2[compressor_type]*log(work_hp))
+                    return self.base_cost == \
+                        exp(c_alf1[compressor_type]
+                            + c_alf2[compressor_type]*log(work_hp))
                 self.cb_cost_eq = Constraint(rule=CB_rule)
-                
+
                 def CP_rule(self):
-                    return self.purchase_cost == (self.FD*self.FM*
-                                      (self.parent_block().flowsheet().costing.CE_index/500)*self.base_cost)
+                    return self.purchase_cost == \
+                        (self.FD * self.FM
+                         * (self.parent_block().flowsheet().costing.
+                            CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
 
             elif mover_type == "fan":
                 # fan cost correlation
                 print('Fan costing coming soon')
             elif mover_type == "blower":
-                #Blower Cost Correlation
+                # Blower Cost Correlation
                 print('Blower costing coming soon')
             else:
-                raise Exception('mover type not supported')    
+                raise Exception('mover type not supported')
