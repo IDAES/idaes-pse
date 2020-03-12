@@ -11,31 +11,12 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Test for Cappresse's module for NMPC.
+Example for Cappresse's module for NMPC.
 """
-
-import pytest
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, Objective,
-                           TransformationFactory, TerminationCondition)
-from pyomo.network import Arc
-from pyomo.kernel import ComponentSet
-
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-        AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
-        EnzymeReactionBlock)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.cappresse import nmpc
 from idaes.dynamic.cappresse.nmpc import *
 import idaes.logger as idaeslog
 from idaes.dynamic.cappresse.tests.testing_model import make_model
-import pdb
 
 __author__ = "Robert Parker"
 
@@ -57,8 +38,18 @@ def main():
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
     m_steady = make_model(steady=True)
     sample_time = 0.5
+    time_plant = m_plant.fs.time
+
+    n_plant_samples = (time_plant.last()-time_plant.first())/sample_time
+    assert n_plant_samples == int(n_plant_samples)
+    n_plant_samples = int(n_plant_samples)
+
+    plant_sample_points = [time_plant.first() + i*sample_time
+                           for i in range(1, n_plant_samples)]
+    for t in plant_sample_points:
+        assert t in time_plant
     # Six samples per horizon, five elements per sample
-    
+
     initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
                             m_plant.fs.mixer.E_inlet.flow_rate[0]]
     
@@ -76,12 +67,11 @@ def main():
                  (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
     # Interestingly, this (st.st. set point) solve converges infeasible
     # if energy_holdup set point is not 300. (Needs higher weight?)
-    
+
     weight_tolerance = 5e-7
     
-    # Weight overwrite expects a list of VarData, value tuples
+    # Weight overwrite expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    # User should /probably/ overwrite weights.
     weight_overwrite = [(m_steady.fs.mixer.E_inlet.flow_rate[0], 20.0)]
     
     nmpc.add_setpoint(set_point,
@@ -92,21 +82,24 @@ def main():
     
     nmpc.add_pwc_constraints()
     
-    nmpc.initialize_control_problem(strategy='simulate')
-    
-    for con in c_mod.component_data_objects(Constraint):
-        assert value(con.body) - value(con.upper) < 1e-6
-        assert value(con.lower) - value(con.body) < 1e-6
-    
-    for var in c_mod.component_data_objects(Var):
-        if var.ub is not None:
-            if not value(var) - var.ub < 1e-6:
-                raise ValueError
-        if var.lb is not None:
-            if not var.lb - value(var) < 1e-6:
-                raise ValueError
+    nmpc.initialize_control_problem(strategy='initial_conditions')
     
     nmpc.solve_control_problem()
+
+    nmpc.inject_inputs_into_plant(time_plant.first())
+
+    nmpc.simulate_plant(time_plant.first())
+
+    for t in plant_sample_points:
+        nmpc.load_initial_conditions_from_plant(t)
+
+        nmpc.initialize_control_problem(strategy='from_previous')
+
+        nmpc.solve_control_problem()
+
+        nmpc.inject_inputs_into_plant(t)
+
+        nmpc.simulate_plant(t)
 
 if __name__ == '__main__':
     main()
