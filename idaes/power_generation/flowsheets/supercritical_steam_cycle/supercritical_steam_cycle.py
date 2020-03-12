@@ -852,7 +852,11 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.turb.hp_split[4].split_fraction[:, "outlet_2"].unfix()
     # Initialize the boiler feed pump turbine.
     _set_port(m.fs.bfpt.inlet, m.fs.turb.ip_split[10].outlet_3)
-    m.fs.bfpt.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.bfpt.control_volume.properties_out[:].pressure.fix(10000)
+    m.fs.bfpt.efficiency_isentropic.fix()
+    m.fs.bfpt.initialize(outlvl=idaeslog.DEBUG, optarg=solver.options)
+    m.fs.bfpt.control_volume.properties_out[:].pressure.unfix()
+    m.fs.bfpt.efficiency_isentropic.unfix()
     ############################################################################
     #  Condenser section                                                       #
     ############################################################################
