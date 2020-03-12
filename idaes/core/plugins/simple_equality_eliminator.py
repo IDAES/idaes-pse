@@ -66,6 +66,31 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                     continue
 
                 subs[id(v0)] = -(b0 + a1 * v1) / a0
+                if v1.lb is not None:
+                    b1 = -(b0 + a1 * v1.lb) / a0
+                else:
+                    b1 = None
+
+                if v1.ub is not None:
+                    b2 = -(b0 + a1 * v1.ub) / a0
+                else:
+                    b2 = None
+
+                if a1*a0 <= 0:
+                    lb = b1
+                    ub = b2
+                else:
+                    lb = b2
+                    ub = b1
+
+
+                if lb is not None:
+                    if v0.lb is None or lb < v0.lb:
+                        v0.setlb(lb)
+                if ub is not None:
+                    if v0.ub is None or ub > v0.ub:
+                        v0.setub(ub)
+
                 cnstr.add(c)
                 rset.add(id(v0))
                 rset.add(id(v1))
@@ -129,15 +154,6 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 c.deactivate()
             for v in fixes: # fix variables that can be fixed
                 v[0].fix(v[1])
-
-            for sub in subs:
-                # set bounds to most restirictive
-                if sub[1].lb is not None:
-                    if sub[0].lb is None or sub[1].lb < sub[0].lb:
-                        sub[0].setlb(sub[1].lb)
-                if sub[1].ub is not None:
-                    if sub[0].ub is None or sub[1].ub > sub[0].ub:
-                        sub[0].setub(sub[1].ub)
 
             # Do replacements in Expressions, Constraints, and Objectives
             # where one var is replaced with a linear expression containing
