@@ -83,7 +83,7 @@ class PhaseType(enum.Enum):
     G = 4  # Assume only vapor is pressent
 
 
-def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
+def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
     """
     Convenience function to calculate enthalpy from temperature and either
     pressure or vapor fraction. This function can be used for inlet streams and
@@ -95,8 +95,10 @@ def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
         T: Temperature [K] (between Tmin and Tmax)
         Tmin: Lower bound on allowed temperatures
         Tmax: Upper bound on allowed temperatures
+        Pmin: Lower bound on allowed pressures
+        PmaxL Upper bound on allowed pressures
         prop: Property block to use for the enthalpy calcuations
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated
+        P: Pressure [Pa] (between Pmin and Pmax), None if saturated
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
@@ -108,11 +110,11 @@ def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
             "htpx must be provided with one (and only one) of arguments P and x."
         )
     if not Tmin <= T <= Tmax:
-        raise ConfigurationError("T out of range. Must be between 2e2 and 3e3")
-    if P is not None and not 1 <= P <= 1e9:
-        raise ConfigurationError("P out of range. Must be between 1 and 1e9")
+        raise ConfigurationError("T = {}, ({} <= T <= {})".format(T, Tmin, Tmax))
+    if P is not None and not Pmin <= P <= Pmax:
+        raise ConfigurationError("P = {}, ({} <= P <= {})".format(P, Pmin, Pmax))
     if x is not None and not 0 <= x <= 1:
-        raise ConfigurationError("x must be between 0 and 1")
+        raise ConfigurationError("x = {}, (0 <= x <= 1)".format(x))
 
     model = ConcreteModel()
     model.param = prop.config.parameters
