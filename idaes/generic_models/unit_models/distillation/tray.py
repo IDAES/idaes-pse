@@ -507,8 +507,8 @@ see property package for documentation.}"""))
                         "while building ports for the tray. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args_feed={}, state_args_liq={},
-                   state_args_vap={}, solver=None, outlvl=idaeslog.NOTSET):
+    def initialize(self, state_args_feed=None, state_args_liq=None,
+                   state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
@@ -547,22 +547,62 @@ see property package for documentation.}"""))
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
 
-        if not self.config.is_feed_tray:
-            average_temperature = \
-                0.5 * (self.properties_in_liq[0].temperature.value
-                       + self.properties_in_vap[0].temperature.value)
+        # state args to initialize the mixed outlet state block
+        if self.config.is_feed_tray and state_args_feed is not None:
+            # if initial guess provided for the feed stream, initialize the
+            # mixed state block at the same condition.
+            self.properties_out.initialize(state_args=state_args_feed,
+                                           solver=solver,
+                                           outlvl=outlvl)
         else:
-            average_temperature = self.properties_in_feed[0].\
-                temperature.value
+            state_args_mixed = {}
+            state_dict = \
+                self.properties_out[self.flowsheet().config.time.first()].\
+                define_port_members()
+            if self.config.is_feed_tray:
+                for k in state_dict.keys():
+                    if state_dict[k].is_indexed():
+                        state_args_mixed[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_mixed[k][m] = \
+                                self.properties_in_feed[0].\
+                                component(state_dict[k].local_name)[m].value
+                    else:
+                        state_args_mixed[k] = \
+                            self.properties_in_feed[0].\
+                            component(state_dict[k].local_name).value
 
-        self.properties_out[:].temperature.fix(average_temperature)
+            else:
+                # if not feed tray, initialize mixed state block at average of
+                # vap/liq inlets except pressure. While this is crude, it
+                # will work for most combination of state vars.
+                for k in state_dict.keys():
+                    if "pressure" in k:
+                        # Take the lowest pressure and this is the liq inlet
+                        state_args_mixed[k] = self.properties_in_liq[0].\
+                            component(state_dict[k].local_name).value
+                    elif state_dict[k].is_indexed():
+                        state_args_mixed[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_mixed[k][m] = \
+                                0.5 * (self.properties_in_liq[0].
+                                       component(state_dict[k].local_name)[m].
+                                       value + self.properties_in_vap[0].
+                                       component(state_dict[k].local_name)[m].
+                                       value)
+                    else:
+                        state_args_mixed[k] = \
+                            0.5 * (self.properties_in_liq[0].
+                                   component(state_dict[k].local_name).value +
+                                   self.properties_in_vap[0].
+                                   component(state_dict[k].local_name).value)
 
         # Deactivate pressure balance
         self.pressure_drop_equation.deactivate()
-        self.properties_out[:].pressure.\
-            fix(self.properties_in_vap[0].pressure.value)
 
-        self.properties_out.initialize(outlvl=outlvl)
+        self.properties_out.initialize(state_args=state_args_mixed,
+                                       solver=solver,
+                                       outlvl=outlvl)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
@@ -572,7 +612,6 @@ see property package for documentation.}"""))
 
         # Activate energy balance
         self.enthalpy_mixing_equations.activate()
-        self.properties_out[:].temperature.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
@@ -582,7 +621,6 @@ see property package for documentation.}"""))
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
-        self.properties_out[:].pressure.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
