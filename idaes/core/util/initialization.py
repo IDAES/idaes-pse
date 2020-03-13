@@ -212,6 +212,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     # Return results
     return results
 
+
 def initialize_by_time_element(fs, time, **kwargs):
     """
     Function to initialize Flowsheet fs element-by-element along 
@@ -370,6 +371,10 @@ def initialize_by_time_element(fs, time, **kwargs):
             was_originally_fixed[id(dv)] = dv.fixed
             if not drv.value is None:
                 dv.fix()
+        # This assumes that only derivative and differential variables can
+        # participate in a constraint with a different time-index than
+        # themselves. This will be likely be violated by flowsheets
+        # involving controllers. FIXME
 
         # Initialize finite element from its initial conditions
         for t in fe:

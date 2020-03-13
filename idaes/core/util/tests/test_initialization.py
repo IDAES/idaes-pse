@@ -22,7 +22,8 @@ from pyomo.network import Arc, Port
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
+from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.tests.props_for_testing import (
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         EnzymeReactionBlock)
 from idaes.core.util.model_statistics import degrees_of_freedom
