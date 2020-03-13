@@ -20,6 +20,7 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc
 from pyomo.kernel import ComponentSet
+from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
@@ -382,8 +383,6 @@ def test_validate_setpoint(nmpc, m_steady):
     for j in m_steady.properties.component_list:
         assert (m_steady.cstr.control_volume.material_holdup[0, 'aq', j].lb 
                 == 0)
-        assert (m_steady.cstr.control_volume.material_holdup[0, 'aq', j].ub 
-                == None)
 
     assert m_steady.mixer.S_inlet.flow_rate[0].lb == 0.5
     assert m_steady.mixer.S_inlet.flow_rate[0].ub == 5
@@ -392,11 +391,11 @@ def test_validate_setpoint(nmpc, m_steady):
     # Validate that weights are correct
     C_P_location = m_steady.var_locator\
             [id(m_steady.cstr.outlet.conc_mol[0, 'P'])].location
-    assert m_steady.alg_weights[C_P_location] == 1/0.4
+    assert m_steady.alg_weights[C_P_location] == 1/(0.4-0.001)
 
     C_S_location = m_steady.var_locator\
             [id(m_steady.cstr.outlet.conc_mol[0, 'S'])].location
-    assert m_steady.alg_weights[C_S_location] == 1/weight_tolerance
+    assert m_steady.alg_weights[C_S_location] == 1/(0.001)
 
     energy_location = m_steady.var_locator\
             [id(m_steady.cstr.control_volume.energy_holdup[0, 'aq'])].location
@@ -408,7 +407,7 @@ def test_validate_setpoint(nmpc, m_steady):
 
     S_inlet_location = m_steady.var_locator\
             [id(m_steady.mixer.S_inlet.flow_rate[0])].location
-    assert abs(m_steady.input_weights[S_inlet_location] - 1/0.1) < 1e-6
+    assert abs(m_steady.input_weights[S_inlet_location] - 1/(0.1)) < 1e-6
 
     # Validate correct objective function
     obj_expr = (m_steady.alg_weights[C_P_location]*
@@ -420,10 +419,10 @@ def test_validate_setpoint(nmpc, m_steady):
                                         m_steady.diff_sp[energy_location])**2
               + m_steady.input_weights[E_inlet_location]*
     (m_steady.mixer.E_inlet.flow_rate[0] - 
-                                        m_steady.mixer.E_inlet.flow_rate[0])**2
+                                    m_steady.input_sp[E_inlet_location])**2
               + m_steady.input_weights[S_inlet_location]*
     (m_steady.mixer.S_inlet.flow_rate[0] - 
-                                        m_steady.mixer.S_inlet.flow_rate[0])**2)
+                                    m_steady.input_sp[S_inlet_location])**2)
     
     assert (abs(value(m_steady.user_setpoint_objective.expr - obj_expr))
             /value(obj_expr)) < 1e-5
@@ -490,7 +489,42 @@ def test_add_objective_function(nmpc):
     # Controller model has not been initialized yet, so value of
     # objective function may not be meaningful
 
-    pdb.set_trace()
+
+def test_add_pwc_constraints(nmpc):
+    sample_time = 1.0
+    nmpc.add_pwc_constraints(sample_time=sample_time)
+
+    c_mod = nmpc.c_mod
+
+    # Test that components were added
+    assert hasattr(c_mod, '_pwc_input_0') 
+    assert hasattr(c_mod, '_pwc_input_1') 
+
+    # Test that constraints have the correct indexing set
+    n_sample = int(c_mod.time.last()/sample_time)
+    sample_points = [sample_time*i
+            for i in range(n_sample+1)]
+
+    for t in sample_points:
+        assert t not in c_mod._pwc_input_0
+        assert t not in c_mod._pwc_input_1
+
+    # Rough test the the constraints are correct - contain the correct 
+    # variables
+    for i, t in enumerate(c_mod.time):
+        if t not in sample_points:
+            t_next = c_mod.time[i+2]
+            var_in_0 = [id(v) for v in 
+                    identify_variables(c_mod._pwc_input_0[t].expr)]
+            var_in_1 = [id(v) for v in 
+                    identify_variables(c_mod._pwc_input_1[t].expr)]
+            assert len(var_in_0) == 2
+            assert len(var_in_1) == 2
+            assert id(c_mod.input_vars[0][t]) in var_in_0
+            assert id(c_mod.input_vars[0][t_next]) in var_in_0
+            assert id(c_mod.input_vars[1][t]) in  var_in_1
+            assert id(c_mod.input_vars[1][t_next]) in var_in_1
+
 
 # TODO: dedicated test for validate_models
 
@@ -526,5 +560,7 @@ if __name__ == '__main__':
     test_construct_objective_weight_matrices(nmpc)
 
     test_add_objective_function(nmpc)
+
+    test_add_pwc_constraints(nmpc)
 
     pdb.set_trace()
