@@ -28,7 +28,7 @@ from idaes.core.util.testing import (PhysicalParameterTestBlock,
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
         EnzymeReactionBlock)
 from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
+        activated_equalities_generator, unfixed_variables_generator)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
@@ -491,10 +491,13 @@ def test_add_objective_function(nmpc):
 
 
 def test_add_pwc_constraints(nmpc):
-    sample_time = 1.0
+    sample_time = 0.5
     nmpc.add_pwc_constraints(sample_time=sample_time)
 
     c_mod = nmpc.c_mod
+
+    assert nmpc.sample_time == sample_time
+    assert nmpc.c_mod._samples_per_horizon == 6
 
     # Test that components were added
     assert hasattr(c_mod, '_pwc_input_0') 
@@ -526,7 +529,179 @@ def test_add_pwc_constraints(nmpc):
             assert id(c_mod.input_vars[1][t_next]) in var_in_1
 
 
-# TODO: dedicated test for validate_models
+def test_initialization_by_simulation(nmpc):
+
+    nmpc.initialize_control_problem(strategy='from_simulation')
+
+    c_mod = nmpc.c_mod
+    time = c_mod.time
+
+    # Validate that model has been correctly unfixed.
+    # (At least at non-initial time)
+    for _slice in c_mod.input_vars + c_mod.diff_vars + c_mod.alg_vars:
+        for t in time:
+            if t != time.first():
+                assert not _slice[t].fixed
+
+    # Check for correct dof
+    assert (degrees_of_freedom(c_mod) == 
+            c_mod.n_iv*(c_mod._samples_per_horizon + 1))
+    # The +1 is to account for the inputs at the initial conditions,
+    # which maybe should be fixed...
+
+    for con in activated_equalities_generator(c_mod):
+        assert abs(value(con.body) - value(con.upper)) < 1e-6
+
+
+def test_initialization_from_initial_conditions(nmpc):
+
+    dof_before = degrees_of_freedom(nmpc.c_mod)
+
+    nmpc.initialize_control_problem(strategy='initial_conditions')
+
+    dof_after = degrees_of_freedom(nmpc.c_mod)
+    assert dof_after == dof_before
+
+    c_mod = nmpc.c_mod
+    locator = c_mod.var_locator
+    time = c_mod.time
+    t0 = time.first()
+
+    # Check that expected value copying was performed
+    for _slice in c_mod.diff_vars + c_mod.alg_vars + c_mod.deriv_vars:
+        for t in time:
+            assert _slice[t] == _slice[time.first()]
+
+    # Expect only violated equalities to be accumulation equations
+    # ^ This is false, as equalities involving inputs could be violated too
+    for con in activated_equalities_generator(c_mod):
+        # If the equality does not contain any inputs, it should
+        # only be violated if it is an accumulation equation
+        if abs(value(con.body) - value(con.upper)) > 1e-6:
+            if not any([locator[id(v)].category == 'input' 
+                        for v in identify_variables(con.expr)]):
+                assert 'accumulation' in con.local_name
+
+
+def test_solve_control_problem(nmpc):
+
+    c_mod = nmpc.c_mod
+
+    init_obj_value = value(c_mod.tracking_objective.expr)
+    nmpc.solve_control_problem()
+    final_obj_value = value(c_mod.tracking_objective.expr)
+
+    # Not always true because initial model might not be feasible
+    assert final_obj_value < init_obj_value
+
+    for con in activated_equalities_generator(c_mod):
+        assert abs(value(con.body) - value(con.upper)) < 1e-6
+
+    for var in unfixed_variables_generator(c_mod):
+        if var.lb is not None:
+            assert var.lb - var.value < 1e-6
+        if var.ub is not None:
+            assert var.value - var.ub < 1e-6
+
+
+def test_inject_inputs(nmpc):
+    
+    c_mod = nmpc.c_mod
+    p_mod = nmpc.p_mod
+    sample_time = nmpc.sample_time
+    time = p_mod.time
+    nmpc.inject_inputs_into(p_mod, c_mod, t_src=2, t_tgt=0)
+    # Here I am copying the inputs at the incorrect time
+    # (t=2 instead of t=0.5, one sampling time) just to explicitly
+    # test both functions inject_inputs_into and inject_inputs_into_plant
+
+    for i, _slice in enumerate(p_mod.input_vars):
+        for t in time:
+            if t > sample_time or t == 0:
+                continue
+            assert _slice[t].value == c_mod.input_vars[i][2].value
+
+    nmpc.inject_inputs_into_plant(0)
+    for i, _slice in enumerate(p_mod.input_vars):
+        for t in time:
+            if t > sample_time or t == 0:
+                continue
+            assert _slice[t].value == c_mod.input_vars[i][sample_time].value
+
+
+def test_simulate_over_range(nmpc):
+
+    p_mod = nmpc.p_mod
+    c_mod = nmpc.c_mod
+    time = p_mod.time
+    sample_time = nmpc.sample_time
+
+#    was_violated = {id(con):
+#            abs(value(con.body)-value(con.upper))>=1e-6 
+#            for con in activated_equalities_generator(p_mod)}
+    # ^ Can't calculate value because many variables are not initialized
+
+    assert degrees_of_freedom(p_mod) == 0
+    nmpc.simulate_over_range(p_mod, 0, 3)
+    assert degrees_of_freedom(p_mod) == 0
+
+    for con in activated_equalities_generator(p_mod):
+        if 'disc_eq' in con.local_name or 'balance' in con.local_name:
+            # (know disc. and balance equations will be directly indexed
+            # by time)
+            index = con.index()
+            if not type(index) is tuple:
+                index = (index,)
+            t_index = index[0]
+            if t_index <= 3:
+                # Equalities in simulated range should not be violated
+                assert abs(value(con.body)-value(con.upper)) < 1e-6
+#            else:
+#                # Equalities outside simulated range should be violated
+#                # if they were violated before
+#                if was_violated[id(con)]:
+#                    assert abs(value(con.body)-value(con.upper)) >= 1e-6
+
+    nmpc.simulate_plant(0)
+
+    # Check that plant simulation matches controller simulation.
+    # Only valid because there is no noise or plant-model-mismatch
+    # and plant/controller have the same time discretizations
+    p_varlist = p_mod.diff_vars + p_mod.alg_vars + p_mod.deriv_vars
+    c_varlist = c_mod.diff_vars + c_mod.alg_vars + c_mod.deriv_vars
+    for i, pvar in enumerate(p_varlist):
+        for t in time:
+            if t > sample_time or t == 0:
+                continue
+            cvar = c_varlist[i]
+            assert abs(pvar[t].value - cvar[t].value) < 1e-5
+
+
+def test_initialize_from_previous(nmpc):
+    c_mod = nmpc.c_mod
+    time = c_mod.time
+    sample_time = nmpc.sample_time
+
+    assert nmpc.controller_solved
+
+    c_varlist = c_mod.diff_vars + c_mod.alg_vars + c_mod.deriv_vars
+
+    prev_values = [{t: _slice[t].value
+                       for t in time}
+                       for _slice in c_varlist]
+    nmpc.initialize_from_previous_sample(c_mod)
+
+    for i, cvar in enumerate(c_varlist):
+        for t in time:
+            if time.last() - t < sample_time or t == time.first():
+                continue
+            t_next = t + sample_time
+            # Addition with ContinuousSet indices can result in rounding
+            # errors. Here round to eighth decimal place.
+            t_next = round(1e8*t_next)/1e8
+            assert t_next in time
+            assert cvar[t].value == prev_values[i][t_next]
+
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_something():
@@ -557,10 +732,24 @@ if __name__ == '__main__':
     
     test_validate_setpoint(nmpc, m_steady.fs)
 
+    nmpc.s_mod = m_steady.fs
+
     test_construct_objective_weight_matrices(nmpc)
 
     test_add_objective_function(nmpc)
 
     test_add_pwc_constraints(nmpc)
+
+    test_initialization_by_simulation(nmpc)
+
+    test_initialization_from_initial_conditions(nmpc)
+
+    test_solve_control_problem(nmpc)
+
+    test_inject_inputs(nmpc)
+
+    test_simulate_over_range(nmpc)
+
+    test_initialize_from_previous(nmpc)
 
     pdb.set_trace()
