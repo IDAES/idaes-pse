@@ -605,7 +605,10 @@ see property package for documentation.}"""))
             self.properties_out[:].temperature.\
                 fix(state_args_mixed["temperature"])
         except AttributeError:
-            pass
+            init_log.warning("Trying to fix outlet temperature "
+                             "during initialization but temperature attribute "
+                             "unavailable in the state block. Initialization "
+                             "proceeding with a potential degree of freedom.")
 
         # Deactivate pressure balance
         self.pressure_drop_equation.deactivate()
@@ -616,7 +619,10 @@ see property package for documentation.}"""))
             self.properties_out[:].pressure.\
                 fix(state_args_mixed["pressure"])
         except AttributeError:
-            pass
+            init_log.warning("Trying to fix outlet pressure "
+                             "during initialization but pressure attribute "
+                             "unavailable in the state block. Initialization "
+                             "proceeding with a potential degree of freedom.")
 
         self.properties_out.initialize(state_args=state_args_mixed,
                                        solver=solver,
