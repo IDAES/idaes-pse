@@ -209,7 +209,7 @@ class NMPCSim(object):
         # Controller model has already been categorized... No need 
         # to provide init_controller_inputs
         self.solve_initial_conditions(self.c_mod, solver=solver)
-        #strip_bounds.revert(self.c_mod)
+        self.strip_controller_bounds.revert(self.c_mod)
 
         self.sample_time = kwargs.pop('sample_time', 
                 self.c_mod.time.get_finite_elements()[1] -
@@ -1227,6 +1227,13 @@ class NMPCSim(object):
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
         init_log.info('Adding piecewise-constant constraints')
 
+        # If sample_time is overwritten here, assume that the 
+        # provided sample_time should be used going forward
+        # (in input injection, plant simulation, and controller initialization)
+        if sample_time != self.sample_time:
+            self.validate_sample_time(sample_time, self.c_mod, self.p_mod)
+            self.sample_time = sample_time
+
         time = model.time
         t0 = model.time.get_finite_elements()[0]
         t1 = model.time.get_finite_elements()[1]
@@ -1266,36 +1273,51 @@ class NMPCSim(object):
 
         time = self.c_mod.time
 
+
         if strategy == 'from_previous':
             self.initialize_from_previous_sample(self.c_mod)
 
-        elif strategy == 'simulate':
+        elif strategy == 'from_simulation':
+
+            # Strip bounds before simulation as square solves will be performed
+            strip_controller_bounds = TransformationFactory(
+                                          'contrib.strip_var_bounds')
+            strip_controller_bounds.apply_to(self.c_mod, reversible=True)
+
             input_type = kwargs.pop('inputs', 'set_point')
             if input_type == 'set_point':
                 for i, _slice in enumerate(self.c_mod.input_vars):
                     for t in time:
                         if t != time.first():
                             _slice[t].fix(self.c_mod.input_sp[i])
+                        else:
+                            _slice[t].fix()
 
             elif input_type == 'initial':
                 for i, _slice in enumerate(self.c_mod.input_vars):
                     t0 = time.first()
                     for t in time:
-                        _slice[t].fix(self.c_mod.input_vars[t0].value)
+                        _slice[t].fix(self.c_mod.input_vars[i][t0].value)
+            # The above should ensure that all inputs are fixed and the 
+            # model has no dof upon simulation
 
             # Deactivate objective function
-            # strip bounds
+            # Here I assume the name of the objective function.
             self.c_mod.tracking_objective.deactivate()
+            # Deactivate pwc constraints (as inputs are fixed)
             for con in self.c_mod._pwc_constraints:
                 con.deactivate()
 
-            initialize_by_time_element(self.c_mod, self.c_mod.time,
-                    solver=self.default_solver, outlvl=idaeslog.DEBUG)
+            # simulate_over_range is faster. Keeping this here for now in case
+            # something goes wrong.
+            #initialize_by_time_element(self.c_mod, self.c_mod.time,
+            #        solver=self.default_solver, outlvl=idaeslog.DEBUG)
+            self.simulate_over_range(self.c_mod, time.first(), time.last())
 
-            solver.solve(self.c_mod, tee=True)
+            # This solve should be trivial:
+            #solver.solve(self.c_mod, tee=True)
 
             # Reactivate objective, pwc constraints, bounds
-
             self.c_mod.tracking_objective.activate()
             for con in self.c_mod._pwc_constraints:
                 con.activate()
@@ -1304,12 +1326,12 @@ class NMPCSim(object):
                 for t in time:
                     _slice[t].unfix()
 
-            self.strip_controller_bounds.revert(self.c_mod)
-            # Add check that integration did not violate bounds/equalities
+            strip_controller_bounds.revert(self.c_mod)
 
         elif strategy == 'initial_conditions':
             self.initialize_from_initial_conditions(self.c_mod)
-            self.strip_controller_bounds.revert(self.c_mod)
+        
+        # Add check that initialization did not violate bounds/equalities?
 
         self.controller_solved = False
 
@@ -1361,10 +1383,6 @@ class NMPCSim(object):
                             _slice[t].set_value(0)
 
 
-    def initialize_from_simulation(self, model):
-        raise NotImplementedError
-
-
     def initialize_from_initial_conditions(self, model, **kwargs):
         """ 
         Set values of differential, algebraic, and derivative variables to
@@ -1392,6 +1410,8 @@ class NMPCSim(object):
             for t in time:
                 _slice[t].unfix()
         # ^ Maybe should fix inputs at time.first()?
+        # Also, this should be redundant as inputs have been unfixed
+        # after initialization
 
         assert (degrees_of_freedom(self.c_mod) == 
                 self.c_mod.n_iv*(self.c_mod._samples_per_horizon + 1))
