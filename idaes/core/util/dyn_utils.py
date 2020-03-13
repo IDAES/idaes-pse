@@ -17,6 +17,7 @@ This module contains utility functions for dynamic IDAES models.
 
 from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.kernel import ComponentSet
 
 from idaes.core import FlowsheetBlock
 from collections import Counter
@@ -59,7 +60,7 @@ def is_explicitly_indexed_by(comp, *sets):
             return False
         # Convert set_tuple to a python:set so a different
         # pyomo:Set with the same elements will not be conflated.
-        set_set = set(comp.index_set().set_tuple)
+        set_set = ComponentSet(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
 
 
@@ -122,7 +123,7 @@ def get_index_set_except(comp, *sets):
         in the same order their Sets were provided in the sets argument.
     """
     n_set = len(sets)
-    s_set = set(sets)
+    s_set = ComponentSet(sets)
     total_s_dim = sum([s.dimen for s in sets])
     info = {}
 
@@ -134,9 +135,9 @@ def get_index_set_except(comp, *sets):
     index_set = comp.index_set()
     if hasattr(index_set, 'set_tuple'):
         set_tuple = index_set.set_tuple
-        counter = Counter(set_tuple)
+        counter = Counter([id(_) for _ in set_tuple])
         for s in sets:
-            if counter[s] != 1:
+            if counter[id(s)] != 1:
                 msg = 'Cannot omit sets that appear multiple times'
                 raise ValueError(msg)
         # Need to know the location of each set within comp's index_set
@@ -390,7 +391,7 @@ def get_derivatives_at(b, time, pts):
 
         if not isinstance(var, DerivativeVar):
             continue
-        if time not in set(var.get_continuousset_list()):
+        if time not in ComponentSet(var.get_continuousset_list()):
             continue
 
         info = get_index_set_except(var, time)
