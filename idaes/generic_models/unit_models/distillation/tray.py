@@ -544,9 +544,6 @@ see property package for documentation.}"""))
                                           solver=solver,
                                           outlvl=outlvl)
 
-        # Deactivate energy balance
-        self.enthalpy_mixing_equations.deactivate()
-
         # state args to initialize the mixed outlet state block
         if self.config.is_feed_tray and state_args_feed is not None:
             # if initial guess provided for the feed stream, initialize the
@@ -558,18 +555,20 @@ see property package for documentation.}"""))
             state_args_mixed = {}
             state_dict = \
                 self.properties_out[self.flowsheet().config.time.first()].\
-                define_port_members()
+                define_state_vars()
             if self.config.is_feed_tray:
                 for k in state_dict.keys():
                     if state_dict[k].is_indexed():
                         state_args_mixed[k] = {}
                         for m in state_dict[k].keys():
                             state_args_mixed[k][m] = \
-                                self.properties_in_feed[0].\
+                                self.properties_in_feed[self.flowsheet().
+                                                        config.time.first()].\
                                 component(state_dict[k].local_name)[m].value
                     else:
                         state_args_mixed[k] = \
-                            self.properties_in_feed[0].\
+                            self.properties_in_feed[self.flowsheet().
+                                                    config.time.first()].\
                             component(state_dict[k].local_name).value
 
             else:
@@ -577,7 +576,7 @@ see property package for documentation.}"""))
                 # vap/liq inlets except pressure. While this is crude, it
                 # will work for most combination of state vars.
                 for k in state_dict.keys():
-                    if "pressure" in k:
+                    if k == "pressure":
                         # Take the lowest pressure and this is the liq inlet
                         state_args_mixed[k] = self.properties_in_liq[0].\
                             component(state_dict[k].local_name).value
@@ -597,8 +596,27 @@ see property package for documentation.}"""))
                                    self.properties_in_vap[0].
                                    component(state_dict[k].local_name).value)
 
+        # Deactivate energy balance
+        self.enthalpy_mixing_equations.deactivate()
+
+        # Try fixing the outlet temperature if else pass
+        # NOTE: if passed then there would probably be a degree of freedom
+        try:
+            self.properties_out[:].temperature.\
+                fix(state_args_mixed["temperature"])
+        except AttributeError:
+            pass
+
         # Deactivate pressure balance
         self.pressure_drop_equation.deactivate()
+
+        # Try fixing the outlet temperature if else pass
+        # NOTE: if passed then there would probably be a degree of freedom
+        try:
+            self.properties_out[:].pressure.\
+                fix(state_args_mixed["pressure"])
+        except AttributeError:
+            pass
 
         self.properties_out.initialize(state_args=state_args_mixed,
                                        solver=solver,
@@ -612,6 +630,10 @@ see property package for documentation.}"""))
 
         # Activate energy balance
         self.enthalpy_mixing_equations.activate()
+        try:
+            self.properties_out[:].temperature.unfix()
+        except AttributeError:
+            pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
@@ -621,6 +643,11 @@ see property package for documentation.}"""))
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
+
+        try:
+            self.properties_out[:].pressure.unfix()
+        except AttributeError:
+            pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)

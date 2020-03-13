@@ -141,7 +141,7 @@ class TestBTXIdeal(object):
         # General build
         assert hasattr(btx_fctp.fs.unit, "material_mixing_equations")
         assert hasattr(btx_fctp.fs.unit, "enthalpy_mixing_equations")
-        # assert hasattr(btx_fctp.fs.unit, "pressure_drop_equation")
+        assert hasattr(btx_fctp.fs.unit, "pressure_drop_equation")
 
         assert btx_fctp.fs.unit.config.has_heat_transfer
         assert hasattr(btx_fctp.fs.unit, "heat_duty")
