@@ -16,7 +16,7 @@ Example for Cappresse's module for NMPC.
 from idaes.dynamic.cappresse import nmpc
 from idaes.dynamic.cappresse.nmpc import *
 import idaes.logger as idaeslog
-from idaes.dynamic.cappresse.tests.testing_model import make_model
+from idaes.dynamic.cappresse.tests.cstr_for_testing import make_model
 
 __author__ = "Robert Parker"
 

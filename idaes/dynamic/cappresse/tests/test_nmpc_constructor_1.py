@@ -23,9 +23,6 @@ from pyomo.kernel import ComponentSet
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-        AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock,
-        EnzymeReactionBlock)
 from idaes.core.util.model_statistics import (degrees_of_freedom, 
         activated_equalities_generator)
 from idaes.core.util.initialization import initialize_by_time_element
@@ -34,7 +31,7 @@ from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.cappresse import nmpc
 from idaes.dynamic.cappresse.nmpc import *
 import idaes.logger as idaeslog
-from testing_model import make_model
+from cstr_for_testing import make_model
 import pdb
 
 __author__ = "Robert Parker"
