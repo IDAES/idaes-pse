@@ -36,7 +36,6 @@ from idaes.dynamic.cappresse import nmpc
 from idaes.dynamic.cappresse.nmpc import *
 import idaes.logger as idaeslog
 from testing_model import make_model
-import pdb
 
 __author__ = "Robert Parker"
 
@@ -751,5 +750,3 @@ if __name__ == '__main__':
     test_simulate_over_range(nmpc)
 
     test_initialize_from_previous(nmpc)
-
-    pdb.set_trace()
