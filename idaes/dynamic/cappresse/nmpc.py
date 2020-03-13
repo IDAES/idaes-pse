@@ -38,13 +38,22 @@ __author__ = "Robert Parker and David Thierry"
 
 # TODO: move this to dyn_utils module
 def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
-    """
+    """This function finds a component in a source block, then uses the same
+    local names and indices to try to find a corresponding component in a target
+    block. 
+
+    Args:
+        tgt_block : Target block that will be searched for component
+        src_block : Source block in which the original component is located
+        src_comp : Component whose name will be searched for in target block
+
+    Kwargs:
+        allow_miss : If True, will ignore attribute and key errors due to 
+                     searching for non-existant components in the target model
+
     Returns:
         Component with the same name in the target block
     """
-    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-    init_log = idaeslog.getInitLogger(__name__, outlvl)
-
     allow_miss = kwargs.pop('allow_miss', False)
 
     local_parent = tgt_block
@@ -53,13 +62,11 @@ def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
         try:
             local_parent = getattr(local_parent, r[0])[r[1]]
         except AttributeError:
-            init_log.warning('Warning.')
             if allow_miss:
                 return None
             else:
                 raise
         except KeyError:
-            init_log.warning('Warning.')
             if allow_miss:
                 return None
             else:
@@ -77,6 +84,17 @@ class VarLocator(object):
     """
 
     def __init__(self, category, container, location, is_ic=False):
+        """Constructor method. Assigns attributes based on arguments.
+
+        Args:
+            category : String describing a type of variable. Should be
+                       something like 'differential' or 'algebraic'
+            container : The list object that contains a VarData's
+                        time slice.
+            location : The index within the container where the variable
+                       lives.
+            is_ic : True if the variable is used as an initial condition.
+        """
         # Should this class store the time index of the variable?
         # probably not (a. might not exist, b. should already be known)
         if type(category) is not str:
@@ -108,6 +126,39 @@ class NMPCSim(object):
     """
 
     def __init__(self, plant_model, controller_model, initial_inputs, **kwargs):
+        """Constructor method. Accepts plant and controller models needed for 
+        NMPC simulation, as well as inputs at the first time point in the 
+        plant model. Models provided are added to the self as attributes.
+        This constructor solves for consistent initial conditions 
+        in the plant and controller and performs categorization into lists of
+        differential, derivative, algebraic, input, fixed, and scalar variables,
+        which are added as attributes to the provided models.
+
+        Args:
+            plant_model : Plant flowsheet model, NMPC of which will be 
+                          simulated. Currently this must contain the entire 
+                          timespan it is desired to simulate.
+            controller_model : Model to be used to calculate control inputs
+                               for the plant. Control inputs in controller
+                               must exist in the plant, and initial condition
+                               variables in the plant must exist in the 
+                               controller.
+            initial_inputs : List of VarData objects containing the variables
+                             to be treated as control inputs, at t = 0.
+
+        Kwargs:
+            solver : Solver to be used for verification of consistent initial 
+                     conditions, will also be used as the default solver if
+                     another is not provided for initializing or solving the 
+                     optimal control problem.
+            outlvl : IDAES logger output level. Default is idaes.logger.NOTSET.
+                     To see solver traces, use idaes.logger.DEBUG.
+            sample_time : Length of time each control input will be held for.
+                          This must be an integer multiple of the (finite
+                          element) discretization spacing in both the plant
+                          and controller models. Default is to use the 
+                          controller model's discretization spacing.
+        """
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
@@ -252,6 +303,14 @@ class NMPCSim(object):
 
 
     def validate_sample_time(self, sample_time, *models):
+        """Makes sure sample time is an integer multiple of discretization
+        spacing in each model, and that horizon of each model is an integer
+        multiple of sample time.
+
+        Args:
+            sample_time: Sample time to check
+            models: List of flowsheet models to check
+        """
         for model in models:
             time = model.time
             fe_spacing = (time.get_finite_elements()[1] -
@@ -283,6 +342,16 @@ class NMPCSim(object):
         slices in the same order.
         Expects to find a var_locator dictionary attribute in the target
         model.
+
+        Args:
+            tgt_model : Model to search for time-slices
+            src_model : Model containing the slices to search for
+            src_slices : List of time-only slices of variables in the source
+                         model
+
+        Returns:
+            List of time-only slices to same-named variables in the target 
+            model
         """
         # What I need to do is actually a little more complicated...
         # Because I can't just find the slice that I want in the target model.
@@ -309,7 +378,8 @@ class NMPCSim(object):
         Makes sure that assumptions regarding fixedness for different points
         in time are valid. Differential, algebraic, and derivative variables
         may be fixed only at t0, only if they are initial conditions.
-        Fixed variables must be fixed at all points in time.
+        Fixed variables must be fixed at all points in time, except possibly
+        initial conditions.
         """
         time = model.time
         t0 = time.first()
@@ -340,9 +410,16 @@ class NMPCSim(object):
 
     def validate_initial_inputs(self, tgt_model, src_model, src_inputs=None,
             outlvl=idaeslog.NOTSET):
-        # Should probably merge with validate_vars, but the functionality is 
-        # slightly different. Here...
-        # Actually seems to do exactly what I want...
+        """Uses initial inputs in the source model to find variables of the
+        same name in a target model.
+        
+        Args:
+           tgt_model : Flowsheet model to search for input variables
+           src_model : Flowsheet model containing inputs to search for
+           src_inputs : List of input variables at the initial time point
+                        to find in target model. If not provided, the
+                        initial_inputs attribute will be used.
+        """
         log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         if not src_inputs:
@@ -383,6 +460,10 @@ class NMPCSim(object):
         """
         Makes sure the two models are FlowsheetBlocks and are
         distinct.
+
+        Args:
+            m1 : First flowsheet model
+            m2 : Second flowsheet model
         """
         if not (isinstance(m1, FlowsheetBlock) and 
                 isinstance(m2, FlowsheetBlock)):
@@ -452,6 +533,24 @@ class NMPCSim(object):
 
 
     def inject_inputs_into_plant(self, t_plant, **kwargs):
+        """Injects input variables from the first sampling time in the 
+        controller model to the sampling period in the plant model that
+        starts at the specified time.
+
+        Args:
+            t_plant : First time point in plant model where inputs will be
+                      applied.
+            
+        Kwargs:
+            sample_time : Sample time in the plant over which the inputs
+                          will be applied. Default is to use the sample
+                          time assigned by the constructor or overwritten
+                          by the creation of PWC constraints.
+            src_attrname : Name (string) of the list attribute containing
+                           the variables in the controller model corresponding
+                           to the plant model's inputs. (These are not
+                           necessarily the control model's inputs!)
+        """
 
         sample_time = kwargs.pop('sample_time', self.sample_time)
         src_attrname = kwargs.pop('src_attrname', 'plant_input_vars')
@@ -470,6 +569,16 @@ class NMPCSim(object):
 
 
     def solve_initial_conditions(self, model, **kwargs):
+        """Function to solve for consistent initial conditions in
+        the provided flowsheet model.
+
+        Args:
+            model : Flowsheet model whose initial conditions are solved
+
+        Kwargs:
+            solver : Solver object to use
+            outlvl : idaes.logger output level
+        """
         # Record which Constraints/Variables are initially inactive
         # deactivate model except at t=0
         # fix initial inputs - raise error if no value
@@ -479,10 +588,11 @@ class NMPCSim(object):
         # Later include option to skip solve for consistent initial conditions
         #
         # Will only work as written for "True" initial conditions since 
-        # it doesn't try to deactivate discretization equations.
+        # it doesn't try to deactivate discretization equations or fix
+        # derivative/differential variables.
 
         was_originally_active = get_activity_dict(model)
-        solver = kwargs.pop('solver', SolverFactory('ipopt'))
+        solver = kwargs.pop('solver', self.default_solver)
         outlvl = kwargs.pop('outlvl', self.outlvl)
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
@@ -535,6 +645,19 @@ class NMPCSim(object):
 
 
     def categorize_variables(self, model, initial_inputs, **kwargs):
+        """Function to create lists of time-only-slices of the different 
+        types of variables in a model, given knowledge of which are inputs. 
+        These lists are added as attributes to the model.
+
+        Args:
+            model : Model whose variables will be flattened and categorized
+            initial_inputs : List of VarData objects that are input variables
+                             at the initial time point
+
+        Kwargs:
+            is_steady : Flag to set True if the model is a steady state model,
+                        and thus its time set is a singleton.
+        """
         # Would probably be much faster to do this categorization
         # during variable flattening
         is_steady = kwargs.pop('is_steady', False)
@@ -556,6 +679,8 @@ class NMPCSim(object):
 
         ic_vars = []
 
+        # Create list of time-only-slices of time indexed variables
+        # (And list of VarData objects for scalar variables)
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
 
         # Remove duplicates from these var lists
@@ -683,6 +808,23 @@ class NMPCSim(object):
 
 
     def build_variable_locator(self, model, **kwargs):
+        """Constructs a dictionary mapping the id of each VarData object
+        to a VarLocator object. This dictionary is added as an attribute to
+        the model.
+
+        Args:
+            model : Flowsheet model containing the variables provided
+
+        Kwargs:
+            algebraic : List of algebraic variable time-slices
+            differential : List of differential variable time-slices
+            derivative : List of derivative variable time-slices
+            input : List of input variable time-slices
+            fixed : List of fixed variable time-slices
+            scalar : List of non-time-indexed variables
+            ic : List of differential, algebraic, or derivative variables
+                 that will be fixed as initial conditions
+        """
         alg_list = kwargs.pop('algebraic', [])
         diff_list = kwargs.pop('differential', [])
         deriv_list = kwargs.pop('derivative', [])
@@ -727,6 +869,9 @@ class NMPCSim(object):
 
 
     def add_setpoint(self, set_point, **kwargs):
+        """User-facing function for the addition of a set point to the 
+        controller. Will validate th
+        """
         skip_validation = kwargs.pop('skip_validation', False)
         outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
         weight_overwrite = kwargs.pop('steady_weight_overwrite', [])
@@ -760,20 +905,6 @@ class NMPCSim(object):
         self.add_objective_function(self.c_mod,
                 control_penalty_type='action',
                 name='tracking_objective')
-#
-#        ### TESTING PURPOSES ONLY ###
-#        time = self.c_mod.time
-#        for inp in self.c_mod.input_vars:
-#            for t in time:
-#                if t != time.first():
-#                    inp[t].unfix()
-#
-#        assert (degrees_of_freedom(self.c_mod) == 
-#                time.get_discretization_info()['nfe']*self.c_mod.n_iv)
-#
-#        results = self.default_solver.solve(self.c_mod, tee=True)
-#
-#        pdb.set_trace()
 
 
     def validate_steady_setpoint(self, set_point, steady_model, **kwargs):
@@ -1221,6 +1352,16 @@ class NMPCSim(object):
 
 
     def add_pwc_constraints(self, **kwargs):
+        """Function to add piecewise constant (PWC) constraints to
+        model. Inputs and sample time are already known, so no arguments are
+        necessary.
+
+        Kwargs:
+            model : Model to which PWC constraints are added. Default is   
+                    controller model
+            sample_time : Duration for which inputs will be forced constant
+            outlvl : idaes.logger output level
+        """
         model = kwargs.pop('model', self.c_mod)
         sample_time = kwargs.pop('sample_time', self.sample_time)
         outlvl = kwargs.pop('outlvl', self.outlvl)
@@ -1265,6 +1406,20 @@ class NMPCSim(object):
 
 
     def initialize_control_problem(self, **kwargs):
+        """Function to initialize the controller model before solving the
+        optimal control problem. Possible strategies are to use the initial
+        conditions, to perform a simulation, or to use the results of the 
+        previous solve. Initialization from a previous (optimization)
+        solve can only be done if an optimization solve has been performed
+        since the last initialization.
+
+        Kwargs:
+            strategy : String describing the initialization strategy. Possible
+                       values are 'from_previous', 'from_simulation', and
+                       'initial_conditions'. Default is 'from_previous'.
+            solver : Solver object to be used for initialization from simulation
+            solver_options : Dictionary of options to pass to the solver
+        """
         strategy = kwargs.pop('strategy', 'from_previous')
         solver = kwargs.pop('solver', self.default_solver)
         solver_options = kwargs.pop('solver_options', None)
@@ -1337,6 +1492,23 @@ class NMPCSim(object):
 
 
     def initialize_from_previous_sample(self, model, **kwargs):
+        """Re-initializes values of variables in model to the values one 
+        sampling time in the future. Values for the last sampling time are 
+        currently set to values in the steady state model, assumed to be the 
+        set point.
+
+        Args:
+            model : Flowsheet model to initialize
+
+        Kwargs: 
+            sample_time : Length of time by which to shift variable values.
+                          Default uses the sample time provided to the 
+                          constructor or overwritten by the PWC constraints.
+            attr_list : List of attribute names containing variables whose
+                        values should be re-initialized. Default is 
+                        'diff_vars', 'alg_vars', 'deriv_vars', and
+                        'input_vars'.
+        """
         # Should only do this if controller is initialized
         # from a prior solve.
         if not self.controller_solved:
@@ -1389,6 +1561,13 @@ class NMPCSim(object):
         their values at the initial conditions.
         An implicit assumption here is that the initial conditions are
         consistent.
+
+        Args:
+            model : Flowsheet model whose variables are initialized
+
+        Kwargs:
+            attr_list : List of names of attributes that contain variables
+                        whose values should be initialized
         """
         attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
         time = model.time
@@ -1400,6 +1579,16 @@ class NMPCSim(object):
 
     
     def solve_control_problem(self, **kwargs):
+        """Function for solving optimal control problem, which calculates
+        control inputs for the plant.
+
+        Kwargs:
+            solver : Solver object to be used, already loaded with user's
+                     desired options. Default is that provided to the 
+                     constructor.
+            outlvl : idaes.logger output level. Default is that provided
+                     to the constructor.
+        """
         solver = kwargs.pop('solver', self.default_solver)
         outlvl = kwargs.pop('outlvl', self.outlvl) 
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
@@ -1427,8 +1616,17 @@ class NMPCSim(object):
 
 
     def simulate_over_range(self, model, t_start, t_end, **kwargs):
-        """
-        This could be made a helper function in a module.
+        """Function for solving a square model, time element-by-time element,
+        between specified start and end times.
+
+        Args:
+            model : Flowsheet model to solve
+            t_start : Beginning of timespan over which to solve
+            t_end : End of timespan over which to solve
+
+        Kwargs:
+            solver : Solver option used to solve portions of the square model
+            outlvl : idaes.logger output level
         """
         # should use knowledge of variables...
 
@@ -1521,6 +1719,18 @@ class NMPCSim(object):
 
 
     def simulate_plant(self, t_start, **kwargs):
+        """Function for simulating plant model for one sampling period after
+        inputs have been assigned from solve of controller model.
+
+        Args:
+            t_start : Beginning of timespan over which to simulate
+
+        Kwargs:
+            sample_time : Length of timespan to simulate. Default is the sample
+                          time provided to the constructor or overwritten by
+                          PWC constraints.
+            outlvl : idaes.logger output level
+        """
         sample_time = kwargs.pop('sample_time', self.sample_time)
         calculate_error = kwargs.pop('calculate_errors', True)
         outlvl = kwargs.pop('outlvl', self.outlvl)
@@ -1532,8 +1742,8 @@ class NMPCSim(object):
         assert t_end in self.p_mod.time
 
         self.simulate_over_range(self.p_mod, t_start, t_end, outlvl=outlvl)
-        msg = (f'Successfully simulated plant over the sampling period '
-                'beginning at {t_start}.')
+        msg = ('Successfully simulated plant over the sampling period '
+                'beginning at ' + str(t_start))
         init_log.info(msg)
 
         tc1 = self.c_mod.time.first() + sample_time
@@ -1544,6 +1754,31 @@ class NMPCSim(object):
 
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, **kwargs):
+        """
+        Calculates the normalized (by the weighting matrix already calculated)
+        error between the differential variables in different models and at
+        different points in time.
+
+        Args:
+            mod1 : First flowsheet model
+            mod2 : Second flowsheet model (may be same as the first)
+            t1 : Time point of interest in first model
+            t2 : Time point of interest in second model
+
+        Kwargs:
+            Q_diagonal : Flag for whether weighting matrix is diagonal. Default
+                         True. False is not supported for now.
+            Q_matrix : Weighting "matrix." For now just a list of values to 
+                       weight the error between each state. Default is to use
+                       the same weights calculated for controller objective
+                       function.
+            state_attrname : Name of the list attribute containing the
+                             variables whose errors will be calculated.
+            state_attrname_1 : Name of variable list in first model if
+                               different
+            state_attrname_2 : Name of variable list in second model if
+                               different
+        """
 
         Q_diagonal = kwargs.pop('Q_diagonal', True)
         if not Q_diagonal:
@@ -1569,6 +1804,9 @@ class NMPCSim(object):
         varlist_2 = getattr(mod2, state_attrname_2)
         assert len(varlist_1) == len(varlist_2)
         n = len(varlist_1)
+
+        assert t1 in mod1.time
+        assert t2 in mod2.time
 
         error = sum(Q_matrix[i]*(varlist_1[i][t1].value - 
                                  varlist_2[i][t2].value)**2
