@@ -1251,6 +1251,7 @@ class NMPCSim(object):
             name = '_pwc_input_' + str(i)
             pwc_constraint = Constraint(model.time, rule=pwc_rule)
             model.add_component(name, pwc_constraint)
+            # Maybe a check here to delete existing "pwc_input" components
             pwc_constraints.append(getattr(model, name))
 
         model._pwc_constraints = pwc_constraints

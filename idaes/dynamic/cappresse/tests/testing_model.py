@@ -94,6 +94,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
     if not steady:
         for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
             m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0.001)
+    # Note: Model does not solve when initial conditions are empty tank
 
     m.fs.mixer.E_inlet.conc_mol.fix(0)
     m.fs.mixer.S_inlet.conc_mol.fix(0)
