@@ -28,7 +28,7 @@ from pyomo.environ import Param, NonNegativeReals
 # Import IDAES cores
 from idaes.core import declare_process_block_class
 
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.generic_models.properties.core.generic.generic_property_v1 import (
         GenericParameterData)
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
