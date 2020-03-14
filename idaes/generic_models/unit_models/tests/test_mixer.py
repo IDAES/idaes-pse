@@ -30,7 +30,11 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock,
                         StateBlock,
-                        declare_process_block_class)
+                        declare_process_block_class,
+                        StateBlockData,
+                        PhysicalParameterBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -38,10 +42,9 @@ from idaes.generic_models.properties.examples.saponification_thermo import \
     SaponificationParameterBlock
 
 from idaes.generic_models.unit_models.mixer import (Mixer,
-                                     MixerData,
-                                     MixingType,
-                                     MaterialBalanceType,
-                                     MomentumMixingType)
+                                                    MixerData,
+                                                    MixingType,
+                                                    MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -782,6 +785,133 @@ class TestBTX(object):
     def test_report(self, btx):
         btx.fs.unit.report()
 
+
+# -----------------------------------------------------------------------------
+# Tests for Mixer in cases where proeprties do not support pressure
+@declare_process_block_class("NoPressureTestBlock")
+class _NoPressureParameterBlock(PhysicalParameterBlock):
+    def build(self):
+        super(_NoPressureParameterBlock, self).build()
+
+        self.phase_list = Set(initialize=["p1", "p2"])
+        self.component_list = Set(initialize=["c1", "c2"])
+        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
+
+        self.phase_equilibrium_list = \
+            {"e1": ["c1", ("p1", "p2")],
+             "e2": ["c2", ("p1", "p2")]}
+
+        self.state_block_class = NoPressureStateBlock
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
+
+@declare_process_block_class("NoPressureStateBlock")
+class NoPressureStateBlockData(StateBlockData):
+    CONFIG = ConfigBlock(implicit=True)
+
+    def build(self):
+        super(NoPressureStateBlockData, self).build()
+
+        self.flow_vol = Var(initialize=20)
+        self.flow_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       initialize=2)
+        self.temperature = Var(initialize=300)
+        self.test_var = Var(initialize=1)
+
+    def get_material_flow_terms(b, p, j):
+        return b.test_var
+
+    def get_enthalpy_flow_terms(b, p):
+        return b.test_var
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
+
+
+class TestMixer_NoPressure(object):
+    @declare_process_block_class("MixerFrame")
+    class MixerFrameData(MixerData):
+        def build(self):
+            super(MixerData, self).build()
+
+    @pytest.mark.build
+    def test_pressure_minimization_unsupported(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = NoPressureTestBlock()
+
+        with pytest.raises(
+                PropertyNotSupportedError,
+                match="fs.mix The property package supplied for this unit "
+                "does not appear to support pressure, which is required for "
+                "momentum mixing. Please set momentum_mixing_type to "
+                "MomentumMixingType.none or provide a property package which "
+                "supports pressure."):
+            m.fs.mix = Mixer(default={
+                "property_package": m.fs.pp,
+                "momentum_mixing_type": MomentumMixingType.minimize,
+                "construct_ports": False})
+
+    @pytest.mark.build
+    def test_pressure_equal_unsupported(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = NoPressureTestBlock()
+
+        with pytest.raises(
+                PropertyNotSupportedError,
+                match="fs.mix The property package supplied for this unit "
+                "does not appear to support pressure, which is required for "
+                "momentum mixing. Please set momentum_mixing_type to "
+                "MomentumMixingType.none or provide a property package which "
+                "supports pressure."):
+            m.fs.mix = Mixer(default={
+                "property_package": m.fs.pp,
+                "momentum_mixing_type": MomentumMixingType.equality,
+                "construct_ports": False})
+
+    @pytest.mark.build
+    def test_pressure_equal_and_min_unsupported(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = NoPressureTestBlock()
+
+        with pytest.raises(
+                PropertyNotSupportedError,
+                match="fs.mix The property package supplied for this unit "
+                "does not appear to support pressure, which is required for "
+                "momentum mixing. Please set momentum_mixing_type to "
+                "MomentumMixingType.none or provide a property package which "
+                "supports pressure."):
+            m.fs.mix = Mixer(default={
+                "property_package": m.fs.pp,
+                "momentum_mixing_type":
+                    MomentumMixingType.minimize_and_equality,
+                "construct_ports": False})
+
+    @pytest.mark.build
+    def test_pressure_none_unsupported(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = NoPressureTestBlock()
+
+        m.fs.mix = Mixer(default={
+            "property_package": m.fs.pp,
+            "momentum_mixing_type": MomentumMixingType.none,
+            "construct_ports": False})
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws

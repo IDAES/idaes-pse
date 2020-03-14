@@ -108,8 +108,8 @@ def test_setInputs_inlet_state_block():
     assert degrees_of_freedom(m.fs.state_block_NRTL_vl) == 6
 
     # Fix NRTL specific variables and check if DOF is 0
-    m.fs.state_block_NRTL_vl.alpha.fix()
-    m.fs.state_block_NRTL_vl.tau.fix()
+    m.fs.properties_NRTL_vl.alpha.fix()
+    m.fs.properties_NRTL_vl.tau.fix()
 
     assert degrees_of_freedom(m.fs.state_block_NRTL_vl) == 0
 
