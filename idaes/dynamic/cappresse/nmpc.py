@@ -1815,3 +1815,30 @@ class NMPCSim(object):
         return error
 
 
+    def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
+        """Copies values from time-indexed variables in one list, at one point
+        in time to another list, at another point in time
+
+        Args:
+            varlist_tgt : List containing variables whose values will be copied
+                          over
+            varlist_src : List containing variables whose values will be copied
+            t_tgt : Point in time, or list of points in time, at which 
+                    variable values will be copied over
+            t_src : Point in time from which variable values will be copied
+        """
+        # Downside to passing varlists as arguments directly is that I can't
+        # validate that time points are valid for each model's time set
+        # without just trying to access the VarDatas
+        assert len(varlist_tgt) == len(varlist_src)
+
+        if not isinstance(t_tgt, list):
+            t_tgt = [t_tgt]
+
+        for i, target_slice in enumerate(varlist_tgt):
+            src_value = varlist_src[i][t_src].value
+            for t in t_tgt:
+                var_tgt = target_slice[t]
+                var_tgt.set_value(src_value)
+
+
