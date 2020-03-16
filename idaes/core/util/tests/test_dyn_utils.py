@@ -456,6 +456,51 @@ def test_find_comp_in_block_at_time():
     assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
 
 
+def test_get_location_of_coordinate_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_location_of_coordinate_set(m.v1.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v2.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v3.index_set(), m.s1) == 3
+
+    # These should raise value errors. Is this the correct way to test for
+    # this in pytest?
+    with pytest.raises(ValueError) as exc_test:
+        get_location_of_coordinate_set(m.v1.index_set(), m.s2)
+    with pytest.raises(ValueError) as exc_test:
+        get_location_of_coordinate_set(m.v121.index_set(), m.s1)
+
+
+def test_get_index_of_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v0 = Var()
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_index_of_set(m.v1[2], m.s1) == 2
+    assert get_index_of_set(m.v2[2,'a',1], m.s1) == 2
+    assert get_index_of_set(m.v3['b',2,1,3,'b',2], m.s1) == 3
+
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v0, m.s1)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'a',1], m.s2)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'b',2], m.s3)
+
+
 if __name__ == "__main__":
     test_is_indexed_by()
     test_get_index_set_except()
@@ -463,3 +508,4 @@ if __name__ == "__main__":
     test_copy_non_time_indexed_values()
     test_find_comp_in_block()
     test_find_comp_in_block_at_time()
+    test_get_location_of_coordinate_set()

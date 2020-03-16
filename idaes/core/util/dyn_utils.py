@@ -364,6 +364,65 @@ def fix_vars_unindexed_by(b, time):
     return varlist
 
 
+def get_location_of_coordinate_set(setprod, subset):
+    """For a SetProduct and some 1-dimensional coordinate set of that
+    SetProduct, returns the location of an index of the coordinate
+    set within the index of the setproduct.
+
+    Args:
+        setprod : SetProduct containing the subset of interest
+        subset : 1-dimensional set whose location will be found in the
+                 SetProduct
+    
+    Returns:
+        Integer location of the subset within the SetProduct
+    """
+    if subset.dimen != 1:
+        # This could be supported in the future if there is demand for it
+        raise ValueError(
+                'Cannot get the location of a multi-dimensional set')
+
+    loc = 0
+    i = 0
+    found = False
+    for _set in setprod.subsets():
+        if _set is subset:
+            if found:
+                raise ValueError(
+                        'Cannot get the location of a set that appears '
+                        'multiple times')
+            found = True
+            loc = i
+            i += 1
+        else:
+            i += _set.dimen
+    return loc
+
+
+def get_index_of_set(comp, _set):
+    """For some data object of an indexed component, gets the value of the
+    index corresponding to some 1-dimensional pyomo set.
+
+    Args: 
+        comp : Component data object whose index will be searched
+        _set : Set whose index will get got
+
+    Returns:
+        Value of the specified set in the component data object
+    """
+    parent = comp.parent_component()
+    if not is_explicitly_indexed_by(parent, _set):
+        raise ValueError(
+                "Cannot get the index of a set that does not index "
+                "comp's parent component.")
+
+    index = comp.index() 
+    if not type(index) is tuple:
+        index = (index,)
+    loc = get_location_of_coordinate_set(parent.index_set(), _set)
+    return index[loc]
+
+
 def get_derivatives_at(b, time, pts):
     """
     Finds derivatives with respect to time at points specified.
