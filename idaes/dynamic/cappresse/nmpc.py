@@ -25,7 +25,7 @@ from pyomo.dae.flatten import flatten_dae_variables
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block)
+        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
 import idaes.logger as idaeslog
 
@@ -37,42 +37,65 @@ __author__ = "Robert Parker and David Thierry"
 
 
 # TODO: move this to dyn_utils module
-def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
-    """This function finds a component in a source block, then uses the same
-    local names and indices to try to find a corresponding component in a target
-    block. 
-
-    Args:
-        tgt_block : Target block that will be searched for component
-        src_block : Source block in which the original component is located
-        src_comp : Component whose name will be searched for in target block
-
-    Kwargs:
-        allow_miss : If True, will ignore attribute and key errors due to 
-                     searching for non-existant components in the target model
-
-    Returns:
-        Component with the same name in the target block
-    """
-    allow_miss = kwargs.pop('allow_miss', False)
-
-    local_parent = tgt_block
-    for r in path_from_block(src_comp, src_block, include_comp=True):
-        # Better name for include_comp might be include_leaf
-        try:
-            local_parent = getattr(local_parent, r[0])[r[1]]
-        except AttributeError:
-            if allow_miss:
-                return None
-            else:
-                raise
-        except KeyError:
-            if allow_miss:
-                return None
-            else:
-                raise
-    tgt_comp = local_parent
-    return tgt_comp
+#def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
+#    """This function finds a component in a source block, then uses the same
+#    local names and indices to try to find a corresponding component in a target
+#    block. 
+#
+#    Args:
+#        tgt_block : Target block that will be searched for component
+#        src_block : Source block in which the original component is located
+#        src_comp : Component whose name will be searched for in target block
+#
+#    Kwargs:
+#        allow_miss : If True, will ignore attribute and key errors due to 
+#                     searching for non-existant components in the target model
+#
+#    Returns:
+#        Component with the same name in the target block
+#    """
+#    allow_miss = kwargs.pop('allow_miss', False)
+#
+#    local_parent = tgt_block
+#    for r in path_from_block(src_comp, src_block, include_comp=False):
+#        # Don't include comp as I want to use this to find IndexedComponents,
+#        # for which [r[1]] will result in a KeyError.
+#        try:
+#            local_parent = getattr(local_parent, r[0])[r[1]]
+#        except AttributeError:
+#            if allow_miss:
+#                return None
+#            else:
+#                raise
+#        except KeyError:
+#            if allow_miss:
+#                return None
+#            else:
+#                raise
+#
+#    # This logic should return the IndexedComponent or ComponentData,
+#    # whichever is appropriate
+#    try:
+#        tgt_comp = getattr(local_parent, src_comp.parent_component().local_name)
+#    except AttributeError:
+#        if allow_miss:
+#            return None
+#        else:
+#            raise
+#    # tgt_comp is now an indexed component or simple component
+#
+#    if hasattr(src_comp, 'index'):
+#        # If comp has index, attempt to access it in tgt_comp
+#        index = src_comp.index()
+#        try:
+#            tgt_comp = tgt_comp[index]
+#        except KeyError:
+#            if allow_miss:
+#                return None
+#            else:
+#                raise
+#
+#    return tgt_comp
 
 
 class VarLocator(object):
@@ -1813,32 +1836,5 @@ class NMPCSim(object):
                     for i in range(n))
 
         return error
-
-
-    def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
-        """Copies values from time-indexed variables in one list, at one point
-        in time to another list, at another point in time
-
-        Args:
-            varlist_tgt : List containing variables whose values will be copied
-                          over
-            varlist_src : List containing variables whose values will be copied
-            t_tgt : Point in time, or list of points in time, at which 
-                    variable values will be copied over
-            t_src : Point in time from which variable values will be copied
-        """
-        # Downside to passing varlists as arguments directly is that I can't
-        # validate that time points are valid for each model's time set
-        # without just trying to access the VarDatas
-        assert len(varlist_tgt) == len(varlist_src)
-
-        if not isinstance(t_tgt, list):
-            t_tgt = [t_tgt]
-
-        for i, target_slice in enumerate(varlist_tgt):
-            src_value = varlist_src[i][t_src].value
-            for t in t_tgt:
-                var_tgt = target_slice[t]
-                var_tgt.set_value(src_value)
 
 
