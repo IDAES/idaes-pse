@@ -60,6 +60,7 @@ Contents
     glossary
     license
     copyright
+    dynamic/index
 
 .. tutorials
 
