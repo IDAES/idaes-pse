@@ -64,9 +64,9 @@ kwargs = dict(
         "pytest",
         "pyutilib",
         "pyyaml",
+        "requests",
         "sympy",
         "tinydb",
-        "toml",
         # alamopy
         # <nothing>
         # ripe
@@ -77,7 +77,7 @@ kwargs = dict(
     entry_points={
         "console_scripts": [
             "dmf = idaes.dmf.cli:base_command",
-            "idaes = idaes.core.commands.base:command_base",
+            "idaes = idaes.commands.base:command_base",
         ]
     },
     extras_require={
