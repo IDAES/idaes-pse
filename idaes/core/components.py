@@ -25,6 +25,21 @@ from .process_base import (declare_process_block_class,
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
+
+    CONFIG.declare("dens_mol_liq_comp", ConfigValue(
+        description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("enth_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component molar enthalpies"))
+    CONFIG.declare("enth_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component molar enthalpies"
+        ))
+    CONFIG.declare("entr_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component molar entropies"))
+    CONFIG.declare("entr_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component molar entropies"))
+    CONFIG.declare("pressure_sat_comp", ConfigValue(
+        description="Method to use to calculate saturation pressure"))
+
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether component_list "
@@ -50,4 +65,5 @@ class ComponentData(ProcessBlockData):
             comp_list.add(self.local_name)
         except AttributeError:
             # Parent does not have a component_list yet, so create one
-            parent.component_list = Set(initialize=[self.local_name])
+            parent.component_list = Set(initialize=[self.local_name],
+                                        ordered=True)

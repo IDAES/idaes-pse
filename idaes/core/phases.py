@@ -85,7 +85,8 @@ class PhaseData(ProcessBlockData):
             phase_list.add(self.local_name)
         except AttributeError:
             # Parent does not have a phase_list yet, so create one
-            parent.phase_list = Set(initialize=[self.local_name])
+            parent.phase_list = Set(initialize=[self.local_name],
+                                    ordered=True)
 
 
 @declare_process_block_class("LiquidPhase")
