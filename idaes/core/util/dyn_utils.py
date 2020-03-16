@@ -58,7 +58,7 @@ def is_explicitly_indexed_by(comp, *sets):
         # we're indexed by a _SetProduct containing all sets
         if not hasattr(comp.index_set(), 'set_tuple'):
             return False
-        # Convert set_tuple to a python:set so a different
+        # Convert set_tuple to a ComponentSet so a different
         # pyomo:Set with the same elements will not be conflated.
         set_set = ComponentSet(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
@@ -446,8 +446,204 @@ def path_from_block(comp, blk, include_comp=False):
         if hasattr(comp, 'index'):
             route.append((comp.parent_component().local_name, comp.index()))
         else:
+            # Not obvious what the right thing to do is if comp has no index
+            # attribute... 
             route.append((comp.parent_component().local_name, None))
     return route
+
+
+def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
+    """This function finds a component in a source block, then uses the same
+    local names and indices to try to find a corresponding component in a target
+    block. 
+
+    Args:
+        tgt_block : Target block that will be searched for component
+        src_block : Source block in which the original component is located
+        src_comp : Component whose name will be searched for in target block
+
+    Kwargs:
+        allow_miss : If True, will ignore attribute and key errors due to 
+                     searching for non-existant components in the target model
+
+    Returns:
+        Component with the same name in the target block
+    """
+    allow_miss = kwargs.pop('allow_miss', False)
+
+    local_parent = tgt_block
+    for r in path_from_block(src_comp, src_block, include_comp=False):
+        # Don't include comp as I want to use this to find IndexedComponents,
+        # for which [r[1]] will result in a KeyError.
+        try:
+            local_parent = getattr(local_parent, r[0])[r[1]]
+        except AttributeError:
+            if allow_miss:
+                return None
+            else:
+                raise
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise
+
+    # This logic should return the IndexedComponent or ComponentData,
+    # whichever is appropriate
+    try:
+        tgt_comp = getattr(local_parent, src_comp.parent_component().local_name)
+    except AttributeError:
+        if allow_miss:
+            return None
+        else:
+            raise
+    # tgt_comp is now an indexed component or simple component
+
+    if hasattr(src_comp, 'index'):
+        # If comp has index, attempt to access it in tgt_comp
+        index = src_comp.index()
+        try:
+            tgt_comp = tgt_comp[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise
+
+    return tgt_comp
+
+
+def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
+                               time, t0, **kwargs):
+    """This function finds a component in a source block, then uses the same
+    local names and indices to try to find a corresponding component in a target
+    block, with the exception of time index in the target component, which is
+    replaced by a specified time point.
+
+    Args:
+        tgt_block : Target block that will be searched for component
+        src_block : Source block in which the original component is located
+        src_comp : Component whose name will be searched for in target block
+        time : Set whose index will be replaced in the target component
+        t0 : Index of the time set that will be used in the target
+             component
+
+    Kwargs:
+        allow_miss : If True, will ignore attribute and key errors due to 
+                     searching for non-existant components in the target model
+
+    Returns:
+    """
+    # Could extend this to allow replacing indices of multiple sets
+    # (useful for PDEs)
+    allow_miss = kwargs.pop('allow_miss', False)
+
+    assert t0 in time
+    assert time.model() is tgt_block.model()
+    assert src_block.model() is src_comp.model()
+
+    local_parent = tgt_block
+    for r in path_from_block(src_comp, src_block, include_comp=False):
+        # Don't include comp as I want to use this to find IndexedComponents,
+        # for which [r[1]] will result in a KeyError.
+
+        # If local_parent is indexed by time, need to replace time index
+        # in r[1]
+
+        try:
+            local_parent = getattr(local_parent, r[0])
+        except AttributeError:
+            if allow_miss:
+                return None
+            else:
+                raise
+
+        index = r[1]
+
+        # Can abstract the following into a function:
+        # replace_time_index or something
+        if is_explicitly_indexed_by(local_parent, time):
+            time_loc = None
+            loc = 0
+            subsets = local_parent.index_set().subsets()
+            for _set in subsets:
+                if _set is time and time_loc is not None:
+                    raise ValueError(
+                        'Explicitly indexing components by multiple '
+                        'instances of time is not supported')
+                if _set is time and time_loc is None:
+                    time_loc = loc
+                loc += _set.dimen
+            if time_loc is None:
+                raise ValueError(
+                    'Did not expect this')
+
+            if type(r[1]) is not tuple:
+                tup_idx = (r[1],)
+            tup_idx = list(tup_idx)
+
+            assert len(tup_idx) == loc
+            # Replace time index with t0
+            tup_idx[time_loc] = t0
+            index = tuple(tup_idx)
+            
+        try:
+            local_parent = local_parent[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise
+
+    # This logic should return the IndexedComponent or ComponentData,
+    # whichever is appropriate
+    try:
+        tgt_comp = getattr(local_parent, src_comp.parent_component().local_name)
+    except AttributeError:
+        if allow_miss:
+            return None
+        else:
+            raise
+    # tgt_comp is now an indexed component or simple component
+
+    if hasattr(src_comp, 'index'):
+        # If comp has index, attempt to access it in tgt_comp
+        index = src_comp.index()
+
+        if is_explicitly_indexed_by(tgt_comp, time):
+            time_loc = None
+            loc = 0
+            subsets = tgt_comp.index_set().subsets()
+            for _set in subsets:
+                if _set is time and time_loc is not None:
+                    raise ValueError(
+                        'Explicitly indexing components by multiple '
+                        'instances of time is not supported')
+                if _set is time and time_loc is None:
+                    time_loc = loc
+                loc += _set.dimen
+            if time_loc is None:
+                raise ValueError(
+                    'Did not expect this')
+
+            if type(index) is not tuple:
+                tup_idx = (index,)
+            tup_idx = list(tup_idx)
+
+            assert len(tup_idx) == loc
+            # Replace time index with t0
+            tup_idx[time_loc] = t0
+            index = tuple(tup_idx)
+
+        try:
+            tgt_comp = tgt_comp[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise
+
+    return tgt_comp
 
 
 def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):

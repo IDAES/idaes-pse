@@ -382,8 +382,84 @@ def test_copy_non_time_indexed_values():
     assert m1.b3[3].v5.value != m2.b3[3].v5.value
 
 
+def test_find_comp_in_block():
+    m1 = ConcreteModel()
+
+    @m1.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3])
+
+    m2 = ConcreteModel()
+
+    @m2.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3,4])
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var([1,2,3])
+
+    v1 = m1.b1[1].v[1]
+
+    assert find_comp_in_block(m2, m1, v1) is m2.b1[1].v[1]
+
+    v2 = m2.b2[1].v[1]
+    v3 = m2.b1[3].v[4]
+
+    # These should result in Attribute/KeyErrors
+    #find_comp_in_block(m1, m2, v2)
+    #find_comp_in_block(m1, m2, v3)
+    assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
+    assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
+
+
+def test_find_comp_in_block_at_time():
+    m1 = ConcreteModel()
+    m1.time = Set(initialize=[1,2,3])
+
+    @m1.Block(m1.time)
+    def b1(b):
+        b.v = Var(m1.time)
+
+    @m1.Block([1,2,3])
+    def b(bl):
+        bl.v = Var(m1.time)
+
+    m2 = ConcreteModel()
+    m2.time = Set(initialize=[1,2,3,4,5,6])
+
+    @m2.Block(m2.time)
+    def b1(b):
+        b.v = Var(m2.time)
+
+    @m2.Block([1,2,3,4])
+    def b(bl):
+        bl.v = Var(m2.time)
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var(m2.time)
+
+    v1 = m1.b1[1].v[1]
+    v3 = m1.b[3].v[1]
+
+    assert find_comp_in_block_at_time(m2, m1, v1, m2.time, 4) is m2.b1[4].v[4]
+    assert find_comp_in_block_at_time(m2, m1, v3, m2.time, 5) is m2.b[3].v[5]
+
+    v2 = m2.b2[1].v[1]
+    v4 = m2.b[4].v[1]
+
+    # Should result in AttributeError
+    #find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
+    #find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
+    assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
+    assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
+
+
 if __name__ == "__main__":
     test_is_indexed_by()
     test_get_index_set_except()
     test_fix_and_deactivate()
     test_copy_non_time_indexed_values()
+    test_find_comp_in_block()
+    test_find_comp_in_block_at_time()
