@@ -36,7 +36,7 @@ def dens_mol_phase(b, p):
         return b.pressure/(const.gas_constant*b.temperature)
     elif pobj.is_liquid_phase():
         return sum(b.mole_frac_phase_comp[p, j] *
-                   get_method(b, "dens_mol_liq_comp", j)(b, b.temperature)
+                   get_method(b, "dens_mol_liq_comp", j)(b, j, b.temperature)
                    for j in b.components_in_phase(p))
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -50,9 +50,9 @@ def enth_mol_phase(b, p):
 def enth_mol_phase_comp(b, p, j):
     pobj = b.params.get_phase(p)
     if pobj.is_vapor_phase():
-        return get_method(b, "enth_mol_ig_comp", j)(b, b.temperature)
+        return get_method(b, "enth_mol_ig_comp", j)(b, j, b.temperature)
     elif pobj.is_liquid_phase():
-        return get_method(b, "enth_mol_liq_comp", j)(b, b.temperature)
+        return get_method(b, "enth_mol_liq_comp", j)(b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -65,9 +65,9 @@ def entr_mol_phase(b, p):
 def entr_mol_phase_comp(b, p, j):
     pobj = b.params.get_phase(p)
     if pobj.is_vapor_phase():
-        return get_method(b, "entr_mol_ig_comp", j)(b, b.temperature)
+        return get_method(b, "entr_mol_ig_comp", j)(b, j, b.temperature)
     elif pobj.is_liquid_phase():
-        return get_method(b, "entr_mol_liq_comp", j)(b, b.temperature)
+        return get_method(b, "entr_mol_liq_comp", j)(b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -78,7 +78,7 @@ def fug_phase_comp(b, p, j):
         return b.mole_frac_phase_comp[p, j]*b.pressure
     elif pobj.is_liquid_phase():
         return b.mole_frac_phase_comp[p, j] * \
-               get_method(b, "pressure_sat_comp", j)(b, b._teq)
+               get_method(b, "pressure_sat_comp", j)(b, j, b._teq)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

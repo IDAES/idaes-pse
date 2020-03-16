@@ -96,7 +96,7 @@ def get_method(self, config_arg, comp=None):
                              .format(self.name, config_arg))
 
     if c_arg is None:
-        raise GenericPropertyPackageError(self, c_arg)
+        raise GenericPropertyPackageError(self, config_arg)
 
     if isinstance(c_arg, types.ModuleType):
         return getattr(c_arg, config_arg)
@@ -360,46 +360,46 @@ class GenericParameterData(PhysicalParameterBlock):
         """Define properties supported and units."""
         # TODO : Need to fix to have methods for things that may or may not be
         # created by state var methods
-    #     obj.add_properties(
-    #         {'flow_mol': {'method': None, 'units': 'mol/s'},
-    #          'mole_frac_comp': {'method': None, 'units': 'none'},
-    #          'mole_frac_phase_comp': {'method': None, 'units': 'none'},
-    #          'phase_frac': {'method': None, 'units': 'none'},
-    #          'temperature': {'method': None, 'units': 'K'},
-    #          'pressure': {'method': None, 'units': 'Pa'},
-    #          'flow_mol_phase': {'method': None, 'units': 'mol/s'},
-    #          'dens_mass': {'method': '_dens_mass', 'units': 'kg/m^3'},
-    #          'dens_mass_phase': {'method': '_dens_mass_phase',
-    #                              'units': 'kg/m^3'},
-    #          'dens_mol': {'method': '_dens_mol', 'units': 'mol/m^3'},
-    #          'dens_mol_phase': {'method': '_dens_mol_phase',
-    #                             'units': 'mol/m^3'},
-    #          'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
-    #          'enth_mol_phase': {'method': '_enth_mol_phase', 'units': 'J/mol'},
-    #          'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
-    #                                  'units': 'J/mol'},
-    #          'entr_mol': {'method': '_entr_mol', 'units': 'J/mol.K'},
-    #          'entr_mol_phase': {'method': '_entr_mol_phase',
-    #                             'units': 'J/mol.K'},
-    #          'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
-    #                                  'units': 'J/mol.K'},
-    #          'fug_phase_comp': {'method': '_fug_phase_comp', 'units': 'Pa'},
-    #          'fug_coeff_phase_comp': {'method': '_fug_coeff_phase_comp',
-    #                                   'units': '-'},
-    #          'gibbs_mol': {'method': '_gibbs_mol', 'units': 'J/mol'},
-    #          'gibbs_mol_phase': {'method': '_gibbs_mol_phase',
-    #                              'units': 'J/mol'},
-    #          'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp',
-    #                                   'units': 'J/mol'},
-    #          'mw': {'method': '_mw', 'units': 'kg/mol'},
-    #          'mw_phase': {'method': '_mw_phase', 'units': 'kg/mol'},
-    #          'pressure_bubble': {'method': '_pressure_bubble', 'units': 'Pa'},
-    #          'pressure_dew': {'method': '_pressure_dew', 'units': 'Pa'},
-    #          'pressure_sat_comp': {'method': '_pressure_sat_comp',
-    #                                'units': 'Pa'},
-    #          'temperature_bubble': {'method': '_temperature_bubble',
-    #                                 'units': 'K'},
-    #          'temperature_dew': {'method': '_temperature_dew', 'units': 'K'}})
+        obj.add_properties(
+            {'flow_mol': {'method': None, 'units': 'mol/s'},
+              'mole_frac_comp': {'method': None, 'units': 'none'},
+              'mole_frac_phase_comp': {'method': None, 'units': 'none'},
+              'phase_frac': {'method': None, 'units': 'none'},
+              'temperature': {'method': None, 'units': 'K'},
+              'pressure': {'method': None, 'units': 'Pa'},
+              'flow_mol_phase': {'method': None, 'units': 'mol/s'},
+              'dens_mass': {'method': '_dens_mass', 'units': 'kg/m^3'},
+              'dens_mass_phase': {'method': '_dens_mass_phase',
+                                  'units': 'kg/m^3'},
+              'dens_mol': {'method': '_dens_mol', 'units': 'mol/m^3'},
+              'dens_mol_phase': {'method': '_dens_mol_phase',
+                                'units': 'mol/m^3'},
+              'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
+              'enth_mol_phase': {'method': '_enth_mol_phase', 'units': 'J/mol'},
+              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
+                                      'units': 'J/mol'},
+              'entr_mol': {'method': '_entr_mol', 'units': 'J/mol.K'},
+              'entr_mol_phase': {'method': '_entr_mol_phase',
+                                'units': 'J/mol.K'},
+              'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
+                                      'units': 'J/mol.K'},
+              'fug_phase_comp': {'method': '_fug_phase_comp', 'units': 'Pa'},
+              'fug_coeff_phase_comp': {'method': '_fug_coeff_phase_comp',
+                                      'units': '-'},
+              'gibbs_mol': {'method': '_gibbs_mol', 'units': 'J/mol'},
+              'gibbs_mol_phase': {'method': '_gibbs_mol_phase',
+                                  'units': 'J/mol'},
+              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp',
+                                      'units': 'J/mol'},
+              'mw': {'method': '_mw', 'units': 'kg/mol'},
+              'mw_phase': {'method': '_mw_phase', 'units': 'kg/mol'},
+              'pressure_bubble': {'method': '_pressure_bubble', 'units': 'Pa'},
+              'pressure_dew': {'method': '_pressure_dew', 'units': 'Pa'},
+              'pressure_sat_comp': {'method': '_pressure_sat_comp',
+                                    'units': 'Pa'},
+              'temperature_bubble': {'method': '_temperature_bubble',
+                                    'units': 'K'},
+              'temperature_dew': {'method': '_temperature_dew', 'units': 'K'}})
 
         obj.add_default_units({'time': 's',
                                 'length': 'm',
@@ -450,3 +450,28 @@ class GenericStateBlockData(StateBlockData):
             # Return only components for indicated phase
             for j in self.params.get_phase(phase).config.component_list:
                 yield j
+
+    # -------------------------------------------------------------------------
+    # Property Methods
+    def _enth_mol(self):
+        def rule_enth_mol(b):
+            return sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                       for p in b.params.phase_list)
+        self.enth_mol = Expression(rule=rule_enth_mol,
+                                   doc="Mixture molar enthalpy")
+
+    def _enth_mol_phase(self):
+        def rule_enth_mol_phase(b, p):
+            p_config = b.params.get_phase(p).config
+            return p_config.equation_of_state.enth_mol_phase(b, p)
+        self.enth_mol_phase = Expression(self.params.phase_list,
+                                         rule=rule_enth_mol_phase)
+
+    def _enth_mol_phase_comp(self):
+        def rule_enth_mol_phase_comp(b, p, j):
+            p_config = b.params.get_phase(p).config
+            return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
+        self.enth_mol_phase_comp = Expression(
+            self.params.phase_list,
+            self.params.component_list,
+            rule=rule_enth_mol_phase_comp)

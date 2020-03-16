@@ -31,7 +31,7 @@ from idaes.core.util.exceptions import PropertyNotSupportedError
 
 
 # Dummy method for property method calls
-def dummy_call(b, T):
+def dummy_call(b, j, T):
     return 42
 
 
