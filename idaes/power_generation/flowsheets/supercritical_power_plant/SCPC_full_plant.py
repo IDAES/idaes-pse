@@ -12,11 +12,11 @@
 ##############################################################################
 
 """
-This is an example supercritical pulverized coal (SCPC) power plant, including 
-steam cycle and boiler heat exchanger network model.  
+This is an example supercritical pulverized coal (SCPC) power plant, including
+steam cycle and boiler heat exchanger network model.
 
-This simulation model consist of a ~595 MW gross coal fired power plant. 
-The dimensions and operating conditions used for this simulation do not 
+This simulation model consist of a ~595 MW gross coal fired power plant.
+The dimensions and operating conditions used for this simulation do not
 represent any specific coal-fired power plant.
 
 This model is for demonstration and tutorial purposes only. Before looking at the
@@ -26,26 +26,26 @@ SCPC Power Plant
 
 Inputs:
     Fresh Water (water make up)
-    Throttle valve opening, 
+    Throttle valve opening,
     BFW - boiler feed water (from Feed water heaters)
     Coal from pulverizers
 
 Main Assumptions:
-    Coal flowrate as a function of load, coal HHV is fixed and heat dutty 
+    Coal flowrate as a function of load, coal HHV is fixed and heat dutty
     splitt from fire side to water wall and platen superheater is fixed.
-    
-    Boiler heat exchanger network: 
-        Water Flow: 
+
+    Boiler heat exchanger network:
+        Water Flow:
             Fresh water -> FWH's -> Economizer -> Water Wall -> Primary SH -> Platen SH -> Finishing Superheate -> HP Turbine -> Reheater -> IP Turbine
         Flue Gas Flow:
             Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer -> Air Preheater
-                                                   -> Primary SH --^ 
+                                                   -> Primary SH --^
         Steam Flow:
             Boiler -> HP Turbine -> Reheater -> IP Turbine
             HP, IP, and LP steam extractions to Feed Water Heaters
-            
 
-    Models used: 
+
+    Models used:
         - Mixers: Attemperator, Flue gas mix
         - Heater: Platen SH, Fire/Water side (simplified model), Feed Water Heaters, Hot Tank, Condenser
         - BoilerHeatExchanger: Economizer, Primary SH, Finishing SH, Reheater
@@ -106,19 +106,19 @@ def import_steam_cycle():
     import idaes.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
     m, solver = steam_cycle.main()
     return m, solver
-    
+
 if __name__ == "__main__":
     # import steam cycle and build concrete model
     m, solver = import_steam_cycle()
     print(degrees_of_freedom(m))
-    #at this point we have a flowsheet with "steam cycle" that solves 
+    #at this point we have a flowsheet with "steam cycle" that solves
     # correctly, with 0 degrees of freedom.
-    
+
     # next step is to import and build the boiler heat exchanger network
     # importing the boiler heat exchanger network from (boiler_subflowsheet_build.py)
-    # will basically append all the unit models into our model ("m") 
+    # will basically append all the unit models into our model ("m")
     # model "m" has been created a few lines above
-    import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr 
+    import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
         # import the models (ECON, WW, PrSH, PlSH, FSH, Spliter, Mixer, Reheater)
         # see boiler_subflowhseet_build.py for a beter description
     blr.build_boiler(m.fs)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     # this is a square problem (i.e. degrees of freedom = 0)
     print('solving square problem disconnected')
     results = solver.solve(m, tee=True)
-    
+
     # at this point we want to connect the units in both flowsheets
     # Economizer inlet = Feed water heater 8 outlet (water)
     # HP inlet = Attemperator outlet (steam)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 #   later user can use the json file to initialize the model
 #   if this is the case comment out previous MS.to_json and uncomment next line
 #    MS.from_json(m, fname = 'SCPC_full.json')
-    
+
     # deactivate constraints linking the FWH8 to HP turbine
     m.fs.boiler_pressure_drop.deactivate()
     m.fs.close_flow.deactivate()
@@ -154,21 +154,21 @@ if __name__ == "__main__":
     m.fs.turb.inlet_split.inlet.pressure.unfix()
     # user can fix the boiler feed water pump pressure (uncomenting next line)
 #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
-    
+
     m.fs.FHWtoECON = Arc(source = m.fs.fwh8.desuperheat.outlet_2,
                       destination = m.fs.ECON.side_1_inlet)
-    
+
     m.fs.Att2HP = Arc(source = m.fs.ATMP1.outlet,
                    destination = m.fs.turb.inlet_split.inlet)
-    
+
     m.fs.HPout2RH = Arc(source = m.fs.turb.hp_split[7].outlet_1,
                      destination = m.fs.RH.side_1_inlet)
-    
+
     m.fs.RHtoIP = Arc(source = m.fs.RH.side_1_outlet,
                    destination =m.fs.turb.ip_stages[1].inlet)
-    
+
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
-    
+
     #unfix boiler connections
     m.fs.ECON.side_1_inlet.flow_mol.unfix()
     m.fs.ECON.side_1_inlet.enth_mol[0].unfix()
@@ -177,9 +177,9 @@ if __name__ == "__main__":
     m.fs.RH.side_1_inlet.enth_mol[0].unfix()
     m.fs.RH.side_1_inlet.pressure[0].unfix()
     m.fs.hotwell.makeup.flow_mol[:].setlb(-1.0)
-    
-#    if user has trouble with infeasible solutions, an easy test 
-#    is to deactivate the link to HP turbine (m.fs.Att2HP_expanded "enth_mol and pressure" equalities) 
+
+#    if user has trouble with infeasible solutions, an easy test
+#    is to deactivate the link to HP turbine (m.fs.Att2HP_expanded "enth_mol and pressure" equalities)
 #    and fix inlet pressure and enth_mol to turbine (m.fs.turb.inlet_split.inlet)
 #   (then double check the values from m.fs.ATMP1.outlet)
 #    m.fs.Att2HP_expanded.enth_mol_equality.deactivate()

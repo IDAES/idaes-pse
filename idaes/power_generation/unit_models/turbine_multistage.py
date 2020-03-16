@@ -604,7 +604,11 @@ class TurbineMultistageData(UnitModelBlockData):
         self.outlet_stage.flow_coeff.fix(value)
 
     def initialize(
-        self, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6, "max_iter": 35}
+        self,
+        outlvl=idaeslog.NOTSET,
+        solver="ipopt",
+        optarg={"tol": 1e-6, "max_iter": 35},
+        copy_disconneted_flow=True,
     ):
         """
         Initialize
@@ -629,6 +633,10 @@ class TurbineMultistageData(UnitModelBlockData):
             for i in stages:
                 if i - 1 not in disconnects:
                     _set_port(stages[i].inlet, prev_port)
+                else:
+                    if copy_disconneted_flow:
+                        for t in stages[i].stages[i].inlet.flow_mol[t]:
+                            stages[i].inlet.flow_mol[t] = prev_port.flow_mol[t]
                 stages[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
                 prev_port = stages[i].outlet
                 if i in splits:
@@ -637,7 +645,7 @@ class TurbineMultistageData(UnitModelBlockData):
                     prev_port = splits[i].outlet_1
             return prev_port
 
-        for k in [1]:
+        for k in [1, 2]:
             # Initialize Splitter
             # Fix n - 1 split fractions
             self.inlet_split.split_fraction[0, "outlet_1"].value = 1.0 / ni
@@ -706,18 +714,5 @@ class TurbineMultistageData(UnitModelBlockData):
                 self.inlet_split.inlet.flow_mol[
                     t
                 ].value = self.outlet_stage.inlet.flow_mol[t].value
-
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
-        init_log.info_high("Solve full multistage turbine")
-        self.inlet_split.inlet.flow_mol.unfix()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = slvr.solve(self, tee=slc.tee)
-        init_log.info(
-            "Flow guess: {}, Initialized Flow: {}".format(
-                flow_guess, self.outlet_stage.inlet.flow_mol[0].value
-            ),
-        )
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)
