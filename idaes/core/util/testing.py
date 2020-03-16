@@ -18,8 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import (Set, SolverFactory, Var, Reals, Constraint, Param,
-        exp)
+from pyomo.environ import Set, SolverFactory, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
