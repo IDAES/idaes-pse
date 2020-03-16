@@ -19,7 +19,7 @@ Standard IDAES pressure changer model.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var
+from pyomo.environ import SolverFactory, value, Var, Expression, Constraint
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -643,7 +643,24 @@ see property package for documentation.}""",
             Var,
         ):
             blk.properties_isentropic[:].temperature.fix()
+        elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].enth_mol,
+            Var,
+        ):
+            blk.properties_isentropic[:].enth_mol.fix()
+        elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].temperature,
+            Expression,
+        ):
+            def tmp_rule(b, t):
+                return blk.properties_isentropic[t].temperature == \
+                    blk.control_volume.properties_in[t].temperature
+            blk.tmp_init_constraint = Constraint(
+                blk.flowsheet().config.time, rule=tmp_rule)
+
         blk.isentropic.deactivate()
+
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
@@ -653,6 +670,17 @@ see property package for documentation.}""",
             Var,
         ):
             blk.properties_isentropic[:].temperature.unfix()
+        elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].enth_mol,
+            Var,
+        ):
+            blk.properties_isentropic[:].enth_mol.unfix()
+        elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].temperature,
+            Expression,
+        ):
+            blk.del_component(blk.tmp_init_constraint)
+
         blk.isentropic.activate()
 
         # ---------------------------------------------------------------------

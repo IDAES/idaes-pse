@@ -240,7 +240,7 @@ class SaponificationStateBlockData(StateBlockData):
                                initialize=298.15,
                                bounds=(298.15, 323.15),
                                doc='State temperature [K]')
-        self.conc_mol_comp = Var(self._params.component_list,
+        self.conc_mol_comp = Var(self.params.component_list,
                                  domain=NonNegativeReals,
                                  initialize=100.0,
                                  doc='Component molar concentrations '
@@ -248,21 +248,21 @@ class SaponificationStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
-                                             self._params.dens_mol)
+                                             self.params.dens_mol)
 
     def get_material_flow_terms(b, p, j):
         return b.flow_vol*b.conc_mol_comp[j]
 
     def get_enthalpy_flow_terms(b, p):
-        return (b.flow_vol*b._params.dens_mol*b._params.cp_mol *
-                (b.temperature - b._params.temperature_ref))
+        return (b.flow_vol*b.params.dens_mol*b.params.cp_mol *
+                (b.temperature - b.params.temperature_ref))
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
     def get_energy_density_terms(b, p):
-        return b._params.dens_mol*b._params.cp_mol*(
-                b.temperature - b._params.temperature_ref)
+        return b.params.dens_mol*b.params.cp_mol*(
+                b.temperature - b.params.temperature_ref)
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentPhase

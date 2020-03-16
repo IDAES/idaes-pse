@@ -253,7 +253,7 @@ class TestStateBlock_LV_PR(object):
             assert j in ["a", "b"]
         assert str(model.fs.props[1]._tr_eq[j].expr) == str(
                 model.fs.props[1]._teq /
-                model.fs.props[1]._params.temperature_crit[j])
+                model.fs.props[1].params.temperature_crit[j])
 
         assert isinstance(model.fs.props[1].equilibrium_constraint,
                           Constraint)
@@ -631,7 +631,7 @@ class TestStateBlock_LV_SRK(object):
             assert j in ["a", "b"]
         assert str(model.fs.props[1]._tr_eq[j].expr) == str(
                 model.fs.props[1]._teq /
-                model.fs.props[1]._params.temperature_crit[j])
+                model.fs.props[1].params.temperature_crit[j])
 
         assert isinstance(model.fs.props[1].equilibrium_constraint,
                           Constraint)

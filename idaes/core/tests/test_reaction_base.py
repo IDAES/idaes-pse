@@ -308,7 +308,7 @@ def test_build():
                                    "state_block": m.pb})
 
     assert hasattr(m.rb, "state_ref")
-    assert m.rb._params == m.rb.config.parameters
+    assert m.rb.params == m.rb.config.parameters
 
 
 # -----------------------------------------------------------------------------
