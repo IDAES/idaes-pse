@@ -6,11 +6,7 @@ import webbrowser
 
 from idaes.ui.fsvis.flask_server import App as fsvis_server
 
-# from notebook end, call m.visualize, which serializes m and launches the app
-
-def sayfoo():
-    print('foo')
-
+# serialize flowsheet and launch the app
 def visualize(flowsheet, name):
     '''    
         Visualizes the flowsheet, assigning it to the given name. Attempts to
