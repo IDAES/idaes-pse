@@ -15,6 +15,8 @@ from jsonschema.exceptions import ValidationError
 
 from idaes.dmf.ui import flowsheet_comparer as fc
 
+from idaes.dmf.ui.flowsheet_comparer import Action
+
 
 def test_compare_models():
     model1 = {'id': 0, 
@@ -57,17 +59,18 @@ def test_compare_models():
 
     diff_model = fc.compare_models(model1, model2)
 
-    diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': "added", "class": "unit model"}, 
-                        's03': {'source': 'M101', 'dest': 'H101', 'label': 'Hello World!', 'action': "changed", "class": "arc"}, 
-                        's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': "added", "class": "arc"}
+    diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': Action.ADD.value, "class": "unit model"}, 
+                        's03': {'source': 'M101', 'dest': 'H101', 'label': 'Hello World!', 'action': Action.CHANGE.value, "class": "arc"}, 
+                        's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': Action.ADD.value, "class": "arc"}
                         }
     assert diff_model == diff_model_truth
 
     diff_model = fc.compare_models(model2, model1)
 
-    diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': 'removed', 'class': 'unit model'},
-                        's03': {'source': 'M101', 'dest': 'H101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': "changed", "class": "arc"},
-                        's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': "removed", "class": "arc"}}
+    diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': Action.REMOVE.value, 'class': 'unit model'},
+                        's03': {'source': 'M101', 'dest': 'H101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': Action.CHANGE.value, "class": "arc"},
+                        's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': Action.REMOVE.value, "class": "arc"}}
+
     assert diff_model == diff_model_truth
 
 
@@ -98,9 +101,10 @@ def test_compare_models_edge_cases():
 
     diff_model = fc.compare_models(existing_model, new_model)
 
-    diff_model_truth = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': 'added', 'class': 'unit model'}, 
-                        'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': 'added', 'class': 'unit model'},
-                        's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': 'added', 'class': 'arc'}}
+    diff_model_truth = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.ADD.value, 'class': 'unit model'}, 
+                        'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.ADD.value, 'class': 'unit model'},
+                        's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': Action.ADD.value, 'class': 'arc'}}
+
     assert diff_model == diff_model_truth
 
     # New model is empty
@@ -116,9 +120,10 @@ def test_compare_models_edge_cases():
                  "arcs": {}}
 
     diff_model = fc.compare_models(existing_model, new_model)
-    assert diff_model == {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': 'removed', 'class': 'unit model'}, 
-                          'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': 'removed', 'class': 'unit model'},
-                          's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': 'removed', 'class': 'arc'}}
+
+    assert diff_model == {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.REMOVE.value, 'class': 'unit model'}, 
+                          'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.REMOVE.value, 'class': 'unit model'},
+                          's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': Action.REMOVE.value, 'class': 'arc'}}
 
     # The models are the same
     model = {'id': 0, 
@@ -179,7 +184,9 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
-  diff_model = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': "added", "class": "unit model"}}
+
+  diff_model = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': Action.ADD.value, "class": "unit model"}}
+
   new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
   jointjs_truth = {"cells": [
                         {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "M101", "z": 1, "attrs": {"image": {"xlinkHref": "mixer.svg"}, "label": {"text": "M101"}, "root": {"title": "mixer"}}}, 
@@ -198,7 +205,9 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
-  diff_model = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': 'removed', "class": "unit model"}}
+ 
+  diff_model = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.REMOVE.value, "class": "unit model"}}
+
   new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
   jointjs_truth = {"cells": [
                         {"type": "standard.Image", "position": {"x": 200, "y": 200}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "H101", "z": 1, "attrs": {"image": {"xlinkHref": "heater_2.svg"}, "label": {"text": "H101"}, "root": {"title": "heater"}}}, 
@@ -215,7 +224,9 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
-  diff_model = {'s01': {'source': 'M101', 'dest': 'F111', 'label': "foo", 'action': "added", "class": "arc"}}
+
+  diff_model = {'s01': {'source': 'M101', 'dest': 'F111', 'label': "foo", 'action': Action.ADD.value, "class": "arc"}}
+
   new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
   jointjs_truth = {"cells": [
                         {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "M101", "z": 1, "attrs": {"image": {"xlinkHref": "mixer.svg"}, "label": {"text": "M101"}, "root": {"title": "mixer"}}}, 
@@ -234,7 +245,9 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
-  diff_model = {'s04': {'source': 'M101', 'dest': 'F111', 'label': "asdf", 'action': "changed", "class": "arc"}}
+
+  diff_model = {'s04': {'source': 'M101', 'dest': 'F111', 'label': "asdf", 'action': Action.CHANGE.value, "class": "arc"}}
+
   new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
   jointjs_truth = {"cells": [
                         {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "M101", "z": 1, "attrs": {"image": {"xlinkHref": "mixer.svg"}, "label": {"text": "M101"}, "root": {"title": "mixer"}}}, 
@@ -255,7 +268,9 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
-  diff_model = {'s04': {'source': 'M101', 'dest': 'F111', 'label': "asdf", 'action': "removed", "class": "arc"}}
+
+  diff_model = {'s04': {'source': 'M101', 'dest': 'F111', 'label': "asdf", 'action': Action.REMOVE.value, "class": "arc"}}
+
   new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
   jointjs_truth = {"cells": [
                         {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "M101", "z": 1, "attrs": {"image": {"xlinkHref": "mixer.svg"}, "label": {"text": "M101"}, "root": {"title": "mixer"}}}, 

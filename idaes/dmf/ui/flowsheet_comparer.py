@@ -10,11 +10,18 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+from enum import Enum
 from jsonschema import validate
 
 
 class UnknownModelDiffException():
     pass
+
+
+class Action(Enum):
+    REMOVE = 1
+    ADD = 2
+    CHANGE = 3
 
 
 def compare_models(existing_model, new_model):
@@ -50,21 +57,21 @@ def compare_models(existing_model, new_model):
             "M111": {
                 "type": "flash", 
                 "image": "flash.svg", 
-                "action": "removed", 
+                "action": "1", 
                 "class": "unit model"
             },
             "s03": {
                 "source": "M101", 
                 "dest": "F102", 
                 "label": "Hello World", 
-                "action": "changed", 
+                "action": "3", 
                 "class": "arc"
             }, 
             "s11": {
                 "source": "H101", 
                 "dest": "F102", 
                 "label": "molar flow ('Vap', 'hydrogen') 0.5", 
-                "action": "added", 
+                "action": "2", 
                 "class": "arc"
             }
         }
@@ -103,11 +110,11 @@ def compare_models(existing_model, new_model):
         validate(instance=value, schema=unit_model_schema)
         if item not in existing_model["unit_models"]:
             diff_model[item] = value
-            diff_model[item]["action"] = "added"
+            diff_model[item]["action"] = Action.ADD.value
             diff_model[item]["class"] = "unit model"
         elif existing_model["unit_models"][item] != value:
             diff_model[item] = value
-            diff_model[item]["action"] = "changed"
+            diff_model[item]["action"] = Action.CHANGE.value
             diff_model[item]["class"] = "unit model"
         elif existing_model["unit_models"][item] == value:
             pass
@@ -122,7 +129,7 @@ def compare_models(existing_model, new_model):
         validate(instance=value, schema=unit_model_schema)
         if item not in new_model["unit_models"]:
             diff_model[item] = value
-            diff_model[item]["action"] = "removed"
+            diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "unit model"
 
     arc_schema = {
@@ -139,11 +146,11 @@ def compare_models(existing_model, new_model):
         validate(instance=value, schema=arc_schema)
         if item not in existing_model["arcs"]:
             diff_model[item] = value
-            diff_model[item]["action"] = "added"
+            diff_model[item]["action"] = Action.ADD.value
             diff_model[item]["class"] = "arc"
         elif existing_model["arcs"][item] != value:
             diff_model[item] = value
-            diff_model[item]["action"] = "changed"
+            diff_model[item]["action"] = Action.CHANGE.value
             diff_model[item]["class"] = "arc"
         else:
             pass
@@ -153,7 +160,7 @@ def compare_models(existing_model, new_model):
         validate(instance=value, schema=arc_schema)
         if item not in new_model["arcs"]:
             diff_model[item] = value
-            diff_model[item]["action"] = "removed"
+            diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "arc"
 
     return diff_model
@@ -170,21 +177,21 @@ def model_jointjs_conversion(diff_model, current_json):
             "M111": {
                 "type": "flash", 
                 "image": "flash.svg", 
-                "action": "removed", 
+                "action": "1", 
                 "class": "unit model"
             }, 
             "s03": {
                 "source": "M101", 
                 "dest": "F102", 
                 "label": "Hello World", 
-                "action": "changed", 
+                "action": "3", 
                 "class": "arc"
             }, 
             "s11": {
                 "source": "H101", 
                 "dest": "F102", 
                 "label": "molar flow ('Vap', 'hydrogen') 0.5", 
-                "action": "added", 
+                "action": "2", 
                 "class": "arc"
             }
         }
@@ -194,7 +201,7 @@ def model_jointjs_conversion(diff_model, current_json):
     .. code-block:: json
 
         {
-            "cells": [{ "--jointjs code--" }],
+            "cells": [{ "--jointjs code--": "--jointjs code--" }],
             "model": {
                 "id": "id", 
                 "unit_models": {
@@ -223,7 +230,7 @@ def model_jointjs_conversion(diff_model, current_json):
                 # If it is removed then just remove it from the new_json
                 new_json["cells"].remove(item)
 
-                if values["action"] != "removed":
+                if values["action"] != Action.REMOVE.value:
                     if values["class"] == "arc":
                         item["id"] = name
                         item["source"]["id"] = values["source"]
