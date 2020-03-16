@@ -644,6 +644,11 @@ see property package for documentation.}""",
         ):
             blk.properties_isentropic[:].temperature.fix()
         elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].enth_mol,
+            Var,
+        ):
+            blk.properties_isentropic[:].enth_mol.fix()
+        elif isinstance(
             blk.properties_isentropic[blk.flowsheet().config.time.first()].temperature,
             Expression,
         ):
@@ -655,6 +660,7 @@ see property package for documentation.}""",
 
         blk.isentropic.deactivate()
 
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
@@ -664,6 +670,11 @@ see property package for documentation.}""",
             Var,
         ):
             blk.properties_isentropic[:].temperature.unfix()
+        elif isinstance(
+            blk.properties_isentropic[blk.flowsheet().config.time.first()].enth_mol,
+            Var,
+        ):
+            blk.properties_isentropic[:].enth_mol.unfix()
         elif isinstance(
             blk.properties_isentropic[blk.flowsheet().config.time.first()].temperature,
             Expression,
