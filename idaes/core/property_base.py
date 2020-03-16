@@ -271,6 +271,10 @@ should be constructed in this state block,
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
 
+    @property
+    def params(self):
+        return self._params
+
     def define_state_vars(self):
         """
         Method that returns a dictionary of state variables used in property
@@ -330,7 +334,7 @@ should be constructed in this state block,
         the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_flow_terms method. Please '
+                                  ' get_enthalpy_flow_terms method. Please '
                                   'contact the property package developer.')
 
     def get_energy_density_terms(self, *args, **kwargs):

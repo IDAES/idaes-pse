@@ -45,8 +45,6 @@ class BTXParameterData(ActivityCoeffParameterData):
         '''
         Callable method for Block construction.
         '''
-        super(BTXParameterData, self).build()
-
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
                                                      'o-xylene'])
@@ -55,6 +53,8 @@ class BTXParameterData(ActivityCoeffParameterData):
         # NOTE: User needs to update this list; can be a subset or
         # equal to the master component list
         self.component_list = Set(initialize=['benzene', 'toluene'])
+
+        super(BTXParameterData, self).build()
 
         # List of components in each phase (optional)
         self.phase_comp = {"Liq": self.component_list,

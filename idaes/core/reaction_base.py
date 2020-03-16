@@ -203,6 +203,10 @@ should be constructed in this reaction block,
 
         self._validate_state_block()
 
+    @property
+    def params(self):
+        return self._params
+
     def _validate_state_block(self):
         """
         Method to validate that the associated state block matches with the

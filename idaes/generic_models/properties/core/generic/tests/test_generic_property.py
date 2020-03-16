@@ -76,7 +76,7 @@ class TestGetMethod(object):
         # Create a dummy state block
         m.props = Block([1])
         m.props[1].config = ConfigBlock()
-        add_object_reference(m.props[1], "_params", m.params)
+        add_object_reference(m.props[1], "params", m.params)
 
         m.props[1].dummy_response = "foo"
 
@@ -645,7 +645,7 @@ class TestGenericStateBlock(object):
         assert str(frame.props[1].dens_mass.expr) == \
             str(sum(frame.props[1].dens_mass_phase[p] *
                     frame.props[1].phase_frac[p]
-                    for p in frame.props[1]._params.phase_list))
+                    for p in frame.props[1].params.phase_list))
 
         # Check that dependency variables also constructed properly
         assert isinstance(frame.props[1].dens_mass_phase, Expression)
@@ -669,7 +669,7 @@ class TestGenericStateBlock(object):
         assert str(frame.props[1].dens_mol.expr) == \
             str(sum(frame.props[1].dens_mol_phase[p] *
                     frame.props[1].phase_frac[p]
-                    for p in frame.props[1]._params.phase_list))
+                    for p in frame.props[1].params.phase_list))
 
         # Check that dependency variables also constructed properly
         assert isinstance(frame.props[1].dens_mol_phase, Expression)
@@ -702,7 +702,7 @@ class TestGenericStateBlock(object):
         assert str(frame.props[1].enth_mol.expr) == \
             str(sum(frame.props[1].enth_mol_phase[p] *
                     frame.props[1].phase_frac[p]
-                    for p in frame.props[1]._params.phase_list))
+                    for p in frame.props[1].params.phase_list))
 
         # Check that dependency variables also constructed properly
         assert isinstance(frame.props[1].enth_mol_phase, Expression)
@@ -735,7 +735,7 @@ class TestGenericStateBlock(object):
         assert str(frame.props[1].entr_mol.expr) == \
             str(sum(frame.props[1].entr_mol_phase[p] *
                     frame.props[1].phase_frac[p]
-                    for p in frame.props[1]._params.phase_list))
+                    for p in frame.props[1].params.phase_list))
 
         # Check that dependency variables also constructed properly
         assert isinstance(frame.props[1].entr_mol_phase, Expression)
@@ -786,7 +786,7 @@ class TestGenericStateBlock(object):
         assert str(frame.props[1].gibbs_mol.expr) == \
             str(sum(frame.props[1].gibbs_mol_phase[p] *
                     frame.props[1].phase_frac[p]
-                    for p in frame.props[1]._params.phase_list))
+                    for p in frame.props[1].params.phase_list))
 
         # Check that dependency variables also constructed properly
         assert isinstance(frame.props[1].gibbs_mol_phase, Expression)
