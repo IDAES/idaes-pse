@@ -12,12 +12,15 @@
 ##############################################################################
 """
 Methods for ideal equations of state.
+
+Currently only supports liquid and vapor phases
 """
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.generic_property import get_method
 from idaes.core.util.constants import Constants as const
 
 
+# TODO: Add support for ideal solids
 def common(b):
     # No common components required for ideal property calculations
     pass
@@ -28,11 +31,12 @@ def dens_mass_phase(b, p):
 
 
 def dens_mol_phase(b, p):
-    if p == "Vap":
+    pobj = b.params.get_phase(p)
+    if pobj.is_vapor_phase():
         return b.pressure/(const.gas_constant*b.temperature)
-    elif p == "Liq":
+    elif pobj.is_liquid_phase():
         return sum(b.mole_frac_phase_comp[p, j] *
-                   get_method(b, "dens_mol_liq_comp")(b, j, b.temperature)
+                   get_method(b, "dens_mol_liq_comp", j)(b, b.temperature)
                    for j in b.components_in_phase(p))
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -44,10 +48,11 @@ def enth_mol_phase(b, p):
 
 
 def enth_mol_phase_comp(b, p, j):
-    if p == "Vap":
-        return get_method(b, "enth_mol_ig_comp")(b, j, b.temperature)
-    elif p == "Liq":
-        return get_method(b, "enth_mol_liq_comp")(b, j, b.temperature)
+    pobj = b.params.get_phase(p)
+    if pobj.is_vapor_phase():
+        return get_method(b, "enth_mol_ig_comp", j)(b, b.temperature)
+    elif pobj.is_liquid_phase():
+        return get_method(b, "enth_mol_liq_comp", j)(b, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -58,26 +63,29 @@ def entr_mol_phase(b, p):
 
 
 def entr_mol_phase_comp(b, p, j):
-    if p == "Vap":
-        return get_method(b, "entr_mol_ig_comp")(b, j, b.temperature)
-    elif p == "Liq":
-        return get_method(b, "entr_mol_liq_comp")(b, j, b.temperature)
+    pobj = b.params.get_phase(p)
+    if pobj.is_vapor_phase():
+        return get_method(b, "entr_mol_ig_comp", j)(b, b.temperature)
+    elif pobj.is_liquid_phase():
+        return get_method(b, "entr_mol_liq_comp", j)(b, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def fug_phase_comp(b, p, j):
-    if p == "Vap":
+    pobj = b.params.get_phase(p)
+    if pobj.is_vapor_phase():
         return b.mole_frac_phase_comp[p, j]*b.pressure
-    elif p == "Liq":
+    elif pobj.is_liquid_phase():
         return b.mole_frac_phase_comp[p, j] * \
-               get_method(b, "pressure_sat_comp")(b, j, b._teq)
+               get_method(b, "pressure_sat_comp", j)(b, b._teq)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def fug_coeff_phase_comp(b, p, j):
-    if p not in ["Liq", "Vap"]:
+    pobj = b.params.get_phase(p)
+    if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
     return 1
 

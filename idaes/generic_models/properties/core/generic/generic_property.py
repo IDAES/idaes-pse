@@ -15,12 +15,12 @@ Framework for generic property packages
 """
 # Import Python libraries
 import types
-from copy import deepcopy
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Expression,
                            Set,
+                           Param,
                            SolverFactory,
                            value,
                            Var)
@@ -49,6 +49,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # TODO: Set a default state definition
+# TODO: Probably should set an initial value for state variables
 # TODO: Need clean-up methods for all methods to work with Pyomo DAE
 # TODO: Need way to dynamically determine units of measurement....
 class GenericPropertyPackageError(PropertyPackageError):
@@ -62,6 +63,50 @@ class GenericPropertyPackageError(PropertyPackageError):
                f"{self.prop}, but was not provided with a method " \
                f"for this property. Please add a method for this property " \
                f"in the property parameter configuration."
+
+
+def get_method(self, config_arg, comp=None):
+    """
+    Method to inspect configuration argument and return the user-defined
+    construction method associated with it.
+
+    This method checks whether the value provided is a method or a
+    module. If the value is a module, it looks in the module for a method
+    with the same name as the config argument and returns this. If the
+    value is a method, the method is returned. If the value is neither a
+    module or a method, an ConfigurationError is raised.
+
+    Args:
+        config_arg : the configuration argument to look up
+
+    Returns:
+        A callable method or a ConfigurationError
+    """
+    if comp is None:
+        source_block = self.params.config
+    else:
+        source_block = self.params.get_component(comp).config
+
+    try:
+        c_arg = getattr(source_block, config_arg)
+    except AttributeError:
+        raise AttributeError("{} Generic Property Package called for invalid "
+                             "configuration option {}. Please contact the "
+                             "developer of the property package."
+                             .format(self.name, config_arg))
+
+    if c_arg is None:
+        raise GenericPropertyPackageError(self, c_arg)
+
+    if isinstance(c_arg, types.ModuleType):
+        return getattr(c_arg, config_arg)
+    elif callable(c_arg):
+        return c_arg
+    else:
+        raise ConfigurationError(
+                "{} Generic Property Package received invalid value "
+                "for argumnet {}. Value must be either a module or a "
+                "method".format(self.name, config_arg))
 
 
 class GenericParameterData(PhysicalParameterBlock):
@@ -88,7 +133,7 @@ class GenericParameterData(PhysicalParameterBlock):
     # TODO : Should we allow different state variables in each phase?
     CONFIG.declare("state_definition", ConfigValue(
         # default=FPhx,
-        description="Choice of State Variable",
+        description="Choice of State Variables",
         doc="""Flag indicating the set of state variables to use for property
         package. Values should be a valid Python method which creates the
         required state variables."""))
@@ -96,6 +141,12 @@ class GenericParameterData(PhysicalParameterBlock):
         domain=dict,
         description="Bounds for state variables",
         doc="""A dict containing bounds to use for state variables."""))
+
+    # Reference State
+    CONFIG.declare("pressure_ref", ConfigValue(
+        description="Pressure at reference state"))
+    CONFIG.declare("temperature_ref", ConfigValue(
+        description="Temperature at reference state"))
 
     # Phase equilibrium config arguments
     CONFIG.declare("phases_in_equilibrium", ConfigValue(
@@ -115,7 +166,7 @@ class GenericParameterData(PhysicalParameterBlock):
         3-tuples where the first value is a valid name from the component_list,
         and the following two values should be phases from the  phase_list."""
         ))
-    CONFIG.declare("phase_equilibrium_state_formulation", ConfigValue(
+    CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
         default=None,
         description="Formulation to use when calculating equilibrium state",
         doc="""Method to use for calculating phase equilibrium state and
@@ -152,8 +203,13 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for p, d in self.config.phases.items():
-            tmp_dict = deepcopy(d)
-            ptype = tmp_dict.pop("type", Phase)
+            tmp_dict = {}
+            ptype = Phase
+            for k, v in d.items():
+                if k == "type":
+                    ptype = v
+                else:
+                    tmp_dict[k] = v
 
             if ptype is Phase:
                 _log.warning("{} phase {} was not assigned a type. "
@@ -188,6 +244,29 @@ class GenericParameterData(PhysicalParameterBlock):
                     "your property parameter definition to include this."
                     .format(self.name))
 
+        # Validate reference state and create Params
+        if self.config.pressure_ref is None:
+            raise ConfigurationError(
+                    "{} Generic Property Package was not provided with a "
+                    "pressure_ref configuration argument. Please fix "
+                    "your property parameter definition to include this."
+                    .format(self.name))
+        else:
+            self.pressure_ref = Param(
+                initialize=self.config.pressure_ref,
+                mutable=True)
+
+        if self.config.temperature_ref is None:
+            raise ConfigurationError(
+                    "{} Generic Property Package was not provided with a "
+                    "temperature_ref configuration argument. Please fix "
+                    "your property parameter definition to include this."
+                    .format(self.name))
+        else:
+            self.temperature_ref = Param(
+                initialize=self.config.temperature_ref,
+                mutable=True)
+
         # Validate equations of state
         for p in self.phase_list:
             if self.get_phase(p).config.equation_of_state is None:
@@ -219,9 +298,8 @@ class GenericParameterData(PhysicalParameterBlock):
                 counter = 1
                 for pp in self.config.phases_in_equilibrium:
                     for j in self.component_list:
-                        if (j in self.get_phase(pp[0]).config.component_list
-                                and j in
-                                self.get_phase(pp[1]).config.component_list):
+                        if ((pp[0], j) in self._phase_component_set
+                                and (pp[1], j) in self._phase_component_set):
                             # Component j is in both phases, in equilibrium
                             pe_dict["PE"+str(counter)] = {j: (pp[0], pp[1])}
                             pe_set.append("PE"+str(counter))
@@ -244,8 +322,8 @@ class GenericParameterData(PhysicalParameterBlock):
                             "{} phase_equilibrium_dict contained entry ({}) "
                             "with unrecognised phase name {}."
                             .format(self.name, i, v[2]))
-                pe_dict[i] = {v[0], (v[1], v[2])}
-                pe_set.append(v[0])
+                pe_dict[i] = {v[0]: (v[1], v[2])}
+                pe_set.append(i)
 
             # Construct phase_equilibrium_list and phase_equilibrium_idx
             self.phase_equilibrium_list = pe_dict
@@ -255,12 +333,12 @@ class GenericParameterData(PhysicalParameterBlock):
         # Validate phase equilibrium formulation if required
         if (self.config.phases_in_equilibrium is not None or
                 self.config.phase_equilibrium_dict is not None):
-            if self.config.phase_equilibrium_state_formulation is None:
+            if self.config.phase_equilibrium_formulation is None:
                 raise ConfigurationError(
                     "{} Generic Property Package provided with a "
                     "phases_in_equilibrium or phase_equilibrium_dict argument,"
-                    " bit no method was specified for "
-                    "phase_equilibrium_state_formulation.".format(self.name))
+                    " but no method was specified for "
+                    "phase_equilibrium_formulation.".format(self.name))
 
     def configure(self):
         """
@@ -277,11 +355,11 @@ class GenericParameterData(PhysicalParameterBlock):
         """
         pass
 
-    # @classmethod
-    # def define_metadata(cls, obj):
-    #     """Define properties supported and units."""
-    #     # TODO : Need to fix to have methods for things that may or may not be
-    #     # created by state var methods
+    @classmethod
+    def define_metadata(cls, obj):
+        """Define properties supported and units."""
+        # TODO : Need to fix to have methods for things that may or may not be
+        # created by state var methods
     #     obj.add_properties(
     #         {'flow_mol': {'method': None, 'units': 'mol/s'},
     #          'mole_frac_comp': {'method': None, 'units': 'none'},
@@ -323,13 +401,13 @@ class GenericParameterData(PhysicalParameterBlock):
     #                                 'units': 'K'},
     #          'temperature_dew': {'method': '_temperature_dew', 'units': 'K'}})
 
-    #     obj.add_default_units({'time': 's',
-    #                            'length': 'm',
-    #                            'mass': 'g',
-    #                            'amount': 'mol',
-    #                            'temperature': 'K',
-    #                            'energy': 'J',
-    #                            'holdup': 'mol'})
+        obj.add_default_units({'time': 's',
+                                'length': 'm',
+                                'mass': 'g',
+                                'amount': 'mol',
+                                'temperature': 'K',
+                                'energy': 'J',
+                                'holdup': 'mol'})
 
 
 class _GenericStateBlock(StateBlock):
@@ -346,3 +424,29 @@ class _GenericStateBlock(StateBlock):
 class GenericStateBlockData(StateBlockData):
     def build(self):
         super(GenericStateBlockData, self).build()
+
+        # Add state variables and associated methods
+        self.params.config.state_definition.define_state(self)
+
+        # Create common components for each property package
+        for p in self.params.phase_list:
+            self.params.get_phase(p).config.equation_of_state.common(self)
+
+    def components_in_phase(self, phase):
+        """
+        Generator method which yields components present in a given phase.
+
+        Args:
+            phase - phase for which to yield components
+
+        Yields:
+            components present in phase.
+        """
+        if self.params.get_phase(phase).config.component_list is None:
+            # All components in all phases
+            for j in self.params.component_list:
+                yield j
+        else:
+            # Return only components for indicated phase
+            for j in self.params.get_phase(phase).config.component_list:
+                yield j
