@@ -13,19 +13,49 @@ from pyomo.core.expr.sympy_tools import PyomoSympyBimap, sympy_available, Sympy2
 import pyomo.environ as pyo
 import numpy as np
 
+from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 
 class Alamopy(Surrogate):
 
-	def __init__(self, settings):
-		super().__init__(settings)
+	CONFIG = Surrogate.CONFIG()
+
+	CONFIG.declare('xlabels', ConfigValue(default=None, domain=list))
+	CONFIG.declare('zlabels', ConfigValue(default=None, domain=list))
+	CONFIG.declare('xval', ConfigValue(default=None, domain=list))
+	CONFIG.declare('zval', ConfigValue(default=None, domain=list))
+	CONFIG.declare('xmin', ConfigValue(default=None, domain=list))
+	CONFIG.declare('xmax', ConfigValue(default=None, domain=list))
+	CONFIG.declare('modeler', ConfigValue(default=6, domain=int))
+	CONFIG.declare('linfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('expfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('logfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('sinfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('cosfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('monomialpower', ConfigValue(default=None, domain=list))
+	CONFIG.declare('multi2power', ConfigValue(default=None, domain=list))
+	CONFIG.declare('multi3power', ConfigValue(default=None, domain=list))
+	CONFIG.declare('ratiopower', ConfigValue(default=None, domain=list))
+	CONFIG.declare('screener', ConfigValue(default=None, domain=int)) # not sure
+	CONFIG.declare('almname', ConfigValue(default=None, domain=str))
+	CONFIG.declare('savescratch', ConfigValue(default=None, domain=str))
+	CONFIG.declare('savetrace', ConfigValue(default=None, domain=str))
+	CONFIG.declare('expandoutput', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('almopt', ConfigValue(default=None, domain=str))
+	CONFIG.declare('loo', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('lmo', ConfigValue(default=False, domain=bool)) # Check
+	CONFIG.declare('maxiter', ConfigValue(default=None, domain=int))
+	CONFIG.declare('simulator', ConfigValue(default=None))
+
+	def __init__(self, **settings):
+		super().__init__(**settings)
 		self.alamopy_results = None
 
 	def build_model(self):
 		super().build_model()
 		if self._vdata_in is not None and self._vdata_out is not None:
-			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out,  xval=self._vdata_in, zval=self._vdata_out, **self.settings)
+			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out,  xval=self._vdata_in, zval=self._vdata_out, **self.config)
 		else:
-			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out, **self.settings)
+			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out,  **self.config)
 
 		self._res = self.alamopy_results
 		self._model = self.alamopy_results['model']
@@ -64,16 +94,23 @@ class Alamopy(Surrogate):
 		self._model = model_pyomo
 
 class Pysmo_rbf(Surrogate):
-	def __init__(self, settings):
-			super().__init__(settings)
+	CONFIG = Surrogate.CONFIG()
+
+	CONFIG.declare('basis_function', ConfigValue(default=None, domain=str))
+	CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
+	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
+
+	def __init__(self, **settings):
+			super().__init__(**settings)
 			self.pysmo_rbf_results = None
 
 	def build_model(self):
 		super().build_model()
 		start_time = time.time()
 		training_data = np.concatenate((self._rdata_in, self._rdata_out.reshape(self._rdata_out.size, 1)), axis=1)
-		self.pyomo_vars = dict((k, self.settings[k]) for k in ['pyomo_vars'] if k in self.settings) # Extreact variable list
-		self.rbf_setup = { k : self.settings[k] for k in set(self.settings) - set(self.pyomo_vars) }
+		self.pyomo_vars = dict((k, self.config[k]) for k in ['pyomo_vars'] if k in self.config) # Extreact variable list
+		self.rbf_setup = { k : self.config[k] for k in set(self.config) - set(self.pyomo_vars) }
 		prob_init = radial_basis_function.RadialBasisFunctions(training_data, **self.rbf_setup)
 		feature_vec = prob_init.get_feature_vector()
 		self.pysmo_rbf_results = prob_init.rbf_training()
@@ -97,16 +134,23 @@ class Pysmo_rbf(Surrogate):
 
 
 class Pysmo_kriging(Surrogate):
-	def __init__(self, settings):
-			super().__init__(settings)
+
+	CONFIG = Surrogate.CONFIG()
+
+	CONFIG.declare('numerical_gradients', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
+
+	def __init__(self, **settings):
+			super().__init__(**settings)
 			self.pysmo_kriging_results = None
 
 	def build_model(self):
 		super().build_model()
 		start_time = time.time()
 		training_data = np.concatenate((self._rdata_in, self._rdata_out.reshape(self._rdata_out.size, 1)), axis=1)
-		self.pyomo_vars = dict((k, self.settings[k]) for k in ['pyomo_vars'] if k in self.settings) # Extreact variable list
-		self.krg_setup = { k : self.settings[k] for k in set(self.settings) - set(self.pyomo_vars) }
+		self.pyomo_vars = dict((k, self.config[k]) for k in ['pyomo_vars'] if k in self.config) # Extreact variable list
+		self.krg_setup = { k : self.config[k] for k in set(self.config) - set(self.pyomo_vars) }
 		prob_init = kriging.KrigingModel(training_data, **self.krg_setup)
 		feature_vec = prob_init.get_feature_vector()
 		self.pysmo_kriging_results = prob_init.kriging_training()		
@@ -134,17 +178,28 @@ class Pysmo_kriging(Surrogate):
 
 
 class Pysmo_polyregression(Surrogate):
-	def __init__(self, settings):
-			super().__init__(settings)
+
+	CONFIG = Surrogate.CONFIG()
+
+	CONFIG.declare('number_of_crossvalidations', ConfigValue(default=None, domain=int))
+	CONFIG.declare('maximum_polynomial_order', ConfigValue(default=None, domain=int))
+	CONFIG.declare('training_split', ConfigValue(default=None, domain=float))
+	CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
+	CONFIG.declare('multinomials', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('additional_features', ConfigValue(default=None, domain=list))
+	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
+
+	def __init__(self, **settings):
+			super().__init__(**settings)
 			self.pysmo_kriging_results = None
 
 	def build_model(self):
 		super().build_model()
 		start_time = time.time()
 		training_data = np.concatenate((self._rdata_in, self._rdata_out.reshape(self._rdata_out.size, 1)), axis=1)
-		self.pyomo_vars = dict((k, self.settings[k]) for k in ['pyomo_vars'] if k in self.settings) # Extract variable list
-		self.add_terms = dict((k, self.settings[k]) for k in ['additional_features'] if k in self.settings)
-		self.polyreg_setup = { k : self.settings[k] for k in set(self.settings) - set(self.pyomo_vars) - set(self.add_terms)}
+		self.pyomo_vars = dict((k, self.config[k]) for k in ['pyomo_vars'] if k in self.config) # Extract variable list
+		self.add_terms = dict((k, self.config[k]) for k in ['additional_features'] if k in self.config)
+		self.polyreg_setup = { k : self.config[k] for k in set(self.config) - set(self.pyomo_vars) - set(self.add_terms)}
 		prob_init = polynomial_regression.PolynomialRegression(training_data, training_data, **self.polyreg_setup)
 		feature_vec = prob_init.get_feature_vector()
 		if self.add_terms:

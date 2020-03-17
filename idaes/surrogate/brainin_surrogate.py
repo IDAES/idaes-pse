@@ -15,7 +15,7 @@
 #            https://www.sfu.ca/~ssurjano/camel6.html
 # This problem utilizes ALAMO's sampling features
 
-from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression
+from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, Alamopy
 from pyomo.environ import Var, ConcreteModel, Objective
 
 import math
@@ -48,13 +48,27 @@ def _main():
     m = ConcreteModel()
     m.x = Var([1, 2])
 
-    # pysmo_rbf_settings = {'basis_function': 'gaussian', 'regularization': True, 'pyomo_vars': [m.x[1], m.x[2]] }
-    # modeler = Pysmo_rbf(pysmo_rbf_settings)
-    # pysmo_krg_settings = {'numerical_gradients': True, 'regularization': True, 'pyomo_vars': [m.x[1], m.x[2]] }
-    # modeler = Pysmo_kriging(pysmo_krg_settings)
+    pysmo_rbf_settings = {'basis_function': 'gaussian',
+                          'regularization': True,
+                          'pyomo_vars': [m.x[1], m.x[2]]}
+    modeler = Pysmo_rbf(**pysmo_rbf_settings)
 
-    pysmo_pr_settings = {'maximum_polynomial_order':4, 'multinomials':1, 'pyomo_vars': [m.x[1], m.x[2]], 'training_split':0.9, 'number_of_crossvalidations': 5}
-    modeler = Pysmo_polyregression(pysmo_pr_settings)
+    pysmo_krg_settings = {'numerical_gradients': True,
+                          'regularization': True,
+                          'pyomo_vars': [m.x[1], m.x[2]]}
+    modeler = Pysmo_kriging(**pysmo_krg_settings)
+
+    pysmo_pr_settings = {'maximum_polynomial_order':4,
+                         'multinomials':1,
+                         'pyomo_vars': [m.x[1], m.x[2]],
+                         'training_split':0.9,
+                         'number_of_crossvalidations': 5}
+    modeler = Pysmo_polyregression(**pysmo_pr_settings)
+
+    alamo_settings = {'monomialpower':(1, 2, 3, 4, 5, 6),
+                      'multi2power':(1, 2),
+                      'expandoutput':True}
+    modeler = Alamopy(**alamo_settings)
 
 
     modeler.regressed_data(x,y)

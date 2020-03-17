@@ -88,7 +88,8 @@ def alamo(xdata, zdata, **kwargs):
     data, debug = alamopy.data, alamopy.debug
 
     # patched together validation data check
-    if "xval" in kwargs.keys():
+    # if "xval" in kwargs.keys():
+    if kwargs["xval"] is not None:
         vargs = (kwargs["xval"], kwargs["zval"])
     else:
         vargs = ()
@@ -286,7 +287,8 @@ def alamo(xdata, zdata, **kwargs):
             )
 
     # Check to see if additional data was sampled and add it
-    if "sampler" in kwargs.keys():
+    # if "sampler" in kwargs.keys():
+    if kwargs["simulator"] is not None:
         xdata, zdata = checkForSampledData(data, debug)
 
     # calculate additional statistics
@@ -429,7 +431,7 @@ def checkinput(data, debug, xdata, zdata, vargs, kwargs):
         if key in kk:
             debug[key] = kwargs[key]
 
-    if "almname" in kk:
+    if kwargs["almname"] is not None:
         data["stropts"]["almname"] += ".alm"
 
 
@@ -512,11 +514,12 @@ def getlabels(data, debug, kwargs):
         debug: Additional options may be specified and will be applied
                 to the .alm
         vargs: validation data valxdata, valzdata
+        kwargs: keyword arguments
     """
 
     # This function generates labels if they are not provided
     # Check to see if labels have been specified before we generate them
-    if "xlabels" in kwargs.keys():
+    if kwargs["xlabels"] is not None:
         data["labs"]["savexlabels"] = kwargs["xlabels"]
     else:
         # Make savexlabels
@@ -525,7 +528,7 @@ def getlabels(data, debug, kwargs):
             temp.append("x" + str(i + 1))
         data["labs"]["savexlabels"] = temp
 
-    if "zlabels" in kwargs.keys():
+    if kwargs["zlabels"] is not None:
         data["labs"]["savezlabels"] = kwargs["zlabels"]
     else:
         # Make savezlabels
@@ -695,7 +698,7 @@ def writeCustomALAMOOptions(kwargs):
         group_list, basis_constraint_list
     name = "almopt.txt"
 
-    if "almopt" in kwargs.keys():
+    if kwargs["almopt"] is not None:
         name = kwargs["almopt"]
 
     with open(name, "w") as r:
@@ -755,7 +758,7 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
     parseKwargs(data, debug, kwargs)
 
     # Check to see if a simwrapper should be built
-    if debug["simwrap"] or "simulator" in kwargs.keys():
+    if debug["simwrap"] or kwargs["simulator"] is not None:
         buildSimWrapper(data, debug)
 
     # Specific check to see if the labels of the response variables
@@ -769,7 +772,8 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
             debug["outkeys"] = True
 
     # Construct xmin and xmax vector based on training data if not provided
-    if "xmin" not in kwargs.keys():
+    # if "xmin" not in kwargs.keys():
+    if kwargs['xmin'] is None:
         constructXBounds(xdata, zdata, data, debug)
 
 
@@ -785,6 +789,8 @@ def parseKwargs(data, debug, kwargs):
     """
 
     for arg in kwargs.keys():
+        if kwargs[arg] is None:
+            break
         if arg in data["pargs"]["opts"]:
             data["opts"][arg] = kwargs[arg]
         elif arg in data["pargs"]["lstopts"]:
@@ -864,7 +870,7 @@ def constructXBounds(xdata, zdata, data, debug):
                 tn = xdata[j]
             if float(xdata[j]) > float(tx):
                 tx = xdata[j]
-        xmin = xmin + str(tn) + " "
+        xmin = "%s %f "%(xmin, tn)
         xmax = xmax + str(tx) + " "
     data["set4"]["xmax"] = xmax
     data["set4"]["xmin"] = xmin
@@ -1231,7 +1237,7 @@ def cleanFiles(data, debug, pywrite=False, **kwargs):
         surface_constraint_list = []
         extrapxmax = None
         extrapxmin = None
-        if "almopt" in kwargs.keys():
+        if kwargs["almopt"] is not None:
             deletefile(kwargs["almopt"])
 
     if debug["simwrap"]:
