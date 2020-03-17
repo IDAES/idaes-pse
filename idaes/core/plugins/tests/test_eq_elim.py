@@ -95,3 +95,22 @@ def test_reverse(model):
     assert not m.x[1].fixed
     assert not m.x[2].fixed
     assert not m.y.fixed
+
+def test_bounds(model):
+    m = model
+
+    elim = pyo.TransformationFactory("simple_equality_eliminator")
+
+    m.x[3].setlb(1)
+    m.x[3].setub(10)
+    m.x[4].setlb(2)
+    m.x[4].setub(12)
+
+    elim.apply_to(m)
+
+    if id(m.x[3]) not in elim._subs_map:
+        assert m.x[3].lb == 1
+        assert m.x[3].ub == 2
+    else:
+        assert m.x[4].lb == 3
+        assert m.x[4].ub == 10

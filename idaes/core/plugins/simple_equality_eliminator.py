@@ -18,6 +18,7 @@ import pyomo.environ as pyo
 from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
+from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
 
@@ -66,31 +67,6 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                     continue
 
                 subs[id(v0)] = -(b0 + a1 * v1) / a0
-
-                if v0.lb is not None:
-                    b1 = -(b0 + a0 * v0.lb) / a1
-                else:
-                    b1 = None
-
-                if v0.ub is not None:
-                    b2 = -(b0 + a0 * v0.ub) / a1
-                else:
-                    b2 = None
-
-                if a1*a0 <= 0:
-                    lb = b1
-                    ub = b2
-                else:
-                    lb = b2
-                    ub = b1
-
-                if lb is not None:
-                    if v1.lb is None or lb < v1.lb:
-                        v1.setlb(lb)
-                if ub is not None:
-                    if v1.ub is None or ub > v1.ub:
-                        v1.setub(ub)
-
                 cnstr.add(c)
                 rset.add(id(v0))
                 rset.add(id(v1))
@@ -99,6 +75,17 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                     subs_map[id(v0)] = v0
 
                 _log.debug("Sub: {} = {}".format(v0, subs[id(v0)]))
+
+                # Use the thightest set of bounds from v0 and v1
+                lb, ub = compute_bounds_on_expr(-(b0 + a0 * v0) / a1)
+
+                if lb is not None:
+                    if v1.lb is None or lb > v1.lb:
+                        v1.setlb(lb)
+                if ub is not None:
+                    if v1.ub is None or ub < v1.ub:
+                        v1.setub(ub)
+
         return subs, cnstr, fixes, subs_map
 
 
