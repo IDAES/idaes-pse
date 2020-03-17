@@ -12,7 +12,7 @@
 ##############################################################################
 import pytest
 
-from idaes.dmf.ui import icon_mapping
+from idaes.ui import icon_mapping
 
 
 @pytest.mark.parametrize(
