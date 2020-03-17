@@ -55,18 +55,21 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Get default solver for testing
 solver = get_default_solver()
 
+
 # -----------------------------------------------------------------------------
 def test_bad_option():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     with pytest.raises(KeyError):
-        m.fs.unit = HeatExchanger(default={"I'm a bad option":"hot"})
+        m.fs.unit = HeatExchanger(default={"I'm a bad option": "hot"})
+
 
 def test_same_name():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     with pytest.raises(NameError):
-        m.fs.unit = HeatExchanger(default={"cold_side_name":"shell"})
+        m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
+
 
 def test_config():
     m = ConcreteModel()
@@ -156,7 +159,8 @@ def test_costing():
 
     results = solver.solve(m)
     assert m.fs.unit.costing.purchase_cost.value == \
-                                            pytest.approx(52442.7363,1e-5)
+                                            pytest.approx(434265.80, 1e-5)
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
