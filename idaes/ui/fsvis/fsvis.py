@@ -8,29 +8,35 @@ from idaes.ui.fsvis.flask_server import App as fsvis_server
 
 # serialize flowsheet and launch the app
 def visualize(flowsheet, name):
-    '''    
-        Visualizes the flowsheet, assigning it to the given name. Attempts to
-        open a browser window to display the visualization app, as well as
-        directly showing the URL in case the browser fails to open.
+    """Visualizes the flowsheet, assigning it to the given name. 
+    
+    Attempts to
+    open a browser window to display the visualization app, as well as
+    directly showing the URL in case the browser fails to open.
+
+    Usage example:
+    
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(...)
+    ...
+    visualize(m.fs, "draftview")
         
-        :param flowsheet: The flowsheet to be visualized.
-        :param name: The name to assign to the visualization. This name will be
-        attached to the visualization instance as long as the visualization app
-        server stays running (e.g. until the parent python kernel is shut down)
-        
-        :return: None
-        
-        Usage example:
-        
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(...)
-        ...
-        visualize(m.fs, "draftview")
-    '''
+    Args: 
+        flowsheet: An IDAES flowsheetBlock to be visualized.
+        name: A name string to assign to the visualization. This name will be
+            attached to the visualization instance as long as the visualization app
+            server stays running (e.g. until the parent python kernel is shut down)
+
+    Returns:   
+        None.
+
+    Raises:
+        None.#TODO
+    """
     server = fsvis_server()
     url = f"http://{server.host}:{server.port}/fs"
     
-    # TODO: make sure `name` is valid for use as a URL query string!!
+    # TODO: make sure `name` is valid for use as a URL query string!! E.g. no spaces...
     
     repeat_until_connection_available(requests.post, url, json={'model': str(flowsheet)}, 
                         params={'id': name})
