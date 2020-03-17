@@ -13,7 +13,6 @@
 # =============================================================================
 
 from pyomo.environ import (Constraint, Var, Param, exp, log)
-from pyomo.environ import units as u
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
@@ -422,7 +421,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
                     exp(5.8259 + 0.13141*log(self.power_consumption_hp)
                         + 0.053255*log(self.power_consumption_hp)**2
                         + 0.028628*log(self.power_consumption_hp)**3
-                        + 0.0035549*log(self.power_consumption_hp)**4)
+                        - 0.0035549*log(self.power_consumption_hp)**4)
             self.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
 
             def CP_motor_rule(self):
@@ -478,7 +477,6 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
             # The user has to select mover_type [compressor or Fan or Blower]
             if mover_type == "compressor":
                 # Compressor Purchase Cost Correlation
-
                 FD_param = {'electrical_motor': 1, 'steam_turbine': 1.15,
                             'gas_turbine': 1.25}
                 self.FD = Param(mutable=True,
