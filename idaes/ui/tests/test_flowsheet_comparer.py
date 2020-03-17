@@ -13,9 +13,9 @@
 import pytest
 from jsonschema.exceptions import ValidationError
 
-from idaes.dmf.ui import flowsheet_comparer as fc
+from idaes.ui import flowsheet_comparer as fc
 
-from idaes.dmf.ui.flowsheet_comparer import Action
+from idaes.ui.flowsheet_comparer import Action
 
 
 def test_compare_models():

@@ -16,8 +16,8 @@ import os
 
 from idaes.core import UnitModelBlockData
 from idaes.core.util.tables import stream_states_dict
-from idaes.dmf.ui.link_position_mapping import link_position_mapping
-from idaes.dmf.ui.icon_mapping import icon_mapping
+from idaes.ui.link_position_mapping import link_position_mapping
+from idaes.ui.icon_mapping import icon_mapping
 
 from pyomo.environ import Block
 from pyomo.network.port import SimplePort
