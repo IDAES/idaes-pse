@@ -76,7 +76,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
 
                 _log.debug("Sub: {} = {}".format(v0, subs[id(v0)]))
 
-                # Use the thightest set of bounds from v0 and v1
+                # Use the tightest set of bounds from v0 and v1
                 lb, ub = compute_bounds_on_expr(-(b0 + a0 * v0) / a1)
 
                 if lb is not None:
