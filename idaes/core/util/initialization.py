@@ -15,12 +15,19 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Var
+from pyomo.environ import Block, Var, TerminationCondition, SolverFactory
 from pyomo.network import Arc
+from pyomo.dae import ContinuousSet
 
+from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.dyn_utils import (get_activity_dict,
+        deactivate_model_at, deactivate_constraints_unindexed_by,
+        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time)
+import idaes.logger as idaeslog
 
-__author__ = "Andrew Lee, John Siirola"
+__author__ = "Andrew Lee, John Siirola, Robert Parker"
 
 
 def fix_state_vars(blk, state_args={}):
@@ -204,3 +211,221 @@ def solve_indexed_blocks(solver, blocks, **kwds):
 
     # Return results
     return results
+
+
+def initialize_by_time_element(fs, time, **kwargs):
+    """
+    Function to initialize Flowsheet fs element-by-element along 
+    ContinuousSet time. Assumes sufficient initialization/correct degrees 
+    of freedom such that the first finite element can be solved immediately 
+    and each subsequent finite element can be solved by fixing differential
+    and derivative variables at the initial time point of that finite element.
+
+    Args:
+        fs : Flowsheet to initialize
+        time : Set whose elements will be solved for individually
+        solver : Pyomo solver object initialized with user's desired options
+        outlvl : IDAES logger outlvl
+        ignore_dof : Bool. If True, checks for square problems will be skipped.
+
+    Returns:
+        None
+    """
+    if not isinstance(fs, FlowsheetBlock):
+        raise TypeError('First arg must be a FlowsheetBlock')
+    if not isinstance(time, ContinuousSet):
+        raise TypeError('Second arg must be a ContinuousSet')
+
+    if time.get_discretization_info() == {}:
+        raise ValueError('ContinuousSet must be discretized')
+
+    scheme = time.get_discretization_info()['scheme']
+    fep_list = time.get_finite_elements()
+    nfe = time.get_discretization_info()['nfe']
+
+    if scheme == 'LAGRANGE-RADAU':
+        ncp = time.get_discretization_info()['ncp']
+    elif scheme == 'LAGRANGE-LEGENDRE':
+        msg = 'Initialization does not support collocation with Legendre roots'
+        raise NotImplementedError(msg)
+    elif scheme == 'BACKWARD Difference':
+        ncp = 1
+    elif scheme == 'FORWARD Difference':
+        ncp = 1
+        msg = 'Forward initialization (explicit Euler) has not yet been implemented'
+        raise NotImplementedError(msg)
+    elif scheme == 'CENTRAL Difference':
+        msg = 'Initialization does not support central finite difference'
+        raise NotImplementedError(msg)
+    else:
+        msg = 'Unrecognized discretization scheme. '
+        'Has the model been discretized along the provided ContinuousSet?'
+        raise ValueError(msg)
+    # Disallow Central/Legendre discretizations.
+    # Neither of these seem to be square by default for multi-finite element
+    # initial value problems.
+
+    # Create logger objects
+    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+    init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
+    solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
+
+    solver = kwargs.pop('solver', SolverFactory('ipopt'))
+
+    ignore_dof = kwargs.pop('ignore_dof', False)
+
+    if not ignore_dof:
+        if degrees_of_freedom(fs) != 0:
+            msg = ('Original model has nonzero degrees of freedom. This was '
+                  'unexpected. Use keyword arg igore_dof=True to skip this '
+                  'check.')
+            init_log.error(msg)
+            raise ValueError('Nonzero degrees of freedom.')
+ 
+    # Get dict telling which constraints/blocks are already inactive:
+    # dict: id(compdata) -> bool (is active?)
+    was_originally_active = get_activity_dict(fs)
+
+    # Deactivate flowsheet except at t0, solve to ensure consistency
+    # of initial conditions.
+    non_initial_time = [t for t in time]
+    non_initial_time.remove(time.first())
+    deactivated = deactivate_model_at(fs, time, non_initial_time, 
+            outlvl=idaeslog.ERROR)
+
+    if not ignore_dof:
+        if degrees_of_freedom(fs) != 0:
+            msg = ('Model has nonzero degrees of freedom at initial conditions.'
+                  ' This was unexpected. Use keyword arg igore_dof=True to skip' 
+                  ' this check.')
+            init_log.error(msg)
+            raise ValueError('Nonzero degrees of freedom.')
+
+    init_log.info(
+    'Model is inactive except at t=0. Solving for consistent initial conditions.')
+    with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+        results = solver.solve(fs, tee=slc.tee)
+    if results.solver.termination_condition == TerminationCondition.optimal:
+        init_log.info('Successfully solved for consistent initial conditions')
+    else:
+        init_log.error('Failed to solve for consistent initial conditions')
+        raise ValueError('Solver failed in initialization')
+
+    deactivated[time.first()] = deactivate_model_at(fs, time, time.first(),
+                                        outlvl=idaeslog.ERROR)[time.first()]
+
+    # Here, deactivate non-time-indexed components. Do this after solve
+    # for initial conditions in case these were used to specify initial 
+    # conditions
+    con_unindexed_by_time = deactivate_constraints_unindexed_by(fs, time)
+    var_unindexed_by_time = fix_vars_unindexed_by(fs, time)
+
+    # Now model is completely inactive
+
+    # For each timestep, we need to
+    # 1. Activate model at points we're solving for
+    # 2. Fix initial conditions (differential variables at previous timestep) 
+    #    of finite element
+    # 3. Solve the (now) square system
+    # 4. Revert the model to its prior state
+
+    # This will make use of the following dictionaries mapping 
+    # time points -> time derivatives and time-differential variables
+    derivs_at_time = get_derivatives_at(fs, time, [t for t in time])
+    dvars_at_time = {t: [d.parent_component().get_state_var()[d.index()]
+                         for d in derivs_at_time[t]]
+                         for t in time}
+
+    # Perform a solve for 1 -> nfe; i is the index of the finite element
+    init_log.info('Flowsheet has been deactivated. Beginning element-wise initialization')
+    for i in range(1, nfe+1):
+        t_prev = time[(i-1)*ncp+1]
+        # Non-initial time points in the finite element:
+        fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
+
+        init_log.info(f'Entering step {i}/{nfe} of initialization')
+
+        # Activate components of model that were active in the presumably
+        # square original system
+        for t in fe:
+            for comp in deactivated[t]:
+                if was_originally_active[id(comp)]:
+                    comp.activate()
+
+        # Get lists of derivative and differential variables
+        # at initial time point of finite element
+        init_deriv_list = derivs_at_time[t_prev]
+        init_dvar_list = dvars_at_time[t_prev]
+
+        # Record original fixed status of each of these variables
+        was_originally_fixed = {}
+        for drv in init_deriv_list:
+            was_originally_fixed[id(drv)] = drv.fixed
+            # Cannot fix variables with value None.
+            # Any variable with value None was not solved for
+            # (either stale or not included in previous solve)
+            # and we don't want to fix it.
+            if not drv.value is None:
+                drv.fix()
+        for dv in init_dvar_list:
+            was_originally_fixed[id(dv)] = dv.fixed
+            if not drv.value is None:
+                dv.fix()
+        # This assumes that only derivative and differential variables can
+        # participate in a constraint with a different time-index than
+        # themselves. This will be likely be violated by flowsheets
+        # involving controllers. FIXME
+
+        # Initialize finite element from its initial conditions
+        for t in fe:
+            copy_values_at_time(fs, fs, t, t_prev, copy_fixed=False,
+                                outlvl=idaeslog.ERROR)
+
+        # Log that we are solving finite element {i}
+        init_log.info(f'Solving finite element {i}')
+
+        if not ignore_dof:
+            if degrees_of_freedom(fs) != 0:
+                msg = (f'Model has nonzero degrees of freedom at finite element'
+                      ' {i}. This was unexpected. '
+                      'Use keyword arg igore_dof=True to skip this check.')
+                init_log.error(msg)
+                raise ValueError('Nonzero degrees of freedom')
+        
+        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+            results = solver.solve(fs, tee=slc.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+           init_log.info(f'Successfully solved finite element {i}')
+        else:
+           init_log.error(f'Failed to solve finite element {i}')
+           raise ValueError('Failure in initialization solve')
+
+        # Deactivate components that may have been activated
+        for t in fe:
+            for comp in deactivated[t]:
+                comp.deactivate()
+
+        # Unfix variables that have been fixed
+        for drv in init_deriv_list:
+            if not was_originally_fixed[id(drv)]:
+                drv.unfix()
+        for dv in init_dvar_list:
+            if not was_originally_fixed[id(dv)]:
+                dv.unfix()
+
+        # Log that initialization step {i} has been finished
+        init_log.info(f'Initialization step {i} complete')
+
+    # Reactivate components of the model that were originally active
+    for t in time:
+        for comp in deactivated[t]:
+            if was_originally_active[id(comp)]:
+                comp.activate()
+
+    for con in con_unindexed_by_time:
+        con.activate()
+    for var in var_unindexed_by_time:
+        var.unfix()
+
+    # Logger message that initialization is finished
+    init_log.info('Initialization completed. Model has been reactivated')

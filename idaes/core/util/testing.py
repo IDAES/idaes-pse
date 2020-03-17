@@ -201,7 +201,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
                                'temperature': 'K',
                                'energy': 'J',
                                'holdup': 'mol'})
-
+        
     @classmethod
     def get_required_properties(self):
         return {}
@@ -238,3 +238,4 @@ class ReactionBlockData(ReactionBlockDataBase):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
+
