@@ -103,7 +103,7 @@ def htpx(T, P=None, x=None):
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
-    return _htpx(T=T, Tmin=200, Tmax=3e3, P=P, x=x, prop=prop)
+    return _htpx(T=T, P=P, x=x, prop=prop, Tmin=270, Tmax=3e3, Pmin=0.1, Pmax=1e9)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -118,10 +118,19 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
             mw=Param(initialize=0.01801528, doc="Molecular weight [kg/mol]"),
-            temperature_crit=Param(initialize=647.096, doc="Critical temperature [K]"),
+            temperature_crit=Param(
+                initialize=647.096,
+                doc="Critical temperature [K]",
+            ),
             pressure_crit=Param(initialize=2.2064e7, doc="Critical pressure [Pa]"),
             dens_mass_crit=Param(initialize=322, doc="Critical density [kg/m3]"),
-            gas_const=Param(initialize=8.3144598, doc="Gas Constant [J/mol/K]"),
+            specific_gas_constant=Param(
+                initialize=461.51805,
+                doc="Water Specific Gas Constant [J/kg/K]",
+            ),
+            pressure_bounds=(0.1, 1e9),
+            temperature_bounds=(250, 2500),
+            enthalpy_bounds=(0, 1e5),
         )
         super().build()
         # Thermal conductivity parameters.
@@ -174,7 +183,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 (3, 5): 0.0,
                 (4, 5): 0.012913842,
             },
-            doc="1st order thermal conductivity prop_iapws95_nist_webbook.txters",
+            doc="1st order thermal conductivity parameters",
         )
         # Viscosity parameters
         # "Release on the IAPWS Formulation 2008 for the Viscosity of

@@ -81,6 +81,44 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this.holder = document.createElement("div");
     this.holder.id = "mimerenderer-idaes-model";
 
+    this.show_hide_button = document.createElement("button");
+
+    this.show_hide_button.innerText = "Show/Hide Arc Labels";  
+    this.show_hide_button.onclick = () => {
+      this.paper.model.getLinks().forEach(function (link: joint.shapes.standard.Link) {        
+        if (link.attr('text/display') == 'none') {
+          link.attr({
+            'text': {
+              display: "block",
+            },
+            'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
+          });
+        }
+        else {
+          link.attr({
+            'text': {
+              display: "none",
+            },
+            'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+          });
+        }
+      });
+    }
+
+    this.save_button = document.createElement("button");
+
+    this.save_button.innerText = "Save";  
+    this.save_button.onclick = () => {
+      console.log("Not implemented yet")
+    }
+
+    this.help_button = document.createElement("button");
+
+    this.help_button.innerText = "Help";  
+    this.help_button.onclick = () => {
+      console.log("Not implemented yet")
+    }
+
     // We need to create the graph and paper in the constructor
     // If you try to create them in renderModel (which is called everytime the user
     // opens an .idaes.vis file or changes tabs) then you get icons that do not drop
@@ -101,37 +139,57 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     });
 
     // Adds link tools (adding vertices, moving segments) to links when your mouse over
-    this.paper.on("cell:mouseover", function(cellView, evt) {
-      if (cellView.model.isLink()) {
-        var verticesTool = new joint.linkTools.Vertices({
-          focusOpacity: 0.5,
-          redundancyRemoval: true,
-          snapRadius: 20,
-          vertexAdding: true,
-        });
-        var segmentsTool = new joint.linkTools.Segments();
+    this.paper.on("link:mouseover", function(cellView, evt) {
+      var verticesTool = new joint.linkTools.Vertices({
+        focusOpacity: 0.5,
+        redundancyRemoval: true,
+        snapRadius: 20,
+        vertexAdding: true,
+      });
+      var segmentsTool = new joint.linkTools.Segments();
 
-        var toolsView = new joint.dia.ToolsView({
-          tools: [
-            verticesTool, segmentsTool
-          ]
-        });
-        cellView.addTools(toolsView)
-        cellView.showTools()
-      }
-    })
+      var sourceArrowheadTool = new joint.linkTools.SourceArrowhead();
+      var targetArrowheadTool = new joint.linkTools.TargetArrowhead();
+
+      var toolsView = new joint.dia.ToolsView({
+        tools: [
+          verticesTool, segmentsTool,
+          sourceArrowheadTool, targetArrowheadTool
+        ]
+      });
+      cellView.addTools(toolsView)
+      cellView.showTools()
+    });
 
     // Removes the link tools when you leave the link
-    this.paper.on("cell:mouseout", function(cellView, evt) {
-      if (cellView.model.isLink()) {
-        cellView.hideTools()
-      }
-    })
+    this.paper.on("link:mouseout", function(cellView, evt) {
+      cellView.hideTools()
+    });
 
     // Icons rotate 90 degrees on right click. Replaces browser context menu
     this.paper.on("element:contextmenu", function(cellView, evt) {
       cellView.model.rotate(90)
-    })
+    });
+
+    // Link labels will appear and disapper on right click. Replaces browser context menu
+    this.paper.on("link:contextmenu", function(linkView, evt) {
+      if (linkView.model.attr('text/display') == 'none') {
+        linkView.model.attr({
+          'text': {
+            display: "block",
+          },
+          'rect': { fill: 'white', stroke: 'black', 'stroke-width': 1, "fill-opacity": "1" }
+        });
+      }
+      else {
+        linkView.model.attr({
+          'text': {
+            display: "none",
+          },
+          'rect': { fill: 'white', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+        });
+      }
+    });
 
     // Constrain the elements to the paper
     this.paper.on('cell:pointermove', function (cellView, evt, x, y) {
@@ -160,6 +218,9 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   async renderModel(model: IRenderMime.IMimeModel) {
 
     let data = model.data[this._mimeType] as JSONObject;
+    this.node.appendChild(this.show_hide_button);
+    this.node.appendChild(this.save_button);
+    this.node.appendChild(this.help_button);
     this.node.appendChild(this.holder);
 
     utils.remapIcons(data, 'forDisplay');
@@ -181,6 +242,9 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   private holder: HTMLDivElement;
   private paper: joint.dia.Paper;
   private graph: joint.dia.Graph;
+  private show_hide_button: HTMLButtonElement;
+  private save_button: HTMLButtonElement;
+  private help_button: HTMLButtonElement;
 }
 
 /**
