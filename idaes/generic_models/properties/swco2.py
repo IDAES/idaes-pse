@@ -117,10 +117,15 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             dens_mass_crit=Param(initialize=467.6, doc="Critical density [kg/m3]"),
             specific_gas_constant=Param(
                 initialize=188.9241,
-                doc="Water Specific Gas Constant [J/kg/K]",
+                doc="CO2 Specific Gas Constant [J/kg/K]",
             ),
+            pressure_bounds=(0.1, 1e9),
+            temperature_bounds=(210, 2500),
+            enthalpy_bounds=(-1e4, 1e5),
         )
+
         super().build()
+
         # Thermal conductivity parameters.
         # Vesovic et al. (1990)
         self.tc_b = Param(

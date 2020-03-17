@@ -227,7 +227,7 @@ class TurbineOutletStageData(PressureChangerData):
         dof = degrees_of_freedom(self)
         try:
             assert dof == 0
-        except:
+        except AssertionError:
             init_log.error("Degrees of freedom not 0, ({})".format(dof))
             raise
 
