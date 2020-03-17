@@ -23,45 +23,45 @@ from pyomo.environ import log
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
-def cp_mol_liq_comp(b, j, T):
+def cp_mol_liq_comp(b, cobj, T):
     # Specific heat capacity
-    return 1e-3*(b.params.cp_mol_liq_comp_coeff[j, "5"]*T**4 +
-                 b.params.cp_mol_liq_comp_coeff[j, "4"]*T**3 +
-                 b.params.cp_mol_liq_comp_coeff[j, "3"]*T**2 +
-                 b.params.cp_mol_liq_comp_coeff[j, "2"]*T +
-                 b.params.cp_mol_liq_comp_coeff[j, "1"])
+    return 1e-3*(cobj.cp_mol_liq_comp_coeff["5"]*T**4 +
+                 cobj.cp_mol_liq_comp_coeff["4"]*T**3 +
+                 cobj.cp_mol_liq_comp_coeff["3"]*T**2 +
+                 cobj.cp_mol_liq_comp_coeff["2"]*T +
+                 cobj.cp_mol_liq_comp_coeff["1"])
 
 
-def enth_mol_liq_comp(b, j, T):
+def enth_mol_liq_comp(b, cobj, T):
     # Specific enthalpy
-    return (1e-3*((b.params.cp_mol_liq_comp_coeff[j, "5"]/5) *
+    return (1e-3*((cobj.cp_mol_liq_comp_coeff["5"]/5) *
                   (T**5-b.params.temperature_ref**5) +
-                  (b.params.cp_mol_liq_comp_coeff[j, "4"]/4) *
+                  (cobj.cp_mol_liq_comp_coeff["4"]/4) *
                   (T**4-b.params.temperature_ref**4) +
-                  (b.params.cp_mol_liq_comp_coeff[j, "3"]/3) *
+                  (cobj.cp_mol_liq_comp_coeff["3"]/3) *
                   (T**3-b.params.temperature_ref**3) +
-                  (b.params.cp_mol_liq_comp_coeff[j, "2"]/2) *
+                  (cobj.cp_mol_liq_comp_coeff["2"]/2) *
                   (T**2-b.params.temperature_ref**2) +
-                  b.params.cp_mol_liq_comp_coeff[j, "1"] *
+                  cobj.cp_mol_liq_comp_coeff["1"] *
                   (T-b.params.temperature_ref)) +
-            b.params.enth_mol_form_phase_comp_ref["Liq", j])
+            cobj.enth_mol_form_phase_comp_ref['Liq'])
 
 
-def entr_mol_liq_comp(b, j, T):
+def entr_mol_liq_comp(b, cobj, T):
     # Specific entropy
-    return (1e-3*((b.params.cp_mol_liq_comp_coeff[j, '5']/4)*T**4 +
-                  (b.params.cp_mol_liq_comp_coeff[j, '4']/3)*T**3 +
-                  (b.params.cp_mol_liq_comp_coeff[j, '3']/2)*T**2 +
-                  b.params.cp_mol_liq_comp_coeff[j, '2']*T +
-                  b.params.cp_mol_liq_comp_coeff[j, '1']*log(T)) +
-            b.params.entr_mol_phase_comp_ref["Liq", j])
+    return (1e-3*((cobj.cp_mol_liq_comp_coeff['5']/4)*T**4 +
+                  (cobj.cp_mol_liq_comp_coeff['4']/3)*T**3 +
+                  (cobj.cp_mol_liq_comp_coeff['3']/2)*T**2 +
+                  cobj.cp_mol_liq_comp_coeff['2']*T +
+                  cobj.cp_mol_liq_comp_coeff['1']*log(T)) +
+            cobj.entr_mol_phase_comp_ref['Liq'])
 
 
 # -----------------------------------------------------------------------------
 # Densities
-def dens_mol_liq_comp(b, j, T):
+def dens_mol_liq_comp(b, cobj, T):
     # pg. 2-98
-    return (b.params.dens_mol_liq_comp_coeff[j, '1'] /
-            b.params.dens_mol_liq_comp_coeff[j, '2']**(
-                    1 + (1-T/b.params.dens_mol_liq_comp_coeff[j, '3']) **
-                    b.params.dens_mol_liq_comp_coeff[j, '4']))
+    return (cobj.dens_mol_liq_comp_coeff['1'] /
+            cobj.dens_mol_liq_comp_coeff['2']**(
+                    1 + (1-T/cobj.dens_mol_liq_comp_coeff['3']) **
+                    cobj.dens_mol_liq_comp_coeff['4']))

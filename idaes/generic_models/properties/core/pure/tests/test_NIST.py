@@ -41,22 +41,22 @@ def frame():
     m.params.temperature_ref = Var(initialize=298.15)
     m.params.pressure_ref = Var(initialize=1e5)
 
-    m.params.pressure_sat_comp_coeff = Var(["H2O"], ["A", "B", "C"])
+    m.params.pressure_sat_comp_coeff = Var(["A", "B", "C"])
     m.params.cp_mol_ig_comp_coeff = Var(
-            ["H2O"], ["A", "B", "C", "D", "E", "F", "G", "H"])
+            ["A", "B", "C", "D", "E", "F", "G", "H"])
 
-    m.params.pressure_sat_comp_coeff["H2O", "A"].value = 8.55959  # +5 for unit conversion
-    m.params.pressure_sat_comp_coeff["H2O", "B"].value = 643.748
-    m.params.pressure_sat_comp_coeff["H2O", "C"].value = -198.043
+    m.params.pressure_sat_comp_coeff["A"].value = 8.55959  # +5 for unit conversion
+    m.params.pressure_sat_comp_coeff["B"].value = 643.748
+    m.params.pressure_sat_comp_coeff["C"].value = -198.043
 
-    m.params.cp_mol_ig_comp_coeff["H2O", "A"].value = 30.09200
-    m.params.cp_mol_ig_comp_coeff["H2O", "B"].value = 6.832514
-    m.params.cp_mol_ig_comp_coeff["H2O", "C"].value = 6.793435
-    m.params.cp_mol_ig_comp_coeff["H2O", "D"].value = -2.534480
-    m.params.cp_mol_ig_comp_coeff["H2O", "E"].value = 0.082139
-    m.params.cp_mol_ig_comp_coeff["H2O", "F"].value = -250.8810
-    m.params.cp_mol_ig_comp_coeff["H2O", "G"].value = 223.3967
-    m.params.cp_mol_ig_comp_coeff["H2O", "H"].value = -241.8264
+    m.params.cp_mol_ig_comp_coeff["A"].value = 30.09200
+    m.params.cp_mol_ig_comp_coeff["B"].value = 6.832514
+    m.params.cp_mol_ig_comp_coeff["C"].value = 6.793435
+    m.params.cp_mol_ig_comp_coeff["D"].value = -2.534480
+    m.params.cp_mol_ig_comp_coeff["E"].value = 0.082139
+    m.params.cp_mol_ig_comp_coeff["F"].value = -250.8810
+    m.params.cp_mol_ig_comp_coeff["G"].value = 223.3967
+    m.params.cp_mol_ig_comp_coeff["H"].value = -241.8264
 
     # Create a dummy state block
     m.props = Block([1])
@@ -69,7 +69,8 @@ def frame():
 
 
 def test_cp_mol_ig_comp(frame):
-    expr = cp_mol_ig_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    expr = cp_mol_ig_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(35.22, abs=1e-2)
 
     frame.props[1].temperature.value = 600
@@ -77,7 +78,8 @@ def test_cp_mol_ig_comp(frame):
 
 
 def test_enth_mol_ig_comp(frame):
-    expr = enth_mol_ig_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    expr = enth_mol_ig_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
 
     frame.props[1].temperature.value = 600
@@ -85,7 +87,8 @@ def test_enth_mol_ig_comp(frame):
 
 
 def test_entr_mol_ig_comp(frame):
-    expr = entr_mol_ig_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    expr = entr_mol_ig_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(206.5, rel=1e-3)
 
     frame.props[1].temperature.value = 600
@@ -93,7 +96,8 @@ def test_entr_mol_ig_comp(frame):
 
 
 def test_pressure_sat_comp(frame):
-    expr = pressure_sat_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    expr = pressure_sat_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(2677137, rel=1e-4)
 
     frame.props[1].temperature.value = 379
@@ -102,13 +106,14 @@ def test_pressure_sat_comp(frame):
 
 def test_pressure_sat_comp_dT(frame):
     expr = pressure_sat_comp_dT(frame.props[1],
-                                "H2O",
+                                frame.params,
                                 frame.props[1].temperature)
 
     delta = 1e-4
-    val = pressure_sat_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    val = pressure_sat_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     val_p = pressure_sat_comp(frame.props[1],
-                              "H2O",
+                              frame.params,
                               frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)
@@ -117,9 +122,10 @@ def test_pressure_sat_comp_dT(frame):
 
     frame.props[1].temperature.value = 373.15
 
-    val = pressure_sat_comp(frame.props[1], "H2O", frame.props[1].temperature)
+    val = pressure_sat_comp(
+        frame.props[1], frame.params, frame.props[1].temperature)
     val_p = pressure_sat_comp(frame.props[1],
-                              "H2O",
+                              frame.params,
                               frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)

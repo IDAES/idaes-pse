@@ -15,7 +15,7 @@ IDAES Component objects
 
 @author: alee
 """
-from pyomo.environ import Set
+from pyomo.environ import Set, Param
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
@@ -25,6 +25,10 @@ from .process_base import (declare_process_block_class,
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
+
+    CONFIG.declare("mw", ConfigValue(
+        domain=float,
+        description="Molecular weight of component"))
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
@@ -54,6 +58,10 @@ class ComponentData(ProcessBlockData):
         # need to add new Component objects
         if not self.config._component_list_exists:
             self.__add_to_component_list()
+
+        # Create Param for molecular weight if provided
+        if self.config.mw is not None:
+            self.mw = Param(initialize=self.config.mw)
 
     def __add_to_component_list(self):
         """

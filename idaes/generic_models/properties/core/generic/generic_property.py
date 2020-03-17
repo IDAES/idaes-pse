@@ -109,6 +109,22 @@ def get_method(self, config_arg, comp=None):
                 "method".format(self.name, config_arg))
 
 
+def get_component_object(self, comp):
+    """
+    Utility method to get a component object from the property parameter block.
+    This code is used frequently throughout the generic property pacakge
+    libraries.
+
+    Args:
+        comp: name of the component object to be returned.
+
+    Returns:
+        Component: Component object with name comp.
+
+    """
+    return self.params.get_component(comp)
+
+
 class GenericParameterData(PhysicalParameterBlock):
     """
     General Property Parameter Block Class
@@ -173,6 +189,24 @@ class GenericParameterData(PhysicalParameterBlock):
         how to handle disappearing phases. Value should be a valid Python
         method or None. Default = None, indicating no phase equilibrium will
         occur."""))
+
+    # Bubble and dew point methods
+    CONFIG.declare("temperature_bubble", ConfigValue(
+        description="Method to use to calculate bubble temperature",
+        doc="""Flag indicating what formulation to use for calculating bubble
+        temperature. Value should be a valid Python method."""))
+    CONFIG.declare("temperature_dew", ConfigValue(
+        description="Method to use to calculate dew temperature",
+        doc="""Flag indicating what formulation to use for calculating dew
+        temperature. Value should be a valid Python method."""))
+    CONFIG.declare("pressure_bubble", ConfigValue(
+        description="Method to use to calculate bubble pressure",
+        doc="""Flag indicating what formulation to use for calculating bubble
+        pressure. Value should be a valid Python method."""))
+    CONFIG.declare("pressure_dew", ConfigValue(
+        description="Method to use to calculate dew pressure",
+        doc="""Flag indicating what formulation to use for calculating dew
+        pressure. Value should be a valid Python method."""))
 
     def build(self):
         '''
@@ -340,12 +374,35 @@ class GenericParameterData(PhysicalParameterBlock):
                     " but no method was specified for "
                     "phase_equilibrium_formulation.".format(self.name))
 
+        # Construct parameter components
+        self.parameters()
+
+        # For safety, fix all Vars in Component objects
+        for c in self.component_list:
+            cobj = self.get_component(c)
+            for v in cobj.component_objects(Var):
+                v.fix()
+
     def configure(self):
         """
         Placeholder method to allow users to specify config arguments via a
         class. The user class should inherit from this one and implement a
         configure() method which sets the values of the desired config
         arguments.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        pass
+
+    def parameters(self):
+        """
+        Placeholder method to allow users to specify parameters via a
+        class. The user class should inherit from this one and implement a
+        parameters() method which creates the reqruied components.
 
         Args:
             None
@@ -453,6 +510,40 @@ class GenericStateBlockData(StateBlockData):
 
     # -------------------------------------------------------------------------
     # Property Methods
+    def _dens_mass(self):
+        def rule_dens_mass(b):
+            return sum(b.dens_mass_phase[p]*b.phase_frac[p]
+                       for p in b.params.phase_list)
+        self.dens_mass = Expression(
+                doc="Mixture mass density",
+                rule=rule_dens_mass)
+
+    def _dens_mass_phase(self):
+        def rule_dens_mass_phase(b, p):
+            p_config = b.params.get_phase(p).config
+            return p_config.equation_of_state.dens_mass_phase(b, p)
+        self.dens_mass_phase = Expression(
+                self.params.phase_list,
+                doc="Mass density of each phase",
+                rule=rule_dens_mass_phase)
+
+    def _dens_mol(self):
+        def rule_dens_mol(b):
+            return sum(b.dens_mol_phase[p]*b.phase_frac[p]
+                       for p in b.params.phase_list)
+        self.dens_mol = Expression(
+                doc="Mixture molar density",
+                rule=rule_dens_mol)
+
+    def _dens_mol_phase(self):
+        def rule_dens_mol_phase(b, p):
+            p_config = b.params.get_phase(p).config
+            return p_config.equation_of_state.dens_mol_phase(b, p)
+        self.dens_mol_phase = Expression(
+                self.params.phase_list,
+                doc="Molar density of each phase",
+                rule=rule_dens_mol_phase)
+
     def _enth_mol(self):
         def rule_enth_mol(b):
             return sum(b.enth_mol_phase[p]*b.phase_frac[p]

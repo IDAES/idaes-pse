@@ -25,7 +25,7 @@ def test_config():
 
     m.comp = Component()
 
-    assert len(m.comp.config) == 7
+    assert len(m.comp.config) == 8
     assert not m.comp.config._component_list_exists
 
 

@@ -234,6 +234,8 @@ class TestStateBlock(object):
         model.props[1].pressure.fix(101325)
         model.props[1].mole_frac_comp["benzene"].fix(0.5)
         model.props[1].mole_frac_comp["toluene"].fix(0.5)
+        
+        model.props[1].display()
 
         assert degrees_of_freedom(model.props[1]) == 0
 
