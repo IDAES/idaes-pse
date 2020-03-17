@@ -15,14 +15,18 @@
 __author__ = "John Eslick"
 
 import click
+import logging
 import idaes.solvers
 from idaes.commands import cb
+
+_log = logging.getLogger("idaes.commands.extensions")
+
 
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--url",
     help="URL to download solver",
-    default=idaes._config.default_binary_url)
+    default=idaes.config.default_binary_url)
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(url, verbose):
     if url is not None:

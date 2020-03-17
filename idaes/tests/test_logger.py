@@ -25,11 +25,11 @@ def test_get_model_logger(caplog):
     assert isinstance(log, logging.LoggerAdapter)
     assert log.name == "idaes.model.My Model 1"
     caplog.set_level(idaeslog.INFO)
-    log.info_low("Hello! from unit")
-    log.info("Hello! from info")
-    log.info_high("Hello! from unit high")
+    log.info_low("Hello! from INFO_LOW")
+    log.info("Hello! from INFO")
+    log.info_high("Hello! from INFO_HIGH")
     for record in caplog.records:
-        assert record.message in ["Hello! INFO", "Hello! from INFO_LOW"]
+        assert record.message in ["Hello! from INFO", "Hello! from INFO_LOW"]
     log = idaeslog.getModelLogger("idaes.My Model 2")
     assert log.name == "idaes.model.My Model 2"
 
@@ -43,21 +43,36 @@ def test_solver_condition():
     assert idaeslog.condition("something else") == "something else"
 
 def test_tags(caplog):
+    idaeslog.remove_log_tag("model")
     def a(tag):
+        caplog.clear()
         caplog.set_level(logging.DEBUG)
         log = idaeslog.getLogger("Unit", tag=tag)
         log.setLevel(logging.DEBUG)
         log.info_high("Hello!")
         log.info("Hello!")
         log.info_low("Hello!")
-        if tag not in idaeslog.log_tags():
-             assert len(caplog.records) == 0
+        if tag not in idaeslog.log_tags() and tag is not None:
+            assert len(caplog.records) == 0
         else:
             assert caplog.records[0].levelname == "INFO"
             assert caplog.records[1].levelname == "INFO"
             assert caplog.records[2].levelname == "INFO"
     for m in idaeslog.valid_log_tags():
         a(m)
+
+def test_add_remove_tags():
+    assert "framework" in idaeslog.valid_log_tags()
+    assert "framework" in idaeslog.log_tags()
+    idaeslog.remove_log_tag("framework")
+    assert "framework" not in idaeslog.log_tags()
+    idaeslog.add_log_tag("framework")
+    assert "framework" in idaeslog.log_tags()
+    idaeslog.add_valid_log_tag("model2")
+    assert "model2" in idaeslog.valid_log_tags()
+    idaeslog.set_log_tags(idaeslog.valid_log_tags())
+    assert "model2" in idaeslog.log_tags()
+
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 def test_solver_condition2():

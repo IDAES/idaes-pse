@@ -45,15 +45,16 @@ def _make_vars(self):
 
 def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     '''
-    Heat exchanger costing method
-    Source: Process and Product Design Principles: Synthesis, Analysis,
-    and Evaluation
-    Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
-    Chapter 22. Cost Accounting and Capital Cost Estimation
-    22.2 Cost Indexes and Capital Investment
+    Heat exchanger costing method.
+
+    Source:
+        Process and Product Design Principles: Synthesis, Analysis, and Evaluation
+        Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
+        Chapter 22. Cost Accounting and Capital Cost Estimation
+        22.2 Cost Indexes and Capital Investment
 
     This method computes the purchase cost (CP) for a shell and tube heat
-    exchanger (Eq. 22.43), the model computes the base cost (CB for 4 type
+    exchanger (Eq. 22.43), the model computes the base cost (CB for 4 types
     of heat exchangers, such as floating head, fixed head, U-tube, and
     Kettle vaporizer), construction material factor (FM), pressure design
     factor (FP), and tube length correction factor (FL), using CE base cost
@@ -62,15 +63,14 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     Cp = FP*FM*FL*CB
 
     Args:
-        hx_type : 'floating_head', 'fixed_head', 'U-tube'*, 'Kettle_vap'
+        hx_type : One of: ``'floating_head'``, ``'fixed_head'``, ``'U-tube'`` or ``'Kettle_vap'``.
+            **Default** - ``'U-tube'``
 
-        material factor (FM): 'stain_steel'*, 'carb_steel'
+        material factor (FM): One of: ``'stain_steel'`` or ``'carb_steel'``.
+            **Default** - ``'stain_steel'``
 
-        tube length (FL): '8ft'*, '12ft', '16ft', '20ft'
-
-        * --> default options
-
-    Author: MZamarripa (created 9/17/2019; updated 2/21/2020)
+        tube length (FL): One of: ``'8ft'``, ``'12ft'``, ``'16ft'`` or ``'20ft'``.
+            **Default** - ``'12ft'``
     '''
     # ------------------------ Heat Exchanger cost ------------------------
     # heat exchanger cost

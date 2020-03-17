@@ -41,17 +41,17 @@ Contents
     :maxdepth: 2
 
     install/index
-    extut
+    ex
     standards
     configuration
     logging
+    commands/index
     core/index
     transformations/index
-    models/index
-    property_models/index
+    model_libraries/index
     vis/index
     dmf/index
-    pysmo/index
+    surrogate/index
     apps/index
     version
     jupyterlab/index
@@ -60,6 +60,8 @@ Contents
     glossary
     license
     copyright
+
+.. tutorials
 
 Indices and tables
 ==================

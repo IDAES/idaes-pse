@@ -67,6 +67,7 @@ class UnitModelBlockData(ProcessBlockData):
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
+**useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
 
@@ -117,11 +118,13 @@ Must be True if dynamic = True,
         """
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
+
         Keyword Args:
-            name = name to use for Port object.
-            block = an instance of a StateBlock to use as the source to
+            name : name to use for Port object.
+            block : an instance of a StateBlock to use as the source to
                     populate the Port object
-            doc = doc string for Port object
+            doc : doc string for Port object
+
         Returns:
             A Pyomo Port object and associated components.
         """
@@ -167,13 +170,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "inlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "inlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the inlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Inlet Port")
+            doc : doc string for Port object (default = "Inlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
@@ -322,13 +325,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "outlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "outlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the outlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Outlet Port")
+            doc : doc string for Port object (default = "Outlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
@@ -507,7 +510,7 @@ Must be True if dynamic = True,
 
         # Get a representative time point for testing
         rep_time = self.flowsheet().config.time.first()
-        if state_1[rep_time]._params is not state_2[rep_time]._params:
+        if state_1[rep_time].params is not state_2[rep_time].params:
             raise ConfigurationError(
                     "{} add_state_material_balances method was provided with "
                     "State Blocks are not linked to the same "
@@ -520,8 +523,8 @@ Must be True if dynamic = True,
                 state_1[rep_time].default_material_balance_type()
             )
 
-        phase_list = state_1[rep_time]._params.phase_list
-        component_list = state_1[rep_time]._params.component_list
+        phase_list = state_1[rep_time].params.phase_list
+        component_list = state_1[rep_time].params.component_list
 
         if balance_type == MaterialBalanceType.componentPhase:
             # TODO : Should we include an optional phase equilibrium term here
