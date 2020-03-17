@@ -48,7 +48,8 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     Heat exchanger costing method.
 
     Source:
-        Process and Product Design Principles: Synthesis, Analysis, and Evaluation
+        Process and Product Design Principles: Synthesis, Analysis, and 
+        Evaluation
         Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
         Chapter 22. Cost Accounting and Capital Cost Estimation
         22.2 Cost Indexes and Capital Investment
@@ -63,13 +64,15 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     Cp = FP*FM*FL*CB
 
     Args:
-        hx_type : One of: ``'floating_head'``, ``'fixed_head'``, ``'U-tube'`` or ``'Kettle_vap'``.
-            **Default** - ``'U-tube'``
+        hx_type : One of: ``'floating_head'``, ``'fixed_head'``, ``'U-tube'``
+        or ``'Kettle_vap'``.
+        **Default** - ``'U-tube'``
 
         material factor (FM): One of: ``'stain_steel'`` or ``'carb_steel'``.
             **Default** - ``'stain_steel'``
 
-        tube length (FL): One of: ``'8ft'``, ``'12ft'``, ``'16ft'`` or ``'20ft'``.
+        tube length (FL): One of: ``'8ft'``, ``'12ft'``, ``'16ft'`` or
+        ``'20ft'``.
             **Default** - ``'12ft'``
     '''
     # ------------------------ Heat Exchanger cost ------------------------
