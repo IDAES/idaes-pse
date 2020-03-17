@@ -1,7 +1,3 @@
-.. index::
-    pair: idaes.core.flowsheet_model;FlowsheetBlockData
-    pair: idaes.core.flowsheet_model;FlowsheetBlock
-
 Unit Model Costing
 ==================
 
@@ -69,16 +65,4 @@ Therefore, the user must set the mover_type = 'compressor', 'fan', 'blower'
 The compressor cost is based on the mechanical work of the unit. Additional arguments are required for the compressor type, driver mover type, and material factor (FM_mat).
 * compressor_type = 'centrifugal', 'reciprocating', 'screw'
 * driver_mover_type = 'electrical_motor', 'steam_turbine', 'gas_turbine'
-* FD_mat = 'carbon_steel', 'stain_steel', 'nickel_alloy' 
-
-
-Flowsheet Classes
------------------
-
-.. module:: idaes.core.flowsheet_model
-
-.. autoclass:: FlowsheetBlockData
-    :members:
-
-.. autoclass:: FlowsheetBlock
-    :members:
+* FD_mat = 'carbon_steel', 'stain_steel', 'nickel_alloy'
