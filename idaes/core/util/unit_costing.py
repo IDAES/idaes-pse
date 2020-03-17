@@ -13,6 +13,7 @@
 # =============================================================================
 
 from pyomo.environ import (Constraint, Var, Param, exp, log)
+from pyomo.environ import units as u
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
@@ -214,7 +215,6 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         if(self.parent_block().config.property_package.get_metadata().
            properties['enth_mol']['units']) == 'J/mol':
             work_hp = w/746  # assuming work is in J/s
-            # work_hp = u.convert(w*u.J/u.s,u.hp) # unit convert tool
 
         elif(self.parent_block().config.property_package.get_metadata().
              properties['enth_mol']['units']) == 'kJ/kmol':
@@ -232,7 +232,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
             raise Exception("units not supported")
 
         def CP_rule(self):
-            return self.purchase_cost == 530*(-1*work_hp)**0.81
+            return self.purchase_cost == 530*(-1 * work_hp)**0.81
         self.cp_cost_eq = Constraint(rule=CP_rule)
 
     # if compressor is True
