@@ -36,6 +36,7 @@ from idaes.dynamic.cappresse.nmpc import find_comp_in_block
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
+import random
 import time as timemodule
 import pdb
 
@@ -440,3 +441,101 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
 #                _slice[t].unfix()
 
     assert degrees_of_freedom(model) == 0
+
+
+def add_noise_at_time(varlist, t_list, **kwargs):
+    """Function to add random noise to the values of variables at a particular
+    point in time.
+
+    Args:
+        varlist : List of (only) time-indexed variables (or References) to
+                  which to add noise
+        t_list : Point in time, or list of points in time, at which to add noise
+
+    Kwargs:
+        random_function : Function that will be called to get the random noise 
+                          added to each variable
+        args_function : Function that maps index (location) of a variable in
+                      varlist to a list of arguments that can be passed to the
+                      random function
+        weights : List of weights for random distribution arguments such as 
+                  standard deviation (Gaussian), radius (uniform), or lambda
+                  (Laplacian)
+        random_arg_dict : Dictionary containing other values users may want
+                          to use in their argument function
+        bound_strategy : String describing strategy for case in which a bound
+                         is violated. Options are 'discard' (default) or 'push'.
+        discard_limit : Number of discarded random values after which an
+                        exception will be raised. Default is 5
+        bound_push : Distance from bound if a push strategy is used for bound
+                     violate. Default is 0
+
+    Returns:
+        A dictionary mapping each t in t_list to the 
+    """
+    n = len(varlist)
+    rand_fcn = kwargs.pop('random_function', random.gauss)
+    weights = kwargs.pop('weights', [1 for i in range(n)])
+    random_arg_dict = kwargs.pop('random_arg_dict', {})
+    assert len(weights) == n
+    sig_0 = kwargs.pop('sigma_0', 0.05)
+    sig = [w*sig_0 for w in weights]
+
+    args_fcn = kwargs.pop('args_function',
+                          lambda i, val, **kwargs: [val, sig[i]])
+
+    bound_strategy = kwargs.pop('bound_strategy', 'discard')
+    discard_limit = kwargs.pop('discard_limit', 5)
+    bound_push = kwargs.pop('bound_push', 0)
+    assert bound_push >= 0
+    assert discard_limit >= 0
+
+    if type(t_list) is not list:
+        t_list = [t_list]
+
+    nom_values = {t: [var[t].value for var in varlist] for t in t_list}
+    for t in t_list:
+        if any([val is None for val in nom_values[t]]):
+            raise ValueError(
+                    'Cannot apply noise to an uninitialized variable')
+
+    def violated_bounds(var, t, val):
+        if var[t].ub is not None:
+            if val > var[t].ub:
+                return ('upper', var[t].ub)
+        if var[t].lb is not None:
+            if val < var[t].lb:
+                return ('lower', var[t].lb)
+        return None
+
+    for i, var in enumerate(varlist):
+        for t in t_list:
+            rand_args = args_fcn(i, var[t].value, **random_arg_dict)
+            newval = rand_fcn(*rand_args)
+
+            violated = violated_bounds(var, t, newval)
+            if not violated:
+                var[t].set_value(newval)
+                continue
+            if bound_strategy == 'discard':
+                for count in range(0, discard_limit):
+                    newval = rand_fcn(*rand_args) 
+                    if not violated_bounds(var, t, newval):
+                        break
+                if violated_bounds(var, t, newval):
+                    raise ValueError(
+                        'Discard limit exceeded when trying to apply noise to '
+                        + var[t].name + ' with arguments ' + str(rand_args) +
+                        '. Please adjust bounds or tighten distribution.')
+            elif bound_strategy == 'push':
+                if violated[0] == 'upper':
+                    newval = violated[1] - bound_push
+                elif violated[0] == 'lower':
+                    newval = violated[1] + bound_push
+                if violated_bounds(var, t, newval):
+                    raise ValueError(
+                            'Value after noise violates bounds even after '
+                            'push. Please use a smaller bound push.')
+            var[t].set_value(newval) 
+
+    return nom_values

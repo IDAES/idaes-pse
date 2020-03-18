@@ -38,6 +38,8 @@ from idaes.dynamic.cappresse.tests.cstr_for_testing import make_model
 import idaes.logger as idaeslog
 from cstr_for_testing import make_model
 
+import random
+
 __author__ = "Robert Parker"
 
 
@@ -217,11 +219,116 @@ def test_simulate_over_range():
     assert mod.fs.cstr.outlet.conc_mol[2, 'E'].value == approx(0.0538, abs=1e-4)
     assert mod.fs.cstr.outlet.conc_mol[2, 'P'].value == approx(0.4372, abs=1e-4)
 
+
+def test_add_noise_at_time():
+    mod = make_model(horizon=2, ntfe=20)
+    time = mod.fs.time
+    t0 = time.first()
+    assert degrees_of_freedom(mod) == 0
+
+    scalar_vars, dae_vars = flatten_dae_variables(mod.fs, time)
+    diff_vars = [Reference(mod.fs.cstr.control_volume.energy_holdup[:, 'aq']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'S']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'E']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'C']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'P'])]
+
+    for t in time:
+        diff_vars[0][t].setlb(290)
+        diff_vars[0][t].setub(310)
+        for i in range(1,5):
+            diff_vars[i][t].setlb(0)
+            diff_vars[i][t].setub(1)
+            # Pretend this is mole fraction...
+
+    assert diff_vars[0][0].value == 300
+    for i in range(1,5):
+        assert diff_vars[i][0].value == 0.001
+
+    copy_values_at_time(diff_vars,
+                        diff_vars,
+                        [t for t in time if t != t0],
+                        t0)
+
+    for seed in [4, 8, 15, 16, 23, 42]:
+        random.seed(seed)
+        weights = [10, 0.001, 0.001, 0.001, 0.001]
+        nom_vals = add_noise_at_time(diff_vars, 0, weights=weights)
+
+        assert nom_vals[0][0] == 300
+        assert diff_vars[0][0].value != 300
+        assert diff_vars[0][0].value == approx(300, abs=2)
+        for i in range(1,5):
+            assert nom_vals[0][i] == 0.001
+            # ^ nom_vals indexed by time, then var-index. This is confusing,
+            # might need to change (or only accept one time point at a time)
+            assert diff_vars[i][0].value != 0.001
+            assert diff_vars[i][0].value == approx(0.001, abs=2e-4)
+            # Within four standard deviations should be a safe check
+
+        for i in range(0, 5):
+            diff_vars[i][0].set_value(nom_vals[0][i])
+        # Reset and try again with new seed
+
+    # Try providing function for uniform random
+    rand_fcn = random.uniform
+
+    random_arg_dict = {'range_list': [(295, 305),
+                                      (0.001, 0.01),
+                                      (0.001, 0.01),
+                                      (0.001, 0.01),
+                                      (0.001, 0.01)]}
+
+    def args_fcn(i, val, **kwargs):
+        # args_fcn expects arguments like this
+        range_list = kwargs.pop('range_list', None)
+        return range_list[i]
+
+    nom_vals = add_noise_at_time(diff_vars, 0.5, 
+                                 random_function=rand_fcn,
+                                 args_function=args_fcn,
+                                 random_arg_dict=random_arg_dict)
+
+    assert nom_vals[0.5][0] == 300
+    assert diff_vars[0][0.5].value != 300
+    assert 295 <= diff_vars[0][0.5].value <= 305
+    for i in range(1, 5):
+        assert nom_vals[0.5][i] == 0.001
+        assert diff_vars[i][0.5].value != 0.001
+        assert 0.001 <= diff_vars[i][0.5].value <= 0.01
+
+    # Try to get some bound violations
+    random_arg_dict = {'range_list': [(295, 305),
+                                      (1, 2),
+                                      (1, 2),
+                                      (1, 2),
+                                      (1, 2)]}
     
+    nom_vals = add_noise_at_time(diff_vars, 1,
+                                 random_function=rand_fcn,
+                                 args_function=args_fcn,
+                                 random_arg_dict=random_arg_dict,
+                                 bound_strategy='push',
+                                 bound_push=0.01)
+    
+    for i in range(1, 5):
+        assert diff_vars[i][1].value == 0.99
+
+    random.seed(123)
+    with pytest.raises(ValueError) as exc_test:
+        # Large weights - one of these lower bounds should fail...
+        nom_vals = add_noise_at_time(diff_vars, 1.5, 
+                                     bound_strategy='discard',
+                                     discard_limit=0,
+                                     weights=[1,1,1,1,1],
+                                     sig_0=0.05)
+
+
 if __name__ == '__main__':
     test_find_comp_in_block()
     test_VarLocator()
     test_copy_values()
     test_find_slices_in_model()
     test_simulate_over_range()
+    test_add_noise_at_time()
 
