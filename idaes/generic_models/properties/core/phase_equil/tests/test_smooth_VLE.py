@@ -53,27 +53,15 @@ def frame():
         "pressure_ref": 1e5,
         "temperature_ref": 300})
 
-
-
-    # m.params.config = ConfigBlock()
-    # m.params.config.declare("equation_of_state", ConfigValue(
-    #         default={"Liq": DummyEoS, "Vap": DummyEoS}))
-
-    # m.params.component_list = Set(initialize=["H2O"])
-    # m.params.phase_list = Set(initialize=["Liq", "Vap"])
-
-    # m.params.temperature_crit_comp = Var(["H2O"], initialize=647.3)
-
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
 
-    # m.props[1].temperature = Var(initialize=300)
     m.props[1].temperature_bubble = Var(initialize=300)
     m.props[1].temperature_dew = Var(initialize=300)
 
-    # m.props[1].fug_phase_comp = Var(m.params.phase_list,
-    #                                 m.params.component_list,
-    #                                 initialize=10)
+    m.props[1].fug_phase_comp = Var(m.params.phase_list,
+                                    m.params.component_list,
+                                    initialize=10)
 
     smooth_VLE.phase_equil(m.props[1])
 
@@ -102,7 +90,7 @@ def test_build(frame):
     assert isinstance(frame.props[1]._tr_eq, Expression)
     assert len(frame.props[1]._tr_eq) == 1
     assert value(frame.props[1]._tr_eq["H2O"]) == value(
-            frame.props[1]._teq/frame.params.temperature_crit_comp["H2O"])
+            frame.props[1]._teq/frame.params.H2O.temperature_crit)
 
 
 def test_t1(frame):
