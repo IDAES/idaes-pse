@@ -510,6 +510,11 @@ see property package for documentation.}"""))
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
 
+        #TODO:
+        # 1. Check initialization for dynamic mode. Currently not supported.
+        # 2. Handle unfixed side split fraction vars
+        # 3. Better logic to handle and fix state vars.
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
@@ -545,14 +550,14 @@ see property package for documentation.}"""))
                                           outlvl=outlvl)
 
         # state args to initialize the mixed outlet state block
+        state_args_mixed = {}
+
         if self.config.is_feed_tray and state_args_feed is not None:
+
             # if initial guess provided for the feed stream, initialize the
             # mixed state block at the same condition.
-            self.properties_out.initialize(state_args=state_args_feed,
-                                           solver=solver,
-                                           outlvl=outlvl)
+            state_args_mixed = state_args_feed
         else:
-            state_args_mixed = {}
             state_dict = \
                 self.properties_out[self.flowsheet().config.time.first()].\
                 define_state_vars()
@@ -596,6 +601,10 @@ see property package for documentation.}"""))
                                    self.properties_in_vap[0].
                                    component(state_dict[k].local_name).value)
 
+        # Initialize the mixed outlet state block
+        self.properties_out.initialize(state_args=state_args_mixed,
+                                       solver=solver,
+                                       outlvl=outlvl)
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
 
@@ -623,10 +632,6 @@ see property package for documentation.}"""))
                              "during initialization but pressure attribute "
                              "unavailable in the state block. Initialization "
                              "proceeding with a potential degree of freedom.")
-
-        self.properties_out.initialize(state_args=state_args_mixed,
-                                       solver=solver,
-                                       outlvl=outlvl)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
