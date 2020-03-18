@@ -461,6 +461,8 @@ def add_noise_at_time(varlist, t_list, **kwargs):
         weights : List of weights for random distribution arguments such as 
                   standard deviation (Gaussian), radius (uniform), or lambda
                   (Laplacian)
+        sigma_0 : Value of standard deviation for a variable with unit weight.
+                  Default is 0.05.
         random_arg_dict : Dictionary containing other values users may want
                           to use in their argument function
         bound_strategy : String describing strategy for case in which a bound
@@ -479,10 +481,11 @@ def add_noise_at_time(varlist, t_list, **kwargs):
     random_arg_dict = kwargs.pop('random_arg_dict', {})
     assert len(weights) == n
     sig_0 = kwargs.pop('sigma_0', 0.05)
-    sig = [w*sig_0 for w in weights]
+    sig = [w*sig_0 if w is not None else None for w in weights]
 
     args_fcn = kwargs.pop('args_function',
-                          lambda i, val, **kwargs: [val, sig[i]])
+                          lambda i, val, **kwargs: [val, sig[i]] 
+                                        if sig[i] is not None else None)
 
     bound_strategy = kwargs.pop('bound_strategy', 'discard')
     discard_limit = kwargs.pop('discard_limit', 5)
@@ -511,6 +514,10 @@ def add_noise_at_time(varlist, t_list, **kwargs):
     for i, var in enumerate(varlist):
         for t in t_list:
             rand_args = args_fcn(i, var[t].value, **random_arg_dict)
+            if not rand_args:
+                # If a certain value is to be skipped,
+                # args_fcn should return None
+                continue
             newval = rand_fcn(*rand_args)
 
             violated = violated_bounds(var, t, newval)

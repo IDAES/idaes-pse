@@ -86,19 +86,22 @@ def main():
     
     nmpc.solve_control_problem()
 
-    nmpc.inject_inputs_into_plant(time_plant.first())
+    nmpc.inject_inputs_into_plant(time_plant.first(),
+                                  add_noise=True)
 
     nmpc.simulate_plant(time_plant.first())
 
     for t in plant_sample_points:
-        nmpc.load_initial_conditions_from_plant(t)
+        nmpc.load_initial_conditions_from_plant(t, 
+                                                add_noise=True)
 
         nmpc.initialize_control_problem(strategy='from_previous')
 
         nmpc.solve_control_problem()
 
-        nmpc.inject_inputs_into_plant(t)
-
+        nmpc.inject_inputs_into_plant(t,
+                                      add_noise=True)
+        
         nmpc.simulate_plant(t)
 
 if __name__ == '__main__':

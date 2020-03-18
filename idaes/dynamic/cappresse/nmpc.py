@@ -28,7 +28,7 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.dynamic.cappresse.util import (simulate_over_range, find_slices_in_model,
-        VarLocator, copy_values_at_time)
+        VarLocator, copy_values_at_time, add_noise_at_time)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -492,7 +492,7 @@ class NMPCSim(object):
             m1 : First flowsheet model
             m2 : Second flowsheet model
         """
-        if not (isinstance(m1, FlowsheetBlock) and 
+        if not (isinstance(m1, FlowsheetBlock) and
                 isinstance(m2, FlowsheetBlock)):
             raise ValueError(
                     'Provided models must be FlowsheetBlocks')
@@ -503,12 +503,50 @@ class NMPCSim(object):
         return True
 
 
-    def load_initial_conditions_from_plant(self, t_plant):
-        # Apply noise
+    def load_initial_conditions_from_plant(self, t_plant, **kwargs):
+
+        time = self.c_mod.time
+        t0 = time.first()
+
         copy_values_at_time(self.c_mod.ic_vars,
                             self.p_mod.controller_ic_vars,
-                            self.c_mod.time.first(),
+                            t0,
                             t_plant)
+
+        # Apply noise to new initial conditions
+        add_noise = kwargs.pop('add_noise', False)
+        noise_weights = kwargs.pop('noise_weights', [])
+        noise_sig_0 = kwargs.pop('noise_sig_0', 0.05)
+        noise_args = kwargs.pop('noise_args', {})
+
+        if add_noise:
+            if not noise_weights:
+                noise_weights = []
+                for var in self.c_mod.ic_vars:
+                    locator = self.c_mod.var_locator[id(var[t0])]
+                    category = locator.category
+                    loc = locator.location
+                    if category == 'differential':
+                        obj_weight = self.c_mod.diff_weights[loc]
+                    elif category == 'derivative':
+                        # Is it okay to weigh derivative noise by 
+                        # the state variable's weight?
+                        obj_weight = self.c_mod.diff_weights[loc]
+                    else:
+                        # FIXME: Won't have obj weight for algebraic equations
+                        obj_weight = None
+
+                    if obj_weight is not None and obj_weight != 0:
+                        # TODO: make an option for max noise weight
+                        noise_weights.append(min(1/obj_weight, 1e6))
+                    else:
+                        noise_weights.append(None)
+
+            add_noise_at_time(self.c_mod.ic_vars,
+                              t0,
+                              weights=noise_weights,
+                              sigma_0=noise_sig_0,
+                              **noise_args)
 
 
     def inject_inputs_into_plant(self, t_plant, **kwargs):
@@ -529,6 +567,11 @@ class NMPCSim(object):
                            the variables in the controller model corresponding
                            to the plant model's inputs. (These are not
                            necessarily the control model's inputs!)
+            add_noise : Bool telling whether or not to apply noise
+            noise_weights : List of weights for each state's standard deviation
+            noise_sig_0 : Standard deviation for a state with unit weight
+            noise_args : Additional kwargs to pass apply_noise_at_time
+
         """
 
         sample_time = kwargs.pop('sample_time', self.sample_time)
@@ -541,10 +584,55 @@ class NMPCSim(object):
 
         time = self.p_mod.time
         plant_sample = [t for t in time if t > t_plant and t<= t_plant+sample_time]
-        assert t_plant not in plant_sample
         assert t_plant+sample_time in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
+
+        add_noise = kwargs.pop('add_noise', False)
+        noise_weights = kwargs.pop('noise_weights', [])
+        noise_sig_0 = kwargs.pop('noise_sig_0', 0.05)
+        noise_args = kwargs.pop('noise_args', {})
+
+        # Need to get proper weights for plant's input vars
+        if add_noise:
+            if not noise_weights:
+                noise_weights = []
+                for var in self.c_mod.plant_input_vars:
+                    locator = self.c_mod.var_locator[id(var[t_controller])]
+                    category = locator.category
+                    loc = locator.location
+                    if category == 'input':
+                        obj_weight = self.c_mod.input_weights[loc]
+                    elif category == 'differential':
+                        obj_weight = self.c_mod.diff_weights[loc]
+                    if obj_weight is not None and obj_weight != 0:
+                        noise_weights.append(min(1/obj_weight, 1e6))
+                    else:
+                        # By default, if state is not penalized in objective,
+                        # noise will not be applied to it here.
+                        # This may be incorrect, but user will have to override,
+                        # by providing their own weights, as I don't see a good
+                        # way of calculating a weight
+                        noise_weights.append(None)
+
+            add_noise_at_time(self.c_mod.plant_input_vars,
+                              t_controller,
+                              weights=noise_weights,
+                              sigma_0=noise_sig_0,
+                              **noise_args)
+            #add_noise_at_time(self.p_mod.input_vars,
+            #                  t_plant+sample_time,
+            #                  weights=noise_weights,
+            #                  sigma_0=noise_sig_0,
+            #                  **noise_args)
+            # Slight bug in logic here: noise is applied to plant variables,
+            # but only controller variables have bounds.
+            # Alternatives: add bounds to plant variables (undesirable)  
+            #               apply noise to controller variables (maybe okay...)
+            #                ^ can always record nominal values, then revert
+            #                  noise after it's copied into plant...
+            # Right now I apply noise to controller model, and don't revert
+
         copy_values_at_time(self.p_mod.input_vars,
                             self.c_mod.plant_input_vars,
                             plant_sample,
