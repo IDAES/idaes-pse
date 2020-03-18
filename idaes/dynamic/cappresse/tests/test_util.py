@@ -15,6 +15,7 @@ Tests for Caprese helper utility functions.
 """
 
 import pytest
+from pytest import approx
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, Objective,
                            TransformationFactory, TerminationCondition,
@@ -33,6 +34,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.cappresse.util import *
 from idaes.dynamic.cappresse.nmpc import find_comp_in_block
+from idaes.dynamic.cappresse.tests.cstr_for_testing import make_model
 import idaes.logger as idaeslog
 from cstr_for_testing import make_model
 
@@ -178,10 +180,48 @@ def test_find_slices_in_model():
         assert dae_vars_2[i].name == _slice.name
         assert _slice in dae_var_set_1
 
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_simulate_over_range():
+    mod = make_model(horizon=2, ntfe=20)
+    assert degrees_of_freedom(mod) == 0
+
+    scalar_vars, dae_vars = flatten_dae_variables(mod.fs, mod.fs.time)
+    diff_vars = [Reference(mod.fs.cstr.control_volume.energy_holdup[:, 'aq']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'S']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'E']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'C']),
+                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'P'])]
+
+    simulate_over_range(mod.fs, 0, 1, solver=solver, dae_vars=dae_vars,
+                        time_linking_variables=diff_vars,
+                        outlvl=idaeslog.DEBUG,
+                        solve_initial_conditions=True)
+
+    assert degrees_of_freedom(mod.fs) == 0
+
+    assert mod.fs.cstr.outlet.conc_mol[1, 'S'].value == approx(10.189, abs=1e-3)
+    assert mod.fs.cstr.outlet.conc_mol[1, 'C'].value == approx(0.4275, abs=1e-4)
+    assert mod.fs.cstr.outlet.conc_mol[1, 'E'].value == approx(0.0541, abs=1e-4)
+    assert mod.fs.cstr.outlet.conc_mol[1, 'P'].value == approx(0.3503, abs=1e-4)
+
+    simulate_over_range(mod.fs, 1, 2, solver=solver, dae_vars=dae_vars,
+                        outlvl=idaeslog.DEBUG)
+
+    assert degrees_of_freedom(mod.fs) == 0
+    for con in activated_equalities_generator(mod.fs):
+        assert value(con.body) - value(con.upper) < 1e-5
+
+    assert mod.fs.cstr.outlet.conc_mol[2, 'S'].value == approx(11.263, abs=1e-3)
+    assert mod.fs.cstr.outlet.conc_mol[2, 'C'].value == approx(0.4809, abs=1e-4)
+    assert mod.fs.cstr.outlet.conc_mol[2, 'E'].value == approx(0.0538, abs=1e-4)
+    assert mod.fs.cstr.outlet.conc_mol[2, 'P'].value == approx(0.4372, abs=1e-4)
+
     
 if __name__ == '__main__':
     test_find_comp_in_block()
     test_VarLocator()
     test_copy_values()
     test_find_slices_in_model()
+    test_simulate_over_range()
 

@@ -21,11 +21,16 @@ from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
 from pyomo.kernel import ComponentSet
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.dae.set_utils import is_in_block_indexed_by
+from pyomo.core.expr.visitor import identify_variables
+from pyomo.core.base.constraint import _ConstraintData
+from pyomo.core.base.block import _BlockData
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block_at_time)
+        path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
+        get_fixed_dict, deactivate_constraints_unindexed_by)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.dynamic.cappresse.nmpc import find_comp_in_block
 import idaes.logger as idaeslog
@@ -35,6 +40,18 @@ import time as timemodule
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
+
+
+# See if ipopt is available and set up solver
+solver_available = SolverFactory('ipopt').available()
+if solver_available:
+    solver = SolverFactory('ipopt')
+    solver.options = {'tol': 1e-6,
+                      'mu_init': 1e-8,
+                      'bound_push': 1e-8,
+                      'halt_on_ampl_error': 'yes'}
+else:
+    solver = None
 
 
 class VarLocator(object):
@@ -173,7 +190,7 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
     return tgt_slices
 
 
-def simulate_over_range(self, model, t_start, t_end, **kwargs):
+def simulate_over_range(model, t_start, t_end, **kwargs):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
 
@@ -198,39 +215,145 @@ def simulate_over_range(self, model, t_start, t_end, **kwargs):
 
     # What variables does this function need knowledge of?
 
-    solver = kwargs.pop('solver', self.default_solver)
-    outlvl = kwargs.pop('outlvl', self.outlvl)
+    solver = kwargs.pop('solver', SolverFactory('ipopt'))
+    outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
     init_log = idaeslog.getInitLogger('nmpc', outlvl)
     solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
-    
+    solve_initial_conditions = kwargs.pop('solve_initial_conditions', False)
+
+    # Variables that will be fixed for time points outside the finite element
+    # when constraints for a finite element are activated.
+    # For a "normal" process, these should just be differential variables
+    # (and maybe derivative variables). For a process with a (PID) controller,
+    # these should also include variables used by the controller.
+    # If these variables are not specified, 
+    time_linking_vars = kwargs.pop('time_linking_vars', [])
+    # Timespan over which these variables will be fixed, counting backwards
+    # from the first time point in the finite element (which will always be
+    # fixed)
+    max_linking_range = kwargs.pop('max_linking_range', 0)
+    # Should I specify max_linking_range as an integer number of finite
+    # elements, an integer number of time points, or a float in actual time
+    # units? Go with latter for now.
 
     time = model.time
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
     assert degrees_of_freedom(model) == 0
-    ncp = model._ncp
+
+    dae_vars = kwargs.pop('dae_vars', [])
+    if not dae_vars:
+        scalar_vars, dae_vars = flatten_dae_variables(model, time)
+        for var in scalar_vars:
+            var.fix()
+        deactivate_constraints_unindexed_by(model, time)
+
+    ncp = time.get_discretization_info()['ncp']
 
     fe_in_range = [i for i, fe in enumerate(time.get_finite_elements())
                             if fe >= t_start and fe <= t_end]
+    t_in_range = [t for t in model.time if t >= t_start and t <= t_end]
+
     fe_in_range.pop(0)
     n_fe_in_range = len(fe_in_range)
 
     was_originally_active = get_activity_dict(model)
+    was_originally_fixed = get_fixed_dict(model)
 
     # Deactivate model
-    time_list = [t for t in time]
-    deactivated = deactivate_model_at(model, time, time_list,
-            outlvl=idaeslog.ERROR)
+    if not solve_initial_conditions:
+        time_list = [t for t in time]
+        deactivated = deactivate_model_at(model, time, time_list,
+                outlvl=idaeslog.ERROR)
+    else:
+        time_list = [t for t in time if t != time.first()]
+        deactivated = deactivate_model_at(model, time, time_list,
+                outlvl=idaeslog.ERROR)
+
+        assert degrees_of_freedom(model) == 0
+        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+            results = solver.solve(model, tee=slc.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            pass
+        else:
+            raise ValueError
+
+        deactivated[time.first()] = deactivate_model_at(model, time, 
+                time.first(),
+                outlvl=idaeslog.ERROR)[time.first()]
+
+    # Fix all vars in model
+    # Can't necessarily do this as vars may have values of None
+    # - solve first finite element (no fixing necessary - ics fixed already)
+    # - fix first finite element, solve second finite element
+    # -               ^ entire thing? unless otherwise specified
+    # - fix second finite element, solve third, etc.
+    # - when done, unfix all variables that were not originally fixed
+    #for var in model.component_data_objects(Var):
+    #    var.fix()
 
     for i in fe_in_range:
         t_prev = time[(i-1)*ncp+1]
 
         fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
 
+        con_list = []
         for t in fe:
+            # These will be fixed vars in constraints at t
+            # Probably not necessary to record at what t
+            # they occur
             for comp in deactivated[t]:
                 if was_originally_active[id(comp)]:
-                    comp.activate()
+                   comp.activate()
+                   if not time_linking_vars:
+                       if isinstance(comp, _ConstraintData):
+                           con_list.append(comp)
+                       elif isinstance(comp, _BlockData):
+                           # Active here should be independent of whether block
+                           # was active
+                           con_list.extend(
+                               list(comp.component_data_objects(Constraint,
+                                                                 active=True)))
+
+        if not time_linking_vars:
+            fixed_vars = []
+            for con in con_list:
+                for var in identify_variables(con.expr,
+                                              include_fixed=False):
+                    t_idx = get_implicit_index_of_set(var, time)
+                    if t_idx is None:
+                        assert not is_in_block_indexed_by(var, time)
+                        continue
+                    if t_idx <= t_prev:
+                        fixed_vars.append(var)
+                        var.fix()
+        else:
+            fixed_vars = []
+            time_range = [t for t in time 
+                          if t_prev - t <= max_linking_range
+                          and t <= t_prev]
+            time_range = [t_prev]
+            for _slice in time_linking_vars:
+                for t in time_range:
+                    #if not _slice[t].fixed:
+                    _slice[t].fix()
+                    fixed_vars.append(_slice[t])
+
+#                    # Need to consider implicit time indices too
+#                    for var in identify_variables(comp.expr,
+#                                                  include_fixed=False):
+#                        t_idx = get_implicit_index_of_set(var, time)
+#                        if t_idx is None:
+#                            assert not is_implicitly_indexed_by(var, time)
+#                            continue
+#                        if t_idx <= t_prev:
+#                            # Assume no t_idx belonging to a future finite
+#                            # element will be present
+#                            pdb.set_trace()
+#                            fixed_vars[t].append(var)
+#                            var.fix()
+                    # Problem with this logic: comp can be a block
+                    # If comp is a constraint, 
 
         # Here I assume that the only variables that can appear in 
         # constraints at a different (later) time index are derivatives
@@ -250,16 +373,18 @@ def simulate_over_range(self, model, t_start, t_end, **kwargs):
         # In either case need to record whether variable was previously fixed
         # so I know if I should unfix it or not.
 
-        was_fixed = {}
-        for drv in model.deriv_vars:
-            was_fixed[id(drv[t_prev])] = drv[t_prev].fixed
-            drv[t_prev].fix()
-        for dv in model.diff_vars:
-            was_fixed[id(dv[t_prev])] = dv[t_prev].fixed
-            dv[t_prev].fix()
+        # In the new implementation of variable fixing, I don't need to fix
+        # these vars - they will already be fixed
+#        was_fixed = {}
+#        for drv in model.deriv_vars:
+#            was_fixed[id(drv[t_prev])] = drv[t_prev].fixed
+#            drv[t_prev].fix()
+#        for dv in model.diff_vars:
+#            was_fixed[id(dv[t_prev])] = dv[t_prev].fixed
+#            dv[t_prev].fix()
 
         for t in fe:
-            for _slice in model.dae_vars:
+            for _slice in dae_vars:
                 if not _slice[t].fixed:
                 # Fixed DAE variables are time-dependent disturbances,
                 # whose values should not be altered by this function.
@@ -283,14 +408,35 @@ def simulate_over_range(self, model, t_start, t_end, **kwargs):
             for comp in deactivated[t]:
                 comp.deactivate()
 
-        for drv in model.deriv_vars:
-            if not was_fixed[id(drv[t_prev])]:
-                drv[t_prev].unfix()
-        for dv in model.diff_vars:
-            if not was_fixed[id(dv[t_prev])]:
-                dv[t_prev].unfix()
+        # Fix all dae vars in the finite element
+        # (Where) should scalar_vars be fixed?
+#        for t in [t_prev] + fe:
+#            for _slice in dae_vars:
+#                if _slice[t].value is not None:
+#                    # Only time this should happen is if an initial
+#                    # condition has not been initialized.
+#                    _slice[t].fix()
+
+        #for drv in model.deriv_vars:
+        #    if not was_fixed[id(drv[t_prev])]:
+        #        drv[t_prev].unfix()
+        #for dv in model.diff_vars:
+        #    if not was_fixed[id(dv[t_prev])]:
+        #        dv[t_prev].unfix()
+
+        for var in fixed_vars:
+            if not was_originally_fixed[id(var)]:
+                var.unfix()
 
     for t in time:
         for comp in deactivated[t]:
             if was_originally_active[id(comp)]:
                 comp.activate()
+
+    # unfix variables that have been fixed
+#    for t in t_in_range:
+#        for _slice in dae_vars:
+#            if not was_originally_fixed[id(_slice[t])]:
+#                _slice[t].unfix()
+
+    assert degrees_of_freedom(model) == 0
