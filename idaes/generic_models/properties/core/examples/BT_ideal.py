@@ -55,6 +55,9 @@ class BTIdealParameterData(GenericParameterData):
         '''
         # ---------------------------------------------------------------------
         # Set config arguments
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         self.config.components = {
             'benzene': {"dens_mol_liq_comp": Perrys,
                         "enth_mol_liq_comp": Perrys,
@@ -62,14 +65,18 @@ class BTIdealParameterData(GenericParameterData):
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
-                        "mw": 78.1136E-3},
+                        "mw": 78.1136E-3,
+                        "pressure_crit": 48.9e5,
+                        "temperature_crit": 562.2},
             'toluene': {"dens_mol_liq_comp": Perrys,
                         "enth_mol_liq_comp": Perrys,
                         "enth_mol_ig_comp": RPP,
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
-                        "mw": 92.1405E-3}}
+                        "mw": 92.1405E-3,
+                        "pressure_crit": 41e5,
+                        "temperature_crit": 591.8}}
         self.config.phases = {
             'Liq': {"type": LiquidPhase,
                     "equation_of_state": ideal},
@@ -92,24 +99,6 @@ class BTIdealParameterData(GenericParameterData):
         self.config.pressure_dew = dew_press_ideal
 
     def parameters(self):
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        self.benzene.pressure_crit_comp = Var(initialize=48.9e5,
-                                              doc='Critical pressure [Pa]')
-
-        self.toluene.pressure_crit_comp = Var(initialize=41e5,
-                                              doc='Critical pressure [Pa]')
-
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        self.benzene.temperature_crit_comp = Var(
-            initialize=562.2,
-            doc='Critical temperature [K]')
-
-        self.toluene.temperature_crit_comp = Var(
-            initialize=591.8,
-            doc='Critical temperature [K]')
-
         # Constants for ideal gas specific enthalpy
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid

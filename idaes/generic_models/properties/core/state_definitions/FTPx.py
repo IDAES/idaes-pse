@@ -28,17 +28,17 @@ def define_state(b):
     # Get bounds if provided
     try:
         f_bounds = b.params.config.state_bounds["flow_mol"]
-    except KeyError:
+    except (KeyError, TypeError):
         f_bounds = (None, None)
 
     try:
         t_bounds = b.params.config.state_bounds["temperature"]
-    except KeyError:
+    except (KeyError, TypeError):
         t_bounds = (None, None)
 
     try:
         p_bounds = b.params.config.state_bounds["pressure"]
-    except KeyError:
+    except (KeyError, TypeError):
         p_bounds = (None, None)
 
     # Set an initial value for each state var

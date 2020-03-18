@@ -20,20 +20,22 @@ import pytest
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
-                           Block,
                            Expression,
                            Param,
-                           Set,
                            value,
                            Var)
-from pyomo.common.config import ConfigBlock, ConfigValue
 
+from idaes.generic_models.properties.core.generic.generic_property import \
+    GenericParameterBlock
+from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.core.util.misc import add_object_reference
 
 
 # Dummy EoS to use for fugacity calls
 class DummyEoS(object):
+    def common(self):
+        pass
+
     def fug_phase_comp(b, p, j):
         return b.fug_phase_comp[p, j]
 
@@ -43,27 +45,35 @@ def frame():
     m = ConcreteModel()
 
     # Create a dummy parameter block
-    m.params = Block()
-    m.params.config = ConfigBlock()
-    m.params.config.declare("equation_of_state", ConfigValue(
-            default={"Liq": DummyEoS, "Vap": DummyEoS}))
+    m.params = GenericParameterBlock(default={
+        "components": {"H2O": {"temperature_crit": 647.3}},
+        "phases": {"Liq": {"equation_of_state": DummyEoS},
+                   "Vap": {"equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300})
 
-    m.params.component_list = Set(initialize=["H2O"])
-    m.params.phase_list = Set(initialize=["Liq", "Vap"])
 
-    m.params.temperature_crit_comp = Var(["H2O"], initialize=647.3)
+
+    # m.params.config = ConfigBlock()
+    # m.params.config.declare("equation_of_state", ConfigValue(
+    #         default={"Liq": DummyEoS, "Vap": DummyEoS}))
+
+    # m.params.component_list = Set(initialize=["H2O"])
+    # m.params.phase_list = Set(initialize=["Liq", "Vap"])
+
+    # m.params.temperature_crit_comp = Var(["H2O"], initialize=647.3)
 
     # Create a dummy state block
-    m.props = Block([1])
-    add_object_reference(m.props[1], "params", m.params)
+    m.props = m.params.state_block_class([1], default={"parameters": m.params})
 
-    m.props[1].temperature = Var(initialize=300)
+    # m.props[1].temperature = Var(initialize=300)
     m.props[1].temperature_bubble = Var(initialize=300)
     m.props[1].temperature_dew = Var(initialize=300)
 
-    m.props[1].fug_phase_comp = Var(m.params.phase_list,
-                                    m.params.component_list,
-                                    initialize=10)
+    # m.props[1].fug_phase_comp = Var(m.params.phase_list,
+    #                                 m.params.component_list,
+    #                                 initialize=10)
 
     smooth_VLE.phase_equil(m.props[1])
 

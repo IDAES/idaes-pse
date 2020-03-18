@@ -52,15 +52,15 @@ def phase_equil(b):
     b._teq_constraint = Constraint(rule=rule_teq)
 
     def rule_tr_eq(b, i):
-        return b._teq / b.params.temperature_crit_comp[i]
+        return b._teq / b.params.get_component(i).temperature_crit
     b._tr_eq = Expression(b.params.component_list,
                           rule=rule_tr_eq,
                           doc='Component reduced temperatures [-]')
 
     def rule_equilibrium(b, j):
-        return (b.params.config.equation_of_state["Vap"].fug_phase_comp(
+        return (b.params.get_phase("Vap").config.equation_of_state.fug_phase_comp(
                     b, "Vap", j) ==
-                b.params.config.equation_of_state["Liq"].fug_phase_comp(
+                b.params.get_phase("Liq").config.equation_of_state.fug_phase_comp(
                     b, "Liq", j))
     b.equilibrium_constraint = \
         Constraint(b.params.component_list, rule=rule_equilibrium)

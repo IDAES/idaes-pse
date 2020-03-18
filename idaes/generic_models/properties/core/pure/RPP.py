@@ -57,24 +57,24 @@ def entr_mol_ig_comp(b, cobj, T):
 # Saturation pressure
 # Note that this equation in not valid beyond the critical temperature
 def pressure_sat_comp(b, cobj, T):
-    x = 1 - T/cobj.temperature_crit_comp
+    x = 1 - T/cobj.temperature_crit
 
     return (exp((1-x)**-1 * (cobj.pressure_sat_comp_coeff['A']*x +
                              cobj.pressure_sat_comp_coeff['B']*x**1.5 +
                              cobj.pressure_sat_comp_coeff['C']*x**3 +
                              cobj.pressure_sat_comp_coeff['D']*x**6)) *
-            cobj.pressure_crit_comp)
+            cobj.pressure_crit)
 
 
 def pressure_sat_comp_dT(b, cobj, T):
-    x = 1 - T/cobj.temperature_crit_comp
+    x = 1 - T/cobj.temperature_crit
 
     return (-pressure_sat_comp(b, cobj, T) *
             ((cobj.pressure_sat_comp_coeff['A'] +
               1.5*cobj.pressure_sat_comp_coeff['B']*x**0.5 +
               3*cobj.pressure_sat_comp_coeff['C']*x**2 +
               6*cobj.pressure_sat_comp_coeff['D']*x**5)/T +
-             (cobj.temperature_crit_comp/T**2) *
+             (cobj.temperature_crit/T**2) *
              (cobj.pressure_sat_comp_coeff['A']*x +
               cobj.pressure_sat_comp_coeff['B']*x**1.5 +
               cobj.pressure_sat_comp_coeff['C']*x**3 +

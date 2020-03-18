@@ -43,8 +43,8 @@ def frame():
     m.params.pressure_ref = Var(initialize=1e5)
 
     m.params.pressure_sat_comp_coeff = Var(["A", "B", "C", "D"])
-    m.params.temperature_crit_comp = Var(initialize=647.3)
-    m.params.pressure_crit_comp = Var(initialize=221.2e5)
+    m.params.temperature_crit = Var(initialize=647.3)
+    m.params.pressure_crit = Var(initialize=221.2e5)
     m.params.cp_mol_ig_comp_coeff = Var(["A", "B", "C", "D"])
     m.params.enth_mol_form_phase_comp_ref = Var(["Vap"])
     m.params.entr_mol_form_phase_comp_ref = Var(["Vap"])
