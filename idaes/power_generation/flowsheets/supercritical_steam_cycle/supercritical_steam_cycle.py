@@ -835,6 +835,9 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     # initialize turbine
     assert degrees_of_freedom(m.fs.turb) == 0
     m.fs.turb.initialize(outlvl=outlvl, optarg=solver.options)
+    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        res = solver.solve(m.fs.turb, tee=slc.tee)
+    init_log.info("Full turbine solve complete: {}".format(idaeslog.condition(res)))
     # The turbine outlet pressure is determined by the condenser once hooked up
     m.fs.turb.outlet_stage.control_volume.properties_out[:].pressure.unfix()
     # Extraction rates are calculated once the feedwater heater models are
@@ -849,7 +852,11 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     m.fs.turb.hp_split[4].split_fraction[:, "outlet_2"].unfix()
     # Initialize the boiler feed pump turbine.
     _set_port(m.fs.bfpt.inlet, m.fs.turb.ip_split[10].outlet_3)
-    m.fs.bfpt.initialize(outlvl=outlvl, optarg=solver.options)
+    m.fs.bfpt.control_volume.properties_out[:].pressure.fix(10000)
+    m.fs.bfpt.efficiency_isentropic.fix()
+    m.fs.bfpt.initialize(outlvl=idaeslog.DEBUG, optarg=solver.options)
+    m.fs.bfpt.control_volume.properties_out[:].pressure.unfix()
+    m.fs.bfpt.efficiency_isentropic.unfix()
     ############################################################################
     #  Condenser section                                                       #
     ############################################################################

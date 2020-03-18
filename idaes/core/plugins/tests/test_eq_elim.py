@@ -95,3 +95,31 @@ def test_reverse(model):
     assert not m.x[1].fixed
     assert not m.x[2].fixed
     assert not m.y.fixed
+
+def test_bounds(model):
+    m = model
+
+    elim = pyo.TransformationFactory("simple_equality_eliminator")
+
+    m.x[3].setlb(-1)
+    m.x[3].setub(10)
+    m.x[4].setlb(1)
+    m.x[4].setub(12)
+
+    elim.apply_to(m)
+
+    # The bounds here come from constraint c5.  z4 is 4, x1 is 0, and x4 and x5
+    # are not fixed, so you get 4 = x3 + x4.  I'm not sure if x3 or x4 will be
+    # replaced, so I calculated bounds on both.
+
+    # For x3 the bounds that come from x4 are 4 - x4.lb and 4 - x4.ub or (-8 and 3)
+    # so the tightest set of bounds from x3 and x4 are (-1, 3)
+
+    # If instead x3 is replaced, the bounds on x4 that come from x3 are
+    # 4 - 10 and 4 + 1 or (-6, 5).  The tightest set of bounds on x4 is (1, 5)
+    if id(m.x[3]) not in elim._subs_map:
+        assert m.x[3].lb == -1
+        assert m.x[3].ub == 3
+    else:
+        assert m.x[4].lb == 1
+        assert m.x[4].ub == 5
