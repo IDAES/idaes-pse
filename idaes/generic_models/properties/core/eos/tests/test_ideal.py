@@ -25,8 +25,6 @@ from idaes.core import (declare_process_block_class,
 from idaes.generic_models.properties.core.eos import ideal
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
-from idaes.core.util.constants import Constants as const
 from idaes.core.util.exceptions import PropertyNotSupportedError
 
 

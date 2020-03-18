@@ -16,7 +16,6 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
-                           Param,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -33,16 +32,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import get_default_solver
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-import idaes.generic_models.properties.core.eos.ideal as ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
-        bubble_temp_ideal,
-        dew_temp_ideal,
-        bubble_press_ideal,
-        dew_press_ideal)
-
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
     import BTIdealParameterBlock
@@ -109,7 +99,7 @@ class TestStateBlock(object):
         model.props = model.params.state_block_class(
                 [1],
                 default={"parameters": model.params,
-                          "defined_state": True})
+                         "defined_state": True})
 
         return model
 
@@ -203,9 +193,9 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                          "mole_frac_comp",
-                          "temperature",
-                          "pressure"]
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
 
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
@@ -213,9 +203,9 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                          "mole_frac_comp",
-                          "temperature",
-                          "pressure"]
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
 
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
@@ -223,9 +213,9 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                          "mole_frac_comp",
-                          "temperature",
-                          "pressure"]
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
 
     def test_dof(self, model):
         # Fix state
@@ -234,7 +224,7 @@ class TestStateBlock(object):
         model.props[1].pressure.fix(101325)
         model.props[1].mole_frac_comp["benzene"].fix(0.5)
         model.props[1].mole_frac_comp["toluene"].fix(0.5)
-        
+
         model.props[1].display()
 
         assert degrees_of_freedom(model.props[1]) == 0
