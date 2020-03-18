@@ -18,21 +18,16 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import Block, ConcreteModel, Expression, Param, Set, Var
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.environ import Block, ConcreteModel, Param, Set, Var
 
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericPropertyPackageError,
-        get_method,
         GenericParameterData,
         GenericStateBlock)
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import (ConfigurationError)
 
 # -----------------------------------------------------------------------------
 @declare_process_block_class("DummyParameterBlock")
@@ -48,8 +43,8 @@ class TestGenericParameterBlock(object):
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
                     "p1": {"type": LiquidPhase,
-                         "component_list": ["a", "b"],
-                         "equation_of_state": "foo"},
+                           "component_list": ["a", "b"],
+                           "equation_of_state": "foo"},
                     "p2": {"equation_of_state": "bar"}},
                 "state_definition": "foo",
                 "pressure_ref": 1e5,

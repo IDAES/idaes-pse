@@ -13,18 +13,18 @@
 from pyomo.environ import Constraint
 
 from idaes.generic_models.properties.core.generic.generic_property import \
-        GenericPropertyPackageError, get_method, get_component_object as cobj
+        get_method, get_component_object as cobj
 
 
 # -----------------------------------------------------------------------------
 # Bubble temperature methods
 def bubble_temp_ideal(b):
     def rule_bubble_temp(b):
-        return sum(b.mole_frac_comp[j] *
-                   get_method(b, "pressure_sat_comp", j)(
-                           b, cobj(b, j), b.temperature_bubble)
-                   for j in b.params.component_list) - \
-            b.pressure == 0
+        return (sum(b.mole_frac_comp[j] *
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), b.temperature_bubble)
+                    for j in b.params.component_list) -
+                b.pressure) == 0
     b.eq_temperature_bubble = Constraint(rule=rule_bubble_temp)
 
     def rule_mole_frac_bubble_temp(b, j):

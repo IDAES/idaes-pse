@@ -63,7 +63,10 @@ def entr_mol_ig_comp(b, cobj, T):
 
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
-def pressure_sat_comp(b, cobj, T):
+def pressure_sat_comp(b, cobj, T, dT=False):
+    if dT:
+        return pressure_sat_comp_dT(b, cobj, T)
+
     return 10**(cobj.pressure_sat_comp_coeff['A'] -
                 cobj.pressure_sat_comp_coeff['B'] /
                 (T + cobj.pressure_sat_comp_coeff['C']))

@@ -23,7 +23,7 @@ libraries.
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Var, NonNegativeReals
+from pyomo.environ import Var
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, LiquidPhase, VaporPhase
