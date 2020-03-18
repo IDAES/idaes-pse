@@ -31,6 +31,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.cappresse import nmpc
 from idaes.dynamic.cappresse.nmpc import *
+from idaes.dynamic.cappresse.util import simulate_over_range
 import idaes.logger as idaeslog
 from cstr_for_testing import make_model
 
@@ -599,20 +600,21 @@ def _test_solve_control_problem(nmpc):
 
 def _test_inject_inputs(nmpc):
     
+
     c_mod = nmpc.c_mod
     p_mod = nmpc.p_mod
     sample_time = nmpc.sample_time
     time = p_mod.time
-    nmpc.inject_inputs_into(p_mod, c_mod, t_src=2, t_tgt=0)
-    # Here I am copying the inputs at the incorrect time
-    # (t=2 instead of t=0.5, one sampling time) just to explicitly
-    # test both functions inject_inputs_into and inject_inputs_into_plant
+   # nmpc.inject_inputs_into(p_mod, c_mod, t_src=2, t_tgt=0)
+   # # Here I am copying the inputs at the incorrect time
+   # # (t=2 instead of t=0.5, one sampling time) just to explicitly
+   # # test both functions inject_inputs_into and inject_inputs_into_plant
 
-    for i, _slice in enumerate(p_mod.input_vars):
-        for t in time:
-            if t > sample_time or t == 0:
-                continue
-            assert _slice[t].value == c_mod.input_vars[i][2].value
+   # for i, _slice in enumerate(p_mod.input_vars):
+   #     for t in time:
+   #         if t > sample_time or t == 0:
+   #             continue
+   #         assert _slice[t].value == c_mod.input_vars[i][2].value
 
     nmpc.inject_inputs_into_plant(0)
     for i, _slice in enumerate(p_mod.input_vars):
@@ -635,7 +637,9 @@ def _test_simulate_over_range(nmpc):
     # ^ Can't calculate value because many variables are not initialized
 
     assert degrees_of_freedom(p_mod) == 0
-    nmpc.simulate_over_range(p_mod, 0, 3)
+    simulate_over_range(p_mod, 0, 3,
+            dae_vars=p_mod.dae_vars,
+            time_linking_vars=p_mod.diff_vars)
     assert degrees_of_freedom(p_mod) == 0
 
     for con in activated_equalities_generator(p_mod):

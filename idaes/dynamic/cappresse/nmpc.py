@@ -27,6 +27,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
+from idaes.dynamic.cappresse.util import (simulate_over_range, find_slices_in_model,
+        VarLocator, copy_values_at_time)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -98,49 +100,49 @@ __author__ = "Robert Parker and David Thierry"
 #    return tgt_comp
 
 
-class VarLocator(object):
-    """
-    Class for storing information used to locate a VarData object.
-    Used because I want to allow the user to supply set-point in terms
-    of any variables they want. I then need to find these variables in the
-    proper container.
-    """
-
-    def __init__(self, category, container, location, is_ic=False):
-        """Constructor method. Assigns attributes based on arguments.
-
-        Args:
-            category : String describing a type of variable. Should be
-                       something like 'differential' or 'algebraic'
-            container : The list object that contains a VarData's
-                        time slice.
-            location : The index within the container where the variable
-                       lives.
-            is_ic : True if the variable is used as an initial condition.
-        """
-        # Should this class store the time index of the variable?
-        # probably not (a. might not exist, b. should already be known)
-        if type(category) is not str:
-            raise TypeError(
-            'category argument must be a string')
-        self.category = category
-
-        if type(container) is not list:
-            raise TypeError(
-            'varlist argument must be a list')
-        self.container = container
-
-        if type(location) is not int:
-            raise TypeError(
-            'location argument must be an integer index')
-        if location >= len(container):
-            raise ValueError(
-            'location must be a valid index for the container') 
-        self.location = location
-
-        if type(is_ic) is not bool:
-            raise ValueError()
-        self.is_ic = is_ic
+#class VarLocator(object):
+#    """
+#    Class for storing information used to locate a VarData object.
+#    Used because I want to allow the user to supply set-point in terms
+#    of any variables they want. I then need to find these variables in the
+#    proper container.
+#    """
+#
+#    def __init__(self, category, container, location, is_ic=False):
+#        """Constructor method. Assigns attributes based on arguments.
+#
+#        Args:
+#            category : String describing a type of variable. Should be
+#                       something like 'differential' or 'algebraic'
+#            container : The list object that contains a VarData's
+#                        time slice.
+#            location : The index within the container where the variable
+#                       lives.
+#            is_ic : True if the variable is used as an initial condition.
+#        """
+#        # Should this class store the time index of the variable?
+#        # probably not (a. might not exist, b. should already be known)
+#        if type(category) is not str:
+#            raise TypeError(
+#            'category argument must be a string')
+#        self.category = category
+#
+#        if type(container) is not list:
+#            raise TypeError(
+#            'varlist argument must be a list')
+#        self.container = container
+#
+#        if type(location) is not int:
+#            raise TypeError(
+#            'location argument must be an integer index')
+#        if location >= len(container):
+#            raise ValueError(
+#            'location must be a valid index for the container') 
+#        self.location = location
+#
+#        if type(is_ic) is not bool:
+#            raise ValueError()
+#        self.is_ic = is_ic
 
 
 class NMPCSim(object):
@@ -231,9 +233,7 @@ class NMPCSim(object):
         init_controller_inputs = self.validate_initial_inputs(controller_model,
                 plant_model, initial_inputs)
         init_log.info('Categorizing variables in the controller model')
-        t1 = timemodule.time() 
         self.categorize_variables(self.c_mod, init_controller_inputs)
-        t2 = timemodule.time()
         self.build_variable_locator(self.c_mod, 
                 differential=self.c_mod.diff_vars,
                 derivative=self.c_mod.deriv_vars,
@@ -241,7 +241,6 @@ class NMPCSim(object):
                 inputs=self.c_mod.input_vars,
                 fixed=self.c_mod.fixed_vars,
                 ic=self.c_mod.ic_vars)
-        t3 = timemodule.time()
         # Only expecting user arguments (set point) in form of controller
         # variables, so only build locator for controller model
         # for now.
@@ -258,21 +257,26 @@ class NMPCSim(object):
 
         # Validate inputs in the plant model and initial conditions
         # in the control model.
-        self.p_mod.controller_ic_vars = self.validate_slices(
+        self.p_mod.controller_ic_vars = find_slices_in_model(
                 self.p_mod,
                 self.c_mod,
+                self.p_mod.var_locator,
                 self.c_mod.ic_vars)
-        self.c_mod.plant_input_vars = self.validate_slices(
+        self.c_mod.plant_input_vars = find_slices_in_model(
                 self.c_mod,
                 self.p_mod,
+                self.c_mod.var_locator,
                 self.p_mod.input_vars)
 
         self.validate_fixedness(self.p_mod)
         self.validate_fixedness(self.c_mod)
 
-        self.load_initial_conditions_into(self.c_mod, self.p_mod,
-                src_attrname='controller_ic_vars')
-#        self.c_mod._originally_active = get_activity_dict(self.c_mod)
+        copy_values_at_time(self.c_mod.ic_vars, 
+                            self.p_mod.controller_ic_vars,
+                            self.c_mod.time.first(),
+                            self.p_mod.time.first())
+        # May eventually want to "load_initial_conditions" here so I can apply 
+        # noise, but for now this is more direct.
 
         # Should strip bounds before this IC solve, since the controller
         # model should have bounds
@@ -499,60 +503,12 @@ class NMPCSim(object):
         return True
 
 
-    def load_initial_conditions_into(self, tgt_model, src_model,
-            src_attrname='ic_vars', **kwargs):
-        t_src = kwargs.pop('t_src', src_model.time.first())
-        t0 = tgt_model.time.first()
-
-        # src_attrname provided so we can use controller_ic_vars
-        src_ic_vars = getattr(src_model, src_attrname)
-        for i, var_tgt in enumerate(tgt_model.ic_vars):
-            var_tgt[t0].fix(src_ic_vars[i][t_src].value)
-
-
     def load_initial_conditions_from_plant(self, t_plant):
-        self.load_initial_conditions_into(self.c_mod, 
-                                          self.p_mod,
-                                          t_src=t_plant)
-
-
-    def inject_inputs_into(self, tgt_model, src_model, **kwargs):
-        """
-        Sets the values of the input variables in the target model 
-        over a sampling range to the values of those in the source 
-        model at the specified point in time.
-
-        Args:
-            tgt_model : The target model
-            src_model : The source model
-            src_attrname : The attribute in the source model that contains
-                           variables corresponding to the plant's input 
-                           variables. Default is input_vars, but may want
-                           to use plant_input_vars so as not to assume that
-                           input variables are the same between models.
-            t_src : The point in time from which input values in the source
-                    model will be extracted.
-            t_tgt : The start of the range into which input values will be 
-                    copied.
-            sample_time : The length of the range into which input values will
-                          be copied.
-        """
-        src_attrname = kwargs.pop('src_attrname', 'input_vars')
-        t1 = src_model.time.get_finite_elements()[1]
-        t0 = src_model.time.get_finite_elements()[0]
-        t_src = kwargs.pop('t_src', t1)
-        t_tgt = kwargs.pop('t_tgt', tgt_model.time.first())
-        sample_time = kwargs.pop('sample_time', self.sample_time)
-
-        src_inputs = getattr(src_model, src_attrname)
-        tgt_inputs = tgt_model.input_vars
-        for t in tgt_model.time:
-            if t <= t_tgt or t > t_tgt + sample_time:
-                continue
-            for i, inp in enumerate(tgt_inputs):
-                inp[t].set_value(src_inputs[i][t_src].value)
-                # Set values instead of fixing here - inputs should
-                # be fixed already, or at least fixed before solve.
+        # Apply noise
+        copy_values_at_time(self.c_mod.ic_vars,
+                            self.p_mod.controller_ic_vars,
+                            self.c_mod.time.first(),
+                            t_plant)
 
 
     def inject_inputs_into_plant(self, t_plant, **kwargs):
@@ -583,12 +539,16 @@ class NMPCSim(object):
         t_controller = self.c_mod.time.first() + sample_time
         assert t_controller in self.c_mod.time
 
-        self.inject_inputs_into(self.p_mod,
-                                self.c_mod,
-                                t_tgt=t_plant,
-                                t_src=t_controller,
-                                sample_time=sample_time,
-                                src_attrname=src_attrname)
+        time = self.p_mod.time
+        plant_sample = [t for t in time if t > t_plant and t<= t_plant+sample_time]
+        assert t_plant not in plant_sample
+        assert t_plant+sample_time in plant_sample
+        # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
+        # sample_time is passed in
+        copy_values_at_time(self.p_mod.input_vars,
+                            self.c_mod.plant_input_vars,
+                            plant_sample,
+                            t_controller)
 
 
     def solve_initial_conditions(self, model, **kwargs):
@@ -1490,7 +1450,9 @@ class NMPCSim(object):
             # something goes wrong.
             #initialize_by_time_element(self.c_mod, self.c_mod.time,
             #        solver=self.default_solver, outlvl=idaeslog.DEBUG)
-            self.simulate_over_range(self.c_mod, time.first(), time.last())
+            simulate_over_range(self.c_mod, time.first(), time.last(),
+                                dae_vars=self.c_mod.dae_vars,
+                                time_linking_variables=self.c_mod.diff_vars)
 
             # This solve should be trivial:
             #solver.solve(self.c_mod, tee=True)
@@ -1592,6 +1554,7 @@ class NMPCSim(object):
             attr_list : List of names of attributes that contain variables
                         whose values should be initialized
         """
+        # could use copy_values_at_time here
         attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
         time = model.time
         for attrname in attr_list:
@@ -1638,109 +1601,6 @@ class NMPCSim(object):
             raise ValueError
 
 
-    def simulate_over_range(self, model, t_start, t_end, **kwargs):
-        """Function for solving a square model, time element-by-time element,
-        between specified start and end times.
-
-        Args:
-            model : Flowsheet model to solve
-            t_start : Beginning of timespan over which to solve
-            t_end : End of timespan over which to solve
-
-        Kwargs:
-            solver : Solver option used to solve portions of the square model
-            outlvl : idaes.logger output level
-        """
-        # should use knowledge of variables...
-
-        # deactivate model except at t_start
-        # deactivate disc. equations at t_start
-        # solve for consistent 'initial' conditions at t_start
-
-        # for each finite element in range... which are these?
-        # get indices of finite elements that lie in range
-        # t_start, t_end should correspond to finite elements
-
-        # end by reactivating parts of model that were originally active
-        solver = kwargs.pop('solver', self.default_solver)
-        outlvl = kwargs.pop('outlvl', self.outlvl)
-        init_log = idaeslog.getInitLogger('nmpc', outlvl)
-        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
-        
-
-        time = model.time
-        assert t_start in time.get_finite_elements()
-        assert t_end in time.get_finite_elements()
-        assert degrees_of_freedom(model) == 0
-        ncp = model._ncp
-
-        fe_in_range = [i for i, fe in enumerate(time.get_finite_elements())
-                                if fe >= t_start and fe <= t_end]
-        fe_in_range.pop(0)
-        n_fe_in_range = len(fe_in_range)
-
-        was_originally_active = get_activity_dict(model)
-
-        # Deactivate model
-        non_initial_time = [t for t in time]
-#        non_initial_time.remove(t_start)
-# ^ Why would I keep model active at initial conditions?
-# Only if I wanted to solve for them... but I assume they've already
-# been solved for
-        deactivated = deactivate_model_at(model, time, non_initial_time,
-                outlvl=idaeslog.ERROR)
-
-        for i in fe_in_range:
-            t_prev = time[(i-1)*ncp+1]
-
-            fe = [time[k] for k in range((i-1)*ncp+2, i*ncp+2)]
-
-            for t in fe:
-                for comp in deactivated[t]:
-                    if was_originally_active[id(comp)]:
-                        comp.activate()
-
-            was_fixed = {}
-            for drv in model.deriv_vars:
-                was_fixed[id(drv[t_prev])] = drv[t_prev].fixed
-                drv[t_prev].fix()
-            for dv in model.diff_vars:
-                was_fixed[id(dv[t_prev])] = dv[t_prev].fixed
-                dv[t_prev].fix()
-
-            for t in fe:
-                for _slice in model.dae_vars:
-                    if not _slice[t].fixed:
-                    # Fixed DAE variables are time-dependent disturbances,
-                    # whose values should not be altered by this function.
-                        _slice[t].set_value(_slice[t_prev].value)
-
-            assert degrees_of_freedom(model) == 0
-
-            with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-                results = solver.solve(model, tee=slc.tee)
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                pass
-            else:
-                raise ValueError
-
-            for t in fe:
-                for comp in deactivated[t]:
-                    comp.deactivate()
-
-            for drv in model.deriv_vars:
-                if not was_fixed[id(drv[t_prev])]:
-                    drv[t_prev].unfix()
-            for dv in model.diff_vars:
-                if not was_fixed[id(dv[t_prev])]:
-                    dv[t_prev].unfix()
-
-        for t in time:
-            for comp in deactivated[t]:
-                if was_originally_active[id(comp)]:
-                    comp.activate()
-
-
     def simulate_plant(self, t_start, **kwargs):
         """Function for simulating plant model for one sampling period after
         inputs have been assigned from solve of controller model.
@@ -1764,7 +1624,11 @@ class NMPCSim(object):
         assert t_start in self.p_mod.time
         assert t_end in self.p_mod.time
 
-        self.simulate_over_range(self.p_mod, t_start, t_end, outlvl=outlvl)
+        #self.simulate_over_range(self.p_mod, t_start, t_end, outlvl=outlvl)
+        simulate_over_range(self.p_mod, t_start, t_end, 
+                dae_vars=self.p_mod.dae_vars, 
+                time_linking_vars=self.p_mod.diff_vars,
+                outlvl=outlvl)
         msg = ('Successfully simulated plant over the sampling period '
                 'beginning at ' + str(t_start))
         init_log.info(msg)
@@ -1836,5 +1700,4 @@ class NMPCSim(object):
                     for i in range(n))
 
         return error
-
 
