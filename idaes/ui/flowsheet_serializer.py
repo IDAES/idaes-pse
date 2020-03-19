@@ -38,7 +38,7 @@ class FlowsheetSerializer:
         self.labels = {}
         self.out_json = {"model": {}}
 
-    def serialize(self, flowsheet, file_base_name, overwrite=False):
+    def serialize(self, flowsheet):
         """
         Serializes the flowsheet and saves it to a file that can be read by the
         idaes-model-vis  jupyter lab extension.
@@ -67,23 +67,10 @@ class FlowsheetSerializer:
             serializer = FlowsheetSerializer()
             serializer.save(m.fs, "output_file")
         """
-        vis_file_name = file_base_name + ".idaes.vis"
-        if os.path.isfile(vis_file_name) and overwrite is False:
-            msg = (
-                f"{vis_file_name} already exists. If you wish to overwrite "
-                f"this file call save() with overwrite=True. "
-                "WARNING: If you overwrite the file, you will lose "
-                "your saved layout."
-            )
-            raise FileBaseNameExistsError(msg)
-        else:
-            print(f"Creating {vis_file_name}")
-
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
 
-        with open(vis_file_name, "w") as out_file:
-            json.dump(self.out_json, out_file)
+        return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
         for component in flowsheet.component_objects(Block, descend_into=False):

@@ -31,20 +31,23 @@ def compare_models(existing_model, new_model):
     .. code-block:: json
 
         {
-            "id": "id", 
-            "unit_models": {
-                "M101": {
-                    "image": "mixer.svg", 
-                    "type": "mixer"
-                }
-            },
-            "arcs": {
-                "s03": {
-                    "source": "M101", 
-                    "dest": "H101", 
-                    "label": "molar flow ('Vap', 'hydrogen') 0.5"
+            "model": {
+                "id": "id", 
+                "unit_models": {
+                    "M101": {
+                        "image": "mixer.svg", 
+                        "type": "mixer"
+                    }
+                },
+                "arcs": {
+                    "s03": {
+                        "source": "M101", 
+                        "dest": "H101", 
+                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                    }
                 }
             }
+            "cells": {["--jointjs code--"]}
         }
 
     :param existing_model: The current model to compare against
@@ -91,6 +94,14 @@ def compare_models(existing_model, new_model):
         },
         "required" : ["id", "unit_models", "arcs"]
     }
+
+    # Copy the new model into the out_json's model key
+    out_json = dict(existing_model)
+    out_json["model"] = new_model["model"]
+
+    existing_model = existing_model["model"]
+    new_model = new_model["model"]
+
     validate(instance=existing_model, schema=model_schema)
     validate(instance=new_model, schema=model_schema)
 
@@ -163,7 +174,8 @@ def compare_models(existing_model, new_model):
             diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "arc"
 
-    return diff_model
+
+    return diff_model, out_json
 
 
 def model_jointjs_conversion(diff_model, current_json):

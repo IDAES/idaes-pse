@@ -5,6 +5,7 @@ import time
 import webbrowser
 
 from idaes.ui.fsvis.flask_server import App as fsvis_server
+from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
 # serialize flowsheet and launch the app
 def visualize(flowsheet, name):
@@ -34,15 +35,17 @@ def visualize(flowsheet, name):
         None.#TODO
     """
     server = fsvis_server()
-    url = f"http://{server.host}:{server.port}/fs"
+    url = f"http://{server.host}:{server.port}/fs?id={name}"
     
     # TODO: make sure `name` is valid for use as a URL query string!! E.g. no spaces...
+
+    serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet)
     
-    repeat_until_connection_available(requests.post, url, json={'model': str(flowsheet)}, 
+    repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
                         params={'id': name})
     success = webbrowser.open(url)
     print(f'Opened in browser window: {success}')
-    print(f'{url}?id={name}')
+    print(f'{url}')
     return server
 
 # possibly should be changed to _repeat_until_connection_available()
