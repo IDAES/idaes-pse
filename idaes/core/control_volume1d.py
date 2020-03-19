@@ -25,7 +25,7 @@ from pyomo.environ import (Constraint,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
-from pyutilib.enum import Enum
+from enum import Enum
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -51,9 +51,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Enumerate options for area
-DistributedVars = Enum(
-    'variant',
-    'uniform')
+class DistributedVars(Enum):
+    variant = 0
+    uniform = 1
 
 
 @declare_process_block_class("ControlVolume1DBlock", doc="""
