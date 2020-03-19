@@ -416,7 +416,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if (p, j) in pc_set:
-                    rparam = rblock[t]._params
+                    rparam = rblock[t].params
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, r]
@@ -441,7 +441,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if (p, j) in pc_set:
                     return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t]._params.
+                            sum(rblock[t].params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.config.reaction_package.
@@ -791,7 +791,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              .format(units['amount'], units['time']))
         def elemental_flow_in(b, t, p, e):
             return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t]._params.element_comp[j][e]
+                       b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
         @self.Expression(self.flowsheet().config.time,
@@ -801,7 +801,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              .format(units['amount'], units['time']))
         def elemental_flow_out(b, t, p, e):
             return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t]._params.element_comp[j][e]
+                       b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
         # Create material balance terms as needed
@@ -858,7 +858,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     sum(b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
-                        ._params.element_comp[j][e]
+                        .params.element_comp[j][e]
                         for p in b.config.property_package.phase_list
                         for j in b.config.property_package.component_list))
 

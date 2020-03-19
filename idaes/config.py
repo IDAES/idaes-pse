@@ -1,41 +1,74 @@
 import pyomo.common.config
 import logging.config
-import toml
+import json
 import os
 import importlib
-import idaes.logger as idaeslog
 
-_log = idaeslog.getLogger(__name__)
+_log = logging.getLogger(__name__)
+default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 
 default_config = """
-default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
-use_idaes_solvers = true
-[logging]
-  version = 1
-  disable_existing_loggers = false
-  [logging.formatters.f1]
-    format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-    datefmt = "%Y-%m-%d %H:%M:%S"
-  [logging.handlers.console]
-    class = "logging.StreamHandler"
-    formatter = "f1"
-    stream = "ext://sys.stdout"
-  [logging.loggers.idaes]
-    level = "INFO"
-    propagate = true
-    handlers = ["console"]
-  [logging.loggers."idaes.solve"]
-    level = "INFO"
-    propagate = false
-    handlers = ["console"]
-  [logging.loggers."idaes.init"]
-    level = "INFO"
-    propagate = false
-    handlers = ["console"]
-  [logging.loggers."idaes.model"]
-    level = "INFO"
-    propagate = false
-    handlers = ["console"]
+{
+    "use_idaes_solvers":true,
+    "logger_capture_solver":true,
+    "logger_tags":[
+        "framework",
+        "model",
+        "flowsheet",
+        "unit",
+        "control_volume",
+        "properties",
+        "reactions"
+    ],
+    "valid_logger_tags":[
+        "framework",
+        "model",
+        "flowsheet",
+        "unit",
+        "control_volume",
+        "properties",
+        "reactions"
+    ],
+    "logging":{
+        "version":1,
+        "disable_existing_loggers":false,
+        "formatters":{
+            "default_format":{
+                "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S"
+            }
+        },
+        "handlers":{
+            "console":{
+                "class": "logging.StreamHandler",
+                "formatter": "default_format",
+                "stream": "ext://sys.stdout"
+            }
+        },
+        "loggers":{
+            "idaes":{
+                "level": "INFO",
+                "propagate": true,
+                "handlers": ["console"]
+            },
+            "idaes.solve":{
+                "propagate": false,
+                "level": "INFO",
+                "handlers": ["console"]
+            },
+            "idaes.init":{
+                "propagate": false,
+                "level": "INFO",
+                "handlers": ["console"]
+            },
+            "idaes.model":{
+                "propagate":false,
+                "level": "INFO",
+                "handlers": ["console"]
+            }
+        }
+    }
+}
 """
 
 def new_idaes_config_block():
@@ -54,6 +87,7 @@ def new_idaes_config_block():
         "use_idaes_solvers",
         pyomo.common.config.ConfigValue(
             default=True,
+            domain=bool,
             description="Add the IDAES bin directory to the path.",
             doc="Add the IDAES bin directory to the path such that solvers provided "
             "by IDAES will be used in preference to previously installed solvers.",
@@ -61,13 +95,32 @@ def new_idaes_config_block():
     )
 
     _config.declare(
-        "default_binary_url",
+        "valid_logger_tags",
         pyomo.common.config.ConfigValue(
-            default=None,
-            description="URL from which to download binaries by default",
+            default=set(),
+            domain=set,
+            description="List of valid logger tags",
         ),
     )
-    d = toml.loads(default_config)
+
+    _config.declare(
+        "logger_tags",
+        pyomo.common.config.ConfigValue(
+            default=set(),
+            domain=set,
+            description="List of logger tags to allow",
+        ),
+    )
+
+    _config.declare(
+        "logger_capture_solver",
+        pyomo.common.config.ConfigValue(
+            default=True,
+            description="Solver output captured by logger?",
+        ),
+    )
+
+    d = json.loads(default_config)
     _config.set_value(d)
     logging.config.dictConfig(_config["logging"])
     return _config
@@ -89,7 +142,7 @@ def read_config(read_config, write_config):
         config_file = read_config
         try:
             with open(config_file, "r") as f:
-                write_config = toml.load(f)
+                write_config = json.load(f)
         except IOError:  # don't require config file
             _log.debug("Config file {} not found (this is okay)".format(read_config))
             return

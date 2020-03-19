@@ -1,3 +1,4 @@
+import idaes
 import logging
 import bisect
 import threading
@@ -5,27 +6,6 @@ from collections.abc import Iterable
 
 from contextlib import contextmanager
 from pyutilib.misc import capture_output
-
-# There isn't really any reason to enforce this other than to catch
-# typing errors and enforce standards.
-_valid_tags = set(
-    [
-        None,
-        "framework",
-        "model",
-        "flowsheet",
-        "unit",
-        "control_volume",
-        "properties",
-        "reactions",
-    ]
-)
-
-
-_config = {
-    "solver_capture":True,
-    "tags": set(_valid_tags), # by default show all valid tags
-}
 
 
 # Throw the standard levels in here, just let you access it all in one place
@@ -54,7 +34,7 @@ class _TagFilter(logging.Filter):
         if record.levelno >= WARNING:
             return True
         try:
-            if record.tag is None or record.tag in _config["tags"]:
+            if record.tag is None or record.tag in idaes.cfg.logger_tags:
                 return True
         except AttributeError:
             return True
@@ -79,7 +59,7 @@ def __add_methods(log, tag=None):
 
 
 def _getLogger(name, logger_name="idaes", level=None, tag=None):
-    assert tag in _valid_tags
+    assert tag in idaes.cfg.valid_logger_tags.union({None})
     if name.startswith("idaes."):
         name = name[6:]
     name = ".".join([logger_name, name])
@@ -178,7 +158,7 @@ def solver_capture_on():
     is captured and sent to the logger.
 
     """
-    _config["solver_capture"] = True
+    idaes.cfg.logger_capture_solver = True
 
 def solver_capture_off():
     """This function turns off the solver capture for the solver_log context
@@ -186,11 +166,11 @@ def solver_capture_off():
     is just sent to stdout like normal.
 
     """
-    _config["solver_capture"] = False
+    idaes.cfg.logger_capture_solver = False
 
 def solver_capture():
     """Return True if solver capture is on or False otherwise."""
-    return _config["solver_capture"]
+    return idaes.cfg.logger_capture_solver
 
 def log_tags():
     """Returns a set of logging tags to be logged.
@@ -198,7 +178,7 @@ def log_tags():
     Returns:
         (set) tags to be logged
     """
-    return _config["tags"]
+    return idaes.cfg.logger_tags
 
 def set_log_tags(tags):
     """Specify a set of tags to be logged
@@ -210,9 +190,9 @@ def set_log_tags(tags):
         None
     """
     for m in tags:
-        if m not in _valid_tags:
+        if m not in idaes.cfg.valid_logger_tags.union({None}):
             raise ValueError("{} is not a valid logging tag".format(m))
-    _config["tags"] = set(tags)
+    idaes.cfg.logger_tags = set(tags)
 
 def add_log_tag(tag):
     """Add a tag to the list of tags to log.
@@ -223,9 +203,9 @@ def add_log_tag(tag):
     Returns:
         None
     """
-    if tag not in _valid_tags:
+    if tag not in idaes.cfg.valid_logger_tags.union({None}):
         raise ValueError("{} is not a valid logging tag".format(tag))
-    _config["tags"].add(tag)
+    idaes.cfg.logger_tags.add(tag)
 
 def remove_log_tag(tag):
     """Remove a tag from the list of tags to log.
@@ -237,7 +217,7 @@ def remove_log_tag(tag):
         None
     """
     try:
-        _config["tags"].remove(tag)
+        idaes.cfg.logger_tags.remove(tag)
     except ValueError:
         pass
 
@@ -247,7 +227,7 @@ def valid_log_tags():
     Returns:
         (set) valid tag names
     """
-    return _valid_tags
+    return idaes.cfg.valid_logger_tags.union({None})
 
 def add_valid_log_tag(tag):
     """Add a tag name to the list of valid names.
@@ -258,7 +238,8 @@ def add_valid_log_tag(tag):
     Returns:
         None
     """
-    _valid_tags.add(tag)
+    assert isinstance(tag, str)
+    idaes.cfg.valid_logger_tags.add(tag)
 
 
 class IOToLogTread(threading.Thread):

@@ -260,13 +260,13 @@ class InterrogatorStateBlockData(StateBlockData):
 
         # Add dummy vars for building Ports and returning expressions
         self._dummy_var = Var(initialize=1)
-        self._dummy_var_phase = Var(self._params.phase_list,
+        self._dummy_var_phase = Var(self.params.phase_list,
                                     initialize=1)
-        self._dummy_var_comp = Var(self._params.component_list,
+        self._dummy_var_comp = Var(self.params.component_list,
                                    initialize=1)
         self._dummy_var_phase_comp = Var(
-                self._params.phase_list,
-                self._params.component_list,
+                self.params.phase_list,
+                self.params.component_list,
                 initialize=1)
 
     # Define standard methods and log calls before returning dummy variable
@@ -328,7 +328,7 @@ class InterrogatorStateBlockData(StateBlockData):
         Method to log calls for properties in required_properties dict
         """
         # Get the required_properties dict from parameter block
-        prop_dict = self._params.required_properties
+        prop_dict = self.params.required_properties
 
         # Get name of parent unit to record in required_properties
         name = self._get_parent_unit_name()
