@@ -80,9 +80,16 @@ def initialize_flowsheet(m):
     m.fs.F03.initialize(outlvl=idaeslog.WARNING)
 
 
-def solve_flowsheet(m):
+def solve_flowsheet(m, stee=False):
     solver = get_default_solver()
-    solver.solve(m, tee=True)
+    solver.solve(m, tee=stee)
+
+
+def display_results(m):
+    m.fs.M01.outlet.display()
+    m.fs.H02.outlet.display()
+    m.fs.F03.vap_outlet.display()
+    m.fs.F03.liq_outlet.display()
 
 
 if __name__ == "__main__":
@@ -92,10 +99,6 @@ if __name__ == "__main__":
 
     initialize_flowsheet(m)
 
-    solve_flowsheet(m)
+    solve_flowsheet(m, stee=True)
 
-    # m.display()
-    m.fs.M01.outlet.display()
-    m.fs.H02.outlet.display()
-    m.fs.F03.vap_outlet.display()
-    m.fs.F03.liq_outlet.display()
+    display_results(m)
