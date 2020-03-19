@@ -24,8 +24,8 @@ def test_beta_module_exception():
 def test_beta_module_import():
     mod = idaes.beta.import_beta('idaes.tests.beta_mod')
     assert mod.__name__ == 'idaes.tests.beta_mod'
+    assert mod.reference_value == 42
 
     mod = idaes.beta.import_beta('.beta_mod')
     assert mod.__name__ == 'idaes.tests.beta_mod'
-
-    
+    assert mod.reference_value == 42

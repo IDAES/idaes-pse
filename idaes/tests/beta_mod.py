@@ -12,6 +12,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+# Declare this module to be a "beta module"
 import idaes.beta
-
 idaes.beta.declare_beta_module()
+
+reference_value = 42
