@@ -51,6 +51,7 @@ class ComponentData(ProcessBlockData):
         description="Method to use to calculate saturation pressure"))
 
     CONFIG.declare("phase_equilibrium_form", ConfigValue(
+        domain=dict,
         description="Form of phase equilibrium constraints for component"))
 
     CONFIG.declare("_component_list_exists", ConfigValue(

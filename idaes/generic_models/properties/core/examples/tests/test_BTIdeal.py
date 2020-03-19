@@ -75,7 +75,8 @@ class TestParamBlock(object):
                 "temperature": (273.15, 450),
                 "pressure": (5e4, 1e6)}
 
-        assert model.params.config.phase_equilibrium_formulation == smooth_VLE
+        assert model.params.config.phase_equilibrium_formulation == {
+            ("Vap", "Liq"): smooth_VLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2

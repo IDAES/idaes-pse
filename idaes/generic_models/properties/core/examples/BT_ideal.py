@@ -66,7 +66,7 @@ class BTIdealParameterData(GenericParameterData):
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
-                        "phase_equilibrium_form": fugacity,
+                        "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                         "mw": 78.1136E-3,
                         "pressure_crit": 48.9e5,
                         "temperature_crit": 562.2},
@@ -76,7 +76,7 @@ class BTIdealParameterData(GenericParameterData):
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
-                        "phase_equilibrium_form": fugacity,
+                        "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                         "mw": 92.1405E-3,
                         "pressure_crit": 41e5,
                         "temperature_crit": 591.8}}
@@ -93,8 +93,9 @@ class BTIdealParameterData(GenericParameterData):
         self.config.pressure_ref = 1e5
         self.config.temperature_ref = 300
 
-        self.config.phase_equilibrium_formulation = smooth_VLE
         self.config.phases_in_equilibrium = [("Vap", "Liq")]
+        self.config.phase_equilibrium_formulation = {
+            ("Vap", "Liq"): smooth_VLE}
 
         self.config.temperature_bubble = bubble_temp_ideal
         self.config.temperature_dew = dew_temp_ideal

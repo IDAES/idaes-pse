@@ -24,7 +24,7 @@ from idaes.generic_models.properties.core.generic.generic_property import \
     GenericPropertyPackageError
 
 
-def phase_equil(b):
+def phase_equil(b, phase_pair):
     # Definition of equilibrium temperature for smooth VLE
     b._teq = Var(initialize=b.temperature.value,
                  doc='Temperature for calculating phase equilibrium')
@@ -60,10 +60,15 @@ def phase_equil(b):
                           doc='Component reduced temperatures [-]')
 
     def rule_equilibrium(b, j):
-        e_mthd = b.params.get_component(j).config.phase_equilibrium_form
+        form_config = b.params.get_component(j).config.phase_equilibrium_form
+        try:
+            e_mthd = form_config[phase_pair]
+        except KeyError:
+            rev_pair = (phase_pair[1], phase_pair[0])
+            e_mthd = form_config[rev_pair]
         if e_mthd is None:
             raise GenericPropertyPackageError(b, "phase_equilibrium_form")
-        return e_mthd(b, "Vap", "Liq", j)
+        return e_mthd(b, phase_pair[0], phase_pair[1], j)
     b.equilibrium_constraint = \
         Constraint(b.params.component_list, rule=rule_equilibrium)
 

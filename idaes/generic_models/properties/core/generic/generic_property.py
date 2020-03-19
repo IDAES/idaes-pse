@@ -50,7 +50,7 @@ _log = idaeslog.getLogger(__name__)
 
 # TODO: Generalise equilibrium constraints for arbitary interacting phases
 # TODO: Handle parameter data
-# Error messages for calls to undefined options
+# TODO: Error messages for calls to undefined options
 
 
 # TODO: Set a default state definition
@@ -178,18 +178,9 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""List of phase pairs for which equilibrium constraints should be
         constructed. Values should be a 2-tuples containing valid phase
         names. Default = None."""))
-    CONFIG.declare("phase_equilibrium_dict", ConfigValue(
-        default=None,
-        domain=dict,
-        description="Phase equilibrium reactions to be modeled",
-        doc="""Dict describing what phase equilibrium reactions should
-        be included in the property calculations. Keys should be unique
-        identifiers for each phase equilibrium reaction, and values should be
-        3-tuples where the first value is a valid name from the component_list,
-        and the following two values should be phases from the  phase_list."""
-        ))
     CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
         default=None,
+        domain=dict,
         description="Formulation to use when calculating equilibrium state",
         doc="""Method to use for calculating phase equilibrium state and
         how to handle disappearing phases. Value should be a valid Python
@@ -317,68 +308,62 @@ class GenericParameterData(PhysicalParameterBlock):
                     .format(self.name, p))
 
         # Validate and build phase equilibrium list
-        # Check that only one of phases_in_equilibrium and
-        # phase_equilibrium_dict was provided
-        pe_dict = {}
-        pe_set = []
-        if (self.config.phases_in_equilibrium is not None and
-                self.config.phase_equilibrium_dict is not None):
-            raise ConfigurationError(
-                "{} Generic Property Package was provided with both a "
-                "phases_in_equilibrium and a phase_equilibrium_dict "
-                "argument. Users should provide only one of these."
-                .format(self.name))
-        else:
+        if self.config.phases_in_equilibrium is not None:
+            # List of interacting phases - assume all matching components
+            # in phase pairs are in equilibrium
             pe_dict = {}
             pe_set = []
+            counter = 1
 
-            if self.config.phases_in_equilibrium is not None:
-                # List of interacting phases - assume all matching components
-                # in phase pairs are in equilibrium
-                counter = 1
-                for pp in self.config.phases_in_equilibrium:
-                    for j in self.component_list:
-                        if ((pp[0], j) in self._phase_component_set
-                                and (pp[1], j) in self._phase_component_set):
-                            # Component j is in both phases, in equilibrium
-                            pe_dict["PE"+str(counter)] = {j: (pp[0], pp[1])}
-                            pe_set.append("PE"+str(counter))
-                            counter += 1
-            elif self.config.phase_equilibrium_dict is not None:
-                # Provided a phase_equilibrium_dict - validate names
-                for i, v in self.config.phase_equilibrium_dict.items():
-                    if v[0] not in self.component_list:
-                        raise ConfigurationError(
-                            "{} phase_equilibrium_dict contained entry ({}) "
-                            "with unrecognised component name {}."
-                            .format(self.name, i, v[0]))
-                    if v[1] not in self.phase_list:
-                        raise ConfigurationError(
-                            "{} phase_equilibrium_dict contained entry ({}) "
-                            "with unrecognised phase name {}."
-                            .format(self.name, i, v[1]))
-                    if v[2] not in self.phase_list:
-                        raise ConfigurationError(
-                            "{} phase_equilibrium_dict contained entry ({}) "
-                            "with unrecognised phase name {}."
-                            .format(self.name, i, v[2]))
-                pe_dict[i] = {v[0]: (v[1], v[2])}
-                pe_set.append(i)
-
-            # Construct phase_equilibrium_list and phase_equilibrium_idx
-            self.phase_equilibrium_list = pe_dict
-            self.phase_equilibrium_idx = Set(initialize=pe_set,
-                                             ordered=True)
-
-        # Validate phase equilibrium formulation if required
-        if (self.config.phases_in_equilibrium is not None or
-                self.config.phase_equilibrium_dict is not None):
+            # Validate phase equilibrium formulation
             if self.config.phase_equilibrium_formulation is None:
                 raise ConfigurationError(
                     "{} Generic Property Package provided with a "
-                    "phases_in_equilibrium or phase_equilibrium_dict argument,"
-                    " but no method was specified for "
-                    "phase_equilibrium_formulation.".format(self.name))
+                    "phases_in_equilibrium argument but no method was "
+                    "specified for phase_equilibrium_formulation."
+                    .format(self.name))
+            pie_config = self.config.phase_equilibrium_formulation
+
+            for pp in self.config.phases_in_equilibrium:
+                if (pp not in pie_config.keys() and
+                        (pp[1], pp[0]) not in pie_config.keys()):
+                    raise ConfigurationError(
+                        "{} Generic Property Package provided with a "
+                        "phases_in_equilibrium argument but "
+                        "phase_equilibrium_formulation was not specified "
+                        "for all phase pairs."
+                        .format(self.name))
+                for j in self.component_list:
+                    if ((pp[0], j) in self._phase_component_set
+                            and (pp[1], j) in self._phase_component_set):
+                        # Component j is in both phases, in equilibrium
+                        pe_dict["PE"+str(counter)] = {j: (pp[0], pp[1])}
+                        pe_set.append("PE"+str(counter))
+                        counter += 1
+
+                        # Validate that component has an equilibrium form
+                        a = self.get_component(j).config.phase_equilibrium_form
+                        if a is None:
+                            raise ConfigurationError(
+                                "{} Generic Property Package component {} is "
+                                "in equilibrium but phase_equilibrium_form"
+                                "was not specified."
+                                .format(self.name, j))
+                        elif (pp not in a.keys() and
+                              (pp[1], pp[0]) not in a.keys()):
+                            raise ConfigurationError(
+                                "{} Generic Property Package component {} is "
+                                "in equilibrium but phase_equilibrium_form "
+                                "was not specified for all appropriate phase "
+                                "pairs."
+                                .format(self.name, j))
+
+            # Construct phase_equilibrium_list and phase_equilibrium_idx
+            self._pe_pairs = Set(initialize=self.config.phases_in_equilibrium,
+                                 ordered=True)
+            self.phase_equilibrium_list = pe_dict
+            self.phase_equilibrium_idx = Set(initialize=pe_set,
+                                             ordered=True)
 
         # Construct parameter components
         self.parameters()
@@ -759,8 +744,9 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         if (blk[k].params.config.phase_equilibrium_formulation is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
-            blk[k].params.config.phase_equilibrium_formulation \
-                .phase_equil_initialization(blk[k])
+            for pp in blk[k].params._pe_pairs:
+                blk[k].params.config.phase_equilibrium_formulation[pp] \
+                    .phase_equil_initialization(blk[k])
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
@@ -833,9 +819,11 @@ class GenericStateBlockData(StateBlockData):
             self.params.get_phase(p).config.equation_of_state.common(self)
 
         # Add phase equilibrium constraints if necessary
-        if (self.params.config.phase_equilibrium_formulation is not None and
+        if (self.params.config.phases_in_equilibrium is not None and
                 (not self.config.defined_state or self.always_flash)):
-            self.params.config.phase_equilibrium_formulation.phase_equil(self)
+            pe_form_config = self.params.config.phase_equilibrium_formulation
+            for pp in self.params._pe_pairs:
+                pe_form_config[pp].phase_equil(self, pp)
 
     def components_in_phase(self, phase):
         """

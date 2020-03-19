@@ -174,30 +174,14 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
-    def test_phase_equilibrium_both_definitions(self):
-        m = ConcreteModel()
-
-        with pytest.raises(ConfigurationError,
-                           match="params Generic Property Package was "
-                           "provided with both a phases_in_equilibrium and a "
-                           "phase_equilibrium_dict argument. Users should "
-                           "provide only one of these."):
-            m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}},
-                "phases": {
-                    "p1": {"equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}},
-                "state_definition": "baz",
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_dict": {"r1": ("a", "p1", "p2")}})
-
     def test_phases_in_equilibrium(self):
         m = ConcreteModel()
 
         m.params = DummyParameterBlock(default={
-            "components": {"a": {}, "b": {}, "c": {}},
+            "components": {
+                "a": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
             "phases": {
                 "p1": {"equation_of_state": "foo"},
                 "p2": {"equation_of_state": "bar"}},
@@ -205,7 +189,7 @@ class TestGenericParameterBlock(object):
             "pressure_ref": 1e5,
             "temperature_ref": 300,
             "phases_in_equilibrium": [("p1", "p2")],
-            "phase_equilibrium_formulation": "whoop"})
+            "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
 
         assert isinstance(m.params.phase_equilibrium_idx, Set)
         assert len(m.params.phase_equilibrium_idx) == 3
@@ -218,39 +202,64 @@ class TestGenericParameterBlock(object):
             "PE2": {"b": ("p1", "p2")},
             "PE3": {"c": ("p1", "p2")}}
 
-    def test_phase_equilibrium_dict(self):
+    def test_phases_in_equilibrium_no_form(self):
         m = ConcreteModel()
 
-        m.params = DummyParameterBlock(default={
-            "components": {"a": {}, "b": {}, "c": {}},
-            "phases": {
-                "p1": {"equation_of_state": "foo"},
-                "p2": {"equation_of_state": "bar"}},
-            "state_definition": "baz",
-            "pressure_ref": 1e5,
-            "temperature_ref": 300,
-            "phase_equilibrium_dict": {"r1": ("a", "p1", "p2")},
-            "phase_equilibrium_formulation": "whoop"})
+        with pytest.raises(ConfigurationError,
+                           match="params Generic Property Package component a "
+                                 "is in equilibrium but phase_equilibrium_form"
+                                 "was not specified."):
+            m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {},
+                    "b": {},
+                    "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {"equation_of_state": "bar"}},
+                "state_definition": "baz",
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "phases_in_equilibrium": [("p1", "p2")],
+                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
 
-        assert isinstance(m.params.phase_equilibrium_idx, Set)
-        assert len(m.params.phase_equilibrium_idx) == 1
-        for i in m.params.phase_equilibrium_idx:
-            assert i in ["r1"]
+    def test_phases_in_equilibrium_missing_pair_form(self):
+        m = ConcreteModel()
 
-        assert isinstance(m.params.phase_equilibrium_list, dict)
-        assert m.params.phase_equilibrium_list == {
-            "r1": {"a": ("p1", "p2")}}
+        with pytest.raises(ConfigurationError,
+                           match="params Generic Property Package component b "
+                                 "is in equilibrium but phase_equilibrium_form"
+                                 " was not specified for all appropriate "
+                                 "phase pairs."):
+            # Also reverse order of phases for component a - this should pass
+            # and component b should be flagged as missing
+            m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"phase_equilibrium_form": {("p2", "p1"): "foo"}},
+                    "b": {"phase_equilibrium_form": {(1, 2): "foo"}},
+                    "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {"equation_of_state": "bar"}},
+                "state_definition": "baz",
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "phases_in_equilibrium": [("p1", "p2")],
+                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
 
     def test_phases_in_equilibrium_no_formulation(self):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package provided "
-                           "with a phases_in_equilibrium or "
-                           "phase_equilibrium_dict argument, but no method "
-                           "was specified for phase_equilibrium_formulation."):
+                           "with a phases_in_equilibrium argument but no "
+                           "method was specified for "
+                           "phase_equilibrium_formulation."):
             m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}},
+                "components": {
+                    "a": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                    "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                    "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
                 "phases": {
                     "p1": {"equation_of_state": "foo"},
                     "p2": {"equation_of_state": "bar"}},
@@ -259,23 +268,30 @@ class TestGenericParameterBlock(object):
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")]})
 
-    def test_phases_equilibrium_dict_no_formulation(self):
+    def test_phases_in_equilibrium_missing_pair_formulation(self):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package provided "
-                           "with a phases_in_equilibrium or "
-                           "phase_equilibrium_dict argument, but no method "
-                           "was specified for phase_equilibrium_formulation."):
+                           "with a phases_in_equilibrium argument but "
+                           "phase_equilibrium_formulation was not specified "
+                           "for all phase pairs."):
+            # Also reverse order of phases for component a - this should pass
+            # and component b should be flagged as missing
             m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}},
+                "components": {
+                    "a": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                    "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
+                    "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
                 "phases": {
                     "p1": {"equation_of_state": "foo"},
                     "p2": {"equation_of_state": "bar"}},
                 "state_definition": "baz",
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "phase_equilibrium_dict": {"r1": ("a", "p1", "p2")}})
+                "phases_in_equilibrium": [("p1", "p2")],
+                "phase_equilibrium_formulation": {(1, 2): "whoop"}})
+
 
 # -----------------------------------------------------------------------------
 # Dummy methods for testing build calls to sub-modules

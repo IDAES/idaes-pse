@@ -40,7 +40,8 @@ def test_fugacity():
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
         "components": {"H2O": {"temperature_crit": 647.3,
-                               "phase_equilibrium_form": fugacity}},
+                               "phase_equilibrium_form": {
+                                   ("Vap", "Liq"): fugacity}}},
         "phases": {"Liq": {"equation_of_state": DummyEoS},
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,

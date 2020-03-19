@@ -48,7 +48,8 @@ def frame():
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
         "components": {"H2O": {"temperature_crit": 647.3,
-                               "phase_equilibrium_form": fugacity}},
+                               "phase_equilibrium_form":
+                                   {("Vap", "Liq"): fugacity}}},
         "phases": {"Liq": {"equation_of_state": DummyEoS},
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,
@@ -65,7 +66,7 @@ def frame():
                                     m.params.component_list,
                                     initialize=10)
 
-    smooth_VLE.phase_equil(m.props[1])
+    smooth_VLE.phase_equil(m.props[1], ("Liq", "Vap"))
 
     return m
 
@@ -86,8 +87,8 @@ def test_build(frame):
     for k in frame.props[1].equilibrium_constraint:
         assert k in frame.params.component_list
         assert str(frame.props[1].equilibrium_constraint[k].body) == str(
-                frame.props[1].fug_phase_comp["Vap", k] -
-                frame.props[1].fug_phase_comp["Liq", k])
+                frame.props[1].fug_phase_comp["Liq", k] -
+                frame.props[1].fug_phase_comp["Vap", k])
 
     assert isinstance(frame.props[1]._tr_eq, Expression)
     assert len(frame.props[1]._tr_eq) == 1
