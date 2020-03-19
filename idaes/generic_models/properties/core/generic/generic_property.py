@@ -48,9 +48,9 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-# TODO: Break equilibrium constraints out of smooth_vle
 # TODO: Generalise equilibrium constraints for arbitary interacting phases
 # TODO: Handle parameter data
+# Error messages for calls to undefined options
 
 
 # TODO: Set a default state definition

@@ -29,6 +29,7 @@ from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 
 # Dummy EoS to use for fugacity calls
@@ -46,7 +47,8 @@ def frame():
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
-        "components": {"H2O": {"temperature_crit": 647.3}},
+        "components": {"H2O": {"temperature_crit": 647.3,
+                               "phase_equilibrium_form": fugacity}},
         "phases": {"Liq": {"equation_of_state": DummyEoS},
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,

@@ -39,6 +39,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
         dew_temp_ideal,
         bubble_press_ideal,
         dew_press_ideal)
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP as RPP
@@ -65,6 +66,7 @@ class BTIdealParameterData(GenericParameterData):
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
+                        "phase_equilibrium_form": fugacity,
                         "mw": 78.1136E-3,
                         "pressure_crit": 48.9e5,
                         "temperature_crit": 562.2},
@@ -74,6 +76,7 @@ class BTIdealParameterData(GenericParameterData):
                         "entr_mol_liq_comp": Perrys,
                         "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
+                        "phase_equilibrium_form": fugacity,
                         "mw": 92.1405E-3,
                         "pressure_crit": 41e5,
                         "temperature_crit": 591.8}}

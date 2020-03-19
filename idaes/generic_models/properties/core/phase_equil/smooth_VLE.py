@@ -20,6 +20,8 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
 from pyomo.environ import Constraint, Expression, Param, Var
 from idaes.core.util.math import smooth_max, smooth_min
+from idaes.generic_models.properties.core.generic.generic_property import \
+    GenericPropertyPackageError
 
 
 def phase_equil(b):
@@ -58,10 +60,10 @@ def phase_equil(b):
                           doc='Component reduced temperatures [-]')
 
     def rule_equilibrium(b, j):
-        return (b.params.get_phase("Vap")
-                .config.equation_of_state.fug_phase_comp(b, "Vap", j) ==
-                b.params.get_phase("Liq")
-                .config.equation_of_state.fug_phase_comp(b, "Liq", j))
+        e_mthd = b.params.get_component(j).config.phase_equilibrium_form
+        if e_mthd is None:
+            raise GenericPropertyPackageError(b, "phase_equilibrium_form")
+        return e_mthd(b, "Vap", "Liq", j)
     b.equilibrium_constraint = \
         Constraint(b.params.component_list, rule=rule_equilibrium)
 
