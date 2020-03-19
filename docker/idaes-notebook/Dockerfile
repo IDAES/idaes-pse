@@ -33,8 +33,8 @@ RUN conda install --quiet --yes \
 # RUN MPLBACKEND=Agg python -c "import matplotlib.pyplot" && \
 #    fix-permissions /home/$NB_USER
 
-# Add idaes directory and change permissions to the notebook user:
-ADD . /home/idaes
+# Add top-level idaes source directory and change permissions to the notebook user:
+ADD ../.. /home/idaes
 USER root
 RUN sudo apt-get update
 RUN sudo apt-get -y install libgfortran3
