@@ -9,9 +9,7 @@ MAINTAINER Project IDAES <hhelgammal@lbl.gov>
 USER $NB_UID
 
 # Install Python 3 packages
-RUN conda install --quiet --yes \
-    'ipywidgets=7.2*' \
-    'xlrd'  && \
+RUN conda install --quiet --yes 'ipywidgets' 'xlrd'  && \
     # Activate ipywidgets extension in the environment that runs the notebook server
     jupyter nbextension enable --py widgetsnbextension --sys-prefix && \
     # Also activate ipywidgets extension for JupyterLab
@@ -34,7 +32,7 @@ RUN conda install --quiet --yes \
 #    fix-permissions /home/$NB_USER
 
 # Add top-level idaes source directory and change permissions to the notebook user:
-ADD ../.. /home/idaes
+ADD . /home/idaes
 USER root
 RUN sudo apt-get update
 RUN sudo apt-get -y install libgfortran3
