@@ -54,10 +54,6 @@ _log = idaeslog.getLogger(__name__)
 
 # TODO: Set a default state definition
 # TODO: Probably should set an initial value for state variables
-
-# TODO: Need clean-up methods for all methods to work with Pyomo DAE
-# This can probably be done entirely within the methods of generic_properties.
-
 # TODO: Need way to dynamically determine units of measurement....
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
@@ -876,211 +872,304 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.temperature_bubble is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
-        b.temperature_bubble = Var(
-                doc="Bubble point temperature",
-                bounds=(b.temperature.lb, b.temperature.ub))
+        try:
+            b.temperature_bubble = Var(
+                    doc="Bubble point temperature",
+                    bounds=(b.temperature.lb, b.temperature.ub))
 
-        b._mole_frac_tbub = Var(
-                b.params.component_list,
-                initialize=1/len(b.params.component_list),
-                bounds=(0, None),
-                doc="Vapor mole fractions at bubble temperature")
+            b._mole_frac_tbub = Var(
+                    b.params.component_list,
+                    initialize=1/len(b.params.component_list),
+                    bounds=(0, None),
+                    doc="Vapor mole fractions at bubble temperature")
 
-        b.params.config.temperature_bubble(b)
+            b.params.config.temperature_bubble(b)
+        except AttributeError:
+            b.del_component(b.temperature_bubble)
+            b.del_component(b.mole_frac_tbub)
+            raise
 
     def _temperature_dew(b):
         if b.params.config.temperature_dew is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
-        b.temperature_dew = Var(
-                doc="Dew point temperature",
-                bounds=(b.temperature.lb, b.temperature.ub))
+        try:
+            b.temperature_dew = Var(
+                    doc="Dew point temperature",
+                    bounds=(b.temperature.lb, b.temperature.ub))
 
-        b._mole_frac_tdew = Var(
-                b.params.component_list,
-                initialize=1/len(b.params.component_list),
-                bounds=(0, None),
-                doc="Liquid mole fractions at dew temperature")
+            b._mole_frac_tdew = Var(
+                    b.params.component_list,
+                    initialize=1/len(b.params.component_list),
+                    bounds=(0, None),
+                    doc="Liquid mole fractions at dew temperature")
 
-        b.params.config.temperature_dew(b)
+            b.params.config.temperature_dew(b)
+        except AttributeError:
+            b.del_component(b.temperature_dew)
+            b.del_component(b.mole_frac_tdew)
+            raise
 
     def _pressure_bubble(b):
         if b.params.config.pressure_bubble is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
-        b.pressure_bubble = Var(
-                doc="Bubble point pressure",
-                bounds=(b.pressure.lb, b.pressure.ub))
+        try:
+            b.pressure_bubble = Var(
+                    doc="Bubble point pressure",
+                    bounds=(b.pressure.lb, b.pressure.ub))
 
-        b._mole_frac_pbub = Var(
-                b.params.component_list,
-                initialize=1/len(b.params.component_list),
-                bounds=(0, None),
-                doc="Vapor mole fractions at bubble pressure")
+            b._mole_frac_pbub = Var(
+                    b.params.component_list,
+                    initialize=1/len(b.params.component_list),
+                    bounds=(0, None),
+                    doc="Vapor mole fractions at bubble pressure")
 
-        b.params.config.pressure_bubble(b)
+            b.params.config.pressure_bubble(b)
+        except AttributeError:
+            b.del_component(b.pressure_bubble)
+            b.del_component(b.mole_frac_pbub)
+            raise
 
     def _pressure_dew(b):
         if b.params.config.pressure_dew is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
-        b.pressure_dew = Var(
-                doc="Dew point pressure",
-                bounds=(b.pressure.lb, b.pressure.ub))
+        try:
+            b.pressure_dew = Var(
+                    doc="Dew point pressure",
+                    bounds=(b.pressure.lb, b.pressure.ub))
 
-        b._mole_frac_pdew = Var(
-                b.params.component_list,
-                initialize=1/len(b.params.component_list),
-                bounds=(0, None),
-                doc="Liquid mole fractions at dew pressure")
+            b._mole_frac_pdew = Var(
+                    b.params.component_list,
+                    initialize=1/len(b.params.component_list),
+                    bounds=(0, None),
+                    doc="Liquid mole fractions at dew pressure")
 
-        b.params.config.pressure_dew(b)
+            b.params.config.pressure_dew(b)
+        except AttributeError:
+            b.del_component(b.pressure_dew)
+            b.del_component(b.mole_frac_pdew)
+            raise
 
     # -------------------------------------------------------------------------
     # Property Methods
     def _dens_mass(self):
-        def rule_dens_mass(b):
-            return sum(b.dens_mass_phase[p]*b.phase_frac[p]
-                       for p in b.params.phase_list)
-        self.dens_mass = Expression(
-                doc="Mixture mass density",
-                rule=rule_dens_mass)
+        try:
+            def rule_dens_mass(b):
+                return sum(b.dens_mass_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mass = Expression(
+                    doc="Mixture mass density",
+                    rule=rule_dens_mass)
+        except AttributeError:
+            self.del_component(self.dens_mass)
+            raise
 
     def _dens_mass_phase(self):
-        def rule_dens_mass_phase(b, p):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.dens_mass_phase(b, p)
-        self.dens_mass_phase = Expression(
-                self.params.phase_list,
-                doc="Mass density of each phase",
-                rule=rule_dens_mass_phase)
+        try:
+            def rule_dens_mass_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mass_phase(b, p)
+            self.dens_mass_phase = Expression(
+                    self.params.phase_list,
+                    doc="Mass density of each phase",
+                    rule=rule_dens_mass_phase)
+        except AttributeError:
+            self.del_component(self.dens_mass_phass)
+            raise
 
     def _dens_mol(self):
-        def rule_dens_mol(b):
-            return sum(b.dens_mol_phase[p]*b.phase_frac[p]
-                       for p in b.params.phase_list)
-        self.dens_mol = Expression(
-                doc="Mixture molar density",
-                rule=rule_dens_mol)
+        try:
+            def rule_dens_mol(b):
+                return sum(b.dens_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mol = Expression(
+                    doc="Mixture molar density",
+                    rule=rule_dens_mol)
+        except AttributeError:
+            self.del_component(self.dens_mol)
+            raise
 
     def _dens_mol_phase(self):
-        def rule_dens_mol_phase(b, p):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.dens_mol_phase(b, p)
-        self.dens_mol_phase = Expression(
-                self.params.phase_list,
-                doc="Molar density of each phase",
-                rule=rule_dens_mol_phase)
+        try:
+            def rule_dens_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mol_phase(b, p)
+            self.dens_mol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Molar density of each phase",
+                    rule=rule_dens_mol_phase)
+        except AttributeError:
+            self.del_component(self.dens_mol_phase)
+            raise
 
     def _enth_mol(self):
-        def rule_enth_mol(b):
-            return sum(b.enth_mol_phase[p]*b.phase_frac[p]
-                       for p in b.params.phase_list)
-        self.enth_mol = Expression(rule=rule_enth_mol,
-                                   doc="Mixture molar enthalpy")
+        try:
+            def rule_enth_mol(b):
+                return sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.enth_mol = Expression(rule=rule_enth_mol,
+                                       doc="Mixture molar enthalpy")
+        except AttributeError:
+            self.del_component(self.enth_mol)
+            raise
 
     def _enth_mol_phase(self):
-        def rule_enth_mol_phase(b, p):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.enth_mol_phase(b, p)
-        self.enth_mol_phase = Expression(self.params.phase_list,
-                                         rule=rule_enth_mol_phase)
+        try:
+            def rule_enth_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.enth_mol_phase(b, p)
+            self.enth_mol_phase = Expression(self.params.phase_list,
+                                             rule=rule_enth_mol_phase)
+        except AttributeError:
+            self.del_component(self.enth_mol_phase)
+            raise
 
     def _enth_mol_phase_comp(self):
-        def rule_enth_mol_phase_comp(b, p, j):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
-        self.enth_mol_phase_comp = Expression(
-            self.params.phase_list,
-            self.params.component_list,
-            rule=rule_enth_mol_phase_comp)
-
-    def _entr_mol(self):
-        def rule_entr_mol(b):
-            return sum(b.entr_mol_phase[p]*b.phase_frac[p]
-                       for p in b.params.phase_list)
-        self.entr_mol = Expression(rule=rule_entr_mol,
-                                   doc="Mixture molar entropy")
-
-    def _entr_mol_phase(self):
-        def rule_entr_mol_phase(b, p):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.entr_mol_phase(b, p)
-        self.entr_mol_phase = Expression(self.params.phase_list,
-                                         rule=rule_entr_mol_phase)
-
-    def _entr_mol_phase_comp(self):
-        def rule_entr_mol_phase_comp(b, p, j):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
-        self.entr_mol_phase_comp = Expression(
-            self.params.phase_list,
-            self.params.component_list,
-            rule=rule_entr_mol_phase_comp)
-
-    def _fug_phase_comp(self):
-        def rule_fug_phase_comp(b, p, j):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.fug_phase_comp(b, p, j)
-        self.fug_phase_comp = Expression(self.params.phase_list,
-                                         self.params.component_list,
-                                         rule=rule_fug_phase_comp)
-
-    def _fug_coeff_phase_comp(self):
-        def rule_fug_coeff_phase_comp(b, p, j):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.fug_coeff_phase_comp(b, p, j)
-        self.fug_coeff_phase_comp = Expression(
+        try:
+            def rule_enth_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
+            self.enth_mol_phase_comp = Expression(
                 self.params.phase_list,
                 self.params.component_list,
-                rule=rule_fug_coeff_phase_comp)
+                rule=rule_enth_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.enth_mol_phase_comp)
+            raise
+
+    def _entr_mol(self):
+        try:
+            def rule_entr_mol(b):
+                return sum(b.entr_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.entr_mol = Expression(rule=rule_entr_mol,
+                                       doc="Mixture molar entropy")
+        except AttributeError:
+            self.del_component(self.entr_mol)
+            raise
+
+    def _entr_mol_phase(self):
+        try:
+            def rule_entr_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.entr_mol_phase(b, p)
+            self.entr_mol_phase = Expression(self.params.phase_list,
+                                             rule=rule_entr_mol_phase)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase)
+            raise
+
+    def _entr_mol_phase_comp(self):
+        try:
+            def rule_entr_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
+            self.entr_mol_phase_comp = Expression(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_entr_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase_comp)
+            raise
+
+    def _fug_phase_comp(self):
+        try:
+            def rule_fug_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.fug_phase_comp(b, p, j)
+            self.fug_phase_comp = Expression(self.params.phase_list,
+                                             self.params.component_list,
+                                             rule=rule_fug_phase_comp)
+        except AttributeError:
+            self.del_component(self.fug_phase_comp)
+            raise
+
+    def _fug_coeff_phase_comp(self):
+        try:
+            def rule_fug_coeff_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.fug_coeff_phase_comp(b, p, j)
+            self.fug_coeff_phase_comp = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_fug_coeff_phase_comp)
+        except AttributeError:
+            self.del_component(self.fug_coeff_phase_comp)
+            raise
 
     def _gibbs_mol(self):
-        def rule_gibbs_mol(b):
-            return sum(b.gibbs_mol_phase[p]*b.phase_frac[p]
-                       for p in b.params.phase_list)
-        self.gibbs_mol = Expression(rule=rule_gibbs_mol,
-                                    doc="Mixture molar Gibbs energy")
+        try:
+            def rule_gibbs_mol(b):
+                return sum(b.gibbs_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.gibbs_mol = Expression(rule=rule_gibbs_mol,
+                                        doc="Mixture molar Gibbs energy")
+        except AttributeError:
+            self.del_component(self.gibbs_mol)
+            raise
 
     def _gibbs_mol_phase(self):
-        def rule_gibbs_mol_phase(b, p):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.gibbs_mol_phase(b, p)
-        self.gibbs_mol_phase = Expression(self.params.phase_list,
-                                          rule=rule_gibbs_mol_phase)
+        try:
+            def rule_gibbs_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.gibbs_mol_phase(b, p)
+            self.gibbs_mol_phase = Expression(self.params.phase_list,
+                                              rule=rule_gibbs_mol_phase)
+        except AttributeError:
+            self.del_component(self.gibbs_mol_phase)
+            raise
 
     def _gibbs_mol_phase_comp(self):
-        def rule_gibbs_mol_phase_comp(b, p, j):
-            p_config = b.params.get_phase(p).config
-            return p_config.equation_of_state.gibbs_mol_phase_comp(b, p, j)
-        self.gibbs_mol_phase_comp = Expression(
-            self.params.phase_list,
-            self.params.component_list,
-            rule=rule_gibbs_mol_phase_comp)
+        try:
+            def rule_gibbs_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.gibbs_mol_phase_comp(b, p, j)
+            self.gibbs_mol_phase_comp = Expression(
+                self.params.phase_list,
+                self.params.component_list,
+                rule=rule_gibbs_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.gibbs_mol_phase_comp)
+            raise
 
     def _mw(self):
-        self.mw = Expression(
-                doc="Average molecular weight",
-                expr=sum(self.phase_frac[p] *
-                         sum(self.mole_frac_phase_comp[p, j] *
-                             self.params.get_component(j).mw_comp
-                             for j in self.params.component_list)
-                         for p in self.params.phase_list))
+        try:
+            self.mw = Expression(
+                    doc="Average molecular weight",
+                    expr=sum(self.phase_frac[p] *
+                             sum(self.mole_frac_phase_comp[p, j] *
+                                 self.params.get_component(j).mw_comp
+                                 for j in self.params.component_list)
+                             for p in self.params.phase_list))
+        except AttributeError:
+            self.del_component(self.mw)
+            raise
 
     def _mw_phase(self):
-        def rule_mw_phase(b, p):
-            return sum(b.mole_frac_phase_comp[p, j] *
-                       b.params.get_component(j).mw_comp
-                       for j in b.params.component_list)
-        self.mw_phase = Expression(
-                self.params.phase_list,
-                doc="Average molecular weight of each phase",
-                rule=rule_mw_phase)
+        try:
+            def rule_mw_phase(b, p):
+                return sum(b.mole_frac_phase_comp[p, j] *
+                           b.params.get_component(j).mw_comp
+                           for j in b.params.component_list)
+            self.mw_phase = Expression(
+                    self.params.phase_list,
+                    doc="Average molecular weight of each phase",
+                    rule=rule_mw_phase)
+        except AttributeError:
+            self.del_component(self.mw_phase)
+            raise
 
     def _pressure_sat_comp(self):
-        def rule_pressure_sat_comp(b, j):
-            cobj = b.params.get_Component(j)
-            return get_method(b, "pressure_sat_comp")(b, cobj, b.temperature)
-        self.pressure_sat_comp = Expression(
-            self.params.component_list,
-            rule=rule_pressure_sat_comp)
+        try:
+            def rule_pressure_sat_comp(b, j):
+                cobj = b.params.get_Component(j)
+                return get_method(b, "pressure_sat_comp")(
+                    b, cobj, b.temperature)
+            self.pressure_sat_comp = Expression(
+                self.params.component_list,
+                rule=rule_pressure_sat_comp)
+        except AttributeError:
+            self.del_component(self.pressure_sat_comp)
+            raise

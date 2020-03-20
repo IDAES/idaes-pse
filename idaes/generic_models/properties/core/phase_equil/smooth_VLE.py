@@ -23,6 +23,8 @@ from idaes.core.util.math import smooth_max, smooth_min
 
 
 def phase_equil(b, phase_pair):
+    # This method is called via StateBlock.build, thus does not need clean-up
+    # try/except statements
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
 
     # Definition of equilibrium temperature for smooth VLE

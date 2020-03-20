@@ -19,14 +19,19 @@ from idaes.generic_models.properties.core.generic.generic_property import \
 # -----------------------------------------------------------------------------
 # Bubble temperature methods
 def bubble_temp_ideal(b):
-    def rule_bubble_temp(b):
-        return (sum(b.mole_frac_comp[j] *
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature_bubble)
-                    for j in b.params.component_list) -
-                b.pressure) == 0
-    b.eq_temperature_bubble = Constraint(rule=rule_bubble_temp)
+    try:
+        def rule_bubble_temp(b):
+            return (sum(b.mole_frac_comp[j] *
+                        get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature_bubble)
+                        for j in b.params.component_list) -
+                    b.pressure) == 0
+        b.eq_temperature_bubble = Constraint(rule=rule_bubble_temp)
+    except AttributeError:
+        b.del_component(b.eq_temperature_bubble)
+        raise
 
+    # Don't need a try/except here, as this will pass if first constraint did
     def rule_mole_frac_bubble_temp(b, j):
         return b._mole_frac_tbub[j]*b.pressure == b.mole_frac_comp[j] * \
                get_method(b, "pressure_sat_comp", j)(
@@ -38,15 +43,20 @@ def bubble_temp_ideal(b):
 # -----------------------------------------------------------------------------
 # Dew temperature methods
 def dew_temp_ideal(b):
-    def rule_dew_temp(b):
-        return (b.pressure*sum(
-                    b.mole_frac_comp[j] /
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature_dew)
-                    for j in b.params.component_list) - 1 ==
-                0)
-    b.eq_temperature_dew = Constraint(rule=rule_dew_temp)
+    try:
+        def rule_dew_temp(b):
+            return (b.pressure*sum(
+                        b.mole_frac_comp[j] /
+                        get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature_dew)
+                        for j in b.params.component_list) - 1 ==
+                    0)
+        b.eq_temperature_dew = Constraint(rule=rule_dew_temp)
+    except AttributeError:
+        b.del_component(b.eq_temperature_dew)
+        raise
 
+    # Don't need a try/except here, as this will pass if first constraint did
     def rule_mole_frac_dew_temp(b, j):
         return (b._mole_frac_tdew[j] *
                 get_method(b, "pressure_sat_comp", j)(
@@ -59,14 +69,19 @@ def dew_temp_ideal(b):
 # -----------------------------------------------------------------------------
 # Bubble pressure methods
 def bubble_press_ideal(b):
-    def rule_bubble_press(b):
-        return b.pressure_bubble == sum(
-                b.mole_frac_comp[j] *
-                get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), b.temperature)
-                for j in b.params.component_list)
-    b.eq_pressure_bubble = Constraint(rule=rule_bubble_press)
+    try:
+        def rule_bubble_press(b):
+            return b.pressure_bubble == sum(
+                    b.mole_frac_comp[j] *
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), b.temperature)
+                    for j in b.params.component_list)
+        b.eq_pressure_bubble = Constraint(rule=rule_bubble_press)
+    except AttributeError:
+        b.del_component(b.eq_pressure_bubble)
+        raise
 
+    # Don't need a try/except here, as this will pass if first constraint did
     def rule_mole_frac_bubble_press(b, j):
         return b._mole_frac_pbub[j]*b.pressure_bubble == (
             b.mole_frac_comp[j] *
@@ -79,14 +94,19 @@ def bubble_press_ideal(b):
 # -----------------------------------------------------------------------------
 # Dew pressure methods
 def dew_press_ideal(b):
-    def rule_dew_press(b):
-        return 0 == 1 - b.pressure_dew*sum(
-                b.mole_frac_comp[j] /
-                get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), b.temperature)
-                for j in b.params.component_list)
-    b.eq_pressure_dew = Constraint(rule=rule_dew_press)
+    try:
+        def rule_dew_press(b):
+            return 0 == 1 - b.pressure_dew*sum(
+                    b.mole_frac_comp[j] /
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), b.temperature)
+                    for j in b.params.component_list)
+        b.eq_pressure_dew = Constraint(rule=rule_dew_press)
+    except AttributeError:
+        b.del_component(b.eq_pressure_dew)
+        raise
 
+    # Don't need a try/except here, as this will pass if first constraint did
     def rule_mole_frac_dew_press(b, j):
         return (b._mole_frac_pdew[j] *
                 get_method(b, "pressure_sat_comp", j)(
