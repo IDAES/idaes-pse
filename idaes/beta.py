@@ -26,6 +26,8 @@ def _caller_module_name():
     # function/module that called the function calling
     # _caller_module_name
     caller_module = inspect.getmodule(inspect.currentframe().f_back.f_back)
+    if caller_module is None:
+        return "<stdin>"
     return caller_module.__name__
     
 
