@@ -16,6 +16,9 @@ import importlib
 import inspect
 import sys
 
+import idaes.logger as idaeslog
+
+_declared_beta_modules = set()
 _declared_beta_module_imports = set()
 
 def _caller_module_name():
@@ -28,6 +31,7 @@ def _caller_module_name():
 
 def declare_beta_module(message=None):
     mod_name = _caller_module_name()
+    _declared_beta_modules.add(mod_name)
     if mod_name in _declared_beta_module_imports:
         return
 
@@ -46,7 +50,14 @@ def import_beta(name, package=None):
     if absolute_name not in _declared_beta_module_imports:
         _declared_beta_module_imports.add(absolute_name)
         try:
-            return importlib.import_module(absolute_name)
+            module = importlib.import_module(absolute_name)
+            if absolute_name not in _declared_beta_modules:
+                idaeslog.getLogger(absolute_name).info(
+                    "Module '%s' imported module '%s' as a Beta module.  "
+                    "This module is not declared beta and can be imported "
+                    "using Python's normal import mechanisms."
+                    % (_caller_module_name(), absolute_name,))
+            return module
         except:
             _declared_beta_module_imports.remove(absolute_name)
             raise

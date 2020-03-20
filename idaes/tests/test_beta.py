@@ -12,7 +12,12 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+import logging
 import pytest
+
+from io import StringIO
+from pyomo.common.log import LoggingIntercept
+
 import idaes.beta
 
 def test_beta_module_exception():
@@ -22,10 +27,22 @@ def test_beta_module_exception():
         import idaes.tests.beta_mod
 
 def test_beta_module_import():
-    mod = idaes.beta.import_beta('idaes.tests.beta_mod')
+    os = StringIO()
+    with LoggingIntercept(os, 'idaes', logging.INFO):
+        mod = idaes.beta.import_beta('idaes.tests.beta_mod')
     assert mod.__name__ == 'idaes.tests.beta_mod'
     assert mod.reference_value == 42
+    assert os.getvalue() == ""
 
     mod = idaes.beta.import_beta('.beta_mod')
     assert mod.__name__ == 'idaes.tests.beta_mod'
     assert mod.reference_value == 42
+
+    os = StringIO()
+    with LoggingIntercept(os, 'idaes.logger', logging.INFO):
+        mod = idaes.beta.import_beta('idaes.logger')
+    assert mod.__name__ == 'idaes.logger'
+    assert os.getvalue().strip() == "Module 'idaes.tests.test_beta' "\
+        "imported module 'idaes.logger' as a Beta module.  "\
+        "This module is not declared beta and can be "\
+        "imported using Python's normal import mechanisms."
