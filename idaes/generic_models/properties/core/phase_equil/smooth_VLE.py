@@ -19,6 +19,7 @@ Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
 from pyomo.environ import Constraint, Param, Var, value
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
 
 
@@ -26,6 +27,19 @@ def phase_equil(b, phase_pair):
     # This method is called via StateBlock.build, thus does not need clean-up
     # try/except statements
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
+
+    # Smooth VLE assumes a liquid and a vapor phase, so validate this
+    phase_1 = b.params.get_phase(phase_pair[0])
+    phase_2 = b.params.get_phase(phase_pair[1])
+
+    liq_phase = phase_1.is_liquid_phase() or phase_2.is_liquid_phase()
+    vap_phase = phase_1.is_vapor_phase() or phase_2.is_vapor_phase()
+
+    if not (liq_phase and vap_phase):
+        raise ConfigurationError(
+            "{} Generic Property Package phase pair {}-{} was set to use "
+            "Smooth VLE formulation, however this is not a vapor-liquid pair."
+            .format(b.params.name, phase_pair[0], phase_pair[1]))
 
     # Definition of equilibrium temperature for smooth VLE
     b.add_component("_t1"+suffix, Var(

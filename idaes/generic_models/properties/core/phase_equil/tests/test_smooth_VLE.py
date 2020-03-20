@@ -30,6 +30,7 @@ from idaes.generic_models.properties.core.generic.generic_property import \
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # Dummy EoS to use for fugacity calls
@@ -107,3 +108,27 @@ def test_t_eq(frame):
             frame.props[1]._teq[("Liq", "Vap")].value = min(t1, td)
             assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)
+
+
+def test_non_VLE_pair():
+    m = ConcreteModel()
+
+    # Create a dummy parameter block
+    m.params = GenericParameterBlock(default={
+        "components": {"H2O": {"temperature_crit": 647.3,
+                               "phase_equilibrium_form":
+                                   {("Sol", "Liq"): fugacity}}},
+        "phases": {"Sol": {"equation_of_state": DummyEoS},
+                   "Liq": {"equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300})
+
+    # Create a dummy state block
+    m.props = m.params.state_block_class([1], default={"parameters": m.params})
+
+    with pytest.raises(ConfigurationError,
+                       match="params Generic Property Package phase pair "
+                       "Liq-Sol was set to use Smooth VLE formulation, "
+                       "however this is not a vapor-liquid pair."):
+        smooth_VLE.phase_equil(m.props[1], ("Liq", "Sol"))

@@ -49,9 +49,6 @@ _log = idaeslog.getLogger(__name__)
 
 
 # TODO: Handle parameter data
-# TODO: More validation of config arguments
-
-
 # TODO: Set a default state definition
 # TODO: Probably should set an initial value for state variables
 # TODO: Need way to dynamically determine units of measurement....
