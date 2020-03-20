@@ -48,14 +48,16 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-# TODO: Generalise equilibrium constraints for arbitary interacting phases
 # TODO: Handle parameter data
-# TODO: Error messages for calls to undefined options
+# TODO: More validation of config arguments
 
 
 # TODO: Set a default state definition
 # TODO: Probably should set an initial value for state variables
+
 # TODO: Need clean-up methods for all methods to work with Pyomo DAE
+# This can probably be done entirely within the methods of generic_properties.
+
 # TODO: Need way to dynamically determine units of measurement....
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
@@ -719,19 +721,13 @@ class _GenericStateBlock(StateBlock):
                 .format(idaeslog.condition(res))
             )
         # ---------------------------------------------------------------------
-        # If StateBlock is using a smooth VLE, calculate _T1 and _Teq
-        eq_check = 0
+        # Calculate _teq
         for k in blk.keys():
-            if hasattr(blk[k], "_t1"):
-                blk[k]._t1.value = max(blk[k].temperature.value,
-                                       blk[k].temperature_bubble.value)
-                blk[k]._teq.value = min(blk[k]._t1.value,
-                                        blk[k].temperature_dew.value)
+            for pp in blk[k].params._pe_pairs:
+                blk[k].params.config.phase_equilibrium_formulation[pp] \
+                    .calculate_teq(blk[k], pp)
 
-                eq_check += 1
-
-        if eq_check > 0:
-            init_log.info("Equilibrium temperature initialization completed.")
+        init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
@@ -744,9 +740,17 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         if (blk[k].params.config.phase_equilibrium_formulation is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
+            for c in blk[k].component_objects(Constraint):
+                # Activate common constraints
+                if c.local_name in ("total_flow_balance",
+                                    "component_flow_balances",
+                                    "sum_mole_frac",
+                                    "equilibrium_constraint"):
+                    c.activate()
             for pp in blk[k].params._pe_pairs:
+                # Activate formulation specific constraints
                 blk[k].params.config.phase_equilibrium_formulation[pp] \
-                    .phase_equil_initialization(blk[k])
+                    .phase_equil_initialization(blk[k], pp)
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
@@ -821,9 +825,31 @@ class GenericStateBlockData(StateBlockData):
         # Add phase equilibrium constraints if necessary
         if (self.params.config.phases_in_equilibrium is not None and
                 (not self.config.defined_state or self.always_flash)):
+
+            # Add equilibrium temperature variable
+            self._teq = Var(
+                self.params._pe_pairs,
+                initialize=value(self.temperature),
+                doc='Temperature for calculating phase equilibrium')
+
             pe_form_config = self.params.config.phase_equilibrium_formulation
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
+
+            def rule_equilibrium(b, phase1, phase2, j):
+                config = b.params.get_component(j).config
+                try:
+                    e_mthd = config.phase_equilibrium_form[(phase1, phase2)]
+                except KeyError:
+                    e_mthd = config.phase_equilibrium_form[(phase2, phase1)]
+                if e_mthd is None:
+                    raise GenericPropertyPackageError(b,
+                                                      "phase_equilibrium_form")
+                return e_mthd(self, phase1, phase2, j)
+            self.equilibrium_constraint = Constraint(
+                self.params._pe_pairs,
+                self.params.component_list,
+                rule=rule_equilibrium)
 
     def components_in_phase(self, phase):
         """

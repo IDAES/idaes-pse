@@ -69,7 +69,7 @@ def m():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
-    m.props[1]._teq = Var(initialize=300)
+    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
                                           initialize=0.5)
@@ -100,7 +100,6 @@ def m_sol():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
-    m.props[1]._teq = Var(initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
                                           initialize=0.5)
@@ -195,19 +194,21 @@ def test_fug_phase_comp_liq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
 
-        assert str(ideal.fug_phase_comp(m.props[1], "Liq", j)) == str(
+        assert str(ideal.fug_phase_comp(
+                        m.props[1], "Liq", j, ("Vap", "Liq"))) == str(
             m.props[1].mole_frac_phase_comp["Liq", j]*42)
 
 
 def test_fug_phase_comp_vap(m):
     for j in m.params.component_list:
-        assert str(ideal.fug_phase_comp(m.props[1], "Vap", j)) == str(
+        assert str(ideal.fug_phase_comp(
+                        m.props[1], "Vap", j, ("Vap", "Liq"))) == str(
             m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure)
 
 
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo")
+        ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
 def test_fug_coeff_phase_comp(m):

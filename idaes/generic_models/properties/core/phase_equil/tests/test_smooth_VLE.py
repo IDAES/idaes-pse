@@ -37,7 +37,7 @@ class DummyEoS(object):
     def common(self):
         pass
 
-    def fug_phase_comp(b, p, j):
+    def fug_phase_comp(b, p, j, pp):
         return b.fug_phase_comp[p, j]
 
 
@@ -61,6 +61,7 @@ def frame():
 
     m.props[1].temperature_bubble = Var(initialize=300)
     m.props[1].temperature_dew = Var(initialize=300)
+    m.props[1]._teq = Var([("Liq", "Vap")], initialize=300)
 
     m.props[1].fug_phase_comp = Var(m.params.phase_list,
                                     m.params.component_list,
@@ -72,28 +73,16 @@ def frame():
 
 
 def test_build(frame):
-    assert isinstance(frame.props[1].eps_1, Param)
-    assert value(frame.props[1].eps_1) == 0.01
+    assert isinstance(frame.props[1].eps_1_Liq_Vap, Param)
+    assert value(frame.props[1].eps_1_Liq_Vap) == 0.01
 
-    assert isinstance(frame.props[1].eps_2, Param)
-    assert value(frame.props[1].eps_2) == 0.0005
+    assert isinstance(frame.props[1].eps_2_Liq_Vap, Param)
+    assert value(frame.props[1].eps_2_Liq_Vap) == 0.0005
 
-    assert isinstance(frame.props[1]._t1, Var)
-    assert isinstance(frame.props[1]._teq, Var)
+    assert isinstance(frame.props[1]._t1_Liq_Vap, Var)
 
-    assert isinstance(frame.props[1]._t1_constraint, Constraint)
-    assert isinstance(frame.props[1]._teq_constraint, Constraint)
-    assert isinstance(frame.props[1].equilibrium_constraint, Constraint)
-    for k in frame.props[1].equilibrium_constraint:
-        assert k in frame.params.component_list
-        assert str(frame.props[1].equilibrium_constraint[k].body) == str(
-                frame.props[1].fug_phase_comp["Liq", k] -
-                frame.props[1].fug_phase_comp["Vap", k])
-
-    assert isinstance(frame.props[1]._tr_eq, Expression)
-    assert len(frame.props[1]._tr_eq) == 1
-    assert value(frame.props[1]._tr_eq["H2O"]) == value(
-            frame.props[1]._teq/frame.params.H2O.temperature_crit)
+    assert isinstance(frame.props[1]._t1_constraint_Liq_Vap, Constraint)
+    assert isinstance(frame.props[1]._teq_constraint_Liq_Vap, Constraint)
 
 
 def test_t1(frame):
@@ -103,8 +92,8 @@ def test_t1(frame):
         for tb in [200, 300, 400, 500]:
             frame.props[1].temperature.value = t
             frame.props[1].temperature_bubble.value = tb
-            frame.props[1]._t1.value = max(t, tb)
-            assert value(frame.props[1]._t1_constraint.body) == \
+            frame.props[1]._t1_Liq_Vap.value = max(t, tb)
+            assert value(frame.props[1]._t1_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)
 
 
@@ -113,8 +102,8 @@ def test_t_eq(frame):
     # Can't check directly, but see that residual of constraint is correct
     for t1 in [200, 300, 400, 500]:
         for td in [200, 300, 400, 500]:
-            frame.props[1]._t1.value = t1
+            frame.props[1]._t1_Liq_Vap.value = t1
             frame.props[1].temperature_dew.value = td
-            frame.props[1]._teq.value = min(t1, td)
-            assert value(frame.props[1]._teq_constraint.body) == \
+            frame.props[1]._teq[("Liq", "Vap")].value = min(t1, td)
+            assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)

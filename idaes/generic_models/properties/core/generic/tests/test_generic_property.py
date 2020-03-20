@@ -333,4 +333,3 @@ class TestGenericStateBlock(object):
         assert frame.props[1].state_defined
         assert isinstance(frame.props[1].dummy_var, Var)
         assert frame.props[1].eos_common == 2
-        # assert frame.props[1].phase_equil_defined
