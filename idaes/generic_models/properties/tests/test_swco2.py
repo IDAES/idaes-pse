@@ -107,6 +107,7 @@ class TestSWCO2(object):
         model.func_hvpt = EF(library=plib, function="hvpt")
         model.func_hlpt = EF(library=plib, function="hlpt")
         model.func_tau = EF(library=plib, function="tau")
+        model.func_tau_sp = EF(library=plib, function="tau_sp")
         model.func_vf = EF(library=plib, function="vf")
         model.func_g = EF(library=plib, function="g")
         model.func_f = EF(library=plib, function="f")
@@ -155,6 +156,22 @@ class TestSWCO2(object):
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
+    def test_solve_tau_hp(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            temp_sat = value(304.128/model.func_tau_sat(data["P"][i]))
+            temp = value(304.128/model.func_tau(data["H"][i], data["P"][i]))
+            print("h = {}, p = {}, T = {}, T_sat = {}".format(data["H"][i], data["P"][i], T, temp_sat))
+            assert temp == pytest.approx(T, rel=0.1)
+
+    def test_solve_tau_sp(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] not in ["vapor"]:
+                continue
+            print("s = {}, p = {}, T = {}".format(data["S"][i], data["P"][i], T))
+            temp = value(304.128/model.func_tau_sp(data["S"][i], data["P"][i]))
+            assert temp == pytest.approx(T, rel=1e-3)
 
     def test_solve_vapor_density(self, model):
         data = read_data("prop_swco2_nist_webbook.txt")
@@ -235,6 +252,9 @@ class TestSWCO2(object):
             if P >= 7.377e6 and T >= 304.1282:
                 # super critical, which we clasify as liquid
                 ph = "Liq"
+            if P <= 0.5179e6:
+                # below tripple point
+                ph = "Vap"
             elif T > Tsat + 0.5:
                 ph = "Vap"
             elif T < Tsat - 0.5:
