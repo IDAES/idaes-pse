@@ -485,7 +485,7 @@ def add_noise_at_time(varlist, t_list, **kwargs):
 
     args_fcn = kwargs.pop('args_function',
                           lambda i, val, **kwargs: [val, sig[i]] 
-                                        if sig[i] is not None else None)
+                                 if sig[i] is not None else None)
 
     bound_strategy = kwargs.pop('bound_strategy', 'discard')
     discard_limit = kwargs.pop('discard_limit', 5)
