@@ -109,10 +109,12 @@ def test_initialize():
     turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
-    turb.ip_stages[1].inlet.unfix()
+    turb.ip_stages[1].inlet.fix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
     turb.initialize(outlvl=1)
+    turb.ip_stages[1].inlet.unfix()
+
 
     for t in m.fs.time:
         m.fs.reheat.inlet.flow_mol[t].value = \

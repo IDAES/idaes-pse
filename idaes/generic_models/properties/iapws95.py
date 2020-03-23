@@ -103,7 +103,7 @@ def htpx(T, P=None, x=None):
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
-    return _htpx(T=T, Tmin=200, Tmax=3e3, P=P, x=x, prop=prop)
+    return _htpx(T=T, P=P, x=x, prop=prop, Tmin=270, Tmax=3e3, Pmin=0.1, Pmax=1e9)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -128,6 +128,9 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 initialize=461.51805,
                 doc="Water Specific Gas Constant [J/kg/K]",
             ),
+            pressure_bounds=(0.1, 1e9),
+            temperature_bounds=(250, 2500),
+            enthalpy_bounds=(0, 1e5),
         )
         super().build()
         # Thermal conductivity parameters.
