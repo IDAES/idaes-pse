@@ -60,7 +60,11 @@ def is_explicitly_indexed_by(comp, *sets):
             return False
         # Convert set_tuple to a ComponentSet so a different
         # pyomo:Set with the same elements will not be conflated.
-        set_set = ComponentSet(comp.index_set().set_tuple)
+
+        if hasattr(comp.index_set(), 'subsets'):
+            set_set = ComponentSet(comp.index_set().subsets())
+        else:
+            set_set = ComponentSet(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
 
 
@@ -134,7 +138,10 @@ def get_index_set_except(comp, *sets):
 
     index_set = comp.index_set()
     if hasattr(index_set, 'set_tuple'):
-        set_tuple = index_set.set_tuple
+        if hasattr(index_set, 'subsets'):
+            set_tuple = list(index_set.subsets())
+        else:
+            set_tuple = index_set.set_tuple
         counter = Counter([id(_) for _ in set_tuple])
         for s in sets:
             if counter[id(s)] != 1:
