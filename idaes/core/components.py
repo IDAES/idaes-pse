@@ -54,6 +54,14 @@ class ComponentData(ProcessBlockData):
         domain=dict,
         description="Form of phase equilibrium constraints for component"))
 
+    CONFIG.declare("cp_mol_ig_comp_coeff", ConfigValue(
+        domain=dict,
+        description="Parameter data for ideal gas component molar heat "
+        "capacity"))
+    CONFIG.declare("enth_mol_form_vap_comp_ref", ConfigValue(
+        description="Parameter data for molar enthalpy of formation in the "
+        "vapor phase at reference temperature"))
+
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether component_list "

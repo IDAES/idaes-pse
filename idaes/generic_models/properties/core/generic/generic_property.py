@@ -99,14 +99,21 @@ def get_method(self, config_arg, comp=None):
         raise GenericPropertyPackageError(self, config_arg)
 
     if isinstance(c_arg, types.ModuleType):
-        return getattr(c_arg, config_arg)
-    elif callable(c_arg):
-        return c_arg
+        c_arg = getattr(c_arg, config_arg)
+
+    try:
+        mthd = c_arg.return_expression
+    except AttributeError:
+        mthd = c_arg
+
+    if callable(mthd):
+        return mthd
     else:
         raise ConfigurationError(
                 "{} Generic Property Package received invalid value "
-                "for argumnet {}. Value must be either a module or a "
-                "method".format(self.name, config_arg))
+                "for argument {}. Value must be a method, a class with a "
+                "method named expression or a module containing one of the "
+                "previous.".format(self.name, config_arg))
 
 
 def get_component_object(self, comp):
@@ -361,6 +368,20 @@ class GenericParameterData(PhysicalParameterBlock):
                                              ordered=True)
 
         # Construct parameter components
+        for c in self.component_list:
+            cobj = self.get_component(c)
+            for a, v in cobj.config.items():
+                if isinstance(v, types.ModuleType):
+                    c_arg = getattr(v, a)
+                else:
+                    c_arg = v
+                try:
+                    c_arg.build_parameters(cobj)
+                except AttributeError:
+                    pass
+        # raise Exception
+
+
         self.parameters()
 
         # For safety, fix all Vars in Component objects
