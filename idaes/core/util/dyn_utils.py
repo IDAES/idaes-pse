@@ -578,7 +578,7 @@ def path_from_block(comp, blk, include_comp=False):
     return route
 
 
-def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
+def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
     """This function finds a component in a source block, then uses the same
     local names and indices to try to find a corresponding component in a target
     block. 
@@ -587,15 +587,12 @@ def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
         tgt_block : Target block that will be searched for component
         src_block : Source block in which the original component is located
         src_comp : Component whose name will be searched for in target block
-
-    Kwargs:
         allow_miss : If True, will ignore attribute and key errors due to 
                      searching for non-existant components in the target model
 
     Returns:
         Component with the same name in the target block
     """
-    allow_miss = kwargs.pop('allow_miss', False)
 
     local_parent = tgt_block
     for r in path_from_block(src_comp, src_block, include_comp=False):
@@ -640,7 +637,7 @@ def find_comp_in_block(tgt_block, src_block, src_comp, **kwargs):
 
 
 def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
-                               time, t0, **kwargs):
+                               time, t0, allow_miss=False):
     """This function finds a component in a source block, then uses the same
     local names and indices to try to find a corresponding component in a target
     block, with the exception of time index in the target component, which is
@@ -653,16 +650,12 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
         time : Set whose index will be replaced in the target component
         t0 : Index of the time set that will be used in the target
              component
-
-    Kwargs:
         allow_miss : If True, will ignore attribute and key errors due to 
                      searching for non-existant components in the target model
 
-    Returns:
     """
     # Could extend this to allow replacing indices of multiple sets
     # (useful for PDEs)
-    allow_miss = kwargs.pop('allow_miss', False)
 
     assert t0 in time
     assert time.model() is tgt_block.model()
