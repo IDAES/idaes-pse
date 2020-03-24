@@ -46,7 +46,7 @@ def compare_models(existing_model, new_model):
                         "label": "molar flow ('Vap', 'hydrogen') 0.5"
                     }
                 }
-            }
+            },
             "cells": {["--jointjs code--"]}
         }
 
