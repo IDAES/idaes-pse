@@ -407,7 +407,7 @@ def get_location_of_coordinate_set(setprod, subset):
             'Cannot get the location of %s because it is multi-dimensional'
             %(subset.name))
 
-    loc = 0
+    loc = None
     i = 0
     found = False
     if hasattr(setprod, 'subsets'):
@@ -682,31 +682,13 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
         # Can abstract the following into a function:
         # replace_time_index or something
         if is_explicitly_indexed_by(local_parent, time):
-            time_loc = None
-            loc = 0
-            if hasattr(local_parent.index_set(), 'subsets'):
-                subsets = local_parent.index_set().subsets()
-            elif hasattr(local_parent.index_set(), 'set_tuple'):
-                subsets = local_parent.index_set().set_tuple
-            else:
-                subsets = [local_parent.index_set()]
-            for _set in subsets:
-                if _set is time and time_loc is not None:
-                    raise ValueError(
-                        'Explicitly indexing components by multiple '
-                        'instances of time is not supported')
-                if _set is time and time_loc is None:
-                    time_loc = loc
-                loc += _set.dimen
-            if time_loc is None:
-                raise ValueError(
-                    'Did not expect this')
+            index_set = local_parent.index_set()
+            time_loc = get_location_of_coordinate_set(index_set, time)
 
             if type(r[1]) is not tuple:
                 tup_idx = (r[1],)
             tup_idx = list(tup_idx)
 
-            assert len(tup_idx) == loc
             # Replace time index with t0
             tup_idx[time_loc] = t0
             index = tuple(tup_idx)
@@ -735,31 +717,13 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
         index = src_comp.index()
 
         if is_explicitly_indexed_by(tgt_comp, time):
-            time_loc = None
-            loc = 0
-            if hasattr(tgt_comp.index_set(), 'subsets'):
-                subsets = tgt_comp.index_set().subsets()
-            elif hasattr(tgt_comp.index_set(), 'set_tuple'):
-                subsets = tgt_comp.index_set.set_tuple
-            else:
-                subsets = [tgt_comp.index_set()]
-            for _set in subsets:
-                if _set is time and time_loc is not None:
-                    raise ValueError(
-                        'Explicitly indexing components by multiple '
-                        'instances of time is not supported')
-                if _set is time and time_loc is None:
-                    time_loc = loc
-                loc += _set.dimen
-            if time_loc is None:
-                raise ValueError(
-                    'Did not expect this')
+            index_set = tgt_comp.index_set()
+            time_loc = get_location_of_coordinate_set(index_set, time)
 
             if type(index) is not tuple:
                 index = (index,)
             index = list(index)
 
-            assert len(index) == loc
             # Replace time index with t0
             index[time_loc] = t0
             index = tuple(index)
