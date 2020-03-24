@@ -27,8 +27,8 @@ from idaes.ui.fsvis.server import DataStorage
 # globals
 
 app = Flask(__name__, static_url_path='', 
-        static_folder='draft/static', 
-        template_folder='draft/templates')
+        static_folder='static', 
+        template_folder='templates')
 db = DataStorage()
 
 # Custom exceptions (handled by Flask error handlers)
