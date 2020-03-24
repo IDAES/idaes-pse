@@ -66,21 +66,21 @@ def test_is_indexed_by():
     assert not is_explicitly_indexed_by(m.v, m.time)
     assert is_explicitly_indexed_by(m.b.v2, m.space)
 
-#    assert not is_implicitly_indexed_by(m.v1, m.time)
-#    assert not is_implicitly_indexed_by(m.v2, m.set)
-#    assert is_implicitly_indexed_by(m.b1[m.time[1]].v2, m.time)
-#
-#    assert is_implicitly_indexed_by(m.b2[m.time[1], 
-#        m.space[1]].b.v1, m.time)
-#    assert (is_implicitly_indexed_by(m.b2[m.time[1], 
-#        m.space[1]].b.v2, m.time) ==
-#        is_explicitly_indexed_by(m.b2[m.time[1], 
-#            m.space[1]].b.v2, m.time))
-#    assert (not is_implicitly_indexed_by(m.b2[m.time[1], 
-#        m.space[1]].b.v1, m.set))
-#
-#    assert (not is_implicitly_indexed_by(m.b2[m.time[1],
-#        m.space[1]].b.v1, m.space, stop_at=m.b2[m.time[1], m.space[1]]))
+    assert not is_implicitly_indexed_by(m.v1, m.time)
+    assert not is_implicitly_indexed_by(m.v2, m.set)
+    assert is_implicitly_indexed_by(m.b1[m.time[1]].v2, m.time)
+
+    assert is_implicitly_indexed_by(m.b2[m.time[1], 
+        m.space[1]].b.v1, m.time)
+    assert (is_implicitly_indexed_by(m.b2[m.time[1], 
+        m.space[1]].b.v2, m.time) ==
+        is_explicitly_indexed_by(m.b2[m.time[1], 
+            m.space[1]].b.v2, m.time))
+    assert (not is_implicitly_indexed_by(m.b2[m.time[1], 
+        m.space[1]].b.v1, m.set))
+
+    assert (not is_implicitly_indexed_by(m.b2[m.time[1],
+        m.space[1]].b.v1, m.space, stop_at=m.b2[m.time[1], m.space[1]]))
 
 # Test get index_set_except and _complete_index
 def test_get_index_set_except():
