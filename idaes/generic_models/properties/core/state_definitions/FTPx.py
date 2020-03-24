@@ -85,39 +85,39 @@ def define_state(b):
     b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
                      bounds=f_bounds,
-                     doc='Component molar flowrate [mol/s]')
+                     doc=' Total molar flowrate')
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions [-]')
+                           doc='Mixture mole fractions')
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure [Pa]')
+                     doc='State pressure')
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='State temperature [K]')
+                        doc='State temperature')
 
     # Add supporting variables
     b.flow_mol_phase = Var(b.params.phase_list,
                            initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
-                           doc='Phase molar flow rates [mol/s]')
+                           doc='Phase molar flow rates')
 
     b.mole_frac_phase_comp = Var(
         b.params.phase_list,
         b.params.component_list,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
-        doc='Phase mole fractions [-]')
+        doc='Phase mole fractions')
 
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
         bounds=(0, None),
-        doc='Phase fractions [-]')
+        doc='Phase fractions')
 
     # Add supporting constraints
     if b.config.defined_state is False:
