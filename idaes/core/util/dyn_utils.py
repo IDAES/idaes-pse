@@ -262,7 +262,7 @@ def get_fixed_dict(b):
 
     Returns:
         A dictionary mapping id of VarData objects to a bool indicating if
-        they are active
+        they are fixed
     """
     return {id(var): var.fixed for var in b.component_data_objects(Var)}
 
@@ -404,7 +404,8 @@ def get_location_of_coordinate_set(setprod, subset):
     if subset.dimen != 1:
         # This could be supported in the future if there is demand for it
         raise ValueError(
-                'Cannot get the location of a multi-dimensional set')
+            'Cannot get the location of %s because it is multi-dimensional'
+            %(subset.name))
 
     loc = 0
     i = 0
@@ -419,8 +420,8 @@ def get_location_of_coordinate_set(setprod, subset):
         if _set is subset:
             if found:
                 raise ValueError(
-                        'Cannot get the location of a set that appears '
-                        'multiple times')
+                    'Cannot get the location of %s because it appears '
+                    'multiple times'%(_set.name))
             found = True
             loc = i
             i += 1
@@ -429,58 +430,58 @@ def get_location_of_coordinate_set(setprod, subset):
     return loc
 
 
-def get_index_of_set(comp, _set):
+def get_index_of_set(comp, wrt):
     """For some data object of an indexed component, gets the value of the
     index corresponding to some 1-dimensional pyomo set.
 
     Args: 
         comp : Component data object whose index will be searched
-        _set : Set whose index will get got
+        wrt : Set whose index will be searched for
 
     Returns:
         Value of the specified set in the component data object
     """
     parent = comp.parent_component()
-    if not is_explicitly_indexed_by(parent, _set):
+    if not is_explicitly_indexed_by(parent, wrt):
         raise ValueError(
-                "Cannot get the index of a set that does not index "
-                "comp's parent component.")
+                "Component %s is not explicitly indexed by set %s."
+                %(comp.name, wrt.name))
 
     index = comp.index() 
     if not type(index) is tuple:
         index = (index,)
-    loc = get_location_of_coordinate_set(parent.index_set(), _set)
+    loc = get_location_of_coordinate_set(parent.index_set(), wrt)
     return index[loc]
 
 
-def get_implicit_index_of_set(comp, _set):
-    """For some data object contained (at some level of the heirarchy) in a
-    block indexed by _set, returns the index corresponding to _set in that
+def get_implicit_index_of_set(comp, wrt):
+    """For some data object contained (at some level of the hierarchy) in a
+    block indexed by wrt, returns the index corresponding to wrt in that
     block.
 
     Args:
         comp : Component data object whose (parent blocks') indices will be
                searched
-        _set : Set whose index will be searched for
+        wrt : Set whose index will be searched for
 
     Returns:
         Value of the specified set 
     """
     val = None
     found = False
-    if is_explicitly_indexed_by(comp.parent_component(), _set):
-        val = get_index_of_set(comp, _set)
+    if is_explicitly_indexed_by(comp.parent_component(), wrt):
+        val = get_index_of_set(comp, wrt)
         found = True
 
     parent_block = comp.parent_block()
     while parent_block is not None:
         parent_component = parent_block.parent_component()
-        if is_explicitly_indexed_by(parent_component, _set):
+        if is_explicitly_indexed_by(parent_component, wrt):
             if found:
                 raise ValueError(
-                        "Cannot get the index of a set that appears multiple "
-                        "times in the heirarchy")
-            val = get_index_of_set(parent_block, _set)
+                        "Cannot get the index of set %s because it appears "
+                        "multiple times in the hierarchy"%(wrt.name))
+            val = get_index_of_set(parent_block, wrt)
             found = True
         parent_block = parent_block.parent_block()
 
@@ -534,7 +535,7 @@ def get_derivatives_at(b, time, pts):
 #       with getname and find_component
 #       ^ not true. Cannot call find_component from a BlockData object
 #                   Or on a name containing a decimal index
-#       component looks like a similar substitue for BlockDatas, but
+#       component looks like a similar substitute for BlockDatas, but
 #       cannot seem to call on names including indices at all
 def path_from_block(comp, blk, include_comp=False):
     """
