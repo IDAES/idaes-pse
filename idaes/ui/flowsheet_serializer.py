@@ -173,10 +173,9 @@ class FlowsheetSerializer:
         self.out_json["model"]["arcs"] = {}
 
         for unit_model in self.unit_models.values():
-            self.out_json["model"]["unit_models"][unit_model["name"]] = {}
             self.out_json["model"]["unit_models"][unit_model["name"]] = {
                 "type": unit_model["type"],
-                "image": icon_mapping[unit_model["type"]]
+                "image": icon_mapping(unit_model["type"])
             }
 
         for edge in self.edges:
@@ -197,7 +196,7 @@ class FlowsheetSerializer:
                     x_pos,
                     y_pos,
                     unit_attrs["name"],
-                    icon_mapping[unit_attrs["type"]],
+                    icon_mapping(unit_attrs["type"]),
                     unit_attrs["type"],
                 )
             except KeyError:

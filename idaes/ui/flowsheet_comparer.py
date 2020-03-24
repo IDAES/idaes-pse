@@ -106,7 +106,7 @@ def compare_models(existing_model, new_model):
     validate(instance=new_model, schema=model_schema)
 
     if existing_model == new_model:
-        return {}
+        return {}, out_json
 
     unit_model_schema = {
         "type" : "object",

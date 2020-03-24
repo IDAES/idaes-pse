@@ -19,53 +19,56 @@ from idaes.ui.flowsheet_comparer import Action
 
 
 def test_compare_models():
-    model1 = {'id': 0, 
-              'unit_models': {
-                  'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                  'H101': {'type': 'heater', 'image': 'heater_2.svg'}, 
-                  'R101': {'type': 'stoichiometric_reactor', 'image': 'reactor_s.svg'}, 
-                  'F101': {'type': 'flash', 'image': 'flash.svg'}, 
-                  'S101': {'type': 'separator', 'image': 'splitter.svg'}, 
-                  'C101': {'type': 'pressure_changer', 'image': 'compressor.svg'}, 
-                  'F102': {'type': 'flash', 'image': 'flash.svg'}}, 
-              'arcs': {
-                  's03': {'source': 'M101', 'dest': 'H101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's04': {'source': 'H101', 'dest': 'R101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's05': {'source': 'R101', 'dest': 'F101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's06': {'source': 'F101', 'dest': 'S101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's08': {'source': 'S101', 'dest': 'C101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's09': {'source': 'C101', 'dest': 'M101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's10': {'source': 'F101', 'dest': 'F102', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}}}
+    model1 = {'model': {
+                  'id': 0, 
+                  'unit_models': {
+                      'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                      'H101': {'type': 'heater', 'image': 'heater_2.svg'}, 
+                      'R101': {'type': 'stoichiometric_reactor', 'image': 'reactor_s.svg'}, 
+                      'F101': {'type': 'flash', 'image': 'flash.svg'}, 
+                      'S101': {'type': 'separator', 'image': 'splitter.svg'}, 
+                      'C101': {'type': 'pressure_changer', 'image': 'compressor.svg'}, 
+                      'F102': {'type': 'flash', 'image': 'flash.svg'}}, 
+                  'arcs': {
+                      's03': {'source': 'M101', 'dest': 'H101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's04': {'source': 'H101', 'dest': 'R101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's05': {'source': 'R101', 'dest': 'F101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's06': {'source': 'F101', 'dest': 'S101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's08': {'source': 'S101', 'dest': 'C101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's09': {'source': 'C101', 'dest': 'M101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                      's10': {'source': 'F101', 'dest': 'F102', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}}}}
 
-    model2 = {'id': 0, 
-              'unit_models': {
-                  'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                  'H101': {'type': 'heater', 'image': 'heater_2.svg'}, 
-                  'R101': {'type': 'stoichiometric_reactor', 'image': 'reactor_s.svg'}, 
-                  'F101': {'type': 'flash', 'image': 'flash.svg'}, 
-                  'S101': {'type': 'separator', 'image': 'splitter.svg'}, 
-                  'C101': {'type': 'pressure_changer', 'image': 'compressor.svg'}, 
-                  'F102': {'type': 'flash', 'image': 'flash.svg'},
-                  'F222': {'type': 'flash', 'image': 'flash.svg'}},
-              'arcs': {
-                  's03': {'source': 'M101', 'dest': 'H101', 'label': "Hello World!"}, 
-                  's04': {'source': 'H101', 'dest': 'R101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's05': {'source': 'R101', 'dest': 'F101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's06': {'source': 'F101', 'dest': 'S101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's08': {'source': 'S101', 'dest': 'C101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's09': {'source': 'C101', 'dest': 'M101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
-                  's10': {'source': 'F101', 'dest': 'F102', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"},
-                  's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}}}
+    model2 = {'model': {
+                'id': 0, 
+                'unit_models': {
+                    'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                    'H101': {'type': 'heater', 'image': 'heater_2.svg'}, 
+                    'R101': {'type': 'stoichiometric_reactor', 'image': 'reactor_s.svg'}, 
+                    'F101': {'type': 'flash', 'image': 'flash.svg'}, 
+                    'S101': {'type': 'separator', 'image': 'splitter.svg'}, 
+                    'C101': {'type': 'pressure_changer', 'image': 'compressor.svg'}, 
+                    'F102': {'type': 'flash', 'image': 'flash.svg'},
+                    'F222': {'type': 'flash', 'image': 'flash.svg'}},
+                'arcs': {
+                    's03': {'source': 'M101', 'dest': 'H101', 'label': "Hello World!"}, 
+                    's04': {'source': 'H101', 'dest': 'R101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                    's05': {'source': 'R101', 'dest': 'F101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                    's06': {'source': 'F101', 'dest': 'S101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                    's08': {'source': 'S101', 'dest': 'C101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                    's09': {'source': 'C101', 'dest': 'M101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}, 
+                    's10': {'source': 'F101', 'dest': 'F102', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"},
+                    's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132"}}}}
 
-    diff_model = fc.compare_models(model1, model2)
+    diff_model, out_json = fc.compare_models(model1, model2)
 
     diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': Action.ADD.value, "class": "unit model"}, 
                         's03': {'source': 'M101', 'dest': 'H101', 'label': 'Hello World!', 'action': Action.CHANGE.value, "class": "arc"}, 
                         's12': {'source': 'M101', 'dest': 'F111', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': Action.ADD.value, "class": "arc"}
                         }
+
     assert diff_model == diff_model_truth
 
-    diff_model = fc.compare_models(model2, model1)
+    diff_model, out_json = fc.compare_models(model2, model1)
 
     diff_model_truth = {'F222': {'type': 'flash', 'image': 'flash.svg', 'action': Action.REMOVE.value, 'class': 'unit model'},
                         's03': {'source': 'M101', 'dest': 'H101', 'label': "molar flow ('Liq', 'benzene') 0.5\nmolar flow ('Liq', 'toluene') 0.5\nmolar flow ('Liq', 'hydrogen') 0.5\nmolar flow ('Liq', 'methane') 0.5\nmolar flow ('Vap', 'benzene') 0.5\nmolar flow ('Vap', 'toluene') 0.5\nmolar flow ('Vap', 'hydrogen') 0.5\nmolar flow ('Vap', 'methane') 0.5\ntemperature 298.15\npressure 10132", 'action': Action.CHANGE.value, "class": "arc"},
@@ -76,30 +79,34 @@ def test_compare_models():
 
 def test_compare_models_edge_cases():
     # Both empty models
-    existing_model = {"id": 1,
-                      "unit_models": {},
-                      "arcs": {}}
+    existing_model = {"model": {
+                        "id": 1,
+                        "unit_models": {},
+                        "arcs": {}}}
 
-    new_model = {"id": 2,
-                 "unit_models": {},
-                 "arcs": {}}
+    new_model = {"model": {
+                   "id": 2,
+                   "unit_models": {},
+                   "arcs": {}}}
 
-    diff_model = fc.compare_models(existing_model, new_model)
+    diff_model, out_json = fc.compare_models(existing_model, new_model)
     assert diff_model == {}
 
     # Existing model is empty
-    existing_model = {"id": 1,
-                      "unit_models": {},
-                      "arcs": {}}
+    existing_model = {"model": {
+                        "id": 1,
+                        "unit_models": {},
+                        "arcs": {}}}
 
-    new_model = {'id': 0, 
-                 'unit_models': {
-                     'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                     'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-                 'arcs': {
-                     's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
+    new_model = {"model": {
+                   'id': 0, 
+                   'unit_models': {
+                       'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                       'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+                   'arcs': {
+                       's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
 
-    diff_model = fc.compare_models(existing_model, new_model)
+    diff_model, out_json = fc.compare_models(existing_model, new_model)
 
     diff_model_truth = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.ADD.value, 'class': 'unit model'}, 
                         'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.ADD.value, 'class': 'unit model'},
@@ -108,69 +115,76 @@ def test_compare_models_edge_cases():
     assert diff_model == diff_model_truth
 
     # New model is empty
-    existing_model = {'id': 0, 
-                      'unit_models': {
-                          'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                          'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-                      'arcs': {
-                          's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
+    existing_model = {"model": {
+                        'id': 0, 
+                        'unit_models': {
+                            'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                            'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+                        'arcs': {
+                            's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
 
-    new_model = {"id": 1,
-                 "unit_models": {},
-                 "arcs": {}}
+    new_model = {"model": {
+                   "id": 1,
+                   "unit_models": {},
+                   "arcs": {}}}
 
-    diff_model = fc.compare_models(existing_model, new_model)
+    diff_model, out_json = fc.compare_models(existing_model, new_model)
 
     assert diff_model == {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.REMOVE.value, 'class': 'unit model'}, 
                           'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.REMOVE.value, 'class': 'unit model'},
                           's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': Action.REMOVE.value, 'class': 'arc'}}
 
     # The models are the same
-    model = {'id': 0, 
-             'unit_models': {
-                 'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                 'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-             'arcs': {
-                 's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
+    model = {"model": {
+               'id': 0, 
+               'unit_models': {
+                   'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                   'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+               'arcs': {
+                   's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
 
-    diff_model = fc.compare_models(model, model)
+    diff_model, out_json = fc.compare_models(model, model)
     assert diff_model == {}
 
 
 def test_compare_models_errors():
     # Both empty
-    existing_model = {}
-    new_model = {}
+    existing_model = {"model": {}}
+    new_model = {"model": {}}
 
     with pytest.raises(ValidationError):
         fc.compare_models(existing_model, new_model)
 
     # New model is the wrong format
-    existing_model = {'id': 0, 
-                      'unit_models': {
-                          'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                          'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-                      'arcs': {
-                          's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
-    new_model = {'unit_models': {
-                     'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                     'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-                 'arcs': {
-                     's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
+    existing_model = {"model": {
+                        'id': 0, 
+                        'unit_models': {
+                            'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                            'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+                        'arcs': {
+                            's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
+    new_model = {"model": {
+                   'unit_models': {
+                       'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                       'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+                   'arcs': {
+                       's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
 
     with pytest.raises(ValidationError):
         fc.compare_models(existing_model, new_model)
 
     # Existing model is the wrong format
-    existing_model = {'id': 0, 
-                      'arcs': {
-                          's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
-    new_model = {'id': 0, 
-                 'unit_models': {
-                     'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
-                     'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
-                 'arcs': {
-                     's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}
+    existing_model = {"model": {
+                        'id': 0, 
+                        'arcs': {
+                            's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
+    new_model = {"model": {
+                   'id': 0, 
+                   'unit_models': {
+                       'M101': {'type': 'mixer', 'image': 'mixer.svg'}, 
+                       'H101': {'type': 'heater', 'image': 'heater_2.svg'}}, 
+                   'arcs': {
+                       's03': {'source': 'M101', 'dest': 'H101', 'label': "hello"}}}}
 
     with pytest.raises(ValidationError):
         fc.compare_models(existing_model, new_model)
