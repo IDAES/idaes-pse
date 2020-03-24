@@ -431,7 +431,7 @@ class FlueGasStateBlockData(StateBlockData):
         """
         This section makes the necessary state variable objects
         """
-        self.flow_component = Var(self._params.component_list,
+        self.flow_component = Var(self.params.component_list,
                                   domain=Reals,
                                   initialize=1.0,
                                   bounds=(0, 1e6),
@@ -450,19 +450,19 @@ class FlueGasStateBlockData(StateBlockData):
         '''
         Create property constraints
         '''
-        self.mole_frac = Var(self._params.component_list, initialize=1, 
+        self.mole_frac = Var(self.params.component_list, initialize=1, 
                              doc='mole fraction of component i')
         def rule_mole_frac(b,c):
             return b.mole_frac[c]*sum(b.flow_component[j] 
-                              for j in b._params.component_list) == b.flow_component[c]
-        self.mole_frac_con = Constraint(self._params.component_list, rule=rule_mole_frac)
+                              for j in b.params.component_list) == b.flow_component[c]
+        self.mole_frac_con = Constraint(self.params.component_list, rule=rule_mole_frac)
 
         '''
         Add flow_mol
         '''
         self.flow_mol = Var(initialize=1, doc='total molar flow')
         def rule_flow_mol(b):
-            return b.flow_mol == sum(b.flow_component[j] for j in b._params.component_list)
+            return b.flow_mol == sum(b.flow_component[j] for j in b.params.component_list)
         self.rule_flow_mol = Constraint(rule=rule_flow_mol)
 
         '''
@@ -470,8 +470,8 @@ class FlueGasStateBlockData(StateBlockData):
         '''
         self.flow_mass = Var(initialize=1, doc='total mass flow')
         def rule_flow_mass(b):
-            return b.flow_mass == sum(b.flow_component[j] * b._params.mw[j] 
-                                      * 0.001 for j in b._params.component_list)
+            return b.flow_mass == sum(b.flow_component[j] * b.params.mw[j] 
+                                      * 0.001 for j in b.params.component_list)
         self.rule_flow_mass = Constraint(rule=rule_flow_mass)
 
     def _heat_cap_calc(self):
@@ -479,12 +479,12 @@ class FlueGasStateBlockData(StateBlockData):
         self.heat_cap = Var(initialize= 1000, doc='heat capacity [J/mol-K]')
         def rule_Cp(b):
             return b.heat_cap*sum(b.flow_component[j]
-                             for j in b._params.component_list) == sum((b._params.CpIG['A',j] 
-                  + b._params.CpIG['B',j]*(b.temperature/1000)
-                  + b._params.CpIG['C',j]*(b.temperature/1000)**2
-                  + b._params.CpIG['D',j]*(b.temperature/1000)**3
-                  + b._params.CpIG['E',j]/(b.temperature/1000)**2)*b.flow_component[j]
-                                         for j in b._params.component_list)
+                             for j in b.params.component_list) == sum((b.params.CpIG['A',j] 
+                  + b.params.CpIG['B',j]*(b.temperature/1000)
+                  + b.params.CpIG['C',j]*(b.temperature/1000)**2
+                  + b.params.CpIG['D',j]*(b.temperature/1000)**3
+                  + b.params.CpIG['E',j]/(b.temperature/1000)**2)*b.flow_component[j]
+                                         for j in b.params.component_list)
         try:
             self.heat_cap_correlation = Constraint(rule=rule_Cp)
         except AttributeError:
@@ -493,21 +493,21 @@ class FlueGasStateBlockData(StateBlockData):
 
 
     def _enthalpy_calc(self):
-        self.enthalpy = Var(self._params.phase_list, doc='Specific Enthalpy [J/mol]')
+        self.enthalpy = Var(self.params.phase_list, doc='Specific Enthalpy [J/mol]')
         # Specific Enthalpy
         def enthalpy_correlation(b, p):
             scale_factor = 1e-3
             return scale_factor*b.enthalpy[p]*sum(b.flow_component[j]
-                             for j in b._params.component_list) == scale_factor*(
-                      sum((b._params.CpIG['A',j]*(b.temperature/1000) +\
-                      b._params.CpIG['B',j]*(b.temperature/1000)**2/2 +\
-                      b._params.CpIG['C',j]*(b.temperature/1000)**3/3 +\
-                      b._params.CpIG['D',j]*(b.temperature/1000)**4/4 -\
-                      b._params.CpIG['E',j]/(b.temperature/1000) +\
-                      b._params.CpIG['F',j])*b.flow_component[j]*1000
-                                         for j in b._params.component_list))
+                             for j in b.params.component_list) == scale_factor*(
+                      sum((b.params.CpIG['A',j]*(b.temperature/1000) +\
+                      b.params.CpIG['B',j]*(b.temperature/1000)**2/2 +\
+                      b.params.CpIG['C',j]*(b.temperature/1000)**3/3 +\
+                      b.params.CpIG['D',j]*(b.temperature/1000)**4/4 -\
+                      b.params.CpIG['E',j]/(b.temperature/1000) +\
+                      b.params.CpIG['F',j])*b.flow_component[j]*1000
+                                         for j in b.params.component_list))
         try:
-            self.enthalpy_correlation = Constraint(self._params.phase_list,
+            self.enthalpy_correlation = Constraint(self.params.phase_list,
                                                    rule=enthalpy_correlation)
         except AttributeError:
             self.del_component(self.enthalpy)
@@ -519,14 +519,14 @@ class FlueGasStateBlockData(StateBlockData):
         # Specific Entropy
         def entropy_correlation(b):
             return b.entropy*sum(b.flow_component[j]
-                                    for j in b._params.component_list) == \
-                sum((b._params.CpIG['A',j]*log((b.temperature/1000)) +
-                b._params.CpIG['B',j]*(b.temperature/1000) +
-                b._params.CpIG['C',j]*(b.temperature/1000)**2/2 +
-                b._params.CpIG['D',j]*(b.temperature/1000)**3/3 -
-                b._params.CpIG['E',j]/(2*(b.temperature/1000)**2) +
-                b._params.CpIG['G',j] - b._params.gas_constant*log(b.mole_frac[j]))
-                *b.flow_component[j] for j in b._params.component_list)
+                                    for j in b.params.component_list) == \
+                sum((b.params.CpIG['A',j]*log((b.temperature/1000)) +
+                b.params.CpIG['B',j]*(b.temperature/1000) +
+                b.params.CpIG['C',j]*(b.temperature/1000)**2/2 +
+                b.params.CpIG['D',j]*(b.temperature/1000)**3/3 -
+                b.params.CpIG['E',j]/(2*(b.temperature/1000)**2) +
+                b.params.CpIG['G',j] - b.params.gas_constant*log(b.mole_frac[j]))
+                *b.flow_component[j] for j in b.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
         except AttributeError:
@@ -541,17 +541,17 @@ class FlueGasStateBlockData(StateBlockData):
         # Reduced Temperature and Pressure
         def reduced_pressure_calculation(b):
             scale_factor = 1e-3
-            return scale_factor*b.pressure_reduced*sum(b._params.pressure_critical[j]*
-                b.flow_component[j] for j in b._params.component_list) == \
+            return scale_factor*b.pressure_reduced*sum(b.params.pressure_critical[j]*
+                b.flow_component[j] for j in b.params.component_list) == \
                 scale_factor*b.pressure*sum(b.flow_component[j] 
-                        for j in b._params.component_list)
+                        for j in b.params.component_list)
 
 
         def reduced_temperature_calculation(b):
             return b.temperature_reduced*sum(b.temperature_critical[j]*
-                b.flow_component[j] for j in b._params.component_list) == \
+                b.flow_component[j] for j in b.params.component_list) == \
                 b.temperature*sum(b.flow_component[j]
-                                        for j in b._params.component_list)
+                                        for j in b.params.component_list)
 
         try:
             self.reduced_pressure_calculation = \
@@ -582,13 +582,13 @@ class FlueGasStateBlockData(StateBlockData):
 
     def _dens_mol_phase(self):
         # Density from PV = ZRT
-        self.dens_mol_phase = Var(self._params.phase_list, doc='Molar Density')
+        self.dens_mol_phase = Var(self.params.phase_list, doc='Molar Density')
 
         def dens_mol_phase_calculation(b, p):
             return b.pressure == (b.dens_mol_phase[p]*b.compress_fact *
-                                  b._params.gas_constant*b.temperature)
+                                  b.params.gas_constant*b.temperature)
         try:
-            self.dens_mol_phase_calculation = Constraint(self._params.phase_list,
+            self.dens_mol_phase_calculation = Constraint(self.params.phase_list,
                                                   rule=dens_mol_phase_calculation)
         except:
             self.del_component(self.dens_mol_phase)
@@ -603,12 +603,12 @@ class FlueGasStateBlockData(StateBlockData):
 
         def vapor_pressure_correlation(b):
             return log(b.vapor_pressure)*sum(b.flow_component[j]
-                              for j in b._params.component_list) == sum((
-                      b._params.vapor_pressure_coeff[j,'A']*b.temperature -
-                      (b._params.vapor_pressure_coeff[j,'B']/(b.temperature +
+                              for j in b.params.component_list) == sum((
+                      b.params.vapor_pressure_coeff[j,'A']*b.temperature -
+                      (b.params.vapor_pressure_coeff[j,'B']/(b.temperature +
                        b._param.vapor_pressure_coeff[j,'C'])))*
                                 b.flow_component[j] 
-                                for j in b._params.component_list)
+                                for j in b.params.component_list)
 
         try:
             self.vapor_pressure_correlation = \
@@ -624,7 +624,7 @@ class FlueGasStateBlockData(StateBlockData):
 
         def volumetric_flow_calculation(b):
             return b.flow_volume*b.density_mol["Vap"] == \
-                    sum(b.flow_component[j] for j in b._params.component_list)
+                    sum(b.flow_component[j] for j in b.params.component_list)
         try:
             self.volumetric_flow_calculation = Constraint(
                                         rule=volumetric_flow_calculation)
@@ -634,24 +634,24 @@ class FlueGasStateBlockData(StateBlockData):
 
 
     def _therm_cond(self):
-        self.therm_cond = Var(self._params.component_list, initialize=0.05, 
+        self.therm_cond = Var(self.params.component_list, initialize=0.05, 
                               doc='thermal conductivity  J/m-K-s')
         self.therm_cond_mix = Var(initialize= 0.05,
                                   doc='thermal conductivity '
                                   'of gas mixture J/m-K-s')
-        self.visc_d = Var(self._params.component_list, 
+        self.visc_d = Var(self.params.component_list, 
                           initialize= 2e-5,
                           doc = 'dynamic viscocity of pure gas species')
         self.visc_d_mix = Var(initialize= 2e-5, 
                               doc='viscosity of gas mixture kg/m-s')
-        self.omega = Var(self._params.component_list, 
+        self.omega = Var(self.params.component_list, 
                          initialize = 1, doc = 'dim')
-        self.theta = Var(self._params.component_list, initialize = 1, 
+        self.theta = Var(self.params.component_list, initialize = 1, 
                          doc = 'dimensionless variable = T/ep/Kappa')
-        self.phi_ij = Var(self._params.component_list,
-                          self._params.component_list, 
+        self.phi_ij = Var(self.params.component_list,
+                          self.params.component_list, 
                           initialize = 1, doc = 'dimensionless var')
-        self.sigma = Param(self._params.component_list,
+        self.sigma = Param(self.params.component_list,
                          initialize={'O2': 3.458,
                                     'N2': 3.621,
                                     'NO': 3.47,
@@ -659,7 +659,7 @@ class FlueGasStateBlockData(StateBlockData):
                                     'H2O': 2.605,
                                     'SO2': 4.29},
                          doc='collision diameter in Angstrom (10e-10 mts)')
-        self.ep_Kappa = Param(self._params.component_list,
+        self.ep_Kappa = Param(self.params.component_list,
                              initialize={'O2': 107.4,
                                          'N2': 97.53,
                                          'NO': 119.0,
@@ -671,54 +671,54 @@ class FlueGasStateBlockData(StateBlockData):
                             "constant in Kelvin")
         try:
             def rule_therm_cond(b,c):
-                return b.therm_cond[c] ==   (((b._params.CpIG['A',c] 
-                  + b._params.CpIG['B',c]*(b.temperature/1000)
-                  + b._params.CpIG['C',c]*(b.temperature/1000)**2
-                  + b._params.CpIG['D',c]*(b.temperature/1000)**3
-                  + b._params.CpIG['E',c]/(b.temperature/1000)**2)/b._params.mw[c]) \
-                + 1.25*(b._params.gas_constant/b._params.mw[c]))*b.visc_d[c]*1000.0
-            self.therm_cond_con = Constraint(self._params.component_list, 
+                return b.therm_cond[c] ==   (((b.params.CpIG['A',c] 
+                  + b.params.CpIG['B',c]*(b.temperature/1000)
+                  + b.params.CpIG['C',c]*(b.temperature/1000)**2
+                  + b.params.CpIG['D',c]*(b.temperature/1000)**3
+                  + b.params.CpIG['E',c]/(b.temperature/1000)**2)/b.params.mw[c]) \
+                + 1.25*(b.params.gas_constant/b.params.mw[c]))*b.visc_d[c]*1000.0
+            self.therm_cond_con = Constraint(self.params.component_list, 
                                              rule=rule_therm_cond)
 
             def rule_theta(b,c):
                 return b.theta[c] == b.temperature/b.ep_Kappa[c]
-            self.theta_con = Constraint(self._params.component_list, rule=rule_theta)
+            self.theta_con = Constraint(self.params.component_list, rule=rule_theta)
 
             def rule_omega(b,c):
                 return b.omega[c] == 1.5794145 + 0.00635771*b.theta[c] \
             - 0.7314*log(b.theta[c]) + 0.2417357*(log(b.theta[c]))**2 \
             - 0.0347045*log(b.theta[c])**3
-            self.omega_con = Constraint(self._params.component_list, rule=rule_omega)
+            self.omega_con = Constraint(self.params.component_list, rule=rule_omega)
     
             # Pure gas viscocity
             def rule_visc_d(b,c):
                 return b.visc_d[c]*b.sigma[c]**2*b.omega[c] == \
-            2.6693e-6*sqrt(b._params.mw[c]*b.temperature)
-            self.visc_d_con = Constraint(self._params.component_list, rule=rule_visc_d)
+            2.6693e-6*sqrt(b.params.mw[c]*b.temperature)
+            self.visc_d_con = Constraint(self.params.component_list, rule=rule_visc_d)
     
             # section to calculate viscosity of gas mixture
             def rule_phi(b,i,j):
                 return b.phi_ij[i,j] == 1/2.8284 \
-            * (1 + (b._params.mw[i]/b._params.mw[j]))**(-0.5) \
-            * (1 + sqrt(b.visc_d[i]/b.visc_d[j])*(b._params.mw[j]/b._params.mw[i])**0.25)**2
-            self.phi_con = Constraint(self._params.component_list, 
-                                      self._params.component_list, 
+            * (1 + (b.params.mw[i]/b.params.mw[j]))**(-0.5) \
+            * (1 + sqrt(b.visc_d[i]/b.visc_d[j])*(b.params.mw[j]/b.params.mw[i])**0.25)**2
+            self.phi_con = Constraint(self.params.component_list, 
+                                      self.params.component_list, 
                                       rule=rule_phi)
 
             # viscosity of Gas mixture kg/m-s
             def rule_visc_d_mix(b):
                 return b.visc_d_mix == sum((b.mole_frac[i]*b.visc_d[i]) \
                                            /sum(b.mole_frac[j]*b.phi_ij[i,j]
-                                               for j in b._params.component_list)
-                                                for i in b._params.component_list)
+                                               for j in b.params.component_list)
+                                                for i in b.params.component_list)
             self.vis_d_mix_con = Constraint(rule=rule_visc_d_mix)
 
             #thermal conductivity of gas mixture in kg/m-s
             def rule_therm_mix(b):
                 return b.therm_cond_mix == \
                     sum((b.mole_frac[i]*b.therm_cond[i]) \
-                    /sum(b.mole_frac[j]*b.phi_ij[i,j] for j in b._params.component_list)
-                                            for i in b._params.component_list)
+                    /sum(b.mole_frac[j]*b.phi_ij[i,j] for j in b.params.component_list)
+                                            for i in b.params.component_list)
             self.therm_mix_con = Constraint(rule=rule_therm_mix)
 
         except AttributeError:
@@ -752,7 +752,7 @@ class FlueGasStateBlockData(StateBlockData):
 
     def get_enthalpy_flow_terms(self, p):
         return sum(self.flow_component[j]
-                   for j in self._params.component_list)*self.enthalpy[p]
+                   for j in self.params.component_list)*self.enthalpy[p]
 
     def get_material_density_terms(self, p, j):
         return self.dens_mol_phase[p]

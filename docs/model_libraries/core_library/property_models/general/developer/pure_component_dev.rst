@@ -32,14 +32,14 @@ Currently, all pure component property methods in the IDAES Generic Property Pac
 Method Parameters
 -----------------
 
-Pure component property methods all depend on a number of parameters, often derived from empirical data. In order to avoid duplication of parameters and facilitate parameter estimation studies, all property parameters are stored in the `PropertyParameterBlock` and each `StateBlock` contains a reference to its associated parameter block (`self._params`).
+Pure component property methods all depend on a number of parameters, often derived from empirical data. In order to avoid duplication of parameters and facilitate parameter estimation studies, all property parameters are stored in the `PropertyParameterBlock` and each `StateBlock` contains a reference to its associated parameter block (`self.params`).
 
 For pure component property methods, parameter names are define in the associated methods thus developers can choose any name they desire. However, the IDAES standard is to use the name of the property appended with `_coeff` and developers are encouraged to follow this convention.
 
 Method Body
 -----------
 
-The body of the pure component property method should assemble an expression describing the specified quantity for the component given in the method arguments. This expression should involve Pyomo components from the `StateBlock` (i.e. `self`), the associated `PropertyParameterBlock` (`self._params`) and be returned in the final step of the method.
+The body of the pure component property method should assemble an expression describing the specified quantity for the component given in the method arguments. This expression should involve Pyomo components from the `StateBlock` (i.e. `self`), the associated `PropertyParameterBlock` (`self.params`) and be returned in the final step of the method.
 
 Example
 -------
@@ -53,7 +53,7 @@ Below is an example of a pure component property method for the molar heat capac
         # Arguments are self, a component and temperature
 
         # Return an expression involving temperature and parameters
-        return (self._params.cp_mol_ig_comp_coeff[component, "A"] +
-                self._params.cp_mol_ig_comp_coeff[component, "B"]*temperature)
+        return (self.params.cp_mol_ig_comp_coeff[component, "A"] +
+                self.params.cp_mol_ig_comp_coeff[component, "B"]*temperature)
 
 Note that the method only returns an expression representing the R.H.S. of the correlation.

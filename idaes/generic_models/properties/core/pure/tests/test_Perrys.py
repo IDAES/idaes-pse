@@ -62,7 +62,7 @@ def frame():
 
     # Create a dummy state block
     m.props = Block([1])
-    add_object_reference(m.props[1], "_params", m.params)
+    add_object_reference(m.props[1], "params", m.params)
 
     m.props[1].temperature = Var(initialize=273.16)
 

@@ -271,6 +271,10 @@ should be constructed in this state block,
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
 
+    @property
+    def params(self):
+        return self._params
+
     def define_state_vars(self):
         """
         Method that returns a dictionary of state variables used in property
