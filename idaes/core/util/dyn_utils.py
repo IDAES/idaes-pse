@@ -692,14 +692,14 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
                 raise ValueError(
                     'Did not expect this')
 
-            if type(r[1]) is not tuple:
-                tup_idx = (r[1],)
-            tup_idx = list(tup_idx)
+            if type(index) is not tuple:
+                index = (index,)
+            index = list(index)
 
-            assert len(tup_idx) == loc
+            assert len(index) == loc
             # Replace time index with t0
-            tup_idx[time_loc] = t0
-            index = tuple(tup_idx)
+            index[time_loc] = t0
+            index = tuple(index)
             
         try:
             local_parent = local_parent[index]
