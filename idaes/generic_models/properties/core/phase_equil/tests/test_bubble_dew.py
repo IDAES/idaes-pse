@@ -35,6 +35,11 @@ from idaes.generic_models.properties.core.generic.tests import dummy_eos
 Psat = {"H2O": 1e5, "EtOH": 5e4}
 
 
+# Dummy method to avoid errors when setting metadata dict
+def set_metadata(b):
+    pass
+
+
 def pressure_sat_comp(b, j, T):
     return Psat[j.local_name]
 

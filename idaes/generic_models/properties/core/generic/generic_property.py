@@ -369,6 +369,8 @@ class GenericParameterData(PhysicalParameterBlock):
             for v in cobj.component_objects(Var):
                 v.fix()
 
+        self.config.state_definition.set_metadata(self)
+
     def configure(self):
         """
         Placeholder method to allow users to specify config arguments via a
@@ -405,12 +407,12 @@ class GenericParameterData(PhysicalParameterBlock):
         # created by state var methods
         obj.add_properties(
             {'flow_mol': {'method': None, 'units': 'mol/s'},
+             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'mole_frac_comp': {'method': None, 'units': 'none'},
              'mole_frac_phase_comp': {'method': None, 'units': 'none'},
              'phase_frac': {'method': None, 'units': 'none'},
              'temperature': {'method': None, 'units': 'K'},
              'pressure': {'method': None, 'units': 'Pa'},
-             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'dens_mass': {'method': '_dens_mass', 'units': 'kg/m^3'},
              'dens_mass_phase': {'method': '_dens_mass_phase',
                                  'units': 'kg/m^3'},

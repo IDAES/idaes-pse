@@ -33,6 +33,11 @@ def dummy_call(b, j, T):
     return 42
 
 
+# Dummy method to avoid errors when setting metadata dict
+def set_metadata(b):
+    pass
+
+
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     def configure(self):

@@ -29,7 +29,13 @@ from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase)
 from idaes.core.util.exceptions import (ConfigurationError)
 
+
 # -----------------------------------------------------------------------------
+# Dummy method to avoid errors when setting metadata dict
+def set_metadata(b):
+    pass
+
+
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     def configure(self):
@@ -46,7 +52,7 @@ class TestGenericParameterBlock(object):
                            "component_list": ["a", "b"],
                            "equation_of_state": "foo"},
                     "p2": {"equation_of_state": "bar"}},
-                "state_definition": "foo",
+                "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
@@ -185,7 +191,7 @@ class TestGenericParameterBlock(object):
             "phases": {
                 "p1": {"equation_of_state": "foo"},
                 "p2": {"equation_of_state": "bar"}},
-            "state_definition": "baz",
+            "state_definition": modules[__name__],
             "pressure_ref": 1e5,
             "temperature_ref": 300,
             "phases_in_equilibrium": [("p1", "p2")],

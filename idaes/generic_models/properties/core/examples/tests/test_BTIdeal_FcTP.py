@@ -16,6 +16,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
+                           Expression,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -31,7 +32,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.state_definitions import FcTP
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
@@ -47,6 +48,12 @@ class TestParamBlock(object):
     def test_build(self):
         model = ConcreteModel()
         model.params = BTIdealParameterBlock()
+
+        # Switch the state definition to fake an FcTP formulation
+        model.params.config.state_definition = FcTP
+        model.params.config.state_bounds = {"flow_mol_comp": (0, 1000),
+                                            "temperature": (273.15, 450),
+                                            "pressure": (5e4, 1e6)}
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -68,10 +75,10 @@ class TestParamBlock(object):
             assert i in [("Liq", "benzene"), ("Liq", "toluene"),
                          ("Vap", "benzene"), ("Vap", "toluene")]
 
-        assert model.params.config.state_definition == FTPx
+        assert model.params.config.state_definition == FcTP
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
+                "flow_mol_comp": (0, 1000),
                 "temperature": (273.15, 450),
                 "pressure": (5e4, 1e6)}
 
@@ -97,6 +104,12 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = BTIdealParameterBlock()
 
+        # Switch the state definition to fake an FcTP formulation
+        model.params.config.state_definition = FcTP
+        model.params.config.state_bounds = {"flow_mol_comp": (0, 1000),
+                                            "temperature": (273.15, 450),
+                                            "pressure": (5e4, 1e6)}
+
         model.props = model.params.state_block_class(
                 [1],
                 default={"parameters": model.params,
@@ -106,10 +119,12 @@ class TestStateBlock(object):
 
     def test_build(self, model):
         # Check state variable values and bounds
-        assert isinstance(model.props[1].flow_mol, Var)
-        assert value(model.props[1].flow_mol) == 500
-        assert model.props[1].flow_mol.ub == 1000
-        assert model.props[1].flow_mol.lb == 0
+        assert isinstance(model.props[1].flow_mol, Expression)
+        assert isinstance(model.props[1].flow_mol_comp, Var)
+        for j in model.params.component_list:
+            assert value(model.props[1].flow_mol_comp[j]) == 500
+            assert model.props[1].flow_mol_comp[j].ub == 1000
+            assert model.props[1].flow_mol_comp[j].lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
         assert value(model.props[1].pressure) == 5.25e5
@@ -191,40 +206,35 @@ class TestStateBlock(object):
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
+            assert i in ["flow_mol_comp",
                          "temperature",
                          "pressure"]
 
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
+            assert i in ["flow_mol_comp",
                          "temperature",
                          "pressure"]
 
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
+            assert i in ["flow_mol_comp",
                          "temperature",
                          "pressure"]
 
     def test_dof(self, model):
         # Fix state
-        model.props[1].flow_mol.fix(1)
+        model.props[1].flow_mol_comp.fix(0.5)
         model.props[1].temperature.fix(368)
         model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["benzene"].fix(0.5)
-        model.props[1].mole_frac_comp["toluene"].fix(0.5)
 
         assert degrees_of_freedom(model.props[1]) == 0
 
