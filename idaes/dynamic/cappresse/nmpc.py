@@ -859,7 +859,10 @@ class NMPCSim(object):
                    "'steady_model' required to validate set point")
             self.s_mod = steady_model
             self.validate_models(self.s_mod, self.p_mod)
-            self.validate_steady_setpoint(set_point, self.s_mod)
+            self.validate_steady_setpoint(set_point, self.s_mod,
+                                          outlvl=outlvl,
+                                          weight_overwrite=weight_overwrite,
+                                          weight_tolerance=weight_tolerance)
             # ^ result should be that controller now has set point attributes
 
         self.construct_objective_weight_matrices(self.c_mod,
