@@ -759,7 +759,10 @@ class NMPCSim(object):
         assert model.n_dv == len(deriv_vars)
 
         model.ic_vars = ic_vars
-        assert model.n_dv == len(ic_vars)
+        #assert model.n_dv == len(ic_vars)
+        # Would like this to be true, but accurately detecting differential
+        # variables that are not implicitly fixed (by fixing some input)
+        # is difficult
 
         model.input_vars = input_vars
         model.n_iv = len(input_vars)
