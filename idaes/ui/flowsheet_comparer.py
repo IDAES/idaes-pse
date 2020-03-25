@@ -47,7 +47,7 @@ def compare_models(existing_model, new_model):
                     }
                 }
             },
-            "cells": {["--jointjs code--"]}
+            "cells": [{ "--jointjs code--": "--jointjs code--" }]
         }
 
     :param existing_model: The current model to compare against
