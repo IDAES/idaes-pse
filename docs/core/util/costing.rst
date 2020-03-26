@@ -38,9 +38,9 @@ common of these paramters is the cost normalization parameter based on the year 
 Table 1. Main Variables added to the unit block ("self.costing").
 
 =========================== ====================== ============ =============================================================================
-Variable                    Symbol                 Units        Index Sets  Doc
+Variable                    Symbol                 Units        Notes
 =========================== ====================== ============ =============================================================================
-Purchase cost               :math:`purchase\_cost` dollars      Normalized purchase cost
+Purchase cost               :math:`purchase\_cost` dollars      Purchase cost
 Base cost                   :math:`base\_cost`     unitless     Base cost
 =========================== ====================== ============ =============================================================================
 
@@ -80,10 +80,9 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
     m.fs.unit.area.fix(1000)  # m2
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)  # W/m2K
     
-    print(degrees_of_freedom(m))
-    
     m.fs.unit.initialize()
     m.fs.unit.get_costing(module=costing, L_factor='12ft')
+    # initialize costing equations
     calculate_variable_from_constraint(
                 m.fs.unit.costing.base_cost,
                 m.fs.unit.costing.base_cost_eq)
@@ -93,13 +92,8 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
                 m.fs.unit.costing.cp_cost_eq)
     
     opt = SolverFactory('ipopt')
-    opt.options = {'tol': 1e-6,
-                   'halt_on_ampl_error': 'no',
-                   'max_iter': 50}
+    opt.options = {'tol': 1e-6, 'max_iter': 50}
     results = opt.solve(m, tee=True)
-    m.fs.unit.costing.base_cost.display()
-    m.fs.unit.costing.purchase_cost.display()
-
 
 Units
 -----
@@ -142,9 +136,9 @@ Heat Exchanger Cost
 
 The purchse cost is computed based on the base unit cost and three correction factors. The base cost is computed depending on the heat exchanger type selected by the user:
 
-.. math:: unit.costing.purchase\_cost = FP*FM_{MAT}*FL*unit.costing.base\_cost*(CE_{index}/500) (Eq. 22.43)
+.. math:: self.costing.purchase\_cost = FP*FM_{MAT}*FL*self.costing.base\_cost*(CE_{index}/500) (Eq. 22.43)
 
-.. math:: unit.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
+.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
 
 where:
 
