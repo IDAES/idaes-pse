@@ -298,6 +298,55 @@ class TestGenericParameterBlock(object):
                 "phases_in_equilibrium": [("p1", "p2")],
                 "phase_equilibrium_formulation": {(1, 2): "whoop"}})
 
+    def test_parameter_construction_no_value(self):
+        m = ConcreteModel()
+
+        class test_class():
+            # Mook up property method class for testing
+            def build_parameters(c):
+                c.test_var = Var()
+
+        with pytest.raises(ConfigurationError,
+                           match="params parameter test_var for component a "
+                           "was not assigned a value. Please check your "
+                           "configuration arguments."):
+            m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"dens_mol_liq_comp": test_class},
+                    "b": {},
+                    "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {"equation_of_state": "bar"}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+    def test_parameter_construction_no_data(self):
+        m = ConcreteModel()
+
+        class test_class():
+            # Mook up property method class for testing
+            def build_parameters(c):
+                c.config.parameter_data["test"]
+
+        with pytest.raises(ConfigurationError,
+                           match="params values were not defined for "
+                           "parameter dens_mol_liq_comp in component a. "
+                           "Please check the parameter_data argument to "
+                           "ensure values are provided."):
+            m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"dens_mol_liq_comp": test_class},
+                    "b": {},
+                    "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {"equation_of_state": "bar"}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
 
 # -----------------------------------------------------------------------------
 # Dummy methods for testing build calls to sub-modules

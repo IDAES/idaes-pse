@@ -48,7 +48,7 @@ def frame():
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
-        "components": {"H2O": {"temperature_crit": 647.3,
+        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3},
                                "phase_equilibrium_form":
                                    {("Vap", "Liq"): fugacity}}},
         "phases": {"Liq": {"equation_of_state": DummyEoS},
@@ -115,7 +115,7 @@ def test_non_VLE_pair():
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
-        "components": {"H2O": {"temperature_crit": 647.3,
+        "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3},
                                "phase_equilibrium_form":
                                    {("Sol", "Liq"): fugacity}}},
         "phases": {"Sol": {"equation_of_state": DummyEoS},

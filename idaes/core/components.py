@@ -26,16 +26,6 @@ from .process_base import (declare_process_block_class,
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
 
-    CONFIG.declare("mw", ConfigValue(
-        domain=float,
-        description="Molecular weight of component"))
-    CONFIG.declare("pressure_crit", ConfigValue(
-        domain=float,
-        description="Critical pressure of component"))
-    CONFIG.declare("temperature_crit", ConfigValue(
-        domain=float,
-        description="Critical temperature of component"))
-
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
@@ -54,13 +44,10 @@ class ComponentData(ProcessBlockData):
         domain=dict,
         description="Form of phase equilibrium constraints for component"))
 
-    CONFIG.declare("cp_mol_ig_comp_coeff", ConfigValue(
+    CONFIG.declare("parameter_data", ConfigValue(
+        default={},
         domain=dict,
-        description="Parameter data for ideal gas component molar heat "
-        "capacity"))
-    CONFIG.declare("enth_mol_form_vap_comp_ref", ConfigValue(
-        description="Parameter data for molar enthalpy of formation in the "
-        "vapor phase at reference temperature"))
+        description="Dict containing initialization data for parameters"))
 
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
@@ -78,15 +65,14 @@ class ComponentData(ProcessBlockData):
             self.__add_to_component_list()
 
         # Create Param for molecular weight if provided
-        if self.config.mw is not None:
-            self.mw = Param(initialize=self.config.mw)
+        if "mw" in self.config.parameter_data:
+            self.mw = Param(initialize=self.config.parameter_data["mw"])
 
         # Create Vars for common parameters
         for p in ["pressure_crit", "temperature_crit"]:
-            if self.config[p] is not None:
+            if p in self.config.parameter_data:
                 self.add_component(p, Var(
-                    initialize=self.config[p],
-                    doc=self.config.get(p)._description))
+                    initialize=self.config.parameter_data[p]))
 
     def __add_to_component_list(self):
         """

@@ -63,33 +63,39 @@ class BTIdealParameterData(GenericParameterData):
             'benzene': {"dens_mol_liq_comp": Perrys,
                         "enth_mol_liq_comp": Perrys,
                         "enth_mol_ig_comp": RPP,
-                        "entr_mol_liq_comp": Perrys,
-                        "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
                         "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
-                        "mw": 78.1136E-3,
-                        "pressure_crit": 48.9e5,
-                        "temperature_crit": 562.2,
-                        "cp_mol_ig_comp_coeff": {'A': -3.392E1,
-                                                 'B': 4.739E-1,
-                                                 'C': -3.017E-4,
-                                                 'D': 7.130E-8},
-                        "enth_mol_form_vap_comp_ref": 82.9e3},
+                        "parameter_data": {
+                            "mw": 78.1136E-3,
+                            "pressure_crit": 48.9e5,
+                            "temperature_crit": 562.2,
+                            "cp_mol_ig_comp_coeff": {'A': -3.392E1,
+                                                     'B': 4.739E-1,
+                                                     'C': -3.017E-4,
+                                                     'D': 7.130E-8},
+                            "enth_mol_form_vap_comp_ref": 82.9e3,
+                            "pressure_sat_comp_coeff": {'A': -6.98273,
+                                                        'B': 1.33213,
+                                                        'C': -2.62863,
+                                                        'D': -3.33399}}},
             'toluene': {"dens_mol_liq_comp": Perrys,
                         "enth_mol_liq_comp": Perrys,
                         "enth_mol_ig_comp": RPP,
-                        "entr_mol_liq_comp": Perrys,
-                        "entr_mol_ig_comp": RPP,
                         "pressure_sat_comp": RPP,
                         "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
-                        "mw": 92.1405E-3,
-                        "pressure_crit": 41e5,
-                        "temperature_crit": 591.8,
-                        "cp_mol_ig_comp_coeff": {'A': -2.435E1,
-                                                 'B': 5.125E-1,
-                                                 'C': -2.765E-4,
-                                                 'D': 4.911E-8},
-                        "enth_mol_form_vap_comp_ref": 50.1e3}}
+                        "parameter_data": {
+                            "mw": 92.1405E-3,
+                            "pressure_crit": 41e5,
+                            "temperature_crit": 591.8,
+                            "cp_mol_ig_comp_coeff": {'A': -2.435E1,
+                                                     'B': 5.125E-1,
+                                                     'C': -2.765E-4,
+                                                     'D': 4.911E-8},
+                            "enth_mol_form_vap_comp_ref": 50.1e3,
+                            "pressure_sat_comp_coeff": {'A': -7.28607,
+                                                        'B': 1.38091,
+                                                        'C': -2.83433,
+                                                        'D': -2.79168}}}}
         self.config.phases = {
             'Liq': {"type": LiquidPhase,
                     "equation_of_state": ideal},
@@ -155,21 +161,21 @@ class BTIdealParameterData(GenericParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        self.benzene.pressure_sat_comp_coeff = Var(
-            ['A', 'B', 'C', 'D'],
-            initialize={'A': -6.98273,
-                        'B': 1.33213,
-                        'C': -2.62863,
-                        'D': -3.33399},
-            doc="Parameters for saturation pressure [Pa]")
+        # self.benzene.pressure_sat_comp_coeff = Var(
+        #     ['A', 'B', 'C', 'D'],
+        #     initialize={'A': -6.98273,
+        #                 'B': 1.33213,
+        #                 'C': -2.62863,
+        #                 'D': -3.33399},
+        #     doc="Parameters for saturation pressure [Pa]")
 
-        self.toluene.pressure_sat_comp_coeff = Var(
-            ['A', 'B', 'C', 'D'],
-            initialize={'A': -7.28607,
-                        'B': 1.38091,
-                        'C': -2.83433,
-                        'D': -2.79168},
-            doc="Parameters for saturation pressure [Pa]")
+        # self.toluene.pressure_sat_comp_coeff = Var(
+        #     ['A', 'B', 'C', 'D'],
+        #     initialize={'A': -7.28607,
+        #                 'B': 1.38091,
+        #                 'C': -2.83433,
+        #                 'D': -2.79168},
+        #     doc="Parameters for saturation pressure [Pa]")
 
         # Source: "Perry's Chemical Engineers' Handbook by Robert H. Perry"
         # 7th Edition, pg. 2-98

@@ -46,8 +46,8 @@ def frame():
     m.params.temperature_crit = Var(initialize=647.3)
     m.params.pressure_crit = Var(initialize=221.2e5)
     m.params.cp_mol_ig_comp_coeff = Var(["A", "B", "C", "D"])
-    m.params.enth_mol_form_phase_comp_ref = Var(["Vap"])
-    m.params.entr_mol_form_phase_comp_ref = Var(["Vap"])
+    m.params.enth_mol_form_vap_comp_ref = Var()
+    m.params.entr_mol_form_vap_comp_ref = Var()
 
     m.params.cp_mol_ig_comp_coeff["A"].value = 3.224e1
     m.params.cp_mol_ig_comp_coeff["B"].value = 1.924e-3
@@ -59,8 +59,8 @@ def frame():
     m.params.pressure_sat_comp_coeff["C"].value = -2.77580
     m.params.pressure_sat_comp_coeff["D"].value = -1.23303
 
-    m.params.enth_mol_form_phase_comp_ref["Vap"].value = -241.83e3
-    m.params.entr_mol_form_phase_comp_ref["Vap"].value = 188.84
+    m.params.enth_mol_form_vap_comp_ref.value = -241.83e3
+    m.params.entr_mol_form_vap_comp_ref.value = 188.84
 
     # Create a dummy state block
     m.props = Block([1])
@@ -73,7 +73,7 @@ def frame():
 
 
 def test_cp_mol_ig_comp(frame):
-    expr = cp_mol_ig_comp(
+    expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(33.656, abs=1e-3)
 
@@ -82,7 +82,7 @@ def test_cp_mol_ig_comp(frame):
 
 
 def test_enth_mol_ig_comp(frame):
-    expr = enth_mol_ig_comp(
+    expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(-240990.825, abs=1e-3)
 
@@ -91,7 +91,7 @@ def test_enth_mol_ig_comp(frame):
 
 
 def test_entr_mol_ig_comp(frame):
-    expr = entr_mol_ig_comp(
+    expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(373.541, abs=1e-3)
 
@@ -100,7 +100,7 @@ def test_entr_mol_ig_comp(frame):
 
 
 def test_pressure_sat_comp(frame):
-    expr = pressure_sat_comp(
+    expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(3171.4391, abs=1e-3)
 
@@ -109,15 +109,14 @@ def test_pressure_sat_comp(frame):
 
 
 def test_pressure_sat_comp_dT(frame):
-    expr = pressure_sat_comp_dT(
+    expr = pressure_sat_comp.dT_expression(
             frame.props[1], frame.params, frame.props[1].temperature)
 
     delta = 1e-4
-    val = pressure_sat_comp(
+    val = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    val_p = pressure_sat_comp(frame.props[1],
-                              frame.params,
-                              frame.props[1].temperature+delta)
+    val_p = pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)
 
@@ -125,11 +124,10 @@ def test_pressure_sat_comp_dT(frame):
 
     frame.props[1].temperature.value = 373.15
 
-    val = pressure_sat_comp(
+    val = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    val_p = pressure_sat_comp(frame.props[1],
-                              frame.params,
-                              frame.props[1].temperature+delta)
+    val_p = pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)
 

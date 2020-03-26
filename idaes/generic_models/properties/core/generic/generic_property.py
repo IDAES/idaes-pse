@@ -378,16 +378,28 @@ class GenericParameterData(PhysicalParameterBlock):
                     c_arg.build_parameters(cobj)
                 except AttributeError:
                     pass
-        # raise Exception
+                except KeyError:
+                    raise ConfigurationError(
+                        "{} values were not defined for parameter {} in "
+                        "component {}. Please check the parameter_data "
+                        "argument to ensure values are provided."
+                        .format(self.name, a, c))
 
-
+        # Call custom user parameter method
         self.parameters()
 
         # For safety, fix all Vars in Component objects
         for c in self.component_list:
             cobj = self.get_component(c)
             for v in cobj.component_objects(Var):
-                v.fix()
+                # if v.is_indexed():
+                for i in v:
+                    if v[i].value is None:
+                        raise ConfigurationError(
+                            "{} parameter {} for component {} was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name, c))
+                    v[i].fix()
 
         self.config.state_definition.set_metadata(self)
 
