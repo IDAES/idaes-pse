@@ -32,7 +32,7 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
         get_fixed_dict, deactivate_constraints_unindexed_by)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.cappresse.nmpc import find_comp_in_block
+from idaes.dynamic.caprese.nmpc import find_comp_in_block
 import idaes.logger as idaeslog
 
 from collections import OrderedDict

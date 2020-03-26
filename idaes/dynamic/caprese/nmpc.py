@@ -27,7 +27,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.cappresse.util import (simulate_over_range, find_slices_in_model,
+from idaes.dynamic.caprese.util import (simulate_over_range, find_slices_in_model,
         VarLocator, copy_values_at_time, add_noise_at_time)
 import idaes.logger as idaeslog
 

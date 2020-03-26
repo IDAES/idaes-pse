@@ -28,8 +28,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
-from idaes.dynamic.cappresse import nmpc
-from idaes.dynamic.cappresse.nmpc import *
+from idaes.dynamic.caprese import nmpc
+from idaes.dynamic.caprese.nmpc import *
 import idaes.logger as idaeslog
 from cstr_for_testing import make_model
 
