@@ -18,30 +18,46 @@ Reid, Prausnitz and Polling, 1987, McGraw-Hill
 
 All parameter indicies based on conventions used by the source
 """
-from pyomo.environ import exp, log
+from pyomo.environ import exp, log, Var
 
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
-def cp_mol_ig_comp(b, cobj, T):
-    # Specific heat capacity
-    return (cobj.cp_mol_ig_comp_coeff["D"]*T**3 +
-            cobj.cp_mol_ig_comp_coeff["C"]*T**2 +
-            cobj.cp_mol_ig_comp_coeff["B"]*T +
-            cobj.cp_mol_ig_comp_coeff["A"])
+class cp_mol_ig_comp():
+    def build_parameters(cobj):
+        cobj.cp_mol_ig_comp_coeff = Var(
+                ['A', 'B', 'C', 'D'],
+                initialize=cobj.config.cp_mol_ig_comp_coeff,
+                doc="Parameters for ideal gas heat capacity [J/mol.K]")
+
+    def return_expression(b, cobj, T):
+        # Specific heat capacity
+        return (cobj.cp_mol_ig_comp_coeff["D"]*T**3 +
+                cobj.cp_mol_ig_comp_coeff["C"]*T**2 +
+                cobj.cp_mol_ig_comp_coeff["B"]*T +
+                cobj.cp_mol_ig_comp_coeff["A"])
 
 
-def enth_mol_ig_comp(b, cobj, T):
-    # Specific enthalpy
-    return ((cobj.cp_mol_ig_comp_coeff["D"]/4) *
-            (T**4-b.params.temperature_ref**4) +
-            (cobj.cp_mol_ig_comp_coeff["C"]/3) *
-            (T**3-b.params.temperature_ref**3) +
-            (cobj.cp_mol_ig_comp_coeff["B"]/2) *
-            (T**2-b.params.temperature_ref**2) +
-            cobj.cp_mol_ig_comp_coeff["A"] *
-            (T-b.params.temperature_ref) +
-            cobj.enth_mol_form_phase_comp_ref['Vap'])
+class enth_mol_ig_comp():
+    def build_parameters(cobj):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+            cp_mol_ig_comp.build_parameters(cobj)
+
+        cobj.enth_mol_form_vap_comp_ref = Var(
+                initialize=cobj.config.enth_mol_form_vap_comp_ref,
+                doc="Vapor phase molar heat of formation @ Tref")
+
+    def return_expression(b, cobj, T):
+        # Specific enthalpy
+        return ((cobj.cp_mol_ig_comp_coeff["D"]/4) *
+                (T**4-b.params.temperature_ref**4) +
+                (cobj.cp_mol_ig_comp_coeff["C"]/3) *
+                (T**3-b.params.temperature_ref**3) +
+                (cobj.cp_mol_ig_comp_coeff["B"]/2) *
+                (T**2-b.params.temperature_ref**2) +
+                cobj.cp_mol_ig_comp_coeff["A"] *
+                (T-b.params.temperature_ref) +
+                cobj.enth_mol_form_vap_comp_ref)
 
 
 def entr_mol_ig_comp(b, cobj, T):

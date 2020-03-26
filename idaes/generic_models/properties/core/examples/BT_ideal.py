@@ -69,7 +69,12 @@ class BTIdealParameterData(GenericParameterData):
                         "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                         "mw": 78.1136E-3,
                         "pressure_crit": 48.9e5,
-                        "temperature_crit": 562.2},
+                        "temperature_crit": 562.2,
+                        "cp_mol_ig_comp_coeff": {'A': -3.392E1,
+                                                 'B': 4.739E-1,
+                                                 'C': -3.017E-4,
+                                                 'D': 7.130E-8},
+                        "enth_mol_form_vap_comp_ref": 82.9e3},
             'toluene': {"dens_mol_liq_comp": Perrys,
                         "enth_mol_liq_comp": Perrys,
                         "enth_mol_ig_comp": RPP,
@@ -79,7 +84,12 @@ class BTIdealParameterData(GenericParameterData):
                         "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                         "mw": 92.1405E-3,
                         "pressure_crit": 41e5,
-                        "temperature_crit": 591.8}}
+                        "temperature_crit": 591.8,
+                        "cp_mol_ig_comp_coeff": {'A': -2.435E1,
+                                                 'B': 5.125E-1,
+                                                 'C': -2.765E-4,
+                                                 'D': 4.911E-8},
+                        "enth_mol_form_vap_comp_ref": 50.1e3}}
         self.config.phases = {
             'Liq': {"type": LiquidPhase,
                     "equation_of_state": ideal},
@@ -106,21 +116,21 @@ class BTIdealParameterData(GenericParameterData):
         # Constants for ideal gas specific enthalpy
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        self.benzene.cp_mol_ig_comp_coeff = Var(
-                ['A', 'B', 'C', 'D'],
-                initialize={'A': -3.392E1,
-                            'B': 4.739E-1,
-                            'C': -3.017E-4,
-                            'D': 7.130E-8},
-                doc="Parameters for ideal gas heat capacity [J/mol.K]")
+        # self.benzene.cp_mol_ig_comp_coeff = Var(
+        #         ['A', 'B', 'C', 'D'],
+        #         initialize={'A': -3.392E1,
+        #                     'B': 4.739E-1,
+        #                     'C': -3.017E-4,
+        #                     'D': 7.130E-8},
+        #         doc="Parameters for ideal gas heat capacity [J/mol.K]")
 
-        self.toluene.cp_mol_ig_comp_coeff = Var(
-                ['A', 'B', 'C', 'D'],
-                initialize={'A': -2.435E1,
-                            'B': 5.125E-1,
-                            'C': -2.765E-4,
-                            'D': 4.911E-8},
-                doc="Parameters for ideal gas heat capacity [J/mol.K]")
+        # self.toluene.cp_mol_ig_comp_coeff = Var(
+        #         ['A', 'B', 'C', 'D'],
+        #         initialize={'A': -2.435E1,
+        #                     'B': 5.125E-1,
+        #                     'C': -2.765E-4,
+        #                     'D': 4.911E-8},
+        #         doc="Parameters for ideal gas heat capacity [J/mol.K]")
 
         # Constants for liquid phase specific enthalpy
         # Source: Perry's Chemical Engineers' Handbook 7th Ed.
