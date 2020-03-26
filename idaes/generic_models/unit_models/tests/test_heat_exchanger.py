@@ -159,7 +159,7 @@ def test_costing():
 
     results = solver.solve(m)
     assert m.fs.unit.costing.purchase_cost.value == \
-                                            pytest.approx(434265.80, 1e-5)
+                                            pytest.approx(591689.4242, 1e-5)
 
 
 # -----------------------------------------------------------------------------

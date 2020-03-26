@@ -39,11 +39,8 @@ def _make_vars(self):
                              bounds=(0, 1e12),
                              doc='Unit Purchase Cost in $')
 
-    self.FM = Param(mutable=True, initialize=3,
-                    doc='construction material correction factor')
 
-
-def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
+def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel', L_factor='12ft'):
     '''
     Heat exchanger costing method.
 
@@ -80,11 +77,15 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     # build generic costing variables
     # (base cost, purchase cost, material factor)
     _make_vars(self)
+
     self.FL = Param(mutable=True, initialize=1.12,
                     doc='hx tube length correction factor')
 
     self.FP = Var(initialize=100,
                   doc='Pressure factor')
+
+    self.FM = Var(initialize=3.5,
+                  doc='construction material correction factor')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
                        doc='hx oversize factor 1.1 to 1.5')
@@ -92,13 +93,6 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
     # select length correction factor
     c_fl = {'8ft': 1.25, '12ft': 1.12, '16ft': 1.05, '20ft': 1.00}
     self.FL = c_fl[L_factor]
-
-    # select construction material (stainless steel default)
-    c_material = {'stain_steel': 3, 'carbon_steel': 2}
-    self.FM = c_material[FM]
-    # ToDo (9/17/2019):FM can be calculated for advanced materials Eq.22.44
-    # i.e. Carbon Steel/Cr-Mo steel, Cr-Mo steel/Cr-Mo steel, Monel/Monel,
-    # Titanium/titanium, etc.
 
     # --------------------------------------------------
     # base cost calculation
@@ -126,6 +120,30 @@ def hx_costing(self, hx_type='U-tube', FM='stain_steel', L_factor='12ft'):
                                                + alf3[hx_type]
                                                * log(area*self.hx_os)**2)
     self.base_cost_eq = Constraint(rule=hx_cost_rule)
+
+    # ------------------------------------------------------
+    # Material of construction factor Eq. 22.44
+    hx_material_factor_a_dic = {'carbon steel/carbon steel':    0.00,
+                                'carbon steel/brass': 1.08,
+                                'carbon steel/stainless steel': 1.75,
+                                'carbon steel/monel': 2.1,
+                                'stainless steel/stainless steel': 2.70}
+
+    hx_material_factor_b_dic = {'carbon steel/carbon steel':    0.00,
+                                'carbon steel/brass': 0.05,
+                                'carbon steel/stainless steel': 0.13,
+                                'carbon steel/monel': 0.13,
+                                'stainless steel/stainless steel': 0.07}
+
+    a = hx_material_factor_a_dic[FM]
+    b = hx_material_factor_b_dic[FM]
+
+    def hx_material_fact_rule(self):
+        if FM == 'carbon steel/carbon steel':
+            return self.FM == 1
+        else:
+            return self.FM == a + (area/100)**b
+    self.hx_material_eqn = Constraint(rule=hx_material_fact_rule)
 
     # ------------------------------------------------------
     # Pressure factor calculation
@@ -181,7 +199,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
     This method computes the purchase cost (CP) for a pressure changer unit,
     and can be used for costing of pumps, fan, blower, compressor, or Turbine.
 
-    Author: MZamarripa (created 2/21/2020)
+    (created 2/21/2020)
 
     Arguments:
 
@@ -201,6 +219,9 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
     # build generic costing variables
     # (base cost, purchase cost, material factor)
     _make_vars(self)
+
+    self.FM = Param(mutable=True, initialize=3,
+                    doc='construction material correction factor')
 
     # if compressor is == False, that means pressure changer is a Turbine
     if self.parent_block().config.compressor is False:
