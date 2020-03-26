@@ -69,7 +69,7 @@ def frame():
 
 
 def test_cp_mol_ig_comp(frame):
-    expr = cp_mol_ig_comp(
+    expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(35.22, abs=1e-2)
 
@@ -78,7 +78,7 @@ def test_cp_mol_ig_comp(frame):
 
 
 def test_enth_mol_ig_comp(frame):
-    expr = enth_mol_ig_comp(
+    expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
 
@@ -87,7 +87,7 @@ def test_enth_mol_ig_comp(frame):
 
 
 def test_entr_mol_ig_comp(frame):
-    expr = entr_mol_ig_comp(
+    expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(206.5, rel=1e-3)
 
@@ -96,7 +96,7 @@ def test_entr_mol_ig_comp(frame):
 
 
 def test_pressure_sat_comp(frame):
-    expr = pressure_sat_comp(
+    expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(2677137, rel=1e-4)
 
@@ -105,16 +105,14 @@ def test_pressure_sat_comp(frame):
 
 
 def test_pressure_sat_comp_dT(frame):
-    expr = pressure_sat_comp_dT(frame.props[1],
-                                frame.params,
-                                frame.props[1].temperature)
+    expr = pressure_sat_comp.dT_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
 
     delta = 1e-4
-    val = pressure_sat_comp(
+    val = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    val_p = pressure_sat_comp(frame.props[1],
-                              frame.params,
-                              frame.props[1].temperature+delta)
+    val_p = pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)
 
@@ -122,11 +120,10 @@ def test_pressure_sat_comp_dT(frame):
 
     frame.props[1].temperature.value = 373.15
 
-    val = pressure_sat_comp(
+    val = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    val_p = pressure_sat_comp(frame.props[1],
-                              frame.params,
-                              frame.props[1].temperature+delta)
+    val_p = pressure_sat_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature+delta)
 
     dPdT = value((val-val_p)/-delta)
 

@@ -28,7 +28,7 @@ class cp_mol_ig_comp():
         cobj.cp_mol_ig_comp_coeff = Var(
                 ['A', 'B', 'C', 'D'],
                 initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"],
-                doc="Parameters for ideal gas heat capacity [J/mol.K]")
+                doc="Parameters for ideal gas molar heat capacity")
 
     def return_expression(b, cobj, T):
         # Specific heat capacity

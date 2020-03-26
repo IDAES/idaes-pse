@@ -43,8 +43,8 @@ def frame():
 
     m.params.dens_mol_liq_comp_coeff = Var(["1", "2", "3", "4"])
     m.params.cp_mol_liq_comp_coeff = Var(["1", "2", "3", "4", "5"])
-    m.params.enth_mol_form_phase_comp_ref = Var(["Liq"])
-    m.params.entr_mol_phase_comp_ref = Var(["Liq"])
+    m.params.enth_mol_form_liq_comp_ref = Var()
+    m.params.entr_mol_form_liq_comp_ref = Var()
 
     m.params.cp_mol_liq_comp_coeff["1"].value = 2.7637e+05
     m.params.cp_mol_liq_comp_coeff["2"].value = -2.0901e+03
@@ -57,8 +57,8 @@ def frame():
     m.params.dens_mol_liq_comp_coeff["3"].value = 647.13
     m.params.dens_mol_liq_comp_coeff["4"].value = 0.081
 
-    m.params.enth_mol_form_phase_comp_ref["Liq"].value = -285.83e3
-    m.params.entr_mol_phase_comp_ref["Liq"].value = 69.95
+    m.params.enth_mol_form_liq_comp_ref.value = -285.83e3
+    m.params.entr_mol_form_liq_comp_ref.value = 69.95
 
     # Create a dummy state block
     m.props = Block([1])
@@ -70,7 +70,7 @@ def frame():
 
 
 def test_cp_mol_liq_comp(frame):
-    expr = cp_mol_liq_comp(
+    expr = cp_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(76.150, rel=1e-3)
 
@@ -79,17 +79,17 @@ def test_cp_mol_liq_comp(frame):
 
 
 def test_enth_mol_liq_comp(frame):
-    expr = enth_mol_liq_comp(
+    expr = enth_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == value(
-            frame.params.enth_mol_form_phase_comp_ref["Liq"])
+            frame.params.enth_mol_form_liq_comp_ref)
 
     frame.props[1].temperature.value = 533.15
     assert value(expr) == pytest.approx(-265423, rel=1e-3)
 
 
 def test_entr_mol_liq_comp(frame):
-    expr = entr_mol_liq_comp(
+    expr = entr_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(1270, rel=1e-3)
 
@@ -98,7 +98,7 @@ def test_entr_mol_liq_comp(frame):
 
 
 def test_dens_mol_liq_comp(frame):
-    expr = dens_mol_liq_comp(
+    expr = dens_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
 
