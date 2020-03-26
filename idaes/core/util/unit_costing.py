@@ -123,17 +123,27 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel', L_f
 
     # ------------------------------------------------------
     # Material of construction factor Eq. 22.44
-    hx_material_factor_a_dic = {'carbon steel/carbon steel':    0.00,
-                                'carbon steel/brass': 1.08,
-                                'carbon steel/stainless steel': 1.75,
-                                'carbon steel/monel': 2.1,
-                                'stainless steel/stainless steel': 2.70}
+    hx_material_factor_a_dic = {'carbon steel/carbon steel':       0.00,
+                                'carbon steel/brass':              1.08,
+                                'carbon steel/stainless steel':    1.75,
+                                'carbon steel/monel':              2.10,
+                                'carbon steel/titanium':           5.20,
+                                'carbon steel/Cr-Mo steel':        1.55,
+                                'Cr-Mo steel/Cr-Mo steel':         1.70,
+                                'stainless steel/stainless steel': 2.70,
+                                'monel/monel':                     3.30,
+                                'titanium/titanium':               9.60}
 
-    hx_material_factor_b_dic = {'carbon steel/carbon steel':    0.00,
-                                'carbon steel/brass': 0.05,
-                                'carbon steel/stainless steel': 0.13,
-                                'carbon steel/monel': 0.13,
-                                'stainless steel/stainless steel': 0.07}
+    hx_material_factor_b_dic = {'carbon steel/carbon steel':       0.00,
+                                'carbon steel/brass':              0.05,
+                                'carbon steel/stainless steel':    0.13,
+                                'carbon steel/monel':              0.13,
+                                'carbon steel/titanium':           0.16,
+                                'carbon steel/Cr-Mo steel':        0.05,
+                                'Cr-Mo steel/Cr-Mo steel':         0.07,
+                                'stainless steel/stainless steel': 0.07,
+                                'monel/monel':                     0.08,
+                                'titanium/titanium':               0.06}
 
     a = hx_material_factor_a_dic[FM]
     b = hx_material_factor_b_dic[FM]
