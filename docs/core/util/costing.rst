@@ -1,50 +1,53 @@
 Unit Model Costing
-==================
+====================
+
+
+The IDAES Process Modeling Framework includes support for incorporating costing of unit 
+operations into a flowsheet to allow for calculation and optimization of process costs. 
+Cost Correlations are implemented using unit costing sub-modules to allow users to easily develop 
+and incorporate their own costing models.
 
 .. contents:: Contents 
     :depth: 4
 
-A generic costing "get_costing():" method has been developed for all the unit models in the generic unit model library. 
-Currently, the method builds pruchase cost correlations from Seider et al. [1], however, this method allows the users to select other correlations to estimate the cost (i.e. other source, proprietary models, vendor quotes, etc.)
+Introduction
+-------------
 
-[1] Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
+.. note:: This is a work in progress, and costing is currently only implemented for pressure changers and heat exchanger.
 
-The get_costing method creates a block named "costing" that includes the cost model (variables, parameters, expressions, and constraints). 
-The main variables are purchase cost and base cost, and each unit model has a different basis to estimate the cost. 
-Table 1 shows the main variables that will be created in the block "costing", while table 2 shows the cost basis for all the unit models supported by this method.
+All unit models within the core IDAES model library include a `get_costing` method which can be called to include
+cost correlations for an instance of that unit. The `get_costing` method for each unit takes a number of arguments used 
+to specify the basis for costing each piece of equipment. Details are given for each unit model later in this documentation, 
+however, all `get_costing` methods take the following two arguments:
+ 
+ * module - this argument specifies the costing module to use when constructing the constraints and associated variables. if not provided, this defaults to the standard IDAES costing module.
+ 
+ * year - this argument sets the year to which all costs should be normalized (CE index 2010 to 2019)
+ 
+When `get_costing` is called on an instance of a unit model, a new sub-block is created 
+on that unit named `costing` (i.e. `flowsheet.unit.costing`). All variables and constraints related to costing will be 
+constructed within this new block (see detailed documentation for each unit for details on these variables and constraints).
 
+In addition, the first time `get_costing` is called for a unit operation within a flowsheet, an additional `costing` block is created 
+on the flowsheet object (i.e. `flowsheet.unit.costing`) in order to hold any global parameters relating to costing. The most 
+common of these paramters is the cost normalization parameter based on the year selected by the user.
+
+.. note:: The global paramters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
+
+ 
 Table 1. Main Variables added to the unit block ("self.costing").
 
 =========================== ====================== ============ =============================================================================
 Variable                    Symbol                 Units        Index Sets  Doc
 =========================== ====================== ============ =============================================================================
-Purchase cost               :math:`purchase\_cost` dollars      Heat transferred from hot side to the cold side
+Purchase cost               :math:`purchase\_cost` dollars      Normalized purchase cost
 Base cost                   :math:`base\_cost`     unitless     Base cost
-Pressure design             :math:`FP`             psig         Pressure design correction factor (only for heat exchangers)
-Pump size factor            :math:`S`              gpm/ft^0.5   Pump Size factor used to compute pump base cost (only for pumps)
 =========================== ====================== ============ =============================================================================
-    
-Table 2. Cost basis for each unit model.
 
-=========================== =========================  =========== ===============================================================================
-Unit Model                  Basis                      Units       Description
-=========================== =========================  =========== ===============================================================================
-heat exchanger              :math:`area`               ft^2        heat exchanger cost is computed as a function of the heat exchanger area
-pump                        :math:`fluid_{work}`       ft^3/s      Pump fluid work is used to compute the pump size factor and head of the pump
-compressor                  :math:`mechanical_{work}`  hp          Compressors are costed based on the mechanical work
-turbine                     :math:`mechanical_{work}`  hp          Turbine cost is computed as a function of the mechanical work
-=========================== =========================  =========== ===============================================================================
+Example
+--------
+Below is a simple example of how to add cost correlations to a flowsheet including a heat exchanger using the default IDAES costing module.
 
-Example:
-The example below demonstrates how to build the cost model as part of the heat exchanger unit model. 
-As it can be observed, after calling the method 'm.fs.unit.get_costing()' the purchase cost and base cost variables are added to the unit block. 
-These variables can be displayed using the display method "m.fs.unit.costing.purchase_cost.display()" and "m.fs.unit.costing.base_cost.display()"
-
-Note that after building the costing model, the costing block is now part of the unit, and initialization of these constraints before solving the flowsheet is recommended.
-The degrees of freedom remain unchanged because we added 2 independent variables and two constraints. 
-Units: it is important to highlight that the costing method interrogates the property package to determine the units of this model, 
-if the user provided the correct units in the metadata dictionary (see property models for additional information), the model units will be converted to the right units. 
-For example: area is in m^2, while the cost correlations for heat exchanger cost require units to be in ft^2.
 
 .. code:: python
 
@@ -80,7 +83,7 @@ For example: area is in m^2, while the cost correlations for heat exchanger cost
     print(degrees_of_freedom(m))
     
     m.fs.unit.initialize()
-    m.fs.unit.get_costing(L_factor='12ft')
+    m.fs.unit.get_costing(module=costing, L_factor='12ft')
     calculate_variable_from_constraint(
                 m.fs.unit.costing.base_cost,
                 m.fs.unit.costing.base_cost_eq)
@@ -97,17 +100,51 @@ For example: area is in m^2, while the cost correlations for heat exchanger cost
     m.fs.unit.costing.base_cost.display()
     m.fs.unit.costing.purchase_cost.display()
 
+
+Units
+-----
+
+It is important to highlight that the costing method interrogates the property 
+package to determine the unit of this model, if the user provided the correct 
+units in the metadata dictionary (see property models for additional information), 
+the model units will be converted to the right units. 
+For example: in this example area is in m^2, while the cost correlations for heat 
+exchangers require units to be in ft^2. Therefore, the costing method will convert 
+the units to ft^2. The use of Pyomo-unit conversion tools is under development.
+
+IDAES Costing Module
+--------------------
+
+A default costing module has been developed primarily based on purchase cost correlations 
+from the following reference with some exceptions (noted in the documentation as appropiate).
+
+Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
+
+Users should refer to the reference above for details of the costing correlations, however, a summary of this methods is provided below.
+    
+Table 2. Cost basis for each unit model.
+
+=========================== =========================  ===========
+Unit Model                  Basis                      Units      
+=========================== =========================  ===========
+heat exchanger              :math:`area`               ft^2       
+pump                        :math:`fluid_{work}`       ft^3/s     
+compressor                  :math:`mechanical_{work}`  hp         
+turbine                     :math:`mechanical_{work}`  hp         
+=========================== =========================  ===========
+
+
 Heat Exchanger Cost
--------------------
+^^^^^^^^^^^^^^^^^^^^^
 
-The Heat exchanger costing method is based on the area of the heat exchanger. 
-This method computes the purchase cost (self.costing.purchase_cost) for a shell and tube heat 
-exchanger (Eq. 22.43). First, the model computes the base cost (self.costing.base_cost = CB, for 4 differnt types
-of heat exchangers, such as floating head, fixed head, U-tube, and
-Kettle vaporizer) for a CE base cost index of 500. Then, additional factors will be used to calculate the final purchase cost, 
-including construction material factor (FM), pressure design factor (FP), and tube length correction factor (FL).
+.. module:: idaes.core.util.unit_costing
 
-.. math:: self.costing.purchase\_cost = FP*FM_{MAT}*FL*CB*(CE_{index}/500) (Eq. 22.43)
+
+The purchse cost is computed based on the base unit cost and three correction factors. The base cost is computed depending on the heat exchanger type selected by the user:
+
+.. math:: unit.costing.purchase\_cost = FP*FM_{MAT}*FL*unit.costing.base\_cost*(CE_{index}/500) (Eq. 22.43)
+
+.. math:: unit.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
 
 where:
 
@@ -117,23 +154,17 @@ where:
 
 * FL - is the tube length correction factor
 
-* CB - is the base cost
-
-* CE - index is a global parameter that includes cost indexes for years 1980-2019
+* CE - index is a global parameter that includes cost indexes for years 2010-2019
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
 
-* hx_type : 'floating_head', 'fixed_head', 'U-tube'*, 'Kettle_vap'
+* hx_type : 'floating_head', 'fixed_head', 'U-tube'*, 'Kettle_vap' 
 
-* material factor (FM): 'stain_steel'*, 'carb_steel'
+* material factor (FM): 'stain_steel'*, 'carb_steel' 
 
-* tube length (FL): '8ft'*, '12ft', '16ft', '20ft'
+* tube length (FL): '8ft'*, '12ft', '16ft', '20ft' 
 
 where '*' corresponds to the default options, FL and FM_MAT are pyomo-mutable parameters fixed based on user selection.
-
-The base cost is computed dependind on the heat exchanger type selected by the user:
-
-.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
 
 
 Table 3. Base cost factors for heat exchanger type.
@@ -184,36 +215,56 @@ Titanium / titanium                9.6    0.06
 
 
 Pressure Changer Cost
----------------------
-The pressure changer unit model is more complicated, because the pressure changer model can be imported to represent a pump, turbine, compressor, or a simply pressure changer (fan, blower, etc.).
-The get_costing(): method currently supports costing of pumps, turbines, and compressors. The method authomatically interrogates the flowsheet object to determine if the unit is being used as a pump, turbine, or compressor. 
-The additional arguments are required to build correlations for different type of pumps or compressors. 
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The costing of a pressure changer unit model is more complicated, because the pressure changer 
+model can be imported into the flowsheet object representing a pump, turbine, compressor, or a 
+simply pressure changer (fan, blower, etc.). The `get_costing` method currently supports costing of pumps, turbines, and compressors. The method authomatically interrogates the flowsheet object to determine if the unit is being used as a pump, turbine, or compressor. 
+
+The `get_costing` method authomatically determines if the unit model is being used as a pump, 
+turbine, or compressor based on the `compressor` and `thermodynamic_assumption` configuration 
+arguments provided by the user where creating the unit model. A summary of the decision logic is shown below.
+
+
+========== =========== =========================
+Unit Type  compressor  thermodynamic_assumption
+========== =========== =========================
+Turbine    False       Any
+Pump       True        pump
+Mover      True        not pump
+========== =========== =========================
+
+Additionally, some unit types have different sub-types which can be costed appropiately. In these cases, 
+an additional argument is provided to `get_costing` to identify the sub-type to use which is detailed below.
+
 
 Turbine Cost Model
-*******************
+"""""""""""""""""""
 
-We determine if the pressure changer is a turbine by interrogating the pressure changer config argument "config.compressor == False".
-Turbine cost is based on the mechanical work of unit (work_mechanical), this correlation has been obtained using the NETL Report (DOE/NETL 2015).
+
+The turbine cost is based on the mechanical work of unit (work_mechanical), this correlation has been obtained using the NETL Report (DOE/NETL 2015).
 
 .. math:: self.costing.purchase\_cost = 580*(mechanical_{work})^{0.81}
 
 DOE/NETL, 2015, report. Cost and performance Baseline for Fossil Energy Plants. Volume 1a: Bituminous Coal (PC) and Natural Gas to Electricity. Revision 3
 
 Pump Cost Model
-****************
+""""""""""""""""
 
-We determine if the pressure change is a pump if " unit.config.compressor == True, and unit.config.Thermodynamic.assumption.name == 'pump' "
-Three main pump types are supported in this method. i) Centrifugal pumps, 2) External gear pumps, 3) Reciprocating Plunger pumps. Purchase cost is computed depending on user's inputs.
-The argument pump_type will determine which cost correlations to be build (pump_type = 'centrifugal', 'external_gear', 'reciprocating')
+Three subtypes are supported for costing of pumps, which can be set using the "pump_type" argument.
+
+1) Centrifugal pumps (pump_type='centrifugal')
+2) External gear pumps (pump_type='external')
+3) Reciprocating Plunger pumps (pump_type='reciprocating')
 
 
-Centrifugal pump (pump_type = 'centrifugal')
-+++++++++++++++++++++++++++++++++++++++++++++
+Centrifugal Pump
++++++++++++++++++++
 
 The centrifugal cost has two main components, the cost of the pump and the cost of the motor. The pump cost is based on the fluid work (work_fluid), pump head, and size factor. 
 Additional arguments are required:
 
-* pump_type_factor = '1.4'
+* pump_type_factor = '1.4' (see Table 6)
 
 * pump_motor_type_factor = 'open', 'enclosed', 'explosion_proof'
 
@@ -234,7 +285,7 @@ Finally, the purchase cost of the pump is obtained in Eq. 22.15.
 
 where:
 
-* S is the pump size factor (self.costing.size_factor)
+* S is the pump size factor (`self.costing.size_factor`)
 
 * Q is the volumetric flowrate in gpm (depending on the model this variable can be found as self.unit.properties_in.flow_vol)
 
@@ -277,7 +328,7 @@ Titanium          9.70
 
 Electric Motor:
 
-A centrifugal pump is usually driven by an electric motor, the self.costing.motor_purchase_cost is calculated based on the power consumption.
+A centrifugal pump is usually driven by an electric motor, the `self.costing.motor_purchase_cost` is calculated based on the power consumption.
 
 .. math:: self.motor_purchase_cost = FT * self.costing.motor\_base\_cost * (CE_{index}/500)  (Eq. 22.20)
 
@@ -292,13 +343,14 @@ A centrifugal pump is usually driven by an electric motor, the self.costing.moto
 Efficiencies are valid for PB in the range of 1 to 1500Hp and Q in the range of 50 to 5000 gpm
 
 where:
-* FT is the motor type factor
+* FT is the motor type correction factor
 
 * PC is the power consumption in hp
 
 * PT is the theoretical efficiency
 
 * Q is the volumetric flowrate in gpm
+
 * H is the pump head in ft
 
 * PB is the pump brake hp
@@ -330,8 +382,10 @@ Here the purchase cost is computed as a function of the volumetric flowrate (Q) 
 .. math:: self.costing.pump\_purchase\_cost = FM_{MAT} * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
 
 
-Reciprocal Plunger Pumps (pump_type = 'reciprocal'):
-++++++++++++++++++++++++++++++++++++++++++++++++++++
+Reciprocating Plunger Pumps
+++++++++++++++++++++++++++++++++
+
+The cost correlation method used here is based on the brake horsepower (PB).
 
 .. math:: self.costing.pump\_base\_cost = \exp{(7.8103 + 0.26986\log{PB} + 0.06718(\log{PB})^{2})} (Eq. 22.23)
 
@@ -350,14 +404,17 @@ Stainless steel 2.20
 
 
 Mover
-******
-We determine if the pressure changer is a mover if "unit.compressor == True and unit.config.Thermodynamic.assumption.name not 'pump ". 
+"""""""
+
 If the unit represents a "Mover", the user can select to cost it as a compressor, fan, or blower. 
-Therefore, the user must set the mover_type = 'compressor' or 'fan' or 'blower' (uper/lower case sensitive)
+Therefore, the user must set the "mover_type" argument.
+* mover_type= 'compressor' or 'fan' or 'blower' (uper/lower case sensitive)
 
 Compressor Cost
 ++++++++++++++++
-The compressor cost is based on the mechanical work of the unit. Additional arguments are required to estimate the cost, such as compressor type, driver mover type, and material factor (FM_MAT).
+The compressor cost is based on the mechanical work of the unit. 
+Additional arguments are required to estimate the cost such as compressor type, 
+driver mover type, and material factor (FM_MAT).
 
 * compressor_type = 'centrifugal', 'reciprocating', 'screw'
 
@@ -370,7 +427,8 @@ The compressor cost is based on the mechanical work of the unit. Additional argu
 .. math:: self.costing.base\_cost = \exp{(\alpha_{1} + \alpha_{2}*\log{mechanical_{work}})}
 
 where: 
-FD is the driver mover type factor and FM is the construction material factor.
+
+* FD is the driver mover type factor and FM is the construction material factor.
 
 Table 10. Compressor type factors.
 
@@ -402,6 +460,3 @@ Cast iron       1.00
 Stainless steel 1.15
 Nickel alloy    1.25
 =============== ==========
-
-Fan and Blower Costing (work in progress)
-+++++++++++++++++++++++++++++++++++++++++
