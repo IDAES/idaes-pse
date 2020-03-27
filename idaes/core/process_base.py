@@ -23,7 +23,7 @@ from pyomo.core.base.misc import tabular_writer
 from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
-from pyutilib.enum import Enum
+from enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -51,10 +51,10 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for material flow basis
-MaterialFlowBasis = Enum(
-    'molar',
-    'mass',
-    'other')
+class MaterialFlowBasis(Enum):
+    molar = 0
+    mass = 1
+    other = 2
 
 
 @declare_process_block_class("ProcessBaseBlock")
