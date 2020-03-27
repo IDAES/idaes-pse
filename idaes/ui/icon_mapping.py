@@ -10,28 +10,35 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-icon_mapping = {
-    "cstr": "reactor_c.svg",
-    "flash": "flash.svg",
-    "gibbs_reactor": "reactor_g.svg",
-    "heat_exchanger": "heat_exchanger_1.svg",
-    "heater": "heater_2.svg",
-    "heat_exchanger_1D": "heat_exchanger_1.svg",  # same as HeatExchanger
-    "mixer": "mixer.svg",
-    "plug_flow_reactor": "reactor_pfr.svg",
-    "pressure_changer": "compressor.svg",
-    "separator": "splitter.svg",
-    "stoichiometric_reactor": "reactor_s.svg",
-    "equilibrium_reactor": "reactor_e.svg",
-    "feed": "feed.svg",
-    "product": "product.svg",
-    "feed_flash": "feed.svg",
-    "statejunction": "NONE",
-    "translator": "NONE",
-    "packed_column": "packed_column_1.svg",
-    "tray_column": "tray_column_1.svg",
-    "default": "default.svg"
-}
+
+def icon_mapping(unit_model_type):
+    mapping = {
+        "cstr": "reactor_c.svg",
+        "flash": "flash.svg",
+        "gibbs_reactor": "reactor_g.svg",
+        "heat_exchanger": "heat_exchanger_1.svg",
+        "heater": "heater_2.svg",
+        "heat_exchanger_1D": "heat_exchanger_1.svg",  # same as HeatExchanger
+        "mixer": "mixer.svg",
+        "plug_flow_reactor": "reactor_pfr.svg",
+        "pressure_changer": "compressor.svg",
+        "separator": "splitter.svg",
+        "stoichiometric_reactor": "reactor_s.svg",
+        "equilibrium_reactor": "reactor_e.svg",
+        "feed": "feed.svg",
+        "product": "product.svg",
+        "feed_flash": "feed.svg",
+        "statejunction": "NONE",
+        "translator": "NONE",
+        "packed_column": "packed_column_1.svg",
+        "tray_column": "tray_column_1.svg",
+        "default": "default.svg"
+    }
+    try:
+        return mapping[unit_model_type]
+    except KeyError:
+        return mapping["default"]
+
 
 
 # TODO handle multi-icon mappings

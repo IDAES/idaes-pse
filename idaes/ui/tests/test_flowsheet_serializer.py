@@ -90,7 +90,7 @@ def test_create_image_jointjs_json():
   y_pos = 0
   component_id = "M101"
   component_type = "mixer"
-  image = icon_mapping[component_type]
+  image = icon_mapping(component_type)
 
   fss = FlowsheetSerializer()
   fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type)

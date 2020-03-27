@@ -3,9 +3,10 @@
 """
 
 """
-import time
+import json
 import pytest
 import requests
+import time
 
 from idaes.ui.fsvis.flask_server import App
 
@@ -26,7 +27,7 @@ def test_app(app):
     # put the JSON payload into the server
     resp = requests.post(url, json=j, params={'id': jid})
     assert resp.status_code == 200
-    assert resp.content == jid
+    assert json.loads(resp.text) == j
     # get back the payload by its ID
     resp = requests.get(url, params={'id': jid})
     assert resp.json() == j
