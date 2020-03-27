@@ -19,9 +19,8 @@ cost correlations for an instance of that unit. The `get_costing` method for eac
 to specify the basis for costing each piece of equipment. Details are given for each unit model later in this documentation, 
 however, all `get_costing` methods take the following two arguments:
  
- * module - this argument specifies the costing module to use when constructing the constraints and associated variables. if not provided, this defaults to the standard IDAES costing module.
- 
- * year - this argument sets the year to which all costs should be normalized (CE index 2010 to 2019)
+* module - this argument specifies the costing module to use when constructing the constraints and associated variables. if not provided, this defaults to the standard IDAES costing module.
+* year - this argument sets the year to which all costs should be normalized (CE index 2010 to 2019)
  
 When `get_costing` is called on an instance of a unit model, a new sub-block is created 
 on that unit named `costing` (i.e. `flowsheet.unit.costing`). All variables and constraints related to costing will be 
@@ -141,20 +140,15 @@ The purchse cost is computed based on the base unit cost and three correction fa
 where:
 
 * FP - is the pressure design correction factor
-
 * FM_Mat - is the construction material correction factor
-
 * FL - is the tube length correction factor
-
 * CE - index is a global parameter that includes cost indexes for years 2010-2019
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
 
-* hx_type : 'floating_head', 'fixed_head', 'U-tube', 'Kettle_vap'
-
-* material factor (FM): 'stain_steel', 'carb_steel'
-
-* tube length (FL): '8ft', '12ft', '16ft', '20ft'
+* hx_type : 'floating_head', 'fixed_head', 'U-tube'\*, 'Kettle_vap'
+* material factor (FM): 'stain_steel'\*, 'carb_steel'
+* tube length (FL): '8ft', '12ft'\*, '16ft', '20ft'
 
 where '*' corresponds to the default options, FL and FM_MAT are pyomo-mutable parameters fixed based on user selection.
 
@@ -254,7 +248,6 @@ The centrifugal cost has two main components, the cost of the pump and the cost 
 Additional arguments are required:
 
 * pump_type_factor = '1.4' (see Table 6)
-
 * pump_motor_type_factor = 'open', 'enclosed', 'explosion_proof'
 
 
@@ -275,13 +268,9 @@ Finally, the purchase cost of the pump is obtained in Eq. 22.15.
 where:
 
 * S is the pump size factor (`self.costing.size_factor`)
-
 * Q is the volumetric flowrate in gpm (depending on the model this variable can be found as self.unit.properties_in.flow_vol)
-
 * H is the head of the pump in ft (which is defined as :math:`H = \Delta P/\rho_{liq}`)
-
 * FT is the pump type factor (users must wisely select this factor based on the pump size factor, pump head range, and maximum motor hp)
-
 * FM_Mat is the material factor for the pump
 
 Table 6. Pump Type factor (Table 22.20 in Seider et al.).
@@ -334,21 +323,13 @@ Efficiencies are valid for PB in the range of 1 to 1500Hp and Q in the range of 
 where:
 
 * FT is the motor type correction factor
-
 * PC is the power consumption in hp
-
 * PT is the theoretical efficiency
-
 * Q is the volumetric flowrate in gpm
-
 * H is the pump head in ft
-
 * PB is the pump brake hp
-
 * nP is the fractional efficiency of the pump
-
 * nM is the fractional efficiency of the motor
-
 * :math:`\rho` is the liquid density in lb/gal
 
 Table 8. FT Factors in Eq.(22.20) and Ranges for electric motors.
@@ -398,6 +379,7 @@ Mover
 
 If the unit represents a "Mover", the user can select to cost it as a compressor, fan, or blower. 
 Therefore, the user must set the "mover_type" argument.
+
 * mover_type= 'compressor' or 'fan' or 'blower' (uper/lower case sensitive)
 
 Compressor Cost
@@ -407,9 +389,7 @@ Additional arguments are required to estimate the cost such as compressor type,
 driver mover type, and material factor (FM_MAT).
 
 * compressor_type = 'centrifugal', 'reciprocating', 'screw'
-
 * driver_mover_type = 'electrical_motor', 'steam_turbine', 'gas_turbine'
-
 * FM_mat = 'carbon_steel', 'stain_steel', 'nickel_alloy'
 
 .. math:: self.costing.purchase\_cost = F_{D} F_{M} self.costing.base\_cost
