@@ -22,7 +22,6 @@ Source code
 
 Documentation
     The documentation for the core package is under `docs`.
-    The documentation for the `apps/` directory is not (currently) being built automatically.
 
 Examples
     Examples are under the `examples/` directory.
@@ -152,35 +151,30 @@ Building documentation
        This will be done for you by running ``pip install requirements-dev.txt`` ("developer" setup)
        as opposed to the regular ``pip install requirements.txt`` ("user" setup).
 
-.. note:: On Windows use the provided ``make.bat`` command (in the ``docs`` dir) rather than `make`
-       in the below examples.
-
-To build the documentation locally, there is a "Makefile" in the `docs/` directory::
+To build the documentation locally, use our custom `build.py` script.
 
     cd docs
-    make allclean
-    make all
+    python build.py
 
 The above commands will do a completely clean build to create HTML output.
-They will also attempt to execute the tutorials. During development, more
-specific Makefile targets may save time:
 
-``make html``
-    Only build the HTML from the existing `.rst` files and generated API docs.
-    Does not rebuild the tutorials or regenerate the API docs.
+If the command succeeds, the final line will look like::
 
-``make apidoc``
-    Just regenerate API documentation source from the Python code. This does
-    not change the HTML output.
+    === SUCCESS
 
-``make tutorials``
-    Generate HTML web pages from the Jupyter Notebook tutorials
+If it fails, it will instead print something like::
 
-Like any other Makefile, you can use these targets together.
-So, if you are editing source code and want to preview the generated documentation,
-you should run: ``make apidoc html``. This will regenerate `.rst` files from the
-source code, then build those files together with hand-edited files into the
-HTML output.
+    *** ERROR in 'html'
+    ***
+    *** message about the command that failed
+    *** and any additional info
+    ***
+
+If you want to see the commands actually being run, add `-v` to the command line.
+
+By default the build command removes all existing built files before running the
+Sphinx commands. To turn this off, and rebuild only "new" things, add `--dirty`
+to the command line.
 
 Previewing documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^
