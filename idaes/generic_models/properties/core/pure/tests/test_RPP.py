@@ -26,6 +26,7 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import ConcreteModel, Block, value, Var
+from pyomo.common.config import ConfigBlock
 
 from idaes.generic_models.properties.core.pure.RPP import *
 from idaes.core.util.misc import add_object_reference
@@ -38,29 +39,25 @@ def frame():
     # Create a dummy parameter block
     m.params = Block()
 
+    m.params.config = ConfigBlock(implicit=True)
+    m.params.config.parameter_data = {
+        "cp_mol_ig_comp_coeff": {'A': 3.224e1,
+                                 'B': 1.924e-3,
+                                 'C': 1.055e-5,
+                                 'D': -3.596e-9},
+        "enth_mol_form_vap_comp_ref": -241.83e3,
+        "entr_mol_form_vap_comp_ref": 188.84,
+        "pressure_sat_comp_coeff": {'A': -7.76451,
+                                    'B': 1.45838,
+                                    'C': -2.77580,
+                                    'D': -1.23303}}
+
     # Add necessary parameters to parameter block
     m.params.temperature_ref = Var(initialize=273.15)
     m.params.pressure_ref = Var(initialize=1e5)
 
-    m.params.pressure_sat_comp_coeff = Var(["A", "B", "C", "D"])
     m.params.temperature_crit = Var(initialize=647.3)
     m.params.pressure_crit = Var(initialize=221.2e5)
-    m.params.cp_mol_ig_comp_coeff = Var(["A", "B", "C", "D"])
-    m.params.enth_mol_form_vap_comp_ref = Var()
-    m.params.entr_mol_form_vap_comp_ref = Var()
-
-    m.params.cp_mol_ig_comp_coeff["A"].value = 3.224e1
-    m.params.cp_mol_ig_comp_coeff["B"].value = 1.924e-3
-    m.params.cp_mol_ig_comp_coeff["C"].value = 1.055e-5
-    m.params.cp_mol_ig_comp_coeff["D"].value = -3.596e-9
-
-    m.params.pressure_sat_comp_coeff["A"].value = -7.76451
-    m.params.pressure_sat_comp_coeff["B"].value = 1.45838
-    m.params.pressure_sat_comp_coeff["C"].value = -2.77580
-    m.params.pressure_sat_comp_coeff["D"].value = -1.23303
-
-    m.params.enth_mol_form_vap_comp_ref.value = -241.83e3
-    m.params.entr_mol_form_vap_comp_ref.value = 188.84
 
     # Create a dummy state block
     m.props = Block([1])
@@ -73,6 +70,8 @@ def frame():
 
 
 def test_cp_mol_ig_comp(frame):
+    cp_mol_ig_comp.build_parameters(frame.params)
+
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(33.656, abs=1e-3)
@@ -82,6 +81,8 @@ def test_cp_mol_ig_comp(frame):
 
 
 def test_enth_mol_ig_comp(frame):
+    enth_mol_ig_comp.build_parameters(frame.params)
+
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(-240990.825, abs=1e-3)
@@ -91,6 +92,8 @@ def test_enth_mol_ig_comp(frame):
 
 
 def test_entr_mol_ig_comp(frame):
+    entr_mol_ig_comp.build_parameters(frame.params)
+
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(373.541, abs=1e-3)
@@ -100,6 +103,8 @@ def test_entr_mol_ig_comp(frame):
 
 
 def test_pressure_sat_comp(frame):
+    pressure_sat_comp.build_parameters(frame.params)
+
     expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(3171.4391, abs=1e-3)
@@ -109,6 +114,8 @@ def test_pressure_sat_comp(frame):
 
 
 def test_pressure_sat_comp_dT(frame):
+    pressure_sat_comp.build_parameters(frame.params)
+
     expr = pressure_sat_comp.dT_expression(
             frame.props[1], frame.params, frame.props[1].temperature)
 

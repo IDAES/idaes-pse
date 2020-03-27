@@ -26,6 +26,7 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import ConcreteModel, Block, value, Var
+from pyomo.common.config import ConfigBlock
 
 from idaes.generic_models.properties.core.pure.Perrys import *
 from idaes.core.util.misc import add_object_reference
@@ -38,27 +39,26 @@ def frame():
     # Create a dummy parameter block
     m.params = Block()
 
+    m.params.config = ConfigBlock(implicit=True)
+    m.params.config.parameter_data = {
+        "dens_mol_liq_comp_coeff": {'1': 5.459e3,  # Factor 1e3 for unit conversion
+                                    '2': 0.30542,
+                                    '3': 647.13,
+                                    '4': 0.081},
+        "cp_mol_liq_comp_coeff": {'1': 2.7637e+05,
+                                  '2': -2.0901e+03,
+                                  '3': 8.1250e+00,
+                                  '4': -1.4116e-2,
+                                  '5': 9.3701e-06},
+        "enth_mol_form_liq_comp_ref": -285.83e3,
+        "entr_mol_form_liq_comp_ref": 69.95,
+        "pressure_sat_comp_coeff": {'A': -7.76451,
+                                    'B': 1.45838,
+                                    'C': -2.77580,
+                                    'D': -1.23303}}
+
     # Add necessary parameters to parameter block
     m.params.temperature_ref = Var(initialize=273.16)
-
-    m.params.dens_mol_liq_comp_coeff = Var(["1", "2", "3", "4"])
-    m.params.cp_mol_liq_comp_coeff = Var(["1", "2", "3", "4", "5"])
-    m.params.enth_mol_form_liq_comp_ref = Var()
-    m.params.entr_mol_form_liq_comp_ref = Var()
-
-    m.params.cp_mol_liq_comp_coeff["1"].value = 2.7637e+05
-    m.params.cp_mol_liq_comp_coeff["2"].value = -2.0901e+03
-    m.params.cp_mol_liq_comp_coeff["3"].value = 8.1250e+00
-    m.params.cp_mol_liq_comp_coeff["4"].value = -1.4116e-2
-    m.params.cp_mol_liq_comp_coeff["5"].value = 9.3701e-06
-
-    m.params.dens_mol_liq_comp_coeff["1"].value = 5.459e3  # Factor 1e3 for unit conversion
-    m.params.dens_mol_liq_comp_coeff["2"].value = 0.30542
-    m.params.dens_mol_liq_comp_coeff["3"].value = 647.13
-    m.params.dens_mol_liq_comp_coeff["4"].value = 0.081
-
-    m.params.enth_mol_form_liq_comp_ref.value = -285.83e3
-    m.params.entr_mol_form_liq_comp_ref.value = 69.95
 
     # Create a dummy state block
     m.props = Block([1])
@@ -70,6 +70,8 @@ def frame():
 
 
 def test_cp_mol_liq_comp(frame):
+    cp_mol_liq_comp.build_parameters(frame.params)
+
     expr = cp_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(76.150, rel=1e-3)
@@ -79,6 +81,8 @@ def test_cp_mol_liq_comp(frame):
 
 
 def test_enth_mol_liq_comp(frame):
+    enth_mol_liq_comp.build_parameters(frame.params)
+
     expr = enth_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == value(
@@ -89,6 +93,8 @@ def test_enth_mol_liq_comp(frame):
 
 
 def test_entr_mol_liq_comp(frame):
+    entr_mol_liq_comp.build_parameters(frame.params)
+
     expr = entr_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(1270, rel=1e-3)
@@ -98,6 +104,8 @@ def test_entr_mol_liq_comp(frame):
 
 
 def test_dens_mol_liq_comp(frame):
+    dens_mol_liq_comp.build_parameters(frame.params)
+
     expr = dens_mol_liq_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
