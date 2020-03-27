@@ -1,6 +1,5 @@
 Unit Model Costing
-====================
-
+==================
 
 The IDAES Process Modeling Framework includes support for incorporating costing of unit 
 operations into a flowsheet to allow for calculation and optimization of process costs. 
@@ -11,7 +10,7 @@ and incorporate their own costing models.
     :depth: 4
 
 Introduction
--------------
+------------
 
 .. note:: This is a work in progress, and costing is currently only implemented for pressure changers and heat exchanger.
 
@@ -45,7 +44,7 @@ Base cost                   :math:`base\_cost`     unitless     Base cost
 =========================== ====================== ============ =============================================================================
 
 Example
---------
+-------
 Below is a simple example of how to add cost correlations to a flowsheet including a heat exchanger using the default IDAES costing module.
 
 
@@ -129,10 +128,9 @@ turbine                     :math:`mechanical_{work}`  hp
 
 
 Heat Exchanger Cost
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 .. module:: idaes.core.util.unit_costing
-
 
 The purchse cost is computed based on the base unit cost and three correction factors. The base cost is computed depending on the heat exchanger type selected by the user:
 
@@ -152,11 +150,11 @@ where:
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
 
-* hx_type : 'floating_head', 'fixed_head', 'U-tube'*, 'Kettle_vap' 
+* hx_type : 'floating_head', 'fixed_head', 'U-tube', 'Kettle_vap'
 
-* material factor (FM): 'stain_steel'*, 'carb_steel' 
+* material factor (FM): 'stain_steel', 'carb_steel'
 
-* tube length (FL): '8ft'*, '12ft', '16ft', '20ft' 
+* tube length (FL): '8ft', '12ft', '16ft', '20ft'
 
 where '*' corresponds to the default options, FL and FM_MAT are pyomo-mutable parameters fixed based on user selection.
 
@@ -209,7 +207,7 @@ Titanium / titanium                9.6    0.06
 
 
 Pressure Changer Cost
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 The costing of a pressure changer unit model is more complicated, because the pressure changer 
 model can be imported into the flowsheet object representing a pump, turbine, compressor, or a 
@@ -231,11 +229,8 @@ Mover      True        not pump
 Additionally, some unit types have different sub-types which can be costed appropiately. In these cases, 
 an additional argument is provided to `get_costing` to identify the sub-type to use which is detailed below.
 
-
 Turbine Cost Model
-"""""""""""""""""""
-
-
+""""""""""""""""""
 The turbine cost is based on the mechanical work of unit (work_mechanical), this correlation has been obtained using the NETL Report (DOE/NETL 2015).
 
 .. math:: self.costing.purchase\_cost = 580*(mechanical_{work})^{0.81}
@@ -253,7 +248,7 @@ Three subtypes are supported for costing of pumps, which can be set using the "p
 
 
 Centrifugal Pump
-+++++++++++++++++++
+++++++++++++++++
 
 The centrifugal cost has two main components, the cost of the pump and the cost of the motor. The pump cost is based on the fluid work (work_fluid), pump head, and size factor. 
 Additional arguments are required:
@@ -337,6 +332,7 @@ A centrifugal pump is usually driven by an electric motor, the `self.costing.mot
 Efficiencies are valid for PB in the range of 1 to 1500Hp and Q in the range of 50 to 5000 gpm
 
 where:
+
 * FT is the motor type correction factor
 
 * PC is the power consumption in hp
@@ -366,7 +362,7 @@ Explosion-proof enclosure, 1 to 25Hp     1.8     1.7
 ======================================== ======= =======
 
 External Gear Pumps
-++++++++++++++++++++
++++++++++++++++++++
 
 External gear pumps are not as common as the contrifugal pump, and various methods can be used to correlate purchase cost. 
 Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm.
@@ -377,7 +373,7 @@ Here the purchase cost is computed as a function of the volumetric flowrate (Q) 
 
 
 Reciprocating Plunger Pumps
-++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++
 
 The cost correlation method used here is based on the brake horsepower (PB).
 
@@ -398,14 +394,14 @@ Stainless steel 2.20
 
 
 Mover
-"""""""
+"""""
 
 If the unit represents a "Mover", the user can select to cost it as a compressor, fan, or blower. 
 Therefore, the user must set the "mover_type" argument.
 * mover_type= 'compressor' or 'fan' or 'blower' (uper/lower case sensitive)
 
 Compressor Cost
-++++++++++++++++
++++++++++++++++
 The compressor cost is based on the mechanical work of the unit. 
 Additional arguments are required to estimate the cost such as compressor type, 
 driver mover type, and material factor (FM_MAT).
