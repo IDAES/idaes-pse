@@ -40,7 +40,8 @@ def _make_vars(self):
                              doc='Unit Purchase Cost in $')
 
 
-def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel', L_factor='12ft'):
+def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
+               L_factor='12ft'):
     '''
     Heat exchanger costing method.
 
@@ -212,19 +213,27 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
     (created 2/21/2020)
 
     Arguments:
+        mover_type : Only if config.compressor is True. Valid values 'fan',
+                        'blower', 'compressor' (default).
+        compressor_type : Only if mover_type='compressor'. Valid values
+                        centrifugal' (default), 'reciprocating', 'screw'
+        driver_mover_type : Only if mover_type='compressor'. Valid values
+                        'electric_motor' (default), 'steam_turbine',
+                        'gas_turbine'
+        pump_type : Only if config.compressor is True and
+                        compressor_type='pump'. Valid values 'centrifugal',
+                        'external_gear', 'reciprocating'
+        pump_type_factor : Only if config.compressor is True and
+                        compressor_type='pump'. Valid values 1.1 to 1.4,
+                        2.1 and 2.2 (default = 1.4)
+        pump_motor_type_factor : Only if config.compressor is True and
+                        compressor_type='pump'. Valid values 'open' (default),
+                        'enclosed', 'explosion_proof''
+        FM_mat : construction material; Valid values 'stain_steel' (default),
+                        'nickel_alloy' (compressor only)
 
-        if config.compressor
-        if config.compressor is True:
-        mover_type: Fan, Blower, Compressor*
-            Fan_type:
-            Blower_type:
-            Compressor_type: centrifugal*, reciprocating, screw
-                drive_type: electric_motor*, steam_turbine, gas_turbine
-
-        FM - construction material:
-            Pump: stain_steel*
-            Compressor: stain_steel*, nickel_alloy
-    *default option
+    Returns:
+        None
     '''
     # build generic costing variables
     # (base cost, purchase cost, material factor)
