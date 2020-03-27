@@ -71,7 +71,7 @@ def almwriter(data, debug, vargs, kwargs):
                         .replace(",", '') + '\n')
 
         # Write data and valdata
-        a.write('begin_data\n')  # ISSUE ENGLE
+        a.write('begin_data\n') 
         for i in range(data['opts']['ndata']):
             temp = ''
             if data['opts']['ninputs'] > 1:
