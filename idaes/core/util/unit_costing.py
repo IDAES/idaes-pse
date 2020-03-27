@@ -216,7 +216,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         mover_type : Only if config.compressor is True. Valid values 'fan',
                         'blower', 'compressor' (default).
         compressor_type : Only if mover_type='compressor'. Valid values
-                        centrifugal' (default), 'reciprocating', 'screw'
+                        'centrifugal' (default), 'reciprocating', 'screw'
         driver_mover_type : Only if mover_type='compressor'. Valid values
                         'electric_motor' (default), 'steam_turbine',
                         'gas_turbine'
