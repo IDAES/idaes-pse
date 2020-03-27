@@ -11,10 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Methods for setting up FPhx as the state variables in a generic property
+Methods for setting up FcPh as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var
+from pyomo.environ import Constraint, Expression, NonNegativeReals, value, Var
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -37,7 +37,7 @@ def define_state(b):
 
     # Get bounds if provided
     try:
-        f_bounds = b.params.config.state_bounds["flow_mol"]
+        f_bounds = b.params.config.state_bounds["flow_mol_comp"]
     except (KeyError, TypeError):
         f_bounds = (None, None)
 
@@ -72,8 +72,8 @@ def define_state(b):
         f_init = (f_bounds[0] + f_bounds[1])/2
 
     if h_bounds == (None, None):
-        # No bounds, default to 0
-        h_init = 0
+        # No bounds, default to 1000
+        h_init = 1000
     elif h_bounds[1] is None and h_bounds[0] is not None:
         # Only lower bound, use lower bound + 1000
         h_init = h_bounds[0] + 1000
@@ -111,29 +111,40 @@ def define_state(b):
         t_init = (t_bounds[0] + t_bounds[1])/2
 
     # Add state variables
-    b.flow_mol = Var(initialize=f_init,
-                     domain=NonNegativeReals,
-                     bounds=f_bounds,
-                     doc=' Total molar flowrate')
-    b.mole_frac_comp = Var(b.params.component_list,
-                           bounds=(0, None),
-                           initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+    b.flow_mol_comp = Var(b.params.component_list,
+                          initialize=f_init,
+                          domain=NonNegativeReals,
+                          bounds=f_bounds,
+                          doc='Component molar flowrate')
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
                      doc='State pressure')
-
     b.enth_mol = Var(initialize=h_init,
+                     domain=NonNegativeReals,
                      bounds=h_bounds,
-                     doc='State molar enthalpy')
+                     doc='Mixture molar specific enthalpy')
 
     # Add supporting variables
+    b.flow_mol = Expression(expr=sum(b.flow_mol_comp[j]
+                                     for j in b.params.component_list),
+                            doc="Total molar flowrate")
+
     b.flow_mol_phase = Var(b.params.phase_list,
                            initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates')
+
+    b.temperature = Var(initialize=t_init,
+                        domain=NonNegativeReals,
+                        bounds=t_bounds,
+                        doc='Temperature')
+
+    b.mole_frac_comp = Var(b.params.component_list,
+                           bounds=(0, None),
+                           initialize=1 / len(b.params.component_list),
+                           doc='Mixture mole fractions')
 
     b.mole_frac_phase_comp = Var(
         b.params.phase_list,
@@ -142,11 +153,6 @@ def define_state(b):
         bounds=(0, None),
         doc='Phase mole fractions')
 
-    b.temperature = Var(initialize=t_init,
-                        domain=NonNegativeReals,
-                        bounds=t_bounds,
-                        doc='Temperature')
-
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
@@ -154,11 +160,14 @@ def define_state(b):
         doc='Phase fractions')
 
     # Add supporting constraints
-    if b.config.defined_state is False:
-        # applied at outlet only
-        b.sum_mole_frac_out = Constraint(
-            expr=1 == sum(b.mole_frac_comp[i]
-                          for i in b.params.component_list))
+    def rule_mole_frac_comp(b, j):
+        if len(b.params.component_list) > 1:
+            return b.flow_mol_comp[j] == b.mole_frac_comp[j]*sum(
+                b.flow_mol_comp[k] for k in b.params.component_list)
+        else:
+            return b.mole_frac_comp[j] == 1
+    b.mole_frac_comp_eq = Constraint(b.params.component_list,
+                                     rule=rule_mole_frac_comp)
 
     def rule_enth_mol(b):
         return b.enth_mol == sum(b.enth_mol_phase[p]*b.phase_frac[p]
@@ -190,7 +199,7 @@ def define_state(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac_comp[i] == sum(
+            return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b.params.phase_list)
         b.component_flow_balances = Constraint(b.params.component_list,
@@ -211,7 +220,7 @@ def define_state(b):
     else:
         # Otherwise use a general formulation
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac_comp[i] == sum(
+            return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b.params.phase_list)
         b.component_flow_balances = Constraint(b.params.component_list,
@@ -230,51 +239,50 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FTPx(p, j):
+    def get_material_flow_terms_FcPh(p, j):
         """Create material flow terms for control volume."""
         if j in b.params.component_list:
             return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
-    b.get_material_flow_terms = get_material_flow_terms_FTPx
+    b.get_material_flow_terms = get_material_flow_terms_FcPh
 
-    def get_enthalpy_flow_terms_FTPx(p):
+    def get_enthalpy_flow_terms_FcPh(p):
         """Create enthalpy flow terms."""
         return b.flow_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
+    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FcPh
 
-    def get_material_density_terms_FTPx(p, j):
+    def get_material_density_terms_FcPh(p, j):
         """Create material density terms."""
         if j in b.params.component_list:
             return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
-    b.get_material_density_terms = get_material_density_terms_FTPx
+    b.get_material_density_terms = get_material_density_terms_FcPh
 
-    def get_energy_density_terms_FTPx(p):
+    def get_energy_density_terms_FcPh(p):
         """Create energy density terms."""
         return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_energy_density_terms = get_energy_density_terms_FTPx
+    b.get_energy_density_terms = get_energy_density_terms_FcPh
 
-    def default_material_balance_type_FTPx():
+    def default_material_balance_type_FcPh():
         return MaterialBalanceType.componentTotal
-    b.default_material_balance_type = default_material_balance_type_FTPx
+    b.default_material_balance_type = default_material_balance_type_FcPh
 
-    def default_energy_balance_type_FTPx():
+    def default_energy_balance_type_FcPh():
         return EnergyBalanceType.enthalpyTotal
-    b.default_energy_balance_type = default_energy_balance_type_FTPx
+    b.default_energy_balance_type = default_energy_balance_type_FcPh
 
-    def get_material_flow_basis_FTPx():
+    def get_material_flow_basis_FcPh():
         return MaterialFlowBasis.molar
-    b.get_material_flow_basis = get_material_flow_basis_FTPx
+    b.get_material_flow_basis = get_material_flow_basis_FcPh
 
-    def define_state_vars_FPhx():
+    def define_state_vars_FcPh():
         """Define state vars."""
-        return {"flow_mol": b.flow_mol,
-                "mole_frac_comp": b.mole_frac_comp,
+        return {"flow_mol_comp": b.flow_mol_comp,
                 "enth_mol": b.enth_mol,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars_FPhx
+    b.define_state_vars = define_state_vars_FcPh
 
 
 def state_initialization(b):
@@ -284,21 +292,21 @@ def state_initialization(b):
     if len(b.params.phase_list) == 1:
         for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
-                b.flow_mol.value
+                value(b.flow_mol)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+                    value(b.mole_frac_comp[j])
 
     else:
         # TODO : Try to find some better guesses than this
         for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b.params.phase_list)
+                value(b.flow_mol) / len(b.params.phase_list)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+                    value(b.mole_frac_comp[j])
 
 
-do_not_initialize = ["sum_mole_frac_out"]
+do_not_initialize = []

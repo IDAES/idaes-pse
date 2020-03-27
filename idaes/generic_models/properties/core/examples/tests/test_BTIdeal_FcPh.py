@@ -16,6 +16,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
+                           Expression,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -36,7 +37,7 @@ from idaes.core import LiquidPhase, VaporPhase
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
-from idaes.generic_models.properties.core.state_definitions import FPhx
+from idaes.generic_models.properties.core.state_definitions import FcPh
 import idaes.generic_models.properties.core.eos.ideal as ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
@@ -118,8 +119,8 @@ config_dict = {
                         "equation_of_state": ideal},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": ideal}},
-    "state_definition": FPhx,
-    "state_bounds": {"flow_mol": (0, 1000),
+    "state_definition": FcPh,
+    "state_bounds": {"flow_mol_comp": (0, 1000),
                      "temperature": (273.15, 450),
                      "pressure": (5e4, 1e6),
                      "enth_mol": (1e4, 2e5)},
@@ -158,10 +159,10 @@ class TestParamBlock(object):
             assert i in [("Liq", "benzene"), ("Liq", "toluene"),
                          ("Vap", "benzene"), ("Vap", "toluene")]
 
-        assert model.params.config.state_definition == FPhx
+        assert model.params.config.state_definition == FcPh
 
         assert model.params.config.state_bounds == {
-            "flow_mol": (0, 1000),
+            "flow_mol_comp": (0, 1000),
             "temperature": (273.15, 450),
             "pressure": (5e4, 1e6),
             "enth_mol": (1e4, 2e5)}
@@ -197,10 +198,12 @@ class TestStateBlock(object):
 
     def test_build(self, model):
         # Check state variable values and bounds
-        assert isinstance(model.props[1].flow_mol, Var)
-        assert value(model.props[1].flow_mol) == 500
-        assert model.props[1].flow_mol.ub == 1000
-        assert model.props[1].flow_mol.lb == 0
+        assert isinstance(model.props[1].flow_mol, Expression)
+        assert isinstance(model.props[1].flow_mol_comp, Var)
+        for j in model.params.component_list:
+            assert value(model.props[1].flow_mol_comp[j]) == 500
+            assert model.props[1].flow_mol_comp[j].ub == 1000
+            assert model.props[1].flow_mol_comp[j].lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
         assert value(model.props[1].pressure) == 5.25e5
@@ -287,40 +290,35 @@ class TestStateBlock(object):
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
+            assert i in ["flow_mol_comp",
                          "enth_mol",
-                         "pressure",
-                         "mole_frac_comp"]
+                         "pressure"]
 
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
+            assert i in ["flow_mol_comp",
                          "enth_mol",
-                         "pressure",
-                         "mole_frac_comp"]
+                         "pressure"]
 
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
-        assert len(sv) == 4
+        assert len(sv) == 3
         for i in sv:
-            assert i in ["flow_mol",
+            assert i in ["flow_mol_comp",
                          "enth_mol",
-                         "pressure",
-                         "mole_frac_comp"]
+                         "pressure"]
 
     def test_dof(self, model):
         # Fix state
-        model.props[1].flow_mol.fix(1)
+        model.props[1].flow_mol_comp.fix(0.5)
         model.props[1].enth_mol.fix(47297)
         model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["benzene"].fix(0.5)
-        model.props[1].mole_frac_comp["toluene"].fix(0.5)
 
         assert degrees_of_freedom(model.props[1]) == 0
 
