@@ -1,10 +1,15 @@
+# IDAES FLOWSHEET VISUALIZER
+
+## For developers
 The directory structure follows established conventions for typical medium-sized Flask apps:
 
+````
 /fsvis
     /static
         /images
             /icons
     /templates
+````
 
  - The directory `fsvis` contains all python relevant to the `fsvis` module, as well
 as source files for running the Flask server used by said module.
