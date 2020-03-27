@@ -127,7 +127,7 @@ def flowsheet():
         data = request.get_json()
         if data is None:
             raise NoDataError()
-        db.compare(id_, data)
+        db.update(id_, data)
         return db.fetch(id_)
     elif request.method == "GET":
         data = db.fetch(id_)

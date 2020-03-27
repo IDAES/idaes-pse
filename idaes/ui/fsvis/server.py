@@ -20,7 +20,7 @@ class DataStorage:
     def fetch(self, id_: str):
         return self._data.get(id_, None)
 
-    def compare(self, id_: str, new_flowsheet: str):
+    def update(self, id_: str, new_flowsheet: str):
         old_json = self.fetch(id_)
 
         if not old_json:
