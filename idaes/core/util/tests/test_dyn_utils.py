@@ -426,6 +426,7 @@ def test_find_comp_in_block_at_time():
     @m1.Block([1,2,3])
     def b(bl):
         bl.v = Var(m1.time)
+        bl.v2 = Var(m1.time, ['a','b','c'])
 
     m2 = ConcreteModel()
     m2.time = Set(initialize=[1,2,3,4,5,6])
@@ -437,6 +438,7 @@ def test_find_comp_in_block_at_time():
     @m2.Block([1,2,3,4])
     def b(bl):
         bl.v = Var(m2.time)
+        bl.v2 = Var(m2.time, ['a','b','c'])
 
     @m2.Block([1,2,3])
     def b2(b):
@@ -447,6 +449,9 @@ def test_find_comp_in_block_at_time():
 
     assert find_comp_in_block_at_time(m2, m1, v1, m2.time, 4) is m2.b1[4].v[4]
     assert find_comp_in_block_at_time(m2, m1, v3, m2.time, 5) is m2.b[3].v[5]
+
+    v = m1.b[1].v2[1, 'a']
+    assert find_comp_in_block_at_time(m2, m1, v, m2.time, 6) is m2.b[1].v2[6, 'a']
 
     v2 = m2.b2[1].v[1]
     v4 = m2.b[4].v[1]
