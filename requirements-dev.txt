@@ -2,9 +2,6 @@
 
 # Put versions of dependencies, required for deployment, here.
 # They will override abstract dependencies in `setup.py`
-bokeh==0.12.9
-pendulum==1.4.4
-pytest-cov==2.5.0
 
 # Pyomo
 git+https://github.com/PyUtilib/pyutilib
