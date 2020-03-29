@@ -6,6 +6,18 @@ import importlib
 
 _log = logging.getLogger(__name__)
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
+known_binary_platform = {
+    "auto":"Auto-select windows, darwin or linux",
+    "windows":"Microsoft Windows (built on verion 1909)",
+    "darwin": "OSX (currently not available)",
+    "linux": "Linux (built on CentOS 7)",
+    "centos6": "CentOS 6",
+    "centos7": "CentOS 7",
+    "centos8": "CentOS 8",
+    "ubuntu1804": "Ubuntu 18.04",
+    "ubuntu1910": "Ubuntu 19.10",
+    "ubuntu2004": "Ubuntu 20.04",
+}
 
 default_config = """
 {
