@@ -5,7 +5,7 @@ import os
 import importlib
 
 _log = logging.getLogger(__name__)
-default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
+default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/2.0/"
 binary_platform_map = {
     "rhel6": "centos6",
     "rhel7": "centos7",
