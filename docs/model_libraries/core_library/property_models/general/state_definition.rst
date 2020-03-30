@@ -1,5 +1,8 @@
+State Definition
+================
+
 Defining State Variables
-========================
+------------------------
 
 An important part of defining a set of property calculations is choosing the set of variables which will describe the state of the material. The set of state variables needs to include information on the extensive flow, composition and thermodynamic state of the material. However, there are many ways in which this information can be described, and the best choice of state variables depends on many factors.
 
@@ -13,9 +16,30 @@ Within the IDAES Generic Property Package Framework, the definition of state var
 The IDAES Generic Property Package Framework has a library of prebuilt state definition sub-modules for users to use which are listed below.
 
 State Definition Libraries
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. toctree::
     :maxdepth: 1
 
     state/FTPx
+
+Setting Bounds on State Variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For optimization applications, it is important to specify good bounds on the state variables in order to improve the robustness of the problem. Further, due to the empirical nature of most thermophysical correlations these correlations are only valid in specific range of states. Users should set the `state_bounds` configuration argument to define the bounds on the state variables of their property package.
+
+The `state_bounds` configuration argument should be a `dict` where the keys are the names of the state variables (using the standard naming convention) and the values a tuple indication the lower and upper bounds on the state. If values are not provided, the bounds will be left undefined.
+
+.. note::
+    Some state definitions allow for setting on additional variables beyond the chosen state variables (temperature is a common example). See the documentation for your state definition for more information on what bounds can be set using the `state_bounds` argument.
+
+Reference State
+---------------
+
+Many thermophysical properties are relative quantities, and require the definition of a thermodynamic reference state. Whilst some simpler models and correlations forego this or define the reference state implicitly, the IDAES Generic Property Package requires the user to specify the thermodynamic reference state (even if it is not used explicitly).
+
+As such, users must provide the following two configuration arguments:
+
+* "pressure_ref" - pressure at reference state
+* "temperature_ref" - temperature at reference state
+

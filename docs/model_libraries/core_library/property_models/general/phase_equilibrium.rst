@@ -12,3 +12,8 @@ Phase Equilibrium Libraries
     :maxdepth: 1
 
     pe/smooth_flash
+    pe/pe_forms
+    bubble_dew
+
+
+5. :ref:`Methods<model_libraries/core_library/property_models/general/bubble_dew:Bubble and Dew Point Methods>` to calculate the bubble and dew points of mixtures.
