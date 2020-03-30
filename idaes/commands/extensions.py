@@ -25,7 +25,7 @@ _log = logging.getLogger("idaes.commands.extensions")
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")
 def get_extensions_platforms():
     click.echo("\nBuild platforms for IDAES binary Extensions.  Most Linux")
-    click.echo("platforms are interchangable.")
+    click.echo("platforms are interchangeable.")
     for key, mes in idaes.config.known_binary_platform.items():
         click.echo("    {}: {}".format(key, mes))
 
