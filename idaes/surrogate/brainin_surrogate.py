@@ -1,3 +1,4 @@
+
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -50,19 +51,22 @@ def _main():
 
     pysmo_rbf_settings = {'basis_function': 'gaussian',
                           'regularization': True,
-                          'pyomo_vars': [m.x[1], m.x[2]]}
+                          'pyomo_vars': [m.x[1], m.x[2]],
+                          'overwrite': True}
     modeler = Pysmo_rbf(**pysmo_rbf_settings)
 
     pysmo_krg_settings = {'numerical_gradients': True,
                           'regularization': True,
-                          'pyomo_vars': [m.x[1], m.x[2]]}
+                          'pyomo_vars': [m.x[1], m.x[2]],
+                          'overwrite': True}
     modeler = Pysmo_kriging(**pysmo_krg_settings)
 
     pysmo_pr_settings = {'maximum_polynomial_order':4,
                          'multinomials':1,
                          'pyomo_vars': [m.x[1], m.x[2]],
                          'training_split':0.9,
-                         'number_of_crossvalidations': 5}
+                         'number_of_crossvalidations': 5,
+                         'overwrite': True}
     modeler = Pysmo_polyregression(**pysmo_pr_settings)
 
     alamo_settings = {'monomialpower':(1, 2, 3, 4, 5, 6),
@@ -77,8 +81,15 @@ def _main():
     modeler.build_model()
 
     print(modeler.get_results())
-    # m.obj = Objective(expr=modeler._model)
+    m.obj = Objective(expr=modeler._model)
     m.pprint()
+
+    modeler.save_results('results.pickle', overwrite=True)
+
+    modeler2 = Pysmo_polyregression()
+    modeler2.load_results('results.pickle')
+    print(modeler2._model)
+
 
 
 if __name__ == "__main__":
