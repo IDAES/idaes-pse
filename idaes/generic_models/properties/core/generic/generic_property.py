@@ -738,18 +738,28 @@ class _GenericStateBlock(StateBlock):
                 .format(idaeslog.condition(res))
             )
         # ---------------------------------------------------------------------
-        # Calculate _teq
-        for k in blk.keys():
-            for pp in blk[k].params._pe_pairs:
-                blk[k].params.config.phase_equilibrium_formulation[pp] \
-                    .calculate_teq(blk[k], pp)
+        # Calculate _teq if required
+        if blk[k].params.config.phases_in_equilibrium is not None:
+            for k in blk.keys():
+                for pp in blk[k].params._pe_pairs:
+                    blk[k].params.config.phase_equilibrium_formulation[pp] \
+                        .calculate_teq(blk[k], pp)
 
-        init_log.info("Equilibrium temperature initialization completed.")
+            init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
             blk[k].params.config.state_definition.state_initialization(blk[k])
+
+            # If state block has phase equilibrium, use the average of all
+            # _teq's as an initial guess for T
+            if (blk[k].params.config.phases_in_equilibrium is not None and
+                    isinstance(blk[k].temperature, Var) and
+                    not blk[k].temperature.fixed):
+                blk[k].temperature.value = value(
+                    sum(blk[k]._teq[i] for i in blk[k].params._pe_pairs) /
+                    len(blk[k].params._pe_pairs))
 
         if outlvl > 0:
             init_log.info("State variable initialization completed.")
