@@ -96,6 +96,20 @@ class Alamopy(Surrogate):
 		model_symp = parse_expr(model_string.replace("^", "**"), local_dict=sympy_locals)
 		model_pyomo = sympy2pyomo_expression(model_symp, obj_map)
 		self._model = model_pyomo
+		
+	def save_results(self, filename, overwrite=False):
+		if not isinstance(overwrite, bool):
+			raise Exception('overwrite must be boolean.')
+		if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
+			raise Exception('filename must be a string with extension ".pickle". Please correct.')
+		if os.path.exists(filename) and overwrite is False:
+			raise Exception(filename, 'already exists!.\n')
+		try:
+			filehandler = open(filename, 'wb')
+			pickle.dump(self.pkl_info, filehandler)
+			print('\nResults saved in ', str(filename))
+		except:
+			raise Exception('File could not be saved.')
 
 	def run_test_suite(self, return_all=False, allow_grb=True):
 
