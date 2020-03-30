@@ -115,7 +115,7 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
         os.remove(fname)
 
 
-@pytest.mark.skipif(ipopt_available == False,
+@pytest.mark.skipif(not ipopt_available,
                     reason="Ipopt solver not available")
 def test_convergence_evaluation_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
