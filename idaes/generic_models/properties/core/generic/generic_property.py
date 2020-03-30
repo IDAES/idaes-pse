@@ -48,7 +48,6 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-# TODO: Handle parameter data
 # TODO: Set a default state definition
 # TODO: Need way to dynamically determine units of measurement....
 class GenericPropertyPackageError(PropertyPackageError):
