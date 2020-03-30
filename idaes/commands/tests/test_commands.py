@@ -42,14 +42,6 @@ def test_examples_download_bad_version():
     )
 
 
-def test_examples_download_target_dir_exists():
-    releases = [examples.Release("baddate", "1.2.3", "info")]
-    curpath = pathlib.Path(os.curdir)
-    assert pytest.raises(
-        examples.DownloadError, examples.download, releases, curpath, "1.2.3", True
-    )
-
-
 def test_examples_find_python_directories():
     with tempfile.TemporaryDirectory() as tmpd:
         root = pathlib.Path(tmpd)

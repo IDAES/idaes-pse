@@ -156,35 +156,35 @@ def test_serialize_flowsheet():
     assert named_edges_results == named_edges_truth
 
 
-def test_create_image_json():
-  out_json = {}
+def test_create_image_jointjs_json():
+  out_json = {"model": {}}
   out_json["cells"] = []
   x_pos = 0
   y_pos = 0
   component_id = "M101"
   component_type = "mixer"
   image = icon_mapping[component_type]
-  label = "M101"
 
   fss = FlowsheetSerializer()
-  fss.create_image_json(out_json, x_pos, y_pos, component_id, image, label, component_type)
+  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type)
   assert out_json == {'cells': 
-                      [{
-                          'type': 'standard.Image', 
-                          'position': {'x': 0, 'y': 0}, 
-                          'size': {'width': 50, 'height': 50}, 
-                          'angle': 0, 'id': 'M101', 'z': (1,), 
-                          'attrs': {
-                              'image': {'xlinkHref': 'mixer.svg'}, 
-                              'label': {'text': 'M101'}, 
-                              'root': {'title': 'mixer'}
+                        [{
+                            'type': 'standard.Image', 
+                            'position': {'x': 0, 'y': 0}, 
+                            'size': {'width': 50, 'height': 50}, 
+                            'angle': 0, 'id': 'M101', 'z': (1,), 
+                            'attrs': {
+                                'image': {'xlinkHref': 'mixer.svg'}, 
+                                'label': {'text': 'M101'}, 
+                                'root': {'title': 'mixer'}
                           }
-                      }]
-                     }
+                        }],
+                       "model": {}
+                      }
 
 
-def test_create_link_json():
-    out_json = {}
+def test_create_link_jointjs_json():
+    out_json = {"model": {}}
     out_json["cells"] = []
     source_anchor = link_position_mapping["heater"]["outlet_anchors"]
     dest_anchor = link_position_mapping["mixer"]["inlet_anchors"]
@@ -194,59 +194,61 @@ def test_create_link_json():
     label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id, label)
+    fss.create_link_jointjs_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id, label)
     assert out_json == {'cells': [{
-                          'type': 'standard.Link', 
-                          'source': {
-                            'anchor': {
-                              'name': 'right', 
-                              'args': {
-                                'rotate': 'false', 
-                                'padding': 0
-                              }
-                            }, 
-                            'id': 'M101'
-                          },
-                          'target': {
-                            'anchor': {
-                              'name': 'left', 
-                              'args': {
-                                'rotate': 'false', 
-                                'padding': 0
-                              }
-                            }, 
-                            'id': 'F101'
-                          }, 
-                          'router': {
-                            'name': 'orthogonal', 
-                            'padding': 10
-                          }, 
-                          'connector': {
-                            'name': 'normal', 
-                            'attrs': {
-                              'line': {
-                                'stroke': '#5c9adb'
-                              }
-                            }
-                          }, 
-                          'id': 's03', 
-                          'labels': [{
-                            'attrs': {
-                              'rect': {
-                                "fill": "#d7dce0", 
-                                "stroke": "#FFFFFF", 
-                                'stroke-width': 1
+                            'type': 'standard.Link', 
+                            'source': {
+                              'anchor': {
+                                'name': 'right', 
+                                'args': {
+                                  'rotate': 'false', 
+                                  'padding': 0
+                                }
                               }, 
-                              'text': {
-                                'text': 'foo', 
-                                'fill': 'black', 
-                                'text-anchor': 'left'
+                              'id': 'M101'
+                            },
+                            'target': {
+                              'anchor': {
+                                'name': 'left', 
+                                'args': {
+                                  'rotate': 'false', 
+                                  'padding': 0
+                                }
+                              }, 
+                              'id': 'F101'
+                            }, 
+                            'router': {
+                              'name': 'orthogonal', 
+                              'padding': 10
+                            }, 
+                            'connector': {
+                              'name': 'normal', 
+                              'attrs': {
+                                'line': {
+                                  'stroke': '#5c9adb'
+                                }
                               }
                             }, 
-                            'position': {
-                              'distance': 0.66, 
-                              'offset': -40
-                            }
-                          }], 
-                          'z': 2
-                        }]}
+                            'id': 's03', 
+                            'labels': [{
+                              'attrs': {
+                                'rect': {
+                                  "fill": "#d7dce0", 
+                                  "stroke": "#FFFFFF", 
+                                  'stroke-width': 1
+                                }, 
+                                'text': {
+                                  'text': 'foo', 
+                                  'fill': 'black', 
+                                  'text-anchor': 'left'
+                                }
+                              }, 
+                              'position': {
+                                'distance': 0.66, 
+                                'offset': -40
+                              }
+                            }], 
+                            'z': 2
+                          }],
+                          "model": {}
+                        }
