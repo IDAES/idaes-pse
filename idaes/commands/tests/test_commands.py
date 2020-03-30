@@ -22,7 +22,7 @@ import tempfile
 import pytest
 
 # package
-from idaes.core.commands import examples
+from idaes.commands import examples
 
 ################
 # get-examples #
@@ -39,14 +39,6 @@ def test_examples_download_bad_version():
     releases = [examples.Release("baddate", "badtag", "info")]
     assert pytest.raises(
         examples.DownloadError, examples.download, releases, "", "1.2.3", True
-    )
-
-
-def test_examples_download_target_dir_exists():
-    releases = [examples.Release("baddate", "1.2.3", "info")]
-    curpath = pathlib.Path(os.curdir)
-    assert pytest.raises(
-        examples.DownloadError, examples.download, releases, curpath, "1.2.3", True
     )
 
 

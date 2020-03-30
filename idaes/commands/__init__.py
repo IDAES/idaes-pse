@@ -10,28 +10,13 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""Commandline Utilities for Managing the IDAES Data Directory"""
+import pkgutil
 
-__author__ = "John Eslick"
+from idaes.commands.base import command_base as cb
 
-import click
-import logging
-import idaes.solvers
-from idaes.core.commands import cb
-
-_log = logging.getLogger("idaes.commands.extensions")
-
-
-@cb.command(name="get-extensions", help="Get solvers and libraries")
-@click.option(
-    "--url",
-    help="URL to download solver",
-    default=idaes.config.default_binary_url)
-@click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(url, verbose):
-    if url is not None:
-        click.echo("Getting files...")
-        idaes.solvers.download_binaries(url, verbose)
-        click.echo("Done")
+# import all the commands
+for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
+    if module_name == "base":
+        pass
     else:
-        click.echo("\n* You must provide a download URL for IDAES binary files.")
+        loader.find_module(module_name).load_module(module_name)
