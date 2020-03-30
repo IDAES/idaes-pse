@@ -253,7 +253,7 @@ class TestSWCO2(object):
                 # super critical, which we clasify as liquid
                 ph = "Liq"
             if P <= 0.5179e6:
-                # below tripple point
+                # below triple point
                 ph = "Vap"
             elif T > Tsat + 0.5:
                 ph = "Vap"
