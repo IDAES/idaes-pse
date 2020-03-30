@@ -278,7 +278,7 @@ def alamo(xdata, zdata, **kwargs):
         if debug["showalm"]:
             os.system(debug["almloc"] + " " + str(data["stropts"]["almname"]))
         else:
-            writethis("Calling ALAMO now:\n")
+            # writethis("Calling ALAMO now:\n")
             os.system(
                 debug["almloc"]
                 + " "
@@ -755,6 +755,7 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
+
     parseKwargs(data, debug, kwargs)
 
     # Check to see if a simwrapper should be built
@@ -789,24 +790,23 @@ def parseKwargs(data, debug, kwargs):
     """
 
     for arg in kwargs.keys():
-        if kwargs[arg] is None:
-            break
-        if arg in data["pargs"]["opts"]:
-            data["opts"][arg] = kwargs[arg]
-        elif arg in data["pargs"]["lstopts"]:
-            data["lstopts"][arg] = list()
-            for term in list([kwargs[arg]]):
-                data["lstopts"][arg].append(term)
-        elif arg in data["pargs"]["stropts"]:
-            data["stropts"][arg] = kwargs[arg]
-        elif arg in data["pargs"]["set4"]:
-            data["set4"][arg] = kwargs[arg]
-        elif arg in debug["pargs"]:
-            debug[arg] = kwargs[arg]
-        else:
-            if arg not in (["xlabels", "zlabels", "xval", "zval"]):
-                sys.stdout.write("Problem with option : " + arg)
-                almerror("p3")
+        if kwargs[arg] is not None:
+            if arg in data["pargs"]["opts"]:
+                data["opts"][arg] = kwargs[arg]
+            elif arg in data["pargs"]["lstopts"]:
+                data["lstopts"][arg] = list()
+                for term in list([kwargs[arg]]):
+                    data["lstopts"][arg].append(term)
+            elif arg in data["pargs"]["stropts"]:
+                data["stropts"][arg] = kwargs[arg]
+            elif arg in data["pargs"]["set4"]:
+                data["set4"][arg] = kwargs[arg]
+            elif arg in debug["pargs"]:
+                debug[arg] = kwargs[arg]
+            else:
+                if arg not in (["xlabels", "zlabels", "xval", "zval"]):
+                    sys.stdout.write("Problem with option : " + arg)
+                    almerror("p3")
 
 
 def buildSimWrapper(data, debug):
@@ -845,10 +845,10 @@ def constructXBounds(xdata, zdata, data, debug):
                 to the .alm
     """
 
-    writethis(
-        "min and max values of inputs are not provided, \
-              they will be calculated from the training data\n"
-    )
+    # writethis(
+    #     "min and max values of inputs are not provided, \
+    #           they will be calculated from the training data\n"
+    # )
     xmin = ""
     xmax = ""
     if data["opts"]["ninputs"] > 1:

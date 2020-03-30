@@ -37,7 +37,7 @@ data['stropts'] = {}
 data['pargs'] = {}
 data['pargs']['opts'] = list(
     ['modeler', 'solvemip', 'linfcns', 'expfcns', 'logfcns', 'sinfcns',
-     'cosfcns', 'sampler', 'maxiter', 'tolmaxerror', 'tolesterror', 'sigma',
+     'cosfcns', 'grbfcns', 'sampler', 'maxiter', 'tolmaxerror', 'tolesterror', 'sigma',
      'builder', 'linearerror', 'regularizer', 'deltaterm', 'maxterms',
      'convpen', 'constant', 'cvxbic', 'screener', 'ncvf'])
 data['pargs']['lstopts'] = list(

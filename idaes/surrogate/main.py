@@ -25,21 +25,23 @@ class Alamopy(Surrogate):
 	CONFIG.declare('zval', ConfigValue(default=None, domain=list))
 	CONFIG.declare('xmin', ConfigValue(default=None, domain=list))
 	CONFIG.declare('xmax', ConfigValue(default=None, domain=list))
-	CONFIG.declare('modeler', ConfigValue(default=6, domain=int))
-	CONFIG.declare('linfcns', ConfigValue(default=False, domain=bool))
-	CONFIG.declare('expfcns', ConfigValue(default=False, domain=bool))
-	CONFIG.declare('logfcns', ConfigValue(default=False, domain=bool))
-	CONFIG.declare('sinfcns', ConfigValue(default=False, domain=bool))
-	CONFIG.declare('cosfcns', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('modeler', ConfigValue(default=1, domain=int))
+	CONFIG.declare('linfcns', ConfigValue(default=1, domain=int))
+	CONFIG.declare('expfcns', ConfigValue(default=0, domain=int))
+	CONFIG.declare('logfcns', ConfigValue(default=0, domain=int))
+	CONFIG.declare('sinfcns', ConfigValue(default=0, domain=int))
+	CONFIG.declare('cosfcns', ConfigValue(default=0, domain=int))
 	CONFIG.declare('monomialpower', ConfigValue(default=None, domain=list))
 	CONFIG.declare('multi2power', ConfigValue(default=None, domain=list))
 	CONFIG.declare('multi3power', ConfigValue(default=None, domain=list))
 	CONFIG.declare('ratiopower', ConfigValue(default=None, domain=list))
+	CONFIG.declare('grbfcns', ConfigValue(default=0, domain=int))
+	CONFIG.declare('convpen', ConfigValue(default=None, domain=float))
 	CONFIG.declare('screener', ConfigValue(default=None, domain=int)) # not sure
 	CONFIG.declare('almname', ConfigValue(default=None, domain=str))
 	CONFIG.declare('savescratch', ConfigValue(default=None, domain=str))
 	CONFIG.declare('savetrace', ConfigValue(default=None, domain=str))
-	CONFIG.declare('expandoutput', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('expandoutput', ConfigValue(default=True, domain=bool))
 	CONFIG.declare('almopt', ConfigValue(default=None, domain=str))
 	CONFIG.declare('loo', ConfigValue(default=False, domain=bool))
 	CONFIG.declare('lmo', ConfigValue(default=False, domain=bool)) # Check
@@ -92,6 +94,120 @@ class Alamopy(Surrogate):
 		model_symp = parse_expr(model_string.replace("^", "**"), local_dict = sympy_locals)
 		model_pyomo = sympy2pyomo_expression(model_symp, obj_map)
 		self._model = model_pyomo
+
+	def run_test_suite(self, return_all = False, allow_grb = True):
+
+		surrogate_modelers = []
+		# all
+		alamo_settings1 = {'logfcns':1,
+						   'expfcns':1,
+						   'monomialpower': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'multi2power': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'multi3power': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'ratiopower': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'sinfcns': 1,
+						   'cosfcns': 1
+						   }
+		surrogate_modelers.append(Alamopy(**alamo_settings1))
+
+		# all0
+		alamo_settings2 = {'logfcns':1,
+						   'expfcns':1,
+						   'monomialpower': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'multi2power': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'multi3power': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						   'ratiopower': (0.5, 1, 2, 3, -0.5, -1, -2, -3),
+						  }
+		surrogate_modelers.append(Alamopy(**alamo_settings2))
+
+		# all1
+		if allow_grb:
+			alamo_settings3 = { 'monomialpower':(0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.3, 1.4, 1.6, 1.8, 2, 2.5,
+												 3, 3.5, 4, -0.1, -0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.3, -1.4,
+												  -1.6, -1.8, -2, -2.5, -3, -3.5, -4 ),
+								'grbfcns': 1
+			}
+			surrogate_modelers.append(Alamopy(**alamo_settings3))
+
+		#linear
+		alamo_settings4 = {}
+		surrogate_modelers.append(Alamopy(**alamo_settings4))
+
+		#logexp
+		alamo_settings5 = {'logfcns':1,
+						   'expfcns':1
+						   }
+		surrogate_modelers.append(Alamopy(**alamo_settings5))
+
+		#mono
+		alamo_settings6 = {'monomialpower':(0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.3, 1.4, 1.6, 1.8, 2)}
+		surrogate_modelers.append(Alamopy(**alamo_settings6))
+
+		#mono2
+		alamo_settings7 = {'monomialpower':(0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.3, 1.4, 1.6, 1.8, 2, 2.5,
+											 3, 3.5, 4, -0.1, -0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.3, -1.4,
+											  -1.6, -1.8, -2, -2.5, -3, -3.5, -4 )}
+		surrogate_modelers.append(Alamopy(**alamo_settings7))
+
+		#multi2
+		alamo_settings8 = {'multi2power': (0.5, 1, 2, 3, -0.5, -1, -2, -3)}
+		surrogate_modelers.append(Alamopy(**alamo_settings8))
+
+		#multi3
+		alamo_settings9 = {'multi3power': (0.5, 1, 2, 3, -0.5, -1, -2, -3)}
+		surrogate_modelers.append(Alamopy(**alamo_settings9))
+
+		#olr
+		alamo_settings10 = {'modeler': 6, 'convpen': 0}
+		surrogate_modelers.append(Alamopy(**alamo_settings10))
+
+		#pce3
+		alamo_settings11 = {'monomialpower' : (1,2,3),
+							'multi2power': (1,2)}
+		surrogate_modelers.append(Alamopy(**alamo_settings11))
+
+		#quad
+		alamo_settings12 = {'monomialpower': (1,2),
+							'multi2power': (1,)}
+		surrogate_modelers.append(Alamopy(**alamo_settings12))
+
+		#ratio
+		alamo_settings13 = {'ratiopower': (0.5, 1, 2, 3, -0.5, -1, -2, -3)}
+		surrogate_modelers.append(Alamopy(**alamo_settings13))
+
+		#ratio2
+		alamo_settings14 = {'ratiopower': (0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.2,
+										   1.3, 1.4, 1.6, 1.8, 2, 2.5, 3, 3.5,
+										   4, -0.1, -0.2, -0.4, -0.6, -0.8, -1,
+										   -1.2, -1.3, -1.4, -1.6, -1.8, -2,
+										   -2.5, -3, -3.5, -4)}
+		surrogate_modelers.append(Alamopy(**alamo_settings14))
+
+		#rbf
+		if(allow_grb):
+			alamo_settings15 = {'grbfcns': 1}
+			surrogate_modelers.append(Alamopy(**alamo_settings15))
+
+		#sincos
+		alamo_settings16 = {'sinfcns': 1,
+							'cosfcns': 1}
+		surrogate_modelers.append(Alamopy(**alamo_settings16))
+
+		best_model = None
+		all_metrics = []
+		for m in surrogate_modelers:
+			m.regressed_data(self._rdata_in, self._rdata_out)
+			m.build_model()
+			metrics = m.get_results()
+			if best_model is None or best_model.get_results()[Metrics.MSE] > metrics[Metrics.MSE]:
+				best_model = m
+
+			all_metrics.append(metrics)
+
+		if return_all:
+			return all_metrics
+
+		return best_model
 
 class Pysmo_rbf(Surrogate):
 	CONFIG = Surrogate.CONFIG()
