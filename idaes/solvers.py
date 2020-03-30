@@ -35,6 +35,8 @@ def download_binaries(url=None, verbose=False, platform="auto"):
             platform = arch[0]
         if platform not in idaes.config.known_binary_platform:
             raise Exception("Unknow platform {}".format(platform))
+        if platform in idaes.config.binary_platform_map:
+            platform = idaes.config.binary_platform_map[platform]
         solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])])
         libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))

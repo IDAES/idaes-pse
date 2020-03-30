@@ -14,9 +14,18 @@ known_binary_platform = {
     "centos6": "CentOS 6",
     "centos7": "CentOS 7",
     "centos8": "CentOS 8",
+    "rhel6": "Red Hat Enterprise Linux 6",
+    "rhel7": "Red Hat Enterprise Linux 7",
+    "rhel8": "Red Hat Enterprise Linux 8",
     "ubuntu1804": "Ubuntu 18.04",
     "ubuntu1910": "Ubuntu 19.10",
     "ubuntu2004": "Ubuntu 20.04",
+}
+binary_platform_map = {
+    "rhel6": "centos6",
+    "rhel7": "centos7",
+    "rhel8": "centos8",
+    "linux": "centos7",
 }
 
 default_config = """
