@@ -8,6 +8,7 @@ shared-dev: &shared-dev
     - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
     - run: cd docs && python build.py
+    - run: idaes get-extensions
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -18,6 +19,7 @@ shared: &shared
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install --progress-bar=off -r requirements.txt
+    - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
@@ -45,6 +47,7 @@ jobs:
           command: |
             source activate idaes36
             python -m pip install --progress-bar=off -r requirements.txt
+            idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
     docker:
@@ -60,7 +63,10 @@ jobs:
           command: |
             source activate idaes-pse
             python -m pip install idaes-pse
-            echo "Getting extensions?"
+      - run:
+          name: Install idaes extensions
+          command: |
+            source activate idaes-pse
             idaes get-extensions
       - run:
           name: Run tests
