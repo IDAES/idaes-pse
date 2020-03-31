@@ -7,7 +7,7 @@ shared-dev: &shared-dev
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
-    - run: cd docs && make all
+    - run: cd docs && python build.py
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
