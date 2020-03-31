@@ -202,7 +202,7 @@ class Alamopy(Surrogate):
 			if best_model is None or best_model.get_results()[Metrics.MSE] > metrics[Metrics.MSE]:
 				best_model = m
 
-			all_metrics.append(metrics)
+			all_metrics.append(m)
 
 		if return_all:
 			return all_metrics
