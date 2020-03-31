@@ -361,7 +361,7 @@ class Pysmo_polyregression(Surrogate):
 	CONFIG.declare('training_split', ConfigValue(default=None, domain=float))
 	CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
 	CONFIG.declare('multinomials', ConfigValue(default=None, domain=bool))
-	CONFIG.declare('additional_features', ConfigValue(default=None, domain=list))
+	CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
 	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
 	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
@@ -375,13 +375,21 @@ class Pysmo_polyregression(Surrogate):
 		start_time = time.time()
 		training_data = np.concatenate((self._rdata_in, self._rdata_out.reshape(self._rdata_out.size, 1)), axis=1)
 		self.pyomo_vars = dict((k, self.config[k]) for k in ['pyomo_vars'] if k in self.config)  # Extract variable list
-		self.add_terms = dict((k, self.config[k]) for k in ['additional_features'] if k in self.config)
+		self.add_terms = dict((k, self.config[k]) for k in ['additional_features_list'] if k in self.config)
 		self.polyreg_setup = {k: self.config[k] for k in set(self.config) - set(self.pyomo_vars) - set(self.add_terms)}
 		prob_init = polynomial_regression.PolynomialRegression(training_data, training_data, **self.polyreg_setup)
 		feature_vec = prob_init.get_feature_vector()
-		if self.add_terms:
-			ValueError('This feature is currently not available with this set-up')  # This needs to be fixed
-		# prob_init.set_additional_terms(self.add_terms['additional_features'])
+		
+		if self.config['additional_features_list'] is not None:
+			try:
+				term_lst = []
+				res = [sub.replace('ft', 'feature_vec') for sub in self.add_terms['additional_features_list']] 
+				for i in res:
+					term_lst.append(eval(i))
+				prob_init.set_additional_terms(term_lst)
+			except:
+				raise ValueError('The additional terms could not be evaluated.')
+				
 		self.pysmo_polyregression_results = prob_init.poly_training()
 		self._results[Metrics.Time] = time.time() - start_time
 
