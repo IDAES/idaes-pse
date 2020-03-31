@@ -229,7 +229,7 @@ class TestIAPWS95(unittest.TestCase):
                 p = "Vap"
                 f = model.prop_in.func_svpt
             print("{} {} {}".format(c[0], c[1], phase[i][2]))
-            self.bin_derivs_fd_test(f, c[1]/1000, 647.096/c[0], d0=1e-3, d1=1e-6, tol=0.001)
+            self.bin_derivs_fd_test(f, c[1]/1000, 647.096/c[0], d0=1e-3, d1=1e-6, tol=0.01)
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
