@@ -22,6 +22,9 @@ State Definition Libraries
     :maxdepth: 1
 
     state/FTPx
+    state/FcTP
+    state/FPhx
+    state/FcPh
 
 Setting Bounds on State Variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -40,6 +43,6 @@ Many thermophysical properties are relative quantities, and require the definiti
 
 As such, users must provide the following two configuration arguments:
 
-* "pressure_ref" - pressure at reference state
-* "temperature_ref" - temperature at reference state
+* `pressure_ref` - pressure at reference state
+* `temperature_ref` - temperature at reference state
 
