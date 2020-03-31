@@ -61,11 +61,13 @@ def _main():
                           'overwrite': True}
     modeler = Pysmo_kriging(**pysmo_krg_settings)
 
+   # Enter additional regression features as list of strings with variable name 'ft'
     pysmo_pr_settings = {'maximum_polynomial_order':4,
                          'multinomials':1,
                          'pyomo_vars': [m.x[1], m.x[2]],
                          'training_split':0.9,
                          'number_of_crossvalidations': 5,
+                         'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])', 'pyo.exp(ft[1])'],
                          'overwrite': True}
     modeler = Pysmo_polyregression(**pysmo_pr_settings)
 
