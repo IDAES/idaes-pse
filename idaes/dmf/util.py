@@ -21,12 +21,14 @@ import logging
 import os
 import re
 import shutil
-import tempfile
 import time
 import yaml
 
 # third-party
 import colorama
+
+# package
+from idaes.util.system import mkdtemp
 
 __author__ = "Dan Gunter"
 
@@ -107,7 +109,7 @@ class TempDir(object):
         self._a = args
 
     def __enter__(self):
-        self._d = tempfile.mkdtemp(*self._a)
+        self._d = mkdtemp(*self._a)
         return self._d
 
     def __exit__(self, *args):

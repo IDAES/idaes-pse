@@ -17,7 +17,6 @@ Tests for idaes.dmf.propindex module.
 import logging
 import shutil
 import sys
-import tempfile
 
 # third-party
 import pytest
@@ -27,6 +26,7 @@ import idaes
 from idaes.dmf import propindex
 from idaes.dmf import DMF
 from idaes.dmf import resource
+from idaes.util.system import mkdtemp
 
 # for testing
 from .util import init_logging
@@ -49,7 +49,7 @@ def test_dmfvisitor():
 
 @pytest.fixture
 def tmpd():
-    d = tempfile.mkdtemp(prefix="test_propindex_", suffix=".idaes")
+    d = mkdtemp(prefix="test_propindex_", suffix=".idaes")
     yield d
     shutil.rmtree(d)
 
