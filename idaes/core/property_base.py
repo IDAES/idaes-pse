@@ -123,7 +123,7 @@ class PhysicalParameterBlock(ProcessBlockData,
         obj = getattr(self, comp)
         if not isinstance(obj, ComponentData):
             raise PropertyPackageError(
-                    "{} get_component found a component {}, but it does not "
+                    "{} get_component found an attribute {}, but it does not "
                     "appear to be an instance of a Component object."
                     .format(self.name, comp))
         return obj
@@ -141,12 +141,22 @@ class PhysicalParameterBlock(ProcessBlockData,
         obj = getattr(self, phase)
         if not isinstance(obj, PhaseData):
             raise PropertyPackageError(
-                    "{} get_phase found a component {}, but it does not "
+                    "{} get_phase found an attribute {}, but it does not "
                     "appear to be an instance of a Phase object."
                     .format(self.name, phase))
         return obj
 
+    # TODO : Deprecate this code at some point
     def _validate_parameter_block(self):
+        """
+        Backwards compatability checks.
+
+        This is code to check for old-style property packages and create
+        the necessary Phase and Component objects.
+
+        It also tries to catch some possible mistakes and provide the user with
+        useful error messages.
+        """
         try:
             # Check names in component list have matching Component objects
             for c in self.component_list:
@@ -158,6 +168,7 @@ class PhysicalParameterBlock(ProcessBlockData,
                                 "name appears in component_list but is not an "
                                 "instance of Component".format(self.name, c))
                 except AttributeError:
+                    # No object with name c, must be old-style package
                     self._make_component_objects()
                     break
         except AttributeError:
@@ -176,6 +187,7 @@ class PhysicalParameterBlock(ProcessBlockData,
                                 "name appears in phase_list but is not an "
                                 "instance of Phase".format(self.name, p))
                 except AttributeError:
+                    # No object with name p, must be old-style package
                     self._make_phase_objects()
                     break
         except AttributeError:
@@ -184,20 +196,22 @@ class PhysicalParameterBlock(ProcessBlockData,
                                        "phase list.".format(self.name))
 
     def _make_component_objects(self):
-        _log.warning("{} appears to be an old-style property package. It will "
-                     "be automatically converted to a new-style package, "
-                     "however users are strongly encouraged to convert their "
-                     "property packages to use phase and component objects."
+        _log.warning("DEPRECATED: {} appears to be an old-style property "
+                     "package. It will be automatically converted to a "
+                     "new-style package, however users are strongly encouraged"
+                     " to convert their property packages to use phase and "
+                     "component objects."
                      .format(self.name))
         for c in self.component_list:
             setattr(self, str(c), Component(
                         default={"_component_list_exists": True}))
 
     def _make_phase_objects(self):
-        _log.warning("{} appears to be an old-style property package. It will "
-                     "be automatically converted to a new-style package, "
-                     "however users are strongly encouraged to convert their "
-                     "property packages to use phase and component objects."
+        _log.warning("DEPRECATED: {} appears to be an old-style property "
+                     "package. It will be automatically converted to a "
+                     "new-style package, however users are strongly encouraged"
+                     " to convert their property packages to use phase and "
+                     "component objects."
                      .format(self.name))
         for p in self.phase_list:
             try:
@@ -216,6 +230,7 @@ class StateBlock(ProcessBlock):
         PropertyData objects, and contains methods that can be applied to
         multiple StateBlockData objects simultaneously.
     """
+
     def initialize(self, *args, **kwargs):
         """
         This is a default initialization routine for StateBlocks to ensure
@@ -228,7 +243,7 @@ class StateBlock(ProcessBlock):
         Returns:
             None
         """
-        raise NotImplementedError('{} property package has not implemented the'
+        raise NotImplementedError('{} property package has not implemented an'
                                   ' initialize method. Please contact '
                                   'the property package developer'
                                   .format(self.name))
@@ -374,6 +389,9 @@ should be constructed in this state block,
         """
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
+
+        # TODO: Deprecate this at some point
+        # Backwards compatability check for old-style property packages
         self._params._validate_parameter_block()
 
     @property

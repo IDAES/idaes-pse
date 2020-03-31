@@ -21,7 +21,6 @@ import math
 import os
 import shutil
 import sys
-import tempfile
 
 # third-party
 import pendulum
@@ -29,6 +28,7 @@ import pytest
 
 # local
 from idaes.dmf import resource, propdata
+from idaes.util.system import mkdtemp
 
 # for testing
 from .util import init_logging
@@ -153,7 +153,7 @@ def test_validate_preprocess(default_resource):
 
 @pytest.fixture
 def tmpd():
-    d = tempfile.mkdtemp(prefix="test_resource_", suffix=".idaes")
+    d = mkdtemp(prefix="test_resource_", suffix=".idaes")
     yield d
     shutil.rmtree(d)
 

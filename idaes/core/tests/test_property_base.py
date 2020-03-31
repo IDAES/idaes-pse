@@ -123,7 +123,7 @@ def test_get_component():
 
     with pytest.raises(
             PropertyPackageError,
-            match="p get_component found a component a, but it does not "
+            match="p get_component found an attribute a, but it does not "
             "appear to be an instance of a Component object."):
         m.p.get_component("a")
 
@@ -143,7 +143,7 @@ def test_get_phase():
 
     with pytest.raises(
             PropertyPackageError,
-            match="p get_phase found a component a, but it does not "
+            match="p get_phase found an attribute a, but it does not "
             "appear to be an instance of a Phase object."):
         m.p.get_phase("a")
 
