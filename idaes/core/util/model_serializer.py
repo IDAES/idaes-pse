@@ -25,8 +25,15 @@ import gzip
 
 # Some more inforation about this module
 __author__ = "John Eslick"
-__format_version__ = 3
+__format_version__ = 4
 
+
+def _can_serialize(o):
+    try:
+        json.dumps(o)
+        return True
+    except TypeError:
+        return False
 
 def _set_active(o, d):
     """
@@ -181,14 +188,18 @@ class StoreSpec(object):
         classes=(
             (Param, ("_mutable",)),
             (Var, ()),
-            (Component, ("active",))),
+            (Expression, ()),
+            (Component, ("active",)),
+        ),
         data_classes=(
             (pyomo.core.base.var._VarData,
                 ("fixed", "stale", "value", "lb", "ub")),
             (pyomo.core.base.param._ParamData, ("value",)),
             (int, ("value",)),
             (float, ("value",)),
-            (pyomo.core.base.component.ComponentData, ("active",))),
+            (pyomo.core.base.expression._ExpressionData, ()),
+            (pyomo.core.base.component.ComponentData, ("active",)),
+        ),
         skip_classes=(ExternalFunction, Set, Port, Expression, RangeSet),
         ignore_missing=True,
         suffix=True,
@@ -350,7 +361,9 @@ class StoreSpec(object):
                 data_classes=(
                     (pyomo.core.base.var._VarData, ("value", "fixed"), _only_fixed),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",))))
+                    (pyomo.core.base.component.ComponentData, ("active",))),
+                suffix=False,
+            )
         else:
             return cls(
                 classes=(
@@ -360,7 +373,9 @@ class StoreSpec(object):
                 data_classes=(
                     (pyomo.core.base.var._VarData, ("value", "fixed")),
                     (pyomo.core.base.param._ParamData, ("value",)),
-                    (pyomo.core.base.component.ComponentData, ("active",))))
+                    (pyomo.core.base.component.ComponentData, ("active",))),
+                suffix=False
+            )
 
 def _may_have_subcomponents(o):
     """
@@ -403,7 +418,7 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
     sd[oname] = {"__type__":str(type(o))}
     if wts.include_suffix:
         sd[oname]["__id__"] = count.count
-        lookup[id(o)] = count.count #used python id() here for efficency
+    lookup[id(o)] = count.count #used python id() here for efficency
     if count is not None: count.count += 1 # incriment the componet counter
     for a in alist: # store the desired attributes
         if a in wts.write_cbs:
@@ -422,6 +437,7 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
     else: # if not suffix go ahead and write the data
         _write_component_data(sd=sd[oname]["data"], o=o, wts=wts, lookup=lookup,
                               count=count, suffixes=suffixes)
+
 
 def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
     """
@@ -445,6 +461,13 @@ def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
         # make special provision for writing suffixes.
         for key in o:
             el = o[key]
+            if id(key) not in lookup:
+                # didn't store these compoents so can't write suffix.
+                continue
+            if not _can_serialize(el):
+                # Since I had the bright idea to expressions in suffixes
+                # not everything in a suffix is serializable.
+                continue
             sd[lookup[id(key)]] = el # Asssume keys are Pyomo model components
     else: # rest of compoents with normal componet data structure
         frst = True # on first item when true

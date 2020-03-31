@@ -23,7 +23,7 @@ from pyomo.core.base.misc import tabular_writer
 from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
-from pyutilib.enum import Enum
+from enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -51,10 +51,10 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for material flow basis
-MaterialFlowBasis = Enum(
-    'molar',
-    'mass',
-    'other')
+class MaterialFlowBasis(Enum):
+    molar = 0
+    mass = 1
+    other = 2
 
 
 @declare_process_block_class("ProcessBaseBlock")
@@ -179,9 +179,9 @@ class ProcessBlockData(_BlockData):
                 except AttributeError:
                     pass
 
-                # Try to fix enthalpy_accumulation @ first time point
+                # Try to fix energy_accumulation @ first time point
                 try:
-                    obj.enthalpy_accumulation[
+                    obj.energy_accumulation[
                             obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
@@ -214,9 +214,9 @@ class ProcessBlockData(_BlockData):
             except AttributeError:
                 pass
 
-            # Try to fix enthalpy_accumulation @ first time point
+            # Try to fix energy_accumulation @ first time point
             try:
-                obj.enthalpy_accumulation[
+                obj.energy_accumulation[
                         obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
@@ -507,27 +507,3 @@ class ProcessBlockData(_BlockData):
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                         self.config.reaction_package.config.default_arguments[k]
-
-    def _get_phase_comp_list(self):
-        """
-        Method to collect phase-component list from property package.
-        If property package does not define a phase-component list, then it is
-        assumed that all components are present in all phases.
-
-        Args:
-            None
-
-        Returns:
-            phase_component_list
-        """
-        # Get phase component list(s)
-        if hasattr(self.config.property_package, "phase_component_list"):
-            phase_component_list =\
-                self.config.property_package.phase_component_list
-        else:
-            # Otherwise assume all components in all phases
-            phase_component_list = {}
-            for p in self.config.property_package.phase_list:
-                phase_component_list[p] = self.config.property_package.\
-                    component_list
-        return phase_component_list

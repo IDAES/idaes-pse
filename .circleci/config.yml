@@ -5,11 +5,9 @@ shared-dev: &shared-dev
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install pip==18.0.0
-    - run: pip install -r requirements-dev.txt
+    - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
-#          - run: pyomo --version
-#    - run: cd docs && make all
+    - run: cd docs && python build.py
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -19,8 +17,7 @@ shared: &shared
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install pip==18.0.0
-    - run: pip install -r requirements.txt
+    - run: pip install --progress-bar=off -r requirements.txt
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
@@ -47,9 +44,33 @@ jobs:
           name: Install and run tests in Python 3.6 Conda environment
           command: |
             source activate idaes36
-            pip install pip==18.0.0
-            pip install -r requirements.txt
+            python -m pip install --progress-bar=off -r requirements.txt
             pytest -c pytest.ini idaes -m "not nocircleci"
+  "pip-install":
+    docker:
+      - image: idaes/ubuntu18-conda:latest
+    working_directory: ~
+    steps:
+      - run:
+          name: Create Python 3.7 Conda environment
+          command: |
+            conda create -yv -n idaes-pse python=3.7
+      - run:
+          name: Install idaes-pse
+          command: |
+            source activate idaes-pse
+            python -m pip install idaes-pse
+      - run:
+          name: Install idaes extensions
+          command: |
+            source activate idaes-pse
+            idaes get-extensions
+      - run:
+          name: Run tests
+          command: |
+            source activate idaes-pse
+            pytest --pyargs idaes -W ignore
+
 
 workflows:
   version: 2
@@ -58,3 +79,14 @@ workflows:
       - "python-3.6"
       - "python-3.7"
       - "python-3.7-dev"
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - nightlies
+    jobs:
+      - "pip-install"

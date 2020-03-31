@@ -16,19 +16,21 @@ Base class for unit models
 
 from pyomo.environ import Reference, SolverFactory
 from pyomo.network import Port
-from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
 from .property_base import StateBlock
-from .control_volume_base import ControlVolumeBlockData, FlowDirection
+from .control_volume_base import (ControlVolumeBlockData,
+                                  FlowDirection,
+                                  MaterialBalanceType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        PropertyPackageError)
+                                        PropertyPackageError,
+                                        BalanceTypeNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -36,7 +38,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
-_log = getIdaesLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("UnitModelBlock")
@@ -65,6 +67,7 @@ class UnitModelBlockData(ProcessBlockData):
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
+**useDefault** - get flag from parent (default = False),
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
 
@@ -115,11 +118,13 @@ Must be True if dynamic = True,
         """
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
+
         Keyword Args:
-            name = name to use for Port object.
-            block = an instance of a StateBlock to use as the source to
+            name : name to use for Port object.
+            block : an instance of a StateBlock to use as the source to
                     populate the Port object
-            doc = doc string for Port object
+            doc : doc string for Port object
+
         Returns:
             A Pyomo Port object and associated components.
         """
@@ -165,13 +170,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "inlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "inlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the inlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Inlet Port")
+            doc : doc string for Port object (default = "Inlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
@@ -320,13 +325,13 @@ Must be True if dynamic = True,
         i.e. either both arguments are provided or neither.
 
         Keyword Args:
-            name = name to use for Port object (default = "outlet").
-            block = an instance of a ControlVolume or StateBlock to use as the
+            name : name to use for Port object (default = "outlet").
+            block : an instance of a ControlVolume or StateBlock to use as the
                     source to populate the Port object. If a ControlVolume is
                     provided, the method will use the outlet state block as
                     defined by the ControlVolume. If not provided, method will
                     attempt to default to an object named control_volume.
-            doc = doc string for Port object (default = "Outlet Port")
+            doc : doc string for Port object (default = "Outlet Port")
 
         Returns:
             A Pyomo Port object and associated components.
@@ -467,6 +472,129 @@ Must be True if dynamic = True,
 
         return p
 
+    def add_state_material_balances(self, balance_type, state_1, state_2):
+        """
+        Method to add material balances linking two State Blocks in a Unit
+        Model. This method is not intended to replace Control Volumes, but
+        to automate writing material balances linking isolated State Blocks
+        in those models where this is required.
+
+        Args:
+            balance_type - a MaterialBalanceType Enum indicating the type
+                            of material balances to write
+            state_1 - first State Block to be linked by balances
+            state_2 - second State Block to be linked by balances
+
+        Returns:
+            None
+        """
+        # Confirm that both state blocks stem from the same parameter block
+        if not isinstance(state_1, StateBlock):
+            raise ConfigurationError(
+                    "{} state_1 argument to add_state_material_balances "
+                    "was not an instance of a State Block.".format(self.name))
+
+        if not isinstance(state_2, StateBlock):
+            raise ConfigurationError(
+                    "{} state_2 argument to add_state_material_balances "
+                    "was not an instance of a State Block.".format(self.name))
+
+        # Check that no constraint with the same name exists
+        # We will only support using this method once per Block
+        if hasattr(self, "state_material_balances"):
+            raise AttributeError(
+                    "{} a set of constraints named state_material_balances "
+                    "already exists in the current UnitModel. To avoid "
+                    "confusion, add_state_material_balances is only supported "
+                    "once per UnitModel.".format(self.name))
+
+        # Get a representative time point for testing
+        rep_time = self.flowsheet().config.time.first()
+        if state_1[rep_time].params is not state_2[rep_time].params:
+            raise ConfigurationError(
+                    "{} add_state_material_balances method was provided with "
+                    "State Blocks are not linked to the same "
+                    "instance of a Physical Parameter Block. This method "
+                    "only supports linking State Blocks from the same "
+                    "Physical Parameter Block.".format(self.name))
+
+        if balance_type == MaterialBalanceType.useDefault:
+            balance_type = (
+                state_1[rep_time].default_material_balance_type()
+            )
+
+        phase_list = state_1[rep_time].params.phase_list
+        component_list = state_1[rep_time].params.component_list
+
+        if balance_type == MaterialBalanceType.componentPhase:
+            # TODO : Should we include an optional phase equilibrium term here
+            # to allow for systems where a phase-transition may occur?
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                phase_list,
+                component_list,
+                doc="State material balances",
+            )
+            def state_material_balances(b, t, p, j):
+                return state_1[t].get_material_flow_terms(
+                    p, j
+                ) == state_2[t].get_material_flow_terms(p, j)
+
+        elif balance_type == MaterialBalanceType.componentTotal:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                component_list,
+                doc="State material balances",
+            )
+            def state_material_balances(b, t, j):
+                return sum(
+                    state_1[t].get_material_flow_terms(p, j)
+                    for p in phase_list
+                ) == sum(
+                    state_2[t].get_material_flow_terms(p, j)
+                    for p in phase_list
+                )
+
+        elif balance_type == MaterialBalanceType.total:
+
+            @self.Constraint(
+                self.flowsheet().config.time,
+                doc="State material balances",
+            )
+            def state_material_balances(b, t):
+                return sum(
+                    sum(
+                        state_1[t].get_material_flow_terms(p, j)
+                        for j in component_list
+                    )
+                    for p in phase_list
+                ) == sum(
+                    sum(
+                        state_2[t].get_material_flow_terms(p, j)
+                        for j in component_list
+                    )
+                    for p in phase_list
+                )
+
+        elif balance_type == MaterialBalanceType.elementTotal:
+            raise BalanceTypeNotSupportedError(
+                "{} add_state_material_balances does not support "
+                "MaterialBalanceType.elementTotal.".format(self.name)
+            )
+        elif balance_type == MaterialBalanceType.none:
+            raise BalanceTypeNotSupportedError(
+                "{} add_state_material_balances does not support "
+                "MaterialBalanceType.None.".format(self.name)
+            )
+        else:
+            raise BurntToast(
+                "{} add_state_material_balances received an unexpected "
+                "argument for balance_type. This should never happen. Please "
+                "contact the IDAES developers with this bug.".format(self.name)
+            )
+
     def _get_stream_table_contents(self, time_point=0):
         """
         Assume unit has standard configuration of 1 inlet and 1 outlet.
@@ -483,7 +611,7 @@ Must be True if dynamic = True,
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-    def initialize(blk, state_args=None, outlvl=6,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a general purpose initialization routine for simple unit
@@ -500,13 +628,6 @@ Must be True if dynamic = True,
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
@@ -515,27 +636,34 @@ Must be True if dynamic = True,
             None
         '''
         # Set solver options
-        init_log = getInitLogger(blk.name, outlvl)
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.control_volume.initialize(outlvl=outlvl+1,
-                                              optarg=optarg,
-                                              solver=solver,
-                                              state_args=state_args)
+        flags = blk.control_volume.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args,
+        )
 
-        init_log.log(4, 'Initialization Step 1 Complete.')
+        init_log.info_high('Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(blk, tee=init_tee(init_log))
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            results = opt.solve(blk, tee=slc.tee)
 
-        init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
+        init_log.info_high(
+            "Initialization Step 2 {}.".format(idaeslog.condition(results))
+        )
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl+1)
 
-        init_log.log(5, 'Initialization Complete: {}'.format(condition(results)))
+        init_log.info('Initialization Complete: {}'.format(idaeslog.condition(results)))

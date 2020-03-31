@@ -2,6 +2,6 @@
 
 # Pyomo from Git
 git+https://github.com/PyUtilib/pyutilib
-git+https://github.com/pyomo/pyomo.git@IDAES
+git+https://github.com/IDAES/pyomo.git@IDAES
 
 -e .

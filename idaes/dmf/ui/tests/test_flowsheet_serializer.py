@@ -13,8 +13,8 @@
 import pytest
 from operator import itemgetter
 
-import idaes.examples.workshops.Module_2_Flowsheet.hda_ideal_VLE as thermo_props
-import idaes.examples.workshops.Module_2_Flowsheet.hda_reaction as reaction_props
+import hda_ideal_VLE as thermo_props
+import hda_reaction as reaction_props
 
 from pyomo.environ import (Constraint,
                            Var,
@@ -32,13 +32,13 @@ from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
 from idaes.dmf.ui.icon_mapping import icon_mapping
 from idaes.dmf.ui.link_position_mapping import link_position_mapping
 
-from idaes.unit_models import (Flash,
+from idaes.generic_models.unit_models import (Flash,
                                PressureChanger,
                                Mixer,
                                Separator as Splitter,
                                Heater,
                                StoichiometricReactor)
-from idaes.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
 
 
 def test_serialize_flowsheet():
@@ -139,80 +139,116 @@ def test_serialize_flowsheet():
 
     named_edges_results = {}
     edges = fss.get_edges()
-    for edge in edges:
-        named_edges_results[edge.getname()] = [x.getname() for x in edges[edge]]
 
-    named_edges_truth = {'M101': ['H101'], 
-                         'H101': ['R101'], 
-                         'R101': ['F101'], 
-                         'F101': ['S101', 'F102'], 
-                         'S101': ['C101'], 
-                         'C101': ['M101']}
+    for name, end_points in edges.items():
+      named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
+
+    print(named_edges_results)
+
+    named_edges_truth = {'s03': {'source': 'M101', 'dest': 'H101'}, 
+                         's04': {'source': 'H101', 'dest': 'R101'}, 
+                         's05': {'source': 'R101', 'dest': 'F101'}, 
+                         's06': {'source': 'F101', 'dest': 'S101'}, 
+                         's08': {'source': 'S101', 'dest': 'C101'}, 
+                         's09': {'source': 'C101', 'dest': 'M101'}, 
+                         's10': {'source': 'F101', 'dest': 'F102'}}
 
     assert named_edges_results == named_edges_truth
 
 
-def test_create_image_json():
-  out_json = {}
+def test_create_image_jointjs_json():
+  out_json = {"model": {}}
   out_json["cells"] = []
   x_pos = 0
   y_pos = 0
   component_id = "M101"
   component_type = "mixer"
   image = icon_mapping[component_type]
-  label = "M101"
 
   fss = FlowsheetSerializer()
-  fss.create_image_json(out_json, x_pos, y_pos, component_id, image, label, component_type)
+  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type)
   assert out_json == {'cells': 
-                      [{
-                          'type': 'standard.Image', 
-                          'position': {'x': 0, 'y': 0}, 
-                          'size': {'width': 50, 'height': 50}, 
-                          'angle': 0, 'id': 'M101', 'z': (1,), 
-                          'attrs': {
-                              'image': {'xlinkHref': 'mixer.svg'}, 
-                              'label': {'text': 'M101'}, 
-                              'root': {'title': 'mixer'}
+                        [{
+                            'type': 'standard.Image', 
+                            'position': {'x': 0, 'y': 0}, 
+                            'size': {'width': 50, 'height': 50}, 
+                            'angle': 0, 'id': 'M101', 'z': (1,), 
+                            'attrs': {
+                                'image': {'xlinkHref': 'mixer.svg'}, 
+                                'label': {'text': 'M101'}, 
+                                'root': {'title': 'mixer'}
                           }
-                      }]
-                     }
+                        }],
+                       "model": {}
+                      }
 
 
-def test_create_link_json():
-    out_json = {}
+def test_create_link_jointjs_json():
+    out_json = {"model": {}}
     out_json["cells"] = []
     source_anchor = link_position_mapping["heater"]["outlet_anchors"]
     dest_anchor = link_position_mapping["mixer"]["inlet_anchors"]
     source_id = "M101"
     dest_id = "F101"
-    link_id = 1
+    link_id = "s03"
+    label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id)
-    print(out_json)
-    assert out_json == {'cells': 
-                        [{
+    fss.create_link_jointjs_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id, label)
+    assert out_json == {'cells': [{
                             'type': 'standard.Link', 
                             'source': {
-                                'anchor': {
-                                            'name': 'right', 
-                                            'args': {'rotate': 'false', 'padding': 0}
-                                          }, 
-                                'id': 'M101'
-                            }, 
+                              'anchor': {
+                                'name': 'right', 
+                                'args': {
+                                  'rotate': 'false', 
+                                  'padding': 0
+                                }
+                              }, 
+                              'id': 'M101'
+                            },
                             'target': {
-                                'anchor': {
-                                            'name': 'left', 
-                                            'args': {'rotate': 'false', 'padding': 0}
-                                          }, 
-                                'id': 'F101'
+                              'anchor': {
+                                'name': 'left', 
+                                'args': {
+                                  'rotate': 'false', 
+                                  'padding': 0
+                                }
+                              }, 
+                              'id': 'F101'
                             }, 
-                            'router': {'name': 'orthogonal', 'padding': 10}, 
+                            'router': {
+                              'name': 'orthogonal', 
+                              'padding': 10
+                            }, 
                             'connector': {
-                                             'name': 'jumpover', 
-                                             'attrs': {'line': {'stroke': '#6FB1E1'}}
-                                         }, 
-                            'id': 1, 'z': 2
-                        }]
-                       }
+                              'name': 'normal', 
+                              'attrs': {
+                                'line': {
+                                  'stroke': '#5c9adb'
+                                }
+                              }
+                            }, 
+                            'id': 's03', 
+                            'labels': [{
+                              'attrs': {
+                                'rect': {
+                                  "fill": "#d7dce0", 
+                                  "stroke": "#FFFFFF", 
+                                  'stroke-width': 1
+                                }, 
+                                'text': {
+                                  'text': 'foo', 
+                                  'fill': 'black', 
+                                  'text-anchor': 'left'
+                                }
+                              }, 
+                              'position': {
+                                'distance': 0.66, 
+                                'offset': -40
+                              }
+                            }], 
+                            'z': 2
+                          }],
+                          "model": {}
+                        }

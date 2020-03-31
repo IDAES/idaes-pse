@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Run ALAMO.
+Run ALAMO .
 """
 import sys
 import collections
@@ -22,26 +22,27 @@ import os
 from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import almerror
 from idaes.surrogate.alamopy.writethis import writethis
-from idaes.surrogate.alamopy.multos import deletefile
+from idaes.surrogate.alamopy.multos import deletefile, has_alamo
 
 
 def doalamo(xdata, zdata, **kwargs):
     """
-    Warning: doalamo is deprecated. 
-    please use alamopy.doalamo.alamo(xdata, zdata, **kwargs)
+    Warning: doalamo is deprecated.
+    please use ``alamopy.doalamo.alamo(xdata, zdata, **kwargs)``
     """
     return alamo(xdata, zdata, **kwargs)
 
 
 def alamo(xdata, zdata, **kwargs):
-    """ [almmodel] = doalamo(xdata,zdata, xvaldata, zvaldata,addopt=vals)
+    """
+    [almmodel] = doalamo(xdata,zdata, xvaldata, zvaldata,addopt=vals)
 
     Args:
-        xdata (numpy.array or list[real])
-        zdata (numpy.array or list[real)
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real)
         kwargs: Additional options may be specified and will be applied
-                to the .alm
-          -  example -  monomialpower=(1,2,3,4) 
+                to the .alm. Example -  monomialpower=(1,2,3,4)
+
           -  xlabels       : labels given to input variables
           -  zlabels       : labels given to outputs
           -  xval          : validaiton data for alamo
@@ -69,17 +70,20 @@ def alamo(xdata, zdata, **kwargs):
                              direct access to the .alm (no current checks)
           -  loo           : leave one out evaluation
           -  lmo           : leave many out evaluation
+
     Returns:
         dict: An ALAMO model with the following keys
+
           -  'model'    : algebraic form of model
           -  'f(model)' : a callable lambda function
-          -   Syntac is depended on expandout
+          -   Syntax is depended on expandout
                syntax => almmodel['f(model)']['out'](inputs,sep,by,comma)
                          almmodel['f(model)'](inputs,sep,by,comma)
           -  'ssr'      : SSE on training set provided
           -  'R2'       : R2 on training set provided
           -  'ssrval'   : SSE on testing set if provided
           -  'R2val'    : R2 on testing set if provided
+
     """
     data, debug = alamopy.data, alamopy.debug
 
@@ -358,19 +362,19 @@ def alamo(xdata, zdata, **kwargs):
 
 
 def setupData(data, debug, xdata, zdata, vargs, kwargs):
-    """ [xdata, zdata, xvaldata, zvaldata] = 
-            setupData(data, debug, xdata,zdata, vargs, kwargs)
+    """
+    [xdata, zdata, xvaldata, zvaldata] =
+    setupData(data, debug, xdata,zdata, vargs, kwargs)
 
-      Checks inputted data and resturctures the data for the .alm file
+    Checks inputted data and resturctures the data for the .alm file
 
-      Args:
-          data/debug: shared default options for .alm file
-          xdata (numpy.array or list[real])
-          zdata (numpy.array or list[real)
-          vargs:  Validation data
-          kwargs: Additional options may be specified and will be applied
+    Args:
+        data/debug: shared default options for .alm file
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real)
+        vargs:  Validation data
+        kwargs: Additional options may be specified and will be applied
                   to the .alm
-
     """
 
     xvaldata, zvaldata = list(), list()
@@ -386,16 +390,16 @@ def setupData(data, debug, xdata, zdata, vargs, kwargs):
 
 
 def checkinput(data, debug, xdata, zdata, vargs, kwargs):
-    """Check the input data into doalamo for errors.
+    """
+    Check the input data into doalamo for errors.
 
-      Args:
-          data/debug: shared default options for .alm file
-          xdata (numpy.array or list[real])
-          zdata (numpy.array or list[real)
-          vargs:  Validation data
-          kwargs: Additional options may be specified and will be applied
-                  to the .alm
-
+    Args:
+        data/debug: shared default options for .alm file
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real)
+        vargs:  Validation data
+        kwargs: Additional options may be specified and will be applied
+                to the .alm
     """
 
     # t = np.zeros([1, 1])
@@ -430,12 +434,13 @@ def checkinput(data, debug, xdata, zdata, vargs, kwargs):
 
 
 def getTrainingData(xdata, zdata, data, debug):
-    """ Structure data for training the model. Modifies data['opts']
+    """
+    Structure data for training the model. Modifies data['opts']
     
-        Args:
-        xdata (numpy.array or list[real])
-        zdata (numpy.array or list[real)
-        data:  shared alamo data options
+    Args:
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real)
+        data: shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
@@ -466,11 +471,12 @@ def getTrainingData(xdata, zdata, data, debug):
 
 
 def getValidationData(vargs, data, debug):
-    """ Structure data for validating the model. Modifies data['opts']
+    """
+    Structure data for validating the model. Modifies data['opts']
 
-        Args:
+    Args:
         vargs: validation data valxdata, valzdata
-        data:  shared alamo data options
+        data: shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
@@ -497,15 +503,17 @@ def getValidationData(vargs, data, debug):
 
 
 def getlabels(data, debug, kwargs):
-    """ Creates labels for data and output. Modifies data['labs']. \
-        Makes labels if no labels are given.
-
-        Args:
-          data:  shared alamo data options
-          debug: Additional options may be specified and will be applied
-                  to the .alm
-          vargs: validation data valxdata, valzdata
     """
+    Creates labels for data and output. Modifies data['labs'].
+    Makes labels if no labels are given.
+
+    Args:
+        data: shared alamo data options
+        debug: Additional options may be specified and will be applied
+                to the .alm
+        vargs: validation data valxdata, valzdata
+    """
+
     # This function generates labels if they are not provided
     # Check to see if labels have been specified before we generate them
     if "xlabels" in kwargs.keys():
@@ -538,11 +546,10 @@ def makelabs(data, debug, param):
     """
     Constructs labels for alamo
 
-      Args:
-        data:  shared alamo data options
-        debug: Additional options may be specified and will be applied
-                to the .alm
-        param = 'ninputs' or 'noutputs
+    Args:
+        data: shared alamo data options
+        debug: Additional options may be specified and will be applied to the .alm
+        param: 'ninputs' or 'noutputs'
     """
 
     temp = list([])
@@ -575,6 +582,7 @@ def addBasisGroups(groups):
     multiple input: Multi2, Multi3, ratio
     Need <pow> for MONO, Multi2, Multi3, Ratio, (-1111) - all powers
     """
+
     print("Adding groups", groups)
     for g in groups:
         if len(g) == 1:
@@ -587,8 +595,9 @@ def addBasisGroups(groups):
 
 def addBasisGroup(type_of_function, input_indices="", powers=""):
     """
-        Include the checks
+    Include the checks
     """
+
     global group_list
     group_index = len(group_list) + 1
     if type_of_function == "CONST":
@@ -621,8 +630,8 @@ def addBasisConstraints(groups_constraints):
     """
     NMT (no more than), ATL (at least), REQ (required if main group), XCL (exclude)
     format: group-id output_id constraint_type integer_parameter
-
     """
+
     global group_constraints, basis_constraints
     print("Adding basis selection constraint", group_constraints)
 
@@ -649,8 +658,9 @@ surface_constraint_list = []
 
 def addCustomConstraints(constraint_list, **kwargs):
     """
-        constraint args = CRTOL, CRNINITIAL, CRMAXITER, CRNVIOL, CRNTRIALS
+    constraint args = CRTOL, CRNINITIAL, CRMAXITER, CRNVIOL, CRNTRIALS
     """
+
     print("Adding constraints", constraint_list)
 
     global extrapxmin, extrapxmax, surface_constraint_list
@@ -728,14 +738,16 @@ def writeCustomALAMOOptions(kwargs):
 
 
 def manageArguments(xdata, zdata, data, debug, kwargs):
-    """ Parse additional input options
-      The 'pargs' library is used to keep track of options a user has availible
-      descriptions of the dictionaries data, and debug are given in shared.py
-      Multiple keys used to make writing the .alm file easier
-        
-      Args:
-        xdata (numpy.array or list[real])
-        zdata (numpy.array or list[real)
+    """
+    Parse additional input options
+
+    The 'pargs' library is used to keep track of options a user has availible
+    descriptions of the dictionaries data, and debug are given in shared.py
+    Multiple keys used to make writing the .alm file easier
+
+    Args:
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real])
         data:  shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
@@ -762,14 +774,16 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
 
 
 def parseKwargs(data, debug, kwargs):
-    """ Parse keyword arguments
+    """
+    Parse keyword arguments
 
-      Args:
-        data:  shared alamo data options
+    Args:
+        data: shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
         kwargs: keyword arguments
     """
+
     for arg in kwargs.keys():
         if arg in data["pargs"]["opts"]:
             data["opts"][arg] = kwargs[arg]
@@ -790,10 +804,11 @@ def parseKwargs(data, debug, kwargs):
 
 
 def buildSimWrapper(data, debug):
-    """ Builds an executable simulator to sample for data 
-      
-      Args:
-        data:  shared alamo data options
+    """
+    Builds an executable simulator to sample for data 
+
+    Args:
+        data: shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
@@ -813,15 +828,17 @@ def buildSimWrapper(data, debug):
 
 
 def constructXBounds(xdata, zdata, data, debug):
-    """ Construct xmin,xmax and zmin, zmax for alamo if none are given
-        
-      Args:
-        xdata (numpy.array or list[real])
-        zdata (numpy.array or list[real)
-        data:  shared alamo data options
+    """
+    Construct xmin,xmax and zmin, zmax for alamo if none are given
+
+    Args:
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real])
+        data: shared alamo data options
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
+
     writethis(
         "min and max values of inputs are not provided, \
               they will be calculated from the training data\n"
@@ -854,13 +871,15 @@ def constructXBounds(xdata, zdata, data, debug):
 
 
 def checkForSampledData(data, debug):
-    """ Check to see if data has been sampled and update ndata
-        
-      Args:
-        data:  shared alamo data options
+    """
+    Check to see if data has been sampled and update ndata
+
+    Args:
+        data: shared alamo data options
         debug: Additional options may be specified 
                and will be applied to the .alm
     """
+
     lst_name = data["stropts"]["almname"].split(".")[0] + ".lst"
     with open(lst_name) as infile, open("awkres", "w") as outfile:
         copy = False
@@ -899,15 +918,16 @@ def checkForSampledData(data, debug):
 
 
 def expandOutput(xdata, zdata, vargs, data, debug):
-    """ Expand output to validation metrics and labels
-
-        Args:
-          data/debug: shared default options for .alm file
-          xdata (numpy.array or list[real])
-          zdata (numpy.array or list[real)
-          vargs:  Validation data
-
     """
+    Expand output to validation metrics and labels
+
+    Args:
+        data/debug: shared default options for .alm file
+        xdata: (numpy.array or list[real])
+        zdata: (numpy.array or list[real])
+        vargs: Validation data
+    """
+
     if debug["expandoutput"]:
         data["results"]["xdata"] = xdata
         data["results"]["zdata"] = zdata
@@ -961,12 +981,12 @@ def expandOutput(xdata, zdata, vargs, data, debug):
 
 
 def readTraceFile(vargs, data, debug):
-    """ Read the alamo trace file to read in the model and metrics
+    """
+    Read the alamo trace file to read in the model and metrics
 
-      Args:
-          data/debug: shared default options for .alm file
-          vargs:  Validation data
-
+    Args:
+        data/debug: shared default options for .alm file
+        vargs: Validation data
     """
 
     trace_file = data["stropts"]["tracefname"]
@@ -976,40 +996,25 @@ def readTraceFile(vargs, data, debug):
         lf = open(trace_str).read()
     except (IOError, FileNotFoundError) as err:
         if debug["mock"]:
-            data["results"]["clrtime"] = "0"
-            data["results"]["size"] = "6"
-            data["results"]["numolr"] = "16960"
-            data["results"]["othertime"] = "0.8799995E-01"
-            data["results"]["olrtime"] = "0.10800002"
-            data["results"]["miptime"] = "0"
-            data["results"]["version"] = "2018.4.3"
-            data["results"]["status"] = "0"
-            data["results"]["R2"] = "1"
-            data["results"]["numclr"] = "0"
-            data["results"]["nummip"] = "0"
-            data["results"]["ssr"] = "0.169E-21"
-            data["results"]["pymodel"] = "cam6alm"
-            data["results"]["totaltime"] = "0.1760001"
-            data["results"]["rmse"] = "0.255E-11"
-            data["results"]["madp"] = "0.814E-09"
-            data["results"][
-                "model"
-            ] = "  z1 = 3.9999999999884194856747 * x1^2 \
-                 - 3.9999999999873385725380 * x2^2 - 2.0999999999876837186719 \
-                 * x1^4 + 3.9999999999879496392907 * x2^4 + 0.33333333333014281141260 \
-                 * x1^6 + 1.0000000000008837375276 * x1*x2"
-            data["results"]["nbas"] = "15"
-
-            if debug["expandoutput"]:
-                data["results"]["ssrval"] = 0
-                data["results"]["R2val"] = 0
-                data["results"]["rmseval"] = 0
-                data["results"]["madpval"] = 0
+            _construct_mock(data)
             return
         else:
-            raise almerror.AlamoError(
-                'Cannot read from trace file "{}": {}'.format(trace_str, err)
-            )
+            error_message = _diagnose_alamo_failure(trace_str, err)
+            raise almerror.AlamoError(error_message)
+            # b_alamo = has_alamo()
+            # lf_logscratch = open("logscratch").read()
+            # if not b_alamo:
+            #     raise almerror.AlamoError(
+            #         'Alamo cannot be found. Please check Alamo is installed.'
+            #     )
+            # elif "termination code" in lf_logscratch:
+            #     raise almerror.AlamoError(
+            #         '{}'.format(lf_logscratch)
+            #     )
+            # else:
+            #     raise almerror.AlamoError(
+            #         'Cannot read from trace file "{}": {}'.format(trace_str, err)
+            #     )
 
     try:
         # import sympy
@@ -1162,13 +1167,14 @@ def readTraceFile(vargs, data, debug):
 
 
 def cleanFiles(data, debug, pywrite=False, **kwargs):
-    """ Removes intermediate files
-
-      Args:
-          data/debug: shared default options for .alm file
-          vargs:  Validation data
-
     """
+    Removes intermediate files
+
+    Args:
+        data/debug: shared default options for .alm file
+        vargs: Validation data
+    """
+
     # Delete files
     if debug["mock"]:
         try:
@@ -1205,6 +1211,52 @@ def cleanFiles(data, debug, pywrite=False, **kwargs):
     if debug["simwrap"]:
         deletefile("simwrapper.py")
 
+
+def _construct_mock(data):
+    data["results"]["clrtime"] = "0"
+    data["results"]["size"] = "6"
+    data["results"]["numolr"] = "16960"
+    data["results"]["othertime"] = "0.8799995E-01"
+    data["results"]["olrtime"] = "0.10800002"
+    data["results"]["miptime"] = "0"
+    data["results"]["version"] = "2018.4.3"
+    data["results"]["status"] = "0"
+    data["results"]["R2"] = "1"
+    data["results"]["numclr"] = "0"
+    data["results"]["nummip"] = "0"
+    data["results"]["ssr"] = "0.169E-21"
+    data["results"]["pymodel"] = "cam6alm"
+    data["results"]["totaltime"] = "0.1760001"
+    data["results"]["rmse"] = "0.255E-11"
+    data["results"]["madp"] = "0.814E-09"
+    data["results"][
+        "model"
+    ] = "  z1 = 3.9999999999884194856747 * x1^2 \
+         - 3.9999999999873385725380 * x2^2 - 2.0999999999876837186719 \
+         * x1^4 + 3.9999999999879496392907 * x2^4 + 0.33333333333014281141260 \
+         * x1^6 + 1.0000000000008837375276 * x1*x2"
+    data["results"]["nbas"] = "15"
+
+    if debug["expandoutput"]:
+        data["results"]["ssrval"] = 0
+        data["results"]["R2val"] = 0
+        data["results"]["rmseval"] = 0
+        data["results"]["madpval"] = 0
+
+
+def _diagnose_alamo_failure(trace_output, error):
+    error_message = None
+    b_alamo = has_alamo()
+    lf_logscratch = open("logscratch").read()
+    if not b_alamo:
+        error_message = 'Alamo cannot be found. Please check Alamo is installed.'
+    elif "termination code" in lf_logscratch:
+        error_message = '{}'.format(lf_logscratch)
+        
+    else:
+        error_message = 'Cannot read from trace file "{}": {}'.format(trace_output, error)
+    return error_message
+        
 
 def get_alamo_version():
     x = [0, 1]

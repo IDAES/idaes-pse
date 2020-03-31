@@ -1,13 +1,13 @@
 import os
-import logging
+import idaes.logger as idaeslog
 import tarfile
 import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
 
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
-def download_binaries(url=None, verbose=False):
+def download_binaries(url=None, verbose=False, platform="auto"):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -19,7 +19,7 @@ def download_binaries(url=None, verbose=False):
         None
     """
     if verbose:
-        _log.setLevel(logging.DEBUG)
+        _log.setLevel(idaeslog.DEBUG)
     idaes._create_lib_dir()
     idaes._create_bin_dir()
     solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
@@ -31,11 +31,17 @@ def download_binaries(url=None, verbose=False):
             c = "/"
         else:
             c = ""
-        solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(arch[0], arch[1])])
-        libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(arch[0], arch[1])])
+        if platform == "auto":
+            platform = arch[0]
+        if platform not in idaes.config.known_binary_platform:
+            raise Exception("Unknow platform {}".format(platform))
+        if platform in idaes.config.binary_platform_map:
+            platform = idaes.config.binary_platform_map[platform]
+        solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])])
+        libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
         _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
-        if arch[0] == 'darwin':
+        if platform == 'darwin':
             raise Exception('Mac OSX currently unsupported')
         fd.set_destination_filename(solvers_tar)
         fd.get_binary_file(solvers_from)

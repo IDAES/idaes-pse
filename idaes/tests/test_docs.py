@@ -19,7 +19,7 @@ for the log of the build and looks for errors in it.
 # stdlib
 import logging
 import os
-import re
+from subprocess import Popen
 
 # third-party
 import pytest
@@ -47,10 +47,10 @@ def docs_path():
         return path
     # look for (last) "docs/" in full current working dir
     cwd_comp = cwd.split(os.path.sep)
-    n = len(cwd_comp)
+    comp_cnt = len(cwd_comp)
     try:
         idx = list(reversed(cwd_comp)).index("docs")
-        return os.path.sep.join(cwd_comp[: n - idx])
+        return os.path.sep.join(cwd_comp[: comp_cnt - idx])
     except ValueError:
         pass
     # look for docs relative to this file
@@ -61,10 +61,10 @@ def docs_path():
             return path
         # look for "docs/" in file's full path
         file_comp = path.split(os.path.sep)
-        n = len(file_comp)
+        comp_cnt = len(file_comp)
         try:
             idx = list(reversed(file_comp)).index("docs")
-            return os.path.sep.join(file_comp[: n - idx])
+            return os.path.sep.join(file_comp[: comp_cnt - idx])
         except ValueError:
             pass
     except NameError:
@@ -75,6 +75,7 @@ ERRLOG = "sphinx-errors.txt"
 
 
 def test_sphinx_build_log(docs_path):
+    """ Check the sphinx log for errors or warnings. """
     _log.info('docs path = "{}"'.format(docs_path))
     if docs_path is None:
         _log.warning('Could not find "docs" directory')
@@ -85,11 +86,33 @@ def test_sphinx_build_log(docs_path):
             'Could not find "{}" in docs directory: {}'.format(ERRLOG, log_path)
         )
         return
-    log = open(log_path)
-    for line in log:
-        if "WARNING: " in line:
-            pass
-            # assert re.search(r'duplicate label sub(module|package)s', line), \
-            #    'Non-trivial warning: {}'.format(line.strip())
-        elif "ERROR: " in line:
-            assert False, "Error: {}".format(line.strip())
+    if os.stat(log_path).st_size == 0:  # file is empty - good
+        return
+
+    # Dump contents to stdout
+    err_count = 0
+    with open(log_path) as log:
+        for line in log:
+            err_count += 1
+            print(line, end='')
+    assert False, f"{err_count} Errors and/or Warnings found in {log_path}"
+
+
+def _have_sphinx():
+    """Test if a working 'sphinx-build' command exists.
+    """
+    have_sphinx = True
+    try:
+        Popen(["sphinx-build", "--version"]).wait()
+    except:
+        have_sphinx = False
+    return have_sphinx
+
+
+def test_doctests(docs_path):
+    if _have_sphinx():
+        build_path = os.path.join(docs_path, "build")
+        command = ["sphinx-build", "-M", "doctest", docs_path, build_path]
+        proc = Popen(command)
+        proc.wait(180)  # 3 minute ceiling
+        assert proc.returncode == 0

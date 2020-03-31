@@ -519,11 +519,12 @@ def d3rdRes(D, T, Y, Beta):
 def drdRes(D, T, Y, Beta):
     """
     Calculates the partial derivaties w.r.t. density
-    Inputs:
-        D - Delta
-        T - Tau
-        Y - index of basis Function (int or array)
-        Beta - weighting (float or array)
+
+    Args:
+        D: Delta
+        T: Tau
+        Y: index of basis Function (int or array)
+        Beta: weighting (float or array)
     """
     global drd_vals
     global coeffs

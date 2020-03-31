@@ -17,7 +17,7 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import value
+from pyomo.environ import Set, value
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -72,6 +72,37 @@ class PhysicalParameterBlock(ProcessBlockData,
             None
         """
         super(PhysicalParameterBlock, self).build()
+
+    def get_phase_component_set(self):
+        """
+        Method to get phase-component set for property package. If a phase-
+        component set has not been constructed yet, this method will construct
+        one.
+
+        Args:
+            None
+
+        Returns:
+            Phase-component Set object
+        """
+        try:
+            return self._phase_component_set
+        except AttributeError:
+            # Phase-component set does not exist, so create one.
+            pc_set = []
+            if hasattr(self.config, "phase_component_list"):
+                for p in self.config.phase_component_list:
+                    for j in self.config.phase_component_list[p]:
+                        pc_set.append((p, j))
+            else:
+                # Otherwise assume all components in all phases
+                for p in self.phase_list:
+                    for j in self.component_list:
+                        pc_set.append((p, j))
+
+            self._phase_component_set = Set(initialize=pc_set, ordered=True)
+
+            return self._phase_component_set
 
 
 class StateBlock(ProcessBlock):
@@ -240,6 +271,10 @@ should be constructed in this state block,
         super(StateBlockData, self).build()
         add_object_reference(self, "_params", self.config.parameters)
 
+    @property
+    def params(self):
+        return self._params
+
     def define_state_vars(self):
         """
         Method that returns a dictionary of state variables used in property
@@ -299,7 +334,7 @@ should be constructed in this state block,
         the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_flow_terms method. Please '
+                                  ' get_enthalpy_flow_terms method. Please '
                                   'contact the property package developer.')
 
     def get_energy_density_terms(self, *args, **kwargs):
