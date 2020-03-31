@@ -8,7 +8,7 @@ shared-dev: &shared-dev
     - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
     - run: cd docs && python build.py
-    - run: apt-get -y install libgomp1 liblapack3 libblas3
+    - run: sudo apt-get -y install libgomp1 liblapack3 libblas3
     - run: idaes get-extensions
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
@@ -20,7 +20,7 @@ shared: &shared
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install --progress-bar=off -r requirements.txt
-    - run: apt-get -y install libgomp1 liblapack3 libblas3
+    - run: sudo apt-get -y install libgomp1 liblapack3 libblas3
     - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
@@ -49,7 +49,7 @@ jobs:
           command: |
             source activate idaes36
             python -m pip install --progress-bar=off -r requirements.txt
-            apt-get -y install libgomp1 liblapack3 libblas3
+            sudo apt-get -y install libgomp1 liblapack3 libblas3
             idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
