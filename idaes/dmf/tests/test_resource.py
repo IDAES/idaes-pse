@@ -14,7 +14,7 @@
 Tests for idaes.dmf.resource2 module
 """
 # stdlib
-import datetime
+from datetime import datetime
 import json
 import logging
 import math
@@ -23,7 +23,6 @@ import shutil
 import sys
 
 # third-party
-import pendulum
 import pytest
 
 # local
@@ -219,7 +218,7 @@ def test_repr(example_resource):
 
 
 def test_date_float():
-    now = pendulum.now()
+    now = datetime.now()
     now_float = now.timestamp()
     assert resource.date_float(now) == now_float
     # tuples
@@ -228,7 +227,7 @@ def test_date_float():
     with pytest.raises(ValueError):
         resource.date_float(tuple("garbage"))
     # datetime
-    assert resource.date_float(datetime.datetime(*now_tuple)) == now_float
+    assert resource.date_float(datetime(*now_tuple)) == now_float
     # strings
     with pytest.raises(ValueError):
         resource.date_float("garbage")
@@ -263,7 +262,7 @@ def test_version_list():
     with pytest.raises(ValueError):
         f((1, 2, 3, None))
     with pytest.raises(ValueError):
-        f((1, 2, 3, datetime.datetime))
+        f((1, 2, 3, datetime))
     with pytest.raises(ValueError):
         f("1.2.3.4")  # last bit can't start with '.'
     assert f("1.2.3RC3") == [1, 2, 3, "RC3"]  # extra
