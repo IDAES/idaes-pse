@@ -5,13 +5,15 @@ from pathlib import Path
 from typing import Dict
 import yaml
 from pyomo.common.config import ConfigBlock
-
+import os.path, pickle
 from mypy_extensions import TypedDict
+
 
 class SurrogateModeler:
     """
     Default setup for known modeler setups
     """
+
     def surrogate_analysis():
         # external utitily
         # run all surrogate tools - paremeter()
@@ -25,7 +27,7 @@ class SurrogateModeler:
         print("hello, I fit nothing")
 
     # MIGUEL
-    # translation of similar commands across the two 
+    # translation of similar commands across the two
     # polynomial_order = 3 => both surrogate tools
 
     # General Settings that trigger differnt models
@@ -37,53 +39,59 @@ class SurrogateModeler:
                                                             'solution_method': str,
                                                             'multinomials': bool,
                                                             'additional_features_list': list,
-                                                            'pyomo_vars': list
+                                                            'pyomo_vars': list,
+                                                            'overwrite': bool,
+                                                            'fname': str
                                                             }, total=False
                                     )
 
     PysmoRBF = TypedDict('PysmoRBF', {'basis_function': str,
                                       'solution_method': str,
                                       'regularization': bool,
-                                      'pyomo_vars': list
+                                      'pyomo_vars': list,
+                                      'overwrite': bool,
+                                      'fname': str
                                       }, total=False
                          )
 
     PysmoKriging = TypedDict('PysmoKriging', {'numerical_gradients': bool,
                                               'regularization': bool,
-                                              'pyomo_vars': list
+                                              'pyomo_vars': list,
+                                              'overwrite': bool,
+                                              'fname': str
                                               }, total=False
                              )
 
     # ALAMo argument types here
 
     AlamoDict = TypedDict('Alamo', {'xlabels': list,
-                                 'zlabels': list,
-                                 'xval': list,
-                                 'zval': list,
-                                 'xmin': list,
-                                 'xmax': list,
-                                 'modeler': int,
-                                 'linfcns': int,
-                                 'expfcns': int,
-                                 'logfcns': int,
-                                 'sinfcns': int,
-                                 'cosfcns': int,
-                                 'monomialpower': list,
-                                 'multi2power': list,
-                                 'multi3power': list,
-                                 'ratiopower': list,
-                                 'screener': int,
-                                 'almname': str,
-                                 'savescratch': bool,
-                                 'savetrace': bool,
-                                 'expandoutput': bool,
-                                 'almopt': str,
-                                 'loo': bool,
-                                 'lmo': bool,
-                                 'maxiter': int,
-                                 'simulator': str
-                                }, total=False
-                         )
+                                    'zlabels': list,
+                                    'xval': list,
+                                    'zval': list,
+                                    'xmin': list,
+                                    'xmax': list,
+                                    'modeler': int,
+                                    'linfcns': int,
+                                    'expfcns': int,
+                                    'logfcns': int,
+                                    'sinfcns': int,
+                                    'cosfcns': int,
+                                    'monomialpower': list,
+                                    'multi2power': list,
+                                    'multi3power': list,
+                                    'ratiopower': list,
+                                    'screener': int,
+                                    'almname': str,
+                                    'savescratch': bool,
+                                    'savetrace': bool,
+                                    'expandoutput': bool,
+                                    'almopt': str,
+                                    'loo': bool,
+                                    'lmo': bool,
+                                    'maxiter': int,
+                                    'simulator': str
+                                    }, total=False
+                          )
 
     # Base set-up for different tools: user cannot access
     pysmo_polyregression_base = PysmoPolyRegression(number_of_crossvalidations=2,
@@ -109,12 +117,12 @@ class SurrogateModeler:
     alamo_base = AlamoDict(monomialpower=(1, 2, 3, 4, 5, 6),
                            multi2power=(1, 2),
                            expandoutput=True
-                )
+                           )
 
 
 class SurrogateFactory:
-    """ 
-    Construct default setting of a tool (CONFIG) 
+    """
+    Construct default setting of a tool (CONFIG)
     Changed by user to Surrogate instance Config
     Ex.
         alternative_cases = {'run_1': dict(pysmo_polyregression_base, maximum_polynomial_order=3),
@@ -124,15 +132,14 @@ class SurrogateFactory:
         tools = [
             ['pysmo_polygression', 'pysmo_rbf', 'pysmo_kriging', 'pysmo_polygression', 'pysmo_polygression', 'pysmo_rbf'],
             [pysmo_polyregression_base, pysmo_rbf_base, pysmo_kriging_base] + list(alternative_cases.values())
-            ]  
+            ]
         user loops:
             Surrogate = new instance()
     """
 
-
     def __init__(self, tool=None):
         """
-            One tool 
+            One tool
         """
         self.tool = tool
         self.modeler = None
@@ -152,7 +159,7 @@ class Metrics:
         m = {Metrics.RMSE: self.rmse}
     When adding attributes to this class, please include a comment with the
     prefix "#:" immediately above it, so Sphinx knows that this is documentation
-    for the attribute. 
+    for the attribute.
     """
 
     #: Root mean-squared error
@@ -180,7 +187,6 @@ class ConfigurationError(Exception):
 
 # Single Surrogate Modeler
 class Surrogate:
-
     CONFIG = ConfigBlock()
 
     # Common Declarations
@@ -204,7 +210,6 @@ class Surrogate:
         self._vdata_in = None
         self._vdata_out = None
 
-
     def modify_config(self, **kwargs):
         _b_built = False
         self.config = self.CONFIG(kwargs)
@@ -215,7 +220,6 @@ class Surrogate:
         self._b_built = True
         pass
 
-
     def update_model(self):
         self.build_model()
         pass
@@ -225,13 +229,13 @@ class Surrogate:
 
     # Get Results
 
-    def get_model(self): # Pyomo Expression
+    def get_model(self):  # Pyomo Expression
         return self._model
 
-    def get_metrics(self): # Metrics Object
+    def get_metrics(self):  # Metrics Object
         return self._metrics
 
-    def get_results(self): # Pyomo Expression, Metrics Object
+    def get_results(self):  # Pyomo Expression, Metrics Object
         return self._results
 
     # Data Handling
@@ -239,32 +243,51 @@ class Surrogate:
     def get_regressed_data(self):
         return (self._rdata_in, self._rdata_out)
 
-    def regressed_data(self, r_in, r_out): # 2D Numparray
+    def regressed_data(self, r_in, r_out):  # 2D Numparray
         self._rdata_in = r_in
         self._rdata_out = r_out
-     
+
     def get_validation_data(self):
         return (self._vdata_in, self._vdata.out)
 
-    def validation_data(self, v_in, v_out): # 2D Numparray
+    def validation_data(self, v_in, v_out):  # 2D Numparray
         self._vdata_in = v_in
         self._vdata_out = v_out
 
     # Using regressed model
-    def calculate_outputs(inputs): # 2D Numparray, use pyomo expression
+    def calculate_outputs(inputs):  # 2D Numparray, use pyomo expression
         outputs = self._model(inputs)
         return
 
     # Additional Metrics - MUST NOT OVERWRITE MODELER METRICS
 
-    def get_trained_metrics(): # 2D Nparray, 2D Numparray
+    def get_trained_metrics():  # 2D Nparray, 2D Numparray
         if not _b_built:
             print("Warning: No surrogate model regressed.")
             return
         pass
 
-    def get_validated_metrics(xval, zval): # 2D, 2D Numparray, use pyomo expression
+    def get_validated_metrics(xval, zval):  # 2D, 2D Numparray, use pyomo expression
         if not _b_built:
             print("Warning: No surrogate model regressed.")
             return
         pass
+
+    def save_results(self, filename):
+        return self.save_results(filename)
+
+    def load_results(self, filename):
+        if os.path.exists(filename) is False:
+            raise Exception(filename, 'does not exist in directory.')
+        try:
+            filehandler = open(filename, 'rb')
+            loaded_res = pickle.load(filehandler)
+            self.config = loaded_res['Run settings']
+            self._results = loaded_res['Results']
+            self._model = loaded_res['Expression']
+            self._rdata_in = loaded_res['In data']
+            self._rdata_out = loaded_res['Out data']
+            print(str(filename), 'successfully loaded.')
+            return
+        except:
+            raise Exception('File could not be loaded.')
