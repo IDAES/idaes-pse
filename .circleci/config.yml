@@ -60,10 +60,7 @@ jobs:
           command: |
             source activate idaes-pse
             python -m pip install idaes-pse
-      - run:
-          name: Install idaes extensions
-          command: |
-            source activate idaes-pse
+            echo "Getting extensions?"
             idaes get-extensions
       - run:
           name: Run tests
