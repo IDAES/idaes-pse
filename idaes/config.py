@@ -5,7 +5,28 @@ import os
 import importlib
 
 _log = logging.getLogger(__name__)
-default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
+default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/2.0.0/"
+binary_platform_map = {
+    "rhel6": "centos6",
+    "rhel7": "centos7",
+    "rhel8": "centos8",
+    "linux": "centos7",
+}
+known_binary_platform = {
+    "auto":"Auto-select windows, darwin or linux",
+    "windows":"Microsoft Windows (built on verion 1909)",
+    "darwin": "OSX (currently not available)",
+    "linux": "Linux (maps to {})".format(binary_platform_map["linux"]),
+    "centos6": "CentOS 6",
+    "centos7": "CentOS 7",
+    "centos8": "CentOS 8",
+    "rhel6": "Red Hat Enterprise Linux 6",
+    "rhel7": "Red Hat Enterprise Linux 7",
+    "rhel8": "Red Hat Enterprise Linux 8",
+    "ubuntu1804": "Ubuntu 18.04",
+    "ubuntu1910": "Ubuntu 19.10",
+    "ubuntu2004": "Ubuntu 20.04",
+}
 
 default_config = """
 {
