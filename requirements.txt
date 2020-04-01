@@ -1,7 +1,7 @@
 --index-url https://pypi.python.org/simple/
 
 # Pyomo from Git
-git+https://github.com/PyUtilib/pyutilib
-git+https://github.com/IDAES/pyomo.git@IDAES
+pyutilib==5.8.0
+pyomo==5.6.9
 
 -e .
