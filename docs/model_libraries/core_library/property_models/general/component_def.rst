@@ -36,6 +36,11 @@ Pure Component Libraries
 
 As a starting point for users, the IDAES Generic Property Package Framework contains a library of some common methods for calculating properties of interest. These libraries are organized by source, and are listed below.
 
+.. note::
+    Users should be careful about mixing-and-matching methods from different libraries, especially for the same component. Thermodynamic properties are intrinsically coupled, thus many correlations are also linked and often share parameters. Mixing-and-matching correlations may result in two correlations using parameters with the same name but with different expectations.
+
+    Additionally, sources often use different approaches for defining the thermodynamic reference state of the material, thus users need to ensure that a consistent reference state is being used when combining methods from different sources.
+
 .. toctree::
     :maxdepth: 1
 
