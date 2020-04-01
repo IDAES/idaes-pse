@@ -46,7 +46,7 @@ The constraints written by the MBR model to compute the pressure drop in the rea
 
 If `pressure_drop_type` is `simple_correlation`:
 
-.. math:: - \frac{ \delta P }{ \delta z } = \left( \rho_{p} - \rho_{g} \right( a_{E} u_{g}
+.. math:: - \frac{ \delta P }{ \delta z } = \left( \rho_{p} - \rho_{g} ) a_{E} u_{g}
 
 where :math:`P` is the system pressure, :math:`z` is the spatial domain, :math:`\rho_{p}` is the density of the particles, :math:`\rho_{g}` is the density of the gas, :math:`u_{g}` is the superficial velocity of the gas, and :math:`a_{E}` is a parameter having the value of 0.2. 
 
