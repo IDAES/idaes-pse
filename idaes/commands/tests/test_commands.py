@@ -16,13 +16,13 @@ Tests for idaes.commands
 # stdlib
 import os
 import pathlib
-import tempfile
 
 # third-party
 import pytest
 
 # package
 from idaes.commands import examples
+from idaes.util.system import TemporaryDirectory
 
 ################
 # get-examples #
@@ -42,16 +42,8 @@ def test_examples_download_bad_version():
     )
 
 
-def test_examples_download_target_dir_exists():
-    releases = [examples.Release("baddate", "1.2.3", "info")]
-    curpath = pathlib.Path(os.curdir)
-    assert pytest.raises(
-        examples.DownloadError, examples.download, releases, curpath, "1.2.3", True
-    )
-
-
 def test_examples_find_python_directories():
-    with tempfile.TemporaryDirectory() as tmpd:
+    with TemporaryDirectory() as tmpd:
         root = pathlib.Path(tmpd)
         # populate a/c/file.py, a/d/file.py, b/c/file.py, b/d/file.py
         for i in ("a", "b"):
@@ -76,7 +68,7 @@ def test_examples_find_python_directories():
 
 def test_illegal_dirs():
     releases = [examples.Release("baddate", "1.2.3", "info")]
-    with tempfile.TemporaryDirectory() as tmpd:
+    with TemporaryDirectory() as tmpd:
         root = pathlib.Path(tmpd)
         # git
         (root / ".git").mkdir()
