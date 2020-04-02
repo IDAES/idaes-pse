@@ -14,10 +14,12 @@
 Utility functions.
 """
 # stdlib
+from datetime import datetime, timedelta, timezone
 import importlib
 import json
 from json import JSONDecodeError
 import logging
+from math import floor, log
 import os
 import re
 import shutil
@@ -205,6 +207,148 @@ def datetime_timestamp(v):
     return result
 
 
+def parse_datetime(datetime_string: str) -> datetime:
+    """Wrapper around datetime parser to allow for easy migration to other
+    (better) implementations.
+
+    Args:
+        datetime_string: String in expected format
+
+    Returns:
+        A `datetime.datetime` object
+
+    Raises:
+        ValueError: Cannot parse this string
+        TypeError: argument must be a string
+    """
+    if not isinstance(datetime_string, str):
+        raise TypeError("parse_datetime: argument must be str")
+    if hasattr(datetime, "fromisoformat"):
+        # new in 3.7, and we support back to 3.6
+        return datetime.fromisoformat(datetime_string)
+    else:
+        # The following code is from the datetime module in Python 3.8
+        dtstr = datetime_string[0:10]
+        if len(dtstr) != 10:
+            raise ValueError(f"Invalid isoformat string: '{dtstr}'")
+        year = int(dtstr[0:4])
+        if dtstr[4] != "-":
+            raise ValueError(f"Invalid date separator: '{dtstr[4]}'")
+        if len(dtstr) < 7:
+            raise ValueError(f"Invalid month: '{dtstr[5:]}'")
+        month = int(dtstr[5:7])
+        if dtstr[7] != "-":
+            raise ValueError("Invalid date separator")
+        day = int(dtstr[8:10])
+        date_components = [year, month, day]
+
+        tstr = datetime_string[11:]
+        if tstr:
+            try:
+                time_components = _parse_isoformat_time(tstr)
+            except ValueError:
+                raise ValueError(f"Invalid isoformat string: {datetime_string!r}")
+        else:
+            time_components = [0, 0, 0, 0, None]
+
+        return datetime(*(date_components + time_components))
+
+
+#################
+#
+# The following two functions are from 3.8 Python standard library
+# They are not present in 3.6, but are present in 3.7+
+#
+
+
+def _parse_isoformat_time(tstr):
+    # Format supported is HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]
+    len_str = len(tstr)
+    if len_str < 2:
+        raise ValueError("Isoformat time too short")
+
+    # This is equivalent to re.search('[+-]', tstr), but faster
+    tz_pos = tstr.find("-") + 1 or tstr.find("+") + 1
+    timestr = tstr[: tz_pos - 1] if tz_pos > 0 else tstr
+
+    time_comps = _parse_hh_mm_ss_ff(timestr)
+
+    tzi = None
+    if tz_pos > 0:
+        tzstr = tstr[tz_pos:]
+
+        # Valid time zone strings are:
+        # HH:MM               len: 5
+        # HH:MM:SS            len: 8
+        # HH:MM:SS.ffffff     len: 15
+
+        if len(tzstr) not in (5, 8, 15):
+            raise ValueError("Malformed time zone string")
+
+        tz_comps = _parse_hh_mm_ss_ff(tzstr)
+        if all(x == 0 for x in tz_comps):
+            tzi = timezone.utc
+        else:
+            tzsign = -1 if tstr[tz_pos - 1] == "-" else 1
+
+            td = timedelta(
+                hours=tz_comps[0],
+                minutes=tz_comps[1],
+                seconds=tz_comps[2],
+                microseconds=tz_comps[3],
+            )
+
+            tzi = timezone(tzsign * td)
+
+    time_comps.append(tzi)
+
+    return time_comps
+
+
+def _parse_hh_mm_ss_ff(tstr):
+    # Parses things of the form HH[:MM[:SS[.fff[fff]]]]
+    len_str = len(tstr)
+
+    time_comps = [0, 0, 0, 0]
+    pos = 0
+    for comp in range(0, 3):
+        if (len_str - pos) < 2:
+            raise ValueError("Incomplete time component")
+
+        time_comps[comp] = int(tstr[pos : pos + 2])
+
+        pos += 2
+        next_char = tstr[pos : pos + 1]
+
+        if not next_char or comp >= 2:
+            break
+
+        if next_char != ":":
+            raise ValueError("Invalid time separator: %c" % next_char)
+
+        pos += 1
+
+    if pos < len_str:
+        if tstr[pos] != ".":
+            raise ValueError("Invalid microsecond component")
+        else:
+            pos += 1
+
+            len_remainder = len_str - pos
+            if len_remainder not in (3, 6):
+                raise ValueError("Invalid microsecond component")
+
+            time_comps[3] = int(tstr[pos:])
+            if len_remainder == 3:
+                time_comps[3] *= 1000
+
+    return time_comps
+
+
+#
+################
+
+
 class ColorTerm:
     """For colorized printing, a very simple wrapper that
     allows colorama objects, or nothing, to be used.
@@ -347,3 +491,36 @@ def uuid_prefix_len(uuids, step=4, maxlen=32):
         if len(prefixes) == all_of_them:
             return n
     return maxlen
+
+
+_pow_abbr = "KMGTPE"
+
+
+def size_prefix(number, base2=False):
+    """Return an abbreviation for the size, up to E (exa)
+    """
+    fudge = 1e-12
+    if number == 0:
+        return "0"
+    elif number < 0:
+        number = -number
+        negative = "-"
+    else:
+        negative = ""
+    if base2:
+        nlog = int(floor(log(number, 2) / 10 + fudge))
+        print(nlog)
+        npow = number / (2 ** (10 * nlog))
+        extra = "i"
+    else:
+        nlog = int(floor(log(number, 10) / 3 + fudge))
+        npow = number / (10 ** (3 * nlog))
+        extra = ""
+    abbr = _pow_abbr[int(floor(nlog))]
+    if abbr == "-":
+        return f"{negative}{number}"
+    if floor(npow) == (floor(npow * 10) / 10):  # don't print ".0"
+        num_str = f"{negative}{npow:.0f}{abbr}{extra}"
+    else:
+        num_str = f"{negative}{npow:.1f}{abbr}{extra}"
+    return num_str
