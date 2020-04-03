@@ -8,7 +8,7 @@ An important part of defining a set of property calculations is choosing the set
 
 Within the IDAES Generic Property Package Framework, the definition of state variables is done using sub-modules which create the necessary variables supporting information for the property package. A state definition sub-module may define any set of state variables the user feel appropriate, but must define the following components as either state variables or functions of the state variables:
 
-* `temperature`
+* `temperature` (must be a Pyomo Var)
 * `pressure`
 * `mole_frac_phase_comp`
 * `phase_frac`
