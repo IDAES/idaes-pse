@@ -1,9 +1,12 @@
 document.getElementById("text").innerHTML = "Javascript run!";
 
-import * as jquery from "/lib/jquery.js"
-import * as lodash from "/lib/lodash.js"
-import * as backbone from "/lib/backbone.js";
-import * as joint from '/lib/joint.min.js';
+import * as jquery from "/lib/node_modules/jquery/jquery.js"
+import * as lodash from "/lib/node_modules/lodash/lodash.js"
+import * as backbone from "/lib/node_modules/backbone/backbone.js";
+import { dia } from '/lib/jointjs/src/core.mjs';
+import * as standard from '/lib/jointjs/src/shapes/standard.mjs';
+
+console.log(JSON.stringify(dia));
 
 var holder = document.getElementById("idaes_flowsheet_visualizer");
 
@@ -11,12 +14,11 @@ var holder = document.getElementById("idaes_flowsheet_visualizer");
 // If you try to create them in renderModel (which is called everytime the user
 // opens an .idaes.vis file or changes tabs) then you get icons that do not drop
 // when the mouseup event is emitted
-var standard = joint.shapes.standard;
 var width = 10000;
 var height = 10000;
 var gridSize = 1;
-var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
-var paper = new joint.dia.Paper({
+var graph = new dia.Graph([], { cellNamespace: { standard } });
+var paper = new dia.Paper({
   el: holder,
   model: graph,
   cellViewNamespace: { standard },
