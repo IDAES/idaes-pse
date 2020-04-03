@@ -4,10 +4,15 @@
 
 """
 import time
+import multiprocessing
 import pytest
 import requests
 
 from idaes.ui.fsvis.flask_server import App
+
+
+# This has to be done for OSX and Windows because they spawn instead of fork
+multiprocessing.set_start_method("fork") 
 
 
 @pytest.fixture()

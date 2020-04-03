@@ -204,9 +204,11 @@ Look for "value" in the value of the `creator.name` field.
 .. option:: --created value
 
 Use "value" as a date or date range and filter on records that
-have a `created` date in that range. Dates should be in a form that is
-accepted by the `Pendulum parse function`_.
-The special token ``..`` is used to indicate date ranges, as in:
+have a `created` date in that range. Dates should be in the form::
+
+    YYYY-MM-DD[*HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]]
+
+To indicate a date range, separate two dates with a "..".
 
 * ``2012-03-19``: On March 19, 2012
 * ``2012-03-19..2012-03-22``: From March 19 to March 22, 2012
@@ -214,8 +216,6 @@ The special token ``..`` is used to indicate date ranges, as in:
 * ``..2012-03-19``: Before March 19, 2012
 
 Note that times may also be part of the date strings.
-
-.. _Pendulum parse function: https://pendulum.eustace.io/docs/#parsing
 
 .. option:: --file value
 
