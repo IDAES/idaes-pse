@@ -11,7 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for math util methods.
+Test for element-by-element initialization on PID controller. This is important
+as PID controllers have additional time-linking variables beyond derivative
+and differential variables.
 """
 
 import pytest
@@ -20,6 +22,7 @@ from pyomo.environ import (Block, ConcreteModel, Constraint, Expression,
                            TransformationFactory, TerminationCondition,
                            exp)
 from pyomo.network import Arc, Port
+from pyomo.dae import DerivativeVar
 
 from idaes.core import (FlowsheetBlock, 
                         MaterialBalanceType, 
@@ -35,15 +38,17 @@ from idaes.core import (FlowsheetBlock,
                         MaterialFlowBasis)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.generic_models.unit_models import CSTR
+from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.generic_models.control import PIDBlock, PIDForm
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             propagate_state,
                                             solve_indexed_blocks,
                                             initialize_by_time_element)
+import idaes.logger as idaeslog
 
-__author__ = "Andrew Lee"
+__author__ = "Robert Parker"
 
 
 # See if ipopt is available and set up solver
@@ -237,114 +242,151 @@ class EnzymeReactionBlockData(ReactionBlockDataBase):
         return MaterialFlowBasis.molar
 
 
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize_by_time_element():
-    horizon = 6
+def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
+
     time_set = [0, horizon]
-    ntfe = 60 # For a finite element every six seconds
-    ntcp = 2
-    m = ConcreteModel(name='CSTR model for testing')
+
+    m = ConcreteModel(name='CSTR with level control')
     m.fs = FlowsheetBlock(default={'dynamic': True,
                                    'time_set': time_set})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
             default={'property_package': m.fs.properties})
-    m.fs.cstr = CSTR(default={"property_package": m.fs.properties,
-                              "reaction_package": m.fs.reactions,
-                              "material_balance_type": MaterialBalanceType.componentTotal,
-                              "energy_balance_type": EnergyBalanceType.enthalpyTotal,
-                              "momentum_balance_type": MomentumBalanceType.none,
-                              "has_heat_of_reaction": True})
+    m.fs.cstr = CSTR(default={'has_holdup': True,
+                              'property_package': m.fs.properties,
+                              'reaction_package': m.fs.reactions,
+                              'material_balance_type': MaterialBalanceType.componentTotal,
+                              'energy_balance_type': EnergyBalanceType.enthalpyTotal,
+                              'momentum_balance_type': MomentumBalanceType.none,
+                              'has_heat_of_reaction': True})
+
+    m.fs.mixer = Mixer(default={
+        'property_package': m.fs.properties,
+        'material_balance_type': MaterialBalanceType.componentTotal,
+        'momentum_mixing_type': MomentumMixingType.none,
+        'num_inlets': 2,
+        'inlet_list': ['S_inlet', 'E_inlet']})
+    # Allegedly the proper energy balance is being used...
+
+    # Add DerivativeVar for CSTR volume
+    m.fs.cstr.control_volume.dVdt = DerivativeVar(
+            m.fs.cstr.control_volume.volume,
+            wrt=m.fs.time)
 
     # Time discretization
     disc = TransformationFactory('dae.collocation')
     disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
 
-    # Fix geometry variables
-    m.fs.cstr.volume.fix(1.0)
+    m.fs.pid = PIDBlock(default={'pv': m.fs.cstr.volume,
+                                 'output': m.fs.cstr.outlet.flow_rate,
+                                 'upper': 5.0,
+                                 'lower': 0.5,
+                                 'calculate_initial_integral': True,
+                                 # ^ Why would initial integral be calculated
+                                 # to be nonzero?
+                                 'pid_form': PIDForm.velocity})
 
-    # Fix initial conditions:
+    m.fs.pid.gain.fix(1.0)
+    m.fs.pid.time_i.fix(0.1)
+    m.fs.pid.time_d.fix(0.0)
+    m.fs.pid.setpoint.fix(1.0)
+
+    # Fix initial condition for volume:
+    m.fs.cstr.volume.unfix()
+    m.fs.cstr.volume[m.fs.time.first()].fix(1.0)
+
+    # Fix initial conditions for other variables:
     for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
-        m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0)
+        m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0.001)
+    # Note: Model does not solve when initial conditions are empty tank
 
-    # TODO: 
-    #     - Split into mixer and CSTR with two distinct inlet streams
-    #     - Add PID controller to outlet flow rate
-    #     - Introduce perturbations in inlet flow rate
-    #     - initialize_by_time_element
+    m.fs.mixer.E_inlet.conc_mol.fix(0)
+    m.fs.mixer.S_inlet.conc_mol.fix(0)
 
-    # Fix inlet conditions
-    # This is a huge hack because I didn't know that the proper way to
-    # have multiple inlets to a CSTR was to use a mixer.
-    # I 'combine' both my inlet streams before sending them to the CSTR.
     for t, j in m.fs.time*m.fs.properties.component_list:
-        if t <= 2:
-            if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(11.91*0.1)
-            elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
-            else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
-        elif t <= 4:
-            if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(5.95*0.1)
-            elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
-            else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
-        else:
-            if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(8.95*0.1)
-            elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(16.75*2.1)
-            else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+        if j == 'E':
+            m.fs.mixer.E_inlet.conc_mol[t, j].fix(inlet_E)
+        elif j == 'S':
+            m.fs.mixer.S_inlet.conc_mol[t, j].fix(inlet_S)
 
-    m.fs.cstr.inlet.flow_rate.fix(2.2)
-    m.fs.cstr.inlet.temperature.fix(300)
+    m.fs.mixer.E_inlet.flow_rate.fix(0.1)
+    m.fs.mixer.S_inlet.flow_rate.fix(2.1)
 
-    # Fix outlet conditions
-    m.fs.cstr.outlet.flow_rate.fix(2.2)
-    m.fs.cstr.outlet.temperature[m.fs.time.first()].fix(300)
-
-    assert degrees_of_freedom(m) == 0
-
-    initialize_by_time_element(m.fs, m.fs.time, solver=solver)
-
-    assert degrees_of_freedom(m) == 0
-
-    # Assert that the result looks how we expect
-    assert m.fs.cstr.outlet.conc_mol[0, 'S'].value == 0
-    assert abs(m.fs.cstr.outlet.conc_mol[2, 'S'].value - 11.389) < 1e-2
-    assert abs(m.fs.cstr.outlet.conc_mol[4, 'P'].value - 0.2191) < 1e-3
-    assert abs(m.fs.cstr.outlet.conc_mol[6, 'E'].value - 0.0327) < 1e-3
-    assert abs(m.fs.cstr.outlet.temperature[6].value - 289.7) < 1
-
-    # Assert that model is still fixed and deactivated as expected
-    assert (
-    m.fs.cstr.control_volume.material_holdup[m.fs.time.first(), 'aq', 'S'].fixed)
-
+    # Specify a perturbation to substrate flow rate:
     for t in m.fs.time:
-        if t != m.fs.time.first():
-            assert (not 
-    m.fs.cstr.control_volume.material_holdup[t, 'aq', 'S'].fixed)
+        if t < horizon/2:
+            continue
+        else:
+            m.fs.mixer.E_inlet.flow_rate[t].fix(3.0)
+    
+    '''
+    Not sure what the 'proper' way to enforce this balance is...
+    Should have some sort of 'sum_flow_rate_eqn' constraint, but
+    that doesn't really make sense for my aqueous property package
+    with dilute components...
+    '''
+    @m.fs.mixer.Constraint(m.fs.time,
+            doc='Solvent flow rate balance')
+    def total_flow_balance(mx, t):
+        return (mx.E_inlet.flow_rate[t] + mx.S_inlet.flow_rate[t]
+                == mx.outlet.flow_rate[t])
 
-            assert not m.fs.cstr.outlet.temperature[t].fixed
-        assert (
-    m.fs.cstr.control_volume.material_holdup_calculation[t, 'aq', 'C'].active)
+    m.fs.mixer.E_inlet.temperature.fix(290)
+    m.fs.mixer.S_inlet.temperature.fix(310)
 
-        assert m.fs.cstr.control_volume.properties_out[t].active
-        assert not m.fs.cstr.outlet.flow_mol_comp[t, 'S'].fixed
-        assert m.fs.cstr.inlet.flow_mol_comp[t, 'S'].fixed
+    m.fs.inlet = Arc(source=m.fs.mixer.outlet, destination=m.fs.cstr.inlet)
 
-    # Assert that constraints are feasible after initialization
-    for con in m.fs.component_data_objects(Constraint, active=True):
-        assert value(con.body) - value(con.upper) < 1e-5
-        assert value(con.lower) - value(con.body) < 1e-5
+    '''
+    This constraint is in lieu of tracking the CSTR's level and allowing
+    the outlet flow rate to be another degree of freedom.
+    ^ Not sure best way to do this in IDAES.
+    '''
+#    @m.fs.cstr.Constraint(m.fs.time,
+#        doc='Total flow rate balance')
+#    def total_flow_balance(cstr, t):
+#        return (cstr.inlet.flow_rate[t] == cstr.outlet.flow_rate[t])
+    '''
+    This constraint is omitted in the PID controlled case - outlet flow
+    rate will be determined by controller
+    '''
+    @m.fs.cstr.Constraint(m.fs.time,
+            doc='Total volume balance')
+    def total_volume_balance(cstr, t):
+        return (cstr.control_volume.dVdt[t] ==
+                cstr.inlet.flow_rate[t] - cstr.outlet.flow_rate[t])
 
-    results = solver.solve(m.fs)
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    # Fix "initial condition" for outlet flow rate, as here it cannot be
+    # specified by the PID controller
+    m.fs.cstr.outlet.flow_rate[m.fs.time.first()].fix(2.2)
+
+    # Specify initial condition for energy
+    m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
+
+    # This generates constraints for my arc, but shouldn't I be able to
+    # enforce that the variables in mixer.outlet are the same as cstr.inlet,
+    # insteady of having two collections of 'the same' variables with an
+    # equality constraint?
+    TransformationFactory('network.expand_arcs').apply_to(m.fs)
+
+    # Need to deactivate some arc equations because they over-specify.
+    # Not sure how to avoid this...
+    m.fs.inlet_expanded.flow_mol_comp_equality.deactivate()
+
+    return m
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialize():
+    '''Very rough test, just to make sure degrees of freedom are not violated.
+    '''
+    mod = make_model(horizon=2, ntfe=20, ntcp=1, inlet_E=11.91, inlet_S=12.92)
+    assert degrees_of_freedom(mod) == 0
+    initialize_by_time_element(mod.fs, mod.fs.time, solver=solver, 
+            outlvl=idaeslog.DEBUG,
+            fix_diff_only=False)
+    assert degrees_of_freedom(mod) == 0
+
 
 if __name__ == '__main__':
-    test_initialize_by_time_element()
+    test_initialize()
