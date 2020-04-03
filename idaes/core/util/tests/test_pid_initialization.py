@@ -287,7 +287,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
                                  # to be nonzero?
                                  'pid_form': PIDForm.velocity})
 
-    m.fs.pid.gain.fix(1.0)
+    m.fs.pid.gain.fix(-1.0)
     m.fs.pid.time_i.fix(0.1)
     m.fs.pid.time_d.fix(0.0)
     m.fs.pid.setpoint.fix(1.0)
@@ -315,10 +315,10 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
 
     # Specify a perturbation to substrate flow rate:
     for t in m.fs.time:
-        if t < horizon/2:
+        if t < horizon/4:
             continue
         else:
-            m.fs.mixer.E_inlet.flow_rate[t].fix(3.0)
+            m.fs.mixer.S_inlet.flow_rate[t].fix(3.0)
     
     '''
     Not sure what the 'proper' way to enforce this balance is...
