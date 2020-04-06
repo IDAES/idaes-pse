@@ -81,6 +81,7 @@ def main():
             steady_weight_tol=weight_tolerance)
     
     nmpc.add_pwc_constraints()
+    # TODO: add_piecewise_constant_constraints
     
     nmpc.initialize_control_problem(strategy='initial_conditions')
     
@@ -88,12 +89,15 @@ def main():
 
     nmpc.inject_inputs_into_plant(time_plant.first(),
                                   add_noise=True)
+    # TODO: transfer_control_inputs_to_plant
+    #       inject_control_inputs_into_plant
 
     nmpc.simulate_plant(time_plant.first())
 
     for t in plant_sample_points:
-        nmpc.load_initial_conditions_from_plant(t, 
+        nmpc.load_initial_conditions_from_plant(t,
                                                 add_noise=True)
+        # TODO: transfer_current_plant_state_to_controller
 
         nmpc.initialize_control_problem(strategy='from_previous')
 
@@ -103,6 +107,16 @@ def main():
                                       add_noise=True)
         
         nmpc.simulate_plant(t)
+        
+        #locator = nmpc.p_mod.var_locator[id(m_plant.cstr.properties_out[0].temperature)]
+        #temperature_slice = locator.container[locator.location]
+
+        #print(nmpc.c_mod.input_vars[0][t].value)
+        #print(nmpc.p_mod.alg_vars[0][t].value)
+
+    # TODO: add code for creating NMPC controller plots
+    # TODO: add option for specifying "user-interest variables"
+
 
 if __name__ == '__main__':
     main()

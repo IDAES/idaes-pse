@@ -27,8 +27,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.caprese.util import (simulate_over_range, find_slices_in_model,
-        VarLocator, copy_values_at_time, add_noise_at_time)
+from idaes.dynamic.caprese.util import (simulate_over_range, 
+        find_slices_in_model, VarLocator, copy_values_at_time, 
+        add_noise_at_time)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -80,6 +81,9 @@ class NMPCSim(object):
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
+        # TODO: handle arguments (solver, outlvl, ...) via config blocks
+        #       separate solvers for each solve, in init
+
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
         self.default_solver = solver
 
@@ -104,7 +108,15 @@ class NMPCSim(object):
 
         self.solve_initial_conditions(self.p_mod,
                 solver=solver)
+        # TODO: move into own function
+        #       possibly a DAE utility
+        #       - check for consistency of initial conditions
+        #       - if not consistent, tell user to go run dae.solve_initial_conditions
 
+        # TODO: - add attributes as private "_initial_inputs" - make block private
+        #       - check that I don't overwrite anything
+        #       - store in a block: util.modeling.unique_component_name
+        #       - cleanup if desired
         self.p_mod.initial_inputs = initial_inputs
         # ^ Add these as an attribute so they can be used later to validate
         # steady state model
@@ -150,6 +162,7 @@ class NMPCSim(object):
 
         # Validate inputs in the plant model and initial conditions
         # in the control model.
+        # TODO: allow user to specify this if names don't match
         self.p_mod.controller_ic_vars = find_slices_in_model(
                 self.p_mod,
                 self.c_mod,
@@ -164,7 +177,10 @@ class NMPCSim(object):
         self.validate_fixedness(self.p_mod)
         self.validate_fixedness(self.c_mod)
 
-        copy_values_at_time(self.c_mod.ic_vars, 
+# TODO: remove. Place in solve_initial_conditions method if it exists.
+#       If desired ('strict mode') check for consistency.
+#####################
+        copy_values_at_time(self.c_mod.ic_vars,
                             self.p_mod.controller_ic_vars,
                             self.c_mod.time.first(),
                             self.p_mod.time.first())
@@ -180,7 +196,9 @@ class NMPCSim(object):
         # Controller model has already been categorized... No need 
         # to provide init_controller_inputs
         self.solve_initial_conditions(self.c_mod, solver=solver)
+        # ^ move into initialize_control_problem
         self.strip_controller_bounds.revert(self.c_mod)
+#####################
 
         self.sample_time = kwargs.pop('sample_time', 
                 self.c_mod.time.get_finite_elements()[1] -
@@ -622,6 +640,8 @@ class NMPCSim(object):
             is_steady : Flag to set True if the model is a steady state model,
                         and thus its time set is a singleton.
         """
+        # TODO: is_steady should be an explicit arg
+
         # Would probably be much faster to do this categorization
         # during variable flattening
         is_steady = kwargs.pop('is_steady', False)
@@ -634,7 +654,9 @@ class NMPCSim(object):
             t1 = t0
         else:
             t1 = time.get_finite_elements()[1]
+        # TODO: try/except attribute error
 
+        # TODO: subblock
         deriv_vars = []
         diff_vars = []
         input_vars = []
@@ -652,6 +674,8 @@ class NMPCSim(object):
                            for v in dae_vars]).values())
         scalar_no_dups = list(OrderedDict([(id(v), v)
                               for v in scalar_vars]).values())
+        # TODO: at this point, create dict: id(v[t0]) -> dae_vars[i]
+        #                               ^ ComponentMap
 
         model.scalar_vars = scalar_no_dups
 
@@ -753,6 +777,7 @@ class NMPCSim(object):
                 alg_vars.append(dae_no_dups.pop(i))
 
 
+        # TODO: attribute of subblock
         model.deriv_vars = deriv_vars
         model.diff_vars = diff_vars
         model.n_dv = len(diff_vars)
@@ -882,6 +907,7 @@ class NMPCSim(object):
         outlvl = kwargs.pop('outlvl', self.outlvl)
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
+        # Above can be setup through common config
         weight_overwrite = kwargs.pop('weight_overwrite', [])
         weight_tolerance = kwargs.pop('weight_tolerance', 1e-6)
 
@@ -907,6 +933,7 @@ class NMPCSim(object):
                     vardata_t1 = _slice
 
                 local_parent = steady_model
+                # TODO: replace with helper function
                 for r in path_from_block(vardata_t0, self.c_mod, 
                                          include_comp=True):
                     try:
