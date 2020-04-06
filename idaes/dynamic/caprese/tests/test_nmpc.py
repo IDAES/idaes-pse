@@ -82,7 +82,8 @@ def test_find_comp_in_block():
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
 
 
-def _test_constructor():
+@pytest.fixture(scope='session')
+def nmpc():
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
@@ -322,7 +323,10 @@ def _test_constructor():
     return nmpc
 
 
-def _test_validate_setpoint(nmpc, m_steady):
+def test_validate_setpoint(nmpc, steady_cstr_model):
+
+    m_steady = steady_cstr_model
+    nmpc.s_mod = steady_cstr_model
 
     # set_point is a list of VarData, Value tuples
     # with VarDatas from the controller model,
@@ -431,7 +435,7 @@ def _test_validate_setpoint(nmpc, m_steady):
         assert var[0].value == c_mod.input_sp[i]
 
 
-def _test_construct_objective_weight_matrices(nmpc):
+def test_construct_objective_weight_matrices(nmpc):
     
     c_mod = nmpc.c_mod
     dynamic_weight_tol = 5e-7
@@ -457,7 +461,7 @@ def _test_construct_objective_weight_matrices(nmpc):
             assert c_mod.diff_weights[i] == dynamic_weight_overwrite[0][1]
 
 
-def _test_add_objective_function(nmpc):
+def test_add_objective_function(nmpc):
 
     c_mod = nmpc.c_mod
     time = c_mod.time
@@ -484,7 +488,7 @@ def _test_add_objective_function(nmpc):
     # objective function may not be meaningful
 
 
-def _test_add_pwc_constraints(nmpc):
+def test_add_pwc_constraints(nmpc):
     sample_time = 0.5
     nmpc.add_pwc_constraints(sample_time=sample_time)
 
@@ -523,7 +527,7 @@ def _test_add_pwc_constraints(nmpc):
             assert id(c_mod.input_vars[1][t_next]) in var_in_1
 
 
-def _test_initialization_by_simulation(nmpc):
+def test_initialization_by_simulation(nmpc):
 
     nmpc.initialize_control_problem(strategy='from_simulation')
 
@@ -547,7 +551,7 @@ def _test_initialization_by_simulation(nmpc):
         assert abs(value(con.body) - value(con.upper)) < 1e-6
 
 
-def _test_initialization_from_initial_conditions(nmpc):
+def test_initialization_from_initial_conditions(nmpc):
 
     dof_before = degrees_of_freedom(nmpc.c_mod)
 
@@ -577,7 +581,7 @@ def _test_initialization_from_initial_conditions(nmpc):
                 assert 'accumulation' in con.local_name
 
 
-def _test_solve_control_problem(nmpc):
+def test_solve_control_problem(nmpc):
 
     c_mod = nmpc.c_mod
 
@@ -598,7 +602,7 @@ def _test_solve_control_problem(nmpc):
             assert var.value - var.ub < 1e-6
 
 
-def _test_inject_inputs(nmpc):
+def test_inject_inputs(nmpc):
     
 
     c_mod = nmpc.c_mod
@@ -624,7 +628,7 @@ def _test_inject_inputs(nmpc):
             assert _slice[t].value == c_mod.input_vars[i][sample_time].value
 
 
-def _test_simulate_over_range(nmpc):
+def test_simulate_over_range(nmpc):
 
     p_mod = nmpc.p_mod
     c_mod = nmpc.c_mod
@@ -674,7 +678,7 @@ def _test_simulate_over_range(nmpc):
             assert abs(pvar[t].value - cvar[t].value) < 1e-5
 
 
-def _test_initialize_from_previous(nmpc):
+def test_initialize_from_previous(nmpc):
     c_mod = nmpc.c_mod
     time = c_mod.time
     sample_time = nmpc.sample_time
@@ -700,69 +704,13 @@ def _test_initialize_from_previous(nmpc):
             assert cvar[t].value == prev_values[i][t_next]
 
 
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_nmpc():
-    m = make_model()
-
-    nmpc = _test_constructor()
-
-    m_steady = make_model(steady=True)
-
-    _test_validate_setpoint(nmpc, m_steady.fs)
-
-    nmpc.s_mod = m_steady.fs
-
-    _test_construct_objective_weight_matrices(nmpc)
-
-    _test_add_objective_function(nmpc)
-
-    _test_add_pwc_constraints(nmpc)
-
-    _test_initialization_by_simulation(nmpc)
-
-    _test_initialization_from_initial_conditions(nmpc)
-
-    _test_solve_control_problem(nmpc)
-
-    _test_inject_inputs(nmpc)
-
-    _test_simulate_over_range(nmpc)
-
-    _test_initialize_from_previous(nmpc)
+@pytest.fixture
+def dynamic_cstr_model():
+    return make_model().fs
 
 
-if __name__ == '__main__':
-    m = make_model()
-#    assert degrees_of_freedom(m) == 0
-#    # This is much slower than the CSTR without mixer. 
-#    # Unclear to me what is causing the slowdown.
-#    initialize_by_time_element(m.fs, m.fs.time, solver=solver)
-#    assert degrees_of_freedom(m) == 0
+@pytest.fixture
+def steady_cstr_model():
+    return make_model(steady=True).fs
 
-    test_find_comp_in_block()
 
-    nmpc = _test_constructor()
-
-    m_steady = make_model(steady=True)
-
-    _test_validate_setpoint(nmpc, m_steady.fs)
-
-    nmpc.s_mod = m_steady.fs
-
-    _test_construct_objective_weight_matrices(nmpc)
-
-    _test_add_objective_function(nmpc)
-
-    _test_add_pwc_constraints(nmpc)
-
-    _test_initialization_by_simulation(nmpc)
-
-    _test_initialization_from_initial_conditions(nmpc)
-
-    _test_solve_control_problem(nmpc)
-
-    _test_inject_inputs(nmpc)
-
-    _test_simulate_over_range(nmpc)
-
-    _test_initialize_from_previous(nmpc)
