@@ -12,7 +12,7 @@
 ##############################################################################
 # =============================================================================
 
-from pyomo.environ import (Constraint, Var, Param, exp, log)
+from pyomo.environ import (Constraint, Var, Param, exp, log, NonNegativeReals)
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
@@ -27,16 +27,16 @@ def global_costing_parameters(self, year=None):
                     '2011': 585.7, '2010': 550.8}
 
     self.CE_index = Param(mutable=True, initialize=ce_index_dic[year],
-                          doc='CE cost index $ year')
+                          doc='Chemical Engineering Plant Cost Index $ year')
 
 
 def _make_vars(self):
     # build generic costing variables (all costing models need these vars)
     self.base_cost = Var(initialize=1e5,
-                         bounds=(0, 1e12),
+                         domain=NonNegativeReals,
                          doc='Unit Base Cost cost in $')
     self.purchase_cost = Var(initialize=1e4,
-                             bounds=(0, 1e12),
+                             domain=NonNegativeReals,
                              doc='Unit Purchase Cost in $')
 
 
@@ -79,21 +79,21 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
     # (base cost, purchase cost, material factor)
     _make_vars(self)
 
-    self.FL = Param(mutable=True, initialize=1.12,
-                    doc='hx tube length correction factor')
+    self.length_factor = Param(mutable=True, initialize=1.12,
+                    doc='hx tube length correction factor, FL')
 
-    self.FP = Var(initialize=100,
-                  doc='Pressure factor')
+    self.pressure_factor = Var(initialize=1,
+                  doc='Pressure design factor - FP')
 
-    self.FM = Var(initialize=3.5,
-                  doc='construction material correction factor')
+    self.material_factor = Var(initialize=3.5,
+                  doc='construction material correction factor - FM')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
                        doc='hx oversize factor 1.1 to 1.5')
 
     # select length correction factor
     c_fl = {'8ft': 1.25, '12ft': 1.12, '16ft': 1.05, '20ft': 1.00}
-    self.FL = c_fl[L_factor]
+    self.length_factor = c_fl[L_factor]
 
     # --------------------------------------------------
     # base cost calculation
@@ -107,23 +107,23 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
 
     if (self.parent_block().config.tube.property_package.get_metadata().
             default_units['length']) == 'm':
-        area = self.parent_block().area*10.7639
+        area = self.parent_block().area*10.7639  # converting to ft^2
     elif (self.parent_block().config.tube.property_package.get_metadata().
             default_units['length']) == 'ft':
         area = self.area
     else:
-        raise Exception('area units not suported')
+        raise Exception('area units not supported')
 
     def hx_cost_rule(self):
-        return self.base_cost == self.FL * exp(alf1[hx_type]
-                                               - alf2[hx_type]
-                                               * log(area*self.hx_os)
-                                               + alf3[hx_type]
-                                               * log(area*self.hx_os)**2)
+        return self.base_cost == exp(alf1[hx_type]
+                                     - alf2[hx_type]
+                                     * log(area*self.hx_os)
+                                     + alf3[hx_type]
+                                     * log(area*self.hx_os)**2)
     self.base_cost_eq = Constraint(rule=hx_cost_rule)
 
     # ------------------------------------------------------
-    # Material of construction factor Eq. 22.44
+    # Material of construction factor Eq. 22.44 in the reference
     hx_material_factor_a_dic = {'carbon steel/carbon steel':       0.00,
                                 'carbon steel/brass':              1.08,
                                 'carbon steel/stainless steel':    1.75,
@@ -151,9 +151,9 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
 
     def hx_material_fact_rule(self):
         if FM == 'carbon steel/carbon steel':
-            return self.FM == 1
+            return self.material_factor == 1
         else:
-            return self.FM == a + (area/100)**b
+            return self.material_factor == a + (area/100)**b
     self.hx_material_eqn = Constraint(rule=hx_material_fact_rule)
 
     # ------------------------------------------------------
@@ -162,7 +162,7 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
     if (self.parent_block().config.tube.property_package.get_metadata().
             properties['pressure']['units']) == 'Pa':
         pressure = (self.parent_block().
-                    tube.properties_in[0].pressure*14.69/1.01325e5)
+                    tube.properties_in[0].pressure*14.69/1.01325e5)  # to psig
     elif (self.parent_block().config.tube.property_package.get_metadata().
             properties['pressure']['units']) == 'psig':
         pressure = self.tube.properties_in[0].pressure
@@ -170,17 +170,18 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
     # units must be in psig
     def hx_P_factor(self):
         # eq valid from 600 pisg to 3000 psig
-        #    return self.hx_FP == 0.8510 + 0.1292*(pressure/600)
+        #    return self.pressure_factor == 0.8510 + 0.1292*(pressure/600)
         #                                + 0.0198*(pressure/600)**2
         # eq valid from 100 pisg to 2000 psig
-        return self.FP == 0.9803 + (0.018*(pressure*14.69/1.01325e5/100)
-                                    + 0.0017*(pressure*14.69/1.01325e5/100)**2)
+        return self.pressure_factor == 0.9803 + 0.0180 * (pressure/100) \
+            + 0.0017 * (pressure/100)**2
     self.p_factor_eq = Constraint(rule=hx_P_factor)
 
     # ---------------------------------------------------------
     # purchase cost equation
     def hx_CP_rule(self):
-        return self.purchase_cost == (self.FP*self.FM*self.FL
+        return self.purchase_cost == (self.pressure_factor*self.material_factor
+                                      * self.length_factor
                                       * (self.parent_block().flowsheet().
                                          costing.CE_index/500)*self.base_cost)
     self.cp_cost_eq = Constraint(rule=hx_CP_rule)
@@ -273,6 +274,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         else:
             raise Exception("units not supported")
 
+        #                           -1*work_hp because work is negative
         def CP_rule(self):
             return self.purchase_cost == 530*(-1 * work_hp)**0.81
         self.cp_cost_eq = Constraint(rule=CP_rule)
