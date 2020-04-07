@@ -184,7 +184,7 @@ def test_find_slices_in_model():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_simulate_over_range():
+def test_initialize_by_element_in_range():
     mod = make_model(horizon=2, ntfe=20)
     assert degrees_of_freedom(mod) == 0
 
@@ -195,7 +195,7 @@ def test_simulate_over_range():
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'C']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'P'])]
 
-    simulate_over_range(mod.fs, 0, 1, solver=solver, dae_vars=dae_vars,
+    initialize_by_element_in_range(mod.fs, 0, 1, solver=solver, dae_vars=dae_vars,
                         time_linking_variables=diff_vars,
                         outlvl=idaeslog.DEBUG,
                         solve_initial_conditions=True)
@@ -207,7 +207,7 @@ def test_simulate_over_range():
     assert mod.fs.cstr.outlet.conc_mol[1, 'E'].value == approx(0.0541, abs=1e-4)
     assert mod.fs.cstr.outlet.conc_mol[1, 'P'].value == approx(0.3503, abs=1e-4)
 
-    simulate_over_range(mod.fs, 1, 2, solver=solver, dae_vars=dae_vars,
+    initialize_by_element_in_range(mod.fs, 1, 2, solver=solver, dae_vars=dae_vars,
                         outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(mod.fs) == 0
@@ -329,6 +329,6 @@ if __name__ == '__main__':
     test_VarLocator()
     test_copy_values()
     test_find_slices_in_model()
-    test_simulate_over_range()
+    test_initialize_by_element_in_range()
     test_add_noise_at_time()
 
