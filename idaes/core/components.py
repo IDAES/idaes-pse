@@ -20,11 +20,15 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
+from .util.config import list_of_phases
 
 
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
+    CONFIG.declare("valid_phases", ConfigValue(
+            domain=list_of_phases,
+            doc="List of valid Phases for this Component."))
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether component_list "
@@ -39,6 +43,18 @@ class ComponentData(ProcessBlockData):
         # need to add new Component objects
         if not self.config._component_list_exists:
             self.__add_to_component_list()
+
+    def is_solute(self):
+        raise TypeError(
+            "{} Generic Component objects do not support is_solute() method. "
+            "Use a Solvent or Solute Component instead."
+            .format(self.name))
+
+    def is_solvent(self):
+        raise TypeError(
+            "{} Generic Component objects do not support is_solvent() method. "
+            "Use a Solvent or Solute Component instead."
+            .format(self.name))
 
     def __add_to_component_list(self):
         """

@@ -23,11 +23,13 @@ from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
+from idaes.core.phases import Phase
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
@@ -103,6 +105,39 @@ def list_of_floats(arg):
         # arg is not iterable
         lst = [float(arg)]
     return lst
+
+
+def list_of_phases(arg):
+    '''Domain validator for lists of Phase objects
+
+    Args:
+        arg : argument to be cast to list of Phases and validated
+
+    Returns:
+        List of Phases
+    '''
+    if isinstance(arg, Phase):
+        # arg is a single Phase object, return list containing this
+        return [arg]
+
+    try:
+        # Otherise, assume arg is iterable
+        if isinstance(arg, str):
+            raise ConfigurationError(
+                "{} should be an instance of an IDAES Phase component ("
+                "received string)."
+                .format(arg))
+        for i in arg:
+            if not isinstance(i, Phase):
+                raise ConfigurationError(
+                    "{} should be an instance of an IDAES Phase component."
+                    .format(i))
+        return arg
+    except TypeError:
+        raise ConfigurationError(
+            "{} should be an instance of an IDAES Phase component or a list of"
+            " Phase components."
+            .format(arg))
 
 
 def list_of_strings(arg):

@@ -25,11 +25,13 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         ReactionParameterBlock,
                         useDefault)
+from idaes.core.phases import Phase
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
+                                    list_of_phases,
                                     is_port,
                                     is_time_domain,
                                     is_transformation_method,
@@ -230,3 +232,24 @@ def test_is_transformation_scheme():
 
     with pytest.raises(ConfigurationError):
         is_transformation_scheme("foo")
+
+
+def test_list_of_phases():
+    m = ConcreteModel()
+    m.p = Phase()
+
+    assert list_of_phases(m.p) == [m.p]
+    assert list_of_phases([m.p, m.p]) == [m.p, m.p]
+
+    with pytest.raises(ConfigurationError):
+        list_of_phases("foo")
+
+    with pytest.raises(ConfigurationError,
+                       match="1 should be an instance of an IDAES Phase "
+                       "component or a list of Phase components."):
+        list_of_phases(1)
+
+    with pytest.raises(ConfigurationError,
+                       match="foo should be an instance of an IDAES Phase "
+                       "component."):
+        list_of_phases(["foo"])
