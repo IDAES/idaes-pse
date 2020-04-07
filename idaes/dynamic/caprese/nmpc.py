@@ -18,7 +18,7 @@ Class for performing NMPC simulations of IDAES flowsheets
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
         TransformationFactory)
-from pyomo.kernel import ComponentSet
+from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
 
@@ -626,7 +626,7 @@ class NMPCSim(object):
                         comp.activate()
 
 
-    def categorize_variables(self, model, initial_inputs, **kwargs):
+    def categorize_variables(self, model, initial_inputs):
         """Function to create lists of time-only-slices of the different 
         types of variables in a model, given knowledge of which are inputs. 
         These lists are added as attributes to the model.
@@ -640,21 +640,18 @@ class NMPCSim(object):
             is_steady : Flag to set True if the model is a steady state model,
                         and thus its time set is a singleton.
         """
-        # TODO: is_steady should be an explicit arg
 
         # Would probably be much faster to do this categorization
         # during variable flattening
-        is_steady = kwargs.pop('is_steady', False)
         time = model.time
 
         # Works for steady state models as time will be an ordered
         # (although not continuous) set:
         t0 = time.first()
-        if is_steady:
-            t1 = t0
-        else:
+        try:
             t1 = time.get_finite_elements()[1]
-        # TODO: try/except attribute error
+        except AttributeError:
+            t1 = t0
 
         # TODO: subblock
         deriv_vars = []
@@ -669,113 +666,82 @@ class NMPCSim(object):
         # (And list of VarData objects for scalar variables)
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
 
-        # Remove duplicates from these var lists
-        dae_no_dups = list(OrderedDict([(id(v[t0]), v)
-                           for v in dae_vars]).values())
-        scalar_no_dups = list(OrderedDict([(id(v), v)
-                              for v in scalar_vars]).values())
-        # TODO: at this point, create dict: id(v[t0]) -> dae_vars[i]
-        #                               ^ ComponentMap
+        dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
+        t0_vardata = list(dae_map.keys())
+        model.dae_vars = list(dae_map.values())
+        model.scalar_vars = list(ComponentMap([(v, v) for v in scalar_vars]).values())
+        input_set = ComponentSet(initial_inputs)
+        updated_input_set = ComponentSet(initial_inputs)
+        diff_set = ComponentSet()
 
-        model.scalar_vars = scalar_no_dups
-
-        # Remove duplicates from variable lists
-        model.dae_vars = dae_no_dups.copy()
-
-        # Find input variables
-        temp_inps = initial_inputs.copy()
-        for i, var in reversed(list(enumerate(dae_no_dups))):
-            for j, ini in enumerate(temp_inps):
-                if var[t0] is ini:
-                    assert ini is temp_inps.pop(j)
-                    assert var is dae_no_dups.pop(i)
-                    input_vars.append(var)
+        # Iterate over initial vardata, popping from dae map when an input,
+        # derivative, or differential var is found.
+        for var0 in t0_vardata:
+            for inp in updated_input_set:
+                if var0 is inp:
+                    input_set.remove(inp)
+                    time_slice = dae_map.pop(var0)
+                    input_vars.append(time_slice)
                     break
-
-        inputs_remaining = [v.name for v in temp_inps]
-        if inputs_remaining:
-            raise ValueError(
-                f'Could not find variables for initial inputs '
-                '{inputs_remaining}')
-
-        # Find derivative variables
-        init_dv_list = []
-        for i, var in reversed(list(enumerate(dae_no_dups))):
-            parent = var[t0].parent_component()
-            index0 = var[t0].index()
-            index1 = var[t1].index()
+             
+            parent = var0.parent_component()
             if not isinstance(parent, DerivativeVar):
                 continue
-            if time not in ComponentSet(parent.get_continuousset_list()):
+            if not time in ComponentSet(parent.get_continuousset_list()):
+                continue
+            index0 = var0.index()
+            var1 = dae_map[var0][t1]
+            index1 = var1.index()
+            state = parent.get_state_var()
+
+            if state[index1].fixed:
+                # Assume state var is fixed everywhere, so derivative
+                # 'isn't really' a derivative.
+                # Should be safe to remove state from dae_map here
+                state_slice = dae_map.pop(state[index0])
+                fixed_vars.append(state_slice)
+                continue
+            if state[index0] in input_set:
+                # If differential variable is an input, then this DerivativeVar
+                # is 'not really a derivative'
                 continue
 
-            # Do The Correct Thing depending on which variables aren't fixed
-            # Should have some robust tests for this behavior
-            if parent.get_state_var()[index1].fixed:
-                # Assume state var has been fixed everywhere.
-                # Then derivative is 'not really a derivative'
-                # in the sense that it doesn't specify a differential
-                # variable through some discretization equations.
-                
-                # In this case do not pop var from dae_no_dups
-                # It needs to be found in the search for alg vars later
-                #
-                # Don't /need/ to add state var to fixed_vars, it will be 
-                # found and added later
-                continue
-
-            assert var is dae_no_dups.pop(i)
-
-            if var[t1].fixed:
+            deriv_slice = dae_map.pop(var0)
+            if var1.fixed:
                 # Assume derivative has been fixed everywhere.
-                # It will be added to the list of fixed variables,
-                # and don't want to search for its state variable later.
-                fixed_vars.append(var)
-            elif var[t0].fixed:
-                # In this case the derivative has been used as an
-                # initial condition. Still want to include it in the
-                # list of derivatives, and want to look for its state var.
-                ic_vars.append(var)
-                deriv_vars.append(var)
-                init_dv_list.append(parent.get_state_var()[index0])
+                # Add to list of fixed variables, and don't remove its state variable.
+                fixed_vars.append(deriv_slice)
+            elif var0.fixed:
+                # In this case the derivative has been used as an initial condition. 
+                # Still want to include it in the list of derivatives.
+                ic_vars.append(deriv_slice)
+                state_slice = dae_map.pop(state[index0])
+                if state[index0].fixed:
+                    ic_vars.append(state_slice)
+                deriv_vars.append(deriv_slice)
+                diff_vars.append(state_slice)
             else:
                 # Neither is fixed. This should be the most common case.
-                deriv_vars.append(var)
-                init_dv_list.append(parent.get_state_var()[index0])
+                state_slice = dae_map.pop(state[index0])
+                if state[index0].fixed:
+                    ic_vars.append(state_slice)
+                deriv_vars.append(deriv_slice)
+                diff_vars.append(state_slice)
 
-        # Find differential variables
-        for i, diffvar in reversed(list(enumerate(dae_no_dups))):
-            for j, dv in enumerate(init_dv_list):
-                # Don't need to reverse here as we intend to break the loop
-                # after the first pop
-                if diffvar[t0] is dv:
-                    if diffvar[t0].fixed and not diffvar[t1].fixed:
-                        ic_vars.append(diffvar)
-                    assert dv is init_dv_list.pop(j)
-                    assert diffvar is dae_no_dups.pop(i)
-                    diff_vars.append(diffvar)
-                    break
+        if not updated_input_set:
+            raise RuntimeError('Not all inputs could be found')
+        assert len(deriv_vars) == len(diff_vars)
 
-        dvs_remaining = [v.name for v in init_dv_list]
-        if dvs_remaining:
-            raise ValueError(
-                f'Could not find variables for initial states '
-                '{dvs_remaining}')
-
-        # Find algebraic variables
-        for i, var in reversed(list(enumerate(dae_no_dups))):
+        for var0, time_slice in dae_map.items():
+            var1 = time_slice[t1]
             # If the variable is still in the list of time-indexed vars,
             # it must either be fixed (not a var) or be an algebraic var
-            # - - - 
-            # Check at t1 instead of t0 as algebraic vars might be fixed
-            # at t0 as initial conditions instead of some differential vars
-            if var[t1].fixed:
-                fixed_vars.append(dae_no_dups.pop(i))
+            if var1.fixed:
+                fixed_vars.append(time_slice)
             else:
-                if var[t0].fixed:
-                    ic_vars.append(var)
-                alg_vars.append(dae_no_dups.pop(i))
-
+                if var0.fixed:
+                    ic_vars.append(time_slice)
+                alg_vars.append(time_slice)
 
         # TODO: attribute of subblock
         model.deriv_vars = deriv_vars
