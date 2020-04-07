@@ -15,6 +15,7 @@ Test for Cappresse's module for NMPC.
 """
 
 import pytest
+from pytest import approx
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, Objective,
                            TransformationFactory, TerminationCondition)
@@ -483,7 +484,7 @@ def test_add_objective_function(nmpc):
 
     obj_expr = obj_state_term + obj_control_term
 
-    assert value(obj_expr) == value(c_mod.tracking_objective.expr)
+    assert value(obj_expr) == approx(value(c_mod.tracking_objective.expr), 1e-6)
     # Controller model has not been initialized yet, so value of
     # objective function may not be meaningful
 
