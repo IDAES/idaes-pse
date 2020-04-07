@@ -105,6 +105,9 @@ class NMPCSim(object):
         self.p_mod = plant_model
         self.c_mod = controller_model
 
+        self.add_namespace_to(self.p_mod)
+        self.add_namespace_to(self.c_mod)
+
         # Validate models
         self.validate_models(self.p_mod, self.c_mod)
 
@@ -249,6 +252,61 @@ class NMPCSim(object):
         # Remember: Need to calculate weight matrices before populating this. 
 
 
+    def add_namespace_to(self, model):
+        name = '_NMPC_NAMESPACE'
+        # Not _CAPRESE_NAMESPACE as I might want to add a similar 
+        # namespace for MHE
+        if hasattr(model, name):
+            raise ValueError('%s already exists on model. Please fix this.'
+                             % name)
+        model.add_component(name, Block())
+        namespace = getattr(model, name)
+
+        namespace.input_vars = []
+        namespace.n_input_vars = 0
+        namespace.input_weights = []
+        namespace.input_setpoints = []
+        namespace.input_bounds = []
+
+        namespace.alg_vars = []
+        namespace.n_alg_vars = 0
+        namespace.alg_weights = []
+        namespace.alg_setpoints = []
+        namespace.alg_bounds = []
+
+        namespace.diff_vars = []
+        namespace.n_diff_vars = 0
+        namespace.diff_weights = []
+        namespace.diff_setpoints = []
+        namespace.diff_bounds = []
+
+        namespace.deriv_vars = []
+        namespace.n_deriv_vars = 0
+        namespace.deriv_weights = []
+        namespace.deriv_setpoints = []
+        namespace.deriv_bounds = []
+
+        namespace.fixed_vars = []
+        namespace.n_fixed_vars = 0
+        namespace.fixed_weights = []
+        namespace.fixed_setpoints = []
+        namespace.fixed_bounds = []
+
+        namespace.scalar_vars = []
+        namespace.n_scalar_vars = 0
+        namespace.scalar_weights = []
+        namespace.scalar_setpoints = []
+        namespace.scalar_bounds = []
+
+        namespace.ic_vars = []
+        namespace.n_ic_vars = 0
+
+        namespace.dae_vars = []
+        namespace.n_dae_vars = 0
+
+        namespace.var_locator = ComponentMap()
+
+
     def validate_sample_time(self, sample_time, *models):
         """Makes sure sample time is an integer multiple of discretization
         spacing in each model, and that horizon of each model is an integer
@@ -266,6 +324,7 @@ class NMPCSim(object):
                 raise ValueError(
                     'Sampling time must be at least as long '
                     'as a finite element in time')
+            # TODO: how to handle roundoff here?
             if (sample_time / fe_spacing) % 1 != 0:
                 raise ValueError(
                     'Sampling time must be an integer multiple of '
