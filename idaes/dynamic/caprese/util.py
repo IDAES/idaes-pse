@@ -191,8 +191,9 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
     return tgt_slices
 
 
-# TODO: initialize_by_element_over_range
-def simulate_over_range(model, t_start, t_end, **kwargs):
+# RENAME
+#def simulate_over_range(model, t_start, t_end, **kwargs):
+def initialize_by_element_in_range(model, t_start, t_end, **kwargs):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
 
@@ -205,6 +206,8 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
+    # CONFIG, KWARGS: handle these kwargs through config
+
     # deactivate model except at t_start
     # deactivate disc. equations at t_start
     # solve for consistent 'initial' conditions at t_start
