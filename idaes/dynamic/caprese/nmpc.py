@@ -17,7 +17,7 @@ Class for performing NMPC simulations of IDAES flowsheets
 
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory)
+        TransformationFactory, Reference)
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
@@ -27,7 +27,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.caprese.util import (simulate_over_range, 
+from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         find_slices_in_model, VarLocator, copy_values_at_time, 
         add_noise_at_time)
 import idaes.logger as idaeslog
@@ -37,6 +37,14 @@ import time as timemodule
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
+
+
+# TODO tags:
+# - KWARGS
+# - CONFIG
+# - NAMESPACE
+# - RENAME
+# - REMOVECONSTANT
 
 
 class NMPCSim(object):
@@ -83,6 +91,7 @@ class NMPCSim(object):
 
         # TODO: handle arguments (solver, outlvl, ...) via config blocks
         #       separate solvers for each solve, in init
+        # KWARGS, CONFIG, NAMESPACE - remove kwargs and set these up here
 
         solver = kwargs.pop('solver', SolverFactory('ipopt'))
         self.default_solver = solver
@@ -358,6 +367,7 @@ class NMPCSim(object):
                         to find in target model. If not provided, the
                         initial_inputs attribute will be used.
         """
+        # TODO: set level through config
         log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         if not src_inputs:
@@ -414,7 +424,12 @@ class NMPCSim(object):
         return True
 
 
-    def load_initial_conditions_from_plant(self, t_plant, **kwargs):
+    def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
+        # Would like to pass "noise_args" in as a bundle here. This can
+        # probably be done with config blocks somehow.
+
+        # TESTME: this function is not tested.
+        # copy_values and add_noise are tested, however
 
         time = self.c_mod.time
         t0 = time.first()
@@ -437,6 +452,8 @@ class NMPCSim(object):
                     locator = self.c_mod.var_locator[id(var[t0])]
                     category = locator.category
                     loc = locator.location
+                    # REMOVECONSTANT
+                    # There should be an enum for variable category
                     if category == 'differential':
                         obj_weight = self.c_mod.diff_weights[loc]
                     elif category == 'derivative':
@@ -445,6 +462,8 @@ class NMPCSim(object):
                         obj_weight = self.c_mod.diff_weights[loc]
                     else:
                         # FIXME: Won't have obj weight for algebraic equations
+                        # NAMESPACE: empty list should be added automatically in
+                        # namespace block
                         obj_weight = None
 
                     if obj_weight is not None and obj_weight != 0:
@@ -460,7 +479,7 @@ class NMPCSim(object):
                               **noise_args)
 
 
-    def inject_inputs_into_plant(self, t_plant, **kwargs):
+    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time.
@@ -484,6 +503,9 @@ class NMPCSim(object):
             noise_args : Additional kwargs to pass apply_noise_at_time
 
         """
+        # KWARGS, CONFIG - handle all of these through config. Pass in noise args
+        # as a bundle
+        # config args for control_input_noise
 
         sample_time = kwargs.pop('sample_time', self.sample_time)
         src_attrname = kwargs.pop('src_attrname', 'plant_input_vars')
@@ -1333,8 +1355,9 @@ class NMPCSim(object):
                 var[t].domain = Reals
 
 
-    # TODO: constrain_control_piecewise_constant
-    def add_pwc_constraints(self, **kwargs):
+# RENAME
+#    def add_pwc_constraints(self, **kwargs):
+    def constrain_control_inputs_piecewise_constant(self, **kwargs):
         """Function to add piecewise constant (PWC) constraints to
         model. Inputs and sample time are already known, so no arguments are
         necessary.
@@ -1345,6 +1368,8 @@ class NMPCSim(object):
             sample_time : Duration for which inputs will be forced constant
             outlvl : idaes.logger output level
         """
+        # KWARGS
+        # CONFIG: all of these options can/should be handled through config
         model = kwargs.pop('model', self.c_mod)
         sample_time = kwargs.pop('sample_time', self.sample_time)
         outlvl = kwargs.pop('outlvl', self.outlvl)
@@ -1373,32 +1398,34 @@ class NMPCSim(object):
         # at module namespace
         # Can access sample_time as attribute of namespace block,
         # then rule can be located outside of class
+        input_indices = [i for i in range(len(model.input_vars))]
+        def pwc_rule(m, t, i):
+            # Unless t is at the boundary of a sample, require
+            # input[t] == input[t_next]
+            # TODO: Do this to tolerance
+            # pyomo.core.base.range::Remainder
+            # (or just math.remainder -- nope, added in 3.7)
+            # if abs(remainder(t-time.first(), sample_time)) < 1e-8
+            # set collocation_tolerance = 1/2(min spacing) during
+            # construction, reference it here.
+            if (t - time.first()) % sample_time == 0:
+                return Constraint.Skip
+            t_next = time.next(t)
+            # NAMESPACE: input_vars. Also, sample_time
+            # probably make sample time an attribute of NMPCSim, but still
+            # provide as a config. CONFIG
+            inputs = m.input_vars
+            _slice = inputs[i]
+            return _slice[t_next] == _slice[t]
+        # NAMESPACE: pwc_input
+        name = '_pwc_input'
+        pwc_constraint = Constraint(model.time, input_indices, 
+                rule=pwc_rule)
+        # Maybe a check here to delete existing pwc constraints
+        model.add_component(name, pwc_constraint)
 
-        # Index constraint by location in input_vars as well as time,
-        # then access _slice[i] so I don't have to declare the model
-        # for every iteration
-        for i, _slice in enumerate(model.input_vars):
-            def pwc_rule(m, t):
-                # Unless t is at the boundary of a sample, require
-                # input[t] == input[t_next]
-                # TODO: Do this to tolerance
-                # pyomo.core.base.range::Remainder
-                # (or just math.remainder -- nope, added in 3.7)
-                # if abs(remainder(t-time.first(), sample_time)) < 1e-8
-                # set collocation_tolerance = 1/2(min spacing) during
-                # construction, reference it here.
-                if (t - time.first()) % sample_time == 0:
-                    return Constraint.Skip
-
-                t_next = time.next(t)
-                return _slice[t_next] == _slice[t]
-
-            name = '_pwc_input_' + str(i)
-            pwc_constraint = Constraint(model.time, rule=pwc_rule)
-            model.add_component(name, pwc_constraint)
-            # Maybe a check here to delete existing "pwc_input" components
-            pwc_constraints.append(getattr(model, name))
-
+        pwc_constraints = [Reference(pwc_constraint[:, i])
+                           for i in input_indices]
         # TODO: namespace block
         model._pwc_constraints = pwc_constraints
 
@@ -1424,6 +1451,8 @@ class NMPCSim(object):
         if solver_options:
             solver.options = solver_options
 
+        input_type = kwargs.pop('input_type', 'set_point')
+
         time = self.c_mod.time
 
         # TODO: remove embedded strings. 
@@ -1436,61 +1465,7 @@ class NMPCSim(object):
 
         elif strategy == 'from_simulation':
             # TODO: 'by_time_element'
-
-            # Strip bounds before simulation as square solves will be performed
-            strip_controller_bounds = TransformationFactory(
-                                          'contrib.strip_var_bounds')
-            strip_controller_bounds.apply_to(self.c_mod, reversible=True)
-
-            input_type = kwargs.pop('inputs', 'set_point')
-            if input_type == 'set_point':
-                for i, _slice in enumerate(self.c_mod.input_vars):
-                    for t in time:
-                        if t != time.first():
-                            _slice[t].fix(self.c_mod.input_sp[i])
-                        else:
-                            _slice[t].fix()
-
-            elif input_type == 'initial':
-                for i, _slice in enumerate(self.c_mod.input_vars):
-                    t0 = time.first()
-                    for t in time:
-                        _slice[t].fix(self.c_mod.input_vars[i][t0].value)
-            # The above should ensure that all inputs are fixed and the 
-            # model has no dof upon simulation
-
-            # Deactivate objective function
-            # Here I assume the name of the objective function.
-            self.c_mod.tracking_objective.deactivate()
-            # Deactivate pwc constraints (as inputs are fixed)
-            for con in self.c_mod._pwc_constraints:
-                con.deactivate()
-
-            # simulate_over_range is faster. Keeping this here for now in case
-            # something goes wrong.
-            #initialize_by_time_element(self.c_mod, self.c_mod.time,
-            #        solver=self.default_solver, outlvl=idaeslog.DEBUG)
-            simulate_over_range(self.c_mod, time.first(), time.last(),
-                                dae_vars=self.c_mod.dae_vars,
-                                time_linking_variables=self.c_mod.diff_vars)
-            # TODO: initialize_by_element_in_range
-            #       solve_elements_in_range
-            # TODO: add function that is wrapper around "simulate_over_range"
-            #       then map option to function
-
-            # This solve should be trivial:
-            #solver.solve(self.c_mod, tee=True)
-
-            # Reactivate objective, pwc constraints, bounds
-            self.c_mod.tracking_objective.activate()
-            for con in self.c_mod._pwc_constraints:
-                con.activate()
-
-            for _slice in self.c_mod.input_vars:
-                for t in time:
-                    _slice[t].unfix()
-
-            strip_controller_bounds.revert(self.c_mod)
+            self.initialize_by_solving_elements(self.c_mod)
 
         elif strategy == 'initial_conditions':
             self.initialize_from_initial_conditions(self.c_mod)
@@ -1498,6 +1473,59 @@ class NMPCSim(object):
         # Add check that initialization did not violate bounds/equalities?
 
         self.controller_solved = False
+
+
+    def initialize_by_solving_elements(self, model, input_type='set_point'):
+        time = model.time 
+        # Strip bounds before simulation as square solves will be performed
+        strip_controller_bounds = TransformationFactory(
+                                      'contrib.strip_var_bounds')
+        strip_controller_bounds.apply_to(model, reversible=True)
+
+        if input_type == 'set_point':
+            for i, _slice in enumerate(model.input_vars):
+                for t in time:
+                    if t != time.first():
+                        _slice[t].fix(model.input_sp[i])
+                    else:
+                        _slice[t].fix()
+
+        elif input_type == 'initial':
+            for i, _slice in enumerate(model.input_vars):
+                t0 = time.first()
+                for t in time:
+                    _slice[t].fix(model.input_vars[i][t0].value)
+
+        else:
+            raise ValueError('Unrecognized input type')
+        # The above should ensure that all inputs are fixed and the 
+        # model has no dof upon simulation
+
+        # Deactivate objective function
+        # Here I assume the name of the objective function.
+        model.tracking_objective.deactivate()
+        # Deactivate pwc constraints (as inputs are fixed)
+        #for con in model._pwc_constraints:
+        #    con.deactivate()
+        model._pwc_input.deactivate()
+
+        initialize_by_element_in_range(self.c_mod, time.first(), time.last(),
+                            dae_vars=self.c_mod.dae_vars,
+                            time_linking_variables=self.c_mod.diff_vars)
+        # TODO: add function that is wrapper around initialize_by_element_in_range
+        #       then map option to function
+
+        # Reactivate objective, pwc constraints, bounds
+        self.c_mod.tracking_objective.activate()
+        #for con in self.c_mod._pwc_constraints:
+        #    con.activate()
+        model._pwc_input.activate()
+
+        for _slice in self.c_mod.input_vars:
+            for t in time:
+                _slice[t].unfix()
+
+        strip_controller_bounds.revert(self.c_mod)
 
 
     def initialize_from_previous_sample(self, model, **kwargs):
@@ -1651,15 +1679,14 @@ class NMPCSim(object):
         outlvl = kwargs.pop('outlvl', self.outlvl)
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
-
         t_end = t_start + sample_time 
         assert t_start in self.p_mod.time
         # TODO: add tolerance here, as t_end could change due to roundoff
         #       Then change t_end s.t. it is a point in time
+        # A helper function may be useful - is_in_to_tolerance
         assert t_end in self.p_mod.time
 
-        #self.simulate_over_range(self.p_mod, t_start, t_end, outlvl=outlvl)
-        simulate_over_range(self.p_mod, t_start, t_end, 
+        initialize_by_element_in_range(self.p_mod, t_start, t_end, 
                 dae_vars=self.p_mod.dae_vars, 
                 time_linking_vars=self.p_mod.diff_vars,
                 outlvl=outlvl)
