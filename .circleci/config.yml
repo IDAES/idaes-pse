@@ -8,6 +8,7 @@ shared-dev: &shared-dev
     - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
     - run: cd docs && python build.py
+    - run: idaes get-extensions
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -18,20 +19,21 @@ shared: &shared
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install --progress-bar=off -r requirements.txt
+    - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
   "python-3.7":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     <<: *shared
   "python-3.7-dev":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     <<: *shared-dev
   "python-3.6":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     working_directory: ~/repo
     steps:
       - checkout
@@ -45,6 +47,7 @@ jobs:
           command: |
             source activate idaes36
             python -m pip install --progress-bar=off -r requirements.txt
+            idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
     docker:
