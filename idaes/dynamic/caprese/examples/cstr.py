@@ -99,7 +99,7 @@ def main():
 
         nmpc.solve_control_problem()
 
-        nmpc.inject_inputs_into_plant(t,
+        nmpc.inject_control_inputs_into_plant(t,
                                       add_noise=True)
         
         nmpc.simulate_plant(t)
