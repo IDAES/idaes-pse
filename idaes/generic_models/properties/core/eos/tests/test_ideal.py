@@ -20,18 +20,22 @@ from sys import modules
 
 from pyomo.environ import ConcreteModel, Var
 
-from idaes.core import declare_process_block_class
+from idaes.core import (declare_process_block_class,
+                        LiquidPhase, VaporPhase, SolidPhase)
 from idaes.generic_models.properties.core.eos import ideal
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
-from idaes.core.util.constants import Constants as const
 from idaes.core.util.exceptions import PropertyNotSupportedError
 
 
 # Dummy method for property method calls
 def dummy_call(b, j, T):
     return 42
+
+
+# Dummy method to avoid errors when setting metadata dict
+def set_metadata(b):
+    pass
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -53,11 +57,15 @@ def m():
 
     # Dummy params block
     m.params = DummyParameterBlock(default={
-                "component_list": ["a", "b", "c"],
-                "phase_list": ["Vap", "Liq"],
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "Vap": {"type": VaporPhase,
+                            "equation_of_state": ideal},
+                    "Liq": {"type": LiquidPhase,
+                            "equation_of_state": ideal}},
                 "state_definition": modules[__name__],
-                "equation_of_state": {"Vap": dummy_eos,
-                                      "Liq": dummy_eos}})
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
 
     m.props = m.params.state_block_class([1],
                                          default={"defined_state": False,
@@ -66,7 +74,37 @@ def m():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
-    m.props[1]._teq = Var(initialize=300)
+    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
+    m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
+                                          m.params.component_list,
+                                          initialize=0.5)
+
+    return m
+
+
+@pytest.fixture()
+def m_sol():
+    m = ConcreteModel()
+
+    # Dummy params block with a Solid Phase to check phase typing
+    m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "Sol": {"type": SolidPhase,
+                            "equation_of_state": ideal},
+                    "Liq": {"type": LiquidPhase,
+                            "equation_of_state": ideal}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+    m.props = m.params.state_block_class([1],
+                                         default={"defined_state": False,
+                                         "parameters": m.params})
+
+    # Add common variables
+    m.props[1].pressure = Var(initialize=101325)
+    m.props[1].temperature = Var(initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
                                           initialize=0.5)
@@ -88,7 +126,8 @@ def test_dens_mass_phase(m):
 
 
 def test_dens_mol_phase_liq(m):
-    m.params.config.dens_mol_liq_comp = dummy_call
+    for j in m.params.component_list:
+        m.params.get_component(j).config.dens_mol_liq_comp = dummy_call
 
     assert str(ideal.dens_mol_phase(m.props[1], "Liq")) == str(
         sum(m.props[1].mole_frac_phase_comp["Liq", j]*42
@@ -96,16 +135,14 @@ def test_dens_mol_phase_liq(m):
 
 
 def test_dens_mol_phase_vap(m):
-    m.params.gas_const = Var()
-
     assert str(ideal.dens_mol_phase(m.props[1], "Vap")) == (
             str(m.props[1].pressure)+"/(8.314462618*J/mol/K*" +
             str(m.props[1].temperature)+")")
 
 
-def test_dens_mol_phase_invalid_phase(m):
+def test_dens_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.dens_mol_phase(m.props[1], "foo")
+        ideal.dens_mol_phase(m_sol.props[1], "Sol")
 
 
 def test_enth_mol_phase(m):
@@ -120,16 +157,17 @@ def test_enth_mol_phase(m):
 
 
 def test_enth_mol_phase_comp(m):
-    m.params.config.enth_mol_liq_comp = dummy_call
-    m.params.config.enth_mol_ig_comp = dummy_call
+    for j in m.params.component_list:
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
 
-    for p in m.params.phase_list:
-        assert str(ideal.enth_mol_phase_comp(m.props[1], p, "foo")) == str(42)
+        assert str(ideal.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+        assert str(ideal.enth_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
 
 
-def test_enth_mol_phase_invalid_phase(m):
+def test_enth_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.enth_mol_phase_comp(m.props[1], "foo", "bar")
+        ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 def test_entr_mol_phase(m):
@@ -144,35 +182,38 @@ def test_entr_mol_phase(m):
 
 
 def test_entr_mol_phase_comp(m):
-    m.params.config.entr_mol_liq_comp = dummy_call
-    m.params.config.entr_mol_ig_comp = dummy_call
+    for j in m.params.component_list:
+        m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
-    for p in m.params.phase_list:
-        assert str(ideal.entr_mol_phase_comp(m.props[1], p, "foo")) == str(42)
+        assert str(ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+        assert str(ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
 
 
-def test_entr_mol_phase_invalid_phase(m):
+def test_entr_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.entr_mol_phase_comp(m.props[1], "foo", "bar")
+        ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 def test_fug_phase_comp_liq(m):
-    m.params.config.pressure_sat_comp = dummy_call
-
     for j in m.params.component_list:
-        assert str(ideal.fug_phase_comp(m.props[1], "Liq", j)) == str(
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call
+
+        assert str(ideal.fug_phase_comp(
+                        m.props[1], "Liq", j, ("Vap", "Liq"))) == str(
             m.props[1].mole_frac_phase_comp["Liq", j]*42)
 
 
 def test_fug_phase_comp_vap(m):
     for j in m.params.component_list:
-        assert str(ideal.fug_phase_comp(m.props[1], "Vap", j)) == str(
+        assert str(ideal.fug_phase_comp(
+                        m.props[1], "Vap", j, ("Vap", "Liq"))) == str(
             m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure)
 
 
-def test_fug_phase_comp_invalid_phase(m):
+def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.fug_phase_comp(m.props[1], "foo", "bar")
+        ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
 def test_fug_coeff_phase_comp(m):
@@ -181,9 +222,9 @@ def test_fug_coeff_phase_comp(m):
             assert ideal.fug_coeff_phase_comp(m.props[1], p, j) == 1
 
 
-def test_fug_coeff_phase_comp_invalid_phase(m):
+def test_fug_coeff_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        ideal.fug_coeff_phase_comp(m.props[1], "foo", "bar")
+        ideal.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 def test_gibbs_mol_phase(m):

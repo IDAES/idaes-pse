@@ -11,10 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Methods for setting up FTPx as the state variables in a generic property
+Methods for setting up FcTP as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var
+from pyomo.environ import Constraint, Expression, NonNegativeReals, Var, value
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -22,19 +22,18 @@ from idaes.core import (MaterialFlowBasis,
 
 
 def set_metadata(b):
-    # This is the default assumption for state vars, so we don't need to change
-    # the metadata dict
+    # The default metadata should be correct in this case, so no need to update
     pass
 
 
 def define_state(b):
-    # FTPx formulation always requires a flash, so set flag to True
+    # FcTP formulation always requires a flash, so set flag to True
     # TODO: should have some checking to make sure developers implement this properly
     b.always_flash = True
 
     # Get bounds if provided
     try:
-        f_bounds = b.params.config.state_bounds["flow_mol"]
+        f_bounds = b.params.config.state_bounds["flow_mol_comp"]
     except (KeyError, TypeError):
         f_bounds = (None, None)
 
@@ -89,14 +88,11 @@ def define_state(b):
         p_init = (p_bounds[0] + p_bounds[1])/2
 
     # Add state variables
-    b.flow_mol = Var(initialize=f_init,
-                     domain=NonNegativeReals,
-                     bounds=f_bounds,
-                     doc=' Total molar flowrate')
-    b.mole_frac_comp = Var(b.params.component_list,
-                           bounds=(0, None),
-                           initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+    b.flow_mol_comp = Var(b.params.component_list,
+                          initialize=f_init,
+                          domain=NonNegativeReals,
+                          bounds=f_bounds,
+                          doc=' Component molar flowrate')
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
@@ -107,11 +103,20 @@ def define_state(b):
                         doc='State temperature')
 
     # Add supporting variables
+    b.flow_mol = Expression(
+        expr=sum(b.flow_mol_comp[j] for j in b.params.component_list),
+        doc="Total molar flowrate")
+
     b.flow_mol_phase = Var(b.params.phase_list,
                            initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates')
+
+    b.mole_frac_comp = Var(b.params.component_list,
+                           bounds=(0, None),
+                           initialize=1 / len(b.params.component_list),
+                           doc='Mixture mole fractions')
 
     b.mole_frac_phase_comp = Var(
         b.params.phase_list,
@@ -127,11 +132,14 @@ def define_state(b):
         doc='Phase fractions')
 
     # Add supporting constraints
-    if b.config.defined_state is False:
-        # applied at outlet only
-        b.sum_mole_frac_out = Constraint(
-            expr=1 == sum(b.mole_frac_comp[i]
-                          for i in b.params.component_list))
+    def rule_mole_frac_comp(b, j):
+        if len(b.params.component_list) > 1:
+            return b.flow_mol_comp[j] == b.mole_frac_comp[j]*sum(
+                b.flow_mol_comp[k] for k in b.params.component_list)
+        else:
+            return b.mole_frac_comp[j] == 1
+    b.mole_frac_comp_eq = Constraint(b.params.component_list,
+                                     rule=rule_mole_frac_comp)
 
     if len(b.params.phase_list) == 1:
         def rule_total_mass_balance(b):
@@ -157,7 +165,7 @@ def define_state(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac_comp[i] == sum(
+            return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b.params.phase_list)
         b.component_flow_balances = Constraint(b.params.component_list,
@@ -178,7 +186,7 @@ def define_state(b):
     else:
         # Otherwise use a general formulation
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac_comp[i] == sum(
+            return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b.params.phase_list)
         b.component_flow_balances = Constraint(b.params.component_list,
@@ -237,8 +245,7 @@ def define_state(b):
 
     def define_state_vars_FTPx():
         """Define state vars."""
-        return {"flow_mol": b.flow_mol,
-                "mole_frac_comp": b.mole_frac_comp,
+        return {"flow_mol_comp": b.flow_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FTPx
@@ -248,21 +255,21 @@ def state_initialization(b):
     if len(b.params.phase_list) == 1:
         for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
-                b.flow_mol.value
+                value(b.flow_mol)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+                    value(b.mole_frac_comp[j])
 
     else:
         # TODO : Try to find some better guesses than this
         for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b.params.phase_list)
+                value(b.flow_mol) / len(b.params.phase_list)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+                    value(b.mole_frac_comp[j])
 
 
-do_not_initialize = ["sum_mole_frac_out"]
+do_not_initialize = []

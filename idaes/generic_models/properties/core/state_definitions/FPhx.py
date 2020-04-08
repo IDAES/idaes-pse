@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Methods for setting up FTPx as the state variables in a generic property
+Methods for setting up FPhx as the state variables in a generic property
 package
 """
 from pyomo.environ import Constraint, NonNegativeReals, Var
@@ -21,10 +21,13 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 
 
+# TODO : Need a way to get a guess for T during initialization
 def set_metadata(b):
-    # This is the default assumption for state vars, so we don't need to change
-    # the metadata dict
-    pass
+    # Need to update metadata so that enth_mol is recorded as being part of the
+    # state variables, and to ensure that getattr does not try to build it
+    # using the default method.
+    b.get_metadata().properties['enth_mol'] = {
+        'method': None}
 
 
 def define_state(b):
@@ -39,14 +42,20 @@ def define_state(b):
         f_bounds = (None, None)
 
     try:
-        t_bounds = b.params.config.state_bounds["temperature"]
+        h_bounds = b.params.config.state_bounds["enth_mol"]
     except (KeyError, TypeError):
-        t_bounds = (None, None)
+        h_bounds = (None, None)
 
     try:
         p_bounds = b.params.config.state_bounds["pressure"]
     except (KeyError, TypeError):
         p_bounds = (None, None)
+
+    # Also include bounds on T, as they might be useful
+    try:
+        t_bounds = b.params.config.state_bounds["temperature"]
+    except (KeyError, TypeError):
+        t_bounds = (None, None)
 
     # Set an initial value for each state var
     if f_bounds == (None, None):
@@ -62,18 +71,18 @@ def define_state(b):
         # Both bounds, use mid point
         f_init = (f_bounds[0] + f_bounds[1])/2
 
-    if t_bounds == (None, None):
-        # No bounds, default to 298.15
-        t_init = 298.15
-    elif t_bounds[1] is None and t_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        t_init = t_bounds[0] + 10
-    elif t_bounds[1] is not None and t_bounds[0] is None:
+    if h_bounds == (None, None):
+        # No bounds, default to 0
+        h_init = 0
+    elif h_bounds[1] is None and h_bounds[0] is not None:
+        # Only lower bound, use lower bound + 1000
+        h_init = h_bounds[0] + 1000
+    elif h_bounds[1] is not None and h_bounds[0] is None:
         # Only upper bound, use half upper bound
-        t_init = t_bounds[1]/2
+        h_init = h_bounds[1]/2
     else:
         # Both bounds, use mid point
-        t_init = (t_bounds[0] + t_bounds[1])/2
+        h_init = (h_bounds[0] + h_bounds[1])/2
 
     if p_bounds == (None, None):
         # No bounds, default to 101325
@@ -88,6 +97,19 @@ def define_state(b):
         # Both bounds, use mid point
         p_init = (p_bounds[0] + p_bounds[1])/2
 
+    if t_bounds == (None, None):
+        # No bounds, default to 298.15
+        t_init = 298.15
+    elif t_bounds[1] is None and t_bounds[0] is not None:
+        # Only lower bound, use lower bound + 10
+        t_init = t_bounds[0] + 10
+    elif t_bounds[1] is not None and t_bounds[0] is None:
+        # Only upper bound, use half upper bound
+        t_init = t_bounds[1]/2
+    else:
+        # Both bounds, use mid point
+        t_init = (t_bounds[0] + t_bounds[1])/2
+
     # Add state variables
     b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
@@ -101,10 +123,10 @@ def define_state(b):
                      domain=NonNegativeReals,
                      bounds=p_bounds,
                      doc='State pressure')
-    b.temperature = Var(initialize=t_init,
-                        domain=NonNegativeReals,
-                        bounds=t_bounds,
-                        doc='State temperature')
+
+    b.enth_mol = Var(initialize=h_init,
+                     bounds=h_bounds,
+                     doc='State molar enthalpy')
 
     # Add supporting variables
     b.flow_mol_phase = Var(b.params.phase_list,
@@ -120,6 +142,11 @@ def define_state(b):
         bounds=(0, None),
         doc='Phase mole fractions')
 
+    b.temperature = Var(initialize=t_init,
+                        domain=NonNegativeReals,
+                        bounds=t_bounds,
+                        doc='Temperature')
+
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
@@ -132,6 +159,12 @@ def define_state(b):
         b.sum_mole_frac_out = Constraint(
             expr=1 == sum(b.mole_frac_comp[i]
                           for i in b.params.component_list))
+
+    def rule_enth_mol(b):
+        return b.enth_mol == sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                                 for p in b.params.phase_list)
+    b.enth_mol_eq = Constraint(rule=rule_enth_mol,
+                               doc="Total molar enthalpy mixing rule")
 
     if len(b.params.phase_list) == 1:
         def rule_total_mass_balance(b):
@@ -235,16 +268,19 @@ def define_state(b):
         return MaterialFlowBasis.molar
     b.get_material_flow_basis = get_material_flow_basis_FTPx
 
-    def define_state_vars_FTPx():
+    def define_state_vars_FPhx():
         """Define state vars."""
         return {"flow_mol": b.flow_mol,
                 "mole_frac_comp": b.mole_frac_comp,
-                "temperature": b.temperature,
+                "enth_mol": b.enth_mol,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars_FTPx
+    b.define_state_vars = define_state_vars_FPhx
 
 
 def state_initialization(b):
+    # TODO: Getting an initial guess for T would probably be a good idea
+    # However, I cannot see an easy way to do from just P and h.
+
     if len(b.params.phase_list) == 1:
         for p in b.params.phase_list:
             b.flow_mol_phase[p].value = \

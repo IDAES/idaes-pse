@@ -1,4 +1,4 @@
-FTPx
+FPhx
 ====
 
 .. contents:: Contents 
@@ -7,24 +7,28 @@ FTPx
 State Definition
 ----------------
 
-This approach describes the material state in terms of total flow (:math:`F`: `flow_mol`), overall (mixture) mole fractions (:math:`x_j`: `mole_frac_comp`), temperature (:math:`T`: `temperature`) and pressure (:math:`P`: `pressure`). As such, there are :math:`3 + N_{components}` state variables, however only :math:`2 + N_{components}` are independent as the mole fraction must sum to 1.
+This approach describes the material state in terms of total flow (:math:`F`: `flow_mol`), overall (mixture) mole fractions (:math:`x_j`: `mole_frac_comp`), total molar enthalpy (:math:`h`: `enth_mol`) and pressure (:math:`P`: `pressure`). As such, there are :math:`3 + N_{components}` state variables, however only :math:`2 + N_{components}` are independent as the mole fraction must sum to 1.
 
 Application
 -----------
 
-This is the simplest approach to fully defining the state of a material, and one of the most easily accessible to the user as it is defined in terms of variables that are easily measured and understood. However, this approach has a number of limitations which the user should be aware of:
+This approach is commonly used by other process simulation tools as it avoids the issues associated with using temperature and pressure as state variables in single component systems. However, as the user generally does not know the specific enthalpy of their feed streams, this approach requires some method to calculate this for feed streams. This can generally be done by specifying temperature of the feed, and then solving for the specific enthalpy.
 
-* If the property package is set up for multiphase flow, an equilibrium calculation is required at the inlet of each unit, as the state definition does not contain information on multiphase flow. This increases the number of complex equilibrium calculations that must be performed, which could be avoided by using a different state definition. 
-* State becomes ill-defined when only one component is present and multiphase behavior can occur, as temperature and pressure are insufficient to fully define the thermodynamic state under these conditions.
+This approach suffers from the following limitation which the user should be aware of:
+
+* If the property package is set up for multiphase flow, an equilibrium calculation is required at the inlet of each unit, as the state definition does not contain information on multiphase flow. This increases the number of complex equilibrium calculations that must be performed, which could be avoided by using a different state definition.
 
 Bounds
 ------
 
-The FTPx module supports bounding of the following variables through the `state_bounds` configuration argument:
+The FPhx module supports bounding of the following variables through the `state_bounds` configuration argument:
 
 * `flow_mol`
-* `temperature`
+* `enth_mol`
 * `pressure`
+* `temperature`
+
+Supplying bounds for temperature is supported as these are often known to greater accuracy than the enthalpy bounds, and specifying these can help the solver find a feasible solution.
 
 Note that mole fractions are automatically assigned a lower bound of 0, but the upper bound is left free as this is implicitly defined by the sum of mole fractions constraint. 
 
@@ -38,6 +42,7 @@ Variables
 
 * `flow_mol_phase` (:math:`F_{mol, p}`)
 * `mole_frac_phase_comp` (:math:`x_{p, j}`)
+* `temperature` (:math:`T`)
 * `phase_frac` (:math:`\psi_p`)
 
 Constraints
@@ -49,6 +54,10 @@ In all cases, a constraint is written for the sum of the overall mole fractions.
 
 .. note::
    The sum of mole fractions constraint is not written at inlet states, as all mole fractions should be defined in the inlet stream.
+
+Additionally, a constraint relating the total specific enthalpy to the specific enthalpy of each phase is written.
+
+.. math:: h_{mol} = \sum_j{\psi_p \times h_{mol, p}}
 
 If the property package supports only one phase:
 

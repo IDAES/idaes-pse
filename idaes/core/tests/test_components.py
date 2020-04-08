@@ -64,7 +64,8 @@ class TestComponent():
         assert m.comp._is_phase_valid("foo")
 
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Component(default={
+            "valid_phase_types": PhaseType.liquidPhase})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -77,7 +78,8 @@ class TestComponent():
         assert not m.comp3._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Component(default={
+            "valid_phase_types": PhaseType.vaporPhase})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -85,7 +87,8 @@ class TestComponent():
         assert not m.comp4._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Component(default={
+            "valid_phase_types": PhaseType.solidPhase})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -94,7 +97,8 @@ class TestComponent():
 
     def test_is_phase_valid_LV(self, m):
         m.comp6 = Component(default={
-            "valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]})
+            "valid_phase_types": [PhaseType.liquidPhase,
+                                  PhaseType.vaporPhase]})
 
         assert m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
@@ -131,7 +135,8 @@ class TestSolute():
         assert m.comp._is_phase_valid("foo")
 
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Component(default={
+            "valid_phase_types": PhaseType.liquidPhase})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -144,7 +149,8 @@ class TestSolute():
         assert not m.comp3._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Component(default={
+            "valid_phase_types": PhaseType.vaporPhase})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -152,7 +158,8 @@ class TestSolute():
         assert not m.comp4._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Component(default={
+            "valid_phase_types": PhaseType.solidPhase})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -161,7 +168,8 @@ class TestSolute():
 
     def test_is_phase_valid_LV(self, m):
         m.comp6 = Component(default={
-            "valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]})
+            "valid_phase_types": [PhaseType.liquidPhase,
+                                  PhaseType.vaporPhase]})
 
         assert m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
@@ -198,7 +206,8 @@ class TestSovent():
         assert m.comp._is_phase_valid("foo")
 
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={"valid_phase_types": PhaseType.liquidPhase})
+        m.comp3 = Component(default={
+            "valid_phase_types": PhaseType.liquidPhase})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
@@ -211,7 +220,8 @@ class TestSovent():
         assert not m.comp3._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={"valid_phase_types": PhaseType.vaporPhase})
+        m.comp4 = Component(default={
+            "valid_phase_types": PhaseType.vaporPhase})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
@@ -219,7 +229,8 @@ class TestSovent():
         assert not m.comp4._is_phase_valid(m.Phase)
 
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={"valid_phase_types": PhaseType.solidPhase})
+        m.comp5 = Component(default={
+            "valid_phase_types": PhaseType.solidPhase})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
@@ -228,7 +239,8 @@ class TestSovent():
 
     def test_is_phase_valid_LV(self, m):
         m.comp6 = Component(default={
-            "valid_phase_types": [PhaseType.liquidPhase, PhaseType.vaporPhase]})
+            "valid_phase_types": [PhaseType.liquidPhase,
+                                  PhaseType.vaporPhase]})
 
         assert m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)

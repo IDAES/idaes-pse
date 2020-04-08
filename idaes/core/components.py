@@ -15,7 +15,7 @@ IDAES Component objects
 
 @author: alee
 """
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
@@ -28,9 +28,34 @@ from .util.exceptions import ConfigurationError
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
+
     CONFIG.declare("valid_phase_types", ConfigValue(
             domain=list_of_phase_types,
             doc="List of valid PhaseTypes (Enums) for this Component."))
+
+    CONFIG.declare("dens_mol_liq_comp", ConfigValue(
+        description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("enth_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component molar enthalpies"))
+    CONFIG.declare("enth_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component molar enthalpies"
+        ))
+    CONFIG.declare("entr_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component molar entropies"))
+    CONFIG.declare("entr_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component molar entropies"))
+    CONFIG.declare("pressure_sat_comp", ConfigValue(
+        description="Method to use to calculate saturation pressure"))
+
+    CONFIG.declare("phase_equilibrium_form", ConfigValue(
+        domain=dict,
+        description="Form of phase equilibrium constraints for component"))
+
+    CONFIG.declare("parameter_data", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict containing initialization data for parameters"))
+
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether component_list "
@@ -45,6 +70,16 @@ class ComponentData(ProcessBlockData):
         # need to add new Component objects
         if not self.config._component_list_exists:
             self.__add_to_component_list()
+
+        # Create Param for molecular weight if provided
+        if "mw" in self.config.parameter_data:
+            self.mw = Param(initialize=self.config.parameter_data["mw"])
+
+        # Create Vars for common parameters
+        for p in ["pressure_crit", "temperature_crit"]:
+            if p in self.config.parameter_data:
+                self.add_component(p, Var(
+                    initialize=self.config.parameter_data[p]))
 
     def is_solute(self):
         raise TypeError(
@@ -68,7 +103,8 @@ class ComponentData(ProcessBlockData):
             comp_list.add(self.local_name)
         except AttributeError:
             # Parent does not have a component_list yet, so create one
-            parent.component_list = Set(initialize=[self.local_name])
+            parent.component_list = Set(initialize=[self.local_name],
+                                        ordered=True)
 
     def _is_phase_valid(self, phase):
         # If no valid phases assigned, assume all are valid
