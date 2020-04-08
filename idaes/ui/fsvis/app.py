@@ -21,7 +21,7 @@ from multiprocessing import Process
 import json
 import socket
 # third party
-from flask import Flask, jsonify, request, render_template#, send_static_file
+from flask import Flask, request, render_template#, send_static_file
 # local
 from idaes.ui.fsvis.server import DataStorage
 

@@ -10,8 +10,6 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-import json
-
 from enum import Enum
 from jsonschema import validate
 
@@ -249,7 +247,6 @@ def model_jointjs_conversion(diff_model, current_json):
         found = False
         for item in current_json["cells"]:
             if name == item["id"]:
-                print(item)
                 # If the action is not removed then update the values
                 # If it is removed then just remove it from the new_json
                 new_json["cells"].remove(item)
