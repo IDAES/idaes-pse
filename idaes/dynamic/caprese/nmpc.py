@@ -134,11 +134,6 @@ class NMPCSim(object):
                 inputs=self.c_mod.input_vars,
                 fixed=self.c_mod.fixed_vars,
                 ic=self.c_mod.ic_vars)
-        # Only expecting user arguments (set point) in form of controller
-        # variables, so only build locator for controller model
-        # for now.
-        # ^ Not true, see above.
-        #
         # Not convinced that having a variable locator like this is the
         # best thing to do, but will go with it for now.
 

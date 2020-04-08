@@ -204,17 +204,6 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
-    # deactivate model except at t_start
-    # deactivate disc. equations at t_start
-    # solve for consistent 'initial' conditions at t_start
-
-    # for each finite element in range... which are these?
-    # get indices of finite elements that lie in range
-    # t_start, t_end should correspond to finite elements
-
-    # end by reactivating parts of model that were originally active
-
-    # What variables does this function need knowledge of?
 
     solver = kwargs.pop('solver', SolverFactory('ipopt'))
     outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
@@ -236,6 +225,8 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
     # Should I specify max_linking_range as an integer number of finite
     # elements, an integer number of time points, or a float in actual time
     # units? Go with latter for now.
+
+    # TODO: Should I fix scalar vars? 
 
     time = model.time
     assert t_start in time.get_finite_elements()
@@ -283,16 +274,7 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
                 time.first(),
                 outlvl=idaeslog.ERROR)[time.first()]
 
-    # Fix all vars in model
-    # Can't necessarily do this as vars may have values of None
-    # - solve first finite element (no fixing necessary - ics fixed already)
-    # - fix first finite element, solve second finite element
-    # -               ^ entire thing? unless otherwise specified
-    # - fix second finite element, solve third, etc.
-    # - when done, unfix all variables that were not originally fixed
-    #for var in model.component_data_objects(Var):
-    #    var.fix()
-
+    # "Integration" loop
     for i in fe_in_range:
         t_prev = time[(i-1)*ncp+1]
 
@@ -340,22 +322,6 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
                     _slice[t].fix()
                     fixed_vars.append(_slice[t])
 
-#                    # Need to consider implicit time indices too
-#                    for var in identify_variables(comp.expr,
-#                                                  include_fixed=False):
-#                        t_idx = get_implicit_index_of_set(var, time)
-#                        if t_idx is None:
-#                            assert not is_implicitly_indexed_by(var, time)
-#                            continue
-#                        if t_idx <= t_prev:
-#                            # Assume no t_idx belonging to a future finite
-#                            # element will be present
-#                            pdb.set_trace()
-#                            fixed_vars[t].append(var)
-#                            var.fix()
-                    # Problem with this logic: comp can be a block
-                    # If comp is a constraint, 
-
         # Here I assume that the only variables that can appear in 
         # constraints at a different (later) time index are derivatives
         # and differential variables (they do so in the discretization
@@ -374,26 +340,11 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
         # In either case need to record whether variable was previously fixed
         # so I know if I should unfix it or not.
 
-        # In the new implementation of variable fixing, I don't need to fix
-        # these vars - they will already be fixed
-#        was_fixed = {}
-#        for drv in model.deriv_vars:
-#            was_fixed[id(drv[t_prev])] = drv[t_prev].fixed
-#            drv[t_prev].fix()
-#        for dv in model.diff_vars:
-#            was_fixed[id(dv[t_prev])] = dv[t_prev].fixed
-#            dv[t_prev].fix()
-
         for t in fe:
             for _slice in dae_vars:
                 if not _slice[t].fixed:
-                # Fixed DAE variables are time-dependent disturbances,
-                # whose values should not be altered by this function.
-                #
-                # ^ Exception is (true) initial conditions, but t should never
-                # be time.first() because first point is always excluded from
-                # fe. This assumption may need to change when/if forward
-                # integration schemes are considered.
+                    # Fixed DAE variables are time-dependent disturbances,
+                    # whose values should not be altered by this function.
                     _slice[t].set_value(_slice[t_prev].value)
 
         assert degrees_of_freedom(model) == 0
@@ -409,22 +360,6 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
             for comp in deactivated[t]:
                 comp.deactivate()
 
-        # Fix all dae vars in the finite element
-        # (Where) should scalar_vars be fixed?
-#        for t in [t_prev] + fe:
-#            for _slice in dae_vars:
-#                if _slice[t].value is not None:
-#                    # Only time this should happen is if an initial
-#                    # condition has not been initialized.
-#                    _slice[t].fix()
-
-        #for drv in model.deriv_vars:
-        #    if not was_fixed[id(drv[t_prev])]:
-        #        drv[t_prev].unfix()
-        #for dv in model.diff_vars:
-        #    if not was_fixed[id(dv[t_prev])]:
-        #        dv[t_prev].unfix()
-
         for var in fixed_vars:
             if not was_originally_fixed[id(var)]:
                 var.unfix()
@@ -433,12 +368,6 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
         for comp in deactivated[t]:
             if was_originally_active[id(comp)]:
                 comp.activate()
-
-    # unfix variables that have been fixed
-#    for t in t_in_range:
-#        for _slice in dae_vars:
-#            if not was_originally_fixed[id(_slice[t])]:
-#                _slice[t].unfix()
 
     assert degrees_of_freedom(model) == 0
 
