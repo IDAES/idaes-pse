@@ -108,11 +108,11 @@ def test_compare_models_edge_cases():
 
     diff_model, out_json = fc.compare_models(existing_model, new_model)
 
-    diff_model_truth = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.ADD.value, 'class': 'unit model'}, 
-                        'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.ADD.value, 'class': 'unit model'},
-                        's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': Action.ADD.value, 'class': 'arc'}}
-
+    # Since the existing model is empty we return an empty diff_model and  
+    # return new_model as the output json
+    diff_model_truth = {}
     assert diff_model == diff_model_truth
+    assert out_json == new_model
 
     # New model is empty
     existing_model = {"model": {
@@ -149,13 +149,13 @@ def test_compare_models_edge_cases():
 
 def test_compare_models_errors():
     # Both empty
-    existing_model = {"model": {}}
-    new_model = {"model": {}}
+    existing_model = {}
+    new_model = {}
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(KeyError):
         fc.compare_models(existing_model, new_model)
 
-    # New model is the wrong format
+    # New model is missing the id
     existing_model = {"model": {
                         'id': 0, 
                         'unit_models': {

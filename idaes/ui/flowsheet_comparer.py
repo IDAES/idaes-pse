@@ -97,12 +97,22 @@ def compare_models(existing_model, new_model):
 
     # Copy the new model into the out_json's model key
     out_json = dict(existing_model)
-    out_json["model"] = new_model["model"]
+    print(new_model)
+    print(existing_model)
+    try:
+        out_json["model"] = new_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of new model json"
+        raise KeyError(msg)
 
     validate(instance=existing_model["model"], schema=model_schema)
     validate(instance=new_model["model"], schema=model_schema)
 
-    existing_model = existing_model["model"]
+    try:
+        existing_model = existing_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of existing model json"
+        raise KeyError(msg)
     # If the existing model is empty then return an empty diff_model 
     # and the full json from the new model
     if existing_model["unit_models"] == {} and \
@@ -115,7 +125,11 @@ def compare_models(existing_model, new_model):
     if existing_model == new_model["model"]:
         return {}, new_model
 
-    new_model = new_model["model"]
+    try:
+        new_model = new_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of new model json"
+        raise KeyError(msg)
 
     unit_model_schema = {
         "type" : "object",

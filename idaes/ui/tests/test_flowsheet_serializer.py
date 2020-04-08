@@ -101,7 +101,7 @@ def test_create_image_jointjs_json():
                             'size': {'width': 50, 'height': 50}, 
                             'angle': 0, 'id': 'M101', 'z': (1,), 
                             'attrs': {
-                                'image': {'xlinkHref': 'mixer.svg'}, 
+                                'image': {'xlinkHref': '/images/icons/mixer.svg'}, 
                                 'label': {'text': 'M101'}, 
                                 'root': {'title': 'mixer'}
                           }
