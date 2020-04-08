@@ -17,11 +17,21 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+from enum import Enum
+
 from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
+
+
+# Enumerate recognised Phase types
+class PhaseType(Enum):
+    undefined = 0
+    liquidPhase = 1
+    vaporPhase = 2
+    solidPhase = 3
 
 
 @declare_process_block_class("Phase")

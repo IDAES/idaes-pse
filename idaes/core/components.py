@@ -20,15 +20,17 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
-from .util.config import list_of_phases
+from .phases import LiquidPhase, PhaseType as PT
+from .util.config import list_of_phase_types
+from .util.exceptions import ConfigurationError
 
 
 @declare_process_block_class("Component")
 class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
-    CONFIG.declare("valid_phases", ConfigValue(
-            domain=list_of_phases,
-            doc="List of valid Phases for this Component."))
+    CONFIG.declare("valid_phase_types", ConfigValue(
+            domain=list_of_phase_types,
+            doc="List of valid PhaseTypes (Enums) for this Component."))
     CONFIG.declare("_component_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether component_list "
@@ -67,3 +69,117 @@ class ComponentData(ProcessBlockData):
         except AttributeError:
             # Parent does not have a component_list yet, so create one
             parent.component_list = Set(initialize=[self.local_name])
+
+    def _is_phase_valid(self, phase):
+        # If no valid phases assigned, assume all are valid
+        if self.config.valid_phase_types is None:
+            return True
+
+        # Check for behaviour of phase, and see if that is a valid behaviour
+        # for component.
+        if (phase.is_liquid_phase() and
+                PT.liquidPhase in self.config.valid_phase_types):
+            return True
+        elif (phase.is_vapor_phase() and
+                PT.vaporPhase in self.config.valid_phase_types):
+            return True
+        elif (phase.is_solid_phase() and
+                PT.solidPhase in self.config.valid_phase_types):
+            return True
+        else:
+            return False
+
+
+# TODO : What about LLE systems where a species is a solvent in one liquid
+# phase, but a solute in another?
+@declare_process_block_class("Solute")
+class SoluteData(ComponentData):
+    """
+    Component type for species which should be considered as solutes in
+    LiquidPhases.
+    """
+
+    def is_solute(self):
+        return True
+
+    def is_solvent(self):
+        return False
+
+
+# TODO : What about LLE systems where a species is a solvent in one liquid
+# phase, but a solute in another?
+@declare_process_block_class("Solvent")
+class SolventData(ComponentData):
+    """
+    Component type for species which should be considered as solvents in
+    LiquidPhases.
+    """
+
+    def is_solute(self):
+        return False
+
+    def is_solvent(self):
+        return True
+
+
+@declare_process_block_class("Ion")
+class IonData(SoluteData):
+    """
+    Component type for ionic species. These can exist only in LiquidPhases,
+    and are always solutes.
+    """
+    CONFIG = SoluteData.CONFIG()
+
+    # Remove valid_phase_types argument, as ions are liquid phase only
+    CONFIG.__delitem__("valid_phase_types")
+
+    CONFIG.declare("charge", ConfigValue(
+            domain=int,
+            doc="Charge of ionic species."))
+
+    def _is_phase_valid(self, phase):
+        return phase.is_liquid_phase()
+
+
+@declare_process_block_class("Anion")
+class AnionData(IonData):
+    """
+    Component type for anionic species. These can exist only in LiquidPhases,
+    and are always solutes.
+    """
+    CONFIG = IonData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        # Validate charge config argument
+        if self.config.charge is None:
+            raise ConfigurationError(
+                "{} was not provided with a value for charge."
+                .format(self.name))
+        elif self.config.charge >= 0:
+            raise ConfigurationError(
+                "{} received invalid value for charge configuration argument."
+                " Anions must have a negative charge.".format(self.name))
+
+
+@declare_process_block_class("Cation")
+class CationData(IonData):
+    """
+    Component type for cationic species. These can exist only in LiquidPhases,
+    and are always solutes.
+    """
+    CONFIG = IonData.CONFIG()
+
+    def build(self):
+        super().build()
+
+        # Validate charge config argument
+        if self.config.charge is None:
+            raise ConfigurationError(
+                "{} was not provided with a value for charge."
+                .format(self.name))
+        elif self.config.charge <= 0:
+            raise ConfigurationError(
+                "{} received invalid value for charge configuration argument."
+                " Cations must have a positive charge.".format(self.name))

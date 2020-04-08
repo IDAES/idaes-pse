@@ -23,7 +23,7 @@ from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
-from idaes.core.phases import Phase
+from idaes.core.phases import PhaseType
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
@@ -107,39 +107,6 @@ def list_of_floats(arg):
     return lst
 
 
-def list_of_phases(arg):
-    '''Domain validator for lists of Phase objects
-
-    Args:
-        arg : argument to be cast to list of Phases and validated
-
-    Returns:
-        List of Phases
-    '''
-    if isinstance(arg, Phase):
-        # arg is a single Phase object, return list containing this
-        return [arg]
-
-    try:
-        # Otherise, assume arg is iterable
-        if isinstance(arg, str):
-            raise ConfigurationError(
-                "{} should be an instance of an IDAES Phase component ("
-                "received string)."
-                .format(arg))
-        for i in arg:
-            if not isinstance(i, Phase):
-                raise ConfigurationError(
-                    "{} should be an instance of an IDAES Phase component."
-                    .format(i))
-        return arg
-    except TypeError:
-        raise ConfigurationError(
-            "{} should be an instance of an IDAES Phase component or a list of"
-            " Phase components."
-            .format(arg))
-
-
 def list_of_strings(arg):
     '''Domain validator for lists of strings
 
@@ -164,6 +131,28 @@ def list_of_strings(arg):
         # arg is not iterable
         lst = [str(arg)]
     return lst
+
+
+def list_of_phase_types(arg):
+    '''Domain validator for lists of PhaseTypes
+
+    Args:
+        arg : argument to be cast to list of PhaseTypes and validated
+
+    Returns:
+        List of PhaseTypes
+    '''
+    if isinstance(arg, PhaseType):
+        # Cast to list and return
+        return [arg]
+    else:
+        # Assume arg is iterable
+        for i in arg:
+            if not isinstance(i, PhaseType):
+                raise ConfigurationError(
+                    "valid_phase_types configuration argument must be a list "
+                    "of PhaseTypes.")
+    return arg
 
 
 def is_port(arg):
