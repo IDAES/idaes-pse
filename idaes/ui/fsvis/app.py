@@ -157,7 +157,7 @@ def display():
         data = update(request, id_)
     elif request.method == "GET":
         data = fetch(request, id_)
-    return render_template('app.html', model=data)
+    return render_template('index.html', model=data)
 
 
 # Flask error handlers

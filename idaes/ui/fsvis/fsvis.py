@@ -4,7 +4,7 @@ from requests.exceptions import ConnectionError
 import time
 import webbrowser
 
-from idaes.ui.fsvis.flask_server import App as fsvis_server
+from idaes.ui.fsvis.app import App as fsvis_server
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
 # serialize flowsheet and launch the app

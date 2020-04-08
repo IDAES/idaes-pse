@@ -108,7 +108,6 @@ class FlowsheetSerializer:
         entry["angle"] = 0
         entry["id"] = name
         entry["z"] = (1,)
-        print("/images/icons/" + image)
         entry["attrs"] = {
             "image": {"xlinkHref": "/images/icons/" + image},
             "label": {"text": name},
