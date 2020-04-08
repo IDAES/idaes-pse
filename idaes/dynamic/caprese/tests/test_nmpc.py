@@ -15,6 +15,7 @@ Test for Cappresse's module for NMPC.
 """
 
 import pytest
+from pytest import approx
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, Objective,
                            TransformationFactory, TerminationCondition)
@@ -31,7 +32,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.caprese import nmpc
 from idaes.dynamic.caprese.nmpc import *
-from idaes.dynamic.caprese.util import simulate_over_range
+from idaes.dynamic.caprese.util import initialize_by_element_in_range
 import idaes.logger as idaeslog
 from cstr_for_testing import make_model
 
@@ -483,14 +484,14 @@ def test_add_objective_function(nmpc):
 
     obj_expr = obj_state_term + obj_control_term
 
-    assert value(obj_expr) == value(c_mod.tracking_objective.expr)
+    assert value(obj_expr) == approx(value(c_mod.tracking_objective.expr), 1e-6)
     # Controller model has not been initialized yet, so value of
     # objective function may not be meaningful
 
 
-def test_add_pwc_constraints(nmpc):
+def test_constrain_control_inputs_piecewise_constant(nmpc):
     sample_time = 0.5
-    nmpc.add_pwc_constraints(sample_time=sample_time)
+    nmpc.constrain_control_inputs_piecewise_constant(sample_time=sample_time)
 
     c_mod = nmpc.c_mod
 
@@ -498,8 +499,7 @@ def test_add_pwc_constraints(nmpc):
     assert nmpc.c_mod._samples_per_horizon == 6
 
     # Test that components were added
-    assert hasattr(c_mod, '_pwc_input_0') 
-    assert hasattr(c_mod, '_pwc_input_1') 
+    assert hasattr(c_mod, '_pwc_input')
 
     # Test that constraints have the correct indexing set
     n_sample = int(c_mod.time.last()/sample_time)
@@ -507,18 +507,20 @@ def test_add_pwc_constraints(nmpc):
             for i in range(n_sample+1)]
 
     for t in sample_points:
-        assert t not in c_mod._pwc_input_0
-        assert t not in c_mod._pwc_input_1
+        for i in range(c_mod.n_iv):
+            assert (t, i) not in c_mod._pwc_input
+            # ^ tuple because pwc_input is now indexed by time and the location
+            # into the input list
 
-    # Rough test the the constraints are correct - contain the correct 
-    # variables
+    # Rough test that the constraints are correct - contain the correct 
+    # variables.
     for i, t in enumerate(c_mod.time):
         if t not in sample_points:
             t_next = c_mod.time[i+2]
             var_in_0 = [id(v) for v in 
-                    identify_variables(c_mod._pwc_input_0[t].expr)]
+                    identify_variables(c_mod._pwc_input[t, 0].expr)]
             var_in_1 = [id(v) for v in 
-                    identify_variables(c_mod._pwc_input_1[t].expr)]
+                    identify_variables(c_mod._pwc_input[t, 1].expr)]
             assert len(var_in_0) == 2
             assert len(var_in_1) == 2
             assert id(c_mod.input_vars[0][t]) in var_in_0
@@ -602,8 +604,7 @@ def test_solve_control_problem(nmpc):
             assert var.value - var.ub < 1e-6
 
 
-def test_inject_inputs(nmpc):
-    
+def test_inject_control_inputs(nmpc):
 
     c_mod = nmpc.c_mod
     p_mod = nmpc.p_mod
@@ -612,7 +613,7 @@ def test_inject_inputs(nmpc):
    # nmpc.inject_inputs_into(p_mod, c_mod, t_src=2, t_tgt=0)
    # # Here I am copying the inputs at the incorrect time
    # # (t=2 instead of t=0.5, one sampling time) just to explicitly
-   # # test both functions inject_inputs_into and inject_inputs_into_plant
+   # # test both functions inject_inputs_into and inject_control_inputs_into_plant
 
    # for i, _slice in enumerate(p_mod.input_vars):
    #     for t in time:
@@ -620,7 +621,7 @@ def test_inject_inputs(nmpc):
    #             continue
    #         assert _slice[t].value == c_mod.input_vars[i][2].value
 
-    nmpc.inject_inputs_into_plant(0)
+    nmpc.inject_control_inputs_into_plant(0)
     for i, _slice in enumerate(p_mod.input_vars):
         for t in time:
             if t > sample_time or t == 0:
@@ -628,7 +629,7 @@ def test_inject_inputs(nmpc):
             assert _slice[t].value == c_mod.input_vars[i][sample_time].value
 
 
-def test_simulate_over_range(nmpc):
+def test_initialize_by_element_in_range(nmpc):
 
     p_mod = nmpc.p_mod
     c_mod = nmpc.c_mod
@@ -641,7 +642,7 @@ def test_simulate_over_range(nmpc):
     # ^ Can't calculate value because many variables are not initialized
 
     assert degrees_of_freedom(p_mod) == 0
-    simulate_over_range(p_mod, 0, 3,
+    initialize_by_element_in_range(p_mod, 0, 3,
             dae_vars=p_mod.dae_vars,
             time_linking_vars=p_mod.diff_vars)
     assert degrees_of_freedom(p_mod) == 0

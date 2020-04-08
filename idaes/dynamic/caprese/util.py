@@ -191,7 +191,9 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
     return tgt_slices
 
 
-def simulate_over_range(model, t_start, t_end, **kwargs):
+# RENAME
+#def simulate_over_range(model, t_start, t_end, **kwargs):
+def initialize_by_element_in_range(model, t_start, t_end, **kwargs):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
 
@@ -204,6 +206,7 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
+    # CONFIG, KWARGS: handle these kwargs through config
 
     solver = kwargs.pop('solver', SolverFactory('ipopt'))
     outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
@@ -217,7 +220,10 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
     # (and maybe derivative variables). For a process with a (PID) controller,
     # these should also include variables used by the controller.
     # If these variables are not specified, 
+
+    # TODO: this should definitely be an explicit arg
     time_linking_vars = kwargs.pop('time_linking_vars', [])
+
     # Timespan over which these variables will be fixed, counting backwards
     # from the first time point in the finite element (which will always be
     # fixed)
@@ -303,6 +309,7 @@ def simulate_over_range(model, t_start, t_end, **kwargs):
             for con in con_list:
                 for var in identify_variables(con.expr,
                                               include_fixed=False):
+                    # use var_locator/ComponentMap to get index somehow
                     t_idx = get_implicit_index_of_set(var, time)
                     if t_idx is None:
                         assert not is_in_block_indexed_by(var, time)

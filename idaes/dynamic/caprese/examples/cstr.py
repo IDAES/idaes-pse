@@ -80,29 +80,35 @@ def main():
             steady_weight_overwrite=weight_overwrite,
             steady_weight_tol=weight_tolerance)
     
-    nmpc.add_pwc_constraints()
+    nmpc.constrain_control_inputs_piecewise_constant()
     
     nmpc.initialize_control_problem(strategy='initial_conditions')
     
     nmpc.solve_control_problem()
 
-    nmpc.inject_inputs_into_plant(time_plant.first(),
+    nmpc.inject_control_inputs_into_plant(time_plant.first(),
                                   add_noise=True)
 
     nmpc.simulate_plant(time_plant.first())
 
     for t in plant_sample_points:
-        nmpc.load_initial_conditions_from_plant(t, 
+        nmpc.transfer_current_plant_state_to_controller(t,
                                                 add_noise=True)
 
         nmpc.initialize_control_problem(strategy='from_previous')
 
         nmpc.solve_control_problem()
 
-        nmpc.inject_inputs_into_plant(t,
+        nmpc.inject_control_inputs_into_plant(t,
                                       add_noise=True)
         
         nmpc.simulate_plant(t)
+
+        break
+        
+    # TODO: add code for creating NMPC controller plots
+    # TODO: add option for specifying "user-interest variables"
+
 
 if __name__ == '__main__':
     main()
