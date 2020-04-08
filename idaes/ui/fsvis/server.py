@@ -18,7 +18,12 @@ class DataStorage:
         self._data[id_] = data
 
     def fetch(self, id_: str):
-        return self._data.get(id_, None)
+        data = self._data.get(id_, None)
+
+        # If there is no data then return an empty model
+        if not data:
+            data = {"cells": [], "model": {"unit_models": {}, "arcs": {}, "id": id_}}
+        return data
 
     def update(self, id_: str, new_flowsheet: str):
         old_json = self.fetch(id_)

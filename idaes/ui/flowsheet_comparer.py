@@ -10,6 +10,8 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+import json
+
 from enum import Enum
 from jsonschema import validate
 
@@ -84,7 +86,7 @@ def compare_models(existing_model, new_model):
     model_schema = {
         "type" : "object",
         "properties" : {
-            "id" : {"type" : "number"},
+            "id" : {"type" : ["number", "string"]},
             "unit_models" : {
                 "type" : "object",
             },
@@ -99,14 +101,23 @@ def compare_models(existing_model, new_model):
     out_json = dict(existing_model)
     out_json["model"] = new_model["model"]
 
+    validate(instance=existing_model["model"], schema=model_schema)
+    validate(instance=new_model["model"], schema=model_schema)
+
     existing_model = existing_model["model"]
+    # If the existing model is empty then return an empty diff_model 
+    # and the full json from the new model
+    if existing_model["unit_models"] == {} and \
+        existing_model["arcs"] == {}:
+        return {}, new_model
+
+    # If the models are the same return an empty diff_model and the full json from
+    # the new model. This will happen when the user moves something in the 
+    # graph but doesn't change the actual idaes model
+    if existing_model == new_model["model"]:
+        return {}, new_model
+
     new_model = new_model["model"]
-
-    validate(instance=existing_model, schema=model_schema)
-    validate(instance=new_model, schema=model_schema)
-
-    if existing_model == new_model:
-        return {}, out_json
 
     unit_model_schema = {
         "type" : "object",
@@ -238,6 +249,7 @@ def model_jointjs_conversion(diff_model, current_json):
         found = False
         for item in current_json["cells"]:
             if name == item["id"]:
+                print(item)
                 # If the action is not removed then update the values
                 # If it is removed then just remove it from the new_json
                 new_json["cells"].remove(item)
@@ -251,9 +263,9 @@ def model_jointjs_conversion(diff_model, current_json):
                         new_json["cells"].append(item)
                     elif values["class"] == "unit model":
                         item["id"] = name
-                        item["label"]["text"] = name
+                        item["attrs"]["label"]["text"] = name
                         item["attrs"]["image"]["xlinkHref"] = values["image"]
-                        item["root"]["title"] = values["type"]
+                        item["attrs"]["root"]["title"] = values["type"]
                         new_json["cells"].append(item)
                     else:
                         # if the class isn't a unit model or an arc then throw an 

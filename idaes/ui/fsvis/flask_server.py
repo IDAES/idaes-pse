@@ -18,9 +18,10 @@ URL but provide JSON content. See the tests for programmatic examples using the
 """
 # standard library
 from multiprocessing import Process
+import json
 import socket
 # third party
-from flask import Flask, request, render_template#, send_static_file
+from flask import Flask, jsonify, request, render_template#, send_static_file
 # local
 from idaes.ui.fsvis.server import DataStorage
 
@@ -114,8 +115,22 @@ class App:
         return getattr(self.instance, name)
 
 
-# Flask routes
+def update(request, id_):
+    data = request.get_json()
+    if data is None:
+        raise NoDataError()
+    db.update(id_, data)
+    return db.fetch(id_)
 
+
+def fetch(request, id_):
+    data = db.fetch(id_)
+    if data is None:
+        raise LookupError(id_)
+    return data
+
+
+# Flask routes
 @app.route("/fs", methods=["GET", "POST"])
 def flowsheet():
     """Store/retrieve flowsheet JSON
@@ -124,36 +139,28 @@ def flowsheet():
     if id_ is None:
         raise NoIdError()
     if request.method == "POST":
-        data = request.get_json()
-        if data is None:
-            raise NoDataError()
-        db.update(id_, data)
-        return db.fetch(id_)
-    elif request.method == "GET":
-        data = db.fetch(id_)
-        if data is None:
-            raise LookupError(id_)
+        data = update(request, id_)
         return data
 
-#@app.route("/test", methods=["GET"])
-#def testpage():
-#    """Quick hello world"""
-#    import testpages
-#    page = testpages.helloworld
-#    return page
+    elif request.method == "GET":
+        data = fetch(request, id_)
+        return data
 
-@app.route("/app", methods=["GET"])
+
+@app.route("/app", methods=["GET", "POST"])
 def display():
     """Display the web app."""
-    return render_template('app.html')
-
-#@app.route("/draft")
-#def send_static_draft():
-#    return app.send_static_file('/draft.html')
+    id_ = request.args.get("id", None)
+    if id_ is None:
+        raise NoIdError()
+    if request.method == "POST":
+        data = update(request, id_)
+    elif request.method == "GET":
+        data = fetch(request, id_)
+    return render_template('app.html', model=data)
 
 
 # Flask error handlers
-
 @app.errorhandler(LookupError)
 def lookup_exception_handler(error):
     return f"Flowsheet id='{error.id_}' not found", 404

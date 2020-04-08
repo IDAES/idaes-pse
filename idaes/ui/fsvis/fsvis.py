@@ -35,17 +35,17 @@ def visualize(flowsheet, name):
         None.#TODO
     """
     server = fsvis_server()
-    url = f"http://{server.host}:{server.port}/fs?id={name}"
+    url = f"http://{server.host}:{server.port}/app"
     
     # TODO: make sure `name` is valid for use as a URL query string!! E.g. no spaces...
 
-    serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet)
+    serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
     
     repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
                         params={'id': name})
-    success = webbrowser.open(url)
+    success = webbrowser.open(url + f"?id={name}")
     print(f'Opened in browser window: {success}')
-    print(f'{url}')
+    print(f'{url}?id={name}')
     return server
 
 # possibly should be changed to _repeat_until_connection_available()
