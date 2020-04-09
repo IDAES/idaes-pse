@@ -97,8 +97,6 @@ def compare_models(existing_model, new_model):
 
     # Copy the new model into the out_json's model key
     out_json = dict(existing_model)
-    print(new_model)
-    print(existing_model)
     try:
         out_json["model"] = new_model["model"]
     except KeyError as error:

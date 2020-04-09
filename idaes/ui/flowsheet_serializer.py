@@ -41,8 +41,35 @@ class FlowsheetSerializer:
 
     def serialize(self, flowsheet, name):
         """
-        Serializes the flowsheet and saves it to a file that can be read by the
-        idaes-model-vis  jupyter lab extension.
+        Serializes the flowsheet into one dict with two sections.
+
+        The "model" section contains the id of the flowsheet and the
+        unit models and arcs. This will be used to compare the model and convert
+        to jointjs
+
+        The "cells" section is the jointjs readable code.
+
+        .. code-block:: json
+
+        {
+            "model": {
+                "id": "id", 
+                "unit_models": {
+                    "M101": {
+                        "image": "mixer.svg", 
+                        "type": "mixer"
+                    }
+                },
+                "arcs": {
+                    "s03": {
+                        "source": "M101", 
+                        "dest": "H101", 
+                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                    }
+                }
+            },
+            "cells": [{ "--jointjs code--": "--jointjs code--" }]
+        }
 
         :param flowsheet: The flowsheet to save. Usually fetched from the model.
         :param name: The name of the flowsheet. This will be used as the model id
