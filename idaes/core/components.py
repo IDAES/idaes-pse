@@ -20,7 +20,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
-from .phases import LiquidPhase, PhaseType as PT
+from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
 
