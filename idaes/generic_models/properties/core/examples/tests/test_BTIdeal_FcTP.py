@@ -126,7 +126,7 @@ config_dict = {
     "pressure_ref": 1e5,
     "temperature_ref": 300,
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_formulation": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
     "temperature_bubble": bubble_temp_ideal,
     "temperature_dew": dew_temp_ideal,
     "pressure_bubble": bubble_press_ideal,
@@ -165,7 +165,7 @@ class TestParamBlock(object):
                 "temperature": (273.15, 450),
                 "pressure": (5e4, 1e6)}
 
-        assert model.params.config.phase_equilibrium_formulation == {
+        assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)

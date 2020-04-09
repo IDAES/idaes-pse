@@ -237,7 +237,7 @@ class TestGenericParameterBlock(object):
             "pressure_ref": 1e5,
             "temperature_ref": 300,
             "phases_in_equilibrium": [("p1", "p2")],
-            "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+            "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
         assert isinstance(m.params.phase_equilibrium_idx, Set)
         assert len(m.params.phase_equilibrium_idx) == 3
@@ -269,7 +269,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
     def test_phases_in_equilibrium_missing_pair_form(self):
         m = ConcreteModel()
@@ -293,7 +293,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
     def test_phases_in_equilibrium_no_formulation(self):
         m = ConcreteModel()
@@ -302,7 +302,7 @@ class TestGenericParameterBlock(object):
                            match="params Generic Property Package provided "
                            "with a phases_in_equilibrium argument but no "
                            "method was specified for "
-                           "phase_equilibrium_formulation."):
+                           "phase_equilibrium_state."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
@@ -322,7 +322,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package provided "
                            "with a phases_in_equilibrium argument but "
-                           "phase_equilibrium_formulation was not specified "
+                           "phase_equilibrium_state was not specified "
                            "for all phase pairs."):
             # Also reverse order of phases for component a - this should pass
             # and component b should be flagged as missing
@@ -338,7 +338,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {(1, 2): "whoop"}})
+                "phase_equilibrium_state": {(1, 2): "whoop"}})
 
     def test_parameter_construction_no_value(self):
         m = ConcreteModel()

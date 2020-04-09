@@ -178,7 +178,7 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""List of phase pairs for which equilibrium constraints should be
         constructed. Values should be a 2-tuples containing valid phase
         names. Default = None."""))
-    CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
+    CONFIG.declare("phase_equilibrium_state", ConfigValue(
         default=None,
         domain=dict,
         description="Formulation to use when calculating equilibrium state",
@@ -328,13 +328,13 @@ class GenericParameterData(PhysicalParameterBlock):
             counter = 1
 
             # Validate phase equilibrium formulation
-            if self.config.phase_equilibrium_formulation is None:
+            if self.config.phase_equilibrium_state is None:
                 raise ConfigurationError(
                     "{} Generic Property Package provided with a "
                     "phases_in_equilibrium argument but no method was "
-                    "specified for phase_equilibrium_formulation."
+                    "specified for phase_equilibrium_state."
                     .format(self.name))
-            pie_config = self.config.phase_equilibrium_formulation
+            pie_config = self.config.phase_equilibrium_state
 
             for pp in self.config.phases_in_equilibrium:
                 if (pp not in pie_config.keys() and
@@ -342,7 +342,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     raise ConfigurationError(
                         "{} Generic Property Package provided with a "
                         "phases_in_equilibrium argument but "
-                        "phase_equilibrium_formulation was not specified "
+                        "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
                 for j in self.component_list:
@@ -753,7 +753,7 @@ class _GenericStateBlock(StateBlock):
         if blk[k].params.config.phases_in_equilibrium is not None:
             for k in blk.keys():
                 for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_formulation[pp] \
+                    blk[k].params.config.phase_equilibrium_state[pp] \
                         .calculate_teq(blk[k], pp)
 
             init_log.info("Equilibrium temperature initialization completed.")
@@ -776,7 +776,7 @@ class _GenericStateBlock(StateBlock):
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k].params.config.phase_equilibrium_formulation is not None and
+        if (blk[k].params.config.phase_equilibrium_state is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
             for c in blk[k].component_objects(Constraint):
                 # Activate common constraints
@@ -787,7 +787,7 @@ class _GenericStateBlock(StateBlock):
                     c.activate()
             for pp in blk[k].params._pe_pairs:
                 # Activate formulation specific constraints
-                blk[k].params.config.phase_equilibrium_formulation[pp] \
+                blk[k].params.config.phase_equilibrium_state[pp] \
                     .phase_equil_initialization(blk[k], pp)
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -870,7 +870,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=value(self.temperature),
                 doc='Temperature for calculating phase equilibrium')
 
-            pe_form_config = self.params.config.phase_equilibrium_formulation
+            pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
 

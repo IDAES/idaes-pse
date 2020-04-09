@@ -132,7 +132,7 @@ class BTIdealParameterData(GenericParameterData):
         self.config.temperature_ref = 300
 
         self.config.phases_in_equilibrium = [("Vap", "Liq")]
-        self.config.phase_equilibrium_formulation = {
+        self.config.phase_equilibrium_state = {
             ("Vap", "Liq"): smooth_VLE}
 
         self.config.temperature_bubble = bubble_temp_ideal
