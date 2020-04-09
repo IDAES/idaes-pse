@@ -207,7 +207,7 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Image", "position": {"x": 200, "y": 200}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "H101", "z": 1, "attrs": {"image": {"xlinkHref": "heater_2.svg"}, "label": {"text": "H101"}, "root": {"title": "heater"}}}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2},
-                        {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "F222", "z": 1, "attrs": {"image": {"xlinkHref": "flash.svg"}, "label": {"text": "F222"}, "root": {"title": "flash"}}},
+                        {"type": "standard.Image", "position": {"x": 150, "y": 150}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "F222", "z": 1, "attrs": {"image": {"xlinkHref": "flash.svg"}, "label": {"text": "F222"}, "root": {"title": "flash"}}},
                      ]}
 
   assert new_jointjs == jointjs_truth
@@ -270,9 +270,6 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "M101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "F111"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "asdf", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
 
-  print(diff_model)
-  print(new_jointjs)
-  print(jointjs_truth)
   assert new_jointjs == jointjs_truth
 
   # Test arc removal

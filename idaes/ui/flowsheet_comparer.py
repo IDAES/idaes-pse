@@ -255,7 +255,11 @@ def model_jointjs_conversion(diff_model, current_json):
 
     """
     new_json = dict(current_json)
+    x = 50
+    y = 50
     for name, values in diff_model.items():
+        x += 100
+        y += 100
         found = False
         for item in current_json["cells"]:
             if name == item["id"]:
@@ -315,7 +319,7 @@ def model_jointjs_conversion(diff_model, current_json):
                 new_item = {
                     "type": "standard.Image",
                     "id": name,
-                    "position": {"x": 100, "y": 100},
+                    "position": {"x": x, "y": y},
                     "size": {"width": 50, "height": 50},
                     "angle": 0,
                     "z": 1,
