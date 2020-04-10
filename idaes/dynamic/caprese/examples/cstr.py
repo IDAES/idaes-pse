@@ -53,9 +53,13 @@ def main():
     initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
                             m_plant.fs.mixer.E_inlet.flow_rate[0]]
     
-    nmpc = NMPCSim(m_plant.fs, m_controller.fs, initial_plant_inputs,
-            solver=solver, outlvl=idaeslog.DEBUG, 
-            sample_time=sample_time)
+    nmpc = NMPCSim(plant_model=m_plant.fs, 
+                   plant_time_set=m_plant.fs.time,
+                   controller_model=m_controller.fs, 
+                   controller_time_set=m_controller.fs.time,
+                   inputs_at_t0=initial_plant_inputs,
+                   solver=solver, outlvl=idaeslog.DEBUG, 
+                   sample_time=sample_time)
     
     p_mod = nmpc.p_mod
     c_mod = nmpc.c_mod
@@ -74,15 +78,18 @@ def main():
     # in the STEADY MODEL
     weight_overwrite = [(m_steady.fs.mixer.E_inlet.flow_rate[0], 20.0)]
     
-    nmpc.add_setpoint(set_point,
-            steady_model=m_steady.fs,
+    nmpc.solve_steady_state_setpoint(set_point,
+            m_steady.fs,
             outlvl=idaeslog.DEBUG,
-            steady_weight_overwrite=weight_overwrite,
-            steady_weight_tol=weight_tolerance)
+            objective_weight_override=weight_overwrite,
+            objective_weight_tolerance=weight_tolerance)
+
+    nmpc.add_setpoint_to_controller()
     
     nmpc.constrain_control_inputs_piecewise_constant()
     
-    nmpc.initialize_control_problem(strategy='initial_conditions')
+    nmpc.initialize_control_problem(
+            control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
     
     nmpc.solve_control_problem()
 
@@ -95,7 +102,8 @@ def main():
         nmpc.transfer_current_plant_state_to_controller(t,
                                                 add_noise=True)
 
-        nmpc.initialize_control_problem(strategy='from_previous')
+        nmpc.initialize_control_problem(
+                control_init_option=ControlInitOption.FROM_PREVIOUS)
 
         nmpc.solve_control_problem()
 

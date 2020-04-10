@@ -18,9 +18,12 @@ Class for performing NMPC simulations of IDAES flowsheets
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
         TransformationFactory, Reference)
+from pyomo.core.base.var import _GeneralVarData
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.opt.solver import SystemCallSolver
+from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -34,9 +37,106 @@ import idaes.logger as idaeslog
 
 from collections import OrderedDict
 import time as timemodule
+import enum
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
+
+
+# Probably make this abstract
+class NMPCEnum(enum.Enum):
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        if type(arg) is str:
+            return cls[arg]
+        else:
+            # Handles enum or integer inputs
+            return cls(arg)
+
+
+class ControlInitOption(NMPCEnum):
+    FROM_PREVIOUS = 11
+    BY_TIME_ELEMENT = 12
+    FROM_INITIAL_CONDITIONS = 13
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        #pdb.set_trace()
+        return super(ControlInitOption, cls).from_enum_or_string(arg)
+        # Why does this work but super(NMPCEnum, cls) does not?
+        # Why is super(cls, cls) wrong?
+
+
+class ElementInitializationInputOption(NMPCEnum):
+    SET_POINT = 21
+    INITIAL = 22
+    CURRENT_VALUES = 23
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(ElementInitializationInputOption, cls).from_enum_or_string(arg)
+
+
+class TimeResolutionOption(NMPCEnum):
+    COLLOCATION_POINTS = 31
+    FINITE_ELEMENTS = 32
+    SAMPLE_POINTS = 33
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(TimeResolutionOption, cls).from_enum_or_string(arg)
+
+
+class ControlPenaltyType(NMPCEnum):
+    ERROR = 41
+    ACTION = 42
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(ControlPenaltyType, cls).from_enum_or_string(arg)
+
+
+class VariableCategory(NMPCEnum):
+    DIFFERENTIAL = 51
+    ALGEBRAIC = 52
+    DERIVATIVE = 53
+    FIXED = 54
+    SCALAR = 55
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(VariableCategory, cls).from_enum_or_string(arg)
+
+
+# This function is to be used as the domain for the user-provided
+# list of inputs at time.first().
+def validate_list_of_vardata(varlist):
+    if not isinstance(varlist, list):
+        raise TypeError('Not a list of VarData')
+    for var in varlist:
+        if not isinstance(var, _GeneralVarData):
+            raise TypeError('Not a list of VarData')
+    return varlist
+
+
+def validate_list_of_vardata_value_tuples(varvaluelist):
+    if not isinstance(varvaluelist, list):
+        raise TypeError('Not a list')
+    for item in varvaluelist:
+        if not isinstance(item, tuple):
+            raise TypeError('Item in list is not a tuple')
+        if not len(item) == 2:
+            raise ValueError('Tuple in list does not have correct length')
+        if not isinstance(item[0], _GeneralVarData):
+            raise TypeError('First entry is not a VarData')
+        item = (item[0], float(item[1]))
+    return varvaluelist
+
+
+def validate_solver(solver):
+    if not isinstance(solver, SystemCallSolver):
+        raise(TypeError, 'Solver is not a SystemCallSolver')
+    return solver
 
 
 # TODO tags:
@@ -51,8 +151,215 @@ class NMPCSim(object):
     """
     Main class for NMPC simulations of IDAES flowsheets. 
     """
+    CONFIG = ConfigDict()
 
-    def __init__(self, plant_model, controller_model, initial_inputs, **kwargs):
+    # What is the right way to configure logger outlvl?
+    # Should I use a default (Init/Solver) IDAES logger or make my own?
+    CONFIG.declare(
+            'outlvl',
+            ConfigValue(
+                default=idaeslog.INFO, 
+                doc='Output verbosity level for IDAES logger'
+                )
+            )
+    CONFIG.declare(
+            'control_init_option',
+            ConfigValue(
+                default=ControlInitOption.FROM_INITIAL_CONDITIONS,
+                domain=ControlInitOption.from_enum_or_string,
+                doc='Option for how to initialize the controller model'
+                )
+            )
+    CONFIG.declare(
+            'element_initialization_input_option',
+            ConfigValue(
+                default=ElementInitializationInputOption.SET_POINT,
+                domain=ElementInitializationInputOption.from_enum_or_string,
+                doc=('Option for how to fix inputs when initializing '
+                    'by time element')
+                )
+            )
+    CONFIG.declare(
+            'time_resolution_option',
+            ConfigValue(
+                default=TimeResolutionOption.SAMPLE_POINTS,
+                domain=TimeResolutionOption.from_enum_or_string,
+                doc=('Option for specifying a time resolution in the '
+                    'objective function')
+                )
+            )
+    CONFIG.declare(
+            'calculate_error',
+            ConfigValue(
+                default=True,
+                domain=bool,
+                doc=('Flag for whether or not to calculate set-point-error '
+                    'when simulating plant')
+                )
+            )
+    CONFIG.declare(
+            'continuous_set_tolerance',
+            ConfigValue(
+                default=1e-8,
+                domain=float,
+                doc=('Tolerance used for determining whether a float is a '
+                    'member of a ContinuousSet')
+                )
+            )
+    CONFIG.declare(
+            'state_objective_weight_matrix_diagonal',
+            ConfigValue(
+                default=True,
+                domain=bool,
+                doc='Flag for whether state objective weights are diagonal'
+                )
+            )
+    CONFIG.declare(
+            'control_objective_weight_matrix_diagonal',
+            ConfigValue(
+                default=True,
+                domain=bool,
+                doc='Flag for whether control objective weights are diagonal'
+                )
+            )
+    CONFIG.declare(
+            'control_penalty_type',
+            ConfigValue(
+                default=ControlPenaltyType.ERROR,
+                domain=ControlPenaltyType.from_enum_or_string,
+                doc=('Type of control penalty that will be normed in '
+                    'objective functions')
+                )
+            )
+    # TODO: Should I combine these into one config argument, then just overwrite
+    # for each's function if they need to change?
+    CONFIG.declare(
+            'add_plant_noise',
+            ConfigValue(
+                default=True,
+                domain=bool,
+                doc='Flag for whether to add noise to state loaded from plant'
+                )
+            )
+    CONFIG.declare(
+            'add_input_noise',
+            ConfigValue(
+                default=True,
+                domain=bool,
+                doc=('Flag for whether to add noise to inputs injected '
+                    'into plant')
+                )
+            )
+    # These args, I just declare once each... perhaps because I don't expect
+    # them to be overwritten?
+    CONFIG.declare(
+            'noise_weights',
+            ConfigValue(
+                default=[],
+                domain=list,
+                doc=('List of weights to overwrite weights for variance '
+                    'in noise function')
+                )
+            )
+    # ^ Really this should be a list of vardata, value tuples
+    CONFIG.declare(
+            'max_noise_weight',
+            ConfigValue(
+                default=1e6,
+                domain=float,
+                doc='Maximum value by which noise variance can be weighted'
+                )
+            )
+    CONFIG.declare(
+            'noise_arguments',
+            ConfigValue(
+                default={},
+                domain=dict,
+                doc='Extra arguments for noise function')
+            )
+    CONFIG.declare(
+            'noise_sigma_0',
+            ConfigValue(
+                default=0.05,
+                domain=float,
+                doc=('Nominal value of variance that will be scaled by weights '
+                    'for each state')
+                )
+            )
+    CONFIG.declare(
+            'setpoint',
+            ConfigValue(
+                default=[],
+                domain=validate_list_of_vardata_value_tuples,
+                doc=('User-specified list of VarDatas and their corresponding '
+                    'setpoints')
+                )
+            )
+    # Still unsure of the purpose of Config.
+    # - Is it a way to pass arguments with default values and validation?
+    #   If so, should every argument have a ConfigValue?
+    # - Is it a way to set default (or constructor-level) arguments, then
+    #   safely and selectively overwrite them if desired during the algorithm?
+    #   This seems like the most practical use to me.
+
+    # How should I handle solver config? What is a good domain?
+    # Since each solver could have a different interface for options,
+    # I'll refrain from adding a ConfigValue for solver options.
+    # Plus having a "config"-inside-a-config seems kind of wonky.
+    CONFIG.declare('solver',
+            ConfigValue(
+                default=SolverFactory('ipopt'),
+                domain=validate_solver,
+                doc='Pyomo solver object to be used to solve generated NLPs'
+                )
+            )
+    CONFIG.declare('tolerance',
+            ConfigValue(
+                default=1e-8,
+                domain=float,
+                doc='Tolerance for checking constraint violation'
+                )
+            )
+    CONFIG.declare('objective_weight_tolerance',
+            ConfigValue(
+                default=1e-6,
+                domain=float,
+                doc=('Minimum delta between nominal and set-point that will '
+                    'be used to calculate objective function weights')
+                )
+            )
+    # If this is intended to be declared only in each function (so it can
+    # be declared with variables from the right model), does it make sense
+    # to declare it here? I don't really want the user passing in values at the
+    # constructor level, but I do want the default value...
+    CONFIG.declare('objective_weight_override',
+            ConfigValue(
+                default=[],
+                domain=validate_list_of_vardata_value_tuples,
+                doc=('User-specified objective weight values for given '
+                    'variables that take precedence over calculated values')
+                )
+            )
+    CONFIG.declare('sample_time',
+            ConfigValue(
+                default=1,
+                domain=float,
+                doc='Time period over which inputs will be held'
+                )
+            )
+    CONFIG.declare('inputs_at_t0',
+            ConfigValue(
+                default=[],
+                domain=validate_list_of_vardata,
+                doc=('List of VarData objects corresponding to the inputs '
+                    'at time.first() in the plant model')
+                )
+            )
+    
+
+    def __init__(self, plant_model=None, plant_time_set=None, 
+        controller_model=None, controller_time_set=None, inputs_at_t0=None,
+        sample_time=None, outlvl=idaeslog.NOTSET, solver=None):
         """Constructor method. Accepts plant and controller models needed for 
         NMPC simulation, as well as inputs at the first time point in the 
         plant model. Models provided are added to the self as attributes.
@@ -86,6 +393,11 @@ class NMPCSim(object):
                           and controller models. Default is to use the 
                           controller model's discretization spacing.
         """
+        self.config = self.CONFIG
+        self.config.sample_time = sample_time
+        self.config.inputs_at_t0 = inputs_at_t0
+        self.config.outlvl = outlvl
+        self.config.solver = solver
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
@@ -93,17 +405,23 @@ class NMPCSim(object):
         #       separate solvers for each solve, in init
         # KWARGS, CONFIG, NAMESPACE - remove kwargs and set these up here
 
-        solver = kwargs.pop('solver', SolverFactory('ipopt'))
-        self.default_solver = solver
+#        solver = kwargs.pop('solver', SolverFactory('ipopt'))
+#        self.default_solver = solver
+
+        # TODO: validate_time_set function
 
         # Logger properties:
         # outlvl added as an attribute so it can be referenced later
-        self.outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-        init_log = idaeslog.getInitLogger('nmpc', level=self.outlvl)
+#        self.outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+#        self.outlvl = outlvl
+
+        init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
 
         # Set up attributes
         self.p_mod = plant_model
+        self.p_mod_time = plant_time_set
         self.c_mod = controller_model
+        self.c_mod_time = controller_time_set
 
         self.add_namespace_to(self.p_mod)
         self.add_namespace_to(self.c_mod)
@@ -112,14 +430,12 @@ class NMPCSim(object):
         self.validate_models(self.p_mod, self.c_mod)
 
         # Solve for consistent initial conditions
-#        self.p_mod._originally_active = get_activity_dict(self.p_mod)
 
         # Categorize variables in plant model
         init_log.info('Categorizing variables in plant model') 
-        self.categorize_variables(self.p_mod, initial_inputs)
+        self.categorize_variables(self.p_mod, self.p_mod_time, inputs_at_t0)
 
-        self.solve_initial_conditions(self.p_mod,
-                solver=solver)
+        self.solve_initial_conditions(self.p_mod, self.p_mod_time)
         # TODO: move into own function
         #       possibly a DAE utility
         #       - check for consistency of initial conditions
@@ -129,7 +445,7 @@ class NMPCSim(object):
         #       - check that I don't overwrite anything
         #       - store in a block: util.modeling.unique_component_name
         #       - cleanup if desired
-        self.p_mod.initial_inputs = initial_inputs
+        self.p_mod.initial_inputs = inputs_at_t0
         # ^ Add these as an attribute so they can be used later to validate
         # steady state model
         # ^ What did I mean by this? In what way does steady state model need
@@ -137,49 +453,49 @@ class NMPCSim(object):
         # Not sure this is still necessary
 
         self.build_variable_locator(self.p_mod, 
-                differential=self.p_mod.diff_vars,
-                derivative=self.p_mod.deriv_vars,
-                algebraic=self.p_mod.alg_vars,
-                inputs=self.p_mod.input_vars,
-                fixed=self.p_mod.fixed_vars,
-                ic=self.p_mod.ic_vars)
+                differential=self.p_mod._NMPC_NAMESPACE.diff_vars,
+                derivative=self.p_mod._NMPC_NAMESPACE.deriv_vars,
+                algebraic=self.p_mod._NMPC_NAMESPACE.alg_vars,
+                inputs=self.p_mod._NMPC_NAMESPACE.input_vars,
+                fixed=self.p_mod._NMPC_NAMESPACE.fixed_vars,
+                ic=self.p_mod._NMPC_NAMESPACE.ic_vars)
         # Now adding a locator to the plant model so I can find plant model
         # variables corresponding to the controller's initial conditions
 
         # Categorize variables in controller model
-        init_controller_inputs = self.validate_initial_inputs(controller_model,
-                plant_model, initial_inputs)
+        init_controller_inputs = self.validate_initial_inputs(self.c_mod,
+                self.p_mod, self.p_mod_time, self.p_mod.initial_inputs)
         init_log.info('Categorizing variables in the controller model')
-        self.categorize_variables(self.c_mod, init_controller_inputs)
+        self.categorize_variables(self.c_mod, self.c_mod_time, init_controller_inputs)
+        # TODO: Would like to use my variable category enum here
+        # As simple as replacing 'differential' by 'DIFFERENTIAL', etc.?
         self.build_variable_locator(self.c_mod, 
-                differential=self.c_mod.diff_vars,
-                derivative=self.c_mod.deriv_vars,
-                algebraic=self.c_mod.alg_vars,
-                inputs=self.c_mod.input_vars,
-                fixed=self.c_mod.fixed_vars,
-                ic=self.c_mod.ic_vars)
-        # Not convinced that having a variable locator like this is the
-        # best thing to do, but will go with it for now.
+                differential=self.c_mod._NMPC_NAMESPACE.diff_vars,
+                derivative=self.c_mod._NMPC_NAMESPACE.deriv_vars,
+                algebraic=self.c_mod._NMPC_NAMESPACE.alg_vars,
+                inputs=self.c_mod._NMPC_NAMESPACE.input_vars,
+                fixed=self.c_mod._NMPC_NAMESPACE.fixed_vars,
+                ic=self.c_mod._NMPC_NAMESPACE.ic_vars)
 
         # Only need to manipulate bounds of controller model. Assume the 
         # bounds in the plant model should remain in place for simulation.
         # (Should probably raise a warning if bounds are present...)
-        self.build_bound_lists(self.c_mod)
+        self.build_bound_lists(self.c_mod, self.c_mod_time)
         # ^ This may be removed in favor of strip_bounds transformation
 
         # Validate inputs in the plant model and initial conditions
         # in the control model.
         # TODO: allow user to specify this if names don't match
-        self.p_mod.controller_ic_vars = find_slices_in_model(
+        self.p_mod._NMPC_NAMESPACE.controller_ic_vars = find_slices_in_model(
                 self.p_mod,
                 self.c_mod,
-                self.p_mod.var_locator,
-                self.c_mod.ic_vars)
-        self.c_mod.plant_input_vars = find_slices_in_model(
+                self.p_mod._NMPC_NAMESPACE.var_locator,
+                self.c_mod._NMPC_NAMESPACE.ic_vars)
+        self.c_mod._NMPC_NAMESPACE.plant_input_vars = find_slices_in_model(
                 self.c_mod,
                 self.p_mod,
-                self.c_mod.var_locator,
-                self.p_mod.input_vars)
+                self.c_mod._NMPC_NAMESPACE.var_locator,
+                self.p_mod._NMPC_NAMESPACE.input_vars)
 
         self.validate_fixedness(self.p_mod)
         self.validate_fixedness(self.c_mod)
@@ -187,10 +503,10 @@ class NMPCSim(object):
 # TODO: remove. Place in solve_initial_conditions method if it exists.
 #       If desired ('strict mode') check for consistency.
 #####################
-        copy_values_at_time(self.c_mod.ic_vars,
-                            self.p_mod.controller_ic_vars,
-                            self.c_mod.time.first(),
-                            self.p_mod.time.first())
+        copy_values_at_time(self.c_mod._NMPC_NAMESPACE.ic_vars,
+                            self.p_mod._NMPC_NAMESPACE.controller_ic_vars,
+                            self.c_mod_time.first(),
+                            self.p_mod_time.first())
         # May eventually want to "load_initial_conditions" here so I can apply 
         # noise, but for now this is more direct.
 
@@ -202,14 +518,15 @@ class NMPCSim(object):
 
         # Controller model has already been categorized... No need 
         # to provide init_controller_inputs
-        self.solve_initial_conditions(self.c_mod, solver=solver)
+        self.solve_initial_conditions(self.c_mod, self.c_mod_time)
         # ^ move into initialize_control_problem
         self.strip_controller_bounds.revert(self.c_mod)
 #####################
 
-        self.sample_time = kwargs.pop('sample_time', 
-                self.c_mod.time.get_finite_elements()[1] -
-                    self.c_mod.time.get_finite_elements()[0])
+#        self.sample_time = kwargs.pop('sample_time', 
+#                self.c_mod.time.get_finite_elements()[1] -
+#                    self.c_mod.time.get_finite_elements()[0])
+        self.sample_time = self.config.sample_time
         self.validate_sample_time(self.sample_time, 
                 self.c_mod, self.p_mod)
 
@@ -325,7 +642,7 @@ class NMPCSim(object):
                     'Sampling time must be an integer multiple of '
                     'finite element spacing for every model')
             else:
-                model._fe_per_sample = int(sample_time/fe_spacing)
+                model._NMPC_NAMESPACE.fe_per_sample = int(sample_time/fe_spacing)
 
             horizon_length = time.last() - time.first()
             if (horizon_length / sample_time) % 1 != 0:
@@ -333,7 +650,7 @@ class NMPCSim(object):
                     'Sampling time must be an integer divider of '
                     'horizon length')
             else:
-                model._samples_per_horizon = int(horizon_length/sample_time)
+                model._NMPC_NAMESPACE.samples_per_horizon = int(horizon_length/sample_time)
 
 
     def validate_slices(self, tgt_model, src_model, src_slices):
@@ -368,8 +685,8 @@ class NMPCSim(object):
             tgt_vardata = find_comp_in_block(tgt_model, 
                                              src_model, 
                                              init_vardata)
-            tgt_slice = tgt_model.var_locator[id(tgt_vardata)].container
-            location = tgt_model.var_locator[id(tgt_vardata)].location
+            tgt_slice = tgt_model._NMPC_NAMESPACE.var_locator[id(tgt_vardata)].container
+            location = tgt_model._NMPC_NAMESPACE.var_locator[id(tgt_vardata)].location
             tgt_slices.append(tgt_slice[location])
         return tgt_slices
 
@@ -384,9 +701,11 @@ class NMPCSim(object):
         """
         time = model.time
         t0 = time.first()
-        locator = model.var_locator
+        locator = model._NMPC_NAMESPACE.var_locator
 
-        for _slice in model.alg_vars + model.diff_vars + model.deriv_vars:
+        for _slice in (model._NMPC_NAMESPACE.alg_vars + 
+                       model._NMPC_NAMESPACE.diff_vars + 
+                       model._NMPC_NAMESPACE.deriv_vars):
             var0 = _slice[t0]
             if locator[id(var0)].is_ic:
                 assert var0.fixed
@@ -398,7 +717,7 @@ class NMPCSim(object):
                 for t in time:
                     assert not _slice[t].fixed
 
-        for var in model.fixed_vars:
+        for var in model._NMPC_NAMESPACE.fixed_vars:
             for t in time:
                 # Fixed vars, e.g. those used in boundary conditions,
                 # may "overlap" with initial conditions. It is up to the user
@@ -409,8 +728,8 @@ class NMPCSim(object):
                 assert var[t].fixed
                     
 
-    def validate_initial_inputs(self, tgt_model, src_model, src_inputs=None,
-            outlvl=idaeslog.NOTSET):
+    def validate_initial_inputs(self, tgt_model, src_model, src_time, 
+            src_inputs=None, **kwargs):
         """Uses initial inputs in the source model to find variables of the
         same name in a target model.
         
@@ -421,14 +740,18 @@ class NMPCSim(object):
                         to find in target model. If not provided, the
                         initial_inputs attribute will be used.
         """
-        # TODO: set level through config
+        config = self.config(kwargs)
+        outlvl = config.outlvl
+        
         log = idaeslog.getInitLogger('nmpc', level=outlvl)
+
+        # src_time only necessary to find inputs if not provided?
 
         if not src_inputs:
             # If source inputs are not specified, assume they
             # already exist in src_model
             try:
-                t0 = src_model.time.first()
+                t0 = src_time.first()
                 src_inputs = [v[t0] for v in src_model.input_vars]
             except AttributeError:
                 msg = ('Error validating inputs. Either provide src_inputs '
@@ -467,10 +790,10 @@ class NMPCSim(object):
             m1 : First flowsheet model
             m2 : Second flowsheet model
         """
-        if not (isinstance(m1, FlowsheetBlock) and
-                isinstance(m2, FlowsheetBlock)):
+        if not (isinstance(m1, Block) and
+                isinstance(m2, Block)):
             raise ValueError(
-                    'Provided models must be FlowsheetBlocks')
+                    'Provided models must be Blocks')
         if m1.model() is m2.model():
             raise ValueError(
                     'Provided models must not live in the same top-level'
@@ -478,62 +801,71 @@ class NMPCSim(object):
         return True
 
 
-    def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
+    def transfer_current_plant_state_to_controller(self, t_plant, 
+            config=ConfigDict(), **kwargs):
         # Would like to pass "noise_args" in as a bundle here. This can
         # probably be done with config blocks somehow.
 
         # TESTME: this function is not tested.
         # copy_values and add_noise are tested, however
+        config = self.config(config)
 
-        time = self.c_mod.time
+        time = self.c_mod_time # TODO: Don't hard-code this. self.c_mod_time
         t0 = time.first()
 
-        copy_values_at_time(self.c_mod.ic_vars,
-                            self.p_mod.controller_ic_vars,
+        copy_values_at_time(self.c_mod._NMPC_NAMESPACE.ic_vars,
+                            self.p_mod._NMPC_NAMESPACE.controller_ic_vars,
                             t0,
                             t_plant)
 
         # Apply noise to new initial conditions
-        add_noise = kwargs.pop('add_noise', False)
-        noise_weights = kwargs.pop('noise_weights', [])
-        noise_sig_0 = kwargs.pop('noise_sig_0', 0.05)
-        noise_args = kwargs.pop('noise_args', {})
+        add_noise = config.add_plant_noise
+
+        # TODO: config for noise args
+        noise_weights = config.noise_weights
+        noise_sig_0 = config.noise_sigma_0
+        noise_args = config.noise_arguments
+        max_noise_weight = config.max_noise_weight
 
         if add_noise:
             if not noise_weights:
                 noise_weights = []
-                for var in self.c_mod.ic_vars:
-                    locator = self.c_mod.var_locator[id(var[t0])]
+                for var in self.c_mod._NMPC_NAMESPACE.ic_vars:
+                    locator = self.c_mod._NMPC_NAMESPACE.var_locator[id(var[t0])]
                     category = locator.category
                     loc = locator.location
                     # REMOVECONSTANT
                     # There should be an enum for variable category
                     if category == 'differential':
-                        obj_weight = self.c_mod.diff_weights[loc]
+                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
                     elif category == 'derivative':
                         # Is it okay to weigh derivative noise by 
                         # the state variable's weight?
-                        obj_weight = self.c_mod.diff_weights[loc]
+                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
                     else:
                         # FIXME: Won't have obj weight for algebraic equations
                         # NAMESPACE: empty list should be added automatically in
                         # namespace block
+                        # Really should calculate these weights, even if they
+                        # aren't used
                         obj_weight = None
 
                     if obj_weight is not None and obj_weight != 0:
                         # TODO: make an option for max noise weight
-                        noise_weights.append(min(1/obj_weight, 1e6))
+                        noise_weights.append(min(1/obj_weight, 
+                                                 max_noise_weight))
                     else:
                         noise_weights.append(None)
 
-            add_noise_at_time(self.c_mod.ic_vars,
+            add_noise_at_time(self.c_mod._NMPC_NAMESPACE.ic_vars,
                               t0,
                               weights=noise_weights,
                               sigma_0=noise_sig_0,
                               **noise_args)
 
 
-    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
+    def inject_control_inputs_into_plant(self, t_plant, config=ConfigDict(), 
+            **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time.
@@ -560,40 +892,43 @@ class NMPCSim(object):
         # KWARGS, CONFIG - handle all of these through config. Pass in noise args
         # as a bundle
         # config args for control_input_noise
+        config = self.config(config)
 
-        sample_time = kwargs.pop('sample_time', self.sample_time)
+        sample_time = self.config.sample_time
         src_attrname = kwargs.pop('src_attrname', 'plant_input_vars')
+        # Why would I ever want to use a different attrname here...?
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        t_controller = self.c_mod.time.first() + sample_time
+        t_controller = self.c_mod_time.first() + sample_time
         assert t_controller in self.c_mod.time
 
-        time = self.p_mod.time
+        time = self.p_mod_time
         plant_sample = [t for t in time if t > t_plant and t<= t_plant+sample_time]
         assert t_plant+sample_time in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
 
-        add_noise = kwargs.pop('add_noise', False)
-        noise_weights = kwargs.pop('noise_weights', [])
-        noise_sig_0 = kwargs.pop('noise_sig_0', 0.05)
-        noise_args = kwargs.pop('noise_args', {})
+        add_noise = config.add_input_noise
+        noise_weights = config.noise_weights
+        noise_sig_0 = config.noise_sigma_0
+        noise_args = config.noise_arguments
+        max_noise_weight = config.max_noise_weight
 
         # Need to get proper weights for plant's input vars
         if add_noise:
             if not noise_weights:
                 noise_weights = []
-                for var in self.c_mod.plant_input_vars:
-                    locator = self.c_mod.var_locator[id(var[t_controller])]
+                for var in self.c_mod._NMPC_NAMESPACE.plant_input_vars:
+                    locator = self.c_mod._NMPC_NAMESPACE.var_locator[id(var[t_controller])]
                     category = locator.category
                     loc = locator.location
                     if category == 'input':
-                        obj_weight = self.c_mod.input_weights[loc]
+                        obj_weight = self.c_mod._NMPC_NAMESPACE.input_weights[loc]
                     elif category == 'differential':
-                        obj_weight = self.c_mod.diff_weights[loc]
+                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
                     if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, 1e6))
+                        noise_weights.append(min(1/obj_weight, max_noise_weight))
                     else:
                         # By default, if state is not penalized in objective,
                         # noise will not be applied to it here.
@@ -602,7 +937,7 @@ class NMPCSim(object):
                         # way of calculating a weight
                         noise_weights.append(None)
 
-            add_noise_at_time(self.c_mod.plant_input_vars,
+            add_noise_at_time(self.c_mod._NMPC_NAMESPACE.plant_input_vars,
                               t_controller,
                               weights=noise_weights,
                               sigma_0=noise_sig_0,
@@ -620,13 +955,13 @@ class NMPCSim(object):
             #                  noise after it's copied into plant...
             # Right now I apply noise to controller model, and don't revert
 
-        copy_values_at_time(self.p_mod.input_vars,
-                            self.c_mod.plant_input_vars,
+        copy_values_at_time(self.p_mod._NMPC_NAMESPACE.input_vars,
+                            self.c_mod._NMPC_NAMESPACE.plant_input_vars,
                             plant_sample,
                             t_controller)
 
 
-    def solve_initial_conditions(self, model, **kwargs):
+    def solve_initial_conditions(self, model, time, **kwargs):
         """Function to solve for consistent initial conditions in
         the provided flowsheet model.
 
@@ -649,21 +984,24 @@ class NMPCSim(object):
         # it doesn't try to deactivate discretization equations or fix
         # derivative/differential variables.
 
+        config = self.config(kwargs)
+
+        # Should activity_dict be a ComponentMap?
         was_originally_active = get_activity_dict(model)
-        solver = kwargs.pop('solver', self.default_solver)
-        outlvl = kwargs.pop('outlvl', self.outlvl)
+        solver = config.solver
+        outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
 
         toplevel = model.model()
-        t0 = model.time.first()
+        t0 = time.first()
 
-        non_initial_time = [t for t in model.time]
+        non_initial_time = [t for t in time]
         non_initial_time.remove(t0)
-        deactivated = deactivate_model_at(model, model.time, non_initial_time, 
+        deactivated = deactivate_model_at(model, time, non_initial_time,
                 outlvl=idaeslog.ERROR)
 
-        for _slice in model.input_vars:
+        for _slice in model._NMPC_NAMESPACE.input_vars:
             vardata = _slice[t0]
             if vardata.model() is not toplevel:
                 raise ValueError(
@@ -702,7 +1040,7 @@ class NMPCSim(object):
                         comp.activate()
 
 
-    def categorize_variables(self, model, initial_inputs):
+    def categorize_variables(self, model, time, initial_inputs):
         """Function to create lists of time-only-slices of the different 
         types of variables in a model, given knowledge of which are inputs. 
         These lists are added as attributes to the model.
@@ -712,14 +1050,11 @@ class NMPCSim(object):
             initial_inputs : List of VarData objects that are input variables
                              at the initial time point
 
-        Kwargs:
-            is_steady : Flag to set True if the model is a steady state model,
-                        and thus its time set is a singleton.
         """
 
         # Would probably be much faster to do this categorization
         # during variable flattening
-        time = model.time
+        #time = model.time
 
         # Works for steady state models as time will be an ordered
         # (although not continuous) set:
@@ -744,8 +1079,11 @@ class NMPCSim(object):
 
         dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
         t0_vardata = list(dae_map.keys())
-        model.dae_vars = list(dae_map.values())
-        model.scalar_vars = list(ComponentMap([(v, v) for v in scalar_vars]).values())
+        #model.dae_vars = list(dae_map.values())
+        model._NMPC_NAMESPACE.dae_vars = list(dae_map.values())
+        #model.scalar_vars = list(ComponentMap([(v, v) for v in scalar_vars]).values())
+        model._NMPC_NAMESPACE.scalar_vars = \
+                list(ComponentMap([(v, v) for v in scalar_vars]).values())
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
         diff_set = ComponentSet()
@@ -818,25 +1156,28 @@ class NMPCSim(object):
                 alg_vars.append(time_slice)
 
         # TODO: attribute of subblock
-        model.deriv_vars = deriv_vars
-        model.diff_vars = diff_vars
-        model.n_dv = len(diff_vars)
-        assert model.n_dv == len(deriv_vars)
-
-        model.ic_vars = ic_vars
+        model._NMPC_NAMESPACE.deriv_vars = deriv_vars
+        model._NMPC_NAMESPACE.diff_vars = diff_vars
+        model._NMPC_NAMESPACE.n_diff_vars = len(diff_vars)
+        model._NMPC_NAMESPACE.n_deriv_vars = len(deriv_vars)
+        assert (model._NMPC_NAMESPACE.n_diff_vars == 
+                model._NMPC_NAMESPACE.n_deriv_vars)
+                
+        model._NMPC_NAMESPACE.ic_vars = ic_vars
+        model._NMPC_NAMESPACE.n_ic_vars = len(ic_vars)
         #assert model.n_dv == len(ic_vars)
         # Would like this to be true, but accurately detecting differential
         # variables that are not implicitly fixed (by fixing some input)
         # is difficult
 
-        model.input_vars = input_vars
-        model.n_iv = len(input_vars)
+        model._NMPC_NAMESPACE.input_vars = input_vars
+        model._NMPC_NAMESPACE.n_input_vars = len(input_vars)
 
-        model.alg_vars = alg_vars
-        model.n_av = len(alg_vars)
+        model._NMPC_NAMESPACE.alg_vars = alg_vars
+        model._NMPC_NAMESPACE.n_alg_vars = len(alg_vars)
 
-        model.fixed_vars = fixed_vars 
-        model.n_nv = len(fixed_vars)
+        model._NMPC_NAMESPACE.fixed_vars = fixed_vars 
+        model._NMPC_NAMESPACE.n_fixed_vars = len(fixed_vars)
 
 
     def build_variable_locator(self, model, **kwargs):
@@ -897,60 +1238,107 @@ class NMPCSim(object):
             for t in model.time:
                 locator[id(_slice[t])].is_ic = True
 
-        model.var_locator = locator
+        model._NMPC_NAMESPACE.var_locator = locator
 
 
-    def add_setpoint(self, set_point, **kwargs):
+    def solve_steady_state_setpoint(self, set_point, steady_model, **kwargs):
+        config = self.config(kwargs)
+        outlvl = config.outlvl
+        weight_override = config.objective_weight_override
+        weight_tolerance = config.objective_weight_tolerance
+
+        if not steady_model:
+            raise ValueError(
+               "'steady_model' required to validate set point")
+        self.s_mod = steady_model
+        self.add_namespace_to(self.s_mod)
+        self.validate_models(self.s_mod, self.p_mod)
+        self.validate_steady_setpoint(set_point, self.s_mod,
+                                      outlvl=outlvl,
+                                      objective_weight_override=weight_override,
+                                      objective_weight_tolerance=weight_tolerance)
+        # ^ result should be that controller now has set point attributes
+
+
+    def add_setpoint_to_controller(self, **kwargs):
         """User-facing function for the addition of a set point to the 
-        controller. Will validate th
+        controller.
         """
-        # TODO: maybe split into two functions
-        skip_validation = kwargs.pop('skip_validation', False)
-        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-        weight_overwrite = kwargs.pop('steady_weight_overwrite', [])
-        weight_tolerance = kwargs.pop('steady_weight_tolerance', 1e-6)
-        dynamic_weight_overwrite = kwargs.pop('dynamic_weight_overwrite', [])
-        dynamic_weight_tol = kwargs.pop('dynamic_weight_tol', 1e-6)
-
-        if skip_validation:
-            raise NotImplementedError(
-                    'Maybe one day...')
-            # In the implementation to 'skip validation', should still
-            # get an error if a set_point var is not present in controller
-            # model.
-            #
-            # Result should be that setpoint attributes have been added to 
-            # controller model
-        else:
-            steady_model = kwargs.pop('steady_model', None)
-            if not steady_model:
-                raise ValueError(
-                   "'steady_model' required to validate set point")
-            self.s_mod = steady_model
-            self.validate_models(self.s_mod, self.p_mod)
-            self.validate_steady_setpoint(set_point, self.s_mod,
-                                          outlvl=outlvl,
-                                          weight_overwrite=weight_overwrite,
-                                          weight_tolerance=weight_tolerance)
-            # ^ result should be that controller now has set point attributes
+        # TODO: allow user to specify a steady state to use without having
+        # called create_steady_state_setpoint
+        config = self.config(kwargs)
+        weight_override = self.config.objective_weight_override
+        weight_tolerance = self.config.objective_weight_tolerance
+        outlvl = config.outlvl
 
         self.construct_objective_weight_matrices(self.c_mod,
-                weight_overwrite=dynamic_weight_overwrite,
-                tol=dynamic_weight_tol)
+                objective_weight_override=weight_override,
+                objective_weight_tolerance=weight_tolerance)
 
         self.add_objective_function(self.c_mod,
-                control_penalty_type='action',
+                control_penalty_type=ControlPenaltyType.ACTION,
                 name='tracking_objective')
 
 
+#    def add_setpoint(self, set_point, skip_validation=False, **kwargs):
+#        """User-facing function for the addition of a set point to the 
+#        controller.
+#        """
+#        # TODO: maybe split into two functions
+#        weight_overwrite = kwargs.pop('steady_weight_overwrite', [])
+#        weight_tolerance = kwargs.pop('steady_weight_tolerance', 1e-6)
+#        dynamic_weight_overwrite = kwargs.pop('dynamic_weight_overwrite', [])
+#        dynamic_weight_tol = kwargs.pop('dynamic_weight_tol', 1e-6)
+#
+#        config = self.config(kwargs)
+#        outlvl = config.outlvl
+#
+#        if skip_validation:
+#            raise NotImplementedError(
+#                    'Maybe one day...')
+#            # In the implementation to 'skip validation', should still
+#            # get an error if a set_point var is not present in controller
+#            # model.
+#            #
+#            # Result should be that setpoint attributes have been added to 
+#            # controller model
+#        else:
+#            steady_model = kwargs.pop('steady_model', None)
+#            if not steady_model:
+#                raise ValueError(
+#                   "'steady_model' required to validate set point")
+#            self.s_mod = steady_model
+#            self.validate_models(self.s_mod, self.p_mod)
+#            self.validate_steady_setpoint(set_point, self.s_mod,
+#                                          outlvl=outlvl,
+#                                          weight_overwrite=weight_overwrite,
+#                                          weight_tolerance=weight_tolerance)
+#            # ^ result should be that controller now has set point attributes
+#
+#        self.construct_objective_weight_matrices(self.c_mod,
+#                weight_overwrite=dynamic_weight_overwrite,
+#                tol=dynamic_weight_tol)
+#
+#        self.add_objective_function(self.c_mod,
+#                control_penalty_type=ControlPenaltyType.ACTION,
+#                name='tracking_objective')
+
+
     def validate_steady_setpoint(self, set_point, steady_model, **kwargs):
-        solver = kwargs.pop('solver', self.default_solver)
-        outlvl = kwargs.pop('outlvl', self.outlvl)
+
+        config = self.config(kwargs)
+#        solver = kwargs.pop('solver', self.default_solver)
+#        outlvl = kwargs.pop('outlvl', self.outlvl)
+        solver = config.solver
+        outlvl = config.outlvl
+        
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
         # Above can be setup through common config
-        weight_overwrite = kwargs.pop('weight_overwrite', [])
-        weight_tolerance = kwargs.pop('weight_tolerance', 1e-6)
+        weight_override = config.objective_weight_override
+        weight_tolerance = config.objective_weight_tolerance
+        #weight_overwrite = kwargs.pop('weight_overwrite', [])
+        #weight_tolerance = kwargs.pop('weight_tolerance', 1e-6)
 
         # The following loop will create steady-state variable lists in
         # proper order, initialize steady state model to initial conditions
@@ -958,15 +1346,19 @@ class NMPCSim(object):
         # variables is the same across these models.
 
         # Assume that variable with time-index t0 exists in steady model
-        t0 = self.c_mod.time.first()
+        t0 = self.c_mod_time.first()
         # Compared fixed-ness as t1 so we're not thrown off by fixed
         # initial conditions
-        t1 = self.c_mod.time.get_finite_elements()[1]
+        t1 = self.c_mod_time.get_finite_elements()[1]
         for attr_name in ['diff_vars', 'alg_vars', 'input_vars', 
                           'fixed_vars', 'scalar_vars']:
             # TODO: subblock for naming
-            setattr(steady_model, attr_name, [])
-            for _slice in getattr(self.c_mod, attr_name):
+            # TODO: pass in these variables as arg instead of using strings
+            #       Or just hard-code, but use the lists in the namespace
+            setattr(steady_model._NMPC_NAMESPACE, attr_name, [])
+            for _slice in getattr(self.c_mod._NMPC_NAMESPACE, attr_name):
+                # TODO: need some way to know which category a variable is
+                # (ComponentMap?)
                 if attr_name != 'scalar_vars':
                     vardata_t0 = _slice[t0]
                     vardata_t1 = _slice[t1]
@@ -999,7 +1391,7 @@ class NMPCSim(object):
                 var_steady = local_parent
                 var_steady.set_value(vardata_t0.value)
                 
-                varlist = getattr(steady_model, attr_name)
+                varlist = getattr(steady_model._NMPC_NAMESPACE, attr_name)
                 if attr_name != 'scalar_vars':
                     varlist.append({t0: var_steady})
                     # Append dict to list here so that steady state
@@ -1012,17 +1404,22 @@ class NMPCSim(object):
                 if not var_steady.fixed == vardata_t1.fixed:
                     var_steady.fixed = vardata_t1.fixed
 
-        assert len(steady_model.diff_vars) == len(self.c_mod.diff_vars)
-        assert len(steady_model.alg_vars) == len(self.c_mod.alg_vars)
-        assert len(steady_model.input_vars) == len(self.c_mod.input_vars)
-        assert len(steady_model.fixed_vars) == len(self.c_mod.fixed_vars)
-        assert len(steady_model.scalar_vars) == len(self.c_mod.scalar_vars)
+        assert (len(steady_model._NMPC_NAMESPACE.diff_vars) == 
+                len(self.c_mod._NMPC_NAMESPACE.diff_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.alg_vars) == 
+                len(self.c_mod._NMPC_NAMESPACE.alg_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.input_vars) == 
+                len(self.c_mod._NMPC_NAMESPACE.input_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.fixed_vars) == 
+                len(self.c_mod._NMPC_NAMESPACE.fixed_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.scalar_vars) == 
+                len(self.c_mod._NMPC_NAMESPACE.scalar_vars))
 
         # Now that steady state model has been validated and initialized,
         # construct complete lists for the *_sp attributes
-        diff_var_sp = [None for var in steady_model.diff_vars]
-        alg_var_sp = [None for var in steady_model.alg_vars]
-        input_var_sp = [None for var in steady_model.input_vars]
+        diff_var_sp = [None for var in steady_model._NMPC_NAMESPACE.diff_vars]
+        alg_var_sp = [None for var in steady_model._NMPC_NAMESPACE.alg_vars]
+        input_var_sp = [None for var in steady_model._NMPC_NAMESPACE.input_vars]
         # ^ list entries are not actually vars, they are dictionaries...
         # maybe this is too confusing
 
@@ -1030,7 +1427,7 @@ class NMPCSim(object):
         # I can use to build the objective function (and weight matrices).
         for vardata, value in set_point:
             # set_point variables should be members of controller model
-            info = self.c_mod.var_locator[id(vardata)]
+            info = self.c_mod._NMPC_NAMESPACE.var_locator[id(vardata)]
             category = info.category
             location = info.location
 
@@ -1048,28 +1445,31 @@ class NMPCSim(object):
         # Add attributes (with proper names!) to steady model
         # so these values can be accessed later
         # TODO: subblock for naming
-        steady_model.diff_sp = diff_var_sp
-        steady_model.alg_sp = alg_var_sp
-        steady_model.input_sp = input_var_sp
+        steady_model._NMPC_NAMESPACE.diff_setpoints = diff_var_sp
+        steady_model._NMPC_NAMESPACE.alg_setpoints = alg_var_sp
+        steady_model._NMPC_NAMESPACE.input_setpoints = input_var_sp
 
         # TODO: ComponentMap
         self.build_variable_locator(steady_model,
-                differential=steady_model.diff_vars,
-                algebraic=steady_model.alg_vars,
-                inputs=steady_model.input_vars,
-                fixed=steady_model.fixed_vars,
-                scalar=steady_model.scalar_vars)
+                differential=steady_model._NMPC_NAMESPACE.diff_vars,
+                algebraic=steady_model._NMPC_NAMESPACE.alg_vars,
+                inputs=steady_model._NMPC_NAMESPACE.input_vars,
+                fixed=steady_model._NMPC_NAMESPACE.fixed_vars,
+                scalar=steady_model._NMPC_NAMESPACE.scalar_vars)
         self.construct_objective_weight_matrices(steady_model,
-                overwrite=weight_overwrite,
-                tol=weight_tolerance)
+                objective_weight_override=weight_override,
+                objective_weight_tolerance=weight_tolerance)
 
-        assert hasattr(steady_model, 'diff_weights')
-        assert hasattr(steady_model, 'alg_weights')
-        assert hasattr(steady_model, 'input_weights')
+        assert hasattr(steady_model._NMPC_NAMESPACE, 'diff_weights')
+        assert hasattr(steady_model._NMPC_NAMESPACE, 'alg_weights')
+        assert hasattr(steady_model._NMPC_NAMESPACE, 'input_weights')
 
-        assert len(steady_model.diff_weights) == len(steady_model.diff_vars)
-        assert len(steady_model.alg_weights) == len(steady_model.alg_vars)
-        assert len(steady_model.input_weights) == len(steady_model.input_vars)
+        assert (len(steady_model._NMPC_NAMESPACE.diff_weights) == 
+                len(steady_model._NMPC_NAMESPACE.diff_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.alg_weights) == 
+                len(steady_model._NMPC_NAMESPACE.alg_vars))
+        assert (len(steady_model._NMPC_NAMESPACE.input_weights) == 
+                len(steady_model._NMPC_NAMESPACE.input_vars))
 
         # Add objective to steady_model
         # Add bounds to steady_model (taken from control model)
@@ -1080,16 +1480,16 @@ class NMPCSim(object):
         # add sp attributes to control model
 
         self.add_objective_function(steady_model,
-                                    control_penalty_type='error',
-                                    name='user_setpoint_objective')
-        self.transfer_bounds(steady_model, self.c_mod)
+                            control_penalty_type=ControlPenaltyType.ERROR,
+                            name='user_setpoint_objective')
+        self.transfer_bounds(steady_model, self.c_mod, steady_model.time)
 
-        for var in steady_model.input_vars:
+        for var in steady_model._NMPC_NAMESPACE.input_vars:
             for t in steady_model.time:
                 var[t].unfix()
 
         assert (degrees_of_freedom(steady_model) ==
-                len(steady_model.input_vars)*len(steady_model.time))
+                len(steady_model._NMPC_NAMESPACE.input_vars)*len(steady_model.time))
 
         init_log.info('Solving for steady state set-point.')
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
@@ -1104,14 +1504,14 @@ class NMPCSim(object):
             raise RuntimeError(msg)
 
         c_diff_sp = []
-        for var in steady_model.diff_vars:
+        for var in steady_model._NMPC_NAMESPACE.diff_vars:
             c_diff_sp.append(var[t0].value)
-        self.c_mod.diff_sp = c_diff_sp
+        self.c_mod._NMPC_NAMESPACE.diff_setpoints = c_diff_sp
 
         c_input_sp = []
-        for var in steady_model.input_vars:
+        for var in steady_model._NMPC_NAMESPACE.input_vars:
             c_input_sp.append(var[t0].value)
-        self.c_mod.input_sp = c_input_sp
+        self.c_mod._NMPC_NAMESPACE.input_setpoints = c_input_sp
 
         # TODO: add alg var sp values
 
@@ -1132,14 +1532,16 @@ class NMPCSim(object):
         provides multiple weights for VarDatas that only differ
         by time? Raise warning and use last weight provided)
         """
-        overwrite = kwargs.pop('overwrite', [])
+        config = self.config(kwargs)
+#        overwrite = kwargs.pop('overwrite', [])
+        override = config.objective_weight_override
 
         # Variables to overwrite must be VarData objects in the model
         # for whose objective function we are calculating weights
         
         weights_to_overwrite = {}
-        for ow_tpl in overwrite:
-            locator = model.var_locator[id(ow_tpl[0])]
+        for ow_tpl in override:
+            locator = model._NMPC_NAMESPACE.var_locator[id(ow_tpl[0])]
             weights_to_overwrite[(locator.category, locator.location)] = \
                     ow_tpl[1]
         # dictionary mapping id of VarDatas to overwrite to specified weight
@@ -1149,7 +1551,7 @@ class NMPCSim(object):
         # Given a vardata here, need to know its location so I know which
         # weight to overwrite
 
-        tol = kwargs.pop('tol', 1e-6)
+        tol = config.objective_weight_tolerance
 
         # Need t0 to get the 'reference' value to compare with set point value
         # for weight calculation
@@ -1160,13 +1562,13 @@ class NMPCSim(object):
 
         # TODO: subblock for naming
         for name in ['diff', 'alg', 'input']:
-            sp_attrname = name + '_sp'
-            if not hasattr(model, sp_attrname):
+            sp_attrname = name + '_setpoints'
+            if not hasattr(model._NMPC_NAMESPACE, sp_attrname):
                 continue
-            sp = getattr(model, sp_attrname)
+            sp = getattr(model._NMPC_NAMESPACE, sp_attrname)
 
             varlist_attrname = name + '_vars'
-            varlist = getattr(model, varlist_attrname)
+            varlist = getattr(model._NMPC_NAMESPACE, varlist_attrname)
 
             # construct the (diagonal) matrix (list).
             matrix = []
@@ -1208,10 +1610,11 @@ class NMPCSim(object):
 
             # TODO: subblock for naming
             weight_attrname = name + '_weights'
-            setattr(model, weight_attrname, matrix)
+            setattr(model._NMPC_NAMESPACE, weight_attrname, matrix)
 
 
-    def add_objective_function(self, model, **kwargs):
+    def add_objective_function(self, model, name='objective', state_weight=1,
+            control_weight=1, **kwargs):
         """
         Assumes that model has already been populated with set point 
         and weights.
@@ -1223,28 +1626,25 @@ class NMPCSim(object):
         but could flatten into slices, then assemble into lists based on names. 
         This seems like a lot of extra work though.)
         """
+        config = self.config(kwargs)
         # TODO: kwargs ???
         name = kwargs.pop('name', 'objective')
-        outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
+        outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         # Q and R are p.s.d. matrices that weigh the state and
         # control norms in the objective function
-        Q_diagonal = kwargs.pop('Q_diagonal', True)
-        R_diagonal = kwargs.pop('R_diagonal', True)
-
-        state_weight = kwargs.pop('state_weight', 1)
-        control_weight = kwargs.pop('control_weight', 1)
-        # The names of these arguments could get confusing...
+        Q_diagonal = config.state_objective_weight_matrix_diagonal
+        R_diagonal = config.control_objective_weight_matrix_diagonal
 
         # User may want to penalize control action, i.e. ||u_i - u_{i-1}||,
         # or control error (from set point), i.e. ||u_i - u*||
         # Valid values are 'action' or 'error'
-        control_penalty_type = kwargs.pop('control_penalty_type', 'action')
-        if not (control_penalty_type == 'action' or
-                control_penalty_type == 'error'):
+        control_penalty_type = config.control_penalty_type
+        if not (control_penalty_type == ControlPenaltyType.ERROR or
+                control_penalty_type == ControlPenaltyType.ACTION):
             raise ValueError(
-                "control_penalty_type argument must be 'action' or 'error'")
+                "control_penalty_type argument must be 'ACTION' or 'ERROR'")
 
         # TODO: rename Q/R more descriptive, or comment well.
         if not Q_diagonal or not R_diagonal:
@@ -1258,15 +1658,15 @@ class NMPCSim(object):
             Q_entries = model.diff_weights + model.alg_weights
             sp_states = model.diff_sp + model.alg_sp
         else:
-            states = model.diff_vars
-            Q_entries = model.diff_weights
-            sp_states = model.diff_sp
+            states = model._NMPC_NAMESPACE.diff_vars
+            Q_entries = model._NMPC_NAMESPACE.diff_weights
+            sp_states = model._NMPC_NAMESPACE.diff_setpoints
         # TODO: Setup all data structures (namespace attributes) in constructor
         # and document there to avoid lots of if statements like this.
 
-        controls = model.input_vars
-        R_entries = model.input_weights
-        sp_controls = model.input_sp
+        controls = model._NMPC_NAMESPACE.input_vars
+        R_entries = model._NMPC_NAMESPACE.input_weights
+        sp_controls = model._NMPC_NAMESPACE.input_setpoints
 
         # TODO: Make this a list of time points, replace with list of
         # time-finite elements or sampling points depending on user preference.
@@ -1282,12 +1682,12 @@ class NMPCSim(object):
         # Should be some check that Q_entries == None <=> sp_states == None
         # Not necessarily true, Q can have an entry due to an overwrite
 
-        if control_penalty_type == 'error':
+        if control_penalty_type == ControlPenaltyType.ERROR:
             control_term = sum(R_entries[i]*(controls[i][t] - sp_controls[i])**2
                     for i in range(len(controls)) if (R_entries[i] is not None
                                                 and sp_controls[i] is not None)
                                for t in time)
-        elif control_penalty_type == 'action':
+        elif control_penalty_type == ControlPenaltyType.ACTION:
             if len(time) == 1:
                 init_log.warning(
                         'Warning: Control action penalty specfied '
@@ -1311,7 +1711,7 @@ class NMPCSim(object):
         model.add_component(name, obj)
 
 
-    def build_bound_lists(self, model):
+    def build_bound_lists(self, model, time):
         """
         Builds lists of lower bound, upper bound tuples as attributes of the 
         input model, based on the current bounds (and domains) of
@@ -1323,11 +1723,10 @@ class NMPCSim(object):
         Returns:
             None
         """
-        time = model.time
         t0 = time.first()
 
-        model.diff_var_bounds = []
-        for var in model.diff_vars:
+        #model._NMPC_NAMESPACE.diff_bounds = []
+        for var in model._NMPC_NAMESPACE.diff_vars:
             # Assume desired bounds are given at t0
             lb = var[t0].lb
             ub = var[t0].ub
@@ -1339,10 +1738,10 @@ class NMPCSim(object):
                 var[t].setlb(lb)
                 var[t].setub(ub)
                 var[t].domain = Reals
-            model.diff_var_bounds.append((lb, ub))
+            model._NMPC_NAMESPACE.diff_bounds.append((lb, ub))
 
-        model.alg_var_bounds = []
-        for var in model.alg_vars:
+        #model._NMPC_NAMESPACE.alg_bounds = []
+        for var in model._NMPC_NAMESPACE.alg_vars:
             # Assume desired bounds are given at t0
             lb = var[t0].lb
             ub = var[t0].ub
@@ -1354,10 +1753,10 @@ class NMPCSim(object):
                 var[t].setlb(lb)
                 var[t].setub(ub)
                 var[t].domain = Reals
-            model.alg_var_bounds.append((lb, ub))
+            model._NMPC_NAMESPACE.alg_bounds.append((lb, ub))
 
-        model.input_var_bounds = []
-        for var in model.input_vars:
+        #model.input_var_bounds = []
+        for var in model._NMPC_NAMESPACE.input_vars:
             # Assume desired bounds are given at t0
             lb = var[t0].lb
             ub = var[t0].ub
@@ -1369,10 +1768,10 @@ class NMPCSim(object):
                 var[t].setlb(lb)
                 var[t].setub(ub)
                 var[t].domain = Reals
-            model.input_var_bounds.append((lb, ub))
+            model._NMPC_NAMESPACE.input_bounds.append((lb, ub))
 
 
-    def transfer_bounds(self, tgt_model, src_model):
+    def transfer_bounds(self, tgt_model, src_model, tgt_time):
         """
         Transfers bounds from source model's bound lists
         to target model's differential, algebraic, and input
@@ -1385,33 +1784,35 @@ class NMPCSim(object):
         Returns:
             None
         """
-        time = tgt_model.time
+        time = tgt_time
 
-        diff_var_bounds = src_model.diff_var_bounds
-        for i, var in enumerate(tgt_model.diff_vars):
+        # TODO: Generalize this act on all categories of variables, or
+        # allow specification of variable categories as an arg
+
+        diff_var_bounds = src_model._NMPC_NAMESPACE.diff_bounds
+        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.diff_vars):
             for t in time:
                 var[t].setlb(diff_var_bounds[i][0])
                 var[t].setub(diff_var_bounds[i][1])
                 var[t].domain = Reals
 
-        alg_var_bounds = src_model.alg_var_bounds
-        for i, var in enumerate(tgt_model.alg_vars):
+        alg_var_bounds = src_model._NMPC_NAMESPACE.alg_bounds
+        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.alg_vars):
             for t in time:
                 var[t].setlb(alg_var_bounds[i][0])
                 var[t].setub(alg_var_bounds[i][1])
                 var[t].domain = Reals
 
-        input_var_bounds = src_model.input_var_bounds
-        for i, var in enumerate(tgt_model.input_vars):
+        input_var_bounds = src_model._NMPC_NAMESPACE.input_bounds
+        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.input_vars):
             for t in time:
                 var[t].setlb(input_var_bounds[i][0])
                 var[t].setub(input_var_bounds[i][1])
                 var[t].domain = Reals
 
 
-# RENAME
-#    def add_pwc_constraints(self, **kwargs):
-    def constrain_control_inputs_piecewise_constant(self, **kwargs):
+    def constrain_control_inputs_piecewise_constant(self, 
+            **kwargs):
         """Function to add piecewise constant (PWC) constraints to
         model. Inputs and sample time are already known, so no arguments are
         necessary.
@@ -1422,20 +1823,21 @@ class NMPCSim(object):
             sample_time : Duration for which inputs will be forced constant
             outlvl : idaes.logger output level
         """
+        config = self.config(kwargs)
         # KWARGS
         # CONFIG: all of these options can/should be handled through config
         model = kwargs.pop('model', self.c_mod)
-        sample_time = kwargs.pop('sample_time', self.sample_time)
-        outlvl = kwargs.pop('outlvl', self.outlvl)
+        sample_time = config.sample_time
+        outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
         init_log.info('Adding piecewise-constant constraints')
 
         # If sample_time is overwritten here, assume that the 
         # provided sample_time should be used going forward
         # (in input injection, plant simulation, and controller initialization)
-        if sample_time != self.sample_time:
+        if sample_time != self.config.sample_time:
             self.validate_sample_time(sample_time, self.c_mod, self.p_mod)
-            self.sample_time = sample_time
+            self.config.sample_time = sample_time
 
         time = model.time
         t0 = model.time.get_finite_elements()[0]
@@ -1452,7 +1854,7 @@ class NMPCSim(object):
         # at module namespace
         # Can access sample_time as attribute of namespace block,
         # then rule can be located outside of class
-        input_indices = [i for i in range(len(model.input_vars))]
+        input_indices = [i for i in range(len(model._NMPC_NAMESPACE.input_vars))]
         def pwc_rule(m, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
@@ -1468,7 +1870,7 @@ class NMPCSim(object):
             # NAMESPACE: input_vars. Also, sample_time
             # probably make sample time an attribute of NMPCSim, but still
             # provide as a config. CONFIG
-            inputs = m.input_vars
+            inputs = m._NMPC_NAMESPACE.input_vars
             _slice = inputs[i]
             return _slice[t_next] == _slice[t]
         # NAMESPACE: pwc_input
@@ -1499,29 +1901,35 @@ class NMPCSim(object):
             solver : Solver object to be used for initialization from simulation
             solver_options : Dictionary of options to pass to the solver
         """
-        strategy = kwargs.pop('strategy', 'from_previous')
-        solver = kwargs.pop('solver', self.default_solver)
-        solver_options = kwargs.pop('solver_options', None)
-        if solver_options:
-            solver.options = solver_options
+        config = self.config(kwargs)
+#        strategy = kwargs.pop('strategy', 'from_previous')
+        strategy = config.control_init_option
+#        solver = kwargs.pop('solver', self.default_solver)
+        solver = config.solver
+#        solver_options = kwargs.pop('solver_options', None)
+#        if solver_options:
+#            solver.options = solver_options
+#       For now, I'm choosing to forgo solver options
 
-        input_type = kwargs.pop('input_type', 'set_point')
+        #input_type = kwargs.pop('input_type', 'set_point')
+        input_type = config.element_initialization_input_option
 
-        time = self.c_mod.time
+        time = self.c_mod_time
 
         # TODO: remove embedded strings. 
         # Handle these options in config block? Here, and in constructor - 'ephemeral'
         # ^ domain maps string to enum, or just takes enum
         # Here, options should be enums
         # Read documentation in pyutilib.misc.config
-        if strategy == 'from_previous':
-            self.initialize_from_previous_sample(self.c_mod)
+        if strategy == ControlInitOption.FROM_PREVIOUS:
+            self.initialize_from_previous_sample(self.c_mod, self.c_mod_time)
 
-        elif strategy == 'from_simulation':
+        elif strategy == ControlInitOption.BY_TIME_ELEMENT:
             # TODO: 'by_time_element'
-            self.initialize_by_solving_elements(self.c_mod)
+            self.initialize_by_solving_elements(self.c_mod, self.c_mod_time,
+                    input_type=element_initialization_input_option)
 
-        elif strategy == 'initial_conditions':
+        elif strategy == ControlInitOption.FROM_INITIAL_CONDITIONS:
             self.initialize_from_initial_conditions(self.c_mod)
         
         # Add check that initialization did not violate bounds/equalities?
@@ -1529,26 +1937,26 @@ class NMPCSim(object):
         self.controller_solved = False
 
 
-    def initialize_by_solving_elements(self, model, input_type='set_point'):
-        time = model.time 
+    def initialize_by_solving_elements(self, model, time,
+            input_type=ElementInitializationInputOption.SET_POINT):
         # Strip bounds before simulation as square solves will be performed
         strip_controller_bounds = TransformationFactory(
                                       'contrib.strip_var_bounds')
         strip_controller_bounds.apply_to(model, reversible=True)
 
-        if input_type == 'set_point':
-            for i, _slice in enumerate(model.input_vars):
+        if input_type == ElementInitializationInputOption.SET_POINT:
+            for i, _slice in enumerate(model._NMPC_NAMESPACE.input_vars):
                 for t in time:
                     if t != time.first():
-                        _slice[t].fix(model.input_sp[i])
+                        _slice[t].fix(model._NMPC_NAMESPACE.input_setpoints[i])
                     else:
                         _slice[t].fix()
 
-        elif input_type == 'initial':
-            for i, _slice in enumerate(model.input_vars):
+        elif input_type == ElementInitializationInputOption.INITIAL_CONDITIONS:
+            for i, _slice in enumerate(model._NMPC_NAMESPACE.input_vars):
                 t0 = time.first()
                 for t in time:
-                    _slice[t].fix(model.input_vars[i][t0].value)
+                    _slice[t].fix(model._NMPC_NAMESPACE.input_vars[i][t0].value)
 
         else:
             raise ValueError('Unrecognized input type')
@@ -1557,32 +1965,32 @@ class NMPCSim(object):
 
         # Deactivate objective function
         # Here I assume the name of the objective function.
-        model.tracking_objective.deactivate()
+        model._NMPC_NAMESPACE.tracking_objective.deactivate()
         # Deactivate pwc constraints (as inputs are fixed)
         #for con in model._pwc_constraints:
         #    con.deactivate()
-        model._pwc_input.deactivate()
+        model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
-        initialize_by_element_in_range(self.c_mod, time.first(), time.last(),
-                            dae_vars=self.c_mod.dae_vars,
-                            time_linking_variables=self.c_mod.diff_vars)
-        # TODO: add function that is wrapper around initialize_by_element_in_range
-        #       then map option to function
+        initialize_by_element_in_range(self.c_mod, self.c_mod_time, time.first(), time.last(),
+                            dae_vars=self.c_mod._NMPC_NAMESPACE.dae_vars,
+                            time_linking_variables=self.c_mod._NMPC_NAMESPACE.diff_vars)
 
         # Reactivate objective, pwc constraints, bounds
-        self.c_mod.tracking_objective.activate()
+        self.c_mod._NMPC_NAMESPACE.tracking_objective.activate()
         #for con in self.c_mod._pwc_constraints:
         #    con.activate()
-        model._pwc_input.activate()
+        model.pwc_constraint.activate()
 
-        for _slice in self.c_mod.input_vars:
+        for _slice in self.c_mod._NMPC_NAMESPACE.input_vars:
             for t in time:
                 _slice[t].unfix()
 
         strip_controller_bounds.revert(self.c_mod)
 
 
-    def initialize_from_previous_sample(self, model, **kwargs):
+    def initialize_from_previous_sample(self, model, time, 
+            attr_list=['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'],
+            **kwargs):
         """Re-initializes values of variables in model to the values one 
         sampling time in the future. Values for the last sampling time are 
         currently set to values in the steady state model, assumed to be the 
@@ -1605,10 +2013,11 @@ class NMPCSim(object):
         if not self.controller_solved:
             raise ValueError
 
-        sample_time = kwargs.pop('sample_time', self.sample_time)
+        config = self.config(kwargs)
+        sample_time = config.sample_time
 
-        attr_list = kwargs.pop('attr_list', 
-                ['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'])
+#        attr_list = kwargs.pop('attr_list', 
+#                ['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'])
         # Replace this argument with a single list of flattened variables.
         # Use as default a non_fixed_variable_list, which was defined in constructor.
         # ^ or pull off namespace block if arg not provided, knowing what these are
@@ -1621,13 +2030,17 @@ class NMPCSim(object):
         # TODO
         # Should initialize dual variables here too.
 
-        time = model.time
+        #time = model.time
+        # TODO: have some attribute for steady time 
+        # Or better yet, don't use a steady_model at all
+        # Here I use steady model, assuming it holds the desired set point values
+        # Really, I should access set point lists...
         steady_t = self.s_mod.time.first()
 
         for attrname in attr_list:
-            varlist = getattr(model, attrname)
+            varlist = getattr(model._NMPC_NAMESPACE, attrname)
             if not attrname == 'deriv_vars':
-                steady_varlist = getattr(self.s_mod, attrname)
+                steady_varlist = getattr(self.s_mod._NMPC_NAMESPACE, attrname)
             for i, _slice in enumerate(varlist):
                 for t in time:
                     # If not in last sample:
@@ -1636,6 +2049,7 @@ class NMPCSim(object):
 
                         # Performing addition on CtsSet indices can result in
                         # rounding errors. Round to 8th decimal place here:
+                        # TODO: config.continuous_set_tolerance
                         t_next = int(round(t_next*1e8))/1e8
 
                         assert t_next in time
@@ -1652,7 +2066,8 @@ class NMPCSim(object):
                             _slice[t].set_value(0)
 
 
-    def initialize_from_initial_conditions(self, model, **kwargs):
+    def initialize_from_initial_conditions(self, model, 
+            attr_list=['deriv_vars', 'diff_vars', 'alg_vars'], **kwargs):
         """ 
         Set values of differential, algebraic, and derivative variables to
         their values at the initial conditions.
@@ -1667,12 +2082,12 @@ class NMPCSim(object):
                         whose values should be initialized
         """
         # could use copy_values_at_time here
-        attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
+#        attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
         # TODO: user provides their own list of variables to initialize, or
         # I grab all these attributes from the model and add them up here.
         time = model.time
         for attrname in attr_list:
-            varlist = getattr(model, attrname)
+            varlist = getattr(model._NMPC_NAMESPACE, attrname)
             for v in varlist:
                 for t in time:
                     v[t].set_value(v[0].value)
@@ -1689,13 +2104,16 @@ class NMPCSim(object):
             outlvl : idaes.logger output level. Default is that provided
                      to the constructor.
         """
-        solver = kwargs.pop('solver', self.default_solver)
-        outlvl = kwargs.pop('outlvl', self.outlvl) 
+        config = self.config(kwargs)
+#        solver = kwargs.pop('solver', self.default_solver)
+#        outlvl = kwargs.pop('outlvl', self.outlvl) 
+        solver = config.solver
+        outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         s_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
 
-        time = self.c_mod.time
-        for _slice in self.c_mod.input_vars:
+        time = self.c_mod_time
+        for _slice in self.c_mod._NMPC_NAMESPACE.input_vars:
             for t in time:
                 _slice[t].unfix()
         # ^ Maybe should fix inputs at time.first()?
@@ -1703,7 +2121,8 @@ class NMPCSim(object):
         # after initialization
 
         assert (degrees_of_freedom(self.c_mod) == 
-                self.c_mod.n_iv*(self.c_mod._samples_per_horizon + 1))
+                self.c_mod._NMPC_NAMESPACE.n_input_vars*
+                (self.c_mod._NMPC_NAMESPACE.samples_per_horizon + 1))
 
         with idaeslog.solver_log(s_log, idaeslog.DEBUG) as slc:
             results = solver.solve(self.c_mod, tee=slc.tee)
@@ -1728,21 +2147,26 @@ class NMPCSim(object):
                           PWC constraints.
             outlvl : idaes.logger output level
         """
-        sample_time = kwargs.pop('sample_time', self.sample_time)
-        calculate_error = kwargs.pop('calculate_errors', True)
-        outlvl = kwargs.pop('outlvl', self.outlvl)
+        config = self.config(kwargs)
+
+        sample_time = self.config.sample_time
+        # ^ Use self.config here, as I don't want user to overwrite sample_time
+        #   at this point. How to throw an error if they do? - use immutable param
+        calculate_error = config.calculate_error
+        outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
 
         t_end = t_start + sample_time 
-        assert t_start in self.p_mod.time
+        assert t_start in self.p_mod_time
         # TODO: add tolerance here, as t_end could change due to roundoff
         #       Then change t_end s.t. it is a point in time
         # A helper function may be useful - is_in_to_tolerance
-        assert t_end in self.p_mod.time
+        # Need to adjust t_end 
+        assert t_end in self.p_mod_time
 
-        initialize_by_element_in_range(self.p_mod, t_start, t_end, 
-                dae_vars=self.p_mod.dae_vars, 
-                time_linking_vars=self.p_mod.diff_vars,
+        initialize_by_element_in_range(self.p_mod, self.p_mod_time, t_start, t_end, 
+                dae_vars=self.p_mod._NMPC_NAMESPACE.dae_vars, 
+                time_linking_vars=self.p_mod._NMPC_NAMESPACE.diff_vars,
                 outlvl=outlvl)
         msg = ('Successfully simulated plant over the sampling period '
                 'beginning at ' + str(t_start))
@@ -1752,10 +2176,13 @@ class NMPCSim(object):
 
         if self.controller_solved and calculate_error:
             self.state_error[t_end] = self.calculate_error_between_states(
-                    self.c_mod, self.p_mod, tc1, t_end)
+                    self.c_mod, self.p_mod, tc1, t_end,
+                    state_objective_weight_matrix=self.c_mod._NMPC_NAMESPACE.diff_weights)
 
 
-    def calculate_error_between_states(self, mod1, mod2, t1, t2, **kwargs):
+    def calculate_error_between_states(self, mod1, mod2, t1, t2, 
+            state_attrname='diff_vars', 
+            state_objective_weight_matrix=[], **kwargs):
         """
         Calculates the normalized (by the weighting matrix already calculated)
         error between the differential variables in different models and at
@@ -1781,29 +2208,31 @@ class NMPCSim(object):
             state_attrname_2 : Name of variable list in second model if
                                different
         """
+        config = self.config(kwargs)
 
-        Q_diagonal = kwargs.pop('Q_diagonal', True)
+#        Q_diagonal = kwargs.pop('Q_diagonal', True)
+        Q_diagonal = config.state_objective_weight_matrix_diagonal
         if not Q_diagonal:
             raise ValueError('Only diagonal weighting matrices are supported')
-        Q_matrix = kwargs.pop('Q_matrix', self.c_mod.diff_weights)
+        Q_matrix = state_objective_weight_matrix
+#        Q_matrix = kwargs.pop('Q_matrix', self.c_mod._NMPC_NAMESPACE.diff_weights)
         # Grab the weighting matrix from the controller model regardless of what
         # mod1 and mod2 are. This can be overwritten if desired.
 
         # Used to specify variables other than differential to use for
         # error calculation
-        state_attrname = kwargs.pop('state_attrname', 'diff_vars')
-        state_attrname_1 = kwargs.pop('state_attrname_1', state_attrname)
-        state_attrname_2 = kwargs.pop('state_attrname_2', state_attrname)
-        # ^ To be used if 
+#        state_attrname = kwargs.pop('state_attrname', 'diff_vars')
+#        state_attrname_1 = kwargs.pop('state_attrname_1', state_attrname)
+#        state_attrname_2 = kwargs.pop('state_attrname_2', state_attrname)
 
-        if (not hasattr(mod1, state_attrname_1) or 
-                not hasattr(mod2, state_attrname_1)):
-            raise ValueError(
-                    'Cannot calculate error in model with no '
-                    + state_attrname + ' attribute')
+#        if (not hasattr(mod1._NMPC_NAMESPACE, state_attrname_1) or 
+#                not hasattr(mod2._NMPC_NAMESPACE, state_attrname_1)):
+#            raise ValueError(
+#                    'Cannot calculate error in model with no '
+#                    + state_attrname + ' attribute')
 
-        varlist_1 = getattr(mod1, state_attrname_1)
-        varlist_2 = getattr(mod2, state_attrname_2)
+        varlist_1 = getattr(mod1._NMPC_NAMESPACE, state_attrname)
+        varlist_2 = getattr(mod2._NMPC_NAMESPACE, state_attrname)
         assert len(varlist_1) == len(varlist_2)
         n = len(varlist_1)
 

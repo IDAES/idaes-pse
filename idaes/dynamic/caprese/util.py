@@ -55,6 +55,21 @@ else:
     solver = None
 
 
+# NMPC Var could inherit from "DAE Var" - just add setpoint
+# Inherit from Var? Advantage is that it could behave like Var
+# fix(), setub() etc.
+# Don't want to duplicate the VarData though - i.e. have them show
+# up twice in component_data_objects
+class NMPCVar(object):
+    def __init__(self, _slice, category):
+        self.timeslice = _slice
+        # ^ _data dict: t -> vardata
+        self.setpoint = None
+        self.bounds = (None, None)
+        self.category = category
+        self.is_initial_condition = False
+
+
 class VarLocator(object):
     """
     Class for storing information used to locate a VarData object.
@@ -193,7 +208,7 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
 
 # RENAME
 #def simulate_over_range(model, t_start, t_end, **kwargs):
-def initialize_by_element_in_range(model, t_start, t_end, **kwargs):
+def initialize_by_element_in_range(model, time, t_start, t_end, **kwargs):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
 
@@ -234,7 +249,7 @@ def initialize_by_element_in_range(model, t_start, t_end, **kwargs):
 
     # TODO: Should I fix scalar vars? 
 
-    time = model.time
+    #time = model.time
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
     assert degrees_of_freedom(model) == 0
