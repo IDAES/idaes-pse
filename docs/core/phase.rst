@@ -11,12 +11,12 @@ Phase objects are used in the IDAES Process Modeling Framework to identify the t
 
 The IDAES Process Modeling Framework currently supports the following types of phases, along with a generic Phase object.
 
-* LiquidPhase
-* SolidPhase
-* VaporPhase
+* `LiquidPhase`
+* `SolidPhase`
+* `VaporPhase`
 
-Phase Objects
--------------
+Phase Object Methods
+--------------------
 
 In a number of unit operations, different phases behave in different ways. For example, in a Flash operation, the vapor phase exits through the top outlet whilst liquid phase(s) (and any solids) exit through the bottom outlet. In order to determine how a given phase should behave in these situations, each Phase object implements the following three methods:
 
