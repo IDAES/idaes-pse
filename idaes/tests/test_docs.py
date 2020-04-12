@@ -19,6 +19,7 @@ for the log of the build and looks for errors in it.
 # stdlib
 import logging
 import os
+from subprocess import Popen
 
 # third-party
 import pytest
@@ -95,3 +96,23 @@ def test_sphinx_build_log(docs_path):
             err_count += 1
             print(line, end='')
     assert False, f"{err_count} Errors and/or Warnings found in {log_path}"
+
+
+def _have_sphinx():
+    """Test if a working 'sphinx-build' command exists.
+    """
+    have_sphinx = True
+    try:
+        Popen(["sphinx-build", "--version"]).wait()
+    except:
+        have_sphinx = False
+    return have_sphinx
+
+
+def test_doctests(docs_path):
+    if _have_sphinx():
+        build_path = os.path.join(docs_path, "build")
+        command = ["sphinx-build", "-M", "doctest", docs_path, build_path]
+        proc = Popen(command)
+        proc.wait(180)  # 3 minute ceiling
+        assert proc.returncode == 0

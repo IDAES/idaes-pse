@@ -32,7 +32,6 @@ from pathlib import Path
 import re
 import shutil
 import sys
-from tempfile import TemporaryDirectory
 from typing import List
 from zipfile import ZipFile
 
@@ -43,6 +42,7 @@ import requests
 # package
 from idaes.commands.base import command_base
 from idaes.ver import package_version as V
+from idaes.util.system import TemporaryDirectory
 
 __author__ = "Dan Gunter"
 
