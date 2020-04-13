@@ -18,26 +18,28 @@ A module of helper functions for working with flattened DAE models.
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
         TransformationFactory)
-from pyomo.kernel import ComponentSet
+from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
 from pyomo.dae.set_utils import is_in_block_indexed_by
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.core.base.block import _BlockData
+from pyomo.core.base.var import _GeneralVarData
+from pyomo.opt.solver import SystemCallSolver
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
-        get_fixed_dict, deactivate_constraints_unindexed_by)
+        get_fixed_dict, deactivate_constraints_unindexed_by, find_comp_in_block)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.caprese.nmpc import find_comp_in_block
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
 import random
 import time as timemodule
+import enum
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
@@ -70,6 +72,103 @@ class NMPCVar(object):
         self.is_initial_condition = False
 
 
+# Probably make this abstract
+class NMPCEnum(enum.Enum):
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        if type(arg) is str:
+            return cls[arg]
+        else:
+            # Handles enum or integer inputs
+            return cls(arg)
+
+
+class ControlInitOption(NMPCEnum):
+    FROM_PREVIOUS = 11
+    BY_TIME_ELEMENT = 12
+    FROM_INITIAL_CONDITIONS = 13
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        #pdb.set_trace()
+        return super(ControlInitOption, cls).from_enum_or_string(arg)
+        # Why does this work but super(NMPCEnum, cls) does not?
+        # Why is super(cls, cls) wrong?
+
+
+class ElementInitializationInputOption(NMPCEnum):
+    SET_POINT = 21
+    INITIAL = 22
+    CURRENT_VALUES = 23
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(ElementInitializationInputOption, cls).from_enum_or_string(arg)
+
+
+class TimeResolutionOption(NMPCEnum):
+    COLLOCATION_POINTS = 31
+    FINITE_ELEMENTS = 32
+    SAMPLE_POINTS = 33
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(TimeResolutionOption, cls).from_enum_or_string(arg)
+
+
+class ControlPenaltyType(NMPCEnum):
+    ERROR = 41
+    ACTION = 42
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(ControlPenaltyType, cls).from_enum_or_string(arg)
+
+
+class VariableCategory(NMPCEnum):
+    DIFFERENTIAL = 51
+    ALGEBRAIC = 52
+    DERIVATIVE = 53
+    INPUT = 54
+    FIXED = 55
+    SCALAR = 56
+
+    @classmethod
+    def from_enum_or_string(cls, arg):
+        return super(VariableCategory, cls).from_enum_or_string(arg)
+
+
+# This function is used as the domain for the user-provided
+# list of inputs at time.first().
+def validate_list_of_vardata(varlist):
+    if not isinstance(varlist, list):
+        raise TypeError('Not a list of VarData')
+    for var in varlist:
+        if not isinstance(var, _GeneralVarData):
+            raise TypeError('Not a list of VarData')
+    return varlist
+
+
+def validate_list_of_vardata_value_tuples(varvaluelist):
+    if not isinstance(varvaluelist, list):
+        raise TypeError('Not a list')
+    for item in varvaluelist:
+        if not isinstance(item, tuple):
+            raise TypeError('Item in list is not a tuple')
+        if not len(item) == 2:
+            raise ValueError('Tuple in list does not have correct length')
+        if not isinstance(item[0], _GeneralVarData):
+            raise TypeError('First entry is not a VarData')
+        item = (item[0], float(item[1]))
+    return varvaluelist
+
+
+def validate_solver(solver):
+    if not isinstance(solver, SystemCallSolver):
+        raise(TypeError, 'Solver is not a SystemCallSolver')
+    return solver
+
+
 class VarLocator(object):
     """
     Class for storing information used to locate a VarData object.
@@ -92,9 +191,9 @@ class VarLocator(object):
         """
         # Should this class store the time index of the variable?
         # probably not (a. might not exist, b. should already be known)
-        if type(category) is not str:
+        if category not in VariableCategory:
             raise TypeError(
-            'category argument must be a string')
+            'category argument must be a valid VariableCategory enum item')
         self.category = category
 
         if type(container) is not list:
@@ -195,20 +294,22 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
         #tgt_vardata = tgt_var[t0_tgt]
 
         try:
-            tgt_container = tgt_locator[id(tgt_vardata)].container
+            # locator is now a ComponentMap and takes in componentdatas
+            tgt_container = tgt_locator[tgt_vardata].container
         except KeyError:
             raise KeyError(
                 'Locator does not seem to know about ' + 
                 tgt_vardata.name)
 
-        location = tgt_locator[id(tgt_vardata)].location
+        location = tgt_locator[tgt_vardata].location
         tgt_slices.append(tgt_container[location])
     return tgt_slices
 
 
-# RENAME
-#def simulate_over_range(model, t_start, t_end, **kwargs):
-def initialize_by_element_in_range(model, time, t_start, t_end, **kwargs):
+def initialize_by_element_in_range(model, time, t_start, t_end, 
+        time_linking_vars=[],
+        max_linking_range=0,
+        **kwargs):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
 
@@ -221,6 +322,8 @@ def initialize_by_element_in_range(model, time, t_start, t_end, **kwargs):
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
+    # TODO: How to handle config arguments here? Should this function
+    # be moved to be a method of NMPC? Have a module-level config?
     # CONFIG, KWARGS: handle these kwargs through config
 
     solver = kwargs.pop('solver', SolverFactory('ipopt'))
@@ -229,6 +332,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end, **kwargs):
     solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
     solve_initial_conditions = kwargs.pop('solve_initial_conditions', False)
 
+    #TODO: Move to docstring
     # Variables that will be fixed for time points outside the finite element
     # when constraints for a finite element are activated.
     # For a "normal" process, these should just be differential variables
@@ -236,18 +340,15 @@ def initialize_by_element_in_range(model, time, t_start, t_end, **kwargs):
     # these should also include variables used by the controller.
     # If these variables are not specified, 
 
-    # TODO: this should definitely be an explicit arg
-    time_linking_vars = kwargs.pop('time_linking_vars', [])
-
     # Timespan over which these variables will be fixed, counting backwards
     # from the first time point in the finite element (which will always be
     # fixed)
-    max_linking_range = kwargs.pop('max_linking_range', 0)
     # Should I specify max_linking_range as an integer number of finite
     # elements, an integer number of time points, or a float in actual time
     # units? Go with latter for now.
 
-    # TODO: Should I fix scalar vars? 
+    # TODO: Should I fix scalar vars? Intuition is that they should already
+    # be fixed.
 
     #time = model.time
     assert t_start in time.get_finite_elements()
