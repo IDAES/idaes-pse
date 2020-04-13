@@ -16,7 +16,7 @@
 #            https://www.sfu.ca/~ssurjano/camel6.html
 # This problem utilizes ALAMO's sampling features
 
-from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, Alamopy
+from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, Alamopy, GeneralSurrogate
 from pyomo.environ import Var, ConcreteModel, Objective
 
 import math
@@ -61,7 +61,7 @@ def _main():
                           'overwrite': True}
     modeler = Pysmo_kriging(**pysmo_krg_settings)
 
-   # Enter additional regression features as list of strings with variable name 'ft'
+    # Enter additional regression features as list of strings with variable name 'ft'
     pysmo_pr_settings = {'maximum_polynomial_order':4,
                          'multinomials':1,
                          'pyomo_vars': [m.x[1], m.x[2]],
@@ -71,14 +71,24 @@ def _main():
                          'overwrite': True}
     modeler = Pysmo_polyregression(**pysmo_pr_settings)
 
+
     alamo_settings = {'monomialpower':(1, 2, 3, 4, 5, 6),
                       'multi2power':(1, 2),
                       'expandoutput':True}
     modeler = Alamopy(**alamo_settings)
 
+    general_settings = {'linear':True,
+                        # 'ratio': True,
+                        'pyomo_vars': [m.x[1], m.x[2]],
+                        'maximum_polynomial_order': 6,
+                        'multinomials': True,
+                        'regularization': True}
+
+    modeler = GeneralSurrogate(**general_settings)
+
 
     modeler.regressed_data(x,y)
-    print(modeler.get_regressed_data())
+    # print(modeler.get_regressed_data())
 
     modeler.build_model()
 
@@ -88,9 +98,9 @@ def _main():
 
     modeler.save_results('results.pickle', overwrite=True)
 
-    modeler2 = Pysmo_polyregression()
-    modeler2.load_results('results.pickle')
-    print(modeler2._model)
+    # modeler2 = Alamopy()
+    # modeler2.load_results('results.pickle')
+    # print(modeler2._model)
 
 
 

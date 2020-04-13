@@ -131,7 +131,7 @@ class KrigingModel:
 
     """
 
-    def __init__(self, XY_data, numerical_gradients=True, regularization=True):
+    def __init__(self, XY_data, numerical_gradients=True, regularization=True, fname=None, overwrite=False):
         """
         Initialization of **KrigingModel** class.
 

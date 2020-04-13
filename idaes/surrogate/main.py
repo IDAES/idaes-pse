@@ -14,7 +14,150 @@ from pyomo.core.expr.sympy_tools import PyomoSympyBimap, sympy_available, Sympy2
 import pyomo.environ as pyo
 import numpy as np
 
+try:
+	import ujson as json
+except:
+	import json
+
 from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
+
+class GeneralSurrogate(Surrogate):
+	CONFIG = Surrogate.CONFIG()
+
+	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
+	CONFIG.declare('linear', ConfigValue(default=True, domain=bool))
+	CONFIG.declare('maximum_polynomial_order', ConfigValue(default=None, domain=int))
+	CONFIG.declare('multinomials', ConfigValue(default=True, domain=bool))
+	CONFIG.declare('logexp', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('sincos', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('ratio', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('kriging', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('rbf', ConfigValue(default=False, domain=bool))
+	CONFIG.declare('alamo_modeler', ConfigValue(default=1, domain=int))
+	CONFIG.declare('convpen', ConfigValue(default=0, domain = int))
+	CONFIG.declare('basis_function', ConfigValue(default=None, domain=str))
+	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('metric', ConfigValue(default=Metrics.SSE, domain=str))
+	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
+
+	def __init__(self, **settings):
+		super().__init__(**settings)
+
+		self._pysmo_krg_settings = {}
+		self._pysmo_rbf_settings = {}
+		self._pysmo_pr_settings = {}
+		self._alamo_settings = {}
+
+		self._models = []
+
+	def build_model(self):
+		super().build_model()
+
+		self.parse_config()
+		models = []
+
+		modeler_krig = Pysmo_kriging(**self._pysmo_krg_settings)
+		modeler_krig.regressed_data(self._rdata_in, self._rdata_out)
+		modeler_krig.build_model()
+		if self.config['kriging']:
+			self._models.append(modeler_krig)
+
+		modeler_rbf = Pysmo_rbf(**self._pysmo_rbf_settings)
+		modeler_rbf.regressed_data(self._rdata_in, self._rdata_out)
+		modeler_rbf.build_model()
+		if self.config['rbf']:
+			self._models.append(modeler_rbf)
+
+		modeler_pr = Pysmo_polyregression(**self._pysmo_pr_settings)
+		modeler_pr.regressed_data(self._rdata_in, self._rdata_out)
+		modeler_pr.build_model()
+		self._models.append(modeler_pr)
+
+		modeler_alamo = Alamopy(**self._alamo_settings)
+		modeler_alamo.regressed_data(self._rdata_in, self._rdata_out)
+		modeler_alamo.build_model()
+		self._models.append(modeler_alamo)
+
+		_alamo_settings_rbf = self._alamo_settings
+		if self.config['rbf']:
+			_alamo_settings_rbf['grbfcns'] = self.config['rbf']
+			modeler_alamo_rbf = Alamopy(**_alamo_settings_rbf)
+			modeler_alamo_rbf.regressed_data(self._rdata_in, self._rdata_out)
+			modeler_alamo_rbf.build_model()
+			self._models.append(modeler_alamo_rbf)
+
+		best_metric = 10e16
+		best_config = {}
+		for m in self._models:
+			metric = m.get_results()[self.config['metric']]
+			# print(m, m.get_results()['SSE'], best_metric, metric)
+			if best_metric > float(metric):
+				best_metric = metric
+				best_config = m.config
+				self._results = m.get_results()
+				self._model = m.get_model()
+
+		if not self.config['kriging']:
+			self._models.append(modeler_krig)
+
+		if not self.config['rbf']:
+			self._models.append(modeler_rbf)
+
+
+		self.pkl_info['Run settings'] = best_config
+		self.pkl_info['Results'] = self._results
+		self.pkl_info['Expression'] = self._model
+
+	def parse_config(self):
+
+		self._pysmo_krg_settings = {'numerical_gradients': True,
+							  'regularization': self.config['regularization'],
+							  'pyomo_vars': self.config['pyomo_vars'],
+							  'overwrite': self.config['overwrite']}
+
+		if self.config['basis_function'] is None:
+			self.config['basis_function'] = 'gaussian'
+
+		self._pysmo_rbf_settings = {'basis_function': self.config['basis_function'],
+							  'regularization': self.config['regularization'],
+							  'pyomo_vars': self.config['pyomo_vars'],
+							  'overwrite': self.config['overwrite']}
+
+		self._pysmo_pr_settings = {'maximum_polynomial_order': self.config['maximum_polynomial_order'],
+							 'multinomials': self.config['multinomials'],
+							 'pyomo_vars': self.config['pyomo_vars'],
+							 'training_split': 0.9,
+							 'number_of_crossvalidations': 5,
+							 'overwrite': self.config['overwrite']}
+
+
+		if self.config['linear']:
+			self._alamo_settings['linfcns'] = 1
+		if self.config['logexp']:
+			self._alamo_settings['logfcns'] = 1
+			self._alamo_settings['expfcns'] = 1
+		if self.config['sincos']:
+			self._alamo_settings['sinfcns'] = 1
+			self._alamo_settings['cosfcns'] = 1
+
+		max_order = self.config['maximum_polynomial_order']
+		pow_list = np.arange(0.5, max_order+1, 0.5)
+		if max_order >= 1:
+			self._alamo_settings['monomialpower'] = pow_list
+		if self.config['multinomials']:
+
+			self._alamo_settings['multi2power'] = np.arange(0.5, max_order/2+1, 0.5)
+			self._alamo_settings['multi3power'] = np.arange(0.5, max_order/2+1, 0.5)
+			if self.config['ratio']:
+				self._alamo_settings['ratiopower'] = pow_list
+		self._alamo_settings['expandoutput'] = True
+		self._alamo_settings['modeler'] = self.config['alamo_modeler']
+		self._alamo_settings['convpen'] = self.config['convpen']
+
+
+	def get_models(self):
+		return self._models
 
 
 class Alamopy(Surrogate):
@@ -59,13 +202,17 @@ class Alamopy(Surrogate):
 			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out, xval=self._vdata_in,
 												 zval=self._vdata_out, **self.config)
 		else:
-			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out, **self.config)
+			self.alamopy_results = alamopy.alamo(self._rdata_in, self._rdata_out,  **self.config)
 
 		self._res = self.alamopy_results
 		self._model = self.alamopy_results['model']
 
 		self.handle_results(self._res)
-		self.pkl_info = {'In data': self._rdata_in, 'Out data': self._rdata_out, 'Run settings': self.config, 'Results': self._results, 'Expression': self._model}
+		self.pkl_info['Run settings'] = self.config.value()
+		self.pkl_info['Results'] = self._results
+		self.pkl_info['Expression'] = self._model
+		#JSON
+		# self.pkl_info['Expression'] = self.alamopy_results['model']
 
 	def handle_results(self, res):
 		# sympy to pyomo converter
@@ -96,20 +243,6 @@ class Alamopy(Surrogate):
 		model_symp = parse_expr(model_string.replace("^", "**"), local_dict=sympy_locals)
 		model_pyomo = sympy2pyomo_expression(model_symp, obj_map)
 		self._model = model_pyomo
-		
-	def save_results(self, filename, overwrite=False):
-		if not isinstance(overwrite, bool):
-			raise Exception('overwrite must be boolean.')
-		if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
-			raise Exception('filename must be a string with extension ".pickle". Please correct.')
-		if os.path.exists(filename) and overwrite is False:
-			raise Exception(filename, 'already exists!.\n')
-		try:
-			filehandler = open(filename, 'wb')
-			pickle.dump(self.pkl_info, filehandler)
-			print('\nResults saved in ', str(filename))
-		except:
-			raise Exception('File could not be saved.')
 
 	def run_test_suite(self, return_all=False, allow_grb=True):
 
@@ -245,7 +378,7 @@ class Pysmo_rbf(Surrogate):
 		start_time = time.time()
 		training_data = np.concatenate((self._rdata_in, self._rdata_out.reshape(self._rdata_out.size, 1)), axis=1)
 		self.pyomo_vars = dict(
-			(k, self.config[k]) for k in ['pyomo_vars'] if k in self.config)  # Extreact variable list
+			(k, self.config[k]) for k in ['pyomo_vars'] if k in self.config)  # Extract variable list
 		self.rbf_setup = {k: self.config[k] for k in set(self.config) - set(self.pyomo_vars)}
 		prob_init = radial_basis_function.RadialBasisFunctions(training_data, **self.rbf_setup)
 		feature_vec = prob_init.get_feature_vector()
@@ -254,7 +387,12 @@ class Pysmo_rbf(Surrogate):
 
 		self.handle_results(feature_vec)
 
-		self.pkl_info = {'In data': self._rdata_in, 'Out data': self._rdata_out, 'Run settings': self.config, 'Class initialization': prob_init, 'pysmo result object': self.pysmo_rbf_results, 'Results': self._results, 'Expression': self._model}
+		self.pkl_info['Run settings'] = self.config
+		self.pkl_info['Results'] = self._results
+		self.pkl_info['pysmo result object'] = self.pysmo_rbf_results
+		self.pkl_info['Expression'] = self._model
+		self.pkl_info['Class initialization'] = prob_init
+
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = self.pysmo_rbf_results.rmse
@@ -268,24 +406,6 @@ class Pysmo_rbf(Surrogate):
 			for i in feature_vec.keys():
 				list_vars.append(feature_vec[i])
 			self._model = self.pysmo_rbf_results.rbf_generate_expression(list_vars)
-
-	def save_results(self, filename, overwrite=False):
-		# Ensure overwrite option, when entered, is boolean
-		if not isinstance(overwrite, bool):
-			raise Exception('overwrite must be boolean.')
-		# Check if filename is a string with pickle extension
-		if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
-			raise Exception('filename must be a string with extension ".pickle". Please correct.')
-		# If overwite is false, throw up error if the filename already exists in the destination folder
-		if os.path.exists(filename) and overwrite is False:
-			raise Exception(filename, 'already exists!.\n')
-		# Try to save
-		try:
-			filehandler = open(filename, 'wb')
-			pickle.dump(self.pkl_info, filehandler)
-			print('\nResults saved in ', str(filename))
-		except:
-			raise Exception('File could not be saved.')
 
 
 class Pysmo_kriging(Surrogate):
@@ -315,7 +435,12 @@ class Pysmo_kriging(Surrogate):
 
 		self.handle_results(feature_vec)
 
-		self.pkl_info = {'In data': self._rdata_in, 'Out data': self._rdata_out, 'Run settings': self.config, 'Class initialization': prob_init, 'pysmo result object': self.pysmo_kriging_results, 'Results': self._results, 'Expression': self._model}
+		self.pkl_info['pysmo result object'] = self.pysmo_kriging_results
+		self.pkl_info['Class initialization'] = prob_init
+		self.pkl_info['Run settings'] = self.config
+		self.pkl_info['Results'] = self._results
+		self.pkl_info['Expression'] = self._model
+
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = self.pysmo_kriging_results.training_rmse
@@ -333,24 +458,6 @@ class Pysmo_kriging(Surrogate):
 			for i in feature_vec.keys():
 				list_vars.append(feature_vec[i])
 			self._model = self.pysmo_kriging_results.kriging_generate_expression(list_vars)
-
-	def save_results(self, filename, overwrite=False):
-		# Ensure overwrite option, when entered, is boolean
-		if not isinstance(overwrite, bool):
-			raise Exception('overwrite must be boolean.')
-		# Check if filename is a string with pickle extension
-		if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
-			raise Exception('filename must be a string with extension ".pickle". Please correct.')
-		# If overwite is false, throw up error if the filename already exists in the destination folder
-		if os.path.exists(filename) and overwrite is False:
-			raise Exception(filename, 'already exists!.\n')
-		# Try to save
-		try:
-			filehandler = open(filename, 'wb')
-			pickle.dump(self.pkl_info, filehandler)
-			print('\nResults saved in ', str(filename))
-		except:
-			raise Exception('File could not be saved.')
 
 
 class Pysmo_polyregression(Surrogate):
@@ -395,7 +502,11 @@ class Pysmo_polyregression(Surrogate):
 
 		self.handle_results(feature_vec)
 
-		self.pkl_info = {'In data': self._rdata_in, 'Out data': self._rdata_out, 'Run settings': self.config, 'Class initialization': prob_init, 'pysmo result object': self.pysmo_polyregression_results, 'Results': self._results, 'Expression': self._model}
+		self.pkl_info['pysmo result object'] = self.pysmo_polyregression_results
+		self.pkl_info['Class initialization'] = prob_init
+		self.pkl_info['Run settings'] = self.config
+		self.pkl_info['Results'] = self._results
+		self.pkl_info['Expression'] = self._model
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = np.sqrt(self.pysmo_polyregression_results.errors['MSE'])
@@ -413,21 +524,3 @@ class Pysmo_polyregression(Surrogate):
 			for i in feature_vec.keys():
 				list_vars.append(feature_vec[i])
 			self._model = self.pysmo_polyregression_results.generate_expression(list_vars)
-
-	def save_results(self, filename, overwrite=False):
-		# Ensure overwrite option, when entered, is boolean
-		if not isinstance(overwrite, bool):
-			raise Exception('overwrite must be boolean.')
-		# Check if filename is a string with pickle extension
-		if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
-			raise Exception('filename must be a string with extension ".pickle". Please correct.')
-		# If overwite is false, throw up error if the filename already exists in the destination folder
-		if os.path.exists(filename) and overwrite is False:
-			raise Exception(filename, 'already exists!.\n')
-		# Try to save
-		try:
-			filehandler = open(filename, 'wb')
-			pickle.dump(self.pkl_info, filehandler)
-			print('\nResults saved in ', str(filename))
-		except:
-			raise Exception('File could not be saved.')

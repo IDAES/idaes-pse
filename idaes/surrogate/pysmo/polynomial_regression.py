@@ -242,7 +242,8 @@ class PolynomialRegression:
     """
 
     def __init__(self, original_data_input, regression_data_input, maximum_polynomial_order, number_of_crossvalidations=None,
-                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None):
+                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None,
+                 fname=None, overwrite=False):
         """
         Initialization of PolynomialRegression class.
 

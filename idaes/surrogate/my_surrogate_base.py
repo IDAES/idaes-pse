@@ -8,151 +8,6 @@ from pyomo.common.config import ConfigBlock
 import os.path, pickle
 from mypy_extensions import TypedDict
 
-
-class SurrogateModeler:
-    """
-    Default setup for known modeler setups
-    """
-
-    def surrogate_analysis():
-        # external utitily
-        # run all surrogate tools - paremeter()
-
-        # ex 1: - pysmo and alamo
-
-        # ex 2: range 1-3 monomial powers
-
-        # analyze metrics
-        # return best
-        print("hello, I fit nothing")
-
-    # MIGUEL
-    # translation of similar commands across the two
-    # polynomial_order = 3 => both surrogate tools
-
-    # General Settings that trigger differnt models
-
-    # Type set-up for different tools
-    PysmoPolyRegression = TypedDict('PysmoPolyRegression', {'number_of_crossvalidations': int,
-                                                            'maximum_polynomial_order': int,
-                                                            'training_split': float,
-                                                            'solution_method': str,
-                                                            'multinomials': bool,
-                                                            'additional_features_list': list,
-                                                            'pyomo_vars': list,
-                                                            'overwrite': bool,
-                                                            'fname': str
-                                                            }, total=False
-                                    )
-
-    PysmoRBF = TypedDict('PysmoRBF', {'basis_function': str,
-                                      'solution_method': str,
-                                      'regularization': bool,
-                                      'pyomo_vars': list,
-                                      'overwrite': bool,
-                                      'fname': str
-                                      }, total=False
-                         )
-
-    PysmoKriging = TypedDict('PysmoKriging', {'numerical_gradients': bool,
-                                              'regularization': bool,
-                                              'pyomo_vars': list,
-                                              'overwrite': bool,
-                                              'fname': str
-                                              }, total=False
-                             )
-
-    # ALAMo argument types here
-
-    AlamoDict = TypedDict('Alamo', {'xlabels': list,
-                                    'zlabels': list,
-                                    'xval': list,
-                                    'zval': list,
-                                    'xmin': list,
-                                    'xmax': list,
-                                    'modeler': int,
-                                    'linfcns': int,
-                                    'expfcns': int,
-                                    'logfcns': int,
-                                    'sinfcns': int,
-                                    'cosfcns': int,
-                                    'monomialpower': list,
-                                    'multi2power': list,
-                                    'multi3power': list,
-                                    'ratiopower': list,
-                                    'screener': int,
-                                    'almname': str,
-                                    'savescratch': bool,
-                                    'savetrace': bool,
-                                    'expandoutput': bool,
-                                    'almopt': str,
-                                    'loo': bool,
-                                    'lmo': bool,
-                                    'maxiter': int,
-                                    'simulator': str
-                                    }, total=False
-                          )
-
-    # Base set-up for different tools: user cannot access
-    pysmo_polyregression_base = PysmoPolyRegression(number_of_crossvalidations=2,
-                                                    maximum_polynomial_order=2,
-                                                    training_split=0.8,
-                                                    solution_method='pyomo',
-                                                    multinomials=False,
-                                                    additional_features=[]
-                                                    )
-
-    pysmo_rbf_base = PysmoRBF(basis_function='gaussian',
-                              solution_method='pyomo',
-                              regularization=True
-                              )
-
-    pysmo_kriging_base = PysmoKriging(numerical_gradients=False,
-                                      regularization=True
-                                      )
-
-    # Base settings for ALAMO modeller here
-
-    # Issues multiple output from sets of inputs
-    alamo_base = AlamoDict(monomialpower=(1, 2, 3, 4, 5, 6),
-                           multi2power=(1, 2),
-                           expandoutput=True
-                           )
-
-
-class SurrogateFactory:
-    """
-    Construct default setting of a tool (CONFIG)
-    Changed by user to Surrogate instance Config
-    Ex.
-        alternative_cases = {'run_1': dict(pysmo_polyregression_base, maximum_polynomial_order=3),
-                     'run_2': dict(pysmo_polyregression_base, solution_method='mle'),
-                     'run_3': dict(pysmo_rbf_base, basis_function='cubic')
-                     }
-        tools = [
-            ['pysmo_polygression', 'pysmo_rbf', 'pysmo_kriging', 'pysmo_polygression', 'pysmo_polygression', 'pysmo_rbf'],
-            [pysmo_polyregression_base, pysmo_rbf_base, pysmo_kriging_base] + list(alternative_cases.values())
-            ]
-        user loops:
-            Surrogate = new instance()
-    """
-
-    def __init__(self, tool=None):
-        """
-            One tool
-        """
-        self.tool = tool
-        self.modeler = None
-
-    def initialize_Modeler(self):
-        """
-        Intialize surrogate modeler
-        Return Surrogate object
-        """
-
-        return self.modeler
-
-
 class Metrics:
     """Names for known types of metrics.
     Use these as keys in dictionaries, e.g.:
@@ -190,7 +45,8 @@ class Surrogate:
     CONFIG = ConfigBlock()
 
     # Common Declarations
-    # CONFIG.declare()
+    # CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+    # CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
 
@@ -210,6 +66,8 @@ class Surrogate:
         self._vdata_in = None
         self._vdata_out = None
 
+        self.pkl_info = None
+
     def modify_config(self, **kwargs):
         _b_built = False
         self.config = self.CONFIG(kwargs)
@@ -218,6 +76,11 @@ class Surrogate:
 
     def build_model(self):
         self._b_built = True
+
+        self.pkl_info = {'In data': self._rdata_in.tolist(),
+                         'Out data': self._rdata_out.tolist()}
+                         # 'Run settings': self.config}
+
         pass
 
     def update_model(self):
@@ -273,8 +136,23 @@ class Surrogate:
             return
         pass
 
-    def save_results(self, filename):
-        return self.save_results(filename)
+    def save_results(self, filename, overwrite=False):
+        # Ensure overwrite option, when entered, is boolean
+        if not isinstance(overwrite, bool):
+            raise Exception('overwrite must be boolean.')
+        # Check if filename is a string with pickle extension
+        if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
+            raise Exception('filename must be a string with extension ".pickle". Please correct.')
+        # If overwite is false, throw up error if the filename already exists in the destination folder
+        if os.path.exists(filename) and overwrite is False:
+            raise Exception(filename, 'already exists!.\n')
+        # Try to save
+        try:
+            filehandler = open(filename, 'wb')
+            pickle.dump(self.pkl_info, filehandler)
+            print('\nResults saved in ', str(filename))
+        except:
+            raise Exception('File could not be saved.')
 
     def load_results(self, filename):
         if os.path.exists(filename) is False:

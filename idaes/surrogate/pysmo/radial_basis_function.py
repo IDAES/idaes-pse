@@ -257,7 +257,7 @@ class RadialBasisFunctions:
 
     """
 
-    def __init__(self, XY_data, basis_function=None, solution_method=None, regularization=None):
+    def __init__(self, XY_data, basis_function=None, solution_method=None, regularization=None, fname=None, overwrite=False):
         """
 
         Initialization of **RadialBasisFunctions** class.
