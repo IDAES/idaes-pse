@@ -52,18 +52,6 @@ class TestParamBlock(object):
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ReactionBlock
 
-        assert len(model.rparams.phase_list) == 1
-        for i in model.rparams.phase_list:
-            assert i == "Liq"
-
-        assert len(model.rparams.component_list) == 5
-        for i in model.rparams.component_list:
-            assert i in ['H2O',
-                         'NaOH',
-                         'EthylAcetate',
-                         'SodiumAcetate',
-                         'Ethanol']
-
         assert len(model.rparams.rate_reaction_idx) == 1
         for i in model.rparams.rate_reaction_idx:
             assert i == "R1"

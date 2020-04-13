@@ -58,15 +58,6 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self.reaction_block_class = ReactionBlock
 
-        # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq'])
-
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2O', 'NaOH',
-                                              'EthylAcetate',
-                                              'SodiumAcetate',
-                                              'Ethanol'])
-
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 

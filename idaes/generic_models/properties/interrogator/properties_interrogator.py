@@ -27,7 +27,10 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        UnitModelBlockData)
+                        UnitModelBlockData,
+                        LiquidPhase,
+                        VaporPhase,
+                        Component)
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -46,6 +49,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     This class contains the methods and attributes for recording and displaying
     the properties requried by the flowsheet.
     """
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -54,12 +58,14 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
 
         self.state_block_class = InterrogatorStateBlock
 
-        # List of valid phases in property package
-        # TODO : Allow users to define a phase list
-        self.phase_list = Set(initialize=['Liq', 'Vap'])
+        # Phase objects
+        # TODO : Allow users to define custom Phase obejcts/phase list
+        self.Liq = LiquidPhase()
+        self.Vap = VaporPhase()
 
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['A', 'B'])
+        # Component objects
+        self.A = Component()
+        self.B = Component()
 
         # Set up dict to record property calls
         self.required_properties = {}
