@@ -41,12 +41,12 @@ def _make_vars(self):
 
 
 def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
-               L_factor='12ft'):
+               length_factor='12ft'):
     '''
     Heat exchanger costing method.
 
     Source:
-        Process and Product Design Principles: Synthesis, Analysis, and 
+        Process and Product Design Principles: Synthesis, Analysis, and
         Evaluation
         Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
         Chapter 22. Cost Accounting and Capital Cost Estimation
@@ -79,21 +79,22 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
     # (base cost, purchase cost, material factor)
     _make_vars(self)
 
-    self.length_factor = Param(mutable=True, initialize=1.12,
-                    doc='hx tube length correction factor, FL')
+    self.L_factor = Param(mutable=True, initialize=1.12,
+                          doc='hx tube length correction factor, FL')
 
     self.pressure_factor = Var(initialize=1,
-                  doc='Pressure design factor - FP')
+                               doc='Pressure design factor - FP')
 
     self.material_factor = Var(initialize=3.5,
-                  doc='construction material correction factor - FM')
+                               doc='construction material correction'
+                               'factor - FM')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
                        doc='hx oversize factor 1.1 to 1.5')
 
     # select length correction factor
     c_fl = {'8ft': 1.25, '12ft': 1.12, '16ft': 1.05, '20ft': 1.00}
-    self.length_factor = c_fl[L_factor]
+    self.L_factor = c_fl[length_factor]
 
     # --------------------------------------------------
     # base cost calculation
@@ -181,13 +182,13 @@ def hx_costing(self, hx_type='U-tube', FM='stainless steel/stainless steel',
     # purchase cost equation
     def hx_CP_rule(self):
         return self.purchase_cost == (self.pressure_factor*self.material_factor
-                                      * self.length_factor
+                                      * self.L_factor
                                       * (self.parent_block().flowsheet().
                                          costing.CE_index/500)*self.base_cost)
     self.cp_cost_eq = Constraint(rule=hx_CP_rule)
 
 
-def pressure_changer_costing(self, FM_mat="stain_steel",
+def pressure_changer_costing(self, FM="stain_steel",
                              # applies for all (pump, compressor, fan, blower)
                              mover_type="compressor",
                              # fan, blower, compressor
@@ -230,7 +231,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
         pump_motor_type_factor : Only if config.compressor is True and
                         compressor_type='pump'. Valid values 'open' (default),
                         'enclosed', 'explosion_proof''
-        FM_mat : construction material; Valid values 'stain_steel' (default),
+        FM : construction material; Valid values 'stain_steel' (default),
                         'nickel_alloy' (compressor only)
 
     Returns:
@@ -240,7 +241,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
     # (base cost, purchase cost, material factor)
     _make_vars(self)
 
-    self.FM = Param(mutable=True, initialize=3,
+    self.material_factor = Param(mutable=True, initialize=3,
                     doc='construction material correction factor')
 
     # if compressor is == False, that means pressure changer is a Turbine
@@ -398,15 +399,15 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
                                     '2.2': 8.90}
 
             if pump_type == 'centrifugal':
-                self.FM = material_factor_dic[FM_mat]
+                self.material_factor = material_factor_dic[FM]
                 self.FT = pump_type_factor_dic[pump_type_factor]
 
             elif pump_type == 'external_gear':
-                self.FM = material_factor_dic[FM_mat]
+                self.material_factor = material_factor_dic[FM]
                 self.FT = 1
 
             elif pump_type == 'reciprocating':
-                self.FM = material_factor_reciprocal_pumps[FM_mat]
+                self.material_factor = material_factor_reciprocal_pumps[FM]
                 self.FT = 1
             else:
                 raise Exception('pump type is not supported')
@@ -436,7 +437,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
 
             def CP_pump_rule(self):
                 return self.pump_purchase_cost == \
-                    (self.FT * self.FM *
+                    (self.FT * self.material_factor *
                      (self.parent_block().flowsheet().
                       costing.CE_index/394)*self.base_cost)
             self.cp_pump_cost_eq = Constraint(rule=CP_pump_rule)
@@ -531,7 +532,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
                 material_factor_dic = {'carbon_steel': 1, 'stain_steel': 2.5,
                                        'nickel_alloy': 5.0}
 
-                self.FM = material_factor_dic[FM_mat]
+                self.material_factor = material_factor_dic[FM]
 
                 c_alf1 = {'centrifugal': 7.58,
                           'reciprocating': 7.9661,
@@ -550,7 +551,7 @@ def pressure_changer_costing(self, FM_mat="stain_steel",
 
                 def CP_rule(self):
                     return self.purchase_cost == \
-                        (self.FD * self.FM
+                        (self.FD * self.material_factor
                          * (self.parent_block().flowsheet().costing.
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
