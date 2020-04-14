@@ -68,9 +68,8 @@ def frame():
                                       "Liq": dummy_eos},
                 "pressure_sat_comp": pressure_sat_comp})
 
-    m.props = m.params.state_block_class([1],
-                                         default={"defined_state": False,
-                                         "parameters": m.params})
+    m.props = m.params.build_state_block([1],
+                                         default={"defined_state": False})
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)

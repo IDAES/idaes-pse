@@ -152,11 +152,10 @@ see property package for documentation.}"""))
         # Create a dict to set up the inlet state blocks
         state_block_args = dict(**self.config.property_package_args)
         state_block_args["has_phase_equilibrium"] = False
-        state_block_args["parameters"] = self.config.property_package
         state_block_args["defined_state"] = True
 
         for i in inlet_list:
-            state_obj = self.config.property_package.state_block_class(
+            state_obj = self.config.property_package.build_state_block(
                 self.flowsheet().config.time,
                 doc="State block for " + i + "_inlet to tray",
                 default=state_block_args)
@@ -166,11 +165,10 @@ see property package for documentation.}"""))
         # Create a dict to set up the mixed outlet state blocks
         mixed_block_args = dict(**self.config.property_package_args)
         mixed_block_args["has_phase_equilibrium"] = True
-        mixed_block_args["parameters"] = self.config.property_package
         mixed_block_args["defined_state"] = False
 
         self.properties_out = self.config.property_package.\
-            state_block_class(self.flowsheet().config.time,
+            build_state_block(self.flowsheet().config.time,
                               doc="State block for mixed outlet from tray",
                               default=mixed_block_args)
 

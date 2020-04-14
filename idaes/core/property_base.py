@@ -79,6 +79,51 @@ class PhysicalParameterBlock(ProcessBlockData,
         """
         super(PhysicalParameterBlock, self).build()
 
+        # Need this to work with the Helmholtz EoS package
+        if not hasattr(self, "_state_block_class"):
+            self._state_block_class = None
+
+    @property
+    def state_block_class(self):
+        if self._state_block_class is not None:
+            return self._state_block_class
+        else:
+            raise AttributeError(
+                "{} has not assigned a StateBlock class to be associated "
+                "with this property package. Please contact the developer of "
+                "the property package.".format(self.name))
+
+    @state_block_class.setter
+    def state_block_class(self, val):
+        _log.warning("DEPRECATED: state_block_class should not be set "
+                     "directly. Property package developers should set the "
+                     "_state_block_class attribute instead.")
+        self._state_block_class = val
+
+    def build_state_block(self, *args, **kwargs):
+        """
+        Methods to construct a StateBlock assoicated with this
+        PhysicalParameterBlock. This will automatically set the parameters
+        construction argument for the StateBlock.
+
+        Returns:
+            StateBlock
+
+        """
+        default = kwargs.pop("default", {})
+        initialize = kwargs.pop("initialize", {})
+
+        if initialize == {}:
+            default["parameters"] = self
+        else:
+            for i in initialize.keys():
+                initialize[i]["parameters"] = self
+
+        return self.state_block_class(*args,
+                                      **kwargs,
+                                      default=default,
+                                      initialize=initialize)
+
     def get_phase_component_set(self):
         """
         Method to get phase-component set for property package. If a phase-

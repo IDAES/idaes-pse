@@ -44,18 +44,16 @@ m.fs.properties_ideal_vl_FTPz = BTXParameterBlock(
     default={"valid_phase": ('Liq', 'Vap'),
              "activity_coeff_model": "Ideal",
              "state_vars": "FTPz"})
-m.fs.state_block_ideal_vl_FTPz = m.fs.properties_ideal_vl_FTPz.state_block_class(
-    default={"parameters": m.fs.properties_ideal_vl_FTPz,
-             "defined_state": True})
+m.fs.state_block_ideal_vl_FTPz = m.fs.properties_ideal_vl_FTPz.build_state_block(
+    default={"defined_state": True})
 
 # liquid only (ideal)
 m.fs.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
                                                      'Liq',
                                                      "activity_coeff_model":
                                                      "Ideal"})
-m.fs.state_block_ideal_l = m.fs.properties_ideal_l.state_block_class(
-    default={"parameters": m.fs.properties_ideal_l,
-             "has_phase_equilibrium": False,
+m.fs.state_block_ideal_l = m.fs.properties_ideal_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 # vapour only (ideal)
@@ -63,9 +61,8 @@ m.fs.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
                                                      'Vap',
                                                      "activity_coeff_model":
                                                      "Ideal"})
-m.fs.state_block_ideal_v = m.fs.properties_ideal_v.state_block_class(
-    default={"parameters": m.fs.properties_ideal_v,
-             "has_phase_equilibrium": False,
+m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 
@@ -194,18 +191,16 @@ m.fs1.properties_ideal_vl = BTXParameterBlock(default={"valid_phase":
                                                        ('Liq', 'Vap'),
                                                        "activity_coeff_model":
                                                        "Ideal"})
-m.fs1.state_block_ideal_vl = m.fs1.properties_ideal_vl.state_block_class(
-    default={"parameters": m.fs1.properties_ideal_vl,
-             "defined_state": False})
+m.fs1.state_block_ideal_vl = m.fs1.properties_ideal_vl.build_state_block(
+    default={"defined_state": False})
 
 # liquid only (ideal)
 m.fs1.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
                                                       "Liq",
                                                       "activity_coeff_model":
                                                       "Ideal"})
-m.fs1.state_block_ideal_l = m.fs1.properties_ideal_l.state_block_class(
-    default={"parameters": m.fs1.properties_ideal_l,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_ideal_l = m.fs1.properties_ideal_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 # vapour only (ideal)
@@ -213,9 +208,8 @@ m.fs1.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
                                                       "Vap",
                                                       "activity_coeff_model":
                                                       "Ideal"})
-m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.state_block_class(
-    default={"parameters": m.fs1.properties_ideal_v,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 

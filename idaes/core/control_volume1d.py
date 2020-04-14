@@ -246,7 +246,6 @@ argument)."""))
         # d0 is config for defined state d1 is config for not defined state
         d0 = dict(**self.config.property_package_args)
         d0.update(has_phase_equilibrium=has_phase_equilibrium,
-                  parameters=self.config.property_package,
                   defined_state=True)
         d1 = copy.copy(d0)
         d1["defined_state"] = False
@@ -260,7 +259,7 @@ argument)."""))
                 return 0
             else:
                 return 1
-        self.properties = self.config.property_package.state_block_class(
+        self.properties = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             self.length_domain,
             doc="Material properties",
@@ -294,9 +293,8 @@ argument)."""))
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
-        tmp_dict["parameters"] = self.config.reaction_package
 
-        self.reactions = self.config.reaction_package.reaction_block_class(
+        self.reactions = self.config.reaction_package.build_reaction_block(
                 self.flowsheet().config.time,
                 self.length_domain,
                 doc="Reaction properties in control volume",

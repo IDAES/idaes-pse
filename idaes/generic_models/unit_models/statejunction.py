@@ -93,12 +93,11 @@ see property package for documentation.}""",
         # Call UnitModel.build to setup dynamics
         super(StateJunctionData, self).build()
 
-        self.properties = self.config.property_package.state_block_class(
+        self.properties = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties",
             default={
                 "has_phase_equilibrium": False,
-                "parameters": self.config.property_package,
                 "defined_state": True,
                 **self.config.property_package_args,
             },
