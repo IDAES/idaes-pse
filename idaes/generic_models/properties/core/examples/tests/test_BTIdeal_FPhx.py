@@ -57,6 +57,7 @@ solver = get_default_solver()
 config_dict = {
     "components": {
         'benzene': {
+            "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
             "enth_mol_ig_comp": RPP,
@@ -86,6 +87,7 @@ config_dict = {
                                             'C': -2.62863,
                                             'D': -3.33399}}},
         'toluene': {
+            "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
             "enth_mol_ig_comp": RPP,

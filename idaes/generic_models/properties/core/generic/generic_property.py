@@ -225,7 +225,15 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for c, d in self.config.components.items():
-            self.add_component(c, Component(default=d))
+            ctype = d.pop("type", None)
+
+            if ctype is None:
+                _log.warning("{} component {} was not assigned a type. "
+                             "Using generic Component object."
+                             .format(self.name, c))
+                ctype = Component
+
+            self.add_component(c, ctype(default=d))
 
         # Add Phase objects
         if self.config.phases is None:
@@ -234,19 +242,15 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for p, d in self.config.phases.items():
-            tmp_dict = {}
-            ptype = Phase
-            for k, v in d.items():
-                if k == "type":
-                    ptype = v
-                else:
-                    tmp_dict[k] = v
+            ptype = d.pop("type", None)
 
-            if ptype is Phase:
+            if ptype is None:
                 _log.warning("{} phase {} was not assigned a type. "
                              "Using generic Phase object."
                              .format(self.name, p))
-            self.add_component(str(p), ptype(default=tmp_dict))
+                ptype = Phase
+
+            self.add_component(str(p), ptype(default=d))
 
         # Validate phase-component lists, and build _phase_component_set
         pc_set = []
