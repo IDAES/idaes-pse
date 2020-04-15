@@ -24,7 +24,8 @@ from pyomo.environ import (ConcreteModel,
                            value,
                            Var)
 
-from idaes.generic_models.properties.core.phase_equil import bubble_dew
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
+    IdealBubbleDew
 from idaes.core import declare_process_block_class
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
@@ -92,7 +93,7 @@ class TestBubbleTempIdeal(object):
         frame.props[1]._mole_frac_tbub = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.bubble_temp_ideal(frame.props[1])
+        IdealBubbleDew.temperature_bubble(frame.props[1])
 
         assert isinstance(frame.props[1].eq_temperature_bubble, Constraint)
         assert len(frame.props[1].eq_temperature_bubble) == 1
@@ -128,7 +129,7 @@ class TestDewTempIdeal(object):
         frame.props[1]._mole_frac_tdew = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.dew_temp_ideal(frame.props[1])
+        IdealBubbleDew.temperature_dew(frame.props[1])
 
         assert isinstance(frame.props[1].eq_temperature_dew, Constraint)
         assert len(frame.props[1].eq_temperature_dew) == 1
@@ -164,7 +165,7 @@ class TestBubblePresIdeal(object):
         frame.props[1]._mole_frac_pbub = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.bubble_press_ideal(frame.props[1])
+        IdealBubbleDew.pressure_bubble(frame.props[1])
 
         assert isinstance(frame.props[1].eq_pressure_bubble, Constraint)
         assert len(frame.props[1].eq_pressure_bubble) == 1
@@ -200,7 +201,7 @@ class TestDewPressureIdeal(object):
         frame.props[1]._mole_frac_pdew = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.dew_press_ideal(frame.props[1])
+        IdealBubbleDew.pressure_dew(frame.props[1])
 
         assert isinstance(frame.props[1].eq_pressure_dew, Constraint)
         assert len(frame.props[1].eq_pressure_dew) == 1

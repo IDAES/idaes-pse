@@ -41,10 +41,7 @@ from idaes.generic_models.properties.core.state_definitions import FcPh
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
-        bubble_temp_ideal,
-        dew_temp_ideal,
-        bubble_press_ideal,
-        dew_press_ideal)
+        IdealBubbleDew)
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
@@ -130,10 +127,7 @@ config_dict = {
     "temperature_ref": 300,
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
-    "temperature_bubble": bubble_temp_ideal,
-    "temperature_dew": dew_temp_ideal,
-    "pressure_bubble": bubble_press_ideal,
-    "pressure_dew": dew_press_ideal}
+    "bubble_dew_method": IdealBubbleDew}
 
 
 class TestParamBlock(object):

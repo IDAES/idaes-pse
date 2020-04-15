@@ -188,22 +188,10 @@ class GenericParameterData(PhysicalParameterBlock):
         occur."""))
 
     # Bubble and dew point methods
-    CONFIG.declare("temperature_bubble", ConfigValue(
-        description="Method to use to calculate bubble temperature",
+    CONFIG.declare("bubble_dew_method", ConfigValue(
+        description="Method to use to calculate bubble and dew points",
         doc="""Flag indicating what formulation to use for calculating bubble
-        temperature. Value should be a valid Python method."""))
-    CONFIG.declare("temperature_dew", ConfigValue(
-        description="Method to use to calculate dew temperature",
-        doc="""Flag indicating what formulation to use for calculating dew
-        temperature. Value should be a valid Python method."""))
-    CONFIG.declare("pressure_bubble", ConfigValue(
-        description="Method to use to calculate bubble pressure",
-        doc="""Flag indicating what formulation to use for calculating bubble
-        pressure. Value should be a valid Python method."""))
-    CONFIG.declare("pressure_dew", ConfigValue(
-        description="Method to use to calculate dew pressure",
-        doc="""Flag indicating what formulation to use for calculating dew
-        pressure. Value should be a valid Python method."""))
+        and dew points. Value should be a valid Python class."""))
 
     def build(self):
         '''
@@ -915,7 +903,7 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
     def _temperature_bubble(b):
-        if b.params.config.temperature_bubble is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
         try:
@@ -929,14 +917,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble temperature")
 
-            b.params.config.temperature_bubble(b)
+            b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
             b.del_component(b.temperature_bubble)
             b.del_component(b.mole_frac_tbub)
             raise
 
     def _temperature_dew(b):
-        if b.params.config.temperature_dew is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
         try:
@@ -950,14 +938,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Liquid mole fractions at dew temperature")
 
-            b.params.config.temperature_dew(b)
+            b.params.config.bubble_dew_method.temperature_dew(b)
         except AttributeError:
             b.del_component(b.temperature_dew)
             b.del_component(b.mole_frac_tdew)
             raise
 
     def _pressure_bubble(b):
-        if b.params.config.pressure_bubble is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
         try:
@@ -971,14 +959,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble pressure")
 
-            b.params.config.pressure_bubble(b)
+            b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
             b.del_component(b.pressure_bubble)
             b.del_component(b.mole_frac_pbub)
             raise
 
     def _pressure_dew(b):
-        if b.params.config.pressure_dew is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
         try:
@@ -992,7 +980,7 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Liquid mole fractions at dew pressure")
 
-            b.params.config.pressure_dew(b)
+            b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:
             b.del_component(b.pressure_dew)
             b.del_component(b.mole_frac_pdew)
