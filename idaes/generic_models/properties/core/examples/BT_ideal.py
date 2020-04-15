@@ -23,14 +23,10 @@ libraries.
 import logging
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        LiquidPhase, VaporPhase, Component)
-
-from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterData)
+from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-import idaes.generic_models.properties.core.eos.ideal as ideal
+from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
         bubble_temp_ideal,
@@ -121,9 +117,9 @@ configuration = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": LiquidPhase,
-                        "equation_of_state": ideal},
+                        "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
-                        "equation_of_state": ideal}},
+                        "equation_of_state": Ideal}},
 
     # Specifying state definition
     "state_definition": FTPx,

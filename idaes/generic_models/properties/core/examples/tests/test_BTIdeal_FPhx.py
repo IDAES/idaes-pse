@@ -37,7 +37,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.generic_models.properties.core.state_definitions import FPhx
-import idaes.generic_models.properties.core.eos.ideal as ideal
+from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
         bubble_temp_ideal,
@@ -117,9 +117,9 @@ config_dict = {
                                             'C': -2.83433,
                                             'D': -2.79168}}}},
     "phases":  {'Liq': {"type": LiquidPhase,
-                        "equation_of_state": ideal},
+                        "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
-                        "equation_of_state": ideal}},
+                        "equation_of_state": Ideal}},
     "state_definition": FPhx,
     "state_bounds": {"flow_mol": (0, 1000),
                      "temperature": (273.15, 450),
