@@ -3,4 +3,5 @@
 """
 from .nmpc import NMPCSim
 from .util import (ControlInitOption, ElementInitializationInputOption,
-        TimeResolutionOption, ControlPenaltyType, VariableCategory)
+        TimeResolutionOption, ControlPenaltyType, VariableCategory,
+        NMPCVarGroup)

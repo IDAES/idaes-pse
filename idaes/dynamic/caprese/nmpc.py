@@ -1248,7 +1248,7 @@ class NMPCSim(object):
                     var_steady.fixed = vardata_t1.fixed
 
             steady_cat_dict[categ] = NMPCVarGroup(varlist,
-                    steady_model.time)
+                    steady_model.time, is_scalar=vargroup.is_scalar)
         steady_model._NMPC_NAMESPACE.category_dict = steady_cat_dict
         steady_model._NMPC_NAMESPACE.diff_vars = \
                 steady_cat_dict[VariableCategory.DIFFERENTIAL].varlist
