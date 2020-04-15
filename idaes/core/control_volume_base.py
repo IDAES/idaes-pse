@@ -552,7 +552,8 @@ have a config block which derives from CONFIG_Base,
             energy_balance_type=parent.config.energy_balance_type,
             has_heat_of_reaction=parent.config.has_heat_of_reaction,
             has_heat_transfer=parent.config.has_heat_transfer,
-            has_work_transfer=parent.config.has_work_transfer)
+            has_work_transfer=parent.config.has_work_transfer,
+            has_enthalpy_transfer=parent.config.has_mass_transfer)
 
         self.add_momentum_balances(
             has_pressure_change=parent.config.has_pressure_change)
