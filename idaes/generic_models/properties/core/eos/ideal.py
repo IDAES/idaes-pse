@@ -18,13 +18,18 @@ Currently only supports liquid and vapor phases
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.generic_property import (
     get_method, get_component_object as cobj)
+from .eos_base import EoSBase
 from idaes.core.util.constants import Constants as const
 
 
 # TODO: Add support for ideal solids
-class Ideal():
+class Ideal(EoSBase):
     def common(b):
         # No common components required for ideal property calculations
+        pass
+
+    def build_parameters(b):
+        # No EoS specific parameters required
         pass
 
     def dens_mass_phase(b, p):
