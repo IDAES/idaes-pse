@@ -98,6 +98,7 @@ class Ideal():
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
 
+
 def _invalid_phase_msg(name, phase):
     return ("{} received unrecognised phase name {}. Ideal property "
             "libray only supports Vap and Liq phases."
