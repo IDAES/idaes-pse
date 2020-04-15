@@ -31,11 +31,12 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
-        find_slices_in_model, VarLocator, copy_values_at_time, 
+        find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
         add_noise_at_time, ElementInitializationInputOption, 
         TimeResolutionOption, ControlInitOption, ControlPenaltyType,
         VariableCategory, validate_list_of_vardata, 
-        validate_list_of_vardata_value_tuples, validate_solver)
+        validate_list_of_vardata_value_tuples, validate_solver,
+        NMPCVarGroup)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -331,8 +332,8 @@ class NMPCSim(object):
         self.c_mod = controller_model
         self.c_mod_time = controller_time_set
 
-        self.add_namespace_to(self.p_mod)
-        self.add_namespace_to(self.c_mod)
+        self.add_namespace_to(self.p_mod, self.p_mod_time)
+        self.add_namespace_to(self.c_mod, self.c_mod_time)
 
         # Validate models
         self.validate_models(self.p_mod, self.c_mod)
@@ -360,12 +361,12 @@ class NMPCSim(object):
         # to resemble plant model?
         # Not sure this is still necessary
 
-        plant_category_dict = {
-                VariableCategory.DIFFERENTIAL: 
+        self.p_mod._NMPC_NAMESPACE.category_dict = {
+                VariableCategory.DIFFERENTIAL:
                         self.p_mod._NMPC_NAMESPACE.diff_vars,
-                VariableCategory.DERIVATIVE: 
+                VariableCategory.DERIVATIVE:
                         self.p_mod._NMPC_NAMESPACE.deriv_vars,
-                VariableCategory.ALGEBRAIC: 
+                VariableCategory.ALGEBRAIC:
                         self.p_mod._NMPC_NAMESPACE.alg_vars,
                 VariableCategory.INPUT: 
                         self.p_mod._NMPC_NAMESPACE.input_vars,
@@ -374,15 +375,8 @@ class NMPCSim(object):
                 VariableCategory.SCALAR: 
                         self.p_mod._NMPC_NAMESPACE.scalar_vars,
                 }
-
         self.build_variable_locator(self.p_mod, self.p_mod_time, 
-                plant_category_dict,
-#                diff_vars=self.p_mod._NMPC_NAMESPACE.diff_vars,
-#                deriv_vars=self.p_mod._NMPC_NAMESPACE.deriv_vars,
-#                alg_vars=self.p_mod._NMPC_NAMESPACE.alg_vars,
-#                input_vars=self.p_mod._NMPC_NAMESPACE.input_vars,
-#                fixed_vars=self.p_mod._NMPC_NAMESPACE.fixed_vars,
-#                scalar_vars=self.p_mod._NMPC_NAMESPACE.scalar_vars,
+                self.p_mod._NMPC_NAMESPACE.category_dict,
                 ic_vars=self.p_mod._NMPC_NAMESPACE.ic_vars)
         # Now adding a locator to the plant model so I can find plant model
         # variables corresponding to the controller's initial conditions
@@ -396,34 +390,29 @@ class NMPCSim(object):
         # As simple as replacing 'differential' by 'DIFFERENTIAL', etc.?
         # Could construct a dict: enum -> var list, but that might be more work than necessary?
         # Then constructing ComponentMap is much easier...
-        controller_category_dict = {
-                VariableCategory.DIFFERENTIAL: 
+        self.c_mod._NMPC_NAMESPACE.category_dict = {
+                VariableCategory.DIFFERENTIAL:
                         self.c_mod._NMPC_NAMESPACE.diff_vars,
-                VariableCategory.DERIVATIVE: 
+                VariableCategory.DERIVATIVE:
                         self.c_mod._NMPC_NAMESPACE.deriv_vars,
-                VariableCategory.ALGEBRAIC: 
+                VariableCategory.ALGEBRAIC:
                         self.c_mod._NMPC_NAMESPACE.alg_vars,
-                VariableCategory.INPUT: 
+                VariableCategory.INPUT:
                         self.c_mod._NMPC_NAMESPACE.input_vars,
-                VariableCategory.FIXED: 
+                VariableCategory.FIXED:
                         self.c_mod._NMPC_NAMESPACE.fixed_vars,
-                VariableCategory.SCALAR: 
+                VariableCategory.SCALAR:
                         self.c_mod._NMPC_NAMESPACE.scalar_vars,
                 }
         self.build_variable_locator(self.c_mod, self.c_mod_time,
-                controller_category_dict,
-#                diff_vars=self.c_mod._NMPC_NAMESPACE.diff_vars,
-#                deriv_vars=self.c_mod._NMPC_NAMESPACE.deriv_vars,
-#                alg_vars=self.c_mod._NMPC_NAMESPACE.alg_vars,
-#                input_vars=self.c_mod._NMPC_NAMESPACE.input_vars,
-#                fixed_vars=self.c_mod._NMPC_NAMESPACE.fixed_vars,
-#                scalar_vars=self.c_mod._NMPC_NAMESPACE.scalar_vars,
+                self.c_mod._NMPC_NAMESPACE.category_dict,
                 ic_vars=self.c_mod._NMPC_NAMESPACE.ic_vars)
 
         # Only need to manipulate bounds of controller model. Assume the 
         # bounds in the plant model should remain in place for simulation.
         # (Should probably raise a warning if bounds are present...)
-        self.build_bound_lists(self.c_mod, self.c_mod_time)
+        for categ, vargroup in self.c_mod._NMPC_NAMESPACE.category_dict.items():
+            self.set_bounds_from_initial(vargroup)
         # ^ This may be removed in favor of strip_bounds transformation
 
         # Validate inputs in the plant model and initial conditions
@@ -438,7 +427,7 @@ class NMPCSim(object):
                 self.c_mod,
                 self.p_mod,
                 self.c_mod._NMPC_NAMESPACE.var_locator,
-                self.p_mod._NMPC_NAMESPACE.input_vars)
+                self.p_mod._NMPC_NAMESPACE.input_vars.varlist)
 
         self.validate_fixedness(self.p_mod, self.p_mod_time)
         self.validate_fixedness(self.c_mod, self.c_mod_time)
@@ -473,19 +462,22 @@ class NMPCSim(object):
         self.validate_sample_time(self.sample_time, 
                 self.c_mod, self.p_mod)
 
+        # TODO: validate_discretization_scheme option?
         scheme = self.c_mod.time.get_discretization_info()['scheme']
         if scheme == 'LAGRANGE-RADAU':
-            self.c_mod._ncp = self.c_mod.time.get_discretization_info()['ncp']
+            self.c_mod._NMPC_NAMESPACE.ncp = \
+                    self.c_mod.time.get_discretization_info()['ncp']
         elif scheme == 'BACKWARD Difference':
-            self.c_mod._ncp = 1
+            self.c_mod._NMPC_NAMESPACE.ncp = 1
         else:
             raise NotImplementedError
 
         scheme = self.p_mod.time.get_discretization_info()['scheme']
         if scheme == 'LAGRANGE-RADAU':
-            self.p_mod._ncp = self.p_mod.time.get_discretization_info()['ncp']
+            self.p_mod._NMPC_NAMESPACE.ncp = \
+                    self.p_mod.time.get_discretization_info()['ncp']
         elif scheme == 'BACKWARD Difference':
-            self.p_mod._ncp = 1
+            self.p_mod._NMPC_NAMESPACE.ncp = 1
         else:
             raise NotImplementedError
 
@@ -507,7 +499,7 @@ class NMPCSim(object):
         # Remember: Need to calculate weight matrices before populating this. 
 
 
-    def add_namespace_to(self, model):
+    def add_namespace_to(self, model, time):
         name = '_NMPC_NAMESPACE'
         # Not _CAPRESE_NAMESPACE as I might want to add a similar 
         # namespace for MHE
@@ -516,50 +508,12 @@ class NMPCSim(object):
                              % name)
         model.add_component(name, Block())
         namespace = getattr(model, name)
+        assert time.model() == model.model()
 
-        namespace.input_vars = []
-        namespace.n_input_vars = 0
-        namespace.input_weights = []
-        namespace.input_setpoints = []
-        namespace.input_bounds = []
-
-        namespace.alg_vars = []
-        namespace.n_alg_vars = 0
-        namespace.alg_weights = []
-        namespace.alg_setpoints = []
-        namespace.alg_bounds = []
-
-        namespace.diff_vars = []
-        namespace.n_diff_vars = 0
-        namespace.diff_weights = []
-        namespace.diff_setpoints = []
-        namespace.diff_bounds = []
-
-        namespace.deriv_vars = []
-        namespace.n_deriv_vars = 0
-        namespace.deriv_weights = []
-        namespace.deriv_setpoints = []
-        namespace.deriv_bounds = []
-
-        namespace.fixed_vars = []
-        namespace.n_fixed_vars = 0
-        namespace.fixed_weights = []
-        namespace.fixed_setpoints = []
-        namespace.fixed_bounds = []
-
-        namespace.scalar_vars = []
-        namespace.n_scalar_vars = 0
-        namespace.scalar_weights = []
-        namespace.scalar_setpoints = []
-        namespace.scalar_bounds = []
-
-        namespace.ic_vars = []
-        namespace.n_ic_vars = 0
-
-        namespace.dae_vars = []
-        namespace.n_dae_vars = 0
-
-        namespace.var_locator = ComponentMap()
+        def get_time():
+            return time
+        # Will not be bound. Not sure if that matters
+        namespace.get_time = get_time
 
 
     def validate_sample_time(self, sample_time, *models):
@@ -572,7 +526,7 @@ class NMPCSim(object):
             models: List of flowsheet models to check
         """
         for model in models:
-            time = model.time
+            time = model._NMPC_NAMESPACE.get_time()
             fe_spacing = (time.get_finite_elements()[1] -
                           time.get_finite_elements()[0])
             if fe_spacing > sample_time:
@@ -585,7 +539,8 @@ class NMPCSim(object):
                     'Sampling time must be an integer multiple of '
                     'finite element spacing for every model')
             else:
-                model._NMPC_NAMESPACE.fe_per_sample = int(sample_time/fe_spacing)
+                model._NMPC_NAMESPACE.fe_per_sample = \
+                        int(sample_time/fe_spacing)
 
             horizon_length = time.last() - time.first()
             if (horizon_length / sample_time) % 1 != 0:
@@ -593,7 +548,8 @@ class NMPCSim(object):
                     'Sampling time must be an integer divider of '
                     'horizon length')
             else:
-                model._NMPC_NAMESPACE.samples_per_horizon = int(horizon_length/sample_time)
+                model._NMPC_NAMESPACE.samples_per_horizon = \
+                        int(horizon_length/sample_time)
 
 
     def validate_slices(self, tgt_model, src_model, src_slices):
@@ -619,18 +575,19 @@ class NMPCSim(object):
         # That slice doesn't exist in the model, it's essentially just a nice
         # literary device for iterating over some related variables.
         # So for every slice provided, extract the first VarData, find it in
-        # the target model, then use the VarLocator to find the corresponding
+        # the target model, then use the NMPCVarLocator to find the corresponding
         # slice in the target model...
         t0 = src_model.time.first()
         tgt_slices = []
+        locator = tgt_model._NMPC_NAMESPACE.var_locator
         for _slice in src_slices:
             init_vardata = _slice[t0]
             tgt_vardata = find_comp_in_block(tgt_model, 
                                              src_model, 
                                              init_vardata)
-            tgt_slice = tgt_model._NMPC_NAMESPACE.var_locator[tgt_vardata].container
-            location = tgt_model._NMPC_NAMESPACE.var_locator[tgt_vardata].location
-            tgt_slices.append(tgt_slice[location])
+            tgt_container = locator[tgt_vardata].group.varlist
+            location = locator[tgt_vardata].location
+            tgt_slices.append(tgt_container[location])
         return tgt_slices
 
 
@@ -645,9 +602,10 @@ class NMPCSim(object):
         t0 = time.first()
         locator = model._NMPC_NAMESPACE.var_locator
 
-        for _slice in (model._NMPC_NAMESPACE.alg_vars + 
-                       model._NMPC_NAMESPACE.diff_vars + 
-                       model._NMPC_NAMESPACE.deriv_vars):
+        # Appropriate for this function to have categories specified
+        for _slice in (model._NMPC_NAMESPACE.alg_vars.varlist + 
+                       model._NMPC_NAMESPACE.diff_vars.varlist + 
+                       model._NMPC_NAMESPACE.deriv_vars.varlist):
             var0 = _slice[t0]
             if locator[var0].is_ic:
                 assert var0.fixed
@@ -659,7 +617,7 @@ class NMPCSim(object):
                 for t in time:
                     assert not _slice[t].fixed
 
-        for var in model._NMPC_NAMESPACE.fixed_vars:
+        for var in model._NMPC_NAMESPACE.fixed_vars.varlist:
             for t in time:
                 # Fixed vars, e.g. those used in boundary conditions,
                 # may "overlap" with initial conditions. It is up to the user
@@ -670,6 +628,7 @@ class NMPCSim(object):
                 assert var[t].fixed
                     
 
+    # TODO: option to skip this step by user specification of input pairs
     def validate_initial_inputs(self, tgt_model, src_model, src_time, 
             src_inputs=None, **kwargs):
         """Uses initial inputs in the source model to find variables of the
@@ -752,6 +711,7 @@ class NMPCSim(object):
         # copy_values and add_noise are tested, however
         config = self.config(config)
 
+        # appropriate to hard-code c_mod_time here
         time = self.c_mod_time
         t0 = time.first()
 
@@ -769,32 +729,32 @@ class NMPCSim(object):
         noise_args = config.noise_arguments
         max_noise_weight = config.max_noise_weight
 
+        locator = self.c_mod._NMPC_NAMESPACE.var_locator
         if add_noise:
             if not noise_weights:
                 noise_weights = []
                 for var in self.c_mod._NMPC_NAMESPACE.ic_vars:
-                    locator = self.c_mod._NMPC_NAMESPACE.var_locator[var[t0]]
-                    category = locator.category
-                    loc = locator.location
+                    info = locator[var[t0]]
+#                    category = info.category
+                    loc = info.location
                     # TODO: Should be a dict mapping: category -> correct weights
                     #       var_info[category].weights (set point, bounds, etc.)
                     #       This would be moot if I could map directly from 
                     #       variable to weights
-                    # TODO: allow other types of variables here
-                    # GENERALIZE
-                    if category == VariableCategory.DIFFERENTIAL:
-                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
-                    elif category == VariableCategory.DERIVATIVE:
-                        # Is it okay to weigh derivative noise by 
-                        # the state variable's weight?
-                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
-                    else:
-                        # FIXME: Won't have obj weight for algebraic equations
-                        # NAMESPACE: empty list should be added automatically in
-                        # namespace block
-                        # Really should calculate these weights, even if they
-                        # aren't used
-                        obj_weight = None
+                    obj_weight = info.group.weights[loc]
+#                    if category == VariableCategory.DIFFERENTIAL:
+#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
+#                    elif category == VariableCategory.DERIVATIVE:
+#                        # Is it okay to weigh derivative noise by 
+#                        # the state variable's weight?
+#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
+#                    else:
+#                        # FIXME: Won't have obj weight for algebraic equations
+#                        # NAMESPACE: empty list should be added automatically in
+#                        # namespace block
+#                        # Really should calculate these weights, even if they
+#                        # aren't used
+#                        obj_weight = None
 
                     if obj_weight is not None and obj_weight != 0:
                         noise_weights.append(min(1/obj_weight, 
@@ -840,13 +800,15 @@ class NMPCSim(object):
         # Send inputs to plant that were calculated for the end
         # of the first sample
         t_controller = self.c_mod_time.first() + sample_time
-        assert t_controller in self.c_mod.time
+        assert t_controller in self.c_mod_time
 
         time = self.p_mod_time
         plant_sample = [t for t in time if t > t_plant and t<= t_plant+sample_time]
         assert t_plant+sample_time in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
+        # Should have some logic to correct if assert fails due to a rounding
+        # error.
 
         add_noise = config.add_input_noise
         noise_weights = config.noise_weights
@@ -855,19 +817,21 @@ class NMPCSim(object):
         max_noise_weight = config.max_noise_weight
 
         # Need to get proper weights for plant's input vars
+        locator = self.c_mod._NMPC_NAMESPACE.var_locator
         if add_noise:
             if not noise_weights:
                 noise_weights = []
                 for var in self.c_mod._NMPC_NAMESPACE.plant_input_vars:
-                    locator = self.c_mod._NMPC_NAMESPACE.var_locator[var[t_controller]]
-                    category = locator.category
-                    loc = locator.location
-                    # TODO: allow other variable categories here?
-                    # GENERALIZE
-                    if category == VariableCategory.INPUT:
-                        obj_weight = self.c_mod._NMPC_NAMESPACE.input_weights[loc]
-                    elif category == VariableCategory.DIFFERENTIAL:
-                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
+                    info = locator[var[t_controller]]
+#                    category = locator.category
+                    loc = info.location
+#                    # TODO: allow other variable categories here?
+#                    # GENERALIZE
+#                    if category == VariableCategory.INPUT:
+#                        obj_weight = self.c_mod._NMPC_NAMESPACE.input_weights[loc]
+#                    elif category == VariableCategory.DIFFERENTIAL:
+#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
+                    obj_weight = info.group.weights[loc]
                     if obj_weight is not None and obj_weight != 0:
                         noise_weights.append(min(1/obj_weight, max_noise_weight))
                     else:
@@ -896,7 +860,7 @@ class NMPCSim(object):
             #                  noise after it's copied into plant...
             # Right now I apply noise to controller model, and don't revert
 
-        copy_values_at_time(self.p_mod._NMPC_NAMESPACE.input_vars,
+        copy_values_at_time(self.p_mod._NMPC_NAMESPACE.input_vars.varlist,
                             self.c_mod._NMPC_NAMESPACE.plant_input_vars,
                             plant_sample,
                             t_controller)
@@ -942,7 +906,8 @@ class NMPCSim(object):
         deactivated = deactivate_model_at(model, time, non_initial_time,
                 outlvl=idaeslog.ERROR)
 
-        for _slice in model._NMPC_NAMESPACE.input_vars:
+        # Proper to specify input_vars here
+        for _slice in model._NMPC_NAMESPACE.input_vars.varlist:
             vardata = _slice[t0]
             if vardata.model() is not toplevel:
                 raise ValueError(
@@ -1024,7 +989,11 @@ class NMPCSim(object):
         model._NMPC_NAMESPACE.dae_vars = list(dae_map.values())
         #model.scalar_vars = list(ComponentMap([(v, v) for v in scalar_vars]).values())
         model._NMPC_NAMESPACE.scalar_vars = \
-                list(ComponentMap([(v, v) for v in scalar_vars]).values())
+            NMPCVarGroup(
+                list(ComponentMap([(v, v) for v in scalar_vars]).values()),
+                index_set=None, is_scalar=True)
+        model._NMPC_NAMESPACE.n_scalar_vars = \
+                model._NMPC_NAMESPACE.scalar_vars.n_vars
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
         diff_set = ComponentSet()
@@ -1096,14 +1065,15 @@ class NMPCSim(object):
                     ic_vars.append(time_slice)
                 alg_vars.append(time_slice)
 
-        # TODO: attribute of subblock
-        model._NMPC_NAMESPACE.deriv_vars = deriv_vars
-        model._NMPC_NAMESPACE.diff_vars = diff_vars
+        model._NMPC_NAMESPACE.deriv_vars = NMPCVarGroup(deriv_vars, time)
+        model._NMPC_NAMESPACE.diff_vars = NMPCVarGroup(diff_vars, time)
         model._NMPC_NAMESPACE.n_diff_vars = len(diff_vars)
         model._NMPC_NAMESPACE.n_deriv_vars = len(deriv_vars)
         assert (model._NMPC_NAMESPACE.n_diff_vars == 
                 model._NMPC_NAMESPACE.n_deriv_vars)
                 
+        # ic_vars will not be stored as a NMPCVarGroup - don't want to store
+        # all the info twice
         model._NMPC_NAMESPACE.ic_vars = ic_vars
         model._NMPC_NAMESPACE.n_ic_vars = len(ic_vars)
         #assert model.n_dv == len(ic_vars)
@@ -1111,25 +1081,20 @@ class NMPCSim(object):
         # variables that are not implicitly fixed (by fixing some input)
         # is difficult
 
-        model._NMPC_NAMESPACE.input_vars = input_vars
+        model._NMPC_NAMESPACE.input_vars = NMPCVarGroup(input_vars, time)
         model._NMPC_NAMESPACE.n_input_vars = len(input_vars)
 
-        model._NMPC_NAMESPACE.alg_vars = alg_vars
+        model._NMPC_NAMESPACE.alg_vars = NMPCVarGroup(alg_vars, time)
         model._NMPC_NAMESPACE.n_alg_vars = len(alg_vars)
 
-        model._NMPC_NAMESPACE.fixed_vars = fixed_vars 
+        model._NMPC_NAMESPACE.fixed_vars = NMPCVarGroup(fixed_vars, time)
         model._NMPC_NAMESPACE.n_fixed_vars = len(fixed_vars)
 
 
     def build_variable_locator(self, model, time, category_dict,
-#            alg_vars=[],
-#            diff_vars=[],
-#            deriv_vars=[],
-#            input_vars=[],
-#            scalar_vars=[],
             ic_vars=[]):
         """Constructs a dictionary mapping the id of each VarData object
-        to a VarLocator object. This dictionary is added as an attribute to
+        to a NMPCVarLocator object. This dictionary is added as an attribute to
         the model.
 
         Args:
@@ -1145,54 +1110,21 @@ class NMPCSim(object):
             ic : List of differential, algebraic, or derivative variables
                  that will be fixed as initial conditions
         """
-#        alg_list = alg_vars
-#        diff_list = diff_vars
-#        deriv_list = deriv_vars
-#        input_list = input_vars
-#        fixed_list = fixed_vars
-#        scalar_list = scalar_vars
         ic_list = ic_vars
 
         locator = ComponentMap()
-        for categ, varlist in category_dict.items():
+        for categ, vargroup in category_dict.items():
+            varlist = vargroup.varlist
             if categ == VariableCategory.SCALAR:
                 for i, var in enumerate(varlist):
-                    locator[var] = VarLocator(categ, varlist, i)
+                    locator[var] = NMPCVarLocator(categ, vargroup, i)
             else:
                 for i, var in enumerate(varlist):
                     for t in time:
-                        locator[var[t]] = VarLocator(categ, varlist, i)
+                        locator[var[t]] = NMPCVarLocator(categ,
+                                vargroup, i)
 
-#        for i, _slice in enumerate(alg_list):
-#            for t in model.time:
-#                locator[_slice[t]] = VarLocator(VariableCategory.ALGEBRAIC, 
-#                                                alg_list, i)
-#
-#        for i, _slice in enumerate(diff_list):
-#            for t in model.time:
-#                locator[_slice[t]] = VarLocator(VariableCategory.DIFFERENTIAL,
-#                                                diff_list, i)
-#
-#        for i, _slice in enumerate(deriv_list):
-#            for t in model.time:
-#                locator[_slice[t]] = VarLocator(VariableCategory.DERIVATIVE, 
-#                                                deriv_list, i)
-#
-#        for i, _slice in enumerate(input_list):
-#            for t in model.time:
-#                locator[_slice[t]] = VarLocator(VariableCategory.INPUT, 
-#                                                input_list, i)
-#
-#        for i, _slice in enumerate(fixed_list):
-#            for t in model.time:
-#                locator[_slice[t]] = VarLocator(VariableCategory.FIXED, 
-#                                                fixed_list, i)
-#
-#        for i, vardata in enumerate(scalar_list):
-#            locator[vardata] = VarLocator(VariableCategory.SCALAR, 
-#                                            scalar_list, i)
-
-        # Since these variables already have VarLocator objects,
+        # Since these variables already have NMPCVarLocator objects,
         # just set the desired attribute.
         for i, _slice in enumerate(ic_list):
             for t in model.time:
@@ -1211,7 +1143,7 @@ class NMPCSim(object):
             raise ValueError(
                "'steady_model' required to validate set point")
         self.s_mod = steady_model
-        self.add_namespace_to(self.s_mod)
+        self.add_namespace_to(self.s_mod, steady_model.time)
         self.validate_models(self.s_mod, self.p_mod)
         self.validate_steady_setpoint(set_point, self.s_mod,
                                       outlvl=outlvl,
@@ -1231,7 +1163,7 @@ class NMPCSim(object):
         weight_tolerance = self.config.objective_weight_tolerance
         outlvl = config.outlvl
 
-        self.construct_objective_weight_matrices(self.c_mod,
+        self.construct_objective_weights(self.c_mod,
                 objective_weight_override=weight_override,
                 objective_weight_tolerance=weight_tolerance)
 
@@ -1240,65 +1172,16 @@ class NMPCSim(object):
                 name='tracking_objective')
 
 
-#    def add_setpoint(self, set_point, skip_validation=False, **kwargs):
-#        """User-facing function for the addition of a set point to the 
-#        controller.
-#        """
-#        # TODO: maybe split into two functions
-#        weight_override = kwargs.pop('steady_weight_override', [])
-#        weight_tolerance = kwargs.pop('steady_weight_tolerance', 1e-6)
-#        dynamic_weight_override = kwargs.pop('dynamic_weight_override', [])
-#        dynamic_weight_tol = kwargs.pop('dynamic_weight_tol', 1e-6)
-#
-#        config = self.config(kwargs)
-#        outlvl = config.outlvl
-#
-#        if skip_validation:
-#            raise NotImplementedError(
-#                    'Maybe one day...')
-#            # In the implementation to 'skip validation', should still
-#            # get an error if a set_point var is not present in controller
-#            # model.
-#            #
-#            # Result should be that setpoint attributes have been added to 
-#            # controller model
-#        else:
-#            steady_model = kwargs.pop('steady_model', None)
-#            if not steady_model:
-#                raise ValueError(
-#                   "'steady_model' required to validate set point")
-#            self.s_mod = steady_model
-#            self.validate_models(self.s_mod, self.p_mod)
-#            self.validate_steady_setpoint(set_point, self.s_mod,
-#                                          outlvl=outlvl,
-#                                          weight_override=weight_override,
-#                                          weight_tolerance=weight_tolerance)
-#            # ^ result should be that controller now has set point attributes
-#
-#        self.construct_objective_weight_matrices(self.c_mod,
-#                weight_override=dynamic_weight_override,
-#                tol=dynamic_weight_tol)
-#
-#        self.add_objective_function(self.c_mod,
-#                control_penalty_type=ControlPenaltyType.ACTION,
-#                name='tracking_objective')
-
-
     def validate_steady_setpoint(self, set_point, steady_model, **kwargs):
 
         config = self.config(kwargs)
-#        solver = kwargs.pop('solver', self.default_solver)
-#        outlvl = kwargs.pop('outlvl', self.outlvl)
         solver = config.solver
         outlvl = config.outlvl
         
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
-        # Above can be setup through common config
         weight_override = config.objective_weight_override
         weight_tolerance = config.objective_weight_tolerance
-        #weight_override = kwargs.pop('weight_override', [])
-        #weight_tolerance = kwargs.pop('weight_tolerance', 1e-6)
 
         # The following loop will create steady-state variable lists in
         # proper order, initialize steady state model to initial conditions
@@ -1310,16 +1193,16 @@ class NMPCSim(object):
         # Compared fixed-ness as t1 so we're not thrown off by fixed
         # initial conditions
         t1 = self.c_mod_time.get_finite_elements()[1]
-        for attr_name in ['diff_vars', 'alg_vars', 'input_vars', 
-                          'fixed_vars', 'scalar_vars']:
-            # TODO: subblock for naming
-            # TODO: pass in these variables as arg instead of using strings
-            #       Or just hard-code, but use the lists in the namespace
-            setattr(steady_model._NMPC_NAMESPACE, attr_name, [])
-            for _slice in getattr(self.c_mod._NMPC_NAMESPACE, attr_name):
+
+        steady_cat_dict = {}
+        for categ, vargroup in self.c_mod._NMPC_NAMESPACE.category_dict.items():
+            if categ == VariableCategory.DERIVATIVE:
+                continue
+            varlist = []
+            for _slice in vargroup.varlist:
                 # TODO: need some way to know which category a variable is
                 # (ComponentMap?)
-                if attr_name != 'scalar_vars':
+                if not vargroup.is_scalar:
                     vardata_t0 = _slice[t0]
                     vardata_t1 = _slice[t1]
                 else:
@@ -1328,7 +1211,8 @@ class NMPCSim(object):
 
                 local_parent = steady_model
                 # TODO: replace with helper function
-                for r in path_from_block(vardata_t0, self.c_mod, 
+                # Is there a UID function I could use to get this?
+                for r in path_from_block(vardata_t0, self.c_mod,
                                          include_comp=True):
                     try:
                         local_parent = getattr(local_parent, r[0])[r[1]]
@@ -1351,8 +1235,7 @@ class NMPCSim(object):
                 var_steady = local_parent
                 var_steady.set_value(vardata_t0.value)
                 
-                varlist = getattr(steady_model._NMPC_NAMESPACE, attr_name)
-                if attr_name != 'scalar_vars':
+                if not vargroup.is_scalar:
                     varlist.append({t0: var_steady})
                     # Append dict to list here so that steady state
                     # VarDatas for "DAE vars" are accessed with the
@@ -1364,22 +1247,38 @@ class NMPCSim(object):
                 if not var_steady.fixed == vardata_t1.fixed:
                     var_steady.fixed = vardata_t1.fixed
 
+            steady_cat_dict[categ] = NMPCVarGroup(varlist,
+                    steady_model.time)
+        steady_model._NMPC_NAMESPACE.category_dict = steady_cat_dict
+        steady_model._NMPC_NAMESPACE.diff_vars = \
+                steady_cat_dict[VariableCategory.DIFFERENTIAL].varlist
+        steady_model._NMPC_NAMESPACE.alg_vars = \
+                steady_cat_dict[VariableCategory.ALGEBRAIC].varlist
+        steady_model._NMPC_NAMESPACE.input_vars = \
+                steady_cat_dict[VariableCategory.INPUT].varlist
+        steady_model._NMPC_NAMESPACE.fixed_vars = \
+                steady_cat_dict[VariableCategory.FIXED].varlist
+        steady_model._NMPC_NAMESPACE.scalar_vars = \
+                steady_cat_dict[VariableCategory.SCALAR].varlist
+
+        # TODO: these don't exist yet
         assert (len(steady_model._NMPC_NAMESPACE.diff_vars) == 
-                len(self.c_mod._NMPC_NAMESPACE.diff_vars))
+                self.c_mod._NMPC_NAMESPACE.n_diff_vars)
         assert (len(steady_model._NMPC_NAMESPACE.alg_vars) == 
-                len(self.c_mod._NMPC_NAMESPACE.alg_vars))
+                self.c_mod._NMPC_NAMESPACE.n_alg_vars)
         assert (len(steady_model._NMPC_NAMESPACE.input_vars) == 
-                len(self.c_mod._NMPC_NAMESPACE.input_vars))
+                self.c_mod._NMPC_NAMESPACE.n_input_vars)
         assert (len(steady_model._NMPC_NAMESPACE.fixed_vars) == 
-                len(self.c_mod._NMPC_NAMESPACE.fixed_vars))
+                self.c_mod._NMPC_NAMESPACE.n_fixed_vars)
         assert (len(steady_model._NMPC_NAMESPACE.scalar_vars) == 
-                len(self.c_mod._NMPC_NAMESPACE.scalar_vars))
+                self.c_mod._NMPC_NAMESPACE.n_scalar_vars)
 
         # Now that steady state model has been validated and initialized,
         # construct complete lists for the *_sp attributes
-        diff_var_sp = [None for var in steady_model._NMPC_NAMESPACE.diff_vars]
-        alg_var_sp = [None for var in steady_model._NMPC_NAMESPACE.alg_vars]
-        input_var_sp = [None for var in steady_model._NMPC_NAMESPACE.input_vars]
+# TODO: these are already None
+#        diff_var_sp = [None for var in steady_model._NMPC_NAMESPACE.diff_vars]
+#        alg_var_sp = [None for var in steady_model._NMPC_NAMESPACE.alg_vars]
+#        input_var_sp = [None for var in steady_model._NMPC_NAMESPACE.input_vars]
         # ^ list entries are not actually vars, they are dictionaries...
         # maybe this is too confusing
 
@@ -1390,57 +1289,50 @@ class NMPCSim(object):
             info = self.c_mod._NMPC_NAMESPACE.var_locator[vardata]
             category = info.category
             location = info.location
+            group = info.group
 
             # Only allow set point variables from following categories:
-            if category == VariableCategory.DIFFERENTIAL:
-                diff_var_sp[location] = value
-            elif category == VariableCategory.ALGEBRAIC:
-                alg_var_sp[location] = value
-            elif category == VariableCategory.INPUT:
-                input_var_sp[location] = value
-            else:
+            if (category != VariableCategory.DIFFERENTIAL and
+                category != VariableCategory.ALGEBRAIC and
+                category != VariableCategory.INPUT):
                 raise ValueError('Set point variables (data objects) must be'
                                  'differential, algebraic, or inputs.')
             # Maybe this restriction should stand, but I should probably map
             # category to the corresponding set-point list
+            group.set_setpoint(location, value)
 
         # Add attributes (with proper names!) to steady model
         # so these values can be accessed later
-        # TODO: subblock for naming
-        steady_model._NMPC_NAMESPACE.diff_setpoints = diff_var_sp
-        steady_model._NMPC_NAMESPACE.alg_setpoints = alg_var_sp
-        steady_model._NMPC_NAMESPACE.input_setpoints = input_var_sp
+# These attributes no longer exist and the info has been properly recorded
+#        steady_model._NMPC_NAMESPACE.diff_setpoints = diff_var_sp
+#        steady_model._NMPC_NAMESPACE.alg_setpoints = alg_var_sp
+#        steady_model._NMPC_NAMESPACE.input_setpoints = input_var_sp
 
-        # TODO: ComponentMap
-        category_dict = {
-        VariableCategory.DIFFERENTIAL: steady_model._NMPC_NAMESPACE.diff_vars,
-        VariableCategory.ALGEBRAIC: steady_model._NMPC_NAMESPACE.alg_vars,
-        VariableCategory.INPUT: steady_model._NMPC_NAMESPACE.input_vars,
-        VariableCategory.FIXED: steady_model._NMPC_NAMESPACE.fixed_vars,
-        VariableCategory.SCALAR: steady_model._NMPC_NAMESPACE.scalar_vars,
-        }
-        # TODO: don't hard-code name of time in steady model
-        self.build_variable_locator(steady_model, steady_model.time, category_dict,
-#                diff_vars=steady_model._NMPC_NAMESPACE.diff_vars,
-#                alg_vars=steady_model._NMPC_NAMESPACE.alg_vars,
-#                input_vars=steady_model._NMPC_NAMESPACE.input_vars,
-#                fixed=steady_model._NMPC_NAMESPACE.fixed_vars,
-#                scalar_vars=steady_model._NMPC_NAMESPACE.scalar_vars)
-        )
-        self.construct_objective_weight_matrices(steady_model,
+# Has already been created.
+#        category_dict = {
+#        VariableCategory.DIFFERENTIAL: steady_model._NMPC_NAMESPACE.diff_vars,
+#        VariableCategory.ALGEBRAIC: steady_model._NMPC_NAMESPACE.alg_vars,
+#        VariableCategory.INPUT: steady_model._NMPC_NAMESPACE.input_vars,
+#        VariableCategory.FIXED: steady_model._NMPC_NAMESPACE.fixed_vars,
+#        VariableCategory.SCALAR: steady_model._NMPC_NAMESPACE.scalar_vars,
+#        }
+        self.build_variable_locator(steady_model, 
+                steady_model._NMPC_NAMESPACE.get_time(), steady_cat_dict)
+
+        # Set values of reference variables
+        for categ, group in steady_cat_dict.items():
+            if categ != VariableCategory.SCALAR:
+                self.set_reference_values_from_initial(group)
+        for categ, group in self.c_mod._NMPC_NAMESPACE.category_dict.items():
+            if categ != VariableCategory.SCALAR:
+                self.set_reference_values_from_initial(group)
+
+        self.construct_objective_weights(steady_model,
+                categories=[VariableCategory.ALGEBRAIC,
+                           VariableCategory.DIFFERENTIAL,
+                           VariableCategory.INPUT],
                 objective_weight_override=weight_override,
                 objective_weight_tolerance=weight_tolerance)
-
-        assert hasattr(steady_model._NMPC_NAMESPACE, 'diff_weights')
-        assert hasattr(steady_model._NMPC_NAMESPACE, 'alg_weights')
-        assert hasattr(steady_model._NMPC_NAMESPACE, 'input_weights')
-
-        assert (len(steady_model._NMPC_NAMESPACE.diff_weights) == 
-                len(steady_model._NMPC_NAMESPACE.diff_vars))
-        assert (len(steady_model._NMPC_NAMESPACE.alg_weights) == 
-                len(steady_model._NMPC_NAMESPACE.alg_vars))
-        assert (len(steady_model._NMPC_NAMESPACE.input_weights) == 
-                len(steady_model._NMPC_NAMESPACE.input_vars))
 
         # Add objective to steady_model
         # Add bounds to steady_model (taken from control model)
@@ -1451,21 +1343,30 @@ class NMPCSim(object):
         # add sp attributes to control model
 
         self.add_objective_function(steady_model,
+                            state_categories=[VariableCategory.DIFFERENTIAL,
+                                              VariableCategory.ALGEBRAIC],
                             control_penalty_type=ControlPenaltyType.ERROR,
                             name='user_setpoint_objective')
-        self.transfer_bounds(steady_model, self.c_mod, steady_model.time)
 
+        # Transfer bounds to steady state model
+        for categ, vargroup in steady_cat_dict.items():
+            controller_group = self.c_mod._NMPC_NAMESPACE.category_dict[categ]
+            self.transfer_bounds(vargroup, controller_group)
+
+        # Unfix inputs for solve
         for var in steady_model._NMPC_NAMESPACE.input_vars:
             for t in steady_model.time:
                 var[t].unfix()
 
+        # Verify proper number of degrees of freedom
+        # TODO: abstract this into a verify_dof function
         assert (degrees_of_freedom(steady_model) ==
                 len(steady_model._NMPC_NAMESPACE.input_vars)*len(steady_model.time))
 
+        # Solve steady state model 
         init_log.info('Solving for steady state set-point.')
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(steady_model, tee=slc.tee)
-
         if results.solver.termination_condition == TerminationCondition.optimal:
             init_log.info(
                     'Successfully solved for steady state set-point')
@@ -1474,23 +1375,36 @@ class NMPCSim(object):
             init_log.error(msg)
             raise RuntimeError(msg)
 
-        c_diff_sp = []
-        for var in steady_model._NMPC_NAMESPACE.diff_vars:
-            c_diff_sp.append(var[t0].value)
-        self.c_mod._NMPC_NAMESPACE.diff_setpoints = c_diff_sp
-
-        c_input_sp = []
-        for var in steady_model._NMPC_NAMESPACE.input_vars:
-            c_input_sp.append(var[t0].value)
-        self.c_mod._NMPC_NAMESPACE.input_setpoints = c_input_sp
-
-        # TODO: add alg var sp values
+        for categ, steady_group in steady_cat_dict.items():
+            controller_group = self.c_mod._NMPC_NAMESPACE.category_dict[categ]
+            for i, var in enumerate(steady_group):
+                controller_group.setpoint[i] = var[t0].value
+        # TODO: Change if economic NMPC (solve for "consistent derivatives")
+        for i in range(self.c_mod._NMPC_NAMESPACE.deriv_vars.n_vars):
+            self.c_mod._NMPC_NAMESPACE.deriv_vars.setpoint[i] = 0
 
 
-    def construct_objective_weight_matrices(self, model, **kwargs):
+    def set_reference_values_from_initial(self, vargroup, t0=None):
+        if vargroup.is_scalar:
+            raise ValueError(
+                'No way to get initial conditions for a scalar component')
+        else:
+            if t0 is None:
+                t0 = vargroup.t0
+        for i in range(vargroup.n_vars):
+            vargroup.reference[i] = vargroup.varlist[i][t0].value
+
+
+    def construct_objective_weights(self, model,
+            categories=[VariableCategory.DIFFERENTIAL,
+                        VariableCategory.ALGEBRAIC,
+                        VariableCategory.DERIVATIVE,
+                        VariableCategory.INPUT], 
+            **kwargs):
         """
         Do I even need the model? 
         ^ it makes things slightly easier to provide only the model, I think...
+        Need model to get the var_locator
 
         Do I want to allow user to provide a setpoint here?
         ^ No, but want to allow them to override weights if they want
@@ -1509,15 +1423,13 @@ class NMPCSim(object):
 
         # Variables to override must be VarData objects in the model
         # for whose objective function we are calculating weights
+        category_dict = model._NMPC_NAMESPACE.category_dict
         
         weights_to_override = {}
         for ow_tpl in override:
             locator = model._NMPC_NAMESPACE.var_locator[ow_tpl[0]]
             weights_to_override[(locator.category, locator.location)] = \
                     ow_tpl[1]
-        # dictionary mapping id of VarDatas to override to specified weight
-        # Is the proper way to do this to use suffixes?
-        # But which vardata (time index) is the right one to have the suffix?
 
         # Given a vardata here, need to know its location so I know which
         # weight to override
@@ -1526,71 +1438,48 @@ class NMPCSim(object):
 
         # Need t0 to get the 'reference' value to compare with set point value
         # for weight calculation
-        t0 = model.time.first()
+#        t0 = vargroup.index_set.first()
+# list of initial values should have already been populated
 
         # Attempt to construct weight for each type of setpoint
         # that we could allow
-        DIFFERENTIAL = VariableCategory.DIFFERENTIAL
-        ALGEBRAIC = VariableCategory.ALGEBRAIC
-        INPUT = VariableCategory.INPUT
 
-        # TODO: Don't rely on attr names here
-        for name in ['diff', 'alg', 'input']:
-            sp_attrname = name + '_setpoints'
-            if not hasattr(model._NMPC_NAMESPACE, sp_attrname):
-                continue
-            sp = getattr(model._NMPC_NAMESPACE, sp_attrname)
-
-            varlist_attrname = name + '_vars'
-            varlist = getattr(model._NMPC_NAMESPACE, varlist_attrname)
-
-            # construct the (diagonal) matrix (list).
-            matrix = []
-            for loc, value in enumerate(sp):
-
+        for categ in categories:
+            vargroup = category_dict[categ]
+            reference = vargroup.reference
+            setpoint = vargroup.setpoint
+            weights = vargroup.weights
+            # construct the diagonal matrix (list).
+            for loc, sp_value in enumerate(setpoint):
+    
                 # This assumes the vardata in sp is the same one
                 # provided by the user. But these could differ by time
                 # index...
                 # Need to check by location, category here
-                if name == 'diff':
-                    if (DIFFERENTIAL, loc) in weights_to_override:
-                        weight = weights_to_override[DIFFERENTIAL, loc]
-                        matrix.append(weight)
-                        continue
-                elif name == 'alg':
-                    if (ALGEBRAIC, loc) in weights_to_override:
-                        weight = weights_to_override[ALGEBRAIC, loc]
-                        matrix.append(weight)
-                        continue
-                elif name == 'input':
-                    if (INPUT, loc) in weights_to_override:
-                        weight = weights_to_override[INPUT, loc]
-                        matrix.append(weight)
-                        continue
-
+                if (categ, loc) in weights_to_override:
+                    weights[loc] = weights_to_override[categ, loc]
+                    continue
+    
                 # If value is None, but variable was provided as override,
                 # weight can still be non-None. This is okay.
-                if value is None:
-                    weight = None
-                    matrix.append(weight)
+                if sp_value is None:
+                    weights[loc] = None
                     continue
-
+    
                 # This line works for steady state variables thanks to
                 # duck typing
-                diff = abs(varlist[loc][t0].value - value)
+                diff = abs(reference[loc] - sp_value)
                 if diff > tol:
                     weight = 1./diff
                 else:
                     weight = 1./tol
-                matrix.append(weight)
-
-            # TODO: subblock for naming
-            weight_attrname = name + '_weights'
-            setattr(model._NMPC_NAMESPACE, weight_attrname, matrix)
-
+                weights[loc] = weight
+    
 
     def add_objective_function(self, model, name='objective', state_weight=1,
-            control_weight=1, **kwargs):
+            control_weight=1, 
+            state_categories=[VariableCategory.DIFFERENTIAL], 
+            **kwargs):
         """
         Assumes that model has already been populated with set point 
         and weights.
@@ -1603,10 +1492,10 @@ class NMPCSim(object):
         This seems like a lot of extra work though.)
         """
         config = self.config(kwargs)
-        # TODO: kwargs ???
         name = kwargs.pop('name', 'objective')
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        time_resolution = config.time_resolution_option
 
         # Q and R are p.s.d. matrices that weigh the state and
         # control norms in the objective function
@@ -1615,34 +1504,30 @@ class NMPCSim(object):
 
         # User may want to penalize control action, i.e. ||u_i - u_{i-1}||,
         # or control error (from set point), i.e. ||u_i - u*||
-        # Valid values are 'action' or 'error'
+        # Valid values are ACTION or ERROR
         control_penalty_type = config.control_penalty_type
         if not (control_penalty_type == ControlPenaltyType.ERROR or
                 control_penalty_type == ControlPenaltyType.ACTION):
             raise ValueError(
                 "control_penalty_type argument must be 'ACTION' or 'ERROR'")
 
-        # TODO: rename Q/R more descriptive, or comment well.
         if not Q_diagonal or not R_diagonal:
             raise NotImplementedError('Q and R must be diagonal for now.')
+        
+        category_dict = model._NMPC_NAMESPACE.category_dict 
+        states = []
+        Q_entries = []
+        sp_states = []
+        for categ in state_categories:
+            vargroup = category_dict[categ]
+            states += vargroup.varlist
+            Q_entries += vargroup.weights
+            sp_states += vargroup.setpoint
 
-        # This implementation assumes diff_weights/diff_sp are just values
-        # TODO: square this with implementation above
-        if hasattr(model, 'alg_sp') and hasattr(model, 'alg_weights'):
-            # Lists of time-indexed 'variables' - this is fine
-            states = model.diff_vars + model.alg_vars
-            Q_entries = model.diff_weights + model.alg_weights
-            sp_states = model.diff_sp + model.alg_sp
-        else:
-            states = model._NMPC_NAMESPACE.diff_vars
-            Q_entries = model._NMPC_NAMESPACE.diff_weights
-            sp_states = model._NMPC_NAMESPACE.diff_setpoints
-        # TODO: Setup all data structures (namespace attributes) in constructor
-        # and document there to avoid lots of if statements like this.
-
-        controls = model._NMPC_NAMESPACE.input_vars
-        R_entries = model._NMPC_NAMESPACE.input_weights
-        sp_controls = model._NMPC_NAMESPACE.input_setpoints
+        input_group = category_dict[VariableCategory.INPUT]
+        controls = input_group.varlist
+        R_entries = input_group.weights
+        sp_controls = input_group.setpoint
 
         # TODO: Make this a list of time points, replace with list of
         # time-finite elements or sampling points depending on user preference.
@@ -1662,7 +1547,7 @@ class NMPCSim(object):
             control_term = sum(R_entries[i]*(controls[i][t] - sp_controls[i])**2
                     for i in range(len(controls)) if (R_entries[i] is not None
                                                 and sp_controls[i] is not None)
-                               for t in time)
+                                                for t in time)
         elif control_penalty_type == ControlPenaltyType.ACTION:
             if len(time) == 1:
                 init_log.warning(
@@ -1673,7 +1558,8 @@ class NMPCSim(object):
                                   (controls[i][time[k]] - controls[i][time[k-1]])**2
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None)
-                               for k in range(2, len(time)+1))
+                                            for k in range(2, len(time)+1))
+        # TODO: allow a control penalty type of None to turn off this term.
             # Note: This term is only non-zero at the boundary between sampling
             # times. Could use this info to make the expression more compact
             # (TODO)
@@ -1687,7 +1573,7 @@ class NMPCSim(object):
         model.add_component(name, obj)
 
 
-    def build_bound_lists(self, model, time):
+    def set_bounds_from_initial(self, vargroup):
         """
         Builds lists of lower bound, upper bound tuples as attributes of the 
         input model, based on the current bounds (and domains) of
@@ -1699,55 +1585,30 @@ class NMPCSim(object):
         Returns:
             None
         """
-        t0 = time.first()
 
-        #model._NMPC_NAMESPACE.diff_bounds = []
-        for var in model._NMPC_NAMESPACE.diff_vars:
-            # Assume desired bounds are given at t0
-            lb = var[t0].lb
-            ub = var[t0].ub
-            if (var[t0].domain == NonNegativeReals and lb is None):
+#        for categ, vargroup in model._NMPC_NAMESPACE.category_dict.items():
+        varlist = vargroup.varlist
+        if not vargroup.is_scalar:
+            t0 = vargroup.index_set.first()
+        for i, var in enumerate(varlist):
+            if not vargroup.is_scalar:
+                # Just assume these are the bounds/domain I want
+                lb = var[t0].lb
+                ub = var[t0].ub
+                domain = var[t0].domain
+            else:
+                lb = var.lb
+                ub = var.ub
+                domain = var.domain
+            if (domain == NonNegativeReals and lb is None):
                 lb = 0
-            elif (var[t0].domain == NonNegativeReals and lb < 0):
+            elif (domain == NonNegativeReals and lb < 0):
                 lb = 0
-            for t in time:
-                var[t].setlb(lb)
-                var[t].setub(ub)
-                var[t].domain = Reals
-            model._NMPC_NAMESPACE.diff_bounds.append((lb, ub))
-
-        #model._NMPC_NAMESPACE.alg_bounds = []
-        for var in model._NMPC_NAMESPACE.alg_vars:
-            # Assume desired bounds are given at t0
-            lb = var[t0].lb
-            ub = var[t0].ub
-            if (var[t0].domain == NonNegativeReals and lb is None):
-                lb = 0
-            elif (var[t0].domain == NonNegativeReals and lb < 0):
-                lb = 0
-            for t in time:
-                var[t].setlb(lb)
-                var[t].setub(ub)
-                var[t].domain = Reals
-            model._NMPC_NAMESPACE.alg_bounds.append((lb, ub))
-
-        #model.input_var_bounds = []
-        for var in model._NMPC_NAMESPACE.input_vars:
-            # Assume desired bounds are given at t0
-            lb = var[t0].lb
-            ub = var[t0].ub
-            if (var[t0].domain == NonNegativeReals and lb is None):
-                lb = 0
-            elif (var[t0].domain == NonNegativeReals and lb < 0):
-                lb = 0
-            for t in time:
-                var[t].setlb(lb)
-                var[t].setub(ub)
-                var[t].domain = Reals
-            model._NMPC_NAMESPACE.input_bounds.append((lb, ub))
+            vargroup.set_lb(i, lb)
+            vargroup.set_ub(i, ub)
 
 
-    def transfer_bounds(self, tgt_model, src_model, tgt_time):
+    def transfer_bounds(self, tgt_group, src_group):
         """
         Transfers bounds from source model's bound lists
         to target model's differential, algebraic, and input
@@ -1760,34 +1621,14 @@ class NMPCSim(object):
         Returns:
             None
         """
-        time = tgt_time
-
-        # TODO: Generalize this act on all categories of variables, or
-        # allow specification of variable categories as an arg
-
-        diff_var_bounds = src_model._NMPC_NAMESPACE.diff_bounds
-        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.diff_vars):
-            for t in time:
-                var[t].setlb(diff_var_bounds[i][0])
-                var[t].setub(diff_var_bounds[i][1])
-                var[t].domain = Reals
-
-        alg_var_bounds = src_model._NMPC_NAMESPACE.alg_bounds
-        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.alg_vars):
-            for t in time:
-                var[t].setlb(alg_var_bounds[i][0])
-                var[t].setub(alg_var_bounds[i][1])
-                var[t].domain = Reals
-
-        input_var_bounds = src_model._NMPC_NAMESPACE.input_bounds
-        for i, var in enumerate(tgt_model._NMPC_NAMESPACE.input_vars):
-            for t in time:
-                var[t].setlb(input_var_bounds[i][0])
-                var[t].setub(input_var_bounds[i][1])
-                var[t].domain = Reals
+        n_vars = tgt_group.n_vars
+        for i in range(n_vars):
+            tgt_group.set_lb(i, src_group.lb[i])
+            tgt_group.set_ub(i, src_group.ub[i])
+            tgt_group.set_domain(i, Reals)
 
 
-    def constrain_control_inputs_piecewise_constant(self, 
+    def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
         """Function to add piecewise constant (PWC) constraints to
         model. Inputs and sample time are already known, so no arguments are
@@ -1800,19 +1641,19 @@ class NMPCSim(object):
             outlvl : idaes.logger output level
         """
         config = self.config(kwargs)
-        # KWARGS
-        # CONFIG: all of these options can/should be handled through config
-        model = kwargs.pop('model', self.c_mod)
         sample_time = config.sample_time
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
         init_log.info('Adding piecewise-constant constraints')
 
+        model = self.c_mod
+
         # If sample_time is overwritten here, assume that the 
         # provided sample_time should be used going forward
         # (in input injection, plant simulation, and controller initialization)
         if sample_time != self.config.sample_time:
-            self.validate_sample_time(sample_time, self.c_mod, self.p_mod)
+            self.validate_sample_time(sample_time, 
+                    self.c_mod, self.p_mod)
             self.config.sample_time = sample_time
 
         time = model.time
@@ -1824,13 +1665,11 @@ class NMPCSim(object):
             raise ValueError
         nfe_per_sample = int(nfe_per_sample)
 
-        pwc_constraints = []
-
         # This rule will not be picklable as it is not declared
         # at module namespace
         # Can access sample_time as attribute of namespace block,
         # then rule can be located outside of class
-        input_indices = [i for i in range(len(model._NMPC_NAMESPACE.input_vars))]
+        input_indices = [i for i in range(model._NMPC_NAMESPACE.input_vars.n_vars)]
         def pwc_rule(m, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
@@ -1843,23 +1682,18 @@ class NMPCSim(object):
             if (t - time.first()) % sample_time == 0:
                 return Constraint.Skip
             t_next = time.next(t)
-            # NAMESPACE: input_vars. Also, sample_time
-            # probably make sample time an attribute of NMPCSim, but still
-            # provide as a config. CONFIG
-            inputs = m._NMPC_NAMESPACE.input_vars
+            inputs = m._NMPC_NAMESPACE.input_vars.varlist
             _slice = inputs[i]
             return _slice[t_next] == _slice[t]
-        # NAMESPACE: pwc_input
-        name = '_pwc_input'
+
+        name = 'pwc_input'
         pwc_constraint = Constraint(model.time, input_indices, 
                 rule=pwc_rule)
-        # Maybe a check here to delete existing pwc constraints
         model.add_component(name, pwc_constraint)
 
-        pwc_constraints = [Reference(pwc_constraint[:, i])
+        pwc_constraint_list = [Reference(pwc_constraint[:, i])
                            for i in input_indices]
-        # TODO: namespace block
-        model._pwc_constraints = pwc_constraints
+        model._NMPC_NAMESPACE.pwc_constraint_list = pwc_constraint_list
 
 
     def initialize_control_problem(self, **kwargs):
@@ -1878,30 +1712,17 @@ class NMPCSim(object):
             solver_options : Dictionary of options to pass to the solver
         """
         config = self.config(kwargs)
-#        strategy = kwargs.pop('strategy', 'from_previous')
         strategy = config.control_init_option
-#        solver = kwargs.pop('solver', self.default_solver)
         solver = config.solver
-#        solver_options = kwargs.pop('solver_options', None)
-#        if solver_options:
-#            solver.options = solver_options
-#       For now, I'm choosing to forgo solver options
 
-        #input_type = kwargs.pop('input_type', 'set_point')
         input_type = config.element_initialization_input_option
 
         time = self.c_mod_time
 
-        # TODO: remove embedded strings. 
-        # Handle these options in config block? Here, and in constructor - 'ephemeral'
-        # ^ domain maps string to enum, or just takes enum
-        # Here, options should be enums
-        # Read documentation in pyutilib.misc.config
         if strategy == ControlInitOption.FROM_PREVIOUS:
-            self.initialize_from_previous_sample(self.c_mod, self.c_mod_time)
+            self.initialize_from_previous_sample(self.c_mod)
 
         elif strategy == ControlInitOption.BY_TIME_ELEMENT:
-            # TODO: 'by_time_element'
             self.initialize_by_solving_elements(self.c_mod, self.c_mod_time,
                     input_type=element_initialization_input_option)
 
@@ -1920,41 +1741,38 @@ class NMPCSim(object):
                                       'contrib.strip_var_bounds')
         strip_controller_bounds.apply_to(model, reversible=True)
 
+        input_vars = model._NMPC_NAMESPACE.input_vars
         if input_type == ElementInitializationInputOption.SET_POINT:
-            for i, _slice in enumerate(model._NMPC_NAMESPACE.input_vars):
+            for i, _slice in enumerate(input_vars.varlist):
                 for t in time:
                     if t != time.first():
-                        _slice[t].fix(model._NMPC_NAMESPACE.input_setpoints[i])
+                        _slice[t].fix(input_vars.setpoint[i])
                     else:
                         _slice[t].fix()
-
         elif input_type == ElementInitializationInputOption.INITIAL_CONDITIONS:
-            for i, _slice in enumerate(model._NMPC_NAMESPACE.input_vars):
+            for i, _slice in enumerate(input_vars.varlist):
                 t0 = time.first()
                 for t in time:
-                    _slice[t].fix(model._NMPC_NAMESPACE.input_vars[i][t0].value)
-
+                    _slice[t].fix(_slice[t0].value)
         else:
-            raise ValueError('Unrecognized input type')
+            raise ValueError('Unrecognized input option')
         # The above should ensure that all inputs are fixed and the 
         # model has no dof upon simulation
 
         # Deactivate objective function
         # Here I assume the name of the objective function.
+        # TODO: ObjectiveType Enum and objective_dict
         model._NMPC_NAMESPACE.tracking_objective.deactivate()
-        # Deactivate pwc constraints (as inputs are fixed)
-        #for con in model._pwc_constraints:
-        #    con.deactivate()
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
-        initialize_by_element_in_range(self.c_mod, self.c_mod_time, time.first(), time.last(),
-                            dae_vars=self.c_mod._NMPC_NAMESPACE.dae_vars,
-                            time_linking_variables=self.c_mod._NMPC_NAMESPACE.diff_vars)
+        initialize_by_element_in_range(self.c_mod, self.c_mod_time, 
+                    time.first(), time.last(),
+                    dae_vars=self.c_mod._NMPC_NAMESPACE.dae_vars,
+                    time_linking_variables=self.c_mod._NMPC_NAMESPACE.diff_vars)
 
         # Reactivate objective, pwc constraints, bounds
+        # TODO: safer objective name
         self.c_mod._NMPC_NAMESPACE.tracking_objective.activate()
-        #for con in self.c_mod._pwc_constraints:
-        #    con.activate()
         model.pwc_constraint.activate()
 
         for _slice in self.c_mod._NMPC_NAMESPACE.input_vars:
@@ -1964,8 +1782,11 @@ class NMPCSim(object):
         strip_controller_bounds.revert(self.c_mod)
 
 
-    def initialize_from_previous_sample(self, model, time, 
-            attr_list=['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'],
+    def initialize_from_previous_sample(self, model,
+            categories=[VariableCategory.DIFFERENTIAL,
+                        VariableCategory.ALGEBRAIC,
+                        VariableCategory.DERIVATIVE,
+                        VariableCategory.INPUT],
             **kwargs):
         """Re-initializes values of variables in model to the values one 
         sampling time in the future. Values for the last sampling time are 
@@ -1992,31 +1813,18 @@ class NMPCSim(object):
         config = self.config(kwargs)
         sample_time = config.sample_time
 
-#        attr_list = kwargs.pop('attr_list', 
-#                ['diff_vars', 'alg_vars', 'deriv_vars', 'input_vars'])
-        # Replace this argument with a single list of flattened variables.
-        # Use as default a non_fixed_variable_list, which was defined in constructor.
-        # ^ or pull off namespace block if arg not provided, knowing what these are
-        # called
-
-        # ^ why not just iterate over dae_vars here?
-        # If fixed vars need to be changed (time-varying known disturbance),
-        # they should be changed manually. (This is my current opinion)
-
         # TODO
         # Should initialize dual variables here too.
 
-        #time = model.time
+        time = model._NMPC_NAMESPACE.get_time()
+        category_dict = model._NMPC_NAMESPACE.category_dict
         # TODO: have some attribute for steady time 
         # Or better yet, don't use a steady_model at all
         # Here I use steady model, assuming it holds the desired set point values
         # Really, I should access set point lists...
-        steady_t = self.s_mod.time.first()
 
-        for attrname in attr_list:
-            varlist = getattr(model._NMPC_NAMESPACE, attrname)
-            if not attrname == 'deriv_vars':
-                steady_varlist = getattr(self.s_mod._NMPC_NAMESPACE, attrname)
+        for categ in categories:
+            varlist = category_dict[categ].varlist
             for i, _slice in enumerate(varlist):
                 for t in time:
                     # If not in last sample:
@@ -2035,15 +1843,16 @@ class NMPCSim(object):
                     # (Should provide some other options here,
                     # like copy inputs from set point then simulate)
                     else:
-                        if not attrname == 'deriv_vars':
-                            _slice[t].set_value(
-                                    steady_varlist[i][steady_t].value)
-                        else:
-                            _slice[t].set_value(0)
+#                        if not attrname == 'deriv_vars':
+                        _slice[t].set_value(category_dict[categ].setpoint[i])
+#                        else:
+#                            _slice[t].set_value(0)
 
 
     def initialize_from_initial_conditions(self, model, 
-            attr_list=['deriv_vars', 'diff_vars', 'alg_vars'], **kwargs):
+            categories=[VariableCategory.DERIVATIVE,
+                        VariableCategory.DIFFERENTIAL,
+                        VariableCategory.ALGEBRAIC]):
         """ 
         Set values of differential, algebraic, and derivative variables to
         their values at the initial conditions.
@@ -2061,12 +1870,12 @@ class NMPCSim(object):
 #        attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
         # TODO: user provides their own list of variables to initialize, or
         # I grab all these attributes from the model and add them up here.
-        time = model.time
-        for attrname in attr_list:
-            varlist = getattr(model._NMPC_NAMESPACE, attrname)
+        time = model._NMPC_NAMESPACE.get_time()
+        cat_dict = model._NMPC_NAMESPACE.category_dict
+        for categ in categories:
+            varlist = cat_dict[categ].varlist
             for v in varlist:
-                for t in time:
-                    v[t].set_value(v[0].value)
+                v[:].set_value(v[0].value)
 
     
     def solve_control_problem(self, **kwargs):
@@ -2081,8 +1890,6 @@ class NMPCSim(object):
                      to the constructor.
         """
         config = self.config(kwargs)
-#        solver = kwargs.pop('solver', self.default_solver)
-#        outlvl = kwargs.pop('outlvl', self.outlvl) 
         solver = config.solver
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
@@ -2152,13 +1959,13 @@ class NMPCSim(object):
 
         if self.controller_solved and calculate_error:
             self.state_error[t_end] = self.calculate_error_between_states(
-                    self.c_mod, self.p_mod, tc1, t_end,
-                    state_objective_weight_matrix=self.c_mod._NMPC_NAMESPACE.diff_weights)
+                    self.c_mod, self.p_mod, tc1, t_end)
 
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, 
             state_attrname='diff_vars', 
-            state_objective_weight_matrix=[], **kwargs):
+            categories=[VariableCategory.DIFFERENTIAL],
+            **kwargs):
         """
         Calculates the normalized (by the weighting matrix already calculated)
         error between the differential variables in different models and at
@@ -2186,34 +1993,30 @@ class NMPCSim(object):
         """
         config = self.config(kwargs)
 
-#        Q_diagonal = kwargs.pop('Q_diagonal', True)
         Q_diagonal = config.state_objective_weight_matrix_diagonal
         if not Q_diagonal:
             raise ValueError('Only diagonal weighting matrices are supported')
-        Q_matrix = state_objective_weight_matrix
-#        Q_matrix = kwargs.pop('Q_matrix', self.c_mod._NMPC_NAMESPACE.diff_weights)
         # Grab the weighting matrix from the controller model regardless of what
         # mod1 and mod2 are. This can be overwritten if desired.
 
+        # TODO: allow option to override weights
+        # As the default, weights are taken from model 1
+
         # Used to specify variables other than differential to use for
         # error calculation
-#        state_attrname = kwargs.pop('state_attrname', 'diff_vars')
-#        state_attrname_1 = kwargs.pop('state_attrname_1', state_attrname)
-#        state_attrname_2 = kwargs.pop('state_attrname_2', state_attrname)
-
-#        if (not hasattr(mod1._NMPC_NAMESPACE, state_attrname_1) or 
-#                not hasattr(mod2._NMPC_NAMESPACE, state_attrname_1)):
-#            raise ValueError(
-#                    'Cannot calculate error in model with no '
-#                    + state_attrname + ' attribute')
-
-        varlist_1 = getattr(mod1._NMPC_NAMESPACE, state_attrname)
-        varlist_2 = getattr(mod2._NMPC_NAMESPACE, state_attrname)
+        
+        varlist_1 = []
+        varlist_2 = []
+        Q_matrix = []
+        for categ in categories:
+            varlist_1 += mod1._NMPC_NAMESPACE.category_dict[categ].varlist
+            Q_matrix += mod1._NMPC_NAMESPACE.category_dict[categ].weights
+            varlist_2 += mod2._NMPC_NAMESPACE.category_dict[categ].varlist
         assert len(varlist_1) == len(varlist_2)
         n = len(varlist_1)
 
-        assert t1 in mod1.time
-        assert t2 in mod2.time
+        assert t1 in mod1._NMPC_NAMESPACE.get_time()
+        assert t2 in mod2._NMPC_NAMESPACE.get_time()
 
         error = sum(Q_matrix[i]*(varlist_1[i][t1].value - 
                                  varlist_2[i][t2].value)**2

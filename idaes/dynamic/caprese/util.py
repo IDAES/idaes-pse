@@ -72,6 +72,111 @@ class NMPCVar(object):
         self.is_initial_condition = False
 
 
+class NMPCVarGroup(object):
+    # TODO: implement __iter__ that iterates over varlist
+    def __init__(self, varlist, index_set, is_scalar=False):
+        if type(varlist) is not list:
+            raise TypeError(
+                    'varlist argument must be a list')
+
+        self.n_vars = len(varlist)
+        self.varlist = varlist
+        self.is_scalar = is_scalar
+        if is_scalar:
+            if index_set is not None:
+                print('Warning. index_set provided for a list of scalars. '
+                      'Setting to None.')
+            self.index_set = None
+            self.t0 = None
+        else:
+
+            self.index_set = self.validate_index_set(index_set)
+            self.t0 = self.index_set.first()
+
+        self.lb = self.n_vars*[None]
+        self.ub = self.n_vars*[None]
+        self.setpoint = self.n_vars*[None]
+        self.reference = self.n_vars*[None]
+        self.weights = self.n_vars*[None]
+        # Can I get time set here? From an element (slice) of varlist
+        # Complicated by the fact that varlist could be scalar_vars
+
+    def __iter__(self):
+        for var in self.varlist:
+            yield var
+
+    def validate_index_set(self, index_set):
+        for var in self.varlist:
+            # Hack so this doesn't fail for dicts that act as wrappers around
+            # steady state model variables.
+            # Should be able remove when I stop using a steady state model.
+            if type(var) is dict:
+                continue
+            # For lack of a better error message, just assert:
+            assert var.index_set() is index_set
+        return index_set
+
+    def validate_index(self, i):
+        if i >= self.n_vars:
+            raise ValueError(
+                'Var index %i out of range. n_vars = %i' %(i, self.n_vars))
+        if self.n_vars == 0:
+            raise ValueError(
+                'Index %i is invalid for an empty NMPCVarGroup' % i)
+
+    def set_setpoint(self, i, val):
+        self.validate_index(i)
+        self.setpoint[i] = val
+
+    def set_ub(self, i, val):
+        self.validate_index(i)
+        self.ub[i] = val
+        if self.is_scalar:
+            self.varlist[i].setub(val)
+        else:
+            for t in self.index_set:
+                self.varlist[i][t].setub(val)
+            #self.varlist[i][:].setub(val)
+            # Reverted from using slices here as they don't work with
+            # the steady model, which I (stupidly) store as dicts.
+            # TODO: Change back one I get rid of steady model.
+
+    def set_lb(self, i, val):
+        self.validate_index(i)
+        self.lb[i] = val
+        if self.is_scalar:
+            self.varlist[i].setlb(val)
+        else:
+            for t in self.index_set:
+                self.varlist[i][t].setlb(val)
+            #self.varlist[i][:].setlb(val)
+
+    def set_domain(self, i, domain):
+        self.validate_index(i)
+        if self.is_scalar:
+            self.varlist[i].domain = domain
+        else:
+            for t in self.index_set:
+                self.varlist[i][t].domain = domain
+
+    def set_value(self, i, val):
+        self.validate_index(i)
+        if self.is_scalar:
+            self.varlist[i].set_value(val)
+        else:
+            for t in self.index_set:
+                self.varlist[i][t].set_value(val)
+            #self.varlist[i][:].set_value(val)
+
+    def set_nominal(self, i, val):
+        self.validate_index(i)
+        self.nominal[i] = val
+
+    def set_weight(self, i, val):
+        self.validate_index(i)
+        self.weights[i] = val
+
+
 # Probably make this abstract
 class NMPCEnum(enum.Enum):
     @classmethod
@@ -169,7 +274,7 @@ def validate_solver(solver):
     return solver
 
 
-class VarLocator(object):
+class NMPCVarLocator(object):
     """
     Class for storing information used to locate a VarData object.
     Used because I want to allow the user to supply set-point in terms
@@ -177,7 +282,7 @@ class VarLocator(object):
     proper container.
     """
 
-    def __init__(self, category, container, location, is_ic=False):
+    def __init__(self, category, group, location, is_ic=False):
         """Constructor method. Assigns attributes based on arguments.
 
         Args:
@@ -196,15 +301,15 @@ class VarLocator(object):
             'category argument must be a valid VariableCategory enum item')
         self.category = category
 
-        if type(container) is not list:
-            raise TypeError(
-            'varlist argument must be a list')
-        self.container = container
+        #if type(container) is not list:
+        #    raise TypeError(
+        #    'varlist argument must be a list')
+        self.group = group
 
         if type(location) is not int:
             raise TypeError(
             'location argument must be an integer index')
-        if location >= len(container):
+        if location >= group.n_vars:
             raise ValueError(
             'location must be a valid index for the container') 
         self.location = location
@@ -229,11 +334,14 @@ def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
     # Downside to passing varlists as arguments directly is that I can't
     # validate that time points are valid for each model's time set
     # without just trying to access the VarDatas
+    # ^ This could be circumvented by passing vargroups, then accessing
+    # the groups' index_set attributes
     assert len(varlist_tgt) == len(varlist_src)
 
     if not isinstance(t_tgt, list):
         t_tgt = [t_tgt]
 
+    # TODO? This could be made more compact with vargroups...
     for i, tgt_slice in enumerate(varlist_tgt):
         src_slice = varlist_src[i]
 
@@ -295,7 +403,7 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
 
         try:
             # locator is now a ComponentMap and takes in componentdatas
-            tgt_container = tgt_locator[tgt_vardata].container
+            tgt_container = tgt_locator[tgt_vardata].group.varlist
         except KeyError:
             raise KeyError(
                 'Locator does not seem to know about ' + 
