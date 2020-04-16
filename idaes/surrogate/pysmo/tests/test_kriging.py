@@ -14,174 +14,109 @@ import sys
 import os
 import io
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
-
-
-from idaes.surrogate.pysmo.kriging import KrigingModel, ResultReport, MyBounds
+from idaes.surrogate.pysmo.kriging import (
+    KrigingModel, ResultReport, MyBounds
+)
 import numpy as np
 import pandas as pd
-import pyutilib.th as unittest
-from unittest.mock import patch
 from scipy.spatial import distance
 import scipy.optimize as opt
 import scipy.stats as stats
-<<<<<<< HEAD:surrogates/tests/test_kriging.py
-from sklearn.metrics import mean_squared_error
-=======
-# from sklearn.metrics import mean_squared_error
->>>>>>> upstream/master:idaes/surrogate/pysmo/tests/test_kriging.py
 import pytest
+from unittest.mock import patch
 
-'''
-coverage run test_kriging.py
-coverage report -m
-coverage html
-
-'''
-
-class KrigingModelTestCases(unittest.TestCase):
-    '''
-    test__init__01: Check that all default values are correctly loaded when input is sparse with both input arrays are numpy
-    test__init__02: Check that all default values are correctly loaded when input is sparse with both input arrays are pandas
-    test__init__03: Test behaviour raise ValueError if input is not numpy nor pandas
-    test__init__04: Test behaviour raise Exception if numerical_gradients not boolean
-    test__init__05: Test behaviour raise Exception if regularization not boolean
-    test__init__06: Test behaviour raise Exception if overwrite not boolean
-    test__init__07: Test behaviour raise Exception if fname with extension is not ".pickle"
-    test__init__08: Test behaviour raise Exception if fname is not string
-    test__init__09: Test behaviour overwrite filenames
-    test__init__10: Test behaviour if filename is not exist, generate a file name by user
-
-    test_covariance_matrix_generator: Test behaviour of covariance_matrix_generator
+class TestKrigingModel:
+    y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])
+    full_data = {'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]}
+    training_data = [ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 5) for j in np.linspace(0, 10, 5)]
+    test_data = [[i,(i+1)**2] for i in range(10)]
+    test_data_large =  [[i,(i+1)**2] for i in range(200)]
+    test_data_1d = [[(i+1)**2] for i in range(10)]
+    test_data_3d = [[i,(i+1)**2,(i+2)**2] for i in range(10)]
+    sample_points = [[i,(i+1)**2] for i in range(8)]
+    sample_points_large =  [[i,(i+1)**2] for i in range(100)]
+    sample_points_1d = [[(i+1)**2] for i in range(8)]
+    sample_points_3d = [[i,(i+1)**2,(i+2)**2] for i in range(8)]
     
-    test_covariance_inverse_generator_01: Test behaviour of covariance_inverse_generator
-    test_covariance_inverse_generator_02: Test behaviour of covariance_inverse_generator when np.linalg.LinAlgError = LAE
-    
-    test_kriging_mean: Test behaviour of kriging_mean
-    
-    test_y_mu_calculation: Test behaviour of y_mu_calculation
-    
-    test_kriging_sd: Test behaviour of kriging_sd
-    
-    test_print_fun: Test behaviour of print_fun
-    
-    test_objective_function: Test behaviour of objective_function
-    
-    test_numerical_gradient_01: Test behaviour of numerical_gradient with regularization=True
-    test_numerical_gradient_02: Test behaviour of numerical_gradient with regularization=False
-    
-    test_parameter_optimization_01:  Test behaviour of parameter_optimization with numerical_gradients=True, check length of results = 9, length of results.x = 3, length of results.success =True
-    test_parameter_optimization_02:  Test behaviour of parameter_optimization with numerical_gradients=False, check length of results = 7, length of results.x = 3, length of results.minimization_failures =False
-    
-    test_optimal_parameter_evaluation: Test behaviour of optimal_parameter_evaluation
-        all functions in this funtion already covered: covariance_matrix_generator, covariance_inverse_generator, kriging_mean, y_mu_calculation, kriging_sd
-    
-    test_error_calculation: Test behaviour of error_calculation, checking with sklearn.metrics.mean_squared_error
-    
-    test_r2_calculation:  Test behaviour of test_r2_calculation
-
-    test_kriging_predict_output_01: Test behavior of kriging_predict_output, check the output dimension
-    test_kriging_predict_output_02: Test behavior of kriging_predict_output with singe input
-    
-    test_kriging_training: Test behaviour of kriging_training, 
-        all functions in this funtion already covered: optimal_parameter_evaluation, error_calculation, r2_calculation already covered
-        ResultReport __init__ is covered here
-    
-    test_get_feature_vector_01:
-    test_get_feature_vector_02:
-        Tests: : Unit tests for get_feature_vector. We verify that:
-            - 1: The (key, val) dictionary obtained from the generated IndexParam matches the headers of the data when the input is a dataframe
-            - 2: The (key, val) dictionary obtained from the generated IndexParam matches is numerically consistent with that of the input array when a numpy array is supplied. 
-    
-    test_kriging_generate_expression: test only while it is running or not (not compared values)
-
-    test_pickle_load01: Test behavior of loads the results
-    test_pickle_load02: Test behaviour raise Exception if cannot loads the results
-
-    test_parity_residual_plots: Test behaviour of plots
-
-    ''' 
-
-    def setUp(self):
-        # Data generated from the expression (x_1 + 1)^2 + (x_2 + 1) ^ 2 between 0 and 10 for x_1 and x_2
-        x1 = np.linspace(1, 10, 21)
-        x2 = np.linspace(1, 10, 21)
-        y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
-        self.full_data = pd.DataFrame({'x1': y[:, 0], 'x2': y[:, 1], 'y': y[:, 2]})
-
-        # Theoretical sample data from range for(x_1 + 1)^2 + (x_2 + 1) ^ 2 between 0 and 10 for x_1 and x_2
-        x1 = np.linspace(0, 10, 5)
-        x2 = np.linspace(0, 10, 5)
-        self.training_data = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in x1 for j in x2])
-
-        # Sample data generated from the expression (x_1 + 1)^2 between 0 and 9
-        self.test_data_numpy = np.array([[i,(i+1)**2] for i in range(10)])
-        self.test_data_pandas = pd.DataFrame([[i,(i+1)**2] for i in range(10)])
-        self.test_data_large =  np.array([[i,(i+1)**2] for i in range(200)])
-        self.test_data_numpy_1d = np.array([[(i+1)**2] for i in range(10)])
-        self.test_data_numpy_3d = np.array([[i,(i+1)**2,(i+2)**2] for i in range(10)]) 
-
-        self.sample_points_numpy = np.array([[i,(i+1)**2] for i in range(8)])
-        self.sample_points_large =  np.array([[i,(i+1)**2] for i in range(100)])
-        self.sample_points_pandas= pd.DataFrame([[i,(i+1)**2] for i in range(8)])
-        self.sample_points_numpy_1d = np.array([[(i+1)**2] for i in range(8)])
-        self.sample_points_numpy_3d = np.array([[i,(i+1)**2,(i+2)**2] for i in range(8)])
-
-    
-    def test__init__01(self):
-        KrigingClass = KrigingModel(self.test_data_numpy)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__01(self, array_type):
+        input_array = array_type(self.test_data)
+        KrigingClass = KrigingModel(input_array)
         assert KrigingClass.num_grads == True
         assert KrigingClass.regularization == True
     
-    def test__init__02(self):
-        KrigingClass = KrigingModel(self.test_data_pandas)
-        assert KrigingClass.num_grads == True
-        assert KrigingClass.regularization == True
-    
-    def test__init__03(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [list])
+    def test__init__02(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(ValueError):
-            KrigingClass = KrigingModel(list(self.test_data_numpy))
+            KrigingClass = KrigingModel(input_array)
     
-    def test__init__04(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__03(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(Exception):
-            KrigingClass = KrigingModel(self.test_data_numpy,numerical_gradients=1)
+            KrigingClass = KrigingModel(input_array,numerical_gradients=1)
     
-    def test__init__05(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__04(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(Exception):
-            KrigingClass = KrigingModel(self.test_data_numpy,regularization=1)
+            KrigingClass = KrigingModel(input_array,regularization=1)
 
-    def test__init__06(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__05(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(Exception):
-            KrigingClass = KrigingModel(self.test_data_numpy,overwrite=1)
+            KrigingClass = KrigingModel(input_array,overwrite=1)
     
-    def test__init__07(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__06(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(Exception):
-            KrigingClass = KrigingModel(self.test_data_numpy,fname='solution.pkl' )
+            KrigingClass = KrigingModel(input_array,fname='solution.pkl' )
     
-    def test__init__08(self):
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__07(self, array_type):
+        input_array = array_type(self.test_data)
         with pytest.raises(Exception):
-            KrigingClass = KrigingModel(self.test_data_numpy,fname=1 )
+            KrigingClass = KrigingModel(input_array,fname=1 )
     
-    def test__init__09(self):
-        file_name = 'sol_check.pickle'
-        KrigingClass1 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True  )
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__08(self, array_type):
+        input_array = array_type(self.test_data)
+        file_name = 'test_filename.pickle'
+        KrigingClass1 = KrigingModel(input_array,fname=file_name,overwrite=True  )
         results = KrigingClass1.kriging_training()
-        KrigingClass2 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True )
-        os.remove(file_name)
+        KrigingClass2 = KrigingModel(input_array,fname=file_name,overwrite=True )
         assert KrigingClass1.filename == KrigingClass2.filename
 
-    def test__init__10(self):
-        file_name1 = 'sol_check1.pickle'
-        file_name2 = 'sol_check2.pickle'
-        KrigingClass1 = KrigingModel(self.test_data_numpy,fname=file_name1,overwrite=True  )
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test__init__09(self, array_type):
+        input_array = array_type(self.test_data)
+        file_name1 = 'test_filename1.pickle'
+        file_name2 = 'test_filename2.pickle'
+        KrigingClass1 = KrigingModel(input_array,fname=file_name1,overwrite=True  )
         results = KrigingClass1.kriging_training()
-        KrigingClass2 = KrigingModel(self.test_data_numpy,fname=file_name2,overwrite=True )
-        os.remove(file_name1)
+        KrigingClass2 = KrigingModel(input_array,fname=file_name2,overwrite=True )
         assert KrigingClass1.filename == file_name1
         assert KrigingClass2.filename == file_name2
 
-    def test_covariance_matrix_generator(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
-
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_covariance_matrix_generator(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         p= 2
         theta = np.array([1,2])
         reg_param = 1.00000000e-06
@@ -192,9 +127,11 @@ class KrigingModelTestCases(unittest.TestCase):
                                    [0.13533528, 0.60653066, 1.000001  ]])
         np.testing.assert_array_equal(np.round(cov_matrix,7), np.round(cov_matrix_exp,7))
     
-    
-    def test_covariance_inverse_generator_01(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_covariance_inverse_generator_01(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         cov_matrix = np.array([[1.000001,   0.60653066, 0.13533528],
                                    [0.60653066, 1.000001,   0.60653066],
                                    [0.13533528, 0.60653066, 1.000001  ]])
@@ -204,18 +141,23 @@ class KrigingModelTestCases(unittest.TestCase):
         
         inverse_x = KrigingClass.covariance_inverse_generator(cov_matrix)
         np.testing.assert_array_equal(np.round(inverse_x,7), np.round(cov_matrix_inv_exp,7))
-        
-    def test_covariance_inverse_generator_02(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_covariance_inverse_generator_02(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         cov_matrix = np.array([[0, 0, 0],
                                [0, 0, 0],
                                [0, 0, 0]])
         inverse_x = KrigingClass.covariance_inverse_generator(cov_matrix)
         np.testing.assert_array_equal(np.round(inverse_x,7), np.round(cov_matrix,7))
 
-    
-    def test_kriging_mean(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_kriging_mean(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         cov_matrix_inv = np.array([[ 1.82957788, -1.51792604,  0.67306158],
                                    [-1.51792604,  2.84133453, -1.51792604],
                                    [ 0.67306158, -1.51792604,  1.82957788]])
@@ -223,9 +165,11 @@ class KrigingModelTestCases(unittest.TestCase):
         kriging_mean_exp =  20.18496
         assert np.round(kriging_mean_exp,5) == np.round(kriging_mean[0][0],5)
 
-
-    def test_y_mu_calculation(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_y_mu_calculation(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         kriging_mean =  20.18496                   
         y_mu = KrigingClass.y_mu_calculation(KrigingClass.y_data, kriging_mean)
         y_mu_exp = np.array([[-18.18496],
@@ -233,9 +177,11 @@ class KrigingModelTestCases(unittest.TestCase):
                              [ 16.81504]])
         np.testing.assert_array_equal(np.round(y_mu,5), np.round(y_mu_exp,5))
 
-    
-    def test_kriging_sd(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_kriging_sd(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         cov_matrix_inv = np.array([[ 1.82957788, -1.51792604,  0.67306158],
                                    [-1.51792604,  2.84133453, -1.51792604],
                                    [ 0.67306158, -1.51792604,  1.82957788]])               
@@ -246,18 +192,22 @@ class KrigingModelTestCases(unittest.TestCase):
         sigma_sq_exp = 272.84104637
         assert np.round(sigma_sq_exp,5) == np.round(sigma_sq[0][0],5)
     
-    
-    def test_print_fun(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_print_fun(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput  
         KrigingClass.print_fun(1, 2, 3.7)
         sys.stdout = sys.__stdout__ 
         assert "at minimum 2.0000 accepted 3\n" == capturedOutput.getvalue() 
     
-    
-    def test_objective_function(self):
-        KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_objective_function(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         conc_log_like = KrigingClass.objective_function(var_vector, KrigingClass.x_data_scaled,  KrigingClass.y_data, p)
@@ -265,52 +215,66 @@ class KrigingModelTestCases(unittest.TestCase):
         conc_log_like_exp = 8.0408619
         assert np.round(conc_log_like_exp,5) == np.round(conc_log_like,5)
 
-    
-    def test_numerical_gradient_01(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],regularization=True)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_numerical_gradient_01(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=True)
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         grad_vec = KrigingClass.numerical_gradient(var_vector, KrigingClass.x_data_scaled,  KrigingClass.y_data, p)
         grad_vec_exp = np.array([0,0,8.8817842e-10])
         np.testing.assert_array_equal(np.round(grad_vec,5), np.round(grad_vec_exp,5))
-        
-    def test_numerical_gradient_02(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],regularization=False)
+    
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    def test_numerical_gradient_02(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=False)
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         grad_vec = KrigingClass.numerical_gradient(var_vector, KrigingClass.x_data_scaled,  KrigingClass.y_data, p)
         grad_vec_exp = np.array([0,0,0])
         np.testing.assert_array_equal(np.round(grad_vec,5), np.round(grad_vec_exp,5))
 
-
-    def test_parameter_optimization_01(self):
-        KrigingClass = KrigingModel(self.training_data[0:3])
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    def test_parameter_optimization_01(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3])
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
         assert len(opt_results) == 9
         assert len(opt_results.x) == 3
         assert opt_results.success == True
     
-    def test_parameter_optimization_02(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],numerical_gradients=False)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array,pd.DataFrame])
+    def test_parameter_optimization_02(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],numerical_gradients=False)
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
         assert len(opt_results) == 7
         assert len(opt_results.x) == 3
         assert opt_results.minimization_failures == False
 
-
-    def test_optimal_parameter_evaluation(self):
-        KrigingClass = KrigingModel(self.training_data[0:3])
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_optimal_parameter_evaluation(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3])
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu = KrigingClass.optimal_parameter_evaluation(var_vector, p)
         np.testing.assert_array_equal(theta, [10**1,10**2])
         np.testing.assert_array_equal(reg_param, 1.00000000e-06)
         
-    
-    def test_error_calculation(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],regularization=False)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_error_calculation(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=False)
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu = KrigingClass.optimal_parameter_evaluation(var_vector, p)
@@ -323,20 +287,14 @@ class KrigingModelTestCases(unittest.TestCase):
         ss_error, rmse_error, y_prediction = KrigingClass.error_calculation(theta, p, mean, cov_inv, y_mu,KrigingClass.x_data_scaled, KrigingClass.y_data)
         
         np.testing.assert_array_equal(y_prediction, y_prediction_exp)
-<<<<<<< HEAD:surrogates/tests/test_kriging.py
-        assert mean_squared_error(KrigingClass.y_data, y_prediction_exp) == ss_error
-        assert np.sqrt(mean_squared_error(KrigingClass.y_data, y_prediction_exp)) == rmse_error
-=======
         assert np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0] == ss_error
         assert np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0]) == rmse_error
-        # self.assertEqual(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0],ss_error)
-        # self.assertEqual(np.sqrt(np.sum((KrigingClass.y_data-y_prediction_exp)**2)/KrigingClass.x_data_scaled.shape[0]),rmse_error)
 
->>>>>>> upstream/master:idaes/surrogate/pysmo/tests/test_kriging.py
-    
-    
-    def test_r2_calculation(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],regularization=False)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])    
+    def test_r2_calculation(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=False)
         p= 2
         var_vector = np.array([1,2,1.00000000e-06])
         theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu = KrigingClass.optimal_parameter_evaluation(var_vector, p)
@@ -345,31 +303,37 @@ class KrigingModelTestCases(unittest.TestCase):
         r_square = KrigingClass.r2_calculation(KrigingClass.y_data,y_prediction)
         assert 0.999999999999 == r_square
 
-    
-    def test_kriging_predict_output_01(self):
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])        
+    def test_kriging_predict_output_01(self, array_type):
+        input_array = array_type(self.training_data)
         np.random.seed(0)
-        KrigingClass = KrigingModel(self.training_data)
+        KrigingClass = KrigingModel(input_array)
         results = KrigingClass.kriging_training()
-        os.remove('solution.pickle')
         y_pred = KrigingClass.kriging_predict_output(results, KrigingClass.x_data_scaled)
         assert y_pred.shape[0] == KrigingClass.x_data_scaled.shape[0]
+        
 
-    def test_kriging_predict_output(self):
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])        
+    def test_kriging_predict_output(self, array_type):
+        input_array = array_type(self.training_data)
         np.random.seed(0)
-        KrigingClass = KrigingModel(self.training_data)
+        KrigingClass = KrigingModel(input_array)
         results = KrigingClass.kriging_training()
-        os.remove('solution.pickle')
         y_pred = KrigingClass.kriging_predict_output(results, np.array([0.1, 0.2]))
         assert y_pred.shape[0] == 1
         
-    
-    def test_kriging_training(self):
-        KrigingClass = KrigingModel(self.training_data[0:3],regularization=False)
-
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])        
+    def test_kriging_training(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array[0:3],regularization=False)
         np.random.seed(0)
         p = 2
-        # Solve optimization problem
-
         bh_results = KrigingClass.parameter_optimization(p)
         # Calculate other variables and parameters
         optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu = KrigingClass.optimal_parameter_evaluation(bh_results.x, p)
@@ -379,7 +343,6 @@ class KrigingModelTestCases(unittest.TestCase):
         
         np.random.seed(0)
         results = KrigingClass.kriging_training()
-        os.remove('solution.pickle')
         np.testing.assert_array_equal(results.optimal_weights,optimal_theta)
         np.testing.assert_array_equal(results.regularization_parameter,optimal_reg_param)
         np.testing.assert_array_equal(results.optimal_mean,optimal_mean)
@@ -395,49 +358,65 @@ class KrigingModelTestCases(unittest.TestCase):
         np.testing.assert_array_equal(results.x_min,KrigingClass.x_data_min)
         np.testing.assert_array_equal(results.x_max,KrigingClass.x_data_max)
         
-    
-    def test_get_feature_vector_01(self):
-        KrigingClass = KrigingModel(self.full_data,regularization=False)
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [pd.DataFrame])        
+    def test_get_feature_vector_01(self, array_type):
+        input_array = array_type(self.full_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         p = KrigingClass.get_feature_vector()
         expected_dict = {'x1': 0, 'x2': 0}
         assert expected_dict == p.extract_values()
-    
-    def test_get_feature_vector_02(self):
-        KrigingClass = KrigingModel(self.training_data,regularization=False)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])        
+    def test_get_feature_vector_02(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         p = KrigingClass.get_feature_vector()
         expected_dict = {0: 0, 1: 0}
         assert expected_dict == p.extract_values()
 
-
-    def test_kriging_generate_expression(self):
-        KrigingClass = KrigingModel(self.training_data,regularization=False)
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_kriging_generate_expression(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         results = KrigingClass.kriging_training()
-        os.remove('solution.pickle')
         p = KrigingClass.get_feature_vector()
         lv =[]
         for i in p.keys():
             lv.append(p[i])
         rbf_expr = results.kriging_generate_expression((lv))
     
-    def test_pickle_load01(self):
-        KrigingClass = KrigingModel(self.training_data,regularization=False)
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_pickle_load01(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         results = KrigingClass.kriging_training()
-        KrigingClass.pickle_load('solution.pickle')
-        os.remove('solution.pickle')
-
-    def test_pickle_load02(self):
-        KrigingClass = KrigingModel(self.training_data,regularization=False)
+        KrigingClass.pickle_load(KrigingClass.filename)
+        
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_pickle_load02(self, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         with pytest.raises(Exception):
-            KrigingClass.pickle_load('abcde.pickle')
+            KrigingClass.pickle_load('file_not_existing.pickle')
             
-    @patch('matplotlib.pyplot.figure')
-    def test_parity_residual_plots(self,mock_fig):
-        KrigingClass = KrigingModel(self.training_data,regularization=False)
+    @pytest.mark.unit
+    @pytest.fixture(scope='module')
+    @patch("matplotlib.pyplot.show")
+    @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
+    def test_parity_residual_plots(self,mock_show, array_type):
+        input_array = array_type(self.training_data)
+        KrigingClass = KrigingModel(input_array,regularization=False)
         results = KrigingClass.kriging_training()
-        os.remove('solution.pickle')
         KrigingClass.parity_residual_plots(results)
-        mock_fig.assert_called() 
+        
         
 if __name__ == '__main__':
-    unittest.main()
-
+    pytest.main()
