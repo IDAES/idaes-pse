@@ -269,6 +269,12 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     test__init__31: Test behaviour raise Exception with no_adaptive_samples< 0
     test__init__32: Test behaviour raise Exception with max_iter< 0
 
+    test__init__33: Test behaviour raise Exception if overwrite not boolean
+    test__init__34: Test behaviour raise Exception if fname with extension is not ".pickle"
+    test__init__35: Test behaviour raise Exception if fname is not string
+    test__init__36: Test behaviour overwrite filenames
+    test__init__37: Test behaviour if filename is not exist, generate a file name by user
+
     test_training_test_data_creation_01: Test behaviour raise Exception with num_training = 0,training_split=0.01
     test_training_test_data_creation_02: Test behaviour raise Exception with num_training == self.number_of_samples, training_split=0.99
     test_training_test_data_creation_03: Check 1. splited training / test size = cross validation size, 2. size of each train / test, 3. each train / test are correctly splitted with default class values
@@ -401,6 +407,11 @@ class PolynomialRegressionTestCases(unittest.TestCase):
     test_poly_training_01: checking the status is 'ok', R2 > 0.95, by running polynomial_regression_fitting, ResultReport class is covered here
 
     test_generate_expression:   test only while it is running or not (not compared values)
+
+    test_pickle_load01: Test bevavior of loads the results
+    test_pickle_load02: Test behaviour raise Exception if cannot loads the results
+
+    test_parity_residual_plots: Test behaviour of plots. poly_predict_output is covered here
     '''
     def setUp(self):
         # Data generated from the expression (x_1 + 1)^2 + (x_2 + 1) ^ 2 between 0 and 10 for x_1 and x_2
@@ -718,6 +729,73 @@ class PolynomialRegressionTestCases(unittest.TestCase):
             PolyClass = PolynomialRegression(original_data_input, regression_data_input,
                                             maximum_polynomial_order=3,
                                             max_iter=-3)
+    
+    def test__init__33(self):       
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        with pytest.raises(Exception):
+            PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                            maximum_polynomial_order=3,
+                                            overwrite=1)
+    def test__init__34(self):       
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        with pytest.raises(Exception):
+            PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                            maximum_polynomial_order=3,
+                                            fname='solution.pkl')
+    def test__init__35(self):       
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        with pytest.raises(Exception):
+            PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                            maximum_polynomial_order=3,
+                                            fname=1)
+    def test__init__36(self):    
+        file_name = 'sol_check.pickle'   
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        
+        PolyClass1 = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3,
+                                        fname=file_name,
+                                        overwrite=True )
+        PolyClass1.get_feature_vector()
+        results = PolyClass1.polynomial_regression_fitting()
+        PolyClass2 = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3,
+                                        fname=file_name,
+                                        overwrite=True )
+        os.remove(file_name)
+        assert PolyClass1.filename == PolyClass2.filename
+
+    def test__init__37(self):    
+        file_name1 = 'sol_check1.pickle'
+        file_name2 = 'sol_check2.pickle'
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+  
+        PolyClass1 = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3,
+                                        fname=file_name1,
+                                        overwrite=True )
+        PolyClass1.get_feature_vector()
+        results = PolyClass1.polynomial_regression_fitting()
+        PolyClass2 = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3,
+                                        fname=file_name2,
+                                        overwrite=True )
+        os.remove(file_name1)
+        assert PolyClass1.filename == file_name1
+        assert PolyClass2.filename == file_name2     
+
+    # def test__init__09(self):
+    #     file_name = 'sol_check.pickle'
+    #     KrigingClass1 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True  )
+    #     results = KrigingClass1.kriging_training()
+    #     KrigingClass2 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True )
+    #     assert KrigingClass1.filename == KrigingClass2.filename
+        
 
         
     def test_training_test_data_creation_01(self):       
@@ -1431,6 +1509,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.polynomial_regression_fitting()
+        os.remove('solution.pickle')
         assert results.fit_status == 'ok'
 
     @patch("matplotlib.pyplot.show")
@@ -1440,12 +1519,14 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed.get_feature_vector()
         with pytest.warns(Warning):
             results = data_feed.polynomial_regression_fitting()
+            os.remove('solution.pickle')
             assert results.fit_status == 'poor'
 
     def test_polynomial_regression_fitting_03(self):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.polynomial_regression_fitting()
+        os.remove('solution.pickle')
         x_input_train_data = self.training_data[:, :-1]
         assert results.fit_status == 'ok'
     
@@ -1454,7 +1535,9 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed.get_feature_vector()
         additional_regression_features = [np.sin(self.training_data[:, 0]), np.sin(self.training_data[:, 1])]    
         results = data_feed.polynomial_regression_fitting(additional_regression_features)      
+        os.remove('solution.pickle')
         results = data_feed.polynomial_regression_fitting()
+        os.remove('solution.pickle')
         assert results.fit_status == 'ok'
 
 
@@ -1487,6 +1570,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         data_feed = PolynomialRegression(self.full_data, self.training_data, maximum_polynomial_order=2)
         data_feed.get_feature_vector()
         results = data_feed.poly_training()
+        os.remove('solution.pickle')
         assert results.fit_status == 'ok'
         
      
@@ -1495,13 +1579,44 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         
         p =data_feed.get_feature_vector()
         results = data_feed.poly_training()
+        os.remove('solution.pickle')
 
         lv =[]
         for i in p.keys():
             lv.append(p[i])
         poly_expr = results.generate_expression((lv))
         
-        
+    
+    def test_pickle_load01(self):
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3)
+        PolyClass.get_feature_vector()
+        results = PolyClass.poly_training()
+        PolyClass.pickle_load('solution.pickle')
+        os.remove('solution.pickle')
+    
+    def test_pickle_load02(self):
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3)
+        with pytest.raises(Exception):
+            PolyClass.pickle_load('abcde.pickle')
+
+    # @patch('matplotlib.pyplot.figure')
+    # def test_parity_residual_plots(self,mock_fig):
+    def test_parity_residual_plots(self):
+        original_data_input= self.test_data_numpy
+        regression_data_input = self.sample_points_numpy
+        PolyClass = PolynomialRegression(original_data_input, regression_data_input,
+                                        maximum_polynomial_order=3)
+        PolyClass.get_feature_vector()
+        results = PolyClass.poly_training()
+        os.remove('solution.pickle')
+        PolyClass.parity_residual_plots(results)
+    #     mock_fig.assert_called()
 
 if __name__ == '__main__':
     unittest.main()
