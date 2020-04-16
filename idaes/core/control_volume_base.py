@@ -196,6 +196,15 @@ CONFIG_Template.declare("has_work_transfer", ConfigValue(
 **Valid values** {
 **True** - include work transfer terms,
 **False** - exclude work transfer terms.}"""))
+CONFIG_Template.declare("has_enthalpy_transfer", ConfigValue(
+    default=False,
+    domain=In([True, False]),
+    description="Entahlpy transfer term construction flag",
+    doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
+should be constructed, **default** - False.
+**Valid values** {
+**True** - include enthalpy transfer terms,
+**False** - exclude enthalpy transfer terms.}"""))
 CONFIG_Template.declare("has_pressure_change", ConfigValue(
     default=False,
     domain=In([True, False]),
@@ -553,7 +562,7 @@ have a config block which derives from CONFIG_Base,
             has_heat_of_reaction=parent.config.has_heat_of_reaction,
             has_heat_transfer=parent.config.has_heat_transfer,
             has_work_transfer=parent.config.has_work_transfer,
-            has_enthalpy_transfer=parent.config.has_mass_transfer)
+            has_enthalpy_transfer=parent.config.has_enthalpy_transfer)
 
         self.add_momentum_balances(
             has_pressure_change=parent.config.has_pressure_change)
