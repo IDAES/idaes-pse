@@ -219,3 +219,6 @@ class CationData(IonData):
             raise ConfigurationError(
                 "{} received invalid value for charge configuration argument."
                 " Cations must have a positive charge.".format(self.name))
+
+
+__all_components__ = [Component, Solute, Solvent, Ion, Anion, Cation]
