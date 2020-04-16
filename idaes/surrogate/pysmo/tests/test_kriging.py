@@ -41,6 +41,11 @@ class KrigingModelTestCases(unittest.TestCase):
     test__init__03: Test behaviour raise ValueError if input is not numpy nor pandas
     test__init__04: Test behaviour raise Exception if numerical_gradients not boolean
     test__init__05: Test behaviour raise Exception if regularization not boolean
+    test__init__06: Test behaviour raise Exception if overwrite not boolean
+    test__init__07: Test behaviour raise Exception if fname with extension is not ".pickle"
+    test__init__08: Test behaviour raise Exception if fname is not string
+    test__init__09: Test behaviour overwrite filenames
+    test__init__10: Test behaviour if filename is not exist, generate a file name by user
 
     test_covariance_matrix_generator: Test behaviour of covariance_matrix_generator
     
@@ -84,6 +89,12 @@ class KrigingModelTestCases(unittest.TestCase):
             - 2: The (key, val) dictionary obtained from the generated IndexParam matches is numerically consistent with that of the input array when a numpy array is supplied. 
     
     test_kriging_generate_expression: test only while it is running or not (not compared values)
+
+    test_pickle_load01: Test behavior of loads the results
+    test_pickle_load02: Test behaviour raise Exception if cannot loads the results
+
+    test_parity_residual_plots: Test behaviour of plots
+
     ''' 
 
     def setUp(self):
@@ -133,8 +144,37 @@ class KrigingModelTestCases(unittest.TestCase):
     def test__init__05(self):
         with pytest.raises(Exception):
             KrigingClass = KrigingModel(self.test_data_numpy,regularization=1)
+
+    def test__init__06(self):
+        with pytest.raises(Exception):
+            KrigingClass = KrigingModel(self.test_data_numpy,overwrite=1)
     
+    def test__init__07(self):
+        with pytest.raises(Exception):
+            KrigingClass = KrigingModel(self.test_data_numpy,fname='solution.pkl' )
     
+    def test__init__08(self):
+        with pytest.raises(Exception):
+            KrigingClass = KrigingModel(self.test_data_numpy,fname=1 )
+    
+    def test__init__09(self):
+        file_name = 'sol_check.pickle'
+        KrigingClass1 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True  )
+        results = KrigingClass1.kriging_training()
+        KrigingClass2 = KrigingModel(self.test_data_numpy,fname=file_name,overwrite=True )
+        os.remove(file_name)
+        assert KrigingClass1.filename == KrigingClass2.filename
+
+    def test__init__10(self):
+        file_name1 = 'sol_check1.pickle'
+        file_name2 = 'sol_check2.pickle'
+        KrigingClass1 = KrigingModel(self.test_data_numpy,fname=file_name1,overwrite=True  )
+        results = KrigingClass1.kriging_training()
+        KrigingClass2 = KrigingModel(self.test_data_numpy,fname=file_name2,overwrite=True )
+        os.remove(file_name1)
+        assert KrigingClass1.filename == file_name1
+        assert KrigingClass2.filename == file_name2
+
     def test_covariance_matrix_generator(self):
         KrigingClass = KrigingModel(self.training_data[0:3,:],regularization=True)
 
@@ -301,6 +341,7 @@ class KrigingModelTestCases(unittest.TestCase):
         np.random.seed(0)
         KrigingClass = KrigingModel(self.training_data)
         results = KrigingClass.kriging_training()
+        os.remove('solution.pickle')
         y_pred = KrigingClass.kriging_predict_output(results, KrigingClass.x_data_scaled)
         assert y_pred.shape[0] == KrigingClass.x_data_scaled.shape[0]
 
@@ -308,6 +349,7 @@ class KrigingModelTestCases(unittest.TestCase):
         np.random.seed(0)
         KrigingClass = KrigingModel(self.training_data)
         results = KrigingClass.kriging_training()
+        os.remove('solution.pickle')
         y_pred = KrigingClass.kriging_predict_output(results, np.array([0.1, 0.2]))
         assert y_pred.shape[0] == 1
         
@@ -328,6 +370,7 @@ class KrigingModelTestCases(unittest.TestCase):
         
         np.random.seed(0)
         results = KrigingClass.kriging_training()
+        os.remove('solution.pickle')
         np.testing.assert_array_equal(results.optimal_weights,optimal_theta)
         np.testing.assert_array_equal(results.regularization_parameter,optimal_reg_param)
         np.testing.assert_array_equal(results.optimal_mean,optimal_mean)
@@ -360,12 +403,31 @@ class KrigingModelTestCases(unittest.TestCase):
     def test_kriging_generate_expression(self):
         KrigingClass = KrigingModel(self.training_data,regularization=False)
         results = KrigingClass.kriging_training()
+        os.remove('solution.pickle')
         p = KrigingClass.get_feature_vector()
         lv =[]
         for i in p.keys():
             lv.append(p[i])
         rbf_expr = results.kriging_generate_expression((lv))
-        
+    
+    def test_pickle_load01(self):
+        KrigingClass = KrigingModel(self.training_data,regularization=False)
+        results = KrigingClass.kriging_training()
+        KrigingClass.pickle_load('solution.pickle')
+        os.remove('solution.pickle')
+
+    def test_pickle_load02(self):
+        KrigingClass = KrigingModel(self.training_data,regularization=False)
+        with pytest.raises(Exception):
+            KrigingClass.pickle_load('abcde.pickle')
+            
+    @patch('matplotlib.pyplot.figure')
+    def test_parity_residual_plots(self,mock_fig):
+        KrigingClass = KrigingModel(self.training_data,regularization=False)
+        results = KrigingClass.kriging_training()
+        os.remove('solution.pickle')
+        KrigingClass.parity_residual_plots(results)
+        mock_fig.assert_called() 
         
 if __name__ == '__main__':
     unittest.main()

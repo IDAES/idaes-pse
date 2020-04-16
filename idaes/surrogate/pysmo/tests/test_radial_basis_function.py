@@ -249,6 +249,12 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     test__init__08: Test behaviour raise Exception with invalid basis_function value
     test__init__09: Test behaviour raise Exception with invalid regularization type
 
+    test__init__10: Test behaviour raise Exception if overwrite not boolean
+    test__init__11: Test behaviour raise Exception if fname with extension is not ".pickle"
+    test__init__12: Test behaviour raise Exception if fname is not string
+    test__init__13: Test behaviour overwrite filenames
+    test__init__14: Test behaviour if filename is not exist, generate a file name by user
+
     test_r2_distance: 
         Tests: : Unit tests for eucl_distance, a function that evaluates the distance between a point c and a set of points in a numpy array.
             The test checks that the function is able to calculate the distance from a single point (n x 1 row vector) to a set of design points (supplied in an n x m array)
@@ -369,6 +375,11 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     test_rbf_generate_expression_04: test only while it is running with self.basis_function == 'mq' or not (not compared values)
     test_rbf_generate_expression_05: test only while it is running with self.basis_function == 'imq' or not (not compared values)
     test_rbf_generate_expression_06: test only while it is running with self.basis_function == 'spline' or not (not compared values)
+
+    test_pickle_load01: Test behavior of loads the results
+    test_pickle_load02: Test behaviour raise Exception if cannot loads the results
+
+    test_parity_residual_plots: Test behaviour of plots
     ''' 
 
     def setUp(self):
@@ -438,8 +449,40 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test__init__09(self):
         with pytest.raises(Exception):
             RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function=None, solution_method=None, regularization=1)
-
     
+    def test__init__10(self):
+        with pytest.raises(Exception):
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, overwrite = 1)
+    
+    def test__init__11(self):
+        with pytest.raises(Exception):
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname='solution.pkl')
+
+    def test__init__12(self):
+        with pytest.raises(Exception):
+            RbfClass = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname=1)
+
+    def test__init__13(self):
+        file_name = 'sol_check.pickle'
+        RbfClass1 = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname=file_name, overwrite=True)
+        p = RbfClass1.get_feature_vector()
+        results = RbfClass1.rbf_training() 
+        RbfClass2 = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname=file_name, overwrite=True)
+        os.remove(file_name)
+        assert RbfClass1.filename == RbfClass2.filename
+        
+
+    def test__init__14(self):
+        file_name1 = 'sol_check1.pickle'
+        file_name2 = 'sol_check2.pickle'
+        RbfClass1 = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname=file_name1, overwrite=True)
+        p = RbfClass1.get_feature_vector()
+        results = RbfClass1.rbf_training() 
+        RbfClass2 = RadialBasisFunctions(self.test_data_numpy, basis_function='LineaR', solution_method='PyoMo', regularization=False, fname=file_name2, overwrite=True)
+        os.remove(file_name1)
+        assert RbfClass1.filename == file_name1
+        assert RbfClass2.filename == file_name2
+
     def test_r2_distance(self):
         u = np.array([[0.1, 0.9]])
         data_feed = RadialBasisFunctions(self.training_data)
@@ -1094,6 +1137,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_training_01(self):
         data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='algebraic', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
 
         best_r_value, best_lambda_param, _ = data_feed.leave_one_out_crossvalidation()
 
@@ -1133,21 +1177,26 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_training_02(self):
         data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='pyomo', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         with pytest.warns(Warning):
-            results = data_feed.rbf_training()          
+            results = data_feed.rbf_training()        
+            os.remove('solution.pickle')  
             assert results.solution_status == 'unstable solution'
     
     def test_rbf_training_03(self):
         data_feed = RadialBasisFunctions(self.test_data_numpy,basis_function=None,solution_method='bfgs', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         with pytest.warns(Warning):
             results = data_feed.rbf_training()          
+            os.remove('solution.pickle')
             assert results.solution_status == 'unstable solution'
 
 
     def test_rbf_predict_output_01(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='linear', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1166,6 +1215,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_predict_output_02(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='cubic', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1184,6 +1234,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_predict_output_03(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='gaussian', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1202,6 +1253,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_predict_output_04(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='imq', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1220,6 +1272,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_predict_output_05(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='mq', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1238,6 +1291,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_predict_output_06(self):
         data_feed = RadialBasisFunctions(self.training_data, basis_function='spline', regularization=False)
         results = data_feed.rbf_training()
+        os.remove('solution.pickle')
         x_test = np.array([[0, 7.5]])
         output = data_feed.rbf_predict_output(results, x_test)
                 
@@ -1271,6 +1325,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='linear',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
         results = data_feed.rbf_training()       
+        os.remove('solution.pickle')
         lv =[]
         for i in p.keys():
             lv.append(p[i])
@@ -1279,7 +1334,8 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_generate_expression_02(self):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='cubic',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
-        results = data_feed.rbf_training()       
+        results = data_feed.rbf_training()     
+        os.remove('solution.pickle')  
         lv =[]
         for i in p.keys():
             lv.append(p[i])
@@ -1288,7 +1344,8 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_generate_expression_03(self):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='gaussian',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
-        results = data_feed.rbf_training()       
+        results = data_feed.rbf_training()      
+        os.remove('solution.pickle') 
         lv =[]
         for i in p.keys():
             lv.append(p[i])
@@ -1297,7 +1354,8 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_generate_expression_04(self):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='mq',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
-        results = data_feed.rbf_training()       
+        results = data_feed.rbf_training()     
+        os.remove('solution.pickle')  
         lv =[]
         for i in p.keys():
             lv.append(p[i])
@@ -1307,6 +1365,7 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='imq',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
         results = data_feed.rbf_training()       
+        os.remove('solution.pickle')
         lv =[]
         for i in p.keys():
             lv.append(p[i])
@@ -1315,12 +1374,36 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
     def test_rbf_generate_expression_06(self):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
-        results = data_feed.rbf_training()       
+        results = data_feed.rbf_training()    
+        os.remove('solution.pickle')   
         lv =[]
         for i in p.keys():
             lv.append(p[i])
         rbf_expr = results.rbf_generate_expression((lv))
-    
+
+    def test_pickle_load01(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training() 
+        data_feed.pickle_load('solution.pickle')
+        os.remove('solution.pickle')
+
+    def test_pickle_load02(self):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training() 
+        os.remove('solution.pickle')
+        with pytest.raises(Exception):
+            data_feed.pickle_load('abcde.pickle')
+            
+    @patch('matplotlib.pyplot.figure')
+    def test_parity_residual_plots(self,mock_fig):
+        data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
+        p = data_feed.get_feature_vector()
+        results = data_feed.rbf_training() 
+        os.remove('solution.pickle')
+        data_feed.parity_residual_plots(results)
+        mock_fig.assert_called() 
     
 if __name__ == '__main__':
     unittest.main()
