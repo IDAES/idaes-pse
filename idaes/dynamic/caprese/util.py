@@ -224,6 +224,7 @@ class TimeResolutionOption(NMPCEnum):
 class ControlPenaltyType(NMPCEnum):
     ERROR = 41
     ACTION = 42
+    NONE = 43
 
     @classmethod
     def from_enum_or_string(cls, arg):
