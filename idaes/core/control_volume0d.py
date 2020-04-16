@@ -859,6 +859,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
+                                    has_enthalpy_transfer=False,
                                     custom_term=None):
         """
         This method constructs a set of 0D enthalpy balances indexed by time
@@ -871,6 +872,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
                     included in enthalpy balances
+            has_enthalpy_transfer - whether terms for enthalpy transfer due to
+                    mass transfer should be included in enthalpy balance. This
+                    should generally be the same as the has_mas_trasnfer
+                    argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
                     Expression must be indexed by time and phase list
@@ -948,6 +953,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             doc="Work transfered in unit [{}/{}]"
                                 .format(units['energy'], units['time']))
 
+        # Enthalpy transfer
+        if has_enthalpy_transfer:
+            self.enthalpy_transfer = Var(
+                self.flowsheet().config.time,
+                domain=Reals,
+                initialize=0.0,
+                doc="Enthalpy transfered in unit due to mass trasnfer [{}/{}]"
+                .format(units['energy'], units['time']))
+
         # Heat of Reaction
         if has_heat_of_reaction:
             @self.Expression(self.flowsheet().config.time,
@@ -984,6 +998,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def work_term(b, t):
             return b.work[t] if has_work_transfer else 0
 
+        def enthalpy_transfer_term(b, t):
+            return b.enthalpy_transfer[t] if has_enthalpy_transfer else 0
+
         def rxn_heat_term(b, t):
             return b.heat_of_reaction[t] if has_heat_of_reaction else 0
 
@@ -1008,6 +1025,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         b.scaling_factor_energy +
                         heat_term(b, t)*b.scaling_factor_energy +
                         work_term(b, t)*b.scaling_factor_energy +
+                        enthalpy_transfer_term(b, t)*b.scaling_factor_energy +
                         rxn_heat_term(b, t)*b.scaling_factor_energy +
                         user_term(t)*b.scaling_factor_energy)
 
