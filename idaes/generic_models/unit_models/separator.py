@@ -404,7 +404,6 @@ linked the mixed state and all outlet states,
         # Setup StateBlock argument dict
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
         # Create empty list to hold StateBlocks for return
@@ -412,7 +411,7 @@ linked the mixed state and all outlet states,
 
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
-            o_obj = self.config.property_package.state_block_class(
+            o_obj = self.config.property_package.build_state_block(
                 self.flowsheet().config.time,
                 doc="Material properties at outlet",
                 default=tmp_dict,
@@ -434,10 +433,9 @@ linked the mixed state and all outlet states,
         # Setup StateBlock argument dict
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True
 
-        self.mixed_state = self.config.property_package.state_block_class(
+        self.mixed_state = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties of mixed stream",
             default=tmp_dict,

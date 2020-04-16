@@ -114,7 +114,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
+        # tmp_dict["parameters"] = self.config.property_package
 
         if information_flow == FlowDirection.forward:
             tmp_dict["defined_state"] = True
@@ -126,28 +126,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
 
-        try:
-            self.properties_in = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at inlet",
-                            default=tmp_dict))
+        self.properties_in = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at inlet",
+                        default=tmp_dict))
 
-            # Reverse defined_state
-            tmp_dict_2 = dict(**tmp_dict)
-            tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
+        # Reverse defined_state
+        tmp_dict_2 = dict(**tmp_dict)
+        tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
 
-            self.properties_out = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at outlet",
-                            default=tmp_dict_2))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} physical property package has not implemented the "
-                    "state_block_class attribute. Please contact the "
-                    "developer of the physical property package."
-                    .format(self.name))
+        self.properties_out = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at outlet",
+                        default=tmp_dict_2))
 
     def add_reaction_blocks(self, has_equilibrium=None):
         """
@@ -175,20 +168,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
-        tmp_dict["parameters"] = self.config.reaction_package
 
-        try:
-            self.reactions = (
-                    self.config.reaction_package.reaction_block_class(
-                            self.flowsheet().config.time,
-                            doc="Reaction properties in control volume",
-                            default=tmp_dict))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} reaction property package has not implemented the "
-                    "reaction_block_class attribute. Please contact the "
-                    "developer of the reaction property package."
-                    .format(self.name))
+        self.reactions = (
+                self.config.reaction_package.build_reaction_block(
+                        self.flowsheet().config.time,
+                        doc="Reaction properties in control volume",
+                        default=tmp_dict))
 
     def _add_material_balance_common(self,
                                      balance_type,

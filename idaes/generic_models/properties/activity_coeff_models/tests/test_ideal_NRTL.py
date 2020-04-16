@@ -35,18 +35,16 @@ m.fs.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
                                                      ('Liq', 'Vap'),
                                                      "activity_coeff_model":
                                                      'NRTL'})
-m.fs.state_block_NRTL_vl = m.fs.properties_NRTL_vl.state_block_class(
-    default={"parameters": m.fs.properties_NRTL_vl,
-             "defined_state": True})
+m.fs.state_block_NRTL_vl = m.fs.properties_NRTL_vl.build_state_block(
+    default={"defined_state": True})
 
 # liquid only (NRTL)
 m.fs.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
                                                     'Liq',
                                                     "activity_coeff_model":
                                                     'NRTL'})
-m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.state_block_class(
-    default={"parameters": m.fs.properties_NRTL_l,
-             "has_phase_equilibrium": False,
+m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 # vapour only (NRTL)
@@ -54,9 +52,8 @@ m.fs.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
                                                     'Vap',
                                                     "activity_coeff_model":
                                                     'NRTL'})
-m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.state_block_class(
-    default={"parameters": m.fs.properties_NRTL_v,
-             "has_phase_equilibrium": False,
+m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 
@@ -140,18 +137,16 @@ m.fs1.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
                                                       ('Liq', 'Vap'),
                                                       "activity_coeff_model":
                                                       'NRTL'})
-m.fs1.state_block_NRTL_vl = m.fs1.properties_NRTL_vl.state_block_class(
-    default={"parameters": m.fs1.properties_NRTL_vl,
-             "defined_state": False})
+m.fs1.state_block_NRTL_vl = m.fs1.properties_NRTL_vl.build_state_block(
+    default={"defined_state": False})
 
 # liquid only (NRTL)
 m.fs1.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
                                                      "Liq",
                                                      "activity_coeff_model":
                                                      'NRTL'})
-m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.state_block_class(
-    default={"parameters": m.fs1.properties_NRTL_l,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 # vapour only (NRTL)
@@ -159,9 +154,8 @@ m.fs1.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
                                                      "Vap",
                                                      "activity_coeff_model":
                                                      'NRTL'})
-m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.state_block_class(
-    default={"parameters": m.fs1.properties_NRTL_v,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 
