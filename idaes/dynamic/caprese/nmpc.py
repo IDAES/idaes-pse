@@ -204,13 +204,6 @@ class NMPCSim(object):
                     'setpoints')
                 )
             )
-    # Still unsure of the purpose of Config.
-    # - Is it a way to pass arguments with default values and validation?
-    #   If so, should every argument have a ConfigValue?
-    # - Is it a way to set default (or constructor-level) arguments, then
-    #   safely and selectively override them if desired during the algorithm?
-    #   This seems like the most practical use to me.
-
     # How should I handle solver config? What is a good domain?
     # Since each solver could have a different interface for options,
     # I'll refrain from adding a ConfigValue for solver options.
@@ -310,19 +303,7 @@ class NMPCSim(object):
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
-        # TODO: handle arguments (solver, outlvl, ...) via config blocks
-        #       separate solvers for each solve, in init
-        # KWARGS, CONFIG, NAMESPACE - remove kwargs and set these up here
-
-#        solver = kwargs.pop('solver', SolverFactory('ipopt'))
-#        self.default_solver = solver
-
         # TODO: validate_time_set function
-
-        # Logger properties:
-        # outlvl added as an attribute so it can be referenced later
-#        self.outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
-#        self.outlvl = outlvl
 
         init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
 
@@ -350,16 +331,7 @@ class NMPCSim(object):
         #       - check for consistency of initial conditions
         #       - if not consistent, tell user to go run dae.solve_initial_conditions
 
-        # TODO: - add attributes as private "_initial_inputs" - make block private
-        #       - check that I don't override anything
-        #       - store in a block: util.modeling.unique_component_name
-        #       - cleanup if desired
-        self.p_mod.initial_inputs = inputs_at_t0
-        # ^ Add these as an attribute so they can be used later to validate
-        # steady state model
-        # ^ What did I mean by this? In what way does steady state model need
-        # to resemble plant model?
-        # Not sure this is still necessary
+        self.p_mod._NMPC_NAMESPACE.initial_inputs = inputs_at_t0
 
         self.p_mod._NMPC_NAMESPACE.category_dict = {
                 VariableCategory.DIFFERENTIAL:
@@ -383,13 +355,10 @@ class NMPCSim(object):
 
         # Categorize variables in controller model
         init_controller_inputs = self.validate_initial_inputs(self.c_mod,
-                self.p_mod, self.p_mod_time, self.p_mod.initial_inputs)
+                self.p_mod, self.p_mod_time, 
+                self.p_mod._NMPC_NAMESPACE.initial_inputs)
         init_log.info('Categorizing variables in the controller model')
         self.categorize_variables(self.c_mod, self.c_mod_time, init_controller_inputs)
-        # TODO: Would like to use my variable category enum here
-        # As simple as replacing 'differential' by 'DIFFERENTIAL', etc.?
-        # Could construct a dict: enum -> var list, but that might be more work than necessary?
-        # Then constructing ComponentMap is much easier...
         self.c_mod._NMPC_NAMESPACE.category_dict = {
                 VariableCategory.DIFFERENTIAL:
                         self.c_mod._NMPC_NAMESPACE.diff_vars,
@@ -439,8 +408,6 @@ class NMPCSim(object):
                             self.p_mod._NMPC_NAMESPACE.controller_ic_vars,
                             self.c_mod_time.first(),
                             self.p_mod_time.first())
-        # May eventually want to "load_initial_conditions" here so I can apply 
-        # noise, but for now this is more direct.
 
         # Should strip bounds before this IC solve, since the controller
         # model should have bounds
@@ -451,18 +418,17 @@ class NMPCSim(object):
         # Controller model has already been categorized... No need 
         # to provide init_controller_inputs
         self.solve_initial_conditions(self.c_mod, self.c_mod_time)
-        # ^ move into initialize_control_problem
         self.strip_controller_bounds.revert(self.c_mod)
+        # TODO: Should not be solving initial conditions of the controller
+        # They will be overridden by steady state solve
 #####################
 
-#        self.sample_time = kwargs.pop('sample_time', 
-#                self.c_mod.time.get_finite_elements()[1] -
-#                    self.c_mod.time.get_finite_elements()[0])
         self.sample_time = self.config.sample_time
         self.validate_sample_time(self.sample_time, 
                 self.c_mod, self.p_mod)
 
         # TODO: validate_discretization_scheme option?
+        # (For custom/future discretization schemes)
         scheme = self.c_mod.time.get_discretization_info()['scheme']
         if scheme == 'LAGRANGE-RADAU':
             self.c_mod._NMPC_NAMESPACE.ncp = \
@@ -735,26 +701,8 @@ class NMPCSim(object):
                 noise_weights = []
                 for var in self.c_mod._NMPC_NAMESPACE.ic_vars:
                     info = locator[var[t0]]
-#                    category = info.category
                     loc = info.location
-                    # TODO: Should be a dict mapping: category -> correct weights
-                    #       var_info[category].weights (set point, bounds, etc.)
-                    #       This would be moot if I could map directly from 
-                    #       variable to weights
                     obj_weight = info.group.weights[loc]
-#                    if category == VariableCategory.DIFFERENTIAL:
-#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
-#                    elif category == VariableCategory.DERIVATIVE:
-#                        # Is it okay to weigh derivative noise by 
-#                        # the state variable's weight?
-#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
-#                    else:
-#                        # FIXME: Won't have obj weight for algebraic equations
-#                        # NAMESPACE: empty list should be added automatically in
-#                        # namespace block
-#                        # Really should calculate these weights, even if they
-#                        # aren't used
-#                        obj_weight = None
 
                     if obj_weight is not None and obj_weight != 0:
                         noise_weights.append(min(1/obj_weight, 
@@ -769,7 +717,7 @@ class NMPCSim(object):
                               **noise_args)
 
 
-    def inject_control_inputs_into_plant(self, t_plant, config=ConfigDict(), 
+    def inject_control_inputs_into_plant(self, t_plant,
             **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
@@ -790,10 +738,8 @@ class NMPCSim(object):
             noise_args : Additional kwargs to pass apply_noise_at_time
 
         """
-        # KWARGS, CONFIG - handle all of these through config. Pass in noise args
-        # as a bundle
         # config args for control_input_noise
-        config = self.config(config)
+        config = self.config(kwargs)
 
         sample_time = self.config.sample_time
 
@@ -807,7 +753,7 @@ class NMPCSim(object):
         assert t_plant+sample_time in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
-        # Should have some logic to correct if assert fails due to a rounding
+        # TODO: Should have some logic to correct if assert fails due to a rounding
         # error.
 
         add_noise = config.add_input_noise
@@ -823,14 +769,7 @@ class NMPCSim(object):
                 noise_weights = []
                 for var in self.c_mod._NMPC_NAMESPACE.plant_input_vars:
                     info = locator[var[t_controller]]
-#                    category = locator.category
                     loc = info.location
-#                    # TODO: allow other variable categories here?
-#                    # GENERALIZE
-#                    if category == VariableCategory.INPUT:
-#                        obj_weight = self.c_mod._NMPC_NAMESPACE.input_weights[loc]
-#                    elif category == VariableCategory.DIFFERENTIAL:
-#                        obj_weight = self.c_mod._NMPC_NAMESPACE.diff_weights[loc]
                     obj_weight = info.group.weights[loc]
                     if obj_weight is not None and obj_weight != 0:
                         noise_weights.append(min(1/obj_weight, max_noise_weight))
@@ -891,7 +830,7 @@ class NMPCSim(object):
 
         config = self.config(kwargs)
 
-        # TODO: Yes. Should activity_dict be a ComponentMap?
+        # TODO: activity_dict should be a ComponentMap
         was_originally_active = get_activity_dict(model)
         solver = config.solver
         outlvl = config.outlvl
@@ -957,18 +896,13 @@ class NMPCSim(object):
                              at the initial time point
 
         """
-
-        # Would probably be much faster to do this categorization
-        # during variable flattening
-        #time = model.time
-
-        # Works for steady state models as time will be an ordered
-        # (although not continuous) set:
         t0 = time.first()
         try:
             t1 = time.get_finite_elements()[1]
         except AttributeError:
             t1 = t0
+        # NOTE: This entire function won't work for steady state models as
+        # it heavily relies on the presence of derivative vars
 
         # TODO: subblock
         deriv_vars = []
@@ -1273,15 +1207,6 @@ class NMPCSim(object):
         assert (len(steady_model._NMPC_NAMESPACE.scalar_vars) == 
                 self.c_mod._NMPC_NAMESPACE.n_scalar_vars)
 
-        # Now that steady state model has been validated and initialized,
-        # construct complete lists for the *_sp attributes
-# TODO: these are already None
-#        diff_var_sp = [None for var in steady_model._NMPC_NAMESPACE.diff_vars]
-#        alg_var_sp = [None for var in steady_model._NMPC_NAMESPACE.alg_vars]
-#        input_var_sp = [None for var in steady_model._NMPC_NAMESPACE.input_vars]
-        # ^ list entries are not actually vars, they are dictionaries...
-        # maybe this is too confusing
-
         # This is where I map user values for set points into lists that
         # I can use to build the objective function (and weight matrices).
         for vardata, value in set_point:
@@ -1290,32 +1215,8 @@ class NMPCSim(object):
             category = info.category
             location = info.location
             group = info.group
-
-            # Only allow set point variables from following categories:
-            if (category != VariableCategory.DIFFERENTIAL and
-                category != VariableCategory.ALGEBRAIC and
-                category != VariableCategory.INPUT):
-                raise ValueError('Set point variables (data objects) must be'
-                                 'differential, algebraic, or inputs.')
-            # Maybe this restriction should stand, but I should probably map
-            # category to the corresponding set-point list
             group.set_setpoint(location, value)
 
-        # Add attributes (with proper names!) to steady model
-        # so these values can be accessed later
-# These attributes no longer exist and the info has been properly recorded
-#        steady_model._NMPC_NAMESPACE.diff_setpoints = diff_var_sp
-#        steady_model._NMPC_NAMESPACE.alg_setpoints = alg_var_sp
-#        steady_model._NMPC_NAMESPACE.input_setpoints = input_var_sp
-
-# Has already been created.
-#        category_dict = {
-#        VariableCategory.DIFFERENTIAL: steady_model._NMPC_NAMESPACE.diff_vars,
-#        VariableCategory.ALGEBRAIC: steady_model._NMPC_NAMESPACE.alg_vars,
-#        VariableCategory.INPUT: steady_model._NMPC_NAMESPACE.input_vars,
-#        VariableCategory.FIXED: steady_model._NMPC_NAMESPACE.fixed_vars,
-#        VariableCategory.SCALAR: steady_model._NMPC_NAMESPACE.scalar_vars,
-#        }
         self.build_variable_locator(steady_model, 
                 steady_model._NMPC_NAMESPACE.get_time(), steady_cat_dict)
 
@@ -1340,7 +1241,7 @@ class NMPCSim(object):
         # Make sure inputs are unfixed - validate degrees of freedom
         #
         # solve steady model for set point
-        # add sp attributes to control model
+        # set setpoint attributes control model
 
         self.add_objective_function(steady_model,
                             state_categories=[VariableCategory.DIFFERENTIAL,
@@ -1418,7 +1319,6 @@ class NMPCSim(object):
         by time? Raise warning and use last weight provided)
         """
         config = self.config(kwargs)
-#        override = kwargs.pop('override', [])
         override = config.objective_weight_override
 
         # Variables to override must be VarData objects in the model
@@ -1436,13 +1336,7 @@ class NMPCSim(object):
 
         tol = config.objective_weight_tolerance
 
-        # Need t0 to get the 'reference' value to compare with set point value
-        # for weight calculation
-#        t0 = vargroup.index_set.first()
-# list of initial values should have already been populated
-
         # Attempt to construct weight for each type of setpoint
-        # that we could allow
 
         for categ in categories:
             vargroup = category_dict[categ]
@@ -1531,6 +1425,8 @@ class NMPCSim(object):
 
         # TODO: Make this a list of time points, replace with list of
         # time-finite elements or sampling points depending on user preference.
+        # Do this after I have tests working again so I can make sure I don't
+        # break anything
         time = model.time
 
         state_term = sum(Q_entries[i]*(states[i][t] - sp_states[i])**2
@@ -1540,8 +1436,6 @@ class NMPCSim(object):
         # TODO: With what time resolution should states/controls be penalized?
         #       I think they should be penalized every sample point
 
-        # Should be some check that Q_entries == None <=> sp_states == None
-        # Not necessarily true, Q can have an entry due to an override
 
         if control_penalty_type == ControlPenaltyType.ERROR:
             control_term = sum(R_entries[i]*(controls[i][t] - sp_controls[i])**2
@@ -1559,7 +1453,8 @@ class NMPCSim(object):
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None)
                                             for k in range(2, len(time)+1))
-        # TODO: allow a control penalty type of None to turn off this term.
+        elif control_penalty_type == ControlPenaltyType.NONE:
+            control_term = 0
             # Note: This term is only non-zero at the boundary between sampling
             # times. Could use this info to make the expression more compact
             # (TODO)
@@ -1570,7 +1465,7 @@ class NMPCSim(object):
 
         # TODO: namespace block
         obj = Objective(expr=obj_expr)
-        model.add_component(name, obj)
+        model._NMPC_NAMESPACE.add_component(name, obj)
 
 
     def set_bounds_from_initial(self, vargroup):
@@ -1592,7 +1487,7 @@ class NMPCSim(object):
             t0 = vargroup.index_set.first()
         for i, var in enumerate(varlist):
             if not vargroup.is_scalar:
-                # Just assume these are the bounds/domain I want
+                # Just assume these (t0) are the bounds/domain I want
                 lb = var[t0].lb
                 ub = var[t0].ub
                 domain = var[t0].domain
@@ -1839,14 +1734,8 @@ class NMPCSim(object):
                         assert t_next in time
                         _slice[t].set_value(_slice[t_next].value)
 
-                    # Otherwise initialize to final steady state
-                    # (Should provide some other options here,
-                    # like copy inputs from set point then simulate)
                     else:
-#                        if not attrname == 'deriv_vars':
                         _slice[t].set_value(category_dict[categ].setpoint[i])
-#                        else:
-#                            _slice[t].set_value(0)
 
 
     def initialize_from_initial_conditions(self, model, 
@@ -1866,10 +1755,6 @@ class NMPCSim(object):
             attr_list : List of names of attributes that contain variables
                         whose values should be initialized
         """
-        # could use copy_values_at_time here
-#        attr_list = kwargs.pop('attr_list', ['deriv_vars', 'diff_vars', 'alg_vars'])
-        # TODO: user provides their own list of variables to initialize, or
-        # I grab all these attributes from the model and add them up here.
         time = model._NMPC_NAMESPACE.get_time()
         cat_dict = model._NMPC_NAMESPACE.category_dict
         for categ in categories:
@@ -1935,6 +1820,7 @@ class NMPCSim(object):
         sample_time = self.config.sample_time
         # ^ Use self.config here, as I don't want user to override sample_time
         #   at this point. How to throw an error if they do? - use immutable param
+        # TODO
         calculate_error = config.calculate_error
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
