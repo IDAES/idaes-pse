@@ -168,9 +168,9 @@ class NMPCVarGroup(object):
                 self.varlist[i][t].set_value(val)
             #self.varlist[i][:].set_value(val)
 
-    def set_nominal(self, i, val):
+    def set_reference(self, i, val):
         self.validate_index(i)
-        self.nominal[i] = val
+        self.reference[i] = val
 
     def set_weight(self, i, val):
         self.validate_index(i)
@@ -215,6 +215,7 @@ class TimeResolutionOption(NMPCEnum):
     COLLOCATION_POINTS = 31
     FINITE_ELEMENTS = 32
     SAMPLE_POINTS = 33
+    INITIAL_POINT = 34
 
     @classmethod
     def from_enum_or_string(cls, arg):
