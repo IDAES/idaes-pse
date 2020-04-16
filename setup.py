@@ -48,7 +48,6 @@ kwargs = dict(
         "click",
         "colorama",
         "flask", # for ui/fsvis
-        "humanize",
         "jupyter",
         "lxml",
         "matplotlib",
@@ -58,7 +57,6 @@ kwargs = dict(
         "numpy",
         "networkx",
         "pandas",
-        "pendulum==1.4.4",
         "pint",
         "psutil",
         "pyomo",

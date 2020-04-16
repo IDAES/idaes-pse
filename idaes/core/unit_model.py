@@ -666,4 +666,5 @@ Must be True if dynamic = True,
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl+1)
 
-        init_log.info('Initialization Complete: {}'.format(idaeslog.condition(results)))
+        init_log.info('Initialization Complete: {}'
+                      .format(idaeslog.condition(results)))

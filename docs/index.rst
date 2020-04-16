@@ -23,6 +23,7 @@ The IDAES team is comprised of collaborators from the following institutions:
 * Lawrence Berkeley National Laboratory
 * Carnegie-Mellon University (subcontract to LBNL)
 * West Virginia University (subcontract to LBNL)
+* University of Notre Dame (subcontract to LBNL)
 
 Contact, contributions and more information
 -------------------------------------------

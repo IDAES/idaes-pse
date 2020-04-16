@@ -23,7 +23,9 @@ from pyomo.environ import Param, Set
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core import (declare_process_block_class,
+                        PhysicalParameterBlock,
+                        Component)
 from idaes.core.util.misc import extract_data
 
 from idaes.generic_models.properties.activity_coeff_models.activity_coeff_prop_pack \
@@ -76,11 +78,14 @@ class MethaneParameterData(ActivityCoeffParameterData):
         super(MethaneParameterData, self).build()
 
         # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2', 'N2', 'O2', 'CH4',
-                                              'CO', 'CO2', 'H2O', 'NH3'])
-
-        # List of components in each phase (optional)
-        self.phase_comp = {"Vap": self.component_list}
+        self.H2 = Component()
+        self.N2 = Component()
+        self.O2 = Component()
+        self.CH4 = Component()
+        self.CO = Component()
+        self.CO2 = Component()
+        self.H2O = Component()
+        self.NH3 = Component()
 
         # List of all chemical elements that constitute the chemical species
         self.element_list = Set(initialize=['H', 'N', 'O', 'C'])
