@@ -17,16 +17,18 @@ Class for performing NMPC simulations of IDAES flowsheets
 
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory, Reference)
+        TransformationFactory, Reference, value)
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.dae.set_utils import is_explicitly_indexed_by, get_index_set_except
 from pyomo.opt.solver import SystemCallSolver
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom, 
+        activated_equalities_generator)
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
@@ -255,6 +257,22 @@ class NMPCSim(object):
                 domain=validate_list_of_vardata,
                 doc=('List of VarData objects corresponding to the inputs '
                     'at time.first() in the plant model')
+                )
+            )
+    CONFIG.declare('user_objective_name',
+            ConfigValue(
+                default='user_objective',
+                domain=str,
+                doc=('Name for the objective function created from the '
+                    'set-point provided by the user')
+                )
+            )
+    CONFIG.declare('full_state_objective_name',
+            ConfigValue(
+                default='tracking_objective',
+                domain=str,
+                doc=('Name for full-state objective function calculated '
+                    'from that provided by the user')
                 )
             )
     
@@ -717,7 +735,7 @@ class NMPCSim(object):
                               **noise_args)
 
 
-    def inject_control_inputs_into_plant(self, t_plant,
+    def inject_control_inputs_into_plant(self, t_plant, add_noise=False,
             **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
@@ -1067,33 +1085,150 @@ class NMPCSim(object):
         model._NMPC_NAMESPACE.var_locator = locator
 
 
+    def get_inconsistent_initial_conditions(self, model, time, tol=1e-6, 
+            **kwargs):
+        config = self.config(kwargs)
+        outlvl = config.outlvl
+        t0 = time.first()
+        inconsistent = []
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        for con in model.component_objects(Constraint, active=True):
+            if not is_explicitly_indexed_by(con, time):
+                continue
+            info = get_index_set_except(con, time)
+            non_time_set = info['set_except']
+            index_getter = info['index_getter']
+            for non_time_index in non_time_set:
+                index = index_getter(non_time_index, t0)
+                try:
+                    condata = con[index]
+                except KeyError:
+                    msg = '%s has no index %s' % (con.name, str(index))
+                    init_log.warning(msg)
+                    continue
+                if (value(condata.body) - value(condata.upper) > tol or
+                    value(condata.lower) - value(condata.body) > tol):
+                    inconsistent.append(con[index])
+        return inconsistent
+
+
     def calculate_full_state_setpoint(self, set_point, require_steady=True, 
             **kwargs):
         config = self.config(kwargs)
+        solver = config.solver
+        outlvl = config.outlvl
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
+        user_objective_name = config.user_objective_name
+
+        # Categories of variables whose set point values will be added to c_mod
+        categories = [VariableCategory.DIFFERENTIAL,
+                      VariableCategory.ALGEBRAIC,
+                      VariableCategory.DERIVATIVE,
+                      VariableCategory.INPUT,
+                      VariableCategory.SCALAR]
+
+        c_mod = self.c_mod
+        time = self.c_mod_time
+        t0 = time.first()
+        category_dict = c_mod._NMPC_NAMESPACE.category_dict
+        locator = c_mod._NMPC_NAMESPACE.var_locator
+
         # populate appropriate setpoint values from argument
+        for vardata, value in set_point:
+            info = locator[vardata]
+            categ = info.category
+            loc = info.location
+            group = category_dict[categ]
+            group.set_setpoint(loc, value)
 
-        # deactivate model except at t0
-        # check consistency of equality constraints at t0
-        # (active equalities)
-        # Solve if not consistent
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+                c_mod.component_data_objects((Constraint, Block))])
+        non_initial_time = [t for t in time if t != time.first()]
+        deactivated = deactivate_model_at(c_mod, time, non_initial_time, outlvl)
 
-        # populate initial list from values after solve
+        inconsistent = self.get_inconsistent_initial_conditions(c_mod, time,
+                outlvl=idaeslog.ERROR)
+        if inconsistent:
+            assert degrees_of_freedom(c_mod) == 0
+            init_log.info('Initial conditions are inconsistent. Solving')
+            with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+                results = solver.solve(c_mod, tee=slc.tee)
+            if results.solver.termination_condition == TerminationCondition.optimal:
+                init_log.info(
+                        'Successfully solved for consistent initial conditions')
+            else:
+                msg = 'Failed to solve for consistent initial conditions'
+                init_log.error(msg)
+                raise RuntimeError(msg)
 
-        # calculate weights based on setpoint values (plus initial conditions)
-        # ^ this definitely will require consistent initial conditions
+        # populate reference list from consistent values
+        for categ, vargroup in category_dict.items():
+            for i, var in enumerate(vargroup.varlist):
+                vargroup.set_reference(i, var[t0].value)
 
-        # add objective based on these weights (specified to only apply at 
-        # t0)
+        override = config.objective_weight_override
+        tolerance = config.objective_weight_tolerance
 
-        # Unfix all variables at t0 (remembering which were fixed)
-        # (except fixed variables)
+        self.construct_objective_weights(c_mod,
+            categories=[VariableCategory.DIFFERENTIAL,
+                        VariableCategory.ALGEBRAIC,
+                        VariableCategory.DERIVATIVE,
+                        VariableCategory.INPUT])
 
-        # solve model
+        # Add an objective function that only involves variables at t0
+        self.add_objective_function(c_mod,
+                control_penalty_type=ControlPenaltyType.ERROR,
+                name=user_objective_name,
+                time_resolution_option=TimeResolutionOption.INITIAL_POINT)
+        temp_objective = getattr(c_mod._NMPC_NAMESPACE, user_objective_name)
 
-        # deactivate objective, reactivate model, populate setpoint list
-        # from values at t0 (save obj weights somehow)
-        # (weights and objective will be set by other functions)
-        # reset values at t0 to values in initial 
+        # Fix/unfix variables as appropriate
+        # Order matters here. If a derivative is used as an IC, we still want
+        # it to be fixed if steayd state is required.
+        for var in c_mod._NMPC_NAMESPACE.ic_vars:
+            var[t0].unfix()
+        for var in category_dict[VariableCategory.INPUT]:
+            var[t0].unfix()
+        if require_steady == True:
+            for var in category_dict[VariableCategory.DERIVATIVE]:
+                var[t0].fix(0.0)
+
+        # Solve single-time point optimization problem
+        assert degrees_of_freedom(c_mod) == c_mod._NMPC_NAMESPACE.n_input_vars
+        init_log.info('Solving for full-state setpoint values')
+        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+            results = solver.solve(c_mod, tee=slc.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            init_log.info(
+                    'Successfully solved for full state setpoint values')
+        else:
+            msg = 'Failed to solve for full state setpoint values'
+            init_log.error(msg)
+            raise RuntimeError(msg)
+
+        # Revert changes (keep inputs unfixed)
+        if require_steady == True:
+            for var in category_dict[VariableCategory.DERIVATIVE]:
+                var[t0].unfix()
+        for var in c_mod._NMPC_NAMESPACE.ic_vars:
+            var[t0].fix()
+
+        # Deactivate objective that was just created
+        temp_objective.deactivate()
+
+        # Transfer setpoint values and reset reference values
+        for categ in categories:
+            vargroup = category_dict[categ]
+            for i, var in enumerate(vargroup.varlist):
+                vargroup.set_setpoint(i, var[t0].value)
+                var[t0].set_value(vargroup.reference[i])
+
+        # Reactivate components that were deactivated
+        for t, complist in deactivated.items():
+            for comp in complist:
+                if was_originally_active[comp]:
+                    comp.activate
 
 
     def solve_steady_state_setpoint(self, set_point, steady_model, **kwargs):
@@ -1415,7 +1550,6 @@ class NMPCSim(object):
         This seems like a lot of extra work though.)
         """
         config = self.config(kwargs)
-        name = kwargs.pop('name', 'objective')
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         time_resolution = config.time_resolution_option
@@ -1456,7 +1590,22 @@ class NMPCSim(object):
         # time-finite elements or sampling points depending on user preference.
         # Do this after I have tests working again so I can make sure I don't
         # break anything
-        time = model.time
+        mod_time = model._NMPC_NAMESPACE.get_time()
+        t0 = mod_time.first()
+        if time_resolution == TimeResolutionOption.COLLOCATION_POINTS:
+            time = [t for t in mod_time]
+        if time_resolution == TimeResolutionOption.FINITE_ELEMENTS:
+            time = mod_time.get_finite_elements()
+        if time_resolution == TimeResolutionOption.SAMPLE_POINTS:
+            sample_time = self.sample_time
+            # TODO: within tolerance
+            # TODO: add a get_sample_points method so I don't have to repeat
+            # this calculation
+            time = [t for t in mod_time.get_finite_elements()
+                    if (t-t0) % sample_time == 0]
+            assert len(time) == (model._NMPC_NAMESPACE.samples_per_horizon + 1)
+        if time_resolution == TimeResolutionOption.INITIAL_POINT:
+            time = [t0]
 
         state_term = sum(Q_entries[i]*(states[i][t] - sp_states[i])**2
                 for i in range(len(states)) if (Q_entries[i] is not None
@@ -1465,14 +1614,14 @@ class NMPCSim(object):
         # TODO: With what time resolution should states/controls be penalized?
         #       I think they should be penalized every sample point
 
-
         if control_penalty_type == ControlPenaltyType.ERROR:
             control_term = sum(R_entries[i]*(controls[i][t] - sp_controls[i])**2
                     for i in range(len(controls)) if (R_entries[i] is not None
                                                 and sp_controls[i] is not None)
                                                 for t in time)
         elif control_penalty_type == ControlPenaltyType.ACTION:
-            if len(time) == 1:
+            time_len = len(time)
+            if time_len == 1:
                 init_log.warning(
                         'Warning: Control action penalty specfied '
                         'for a model with a single time point.'
@@ -1481,7 +1630,7 @@ class NMPCSim(object):
                                   (controls[i][time[k]] - controls[i][time[k-1]])**2
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None)
-                                            for k in range(2, len(time)+1))
+                                            for k in range(1, time_len))
         elif control_penalty_type == ControlPenaltyType.NONE:
             control_term = 0
             # Note: This term is only non-zero at the boundary between sampling
@@ -1510,7 +1659,6 @@ class NMPCSim(object):
             None
         """
 
-#        for categ, vargroup in model._NMPC_NAMESPACE.category_dict.items():
         varlist = vargroup.varlist
         if not vargroup.is_scalar:
             t0 = vargroup.index_set.first()

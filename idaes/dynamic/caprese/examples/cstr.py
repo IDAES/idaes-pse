@@ -76,13 +76,18 @@ def main():
     
     # Weight overwrite expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    weight_overwrite = [(m_steady.fs.mixer.E_inlet.flow_rate[0], 20.0)]
-    
-    nmpc.solve_steady_state_setpoint(set_point,
-            m_steady.fs,
-            outlvl=idaeslog.DEBUG,
-            objective_weight_override=weight_overwrite,
-            objective_weight_tolerance=weight_tolerance)
+    weight_override = [(m_steady.fs.mixer.E_inlet.flow_rate[0], 20.0)]
+
+    nmpc.calculate_full_state_setpoint(set_point,
+            objective_weight_override=weight_override,
+            objective_weight_tolerance=weight_tolerance,
+            outlvl=idaeslog.DEBUG)
+
+#    nmpc.solve_steady_state_setpoint(set_point,
+#            m_steady.fs,
+#            outlvl=idaeslog.DEBUG,
+#            objective_weight_override=weight_override,
+#            objective_weight_tolerance=weight_tolerance)
 
     nmpc.add_setpoint_to_controller()
     
@@ -112,8 +117,6 @@ def main():
         
         nmpc.simulate_plant(t)
 
-        break
-        
     # TODO: add code for creating NMPC controller plots
     # TODO: add option for specifying "user-interest variables"
 
