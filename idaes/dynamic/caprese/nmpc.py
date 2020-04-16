@@ -1067,6 +1067,35 @@ class NMPCSim(object):
         model._NMPC_NAMESPACE.var_locator = locator
 
 
+    def calculate_full_state_setpoint(self, set_point, require_steady=True, 
+            **kwargs):
+        config = self.config(kwargs)
+        # populate appropriate setpoint values from argument
+
+        # deactivate model except at t0
+        # check consistency of equality constraints at t0
+        # (active equalities)
+        # Solve if not consistent
+
+        # populate initial list from values after solve
+
+        # calculate weights based on setpoint values (plus initial conditions)
+        # ^ this definitely will require consistent initial conditions
+
+        # add objective based on these weights (specified to only apply at 
+        # t0)
+
+        # Unfix all variables at t0 (remembering which were fixed)
+        # (except fixed variables)
+
+        # solve model
+
+        # deactivate objective, reactivate model, populate setpoint list
+        # from values at t0 (save obj weights somehow)
+        # (weights and objective will be set by other functions)
+        # reset values at t0 to values in initial 
+
+
     def solve_steady_state_setpoint(self, set_point, steady_model, **kwargs):
         config = self.config(kwargs)
         outlvl = config.outlvl
