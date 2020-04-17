@@ -19,6 +19,7 @@ from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
         TransformationFactory, Reference, value)
 from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.range import remainder # remainder seems an unintuitive name...
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
@@ -38,7 +39,7 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         TimeResolutionOption, ControlInitOption, ControlPenaltyType,
         VariableCategory, validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup)
+        NMPCVarGroup, find_point_in_continuousset)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -500,7 +501,7 @@ class NMPCSim(object):
         namespace.get_time = get_time
 
 
-    def validate_sample_time(self, sample_time, *models):
+    def validate_sample_time(self, sample_time, *models, **kwargs):
         """Makes sure sample time is an integer multiple of discretization
         spacing in each model, and that horizon of each model is an integer
         multiple of sample time.
@@ -509,31 +510,59 @@ class NMPCSim(object):
             sample_time: Sample time to check
             models: List of flowsheet models to check
         """
+        config = self.config(kwargs)
+        tolerance = config.continuous_set_tolerance
         for model in models:
             time = model._NMPC_NAMESPACE.get_time()
-            fe_spacing = (time.get_finite_elements()[1] -
-                          time.get_finite_elements()[0])
-            if fe_spacing > sample_time:
-                raise ValueError(
-                    'Sampling time must be at least as long '
-                    'as a finite element in time')
-            # TODO: how to handle roundoff here?
-            if (sample_time / fe_spacing) % 1 != 0:
-                raise ValueError(
-                    'Sampling time must be an integer multiple of '
-                    'finite element spacing for every model')
-            else:
-                model._NMPC_NAMESPACE.fe_per_sample = \
-                        int(sample_time/fe_spacing)
-
             horizon_length = time.last() - time.first()
-            if (horizon_length / sample_time) % 1 != 0:
+
+            # TODO: This should probably be a DAE utility
+            min_spacing = horizon_length
+            for t in time:
+                if t == time.first():
+                    continue
+                prev = time.prev(t)
+                if t - prev < min_spacing:
+                    min_spacing = t - prev
+            # Sanity check:
+            assert min_spacing > 0
+            # Required so only one point can satisfy equality to tolerance
+            assert tolerance < min_spacing/2
+
+            off_by = abs(remainder(horizon_length, sample_time))
+            if off_by > tolerance:
                 raise ValueError(
                     'Sampling time must be an integer divider of '
-                    'horizon length')
-            else:
-                model._NMPC_NAMESPACE.samples_per_horizon = \
-                        int(horizon_length/sample_time)
+                    'horizon length within tolerance %f' % tolerance)
+            n_samples = round(horizon_length/sample_time)
+            model._NMPC_NAMESPACE.samples_per_horizon = n_samples
+
+            finite_elements = time.get_finite_elements()
+
+            sample_points = []
+            sample_no = 1
+            fe_per = 0
+            fe_per_sample_dict = {}
+            for t in finite_elements:
+                if t == time.first():
+                    continue
+                fe_per += 1
+                time_since = t - time.first()
+                sp = sample_no*sample_time
+                diff = abs(sp-time_since)
+                if diff < tolerance:
+                    sample_points.append(t)
+                    sample_no += 1
+                    fe_per_sample_dict[sample_no] = fe_per
+                    fe_per = 0
+                if time_since > sp:
+                    raise ValueError(
+                            'Could not find a time point for the %ith '
+                            'sample point' % sample_no)
+            assert len(sample_points) == n_samples
+            # Here sample_points excludes time.first()
+            model._NMPC_NAMESPACE.fe_per_sample = fe_per_sample_dict
+            model._NMPC_NAMESPACE.sample_points = sample_points
 
 
     def validate_slices(self, tgt_model, src_model, src_slices):
@@ -758,21 +787,25 @@ class NMPCSim(object):
         """
         # config args for control_input_noise
         config = self.config(kwargs)
-
+        tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        t_controller = self.c_mod_time.first() + sample_time
+        t_controller = find_point_in_continuousset(
+                self.c_mod_time.first() + sample_time, 
+                self.c_mod_time, tolerance)
         assert t_controller in self.c_mod_time
 
         time = self.p_mod_time
-        plant_sample = [t for t in time if t > t_plant and t<= t_plant+sample_time]
-        assert t_plant+sample_time in plant_sample
+        plant_sample_end = find_point_in_continuousset(
+                t_plant + sample_time, 
+                time, tolerance)
+        assert plant_sample_end in time
+        plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
+        assert plant_sample_end in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
-        # TODO: Should have some logic to correct if assert fails due to a rounding
-        # error.
 
         add_noise = config.add_input_noise
         noise_weights = config.noise_weights
@@ -1586,24 +1619,18 @@ class NMPCSim(object):
         R_entries = input_group.weights
         sp_controls = input_group.setpoint
 
-        # TODO: Make this a list of time points, replace with list of
-        # time-finite elements or sampling points depending on user preference.
-        # Do this after I have tests working again so I can make sure I don't
-        # break anything
         mod_time = model._NMPC_NAMESPACE.get_time()
         t0 = mod_time.first()
+        # NOTE: t0 is now omitted from objective function, unless
+        # INITIAL_POINT option is used
         if time_resolution == TimeResolutionOption.COLLOCATION_POINTS:
-            time = [t for t in mod_time]
+            time = [t for t in mod_time if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.FINITE_ELEMENTS:
-            time = mod_time.get_finite_elements()
+            time = [t for t in mod_time.get_finite_elements() 
+                    if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.SAMPLE_POINTS:
             sample_time = self.sample_time
-            # TODO: within tolerance
-            # TODO: add a get_sample_points method so I don't have to repeat
-            # this calculation
-            time = [t for t in mod_time.get_finite_elements()
-                    if (t-t0) % sample_time == 0]
-            assert len(time) == (model._NMPC_NAMESPACE.samples_per_horizon + 1)
+            time = model._NMPC_NAMESPACE.sample_points
         if time_resolution == TimeResolutionOption.INITIAL_POINT:
             time = [t0]
 
@@ -1620,14 +1647,19 @@ class NMPCSim(object):
                                                 and sp_controls[i] is not None)
                                                 for t in time)
         elif control_penalty_type == ControlPenaltyType.ACTION:
-            time_len = len(time)
+            # Override time list to be the list of sample points,
+            # as these are the only points control action can be 
+            # nonzero
+            action_time = model._NMPC_NAMESPACE.sample_points
+            time_len = len(action_time)
             if time_len == 1:
                 init_log.warning(
                         'Warning: Control action penalty specfied '
                         'for a model with a single time point.'
                         'Control term in objective function will be empty.')
             control_term = sum(R_entries[i]*
-                                  (controls[i][time[k]] - controls[i][time[k-1]])**2
+                                  (controls[i][action_time[k]] - 
+                                      controls[i][action_time[k-1]])**2
                 for i in range(len(controls)) if (R_entries[i] is not None
                                             and sp_controls[i] is not None)
                                             for k in range(1, time_len))
@@ -1635,9 +1667,6 @@ class NMPCSim(object):
             control_term = 0
             # Note: This term is only non-zero at the boundary between sampling
             # times. Could use this info to make the expression more compact
-            # (TODO)
-            # Populate time as either the list of finite element of the list
-            # of sample points. Change time to be a list, not ContinuousSet
 
         obj_expr = state_term + control_term
 
@@ -1729,13 +1758,6 @@ class NMPCSim(object):
             self.config.sample_time = sample_time
 
         time = model.time
-        t0 = model.time.get_finite_elements()[0]
-        t1 = model.time.get_finite_elements()[1]
-        nfe_spacing = t1-t0
-        nfe_per_sample = sample_time / nfe_spacing 
-        if nfe_per_sample - int(nfe_per_sample) != 0:
-            raise ValueError
-        nfe_per_sample = int(nfe_per_sample)
 
         # This rule will not be picklable as it is not declared
         # at module namespace
@@ -1745,14 +1767,11 @@ class NMPCSim(object):
         def pwc_rule(m, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            # TODO: Do this to tolerance
-            # pyomo.core.base.range::Remainder
-            # (or just math.remainder -- nope, added in 3.7)
-            # if abs(remainder(t-time.first(), sample_time)) < 1e-8
-            # set collocation_tolerance = 1/2(min spacing) during
-            # construction, reference it here.
-            if (t - time.first()) % sample_time == 0:
+            if t in m._NMPC_NAMESPACE.sample_points:
                 return Constraint.Skip
+            # ^ Here, the constraint will be applied at t == 0
+#            if (t - time.first()) % sample_time == 0:
+#                return Constraint.Skip
             t_next = time.next(t)
             inputs = m._NMPC_NAMESPACE.input_vars.varlist
             _slice = inputs[i]
@@ -1884,6 +1903,7 @@ class NMPCSim(object):
 
         config = self.config(kwargs)
         sample_time = config.sample_time
+        tolerance = config.continuous_set_tolerance
 
         # TODO
         # Should initialize dual variables here too.
@@ -1892,8 +1912,6 @@ class NMPCSim(object):
         category_dict = model._NMPC_NAMESPACE.category_dict
         # TODO: have some attribute for steady time 
         # Or better yet, don't use a steady_model at all
-        # Here I use steady model, assuming it holds the desired set point values
-        # Really, I should access set point lists...
 
         for categ in categories:
             varlist = category_dict[categ].varlist
@@ -1901,16 +1919,17 @@ class NMPCSim(object):
                 for t in time:
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
-                        t_next = t + sample_time
+                        t_next = find_point_in_continuousset(
+                                t + sample_time, 
+                                time, tolerance=tolerance)
 
-                        # Performing addition on CtsSet indices can result in
-                        # rounding errors. Round to 8th decimal place here:
-                        # TODO: config.continuous_set_tolerance
-                        t_next = int(round(t_next*1e8))/1e8
-
-                        assert t_next in time
+#                        # Performing addition on CtsSet indices can result in
+#                        # rounding errors. Round to 8th decimal place here:
+#                        # TODO: config.continuous_set_tolerance
+#                        t_next = int(round(t_next*1e8))/1e8
+#
+#                        assert t_next in time
                         _slice[t].set_value(_slice[t_next].value)
-
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
 
@@ -1967,7 +1986,7 @@ class NMPCSim(object):
 
         assert (degrees_of_freedom(self.c_mod) == 
                 self.c_mod._NMPC_NAMESPACE.n_input_vars*
-                (self.c_mod._NMPC_NAMESPACE.samples_per_horizon + 1))
+                (self.c_mod._NMPC_NAMESPACE.samples_per_horizon))
 
         with idaeslog.solver_log(s_log, idaeslog.DEBUG) as slc:
             results = solver.solve(self.c_mod, tee=slc.tee)

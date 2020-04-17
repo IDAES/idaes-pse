@@ -321,6 +321,16 @@ class NMPCVarLocator(object):
         self.is_ic = is_ic
 
 
+def find_point_in_continuousset(point, cset, tolerance=1e-8):
+    for t in cset:
+        diff = abs(point-t)
+        if diff < tolerance:
+            return t
+        if t > point:
+            break
+    return None
+
+
 def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
     """Copies values from time-indexed variables in one list, at one point
     in time to another list, at another point in time
