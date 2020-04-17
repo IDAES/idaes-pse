@@ -215,8 +215,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # Call configure method to set construction arguments
         self.configure()
 
-        # Set reference to StateBlock constructor class
-        self.state_block_class = GenericStateBlock
+        # Build core components
+        self._state_block_class = GenericStateBlock
 
         # Add Component objects
         if self.config.components is None:

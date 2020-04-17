@@ -56,7 +56,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         '''
         super(PropertyInterrogatorData, self).build()
 
-        self.state_block_class = InterrogatorStateBlock
+        self._state_block_class = InterrogatorStateBlock
 
         # Phase objects
         # TODO : Allow users to define custom Phase obejcts/phase list

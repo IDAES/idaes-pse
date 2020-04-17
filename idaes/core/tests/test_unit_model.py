@@ -146,8 +146,7 @@ def test_add_port():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = m.fs.pp.state_block_class(m.fs.time,
-                             default={"parameters": m.fs.pp})
+    m.fs.u.prop = m.fs.pp.build_state_block(m.fs.time)
 
     p_obj = m.fs.u.add_port(name="test_port", block=m.fs.u.prop)
 
@@ -170,8 +169,7 @@ def test_add_port_invalid_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = m.fs.pp.state_block_class(m.fs.time,
-                             default={"parameters": m.fs.pp})
+    m.fs.u.prop = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(ConfigurationError):
         m.fs.u.add_port(name="test_port", block=m.fs.u)
@@ -506,8 +504,7 @@ def test_add_state_material_balances_invalid_state_2():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
     m.fs.u.sb2 = object()
 
     with pytest.raises(
@@ -527,10 +524,8 @@ def test_add_state_material_balances_mixed_states():
     m.fs.pp2 = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp1.state_block_class(m.fs.time,
-                                            default={"parameters": m.fs.pp1})
-    m.fs.u.sb2 = m.fs.pp2.state_block_class(m.fs.time,
-                                            default={"parameters": m.fs.pp2})
+    m.fs.u.sb1 = m.fs.pp1.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp2.build_state_block(m.fs.time)
 
     with pytest.raises(
             ConfigurationError,
@@ -551,10 +546,8 @@ def test_add_state_material_balances_component_phase():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentPhase,
@@ -574,10 +567,8 @@ def test_add_state_material_balances_component_total():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentTotal,
@@ -596,10 +587,8 @@ def test_add_state_material_balances_total():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.total,
@@ -616,10 +605,8 @@ def test_add_state_material_balances_element_total():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.u.add_state_material_balances(
@@ -634,10 +621,8 @@ def test_add_state_material_balances_none():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.u.add_state_material_balances(
@@ -652,10 +637,8 @@ def test_add_state_material_balances_double_call():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentPhase,
