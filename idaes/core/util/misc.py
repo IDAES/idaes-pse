@@ -189,15 +189,16 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
     An object derived from _GeneralExpressionData which implements methods for
     common APIs on Vars.
 
-    Constructor Arguments
-        expr        The Pyomo expression stored in this expression.
-        component   The Expression object that owns this data.
+    Constructor Arguments:
+        expr: The Pyomo expression stored in this expression.
 
-    Public Class Attributes
-        expr        The expression owned by this data.
+        component: The Expression object that owns this data.
+
+    Public Class Attributes:
+        expr: The expression owned by this data.
 
     Private class attributes:
-        _component  The expression component.
+        _component: The expression component.
     """
 
     # Define methods for common APIs on Vars in case user mistakes
@@ -232,10 +233,12 @@ class VarLikeExpression(pyo.Expression):
     A shared var-like expression container, which may be defined over a index.
 
     Constructor Arguments:
-        initialize  A Pyomo expression or dictionary of expressions
-                        used to initialize this object.
-        expr        A synonym for initialize.
-        rule        A rule function used to initialize this object.
+        initialize: A Pyomo expression or dictionary of expressions used
+        to initialize this object.
+
+        expr: A synonym for initialize.
+
+        rule: A rule function used to initialize this object.
     """
 
     _ComponentDataClass = _GeneralVarLikeExpressionData
