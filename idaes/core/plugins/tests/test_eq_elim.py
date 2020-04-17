@@ -77,8 +77,31 @@ def test_transform(model):
     assert m.x[2].fixed
     assert m.y.fixed
 
+def test_revert_constraint():
+    # test that multiple replaced constraints are reverted right
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var([1, 2, 3, 4], initialize={1:0, 2:2, 3:3, 4:4})
+    #m.x.fix()
+    m.x[1].unfix()
+    # This constraint should be replaced twice
+    # 1.) x[2] and x[3] get written in terms of x[4]
+    # 2.) x[1] == 0.5*x[4] + x[3]
+    # 3.) x[1] == 0.5*x[4] + 0.75*x[3]
+    m.c1 = pyo.Constraint(expr=m.x[1] == m.x[2] + m.x[3])
+    m.c2 = pyo.Constraint(expr=m.x[2]*2 == m.x[4])
+    m.c3 = pyo.Constraint(expr=m.x[3]*4 == m.x[4]*3)
+    elim = pyo.TransformationFactory("simple_equality_eliminator")
+    elim.apply_to(m, max_iter=3)
+    print(m.x[1].value)
+    print(m.c1.body)
+    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -5)
+    elim.revert()
+    # make sure the constraint is back to m.x[1] == m.x[2] + m.x[3]
+    m.x[2] = 0.5
+    m.x[3] = 0.75
+    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -1.25)
 
-def test_reverse(model):
+def test_reverse_var(model):
     m = model
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m)
