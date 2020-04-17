@@ -91,23 +91,27 @@ def test_revert_constraint():
     m.c3 = pyo.Constraint(expr=m.x[3]*4 == m.x[4]*3)
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m, max_iter=3)
-    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -5)
+    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -5
     elim.revert()
     # make sure the constraint is back to m.x[1] == m.x[2] + m.x[3]
+    m.x[1] = 0.0
     m.x[2] = 0.5
     m.x[3] = 0.75
-    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -1.25)
+    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -1.25
 
     # check again with fixed var
     m.x[4].fix()
     elim.apply_to(m, max_iter=3)
     assert len([c for c in m.component_data_objects(pyo.Constraint, active=True)]) == 0
-    assert pytest.approx(pyo.value(m.x[1]) == 5)
+    assert m.x[1].fixed
+    assert pytest.approx(pyo.value(m.x[1])) == 5
     elim.revert()
+    m.x[1] = 0.0
     m.x[2] = 0.5
     m.x[3] = 0.75
     assert len([c for c in m.component_data_objects(pyo.Constraint, active=True)]) == 3
-    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -1.25)
+    assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -1.25
+    assert not m.x[1].fixed
 
 def test_reverse_var(model):
     m = model
