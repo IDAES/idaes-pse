@@ -91,8 +91,6 @@ def test_revert_constraint():
     m.c3 = pyo.Constraint(expr=m.x[3]*4 == m.x[4]*3)
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m, max_iter=3)
-    print(m.x[1].value)
-    print(m.c1.body)
     assert pytest.approx(pyo.value(m.c1.body - m.c1.lower) == -5)
     elim.revert()
     # make sure the constraint is back to m.x[1] == m.x[2] + m.x[3]
