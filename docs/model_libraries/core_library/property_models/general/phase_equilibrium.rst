@@ -3,7 +3,7 @@ Defining Phase Equilibria
 
 Phase equilibrium and separation is a key part of almost all chemical processes, and also represent some of the most complex and non-linear constraints in a model, especially when dealing with systems which may cross phase boundaries. Systems may also include multiple interacting phases with equilibrium, which further complicates the problem. As such, good formulations of these constraints is key to a robust and tractable model.
 
-The IDAES Generic Property Package framework supports a range of phase equilibrium behaviors, including multiple phases in equilibrium and different formulations for describing the equilibria. The are all optional, and users do not need to define phase equilibria if it is not required for their system.
+The IDAES Generic Property Package framework supports a range of phase equilibrium behaviors, including multiple phases in equilibrium and different formulations for describing the equilibria. These are all optional, and users do not need to define phase equilibria if it is not required for their system.
 
 Setting up phase equilibrium within the framework is done using three configuration arguments as discussed below. However, users should be aware that some of these options require definition of further properties, such as bubble and dew point calculations.
 

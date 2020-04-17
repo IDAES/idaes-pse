@@ -22,9 +22,9 @@ Each phase in the `phases` argument must be assigned a valid phase type from tho
 Equations of State
 ^^^^^^^^^^^^^^^^^^
 
-Equations of State (or equivalent methods) describe the relationship between different thermophysical properties within a mixture and ensure that the behavior of these are thermodynamically consistent, and wide range of equations of state are available in literature for different applications and levels of rigor. Each phase must be assigned an Equation of State (or equivalent method) in the form of a Python module which will assemble the necessary variables, constraints and expressions associated with the desired approach.
+Equations of state (or equivalent methods) describe the relationship between different thermophysical properties within a mixture and ensure that the behavior of these are thermodynamically consistent. Each phase must be assigned an Equation of State (or equivalent method) in the form of a Python module which will assemble the necessary variables, constraints and expressions associated with the desired approach.
 
-The IDAES Generic Property Package Framework provides a number of prebuilt equation of state packages for users to use, which are listed below.
+A wide range of equations of states are available in literature for different applications and levels of rigor, and the IDAES Generic Property Package Framework provides a number of prebuilt modules for users, which are listed below.
 
 Equation of State Libraries
 """""""""""""""""""""""""""
