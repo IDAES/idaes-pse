@@ -15,7 +15,13 @@
 This module contains miscellaneous utility functions for use in IDAES models.
 """
 import xml.dom.minidom
+
 import pyomo.environ as pyo
+from pyomo.core.base.expression import _GeneralExpressionData
+from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.indexed_component import (
+    UnindexedComponent_set, )
+
 
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
@@ -63,8 +69,8 @@ def extract_data(data_dict):
 def TagReference(s, description=""):
     """
     Create a Pyomo reference with an added description string attribute to
-    describe the reference. The intended use for these references is to create a
-    time-indexed reference to variables in a model corresponding to plant
+    describe the reference. The intended use for these references is to create
+    a time-indexed reference to variables in a model corresponding to plant
     measurment tags.
 
     Args:
@@ -172,3 +178,178 @@ def copy_port_values(destination, source):
         if isinstance(v, pyo.Var):
             for i in v:
                 v[i].value = pyo.value(source.vars[k][i])
+
+
+# -----------------------------------------------------------------------------
+# Creating a Component derived from Pyomo's Expression to use in cases
+# where an Expression could be mistaken for a Var.
+# Author: Andrew Lee
+class _GeneralVarLikeExpressionData(_GeneralExpressionData):
+    """
+    An object derived from _GeneralExpressionData which implements methods for
+    common APIs on Vars.
+
+    Constructor Arguments
+        expr        The Pyomo expression stored in this expression.
+        component   The Expression object that owns this data.
+
+    Public Class Attributes
+        expr        The expression owned by this data.
+
+    Private class attributes:
+        _component  The expression component.
+    """
+
+    # Define methods for common APIs on Vars in case user mistakes
+    # an Expression for a Var
+    def setlb(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not have bounds. "
+            "Use an inequality Constraint instead."
+            % (self.name))
+
+    def setub(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not have bounds. "
+            "Use an inequality Constraint instead."
+            % (self.name))
+
+    def fix(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not be fixed. "
+            "Use an equality Constraint instead."
+            % (self.name))
+
+    def unfix(self):
+        raise TypeError(
+            "%s is an Expression and can not be unfixed."
+            % (self.name))
+
+@ModelComponentFactory.register(
+    "Named expressions that can be used in places of variables.")
+class VarLikeExpression(pyo.Expression):
+    """
+    A shared var-like expression container, which may be defined over a index.
+
+    Constructor Arguments:
+        initialize  A Pyomo expression or dictionary of expressions
+                        used to initialize this object.
+        expr        A synonym for initialize.
+        rule        A rule function used to initialize this object.
+    """
+
+    _ComponentDataClass = _GeneralVarLikeExpressionData
+    NoConstraint    = (1000,)
+    Skip            = (1000,)
+
+    def __new__(cls, *args, **kwds):
+        if cls != VarLikeExpression:
+            return super(VarLikeExpression, cls).__new__(cls)
+        if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
+            return SimpleVarLikeExpression.__new__(SimpleVarLikeExpression)
+        else:
+            return IndexedVarLikeExpression.__new__(IndexedVarLikeExpression)
+
+
+class SimpleVarLikeExpression(_GeneralVarLikeExpressionData,
+                              VarLikeExpression):
+
+    def __init__(self, *args, **kwds):
+        _GeneralVarLikeExpressionData.__init__(self, expr=None, component=self)
+        VarLikeExpression.__init__(self, *args, **kwds)
+
+    # These methods need to be pointed to the derived _GeneralVarLikeExpression
+    def set_value(self, expr):
+        """Set the expression on this expression."""
+        if self._constructed:
+            return _GeneralVarLikeExpressionData.set_value(self, expr)
+        raise ValueError(
+            "Setting the expression of expression '%s' "
+            "before the Expression has been constructed (there "
+            "is currently no object to set)."
+            % (self.name))
+
+    def is_constant(self):
+        """A boolean indicating whether this expression is constant."""
+        if self._constructed:
+            return _GeneralVarLikeExpressionData.is_constant(self)
+        raise ValueError(
+            "Accessing the is_constant flag of expression '%s' "
+            "before the Expression has been constructed (there "
+            "is currently no value to return)."
+            % (self.name))
+
+    def is_fixed(self):
+        """A boolean indicating whether this expression is fixed."""
+        if self._constructed:
+            return _GeneralVarLikeExpressionData.is_fixed(self)
+        raise ValueError(
+            "Accessing the is_fixed flag of expression '%s' "
+            "before the Expression has been constructed (there "
+            "is currently no value to return)."
+            % (self.name))
+
+    #
+    # From Pyomo: Leaving this method for backward compatibility reasons.
+    # (probably should be removed)
+    # Note: Doresn't see mto work without it
+    #
+    def add(self, index, expr):
+        """Add an expression with a given index."""
+        if index is not None:
+            raise KeyError(
+                "SimpleExpression object '%s' does not accept "
+                "index values other than None. Invalid value: %s"
+                % (self.name, index))
+        if (type(expr) is tuple) and \
+           (expr == pyo.Expression.Skip):
+            raise ValueError(
+                "Expression.Skip can not be assigned "
+                "to an Expression that is not indexed: %s"
+                % (self.name))
+        self.set_value(expr)
+        return self
+
+
+class IndexedVarLikeExpression(VarLikeExpression):
+
+    #
+    # From Pyomo: Leaving this method for backward compatibility reasons
+    # Note: It allows adding members outside of self._index.
+    #       This has always been the case. Not sure there is
+    #       any reason to maintain a reference to a separate
+    #       index set if we allow this.
+    #
+    def add(self, index, expr):
+        """Add an expression with a given index."""
+        if (type(expr) is tuple) and \
+           (expr == pyo.Expression.Skip):
+            return None
+        cdata = _GeneralVarLikeExpressionData(expr, component=self)
+        self._data[index] = cdata
+        return cdata
+
+    # Define methods for common APIs on Vars in case user mistakes
+    # an Expression for a Var
+    def setlb(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not have bounds. "
+            "Use inequality Constraints instead."
+            % (self.name))
+
+    def setub(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not have bounds. "
+            "Use inequality Constraints instead."
+            % (self.name))
+
+    def fix(self, val=None):
+        raise TypeError(
+            "%s is an Expression and can not be fixed. "
+            "Use equality Constraints instead."
+            % (self.name))
+
+    def unfix(self):
+        raise TypeError(
+            "%s is an Expression and can not be unfixed."
+            % (self.name))
