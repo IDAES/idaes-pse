@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import pytest
-from unittest.mock import patch
+from mock import patch
 
 class TestFeatureScaling:
     test_data_1d = [[x] for x in range(10)]

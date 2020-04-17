@@ -23,7 +23,7 @@ from scipy.spatial import distance
 import scipy.optimize as opt
 import scipy.stats as stats
 import pytest
-from unittest.mock import patch
+from mock import patch
 
 class TestKrigingModel:
     y = np.array([ [i,j,((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])

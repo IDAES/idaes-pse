@@ -18,7 +18,7 @@ from idaes.surrogate.pysmo.polynomial_regression import (
 import numpy as np
 import pandas as pd
 import pytest
-from unittest.mock import patch
+from mock import patch
 
 class TestFeatureScaling:
     test_data_1d = [[x] for x in range(10)]
