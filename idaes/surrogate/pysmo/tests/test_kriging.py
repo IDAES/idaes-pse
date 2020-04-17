@@ -421,13 +421,13 @@ class KrigingModelTestCases(unittest.TestCase):
         with pytest.raises(Exception):
             KrigingClass.pickle_load('abcde.pickle')
             
-    @patch('matplotlib.pyplot.figure')
-    def test_parity_residual_plots(self,mock_fig):
+    @patch('matplotlib.pyplot.show')
+    def test_parity_residual_plots(self,mock_show):
         KrigingClass = KrigingModel(self.training_data,regularization=False)
         results = KrigingClass.kriging_training()
         os.remove('solution.pickle')
         KrigingClass.parity_residual_plots(results)
-        mock_fig.assert_called() 
+        mock_show.assert_called()
         
 if __name__ == '__main__':
     unittest.main()
