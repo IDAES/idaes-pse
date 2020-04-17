@@ -21,6 +21,7 @@ from pyomo.core.base.expression import _GeneralExpressionData
 from pyomo.core.base.plugin import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
+from pyomo.core.base.util import disable_methods
 
 
 # Author: Andrew Lee
@@ -249,7 +250,8 @@ class VarLikeExpression(pyo.Expression):
         if cls != VarLikeExpression:
             return super(VarLikeExpression, cls).__new__(cls)
         if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
-            return SimpleVarLikeExpression.__new__(SimpleVarLikeExpression)
+            return AbstractSimpleVarLikeExpression.__new__(
+                AbstractSimpleVarLikeExpression)
         else:
             return IndexedVarLikeExpression.__new__(IndexedVarLikeExpression)
 
@@ -261,41 +263,10 @@ class SimpleVarLikeExpression(_GeneralVarLikeExpressionData,
         _GeneralVarLikeExpressionData.__init__(self, expr=None, component=self)
         VarLikeExpression.__init__(self, *args, **kwds)
 
-    # These methods need to be pointed to the derived _GeneralVarLikeExpression
-    def set_value(self, expr):
-        """Set the expression on this expression."""
-        if self._constructed:
-            return _GeneralVarLikeExpressionData.set_value(self, expr)
-        raise ValueError(
-            "Setting the expression of expression '%s' "
-            "before the Expression has been constructed (there "
-            "is currently no object to set)."
-            % (self.name))
-
-    def is_constant(self):
-        """A boolean indicating whether this expression is constant."""
-        if self._constructed:
-            return _GeneralVarLikeExpressionData.is_constant(self)
-        raise ValueError(
-            "Accessing the is_constant flag of expression '%s' "
-            "before the Expression has been constructed (there "
-            "is currently no value to return)."
-            % (self.name))
-
-    def is_fixed(self):
-        """A boolean indicating whether this expression is fixed."""
-        if self._constructed:
-            return _GeneralVarLikeExpressionData.is_fixed(self)
-        raise ValueError(
-            "Accessing the is_fixed flag of expression '%s' "
-            "before the Expression has been constructed (there "
-            "is currently no value to return)."
-            % (self.name))
-
     #
     # From Pyomo: Leaving this method for backward compatibility reasons.
     # (probably should be removed)
-    # Note: Doresn't see mto work without it
+    # Note: Doesn't seem to work without it
     #
     def add(self, index, expr):
         """Add an expression with a given index."""
@@ -314,6 +285,11 @@ class SimpleVarLikeExpression(_GeneralVarLikeExpressionData,
         return self
 
 
+@disable_methods({'set_value', 'is_constant', 'is_fixed'})
+class AbstractSimpleVarLikeExpression(SimpleVarLikeExpression):
+    pass
+
+
 class IndexedVarLikeExpression(VarLikeExpression):
 
     #
@@ -326,7 +302,7 @@ class IndexedVarLikeExpression(VarLikeExpression):
     def add(self, index, expr):
         """Add an expression with a given index."""
         if (type(expr) is tuple) and \
-           (expr == pyo.Expression.Skip):
+            (expr == pyo.Expression.Skip):
             return None
         cdata = _GeneralVarLikeExpressionData(expr, component=self)
         self._data[index] = cdata
