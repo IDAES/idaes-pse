@@ -38,8 +38,9 @@ class GeneralSurrogate(Surrogate):
 	CONFIG.declare('basis_function', ConfigValue(default=None, domain=str))
 	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('metric', ConfigValue(default=Metrics.SSE, domain=str))
-	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
 	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
+	CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
 
 	def __init__(self, **settings):
 		super().__init__(**settings)
@@ -129,7 +130,8 @@ class GeneralSurrogate(Surrogate):
 							 'pyomo_vars': self.config['pyomo_vars'],
 							 'training_split': 0.9,
 							 'number_of_crossvalidations': 5,
-							 'overwrite': self.config['overwrite']}
+							 'overwrite': self.config['overwrite'],
+							 'additional_features_list': self.config['additional_features_list']}
 
 
 		if self.config['linear']:
@@ -366,7 +368,7 @@ class Pysmo_rbf(Surrogate):
 	CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
 	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
 	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
 	def __init__(self, **settings):
@@ -414,7 +416,7 @@ class Pysmo_kriging(Surrogate):
 	CONFIG.declare('numerical_gradients', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
 	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
 	def __init__(self, **settings):
@@ -470,7 +472,7 @@ class Pysmo_polyregression(Surrogate):
 	CONFIG.declare('multinomials', ConfigValue(default=None, domain=bool))
 	CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
 	CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-	CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
+	CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
 	CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
 	def __init__(self, **settings):

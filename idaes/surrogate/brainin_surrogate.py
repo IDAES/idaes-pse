@@ -80,6 +80,8 @@ def _main():
     general_settings = {'linear':True,
                         # 'ratio': True,
                         'pyomo_vars': [m.x[1], m.x[2]],
+                        'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])',
+                                                     'pyo.exp(ft[1])'],
                         'maximum_polynomial_order': 6,
                         'multinomials': True,
                         'regularization': True}
