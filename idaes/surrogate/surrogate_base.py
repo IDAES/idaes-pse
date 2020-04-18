@@ -27,7 +27,8 @@ class ConfigurationError(Exception):
 
 
 class Config:
-    """Configuration for surrogate modeling tool(s).
+    """
+    Configuration for surrogate modeling tool(s).
 
     Can load/save itself from a file, and retrieve the settings for a given
     tool, or the global settings, as a dict.
@@ -42,7 +43,8 @@ class Config:
           "<toolA-name>": { ...toolA-specific settings... },
           "<toolB-name>": { ...toolB-specific settings... },
           ...
-        } 
+        }
+
     """
 
     #: Key for global settings section in configuration
