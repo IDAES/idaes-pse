@@ -7,7 +7,8 @@ import yaml
 
 
 class Metrics:
-    """Names for known types of metrics.
+    """
+    Names for known types of metrics.
 
     Use these as keys in dictionaries, e.g.:
 
@@ -15,7 +16,8 @@ class Metrics:
 
     When adding attributes to this class, please include a comment with the
     prefix "#:" immediately above it, so Sphinx knows that this is documentation
-    for the attribute. 
+    for the attribute.
+
     """
 
     #: Root mean-squared error
@@ -43,6 +45,7 @@ class Config:
           "<toolA-name>": { ...toolA-specific settings... },
           "<toolB-name>": { ...toolB-specific settings... },
           ...
+
         }
 
     """
