@@ -6,7 +6,7 @@ from typing import Dict
 import yaml
 from pyomo.common.config import ConfigBlock
 import os.path, pickle
-from mypy_extensions import TypedDict
+# from mypy_extensions import TypedDict
 
 class Metrics:
     """Names for known types of metrics.
