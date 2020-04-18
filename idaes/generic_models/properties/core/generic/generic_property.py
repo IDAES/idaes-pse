@@ -207,7 +207,7 @@ class GenericParameterData(PhysicalParameterBlock):
         self.configure()
 
         # Build core components
-        self.state_block_class = GenericStateBlock
+        self._state_block_class = GenericStateBlock
 
         if self.config.phase_component_list is not None:
             # Check if phase list provided and cross-validate

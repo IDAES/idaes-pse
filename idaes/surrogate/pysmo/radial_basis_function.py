@@ -22,6 +22,8 @@ import scipy.optimize as opt
 import warnings
 import itertools
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
+from matplotlib import pyplot as plt
+import os.path, pickle
 
 
 """
@@ -311,6 +313,23 @@ class RadialBasisFunctions:
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
 
         """
+        if not isinstance(overwrite, bool):
+            raise Exception('overwrite must be boolean.')
+        self.overwrite = overwrite
+        if fname is None:
+            fname = 'solution.pickle'
+            self.filename = 'solution.pickle'
+        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
+            raise Exception('fname must be a string with extension ".pickle". Please correct.')
+        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
+            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            self.filename = fname
+        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
+            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
+            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+            # self.filename = 'solution.pickle'
+        elif os.path.exists(fname) is False:
+            self.filename = fname
 
 
         # Check data types and shapes
@@ -946,6 +965,7 @@ class RadialBasisFunctions:
         r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
         y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
         results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square, self.basis_function, self.data_min, self.data_max)
+        self.pickle_save({'set-up':self, 'result':results})
         return results
 
     def rbf_predict_output(self, results_vector, x_data):
@@ -1027,3 +1047,59 @@ class RadialBasisFunctions:
         p.construct()
         self.feature_list = p
         return p
+
+    def pickle_save(self, solutions):
+        """
+        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        """
+        try:
+            filehandler = open(self.filename, 'wb')
+            pickle.dump(solutions, filehandler)
+            print('\nResults saved in ', str(self.filename))
+        except:
+            raise IOError('File could not be saved.')
+
+
+    @staticmethod
+    def pickle_load(solution_file):
+        """
+        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+
+        Input arguments:
+                solution_file            : Pickle object file containing previous solution to be loaded.
+
+        """
+        try:
+            filehandler = open(solution_file, 'rb')
+            return pickle.load(filehandler)
+        except:
+            raise Exception('File could not be loaded.')
+
+    def parity_residual_plots(self, results_vector):
+        """
+
+        inputs:
+            results_vector: Result object created by run.
+
+        Returns:
+
+        """
+
+        fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
+        ax = fig1.add_subplot(121)
+        ax.plot(self.y_data_unscaled, self.y_data_unscaled, '-')
+        ax.plot(self.y_data_unscaled, results_vector.output_predictions, 'o')
+        ax.set_xlabel(r'True data', fontsize=12)
+        ax.set_ylabel(r'Surrogate values', fontsize=12)
+        ax.set_title(r'Parity plot', fontsize=12)
+
+        ax2 = fig1.add_subplot(122)
+        ax2.plot(self.y_data_unscaled, self.y_data_unscaled - results_vector.output_predictions, 's', mfc='w', mec='m', ms=6)
+        ax2.axhline(y=0, xmin=0, xmax=1)
+        ax2.set_xlabel(r'True data', fontsize=12)
+        ax2.set_ylabel(r'Residuals', fontsize=12)
+        ax2.set_title(r'Residual plot', fontsize=12)
+
+        plt.show()
+
+        return

@@ -23,7 +23,7 @@ The role of the ReactionParameterBlock class is to set up the references require
 
 Reaction property packages are used by all of the other modeling components to inform them of what needs to be constructed when dealing with chemical reactions. In order to do this, the IDAES modeling framework looks for a number of attributes in the ReactionParameter block which are used to inform the construction of other components.
 
-* reaction_block_class - a pointer to the associated class that should be called when constructing ReactionBlocks.
+* reaction_block_class - a pointer to the associated class that should be called when constructing ReactionBlocks. This should only be set by the property package developer.
 * phase_list - a Pyomo Set object defining the valid phases of the mixture of interest.
 * component_list - a Pyomo Set defining the names of the chemical species present in the mixture.
 * rate_reaction_idx - a Pyomo Set defining a list of names for the kinetically controlled reactions of interest.
@@ -62,6 +62,11 @@ Reaction Blocks have the following construction arguments:
 * parameters - a reference to the associated Reaction Parameter block which will be used to make references to all necessary parameters.
 * state_block - a reference to the associated StateBlock which will provide the necessary state and physical property information.
 * has_equilibrium - indicates whether the associated Control Volume or Unit model expects chemical equilibrium to be enforced (if applicable).
+
+Constructing Reaction Blocks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Reaction Blocks can be constructed directly from the associated Reaction Parameter Block by calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_reaction_block` method as ususal.
 
 ReactionBlockDataBase Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

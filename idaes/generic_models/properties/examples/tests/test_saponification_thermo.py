@@ -81,9 +81,7 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = SaponificationParameterBlock()
 
-        model.props = model.params.state_block_class(
-                [1],
-                default={"parameters": model.params})
+        model.props = model.params.build_state_block([1])
 
         return model
 
@@ -109,10 +107,9 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = SaponificationParameterBlock()
 
-        model.props = model.params.state_block_class(
+        model.props = model.params.build_state_block(
                 [1],
-                default={"parameters": model.params,
-                         "defined_state": True})
+                default={"defined_state": True})
 
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1
