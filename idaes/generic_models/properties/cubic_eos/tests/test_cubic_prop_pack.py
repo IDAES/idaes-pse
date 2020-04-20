@@ -155,8 +155,7 @@ class TestStateBlock_LV_PR(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -265,8 +264,7 @@ class TestStateBlock_LV_PR(object):
                     model.fs.props[1]._log_equilibrium_cubic("Liq", j))
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.PR
 
@@ -319,8 +317,7 @@ class TestStateBlock_L_PR(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -372,8 +369,7 @@ class TestStateBlock_L_PR(object):
             model.fs.props[1].temperature)
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.PR
 
@@ -426,8 +422,7 @@ class TestStateBlock_V_PR(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -479,8 +474,7 @@ class TestStateBlock_V_PR(object):
             model.fs.props[1].temperature)
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.PR
 
@@ -533,8 +527,7 @@ class TestStateBlock_LV_SRK(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -643,8 +636,7 @@ class TestStateBlock_LV_SRK(object):
                     model.fs.props[1]._log_equilibrium_cubic("Liq", j))
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.SRK
 
@@ -697,8 +689,7 @@ class TestStateBlock_L_SRK(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -750,8 +741,7 @@ class TestStateBlock_L_SRK(object):
             model.fs.props[1].temperature)
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.SRK
 
@@ -804,8 +794,7 @@ class TestStateBlock_V_SRK(object):
         return m
 
     def test_build_default(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         assert isinstance(model.fs.props[1].flow_mol, Var)
         assert len(model.fs.props[1].flow_mol) == 1
@@ -857,8 +846,7 @@ class TestStateBlock_V_SRK(object):
             model.fs.props[1].temperature)
 
     def test_common_cubic(self, model):
-        model.fs.props = model.fs.params.state_block_class(
-                [1], default={"parameters": model.fs.params})
+        model.fs.props = model.fs.params.build_state_block([1])
 
         eos = CubicEoS.SRK
 

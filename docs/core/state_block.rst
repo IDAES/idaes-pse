@@ -23,7 +23,7 @@ The role of the PhysicalParameterBlock class is to set up the references require
 
 Physical property packages form the core of any process model in the IDAES modeling framework, and are used by all of the other modeling components to inform them of what needs to be constructed. In order to do this, the IDAES modeling framework looks for a number of attributes in the PhysicalParameter block which are used to inform the construction of other components.
 
-* state_block_class - a pointer to the associated class that should be called when constructing StateBlocks.
+* state_block_class - a pointer to the associated class that should be called when constructing StateBlocks. This should only be set by the property package developer.
 * phase_list - a Pyomo Set object defining the valid phases of the mixture of interest.
 * component_list - a Pyomo Set defining the names of the chemical species present in the mixture.
 * element_list - (optional) a Pyomo Set defining the names of the chemical elements that make up the species within the mixture. This is used when doing elemental material balances.
@@ -60,8 +60,13 @@ State Blocks have the following construction arguments:
 * defined_state - this argument indicates whether the State Block should expect the material state to be fully defined by another part of the flowsheet (such as by an upstream unit operation). This argument is used to determine whether constraints such as sums of mole fractions should be enforced.
 * has_phase_equilibrium - indicates whether the associated Control Volume or Unit model expects phase equilibrium to be enforced (if applicable).
 
+Constructing State Blocks
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+State Blocks can be constructed directly from the associated Physical Parameter Block by calling the `build_state_block()` method on the Physical Parameter Block. The `parameters` construction argument will be automatically set, and any other arguments (including indexing sets) may be provided to the `build_state_block` method as ususal.
+
 StateBlockData Class
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 StateBlockData contains the code necessary for implementing the as needed construction of variables and constraints.
 
@@ -70,7 +75,7 @@ StateBlockData contains the code necessary for implementing the as needed constr
     :members:
 
 StateBlock Class
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. autoclass:: StateBlock
     :members:

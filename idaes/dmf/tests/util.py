@@ -18,12 +18,11 @@ import importlib
 import logging
 import os
 import shutil
-import tempfile
 # third party
 import pytest
 # local
-from idaes.dmf import util, dmfbase
-
+from idaes.dmf import dmfbase
+from idaes.util.system import mkdtemp
 from mock import MagicMock, patch
 
 scratchdir = None
@@ -156,7 +155,7 @@ class TempDir(object):
         self._origdir = None
 
     def __enter__(self):
-        self._d = tempfile.mkdtemp(suffix='-dmf')
+        self._d = mkdtemp(suffix='-dmf')
         if self._chdir:
             self._origdir = os.getcwd()
             os.chdir(self._d)
@@ -185,7 +184,7 @@ def tmp_dmf():
     directory.
     """
     global scratchdir
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = mkdtemp()
     tmpdmf = dmfbase.DMF(path=tmpdir, create=True)
     scratchdir = os.path.join(tmpdir, 'scratch')
     os.mkdir(scratchdir)

@@ -19,7 +19,6 @@ import logging
 import re
 
 # third party
-import pendulum
 from tinydb import TinyDB, Query
 
 # local
@@ -192,21 +191,8 @@ class ResourceDB(object):
     @staticmethod
     def _value_transform(v):
         # transform dates into timestamps
-        if isinstance(v, datetime) or isinstance(v, pendulum.Pendulum):
-            if isinstance(v, datetime):
-                pv = pendulum.create(
-                    v.year,
-                    v.month,
-                    v.day,
-                    v.hour,
-                    v.minute,
-                    v.second,
-                    v.microsecond,
-                    v.tzname(),
-                )
-            else:
-                pv = v
-            return pv.timestamp()
+        if isinstance(v, datetime):
+            return v.timestamp()
         # support for special string '@' values
         elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
             if v == '@true':

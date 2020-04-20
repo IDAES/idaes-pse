@@ -59,9 +59,8 @@ def m():
                 "equation_of_state": {"Vap": dummy_eos,
                                       "Liq": dummy_eos}})
 
-    m.props = m.params.state_block_class([1],
-                                         default={"defined_state": False,
-                                         "parameters": m.params})
+    m.props = m.params.build_state_block([1],
+                                         default={"defined_state": False})
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)

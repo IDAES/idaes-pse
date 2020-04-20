@@ -536,9 +536,8 @@ class TestGenericStateBlock(object):
                 "phase_equilibrium_formulation": modules[__name__],
                 "phase_equilibrium_dict": {1: ["a", (1, 2)]}})
 
-        m.props = m.params.state_block_class([1],
-                                             default={"defined_state": False,
-                                                      "parameters": m.params})
+        m.props = m.params.build_state_block([1],
+                                             default={"defined_state": False})
 
         # Add necessary variables to state block
         m.props[1].pressure = Var(bounds=(1000, 3000))

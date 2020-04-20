@@ -17,7 +17,6 @@ import json
 import logging
 import os
 import sys
-import tempfile
 
 # third-party
 import pytest
@@ -26,6 +25,7 @@ import pytest
 from idaes.dmf import resource
 from idaes.dmf import errors
 from idaes.dmf.dmfbase import DMFConfig, DMF
+from idaes.util.system import mkdtemp, NamedTemporaryFile
 from .util import init_logging, tmp_dmf, TempDir
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
@@ -237,15 +237,15 @@ def test_dmf_add(tmp_dmf):
     r = resource.Resource(value={"desc": "test resource"})
     r.do_copy = True  # copy by default
     # (1) Copy, and don't remove {default behavior}
-    tmpf1 = tempfile.NamedTemporaryFile(delete=False)
+    tmpf1 = NamedTemporaryFile(delete=False)
     tmpf1.close()
     r.v["datafiles"].append({"path": tmpf1.name})
     # (2) Copy, and remove original
-    tmpf2 = tempfile.NamedTemporaryFile(delete=False)
+    tmpf2 = NamedTemporaryFile(delete=False)
     tmpf2.close()
     r.v["datafiles"].append({"path": tmpf2.name, "is_tmp": True})
     # (3) Do not copy (or remove)
-    tmpf3 = tempfile.NamedTemporaryFile()
+    tmpf3 = NamedTemporaryFile()
     r.v["datafiles"].append({"path": tmpf3.name, "do_copy": False})
 
     tmp_dmf.add(r)
@@ -274,7 +274,7 @@ def test_dmf_add_duplicate(tmp_dmf):
 def test_dmf_add_filesystem_err(tmp_dmf):
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile
-    tmpf1 = tempfile.NamedTemporaryFile(delete=False)
+    tmpf1 = NamedTemporaryFile(delete=False)
     tmpf1.close()
     r.v["datafiles"].append({"path": tmpf1.name})
     # now, to get an error, make the DMF datafile path unwritable
@@ -290,7 +290,7 @@ def test_dmf_add_filesystem_err(tmp_dmf):
 def test_dmf_add_tmp_no_copy(tmp_dmf):
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile, with temporary-file flag turned on
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = mkdtemp()
     tmpfile = os.path.join(tmpdir, "foo")
     open(tmpfile, "w")
     r.v["datafiles"].append({"path": tmpfile, "is_tmp": True, "do_copy": True})
@@ -314,7 +314,7 @@ def test_dmf_add_tmp_no_copy(tmp_dmf):
 def test_dmf_add_tmp_no_unlink(tmp_dmf):
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile, with temporary-file flag turned on
-    tmpdir = tempfile.mkdtemp()
+    tmpdir = mkdtemp()
     tmpfile = os.path.join(tmpdir, "foo")
     open(tmpfile, "w")
     r.v["datafiles"].append({"path": tmpfile, "is_tmp": True, "do_copy": True})
@@ -431,7 +431,7 @@ def dmfconfig_tmp():
        is done.
     """
     default_filename = DMFConfig._filename
-    tmpfile = tempfile.NamedTemporaryFile()
+    tmpfile = NamedTemporaryFile()
     DMFConfig._filename = tmpfile.name
     yield tmpfile
     tmpfile.close()

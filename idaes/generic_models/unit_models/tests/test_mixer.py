@@ -20,6 +20,7 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Param,
+                           RangeSet,
                            Set,
                            Var,
                            TerminationCondition,
@@ -459,7 +460,7 @@ class TestMixer(object):
         mixer_frame.fs.mix.add_pressure_minimization_equations(inlet_blocks,
                                                                mixed_block)
 
-        assert isinstance(mixer_frame.fs.mix.inlet_idx, Set)
+        assert mixer_frame.fs.mix.inlet_idx.type() is RangeSet
         assert isinstance(mixer_frame.fs.mix.minimum_pressure, Var)
         assert len(mixer_frame.fs.mix.minimum_pressure) == 2
         assert isinstance(mixer_frame.fs.mix.eps_pressure, Param)
@@ -536,7 +537,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert isinstance(m.fs.mix.inlet_idx, Set)
+        assert m.fs.mix.inlet_idx.type() is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
@@ -564,7 +565,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
         assert len(m.fs.mix.enthalpy_mixing_equations) == 1
 
-        assert isinstance(m.fs.mix.inlet_idx, Set)
+        assert m.fs.mix.inlet_idx.type() is RangeSet
         assert isinstance(m.fs.mix.minimum_pressure, Var)
         assert len(m.fs.mix.minimum_pressure) == 2
         assert isinstance(m.fs.mix.eps_pressure, Param)
