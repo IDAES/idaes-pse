@@ -30,7 +30,10 @@ shared-ex: &shared-ex
     - run: pip install --progress-bar=off -r requirements.txt
     - run: idaes get-extensions
 #    - run: pytest -c pytest.ini idaes -m "not nocircleci"
-    - run: git clone git@github.com:IDAES/examples-dev.git
+    - add_ssh_keys:
+        fingerprints:
+          64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d
+    - run: cd ~/ && git clone git@github.com:IDAES/examples-dev.git
 
 jobs:
   "python-3.7":
