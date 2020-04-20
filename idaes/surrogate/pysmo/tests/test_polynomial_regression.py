@@ -1605,9 +1605,8 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         with pytest.raises(Exception):
             PolyClass.pickle_load('abcde.pickle')
 
-    # @patch('matplotlib.pyplot.figure')
-    # def test_parity_residual_plots(self,mock_fig):
-    def test_parity_residual_plots(self):
+    @patch('matplotlib.pyplot.show')
+    def test_parity_residual_plots(self,mock_show):
         original_data_input= self.test_data_numpy
         regression_data_input = self.sample_points_numpy
         PolyClass = PolynomialRegression(original_data_input, regression_data_input,
@@ -1616,7 +1615,7 @@ class PolynomialRegressionTestCases(unittest.TestCase):
         results = PolyClass.poly_training()
         os.remove('solution.pickle')
         PolyClass.parity_residual_plots(results)
-    #     mock_fig.assert_called()
+        mock_show.assert_called()
 
 if __name__ == '__main__':
     unittest.main()
