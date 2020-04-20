@@ -26,11 +26,12 @@ shared-ex: &shared-ex
   working_directory: ~/repo
   steps:
     - checkout
-    - run: ./scripts/remove-idaes-from-path.sh
+#    - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install --progress-bar=off -r requirements.txt
     - run: idaes get-extensions
-    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+#    - run: pytest -c pytest.ini idaes -m "not nocircleci"
     - run: git clone git@github.com:IDAES/examples-dev.git
+
 jobs:
   "python-3.7":
      docker:
