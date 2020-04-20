@@ -280,7 +280,7 @@ class NMPCSim(object):
 
     def __init__(self, plant_model=None, plant_time_set=None, 
         controller_model=None, controller_time_set=None, inputs_at_t0=None,
-        sample_time=None, outlvl=idaeslog.NOTSET, solver=None):
+        sample_time=None, **kwargs):
         """Constructor method. Accepts plant and controller models needed for 
         NMPC simulation, as well as inputs at the first time point in the 
         plant model. Models provided are added to the self as attributes.
@@ -314,11 +314,10 @@ class NMPCSim(object):
                           and controller models. Default is to use the 
                           controller model's discretization spacing.
         """
-        self.config = self.CONFIG
+        self.config = self.CONFIG(kwargs)
+        # Should I provide solver and outlvl as explicit args here?
         self.config.sample_time = sample_time
         self.config.inputs_at_t0 = inputs_at_t0
-        self.config.outlvl = outlvl
-        self.config.solver = solver
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
@@ -1411,8 +1410,11 @@ class NMPCSim(object):
             info = self.c_mod._NMPC_NAMESPACE.var_locator[vardata]
             category = info.category
             location = info.location
+
+            steady_group = steady_model._NMPC_NAMESPACE.category_dict[category]
             group = info.group
             group.set_setpoint(location, value)
+            steady_group.set_setpoint(location, value)
 
         self.build_variable_locator(steady_model, 
                 steady_model._NMPC_NAMESPACE.get_time(), steady_cat_dict)
@@ -1441,10 +1443,11 @@ class NMPCSim(object):
         # set setpoint attributes control model
 
         self.add_objective_function(steady_model,
-                            state_categories=[VariableCategory.DIFFERENTIAL,
-                                              VariableCategory.ALGEBRAIC],
-                            control_penalty_type=ControlPenaltyType.ERROR,
-                            name='user_setpoint_objective')
+                    state_categories=[VariableCategory.DIFFERENTIAL,
+                                      VariableCategory.ALGEBRAIC],
+                    control_penalty_type=ControlPenaltyType.ERROR,
+                    time_resolution_option=TimeResolutionOption.INITIAL_POINT,
+                    name='user_setpoint_objective')
 
         # Transfer bounds to steady state model
         for categ, vargroup in steady_cat_dict.items():

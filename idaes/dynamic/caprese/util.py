@@ -105,6 +105,9 @@ class NMPCVarGroup(object):
         for var in self.varlist:
             yield var
 
+    def __len__(self):
+        return self.n_vars
+
     def validate_index_set(self, index_set):
         for var in self.varlist:
             # Hack so this doesn't fail for dicts that act as wrappers around
@@ -329,6 +332,12 @@ def find_point_in_continuousset(point, cset, tolerance=1e-8):
         if t > point:
             break
     return None
+
+
+def copy_weights(tgt_group, src_group):
+    assert tgt_group.n_vars == src_group.n_vars
+    for i in range(tgt_group.n_vars):
+        tgt_group.set_weight(i, src_group.weights[i])
 
 
 def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
