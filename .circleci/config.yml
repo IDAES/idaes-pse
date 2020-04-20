@@ -50,8 +50,8 @@ jobs:
   "python-3.6":
     docker:
       - image: idaes/jupyterhub:1.4.5
-      working_directory: ~/repo
-     steps:
+    working_directory: ~/repo
+    steps:
       - checkout
       - run: ./scripts/remove-idaes-from-path.sh
       - run:
