@@ -121,7 +121,7 @@ def test_revert_constraint():
     elim.apply_to(m, max_iter=3)
     assert len([c for c in m.component_data_objects(pyo.Constraint, active=True)]) == 0
     # Since x[4] is fixed all the constraints can be eliminated and all the variables
-    # can be fixed based on the value of x[4].  Fisrt make sure x[1] is fixed right
+    # can be fixed based on the value of x[4].  First make sure x[1] is fixed right
     assert m.x[1].fixed
     assert pytest.approx(pyo.value(m.x[1])) == 5
     elim.revert()
