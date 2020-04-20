@@ -1396,14 +1396,14 @@ class RadialBasisFunctionTestCases(unittest.TestCase):
         with pytest.raises(Exception):
             data_feed.pickle_load('abcde.pickle')
             
-    @patch('matplotlib.pyplot.figure')
-    def test_parity_residual_plots(self,mock_fig):
+    @patch('matplotlib.pyplot.show')
+    def test_parity_residual_plots(self,mock_show):
         data_feed = RadialBasisFunctions(self.training_data,basis_function='spline',solution_method=None, regularization=False)
         p = data_feed.get_feature_vector()
         results = data_feed.rbf_training() 
         os.remove('solution.pickle')
         data_feed.parity_residual_plots(results)
-        mock_fig.assert_called() 
+        mock_show.assert_called()
     
 if __name__ == '__main__':
     unittest.main()
