@@ -94,7 +94,7 @@ def test_revert_constraint():
 
     elim = pyo.TransformationFactory("simple_equality_eliminator")
     elim.apply_to(m)
-    # Check that numbers indicate correctly transoformed constraint
+    # Check that numbers indicate correctly transformed constraint
     assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -5
     # Check the linear representation of the constraint to make sure it's right
     c1_repn = generate_standard_repn(m.c1.body)
@@ -126,7 +126,7 @@ def test_revert_constraint():
     assert pytest.approx(pyo.value(m.x[1])) == 5
     elim.revert()
     # Now when we revert the transformation, make sure the constraints come back
-    # correctly and that the varaibles are not fixed anymore.
+    # correctly and that the variables are not fixed anymore.
     m.x[1] = 0.0
     m.x[2] = 0.5
     m.x[3] = 0.75
