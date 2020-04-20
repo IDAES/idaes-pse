@@ -22,33 +22,47 @@ shared: &shared
     - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
+shared-ex: &shared-ex
+  working_directory: ~/repo
+  steps:
+    - checkout
+    - run: ./scripts/remove-idaes-from-path.sh
+    - run: pip install --progress-bar=off -r requirements.txt
+    - run: idaes get-extensions
+    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+    - run: git clone git@github.com:IDAES/examples-dev.git
 jobs:
-  "python-3.7":
+  # temporarily comment out everything except examples
+  #  "python-3.7":
+  # docker:
+  #    - image: idaes/jupyterhub:1.4.5
+  #  <<: *shared
+  #"python-3.7-dev":
+  #  docker:
+  #    - image: idaes/jupyterhub:1.4.5
+  #  <<: *shared-dev
+  "python-3.7-ex":
     docker:
       - image: idaes/jupyterhub:1.4.5
-    <<: *shared
-  "python-3.7-dev":
-    docker:
-      - image: idaes/jupyterhub:1.4.5
-    <<: *shared-dev
-  "python-3.6":
-    docker:
-      - image: idaes/jupyterhub:1.4.5
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run: ./scripts/remove-idaes-from-path.sh
-      - run:
-          name: Create Python 3.6 Conda environment
-          command: |
-            conda create -yv -n idaes36 python=3.6
-      - run:
-          name: Install and run tests in Python 3.6 Conda environment
-          command: |
-            source activate idaes36
-            python -m pip install --progress-bar=off -r requirements.txt
-            idaes get-extensions
-            pytest -c pytest.ini idaes -m "not nocircleci"
+    <<: *shared-ex
+    #"python-3.6":
+    #docker:
+    #  - image: idaes/jupyterhub:1.4.5
+    #  working_directory: ~/repo
+    # steps:
+    #  - checkout
+    #  - run: ./scripts/remove-idaes-from-path.sh
+    #  - run:
+    #      name: Create Python 3.6 Conda environment
+    #      command: |
+    #        conda create -yv -n idaes36 python=3.6
+    #  - run:
+    #      name: Install and run tests in Python 3.6 Conda environment
+    #      command: |
+    #        source activate idaes36
+    #        python -m pip install --progress-bar=off -r requirements.txt
+    #        idaes get-extensions
+    #        pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
     docker:
       - image: idaes/ubuntu18-conda:latest
