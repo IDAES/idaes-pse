@@ -32,7 +32,8 @@ shared-ex: &shared-ex
 #    - run: pytest -c pytest.ini idaes -m "not nocircleci"
     - add_ssh_keys:
         fingerprints:
-          64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d
+          - "64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d"
+          - "e7:47:84:ba:d3:16:a8:54:18:c6:0a:87:4b:ec:f9:f1"
     - run: cd ~/ && git clone git@github.com:IDAES/examples-dev.git
 
 jobs:
