@@ -35,7 +35,7 @@ jobs:
   "python-3.7":
      docker:
         - image: idaes/jupyterhub:1.4.5
-      <<: *shared
+     <<: *shared
 
   "python-3.7-dev":
     docker:
