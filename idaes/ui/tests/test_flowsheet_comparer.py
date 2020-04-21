@@ -108,11 +108,11 @@ def test_compare_models_edge_cases():
 
     diff_model, out_json = fc.compare_models(existing_model, new_model)
 
-    diff_model_truth = {'M101': {'type': 'mixer', 'image': 'mixer.svg', 'action': Action.ADD.value, 'class': 'unit model'}, 
-                        'H101': {'type': 'heater', 'image': 'heater_2.svg', 'action': Action.ADD.value, 'class': 'unit model'},
-                        's03': {'source': 'M101', 'dest': 'H101', 'label': "hello", 'action': Action.ADD.value, 'class': 'arc'}}
-
+    # Since the existing model is empty we return an empty diff_model and  
+    # return new_model as the output json
+    diff_model_truth = {}
     assert diff_model == diff_model_truth
+    assert out_json == new_model
 
     # New model is empty
     existing_model = {"model": {
@@ -149,13 +149,13 @@ def test_compare_models_edge_cases():
 
 def test_compare_models_errors():
     # Both empty
-    existing_model = {"model": {}}
-    new_model = {"model": {}}
+    existing_model = {}
+    new_model = {}
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(KeyError):
         fc.compare_models(existing_model, new_model)
 
-    # New model is the wrong format
+    # New model is missing the id
     existing_model = {"model": {
                         'id': 0, 
                         'unit_models': {
@@ -207,7 +207,7 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Image", "position": {"x": 200, "y": 200}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "H101", "z": 1, "attrs": {"image": {"xlinkHref": "heater_2.svg"}, "label": {"text": "H101"}, "root": {"title": "heater"}}}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "H101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "hello", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}, 
                         {"type": "standard.Link", "source": {"anchor": {"name": "bottomRight", "args": {"rotate": "false", "padding": 0}}, "id": "R101"}, "target": {"anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}}, "id": "F101"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s05", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "world", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2},
-                        {"type": "standard.Image", "position": {"x": 100, "y": 100}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "F222", "z": 1, "attrs": {"image": {"xlinkHref": "flash.svg"}, "label": {"text": "F222"}, "root": {"title": "flash"}}},
+                        {"type": "standard.Image", "position": {"x": 150, "y": 150}, "size": {"width": 50, "height": 50}, "angle": 0, "id": "F222", "z": 1, "attrs": {"image": {"xlinkHref": "flash.svg"}, "label": {"text": "F222"}, "root": {"title": "flash"}}},
                      ]}
 
   assert new_jointjs == jointjs_truth
@@ -270,9 +270,6 @@ def test_model_jointjs_conversion():
                         {"type": "standard.Link", "source": {"anchor": {"name": "right", "args": {"rotate": "false", "padding": 0}}, "id": "M101"}, "target": {"anchor": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}}, "id": "F111"}, "router": {"name": "orthogonal", "padding": 10}, "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}}, "id": "s04", "labels": [{"attrs": {"rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1}, "text": {"text": "asdf", "fill": "black", "text-anchor": "left"}}, "position": {"distance": 0.66, "offset": -40}}], "z": 2}
                      ]}
 
-  print(diff_model)
-  print(new_jointjs)
-  print(jointjs_truth)
   assert new_jointjs == jointjs_truth
 
   # Test arc removal

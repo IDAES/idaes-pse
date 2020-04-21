@@ -37,27 +37,42 @@ class FlowsheetSerializer:
         self.orphaned_ports = {}
         self.labels = {}
         self.out_json = {"model": {}}
+        self.name = ""
 
-    def serialize(self, flowsheet):
+    def serialize(self, flowsheet, name):
         """
-        Serializes the flowsheet and saves it to a file that can be read by the
-        idaes-model-vis  jupyter lab extension.
+        Serializes the flowsheet into one dict with two sections.
+
+        The "model" section contains the id of the flowsheet and the
+        unit models and arcs. This will be used to compare the model and convert
+        to jointjs
+
+        The "cells" section is the jointjs readable code.
+
+        .. code-block:: json
+
+        {
+            "model": {
+                "id": "id", 
+                "unit_models": {
+                    "M101": {
+                        "image": "mixer.svg", 
+                        "type": "mixer"
+                    }
+                },
+                "arcs": {
+                    "s03": {
+                        "source": "M101", 
+                        "dest": "H101", 
+                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                    }
+                }
+            },
+            "cells": [{ "--jointjs code--": "--jointjs code--" }]
+        }
 
         :param flowsheet: The flowsheet to save. Usually fetched from the model.
-        :param file_base_name: The file prefix to the .idaes.vis file produced.
-        The file is created/saved
-        in the directory that you ran from Jupyter Lab.
-        :param overwrite: Boolean to overwrite an existing file_base_name.idaes.vis.
-        If True, the existing file with the same file_base_name will be overwritten.
-        This will cause you to lose
-        any saved layout. 
-        If False and there is an existing file with that file_base_name, you will get
-        an error
-        message stating that you cannot save a file to the file_base_name
-        (and therefore overwriting the saved
-        layout). If there is not an existing file with that file_base_name then it
-        saves as normal.
-        Defaults to False.
+        :param name: The name of the flowsheet. This will be used as the model id
         :return: None
 
         Usage example:
@@ -67,6 +82,7 @@ class FlowsheetSerializer:
             serializer = FlowsheetSerializer()
             serializer.save(m.fs, "output_file")
         """
+        self.name = name
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
 
@@ -120,7 +136,7 @@ class FlowsheetSerializer:
         entry["id"] = name
         entry["z"] = (1,)
         entry["attrs"] = {
-            "image": {"xlinkHref": image},
+            "image": {"xlinkHref": "/images/icons/" + image},
             "label": {"text": name},
             "root": {"title": title},
         }
@@ -168,14 +184,14 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
-        self.out_json["model"]["id"] = 0
+        self.out_json["model"]["id"] = self.name
         self.out_json["model"]["unit_models"] = {}
         self.out_json["model"]["arcs"] = {}
 
         for unit_model in self.unit_models.values():
             self.out_json["model"]["unit_models"][unit_model["name"]] = {
                 "type": unit_model["type"],
-                "image": icon_mapping(unit_model["type"])
+                "image": "/images/icons/" + icon_mapping(unit_model["type"])
             }
 
         for edge in self.edges:
