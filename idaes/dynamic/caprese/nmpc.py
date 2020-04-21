@@ -941,17 +941,17 @@ class NMPCSim(object):
         as attributes to the model's _NMPC_NAMESPACE.
 
         Possible variable categories are:
-            INPUT -- Those specified by the user to be inputs
-            DERIVATIVE -- Those declared as Pyomo DerivativeVars, whose "state
+            - INPUT -- Those specified by the user to be inputs
+            - DERIVATIVE -- Those declared as Pyomo DerivativeVars, whose "state
             "variable" is not fixed, except possibly as an initial condition
-            DIFFERENTIAL -- Those referenced as the "state variable" by an
+            - DIFFERENTIAL -- Those referenced as the "state variable" by an
             unfixed (except possibly as an initial condition) DerivativeVar
-            FIXED -- Those that are fixed at non-initial time points. These
+            - FIXED -- Those that are fixed at non-initial time points. These
             are typically disturbances, design variables, or uncertain
             parameters.
-            ALGEBRAIC -- Unfixed, time-indexed variables that are neither
+            - ALGEBRAIC -- Unfixed, time-indexed variables that are neither
             inputs nor referenced by an unfixed derivative.
-            SCALAR -- Variables unindexed by time. These could be variables
+            - SCALAR -- Variables unindexed by time. These could be variables
             that refer to a specific point in time (initial or final 
             conditions), averages over time, or truly time-independent variables
             like diameter.
@@ -1181,13 +1181,29 @@ class NMPCSim(object):
 
         The solve is performed in the first time point blocks/constraints of the
         controller model. The procedure is:
-            i.  
+            i. Populate controller setpoint attributes with user-defined values
+            ii. Record which constraints were originally active
+            iii. Deactivate constraints except at time.first()
+            iv. Check for consistent initial conditions. Attempt to solve for
+            constraint satisfaction if necessary
+            v. Populate reference attributes with (now consistent) initial
+            conditions
+            vi. Calculate objective weights for values provided by user
+            vii. Add objective function based on these weights and setpoint
+            values
+            viii. Unfix initial conditions and fix inputs (and derivatives if
+            steady-state is required)
+            ix. Solve "projected" optimization problem
+            x. Refix initial conditions (unfix derivatives if they were fixed)
+            xi. Deactivate just-created objective
+            xii. Transfer variable values to setpoint attributes
+            xiii. Reactivate model at non-initial time
 
         Args:
             setpoint : List of VarData, value tuples to be used in the objective
             function of the single-time point optimization problem
             require_steady : Bool telling whether or not to fix derivatives to
-            zero when performing optimization.
+            zero when performing optimization
 
         """
         config = self.config(kwargs)
@@ -1210,7 +1226,13 @@ class NMPCSim(object):
         category_dict = c_mod._NMPC_NAMESPACE.category_dict
         locator = c_mod._NMPC_NAMESPACE.var_locator
 
-        # populate appropriate setpoint values from argument
+        # Clear any previous existing setpoint values in these variables
+        for categ in categories:
+            group = category_dict[categ]
+            for i in range(group.n_vars):
+                group.set_setpoint(i, None)
+                
+        # Populate appropriate setpoint values from argument
         for vardata, value in setpoint:
             info = locator[vardata]
             categ = info.category
@@ -1318,7 +1340,7 @@ class NMPCSim(object):
             init_log.error(msg)
             raise RuntimeError(msg)
 
-        # Revert changes (keep inputs unfixed)
+        # Revert changes. Again, order matters
         if require_steady == True:
             for var in category_dict[VariableCategory.DERIVATIVE]:
                 var[t0].unfix()
@@ -1343,6 +1365,14 @@ class NMPCSim(object):
 
 
     def solve_steady_state_setpoint(self, setpoint, steady_model, **kwargs):
+        """Solves for a steady-state setpoint based on a user-provided
+        setpoint, using a user-provided steady state model.
+        
+        Args:
+            setpoint : List of VarData, value tuples indicating setpoints
+            steady_model : Steady-state version of the controller model
+
+        """
         config = self.config(kwargs)
         outlvl = config.outlvl
         weight_override = config.objective_weight_override
@@ -1363,8 +1393,14 @@ class NMPCSim(object):
 
     def add_setpoint_to_controller(self, objective_name='tracking_objective', 
             **kwargs):
-        """User-facing function for the addition of a set point to the 
-        controller.
+        """User-facing function for the addition of a setpoint to the 
+        controller. Assumes the controller model's setpoint attributes have
+        been populated with desired values. This function first calculates
+        weights, then adds an objective function based on those weights 
+        and existing setpoint values.
+
+        Args:
+            objective_name : Name to use for the objective function added
         """
         # TODO: allow user to specify a steady state to use without having
         # called create_steady_state_setpoint
@@ -1393,6 +1429,15 @@ class NMPCSim(object):
 
 
     def validate_steady_setpoint(self, setpoint, steady_model, **kwargs):
+        """Validates a user-provided steady-state model (against the controller
+        model), solves a steady-state optimization problem, and sets setpoint
+        attributes of controller model accordingly.
+
+        Args:
+            setpoint : List of VarData, value tuples representing a setpoint
+            steady_model : Steady-state version of controller model
+
+        """
 
         config = self.config(kwargs)
         solver = config.solver
@@ -1524,13 +1569,6 @@ class NMPCSim(object):
                 objective_weight_tolerance=weight_tolerance)
 
         # Add objective to steady_model
-        # Add bounds to steady_model (taken from control model)
-        #
-        # Make sure inputs are unfixed - validate degrees of freedom
-        #
-        # solve steady model for set point
-        # set setpoint attributes control model
-
         self.add_objective_function(steady_model,
                     objective_state_categories=[VariableCategory.DIFFERENTIAL,
                                                 VariableCategory.ALGEBRAIC],
@@ -1575,6 +1613,15 @@ class NMPCSim(object):
 
 
     def set_reference_values_from_initial(self, vargroup, t0=None):
+        """Sets the values in the reference list of an NMPCVarGroup from the
+        values of the group's variables at t0
+
+        Args:
+            vargroup : NMPCVarGroup instance whose reference values to set
+            t0 : Point in time at which variable values will be used to set
+            reference values
+
+        """
         if vargroup.is_scalar:
             raise ValueError(
                 'No way to get initial conditions for a scalar component')
@@ -1591,21 +1638,21 @@ class NMPCSim(object):
                         VariableCategory.DERIVATIVE,
                         VariableCategory.INPUT], 
             **kwargs):
-        """
-        Do I even need the model? 
-        ^ it makes things slightly easier to provide only the model, I think...
-        Need model to get the var_locator
+        """Constructs the objective weight values for the specified variable
+        categories of a specified model. Weights are calculated for each 
+        variable in each group by taking the difference between the initial
+        value and the setpoint value, making sure it is above a tolerance,
+        and taking its reciprocal. Weights can be overridden by a list
+        of VarData, value tuples passed in as the "objective_weight_override"
+        config argument.
 
-        Do I want to allow user to provide a setpoint here?
-        ^ No, but want to allow them to override weights if they want
+        Args:
+            model : Model whose variables will be accessed to calculate weights,
+            and whose weight attributes will be set.
+            categories : List of VariableCategory enum items for which to 
+            calculate weights. Default is DIFFERENTIAL, ALGEBRAIC, DERIVATIVE,
+            and INPUT
 
-        Here each setpoint is a list of (VarData, value) tuples.
-
-        Overwrite is a lists of (VarData, value) tuples, where 
-        this value will directly override the weight of the
-        corresponding VarData. (For all time..., what if user
-        provides multiple weights for VarDatas that only differ
-        by time? Raise warning and use last weight provided)
         """
         config = self.config(kwargs)
         override = config.objective_weight_override
@@ -1659,18 +1706,20 @@ class NMPCSim(object):
     
 
     def add_objective_function(self, model, name='objective', state_weight=1,
-            control_weight=1, 
-            **kwargs):
-        """
-        Assumes that model has already been populated with set point 
-        and weights.
-        Need to include state?
-        Can't access ss vars in same manner as vars in dynamic model - 
-        entries in varlists are not slices, they are already VarDatas...
-        Solution would be to either add dynamic/ss flag, or to modify ss varlists
-        to look like those dynamic. (Can't actually categorize because no derivs,
-        but could flatten into slices, then assemble into lists based on names. 
-        This seems like a lot of extra work though.)
+            control_weight=1, **kwargs):
+        """Adds an objective function based on already calculated weights
+        and setpoint values to the _NMPC_NAMESPACE of a model.
+
+        Args:
+            model : Model to which to add objective function
+            name : Name of objective function to add
+            state_weight : Additional weight factor to apply to each state
+            term in the objective function. Intended for a user that wants
+            to weigh states and controls differently
+            control_weight : Addtional weight factor to apply to each control
+            term in the objective function. Intended for a user that wants to
+            weigh states and controls differently
+
         """
         config = self.config(kwargs)
         outlvl = config.outlvl
@@ -1783,8 +1832,6 @@ class NMPCSim(object):
         Args:
             model : Model whose variables will be checked for bounds.
 
-        Returns:
-            None
         """
 
         varlist = vargroup.varlist
@@ -1818,8 +1865,6 @@ class NMPCSim(object):
             tgt_model : Model whose variables bounds will be transferred to
             src_model : Model whose bound lists will be used to set bounds.
 
-        Returns:
-            None
         """
         n_vars = tgt_group.n_vars
         for i in range(n_vars):
@@ -1830,15 +1875,10 @@ class NMPCSim(object):
 
     def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
-        """Function to add piecewise constant (PWC) constraints to
-        model. Inputs and sample time are already known, so no arguments are
-        necessary.
+        """Function to add piecewise constant (PWC) constraints to controller
+        model. Requires model's _NMPC_NAMESPACE to know about input vars
+        and to have as an attribute a sample points list.
 
-        Kwargs:
-            model : Model to which PWC constraints are added. Default is   
-                    controller model
-            sample_time : Duration for which inputs will be forced constant
-            outlvl : idaes.logger output level
         """
         config = self.config(kwargs)
         sample_time = config.sample_time
@@ -1893,14 +1933,10 @@ class NMPCSim(object):
         conditions, to perform a simulation, or to use the results of the 
         previous solve. Initialization from a previous (optimization)
         solve can only be done if an optimization solve has been performed
-        since the last initialization.
+        since the last initialization. The strategy may be passed in as
+        the control_init_option keyword (config) argument, otherwise the
+        default will be used.
 
-        Kwargs:
-            strategy : String describing the initialization strategy. Possible
-                       values are 'from_previous', 'from_simulation', and
-                       'initial_conditions'. Default is 'from_previous'.
-            solver : Solver object to be used for initialization from simulation
-            solver_options : Dictionary of options to pass to the solver
         """
         config = self.config(kwargs)
         strategy = config.control_init_option
@@ -1927,6 +1963,16 @@ class NMPCSim(object):
 
     def initialize_by_solving_elements(self, model, time,
             input_type=ElementInitializationInputOption.SET_POINT):
+        """Initializes the controller model by solving (a square simulation
+        for) each time element.
+
+        Args:
+            model : Model to initialize
+            time : Set to treat as time
+            input_type : ElementInitializationInputOption enum item 
+            telling how to fix the inputs for the simulation
+
+        """
         # Strip bounds before simulation as square solves will be performed
         strip_controller_bounds = TransformationFactory(
                                       'contrib.strip_var_bounds')
@@ -1986,15 +2032,9 @@ class NMPCSim(object):
 
         Args:
             model : Flowsheet model to initialize
+            categories : List of VariableCategory enum items to initialize.
+            Default contains DIFFERENTIAL, ALGEBRAIC, DERIVATIVE, and INPUT
 
-        Kwargs: 
-            sample_time : Length of time by which to shift variable values.
-                          Default uses the sample time provided to the 
-                          constructor or overwritten by the PWC constraints.
-            attr_list : List of attribute names containing variables whose
-                        values should be re-initialized. Default is 
-                        'diff_vars', 'alg_vars', 'deriv_vars', and
-                        'input_vars'.
         """
         # Should only do this if controller is initialized
         # from a prior solve.
@@ -2046,10 +2086,10 @@ class NMPCSim(object):
 
         Args:
             model : Flowsheet model whose variables are initialized
+            categories : List of VariableCategory enum items to 
+            initialize. Default contains DERIVATIVE, DIFFERENTIAL, and
+            ALGEBRAIC.
 
-        Kwargs:
-            attr_list : List of names of attributes that contain variables
-                        whose values should be initialized
         """
         time = model._NMPC_NAMESPACE.get_time()
         cat_dict = model._NMPC_NAMESPACE.category_dict
@@ -2063,12 +2103,6 @@ class NMPCSim(object):
         """Function for solving optimal control problem, which calculates
         control inputs for the plant.
 
-        Kwargs:
-            solver : Solver object to be used, already loaded with user's
-                     desired options. Default is that provided to the 
-                     constructor.
-            outlvl : idaes.logger output level. Default is that provided
-                     to the constructor.
         """
         config = self.config(kwargs)
         solver = config.solver
@@ -2105,11 +2139,6 @@ class NMPCSim(object):
         Args:
             t_start : Beginning of timespan over which to simulate
 
-        Kwargs:
-            sample_time : Length of timespan to simulate. Default is the sample
-                          time provided to the constructor or overwritten by
-                          PWC constraints.
-            outlvl : idaes.logger output level
         """
         config = self.config(kwargs)
 
@@ -2158,14 +2187,10 @@ class NMPCSim(object):
             mod2 : Second flowsheet model (may be same as the first)
             t1 : Time point of interest in first model
             t2 : Time point of interest in second model
+            Q_matrix : List of weights by which to weigh the error for
+            each state. Default is to use the same weights calculated
+            for the controller objective function.
 
-        Kwargs:
-            Q_diagonal : Flag for whether weighting matrix is diagonal. Default
-                         True. False is not supported for now.
-            Q_matrix : Weighting "matrix." For now just a list of values to 
-                       weight the error between each state. Default is to use
-                       the same weights calculated for controller objective
-                       function.
         """
         config = self.config(kwargs)
 
