@@ -58,7 +58,7 @@ def main():
                    controller_model=m_controller.fs, 
                    controller_time_set=m_controller.fs.time,
                    inputs_at_t0=initial_plant_inputs,
-                   solver=solver, outlvl=idaeslog.DEBUG, 
+                   solver=solver, outlvl=idaeslog.DEBUG,
                    sample_time=sample_time)
     
     p_mod = nmpc.p_mod
