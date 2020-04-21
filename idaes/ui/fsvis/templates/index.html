@@ -1,0 +1,23 @@
+<!doctype html>
+
+<title>IDAES Model Visualizer</title>
+
+<button type="button" id="help_button">Help</button>
+<button type="button" id="save_button">Save</button> 
+<button type="button" id="show_hide_button">Show/Hide Arc Labels</button> 
+
+<!-- Create a div tag for the jointjs stuff -->
+<div id="idaes_flowsheet_visualizer"></div>
+
+<!-- I (Makayla) couldn't figure out how to import the variables from Flask's render_template 
+     directly into the seperate javascript file so I'm storing it in a div tag that the 
+     javascript accesses
+ -->
+<div id="model" data-model='{{ model | tojson | safe }}'></div>
+
+<!-- dependencies -->
+<script src="/lib/jquery.js" type="text/javascript"></script>
+<script src="/lib/lodash.js" type="text/javascript"></script>
+<script src="/lib/backbone.js" type="text/javascript"></script>
+<script src="/lib/joint.min.js" type="text/javascript"></script>
+<script src="/main.js" type="module" ></script>

@@ -13,78 +13,16 @@
 import pytest
 from operator import itemgetter
 
-import hda_ideal_VLE as thermo_props
-import hda_reaction as reaction_props
-
-from pyomo.environ import (Constraint,
-                           Var,
-                           ConcreteModel,
-                           Expression,
-                           Objective,
-                           SolverFactory,
-                           TransformationFactory,
-                           value)
-from pyomo.network import Arc, SequentialDecomposition
-
-from idaes.core import FlowsheetBlock
-
-from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
-from idaes.dmf.ui.icon_mapping import icon_mapping
-from idaes.dmf.ui.link_position_mapping import link_position_mapping
-
-from idaes.generic_models.unit_models import (Flash,
-                               PressureChanger,
-                               Mixer,
-                               Separator as Splitter,
-                               Heater,
-                               StoichiometricReactor)
-from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.generic_models.flowsheets.demo_flowsheet import (
+    build_flowsheet, set_dof, initialize_flowsheet, solve_flowsheet)
+from idaes.ui.flowsheet_serializer import FlowsheetSerializer
+from idaes.ui.icon_mapping import icon_mapping
+from idaes.ui.link_position_mapping import link_position_mapping
 
 
 def test_serialize_flowsheet():
     # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.thermo_params = thermo_props.HDAParameterBlock()
-    m.fs.reaction_params = reaction_props.HDAReactionParameterBlock(default={"property_package": m.fs.thermo_params})
-  
-    m.fs.M101 = Mixer(default={"property_package": m.fs.thermo_params,
-                               "inlet_list": ["toluene_feed", "hydrogen_feed", "vapor_recycle"]
-                               })
-  
-    m.fs.H101 = Heater(default={"property_package": m.fs.thermo_params,
-                                "has_pressure_change": False,
-                                "has_phase_equilibrium": True})
-    m.fs.R101 = StoichiometricReactor(default={"property_package": m.fs.thermo_params,
-                                               "reaction_package": m.fs.reaction_params,
-                                               "has_heat_of_reaction": True,
-                                               "has_heat_transfer": True,
-                                               "has_pressure_change": False
-                                               })
-    m.fs.F101 = Flash(default={"property_package": m.fs.thermo_params,
-                               "has_heat_transfer": True,
-                               "has_pressure_change": True
-                               })
-    m.fs.S101 = Splitter(default={"property_package": m.fs.thermo_params,
-                                  "ideal_separation": False,
-                                  "outlet_list": ["purge", "recycle"]
-                                  })
-    m.fs.C101 = PressureChanger(default={"property_package": m.fs.thermo_params,
-                                         "compressor": True,
-                                         "thermodynamic_assumption": ThermodynamicAssumption.isothermal
-                                         })
-    m.fs.F102 = Flash(default={"property_package": m.fs.thermo_params,
-                               "has_heat_transfer": True,
-                               "has_pressure_change": True
-                               })
-  
-    m.fs.s03 = Arc(source=m.fs.M101.outlet, destination=m.fs.H101.inlet)
-    m.fs.s04 = Arc(source=m.fs.H101.outlet, destination=m.fs.R101.inlet)
-    m.fs.s05 = Arc(source=m.fs.R101.outlet, destination=m.fs.F101.inlet)
-    m.fs.s06 = Arc(source=m.fs.F101.vap_outlet, destination=m.fs.S101.inlet)
-    m.fs.s08 = Arc(source=m.fs.S101.recycle, destination=m.fs.C101.inlet)
-    m.fs.s09 = Arc(source=m.fs.C101.outlet, destination=m.fs.M101.vapor_recycle)
-    m.fs.s10 = Arc(source=m.fs.F101.liq_outlet, destination=m.fs.F102.inlet)
+    m = build_flowsheet()
   
     fss = FlowsheetSerializer()
     fss.serialize_flowsheet(m.fs)
@@ -94,13 +32,9 @@ def test_serialize_flowsheet():
     for unit_model in unit_models:
         unit_model_names_types.append(unit_models[unit_model])
 
-    unit_models_names_type_truth = [{'name': 'M101', 'type': 'mixer'}, 
-                                    {'name': 'H101', 'type': 'heater'}, 
-                                    {'name': 'R101', 'type': 'stoichiometric_reactor'}, 
-                                    {'name': 'F101', 'type': 'flash'}, 
-                                    {'name': 'S101', 'type': 'separator'}, 
-                                    {'name': 'C101', 'type': 'pressure_changer'}, 
-                                    {'name': 'F102', 'type': 'flash'}]
+    unit_models_names_type_truth = [{'name': 'M01', 'type': 'mixer'}, 
+                                    {'name': 'H02', 'type': 'heater'}, 
+                                    {'name': 'F03', 'type': 'flash'}]
   
     set_result = set(tuple(sorted(d.items())) for d in unit_model_names_types)
     set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
@@ -143,15 +77,8 @@ def test_serialize_flowsheet():
     for name, end_points in edges.items():
       named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
 
-    print(named_edges_results)
-
-    named_edges_truth = {'s03': {'source': 'M101', 'dest': 'H101'}, 
-                         's04': {'source': 'H101', 'dest': 'R101'}, 
-                         's05': {'source': 'R101', 'dest': 'F101'}, 
-                         's06': {'source': 'F101', 'dest': 'S101'}, 
-                         's08': {'source': 'S101', 'dest': 'C101'}, 
-                         's09': {'source': 'C101', 'dest': 'M101'}, 
-                         's10': {'source': 'F101', 'dest': 'F102'}}
+    named_edges_truth = {'s01': {'source': 'M01', 'dest': 'H02'}, 
+                         's02': {'source': 'H02', 'dest': 'F03'}}
 
     assert named_edges_results == named_edges_truth
 
@@ -163,7 +90,7 @@ def test_create_image_jointjs_json():
   y_pos = 0
   component_id = "M101"
   component_type = "mixer"
-  image = icon_mapping[component_type]
+  image = icon_mapping(component_type)
 
   fss = FlowsheetSerializer()
   fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type)
@@ -174,7 +101,7 @@ def test_create_image_jointjs_json():
                             'size': {'width': 50, 'height': 50}, 
                             'angle': 0, 'id': 'M101', 'z': (1,), 
                             'attrs': {
-                                'image': {'xlinkHref': 'mixer.svg'}, 
+                                'image': {'xlinkHref': '/images/icons/mixer.svg'}, 
                                 'label': {'text': 'M101'}, 
                                 'root': {'title': 'mixer'}
                           }
