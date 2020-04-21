@@ -2332,7 +2332,7 @@ class TestPHvalues(object):
         )
 
         return model
-
+    
     def test_tau_sat(self, model):
         cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for c in cond:
@@ -2481,6 +2481,37 @@ class TestPHvalues(object):
             else:
                 tol = 0.006
             assert abs(h - c[2]) / c[2] < tol
+
+    def test_entropy_vapor_as_function_of_p_and_tau(self, model):
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=6)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
+        for i, c in enumerate(cond):
+            if phase[i][2] in ["liquid", "supercritical"]:
+                continue
+            model.prop_in.temperature.set_value(c[0])
+            s = value(model.prop_in.func_svpt(c[1] / 1000, 647.096 / c[0]))
+            rho = value(model.prop_in.dens_mass_phase["Vap"])
+            if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+                tol = 0.03  # steep part in sc region
+            else:
+                tol = 0.003
+            assert abs(s - c[2]) / c[2] < tol
+
+    def test_entropy_liquid_as_function_of_p_and_tau(self, model):
+        cond = read_data("prop_iapws95_nist_webbook.txt", col=6)
+        phase = read_data("prop_iapws95_nist_webbook.txt", col=13)
+        for i, c in enumerate(cond):
+            p = phase[i][2]
+            if p in ["vapor"]:
+                continue
+            model.prop_in.temperature.set_value(c[0])
+            s = value(model.prop_in.func_slpt(c[1] / 1000, 647.096 / c[0]))
+            rho = value(model.prop_in.dens_mass_phase["Liq"])
+            if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+                tol = 0.03  # steep part in sc region
+            else:
+                tol = 0.006
+            assert abs(s - c[2]) / c[2] < tol
 
     def test_entropy(self, model):
         cond = read_data("prop_iapws95_nist_webbook.txt", col=6)

@@ -29,7 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_floats)
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
+from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
 from idaes.core.util import unit_costing as costing
 

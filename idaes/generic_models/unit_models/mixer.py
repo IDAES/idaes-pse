@@ -410,7 +410,6 @@ objects linked to all inlet states and the mixed state,
         # Setup StateBlock argument dict
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
-        tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True
 
         # Create empty list to hold StateBlocks for return
@@ -418,7 +417,7 @@ objects linked to all inlet states and the mixed state,
 
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
-            i_obj = self.config.property_package.state_block_class(
+            i_obj = self.config.property_package.build_state_block(
                 self.flowsheet().config.time,
                 doc="Material properties at inlet",
                 default=tmp_dict,
@@ -440,10 +439,9 @@ objects linked to all inlet states and the mixed state,
         # Setup StateBlock argument dict
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = self.config.has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
-        self.mixed_state = self.config.property_package.state_block_class(
+        self.mixed_state = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties of mixed stream",
             default=tmp_dict,
