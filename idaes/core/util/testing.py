@@ -30,8 +30,7 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         MaterialFlowBasis,
                         MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                        EnergyBalanceType)
 
 
 def get_default_solver():
@@ -71,7 +70,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.basis_switch = 1
         self.default_balance_switch = 1
 
-        self.state_block_class = TestStateBlock
+        self._state_block_class = TestStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -187,7 +186,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
                                             ("e2", "p2", "c1"): 1,
                                             ("e2", "p2", "c2"): 1}
 
-        self.reaction_block_class = ReactionBlock
+        self._reaction_block_class = ReactionBlock
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
@@ -201,7 +200,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
                                'temperature': 'K',
                                'energy': 'J',
                                'holdup': 'mol'})
-        
+
     @classmethod
     def get_required_properties(self):
         return {}
@@ -238,4 +237,3 @@ class ReactionBlockData(ReactionBlockDataBase):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
-
