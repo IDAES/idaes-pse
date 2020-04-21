@@ -42,12 +42,13 @@ from pyutilib.misc import import_file
 
 _install_idaes_workshop_materials_url = 'http://www.pyomo.org/s/install_idaes_workshop_materials.py'
 
+
 def download_install_module():
     """
     Downloads install_idaes_workshop_materials.py from pyomo.org
     """
     download_dir = futils.this_file_dir()
-    download_dir = os.path.join(download_dir, '../../examples/workshops')
+    download_dir = os.path.join(download_dir, '..', '..', 'scripts', 'workshops')
     download_dest = os.path.join(download_dir, 'install_idaes_workshop_materials.py')
     
     print("\n\n"
@@ -72,6 +73,7 @@ def download_install_module():
     print('... download complete')
     return download_dest
 
+
 def import_install_module(download_dest):
     """
     Imports the path in download_dest (install_idaes_workshop_materials.py module)
@@ -79,6 +81,7 @@ def import_install_module(download_dest):
     install_module = import_file(download_dest)
     print('... importing install module')
     return install_module
+
 
 if __name__ == '__main__':
     download_dest = download_install_module()
