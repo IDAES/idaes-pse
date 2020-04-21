@@ -941,20 +941,23 @@ class NMPCSim(object):
         as attributes to the model's _NMPC_NAMESPACE.
 
         Possible variable categories are:
-            - INPUT -- Those specified by the user to be inputs
-            - DERIVATIVE -- Those declared as Pyomo DerivativeVars, whose "state
-            "variable" is not fixed, except possibly as an initial condition
-            - DIFFERENTIAL -- Those referenced as the "state variable" by an
-            unfixed (except possibly as an initial condition) DerivativeVar
-            - FIXED -- Those that are fixed at non-initial time points. These
-            are typically disturbances, design variables, or uncertain
-            parameters.
-            - ALGEBRAIC -- Unfixed, time-indexed variables that are neither
-            inputs nor referenced by an unfixed derivative.
-            - SCALAR -- Variables unindexed by time. These could be variables
-            that refer to a specific point in time (initial or final 
-            conditions), averages over time, or truly time-independent variables
-            like diameter.
+
+            - INPUT --- Those specified by the user to be inputs
+            - DERIVATIVE --- Those declared as Pyomo DerivativeVars, whose 
+                             "state variable" is not fixed, except possibly as an
+                             initial condition
+            - DIFFERENTIAL --- Those referenced as the "state variable" by an
+                               unfixed (except possibly as an initial condition)
+                               DerivativeVar
+            - FIXED --- Those that are fixed at non-initial time points. These
+                        are typically disturbances, design variables, or 
+                        uncertain parameters.
+            - ALGEBRAIC --- Unfixed, time-indexed variables that are neither
+                            inputs nor referenced by an unfixed derivative.
+            - SCALAR --- Variables unindexed by time. These could be variables
+                         that refer to a specific point in time (initial or
+                         final conditions), averages over time, or truly 
+                         time-independent variables like diameter.
 
         Args:
             model : Model whose variables will be flattened and categorized
@@ -1100,9 +1103,9 @@ class NMPCSim(object):
         Args:
             model : Flowsheet model containing the variables provided
             category_dict : Dictionary mapping VariableCategory enum items
-            to NMPCVarGroup instances
+                            to NMPCVarGroup instances
             ic_vars : List of variables (time-only slices) that are fixed
-            only at the initial time point
+                      only at the initial time point
 
         """
         time = model._NMPC_NAMESPACE.get_time()
@@ -1181,18 +1184,19 @@ class NMPCSim(object):
 
         The solve is performed in the first time point blocks/constraints of the
         controller model. The procedure is:
+
             i. Populate controller setpoint attributes with user-defined values
             ii. Record which constraints were originally active
             iii. Deactivate constraints except at time.first()
             iv. Check for consistent initial conditions. Attempt to solve for
-            constraint satisfaction if necessary
+                constraint satisfaction if necessary
             v. Populate reference attributes with (now consistent) initial
-            conditions
+               conditions
             vi. Calculate objective weights for values provided by user
             vii. Add objective function based on these weights and setpoint
-            values
+                 values
             viii. Unfix initial conditions and fix inputs (and derivatives if
-            steady-state is required)
+                  steady-state is required)
             ix. Solve "projected" optimization problem
             x. Refix initial conditions (unfix derivatives if they were fixed)
             xi. Deactivate just-created objective
@@ -1201,9 +1205,9 @@ class NMPCSim(object):
 
         Args:
             setpoint : List of VarData, value tuples to be used in the objective
-            function of the single-time point optimization problem
+                       function of the single-time point optimization problem
             require_steady : Bool telling whether or not to fix derivatives to
-            zero when performing optimization
+                             zero when performing optimization
 
         """
         config = self.config(kwargs)
@@ -1619,7 +1623,7 @@ class NMPCSim(object):
         Args:
             vargroup : NMPCVarGroup instance whose reference values to set
             t0 : Point in time at which variable values will be used to set
-            reference values
+                 reference values
 
         """
         if vargroup.is_scalar:
@@ -1648,10 +1652,10 @@ class NMPCSim(object):
 
         Args:
             model : Model whose variables will be accessed to calculate weights,
-            and whose weight attributes will be set.
+                    and whose weight attributes will be set.
             categories : List of VariableCategory enum items for which to 
-            calculate weights. Default is DIFFERENTIAL, ALGEBRAIC, DERIVATIVE,
-            and INPUT
+                         calculate weights. Default is DIFFERENTIAL, ALGEBRAIC,
+                         DERIVATIVE, and INPUT
 
         """
         config = self.config(kwargs)
@@ -1714,11 +1718,11 @@ class NMPCSim(object):
             model : Model to which to add objective function
             name : Name of objective function to add
             state_weight : Additional weight factor to apply to each state
-            term in the objective function. Intended for a user that wants
-            to weigh states and controls differently
+                           term in the objective function. Intended for a user
+                           that wants to weigh states and controls differently
             control_weight : Addtional weight factor to apply to each control
-            term in the objective function. Intended for a user that wants to
-            weigh states and controls differently
+                             term in the objective function. Intended for a user
+                             that wants to weigh states and controls differently
 
         """
         config = self.config(kwargs)
@@ -2033,7 +2037,8 @@ class NMPCSim(object):
         Args:
             model : Flowsheet model to initialize
             categories : List of VariableCategory enum items to initialize.
-            Default contains DIFFERENTIAL, ALGEBRAIC, DERIVATIVE, and INPUT
+                         Default contains DIFFERENTIAL, ALGEBRAIC, DERIVATIVE,
+                         and INPUT
 
         """
         # Should only do this if controller is initialized
@@ -2087,8 +2092,8 @@ class NMPCSim(object):
         Args:
             model : Flowsheet model whose variables are initialized
             categories : List of VariableCategory enum items to 
-            initialize. Default contains DERIVATIVE, DIFFERENTIAL, and
-            ALGEBRAIC.
+                         initialize. Default contains DERIVATIVE, DIFFERENTIAL,
+                         and ALGEBRAIC.
 
         """
         time = model._NMPC_NAMESPACE.get_time()
@@ -2188,8 +2193,8 @@ class NMPCSim(object):
             t1 : Time point of interest in first model
             t2 : Time point of interest in second model
             Q_matrix : List of weights by which to weigh the error for
-            each state. Default is to use the same weights calculated
-            for the controller objective function.
+                       each state. Default is to use the same weights calculated
+                       for the controller objective function.
 
         """
         config = self.config(kwargs)
