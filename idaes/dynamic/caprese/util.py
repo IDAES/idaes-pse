@@ -437,6 +437,7 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
 
 def initialize_by_element_in_range(model, time, t_start, t_end, 
         time_linking_vars=[],
+        dae_vars=[],
         max_linking_range=0,
         **kwargs):
     """Function for solving a square model, time element-by-time element,
@@ -484,7 +485,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
     assert t_end in time.get_finite_elements()
     assert degrees_of_freedom(model) == 0
 
-    dae_vars = kwargs.pop('dae_vars', [])
+    #dae_vars = kwargs.pop('dae_vars', [])
     if not dae_vars:
         scalar_vars, dae_vars = flatten_dae_variables(model, time)
         for var in scalar_vars:

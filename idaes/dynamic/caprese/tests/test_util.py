@@ -21,7 +21,7 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            TransformationFactory, TerminationCondition,
                            Reference)
 from pyomo.network import Arc
-from pyomo.kernel import ComponentSet
+from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae.flatten import flatten_dae_variables
 
@@ -86,18 +86,21 @@ def test_find_comp_in_block():
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
 
 
-def test_VarLocator():
+def test_NMPCVarLocator():
     m = ConcreteModel()
-    m.v = Var([1,2,3], ['a','b','c'])
+    m.time = Set(initialize=[1,2,3])
+    m.v = Var(m.time, ['a','b','c'])
 
     varlist = [Reference(m.v[:,'a']),
                Reference(m.v[:,'b']),
                Reference(m.v[:,'b'])]
+    group = NMPCVarGroup(varlist, m.time)
 
-    locator = VarLocator('variable', varlist, 0, is_ic=True)
+    categ = VariableCategory.DIFFERENTIAL
+    locator = NMPCVarLocator(categ, group, 0, is_ic=True)
 
-    assert locator.category == 'variable'
-    assert locator.container is varlist
+    assert locator.category == VariableCategory.DIFFERENTIAL
+    assert locator.group is group
     assert locator.location == 0
     assert locator.is_ic == True
 
@@ -169,8 +172,10 @@ def test_find_slices_in_model():
     scalar_vars_2, dae_vars_2 = flatten_dae_variables(m2, m2.time)
 
     t0_tgt = m1.time.first()
-    locator = {id(var[t0_tgt]): VarLocator('variable', dae_vars_1, i)
-                                for i, var in enumerate(dae_vars_1)}
+    group = NMPCVarGroup(dae_vars_1, m1.time)
+    categ = VariableCategory.ALGEBRAIC
+    locator = ComponentMap([(var[t0_tgt], NMPCVarLocator(categ, group, i))
+                                for i, var in enumerate(dae_vars_1)])
 
     tgt_slices = find_slices_in_model(m1, m2, locator, dae_vars_2)
 
@@ -194,7 +199,8 @@ def test_initialize_by_element_in_range():
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'C']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'P'])]
 
-    initialize_by_element_in_range(mod.fs, 0, 1, solver=solver, dae_vars=dae_vars,
+    initialize_by_element_in_range(mod.fs, mod.fs.time, 0, 1, solver=solver, 
+                        dae_vars=dae_vars,
                         time_linking_variables=diff_vars,
                         outlvl=idaeslog.DEBUG,
                         solve_initial_conditions=True)
@@ -206,7 +212,8 @@ def test_initialize_by_element_in_range():
     assert mod.fs.cstr.outlet.conc_mol[1, 'E'].value == approx(0.0541, abs=1e-4)
     assert mod.fs.cstr.outlet.conc_mol[1, 'P'].value == approx(0.3503, abs=1e-4)
 
-    initialize_by_element_in_range(mod.fs, 1, 2, solver=solver, dae_vars=dae_vars,
+    initialize_by_element_in_range(mod.fs, mod.fs.time, 1, 2, solver=solver, 
+                        dae_vars=dae_vars,
                         outlvl=idaeslog.DEBUG)
 
     assert degrees_of_freedom(mod.fs) == 0
@@ -325,7 +332,7 @@ def test_add_noise_at_time():
 
 if __name__ == '__main__':
     test_find_comp_in_block()
-    test_VarLocator()
+    test_NMPCVarLocator()
     test_copy_values()
     test_find_slices_in_model()
     test_initialize_by_element_in_range()
