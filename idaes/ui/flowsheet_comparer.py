@@ -31,20 +31,23 @@ def compare_models(existing_model, new_model):
     .. code-block:: json
 
         {
-            "id": "id", 
-            "unit_models": {
-                "M101": {
-                    "image": "mixer.svg", 
-                    "type": "mixer"
+            "model": {
+                "id": "id", 
+                "unit_models": {
+                    "M101": {
+                        "image": "mixer.svg", 
+                        "type": "mixer"
+                    }
+                },
+                "arcs": {
+                    "s03": {
+                        "source": "M101", 
+                        "dest": "H101", 
+                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                    }
                 }
             },
-            "arcs": {
-                "s03": {
-                    "source": "M101", 
-                    "dest": "H101", 
-                    "label": "molar flow ('Vap', 'hydrogen') 0.5"
-                }
-            }
+            "cells": [{ "--jointjs code--": "--jointjs code--" }]
         }
 
     :param existing_model: The current model to compare against
@@ -81,7 +84,7 @@ def compare_models(existing_model, new_model):
     model_schema = {
         "type" : "object",
         "properties" : {
-            "id" : {"type" : "number"},
+            "id" : {"type" : ["number", "string"]},
             "unit_models" : {
                 "type" : "object",
             },
@@ -91,11 +94,40 @@ def compare_models(existing_model, new_model):
         },
         "required" : ["id", "unit_models", "arcs"]
     }
-    validate(instance=existing_model, schema=model_schema)
-    validate(instance=new_model, schema=model_schema)
 
-    if existing_model == new_model:
-        return {}
+    # Copy the new model into the out_json's model key
+    out_json = dict(existing_model)
+    try:
+        out_json["model"] = new_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of new model json"
+        raise KeyError(msg)
+
+    validate(instance=existing_model["model"], schema=model_schema)
+    validate(instance=new_model["model"], schema=model_schema)
+
+    try:
+        existing_model = existing_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of existing model json"
+        raise KeyError(msg)
+    # If the existing model is empty then return an empty diff_model 
+    # and the full json from the new model
+    if existing_model["unit_models"] == {} and \
+        existing_model["arcs"] == {}:
+        return {}, new_model
+
+    # If the models are the same return an empty diff_model and the full json from
+    # the new model. This will happen when the user moves something in the 
+    # graph but doesn't change the actual idaes model
+    if existing_model == new_model["model"]:
+        return {}, new_model
+
+    try:
+        new_model = new_model["model"]
+    except KeyError as error:
+        msg = "Unable to find 'model' section of new model json"
+        raise KeyError(msg)
 
     unit_model_schema = {
         "type" : "object",
@@ -163,7 +195,8 @@ def compare_models(existing_model, new_model):
             diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "arc"
 
-    return diff_model
+
+    return diff_model, out_json
 
 
 def model_jointjs_conversion(diff_model, current_json):
@@ -222,7 +255,11 @@ def model_jointjs_conversion(diff_model, current_json):
 
     """
     new_json = dict(current_json)
+    x = 50
+    y = 50
     for name, values in diff_model.items():
+        x += 100
+        y += 100
         found = False
         for item in current_json["cells"]:
             if name == item["id"]:
@@ -239,9 +276,9 @@ def model_jointjs_conversion(diff_model, current_json):
                         new_json["cells"].append(item)
                     elif values["class"] == "unit model":
                         item["id"] = name
-                        item["label"]["text"] = name
+                        item["attrs"]["label"]["text"] = name
                         item["attrs"]["image"]["xlinkHref"] = values["image"]
-                        item["root"]["title"] = values["type"]
+                        item["attrs"]["root"]["title"] = values["type"]
                         new_json["cells"].append(item)
                     else:
                         # if the class isn't a unit model or an arc then throw an 
@@ -282,7 +319,7 @@ def model_jointjs_conversion(diff_model, current_json):
                 new_item = {
                     "type": "standard.Image",
                     "id": name,
-                    "position": {"x": 100, "y": 100},
+                    "position": {"x": x, "y": y},
                     "size": {"width": 50, "height": 50},
                     "angle": 0,
                     "z": 1,

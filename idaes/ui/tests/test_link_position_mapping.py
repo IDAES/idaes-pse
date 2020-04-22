@@ -12,7 +12,7 @@
 ##############################################################################
 import pytest
 
-from idaes.dmf.ui import link_position_mapping
+from idaes.ui import link_position_mapping
 
 
 @pytest.mark.parametrize(
