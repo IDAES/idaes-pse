@@ -11,30 +11,13 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for Component objects
-
-Author: Andrew Lee
+Library of common forms for phase equilibrium constraints
 """
-from pyomo.environ import ConcreteModel, Set
-
-from idaes.core.components import Component
 
 
-def test_config():
-    m = ConcreteModel()
-
-    m.comp = Component()
-
-    assert not m.comp.config._component_list_exists
-
-
-def test_populate_component_list():
-    m = ConcreteModel()
-
-    m.comp = Component()
-    m.comp2 = Component()
-
-    assert isinstance(m.component_list, Set)
-
-    for j in m.component_list:
-        assert j in ["comp", "comp2"]
+def fugacity(b, phase1, phase2, comp):
+    pp = (phase1, phase2)
+    return (b.params.get_phase(phase1)
+            .config.equation_of_state.fug_phase_comp(b, phase1, comp, pp) ==
+            b.params.get_phase(phase2)
+            .config.equation_of_state.fug_phase_comp(b, phase2, comp, pp))

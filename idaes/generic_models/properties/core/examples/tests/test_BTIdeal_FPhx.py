@@ -31,22 +31,112 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.core import LiquidPhase, VaporPhase
 
-from idaes.generic_models.properties.core.examples.BT_ideal \
-    import BTIdealParameterBlock
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+
+from idaes.generic_models.properties.core.state_definitions import FPhx
+import idaes.generic_models.properties.core.eos.ideal as ideal
+from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
+        bubble_temp_ideal,
+        dew_temp_ideal,
+        bubble_press_ideal,
+        dew_press_ideal)
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+
+import idaes.generic_models.properties.core.pure.Perrys as Perrys
+import idaes.generic_models.properties.core.pure.RPP as RPP
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
 
+config_dict = {
+    "components": {
+        'benzene': {
+            "dens_mol_liq_comp": Perrys,
+            "enth_mol_liq_comp": Perrys,
+            "enth_mol_ig_comp": RPP,
+            "pressure_sat_comp": RPP,
+            "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            "parameter_data": {
+                "mw": 78.1136E-3,  # [1]
+                "pressure_crit": 48.9e5,  # [1]
+                "temperature_crit": 562.2,  # [1]
+                "dens_mol_liq_comp_coeff": {'1': 1.0162*1e3,  # [2] pg. 2-98
+                                            '2': 0.2655,
+                                            '3': 562.16,
+                                            '4': 0.28212},
+                "cp_mol_ig_comp_coeff": {'A': -3.392E1,  # [1]
+                                         'B': 4.739E-1,
+                                         'C': -3.017E-4,
+                                         'D': 7.130E-8},
+                "cp_mol_liq_comp_coeff": {'1': 1.29E2,  # [2]
+                                          '2': -1.7E-1,
+                                          '3': 6.48E-4,
+                                          '4': 0,
+                                          '5': 0},
+                "enth_mol_form_liq_comp_ref": 49.0e3,  # [3]
+                "enth_mol_form_vap_comp_ref": 82.9e3,  # [3]
+                "pressure_sat_comp_coeff": {'A': -6.98273,  # [1]
+                                            'B': 1.33213,
+                                            'C': -2.62863,
+                                            'D': -3.33399}}},
+        'toluene': {
+            "dens_mol_liq_comp": Perrys,
+            "enth_mol_liq_comp": Perrys,
+            "enth_mol_ig_comp": RPP,
+            "pressure_sat_comp": RPP,
+            "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+            "parameter_data": {
+                "mw": 92.1405E-3,  # [1]
+                "pressure_crit": 41e5,  # [1]
+                "temperature_crit": 591.8,  # [1]
+                "dens_mol_liq_comp_coeff": {'1': 0.8488*1e3,  # [2] pg. 2-98
+                                            '2': 0.26655,
+                                            '3': 591.8,
+                                            '4': 0.2878},
+                "cp_mol_ig_comp_coeff": {'A': -2.435E1,
+                                         'B': 5.125E-1,
+                                         'C': -2.765E-4,
+                                         'D': 4.911E-8},
+                "cp_mol_liq_comp_coeff": {'1': 1.40E2,  # [2]
+                                          '2': -1.52E-1,
+                                          '3': 6.95E-4,
+                                          '4': 0,
+                                          '5': 0},
+                "enth_mol_form_liq_comp_ref": 12.0e3,  # [3]
+                "enth_mol_form_vap_comp_ref": 50.1e3,  # [3]
+                "pressure_sat_comp_coeff": {'A': -7.28607,  # [1]
+                                            'B': 1.38091,
+                                            'C': -2.83433,
+                                            'D': -2.79168}}}},
+    "phases":  {'Liq': {"type": LiquidPhase,
+                        "equation_of_state": ideal},
+                'Vap': {"type": VaporPhase,
+                        "equation_of_state": ideal}},
+    "state_definition": FPhx,
+    "state_bounds": {"flow_mol": (0, 1000),
+                     "temperature": (273.15, 450),
+                     "pressure": (5e4, 1e6),
+                     "enth_mol": (1e4, 2e5)},
+    "pressure_ref": 1e5,
+    "temperature_ref": 300,
+    "phases_in_equilibrium": [("Vap", "Liq")],
+    "phase_equilibrium_formulation": {("Vap", "Liq"): smooth_VLE},
+    "temperature_bubble": bubble_temp_ideal,
+    "temperature_dew": dew_temp_ideal,
+    "pressure_bubble": bubble_press_ideal,
+    "pressure_dew": dew_press_ideal}
+
 
 class TestParamBlock(object):
     def test_build(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=config_dict)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -68,12 +158,13 @@ class TestParamBlock(object):
             assert i in [("Liq", "benzene"), ("Liq", "toluene"),
                          ("Vap", "benzene"), ("Vap", "toluene")]
 
-        assert model.params.config.state_definition == FTPx
+        assert model.params.config.state_definition == FPhx
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
-                "temperature": (273.15, 450),
-                "pressure": (5e4, 1e6)}
+            "flow_mol": (0, 1000),
+            "temperature": (273.15, 450),
+            "pressure": (5e4, 1e6),
+            "enth_mol": (1e4, 2e5)}
 
         assert model.params.config.phase_equilibrium_formulation == {
             ("Vap", "Liq"): smooth_VLE}
@@ -95,11 +186,12 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=config_dict)
 
-        model.props = model.params.build_state_block(
+        model.props = model.params.state_block_class(
                 [1],
-                default={"defined_state": True})
+                default={"parameters": model.params,
+                         "defined_state": True})
 
         return model
 
@@ -114,6 +206,11 @@ class TestStateBlock(object):
         assert value(model.props[1].pressure) == 5.25e5
         assert model.props[1].pressure.ub == 1e6
         assert model.props[1].pressure.lb == 5e4
+
+        assert isinstance(model.props[1].enth_mol, Var)
+        assert value(model.props[1].enth_mol) == 1.05e5
+        assert model.props[1].enth_mol.ub == 2e5
+        assert model.props[1].enth_mol.lb == 1e4
 
         assert isinstance(model.props[1].temperature, Var)
         assert value(model.props[1].temperature) == 361.575
@@ -193,9 +290,9 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+                         "enth_mol",
+                         "pressure",
+                         "mole_frac_comp"]
 
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
@@ -203,9 +300,9 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+                         "enth_mol",
+                         "pressure",
+                         "mole_frac_comp"]
 
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
@@ -213,14 +310,14 @@ class TestStateBlock(object):
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+                         "enth_mol",
+                         "pressure",
+                         "mole_frac_comp"]
 
     def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
-        model.props[1].temperature.fix(368)
+        model.props[1].enth_mol.fix(47297)
         model.props[1].pressure.fix(101325)
         model.props[1].mole_frac_comp["benzene"].fix(0.5)
         model.props[1].mole_frac_comp["toluene"].fix(0.5)
