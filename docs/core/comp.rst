@@ -21,7 +21,7 @@ The IDAES Process Modeling Framework currently supports the following types of c
 Component Object Methods
 ------------------------
 
-Component objects are intended to store all the necessary information regarding a given chemical species for use within a process model. Examples of such information include the methods and parameters required for calculating thermophysical properties. Additionally, certain unit operations handle components in different ways depending on certain criteria. An example of this is Reverse Osmosis membranes, where the driving force across the member is calculated differently for solvent species and solute species.
+Component objects are intended to store all the necessary information regarding a given chemical species for use within a process model. Examples of such information include the methods and parameters required for calculating thermophysical properties. Additionally, certain unit operations handle components in different ways depending on certain criteria. An example of this is Reverse Osmosis, where the driving force across the membrane is calculated differently for solvent species and solute species.
 
 Component objects implement the following methods for determining species behavior:
 
@@ -36,7 +36,7 @@ Types of Components
 Component Class
 ^^^^^^^^^^^^^^^
 
-This is a general purpose Component object, and is suitable for general cases where the user is not concerned about distinguishing solutes from solvents (`is_solute()` and `is_solvent()` will both raise `TypeErrors`). The also forms the base class for all other Component types.
+This is a general purpose Component object, and is suitable for general cases where the user is not concerned about distinguishing solutes from solvents (`is_solute()` and `is_solvent()` will both raise `TypeErrors`). This also forms the base class for all other Component types.
 
 .. module:: idaes.core.components
 

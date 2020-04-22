@@ -267,7 +267,7 @@ class GenericParameterData(PhysicalParameterBlock):
             pc_list = self.get_phase(p).config.component_list
             if pc_list is None:
                 # No phase-component list, look at components to determine
-                # whihc are valid in current phase
+                # which are valid in current phase
                 for j in self.component_list:
                     if self.get_component(j)._is_phase_valid(pobj):
                         # If compoennt says phase is valid, add to set
