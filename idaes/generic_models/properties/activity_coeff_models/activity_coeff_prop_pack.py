@@ -125,7 +125,7 @@ conditions, and thus corresponding constraints  should be included,
         """Callable method for Block construction."""
         super(ActivityCoeffParameterData, self).build()
 
-        self.state_block_class = ActivityCoeffStateBlock
+        self._state_block_class = ActivityCoeffStateBlock
 
         # Create Phase objects
         if self.config.valid_phase == ('Liq', 'Vap') or \

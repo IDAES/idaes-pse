@@ -203,7 +203,7 @@ change.
         """
         # Location of the *.so or *.dll file for external functions
         self.plib = library
-        self.state_block_class = state_block_class
+        self._state_block_class = state_block_class
         self.component_list = component_list
         self.phase_equilibrium_idx = phase_equilibrium_idx
         self.phase_equilibrium_list = phase_equilibrium_list

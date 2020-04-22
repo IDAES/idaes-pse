@@ -409,9 +409,8 @@ class TestGenericStateBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
-        m.props = m.params.state_block_class([1],
-                                             default={"defined_state": False,
-                                                      "parameters": m.params})
+        m.props = m.params.build_state_block([1],
+                                             default={"defined_state": False})
 
         # Add necessary variables to state block
         m.props[1].pressure = Var(bounds=(1000, 3000))

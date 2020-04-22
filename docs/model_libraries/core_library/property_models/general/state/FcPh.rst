@@ -47,12 +47,12 @@ Variables
 Expressions
 """""""""""
 
-An Expression is create for the total flowrate such that :math:`F = \sum{F_j}`
+An Expression is created for the total flowrate such that :math:`F = \sum{F_j}`
 
 Constraints
 """""""""""
 
-In all cases, a constraint to calculate component mole fractions from the component flow rates.
+In all cases, a constraint is created to calculate component mole fractions from the component flow rates.
 
 .. math:: F_j = x_j \times \sum{F_j}
 

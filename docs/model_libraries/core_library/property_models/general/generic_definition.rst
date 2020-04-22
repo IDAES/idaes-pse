@@ -139,12 +139,12 @@ Users should populate the `configure` and `parameters` methods as discussed belo
 Configure
 ^^^^^^^^^
 
-The 'configure` method is assign values to the configuration arguments within, using the format `self.config.option_name = value`.
+The 'configure` method is used to assign values to the configuration arguments, using the format `self.config.option_name = value`.
 
 Parameters
 ^^^^^^^^^^
 
-The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of parameters which need to be defined will depend upon the configuration options chosen, and the documentation for each method lists the expected parameters which need to be defined in this section. Users need only define those parameters required by the options they have chosen.
+The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of necessary parameters is based on the configuration options and the selected methods. Each method lists their necessary parameters in their documentation. Users need only define those parameters required by the options they have chosen.
 
 Property parameters can be defined as either Pyomo `Params` or `Vars` depending upon the users needs and application. Whilst `Params` would seem to be the logical choice, be aware that for parameter estimation problems the parameters being estimated need to be defined as `Vars` (so that the solver is free to vary them). 
 

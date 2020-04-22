@@ -21,10 +21,8 @@ from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            Reals,
-                           Set,
                            value,
                            Var)
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -57,13 +55,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
     superheated steam.
 
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = SaponificationStateBlock
+        self._state_block_class = SaponificationStateBlock
 
         # Add Phase objects
         self.Liq = LiquidPhase()

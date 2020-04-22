@@ -100,10 +100,9 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = GenericParameterBlock(default=configuration)
 
-        model.props = model.params.state_block_class(
+        model.props = model.params.build_state_block(
                 [1],
-                default={"parameters": model.params,
-                         "defined_state": True})
+                default={"defined_state": True})
 
         return model
 
