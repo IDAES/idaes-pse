@@ -95,6 +95,9 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
+            # temporarily hold sphinx version to avoid bug with 3.0.2 (PR #7504)
+            # -dang 4/22/2020
+            "sphinx<=3.0.1",
             "sphinx-rtd-theme>=0.1.9",
             "sphinxcontrib-napoleon>=0.5.0",
             "sphinx-argparse",
