@@ -25,16 +25,6 @@ shared: &shared
 shared-ex: &shared-ex
   working_directory: ~/repo
   steps:
-    - checkout
-#    - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install --progress-bar=off -r requirements.txt
-    - run: idaes get-extensions
-#    - run: pytest -c pytest.ini idaes -m "not nocircleci"
-    - add_ssh_keys:
-        fingerprints:
-          - "64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d"
-          - "e7:47:84:ba:d3:16:a8:54:18:c6:0a:87:4b:ec:f9:f1"
-    - run: git clone git@github.com:IDAES/examples-dev.git
 
 jobs:
   "python-3.7":
@@ -47,10 +37,22 @@ jobs:
       - image: idaes/jupyterhub:1.4.5
     <<: *shared-dev
 
+  # Build the examples
   "python-3.7-ex":
     docker:
       - image: idaes/ubuntu18-conda:ex
-    <<: *shared-ex
+    - checkout
+    - run:
+        name: Install requirements.txt
+        command: pip install --progress-bar=off -r requirements.txt
+    - run: idaes get-extensions
+    - add_ssh_keys:
+        fingerprints:
+          - "64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d"
+          - "e7:47:84:ba:d3:16:a8:54:18:c6:0a:87:4b:ec:f9:f1"
+    - run:
+        name: Clone examples-dev/master
+        command: git clone git@github.com:IDAES/examples-dev.git
 
   "python-3.6":
     docker:
