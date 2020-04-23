@@ -17,6 +17,8 @@ from idaes.dynamic.caprese import nmpc
 from idaes.dynamic.caprese.nmpc import *
 import idaes.logger as idaeslog
 from idaes.dynamic.caprese.tests.cstr_for_testing import make_model
+import pandas as pd
+import matplotlib.pyplot as plt
 
 __author__ = "Robert Parker"
 
@@ -30,6 +32,35 @@ if SolverFactory('ipopt').available():
                       'halt_on_ampl_error': 'yes'}
 else:
     solver = None
+
+class PlotData(object):
+    def __init__(self, group, location, name=None, t_switch=None):
+        # Would really like a PlotData class that is constructed based on an
+        # NMPCVar object that contains necessary setpoint/reference
+        # information, instead of having to access that in the NMPCVarGroup
+        time = group.index_set
+        if t_switch == None:
+            t_switch = group.t0
+
+        self.name = name
+
+        var = group.varlist[location]
+        initial = group.reference[location]
+        setpoint = group.setpoint[location]
+        self.data_series = pd.Series(
+                [var[t].value for t in time],
+                index=[t for t in time])
+        self.setpoint_series = pd.Series(
+                [initial if t < t_switch else setpoint for t in time])
+
+    def plot(self):
+        # fig, ax can be formatted to the user's liking
+        fig, ax = plt.subplots()
+        if self.name is not None:
+            self.data_series.plot(label=self.name)
+        else:
+            self.data_series.plot()
+        return fig, ax
 
 def main():
 
@@ -76,18 +107,12 @@ def main():
     
     # Weight overwrite expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    weight_override = [(m_steady.fs.mixer.E_inlet.flow_rate[0], 20.0)]
+    weight_override = [(c_mod.mixer.E_inlet.flow_rate[0], 20.0)]
 
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
             objective_weight_tolerance=weight_tolerance,
             outlvl=idaeslog.DEBUG)
-
-#    nmpc.solve_steady_state_setpoint(set_point,
-#            m_steady.fs,
-#            outlvl=idaeslog.DEBUG,
-#            objective_weight_override=weight_override,
-#            objective_weight_tolerance=weight_tolerance)
 
     nmpc.add_setpoint_to_controller()
     
@@ -99,13 +124,13 @@ def main():
     nmpc.solve_control_problem()
 
     nmpc.inject_control_inputs_into_plant(time_plant.first(),
-                                  add_noise=True)
+                                  add_input_noise=True)
 
     nmpc.simulate_plant(time_plant.first())
 
     for t in plant_sample_points:
         nmpc.transfer_current_plant_state_to_controller(t,
-                                                add_noise=True)
+                                                add_plant_noise=True)
 
         nmpc.initialize_control_problem(
                 control_init_option=ControlInitOption.FROM_PREVIOUS)
@@ -113,12 +138,38 @@ def main():
         nmpc.solve_control_problem()
 
         nmpc.inject_control_inputs_into_plant(t,
-                                      add_noise=True)
+                                      add_input_noise=True)
         
         nmpc.simulate_plant(t)
 
     # TODO: add code for creating NMPC controller plots
     # TODO: add option for specifying "user-interest variables"
+
+    temp_info = p_mod._NMPC_NAMESPACE.var_locator[
+            p_mod.cstr.outlet.temperature[0.]]
+    temp_location = temp_info.location
+    temp_group = temp_info.group
+    temperature_data = PlotData(temp_group, temp_location, name='Temperature')
+    fig, ax = temperature_data.plot()
+    fig.savefig(temperature_data.name)
+
+    P_info = p_mod._NMPC_NAMESPACE.var_locator[
+            p_mod.cstr.outlet.conc_mol[0.,'P']]
+    P_location = P_info.location
+    P_group = P_info.group
+    P_data = PlotData(P_group, P_location, name='P_conc')
+    fig, ax = P_data.plot()
+    fig.savefig(P_data.name)
+
+    S_info = p_mod._NMPC_NAMESPACE.var_locator[
+            p_mod.cstr.outlet.conc_mol[0.,'S']]
+    S_location = S_info.location
+    S_group = S_info.group
+    S_data = PlotData(S_group, S_location, name='S_conc')
+    fig, ax = S_data.plot()
+    fig.savefig(S_data.name)
+
+    pdb.set_trace()
 
 
 if __name__ == '__main__':
