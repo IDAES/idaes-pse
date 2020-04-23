@@ -50,8 +50,10 @@ jobs:
       - run: idaes get-extensions
       - add_ssh_keys:
           fingerprints:
-            # dangunter
-            - "15:e0:ca:dc:6d:b2:6d:55:55:a1:d4:65:be:33:7e:a2"
+            # idaes/examples-dev deploy key
+            - "64:cd:62:b2:e8:fa:df:19:49:88:f3:d6:53:5b:e3:6d"
+            # idaes/examples-dev idaes build key (?)
+            - "b4:5e:a1:64:84:fc:e2:da:29:70:be:f9:f2:9c:f8:61"
       - run:
           name: Clone examples-dev/master
           command: git clone git@github.com:IDAES/examples-dev.git
