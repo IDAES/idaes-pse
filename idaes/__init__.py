@@ -13,7 +13,7 @@ from .ver import __version__  # noqa
 _log = logging.getLogger(__name__)
 
 # Standard locations for config file, binary libraries and executables, ...
-data_directory, bin_directory, lib_directory = config.get_data_directory()
+data_directory, bin_directory = config.get_data_directory()
 
 # Set the path for the global and local config files
 _global_config_file = os.path.join(data_directory, "idaes.conf")
@@ -27,7 +27,7 @@ config.read_config(_global_config_file, _config)
 config.read_config(_local_config_file, _config)
 
 # Setup the environment so solver executables can be run
-config.setup_environment(bin_directory, lib_directory, _config.use_idaes_solvers)
+config.setup_environment(bin_directory, _config.use_idaes_solvers)
 
 # Debug log for basic testing of the logging config
 _log.debug("'idaes' logger debug test")
@@ -41,10 +41,5 @@ def _create_bin_dir():
     """Create the IDAES directory to store executable files in."""
     _create_data_dir()
     config.create_dir(bin_directory)
-
-def _create_lib_dir():
-    """Create the IDAES directory to store library files in."""
-    _create_data_dir()
-    config.create_dir(lib_directory)
 
 cfg = _config
