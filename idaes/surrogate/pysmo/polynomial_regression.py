@@ -688,7 +688,6 @@ class PolynomialRegression:
         instance = model
         opt = SolverFactory("ipopt")
         opt.options['max_iter'] = 10000000
-        
         result = opt.solve(instance)  # , tee=True)
 
         # Convert theta variable into numpy array

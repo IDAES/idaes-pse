@@ -762,7 +762,6 @@ class RadialBasisFunctions:
         opt.options['max_iter'] = 10000
         opt.options['acceptable_tol'] = 1e-30
         # model.pprint()
-
         result = opt.solve(instance)  # , tee=True)
         # model.display()
 
@@ -773,7 +772,6 @@ class RadialBasisFunctions:
             phi[iterator, 0] = instance.theta[s].value
             iterator += 1
         return phi
-
 
     @staticmethod
     def error_calculation(phi, x, y_data):
