@@ -23,4 +23,5 @@ RUN apt-get -qq update \
 USER $IUSER
 ENV PATH /opt/conda/bin:$PATH
 WORKDIR /home/$IUSER
+ENV PATH=$PATH:/home/$IUSER/.idaes/bin
 RUN conda init bash
