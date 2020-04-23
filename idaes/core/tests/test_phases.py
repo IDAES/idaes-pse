@@ -25,9 +25,12 @@ def test_config():
 
     m.phase = Phase()
 
-    assert len(m.phase.config) == 2
-    assert m.phase.config.component_list is None
-    assert not m.phase.config._phase_list_exists
+    assert len(m.phase.config) == 3
+    for k, v in m.phase.config.items():
+        if k == "_phase_list_exists":
+            assert not v
+        else:
+            assert v is None
 
 
 def test_populate_phase_list():
