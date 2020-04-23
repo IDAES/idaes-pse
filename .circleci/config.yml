@@ -48,14 +48,14 @@ jobs:
           name: Install requirements.txt
           command: pip install --progress-bar=off -r requirements.txt
       - run: idaes get-extensions
-      - add_ssh_keys:
-          fingerprints:
-            # Key for examples-dev from idaes-dev
-            - "ed:f3:2d:e6:7f:d4:7c:d7:49:18:bd:7d:1d:d2:ea:3a"
       - run:
-          name: Clone examples-dev/master
+          name: Clone examples-dev
           command: git clone git@github.com:IDAES/examples-dev.git
-
+      - run:
+          name: Run examples-dev tests
+          command: |
+              cd examples-dev
+              pytest -m "not integration"
   "python-3.6":
     docker:
       - image: idaes/jupyterhub:1.4.5
