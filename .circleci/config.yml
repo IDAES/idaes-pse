@@ -49,7 +49,7 @@ jobs:
 
   "python-3.7-ex":
     docker:
-      - image: idaes/jupyterhub:1.4.5
+      - image: idaes/ubuntu-conda:ex
     <<: *shared-ex
 
   "python-3.6":
