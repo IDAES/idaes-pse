@@ -466,6 +466,7 @@ class PolynomialRegression:
                 training_data["training_set_" + str(i)] = A[0:num_training, :]
                 cross_val_data["test_set_" + str(i)] = A[num_training:, :]
             elif additional_features is not None:
+                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1] + additional_features.shape[1]))
                 A[:, 0:self.regression_data.shape[1]] = self.regression_data
                 A[:, self.regression_data.shape[1]:] = additional_features
@@ -634,9 +635,12 @@ class PolynomialRegression:
          For more details about the maximum likelihood estimate methos, see to Forrester et al.
 
         """
-        moore_penrose_inverse = np.linalg.pinv(x)  # Moore Penrose inverse of vector x
-        phi = np.matmul(moore_penrose_inverse, y)
-        return phi
+        try:
+            moore_penrose_inverse = np.linalg.pinv(x)  # Moore Penrose inverse of vector x
+            phi = np.matmul(moore_penrose_inverse, y)
+            return phi
+        except:
+            raise Exception('Optimization fails!')
 
     @staticmethod
     def pyomo_optimization(x, y):
@@ -687,15 +691,18 @@ class PolynomialRegression:
         instance = model
         opt = SolverFactory("ipopt")
         opt.options['max_iter'] = 10000000
-        result = opt.solve(instance)  # , tee=True)
+        try:
+            result = opt.solve(instance)  # , tee=True)
 
-        # Convert theta variable into numpy array
-        phi = np.zeros((len(instance.theta), 1))
-        iterator = 0
-        for s in instance.N:
-            phi[iterator, 0] = instance.theta[s].value
-            iterator += 1
-        return phi
+            # Convert theta variable into numpy array
+            phi = np.zeros((len(instance.theta), 1))
+            iterator = 0
+            for s in instance.N:
+                phi[iterator, 0] = instance.theta[s].value
+                iterator += 1
+            return phi
+        except:
+            raise Exception('Pyomo optimization fails!')
 
     @staticmethod
     def cross_validation_error_calculation(phi, x_test_data, y_test_data):

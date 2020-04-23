@@ -762,16 +762,19 @@ class RadialBasisFunctions:
         opt.options['max_iter'] = 10000
         opt.options['acceptable_tol'] = 1e-30
         # model.pprint()
-        result = opt.solve(instance)  # , tee=True)
-        # model.display()
+        try:
+            result = opt.solve(instance)  # , tee=True)
+            # model.display()
 
-        # Convert theta variable into numpy array
-        phi = np.zeros((len(instance.theta), 1))
-        iterator = 0
-        for s in instance.N:
-            phi[iterator, 0] = instance.theta[s].value
-            iterator += 1
-        return phi
+            # Convert theta variable into numpy array
+            phi = np.zeros((len(instance.theta), 1))
+            iterator = 0
+            for s in instance.N:
+                phi[iterator, 0] = instance.theta[s].value
+                iterator += 1
+            return phi
+        except:
+            raise Exception('Pyomo optimization fails!')
 
     @staticmethod
     def error_calculation(phi, x, y_data):
