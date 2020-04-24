@@ -458,15 +458,14 @@ class PolynomialRegression:
         elif num_training == self.number_of_samples:
             raise Exception('The inputted of fraction_training is too high.')
         for i in range(1, self.number_of_crossvalidations + 1):
+            np.random.seed(i)
             if additional_features is None:
-                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1]))
                 A[:, :] = self.regression_data
                 np.random.shuffle(A)  # Shuffles the rows of the regression data randomly
                 training_data["training_set_" + str(i)] = A[0:num_training, :]
                 cross_val_data["test_set_" + str(i)] = A[num_training:, :]
             elif additional_features is not None:
-                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1] + additional_features.shape[1]))
                 A[:, 0:self.regression_data.shape[1]] = self.regression_data
                 A[:, self.regression_data.shape[1]:] = additional_features
