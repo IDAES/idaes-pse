@@ -53,8 +53,9 @@ The IDAES BFBR model has construction arguments specific to the whole unit and t
   - 'dae.collocation' - orthogonal collocation method.
   
 * transformation_scheme - sets the scheme to use when transforming a domain. 
-  Selected schemes should be compatible with the transformation_method chosen:
+  Selected schemes should be compatible with the transformation_method chosen (default = None):
   
+  - None - defaults to "BACKWARD" for finite difference transformation method and to "LAGRANGE-RADAU" for collocation transformation method
   - 'BACKWARD' - use a finite difference transformation method.
   - 'FORWARD' - use a finite difference transformation method.
   - 'LAGRANGE-RADAU' - use a collocation transformation method.   
@@ -84,7 +85,7 @@ The IDAES BFBR model has construction arguments specific to the whole unit and t
 
 **Arguments that are applicable to the gas emulsion region:**
 
-* momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.none).
+* momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.pressureTotal).
 * has_pressure_change - indicates whether terms for pressure change should be constructed (default = False).
 * property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
   This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
@@ -248,10 +249,6 @@ Bubble mass transfer '(p=vap)':
 Gas emulsion mass transfer '(p=vap)':
 
 .. math:: M_{tr,ge,t,x,p,j} = - K_{gbulkc,t,x,j} + A_{b,t,x} K_{be,t,x,j} {\left(C_{b,total,t,x} - C_{ge,total,t,x} \right)} + r_{hetero,ge,t,x,j}
-
-Solid emulsion mass transfer '(p=sol)':
-
-.. math:: M_{tr,se,t,x,p,j} = 0
 
 *if 'energy_balance_type' is not 'EnergyBalanceType.none':*
 
