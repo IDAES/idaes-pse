@@ -30,9 +30,9 @@ from pyomo.common.config import ConfigValue
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock,
-                        Component)
-from idaes.core.phases import *
+                        StateBlock)
+from idaes.core.components import Component, __all_components__
+from idaes.core.phases import Phase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -178,7 +178,7 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""List of phase pairs for which equilibrium constraints should be
         constructed. Values should be a 2-tuples containing valid phase
         names. Default = None."""))
-    CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
+    CONFIG.declare("phase_equilibrium_state", ConfigValue(
         default=None,
         domain=dict,
         description="Formulation to use when calculating equilibrium state",
@@ -225,7 +225,19 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for c, d in self.config.components.items():
-            self.add_component(c, Component(default=d))
+            ctype = d.pop("type", None)
+
+            if ctype is None:
+                _log.warning("{} component {} was not assigned a type. "
+                             "Using generic Component object."
+                             .format(self.name, c))
+                ctype = Component
+            elif ctype not in __all_components__:
+                raise TypeError(
+                    "{} component {} was assigned unrecognised type {}."
+                    .format(self.name, c, str(ctype)))
+
+            self.add_component(c, ctype(default=d))
 
         # Add Phase objects
         if self.config.phases is None:
@@ -234,36 +246,48 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for p, d in self.config.phases.items():
-            tmp_dict = {}
-            ptype = Phase
-            for k, v in d.items():
-                if k == "type":
-                    ptype = v
-                else:
-                    tmp_dict[k] = v
+            ptype = d.pop("type", None)
 
-            if ptype is Phase:
+            if ptype is None:
                 _log.warning("{} phase {} was not assigned a type. "
                              "Using generic Phase object."
                              .format(self.name, p))
-            self.add_component(str(p), ptype(default=tmp_dict))
+                ptype = Phase
+            elif ptype not in __all_phases__:
+                raise TypeError(
+                    "{} phase {} was assigned unrecognised type {}."
+                    .format(self.name, p, str(ptype)))
+
+            self.add_component(str(p), ptype(default=d))
 
         # Validate phase-component lists, and build _phase_component_set
         pc_set = []
         for p in self.phase_list:
+            pobj = self.get_phase(p)
             pc_list = self.get_phase(p).config.component_list
             if pc_list is None:
-                # No phase-component list, assume all components in phase
+                # No phase-component list, look at components to determine
+                # which are valid in current phase
                 for j in self.component_list:
-                    pc_set.append((p, j))
+                    if self.get_component(j)._is_phase_valid(pobj):
+                        # If compoennt says phase is valid, add to set
+                        pc_set.append((p, j))
             else:
                 # Validate that component names are valid and add to pc_set
                 for j in pc_list:
                     if j not in self.component_list:
+                        # Unrecognised component
                         raise ConfigurationError(
                             "{} phase-component list for phase {} contained "
                             "component {} which is not in the master "
                             "component list".format(self.name, p, j))
+                    # Check that phase is valid for component
+                    if not self.get_component(j)._is_phase_valid(pobj):
+                        raise ConfigurationError(
+                            "{} phase-component list for phase {} contained "
+                            "component {}, however this component is not "
+                            "valid for the given PhaseType"
+                            .format(self.name, p, j))
                     pc_set.append((p, j))
         self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
@@ -316,13 +340,13 @@ class GenericParameterData(PhysicalParameterBlock):
             counter = 1
 
             # Validate phase equilibrium formulation
-            if self.config.phase_equilibrium_formulation is None:
+            if self.config.phase_equilibrium_state is None:
                 raise ConfigurationError(
                     "{} Generic Property Package provided with a "
                     "phases_in_equilibrium argument but no method was "
-                    "specified for phase_equilibrium_formulation."
+                    "specified for phase_equilibrium_state."
                     .format(self.name))
-            pie_config = self.config.phase_equilibrium_formulation
+            pie_config = self.config.phase_equilibrium_state
 
             for pp in self.config.phases_in_equilibrium:
                 if (pp not in pie_config.keys() and
@@ -330,7 +354,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     raise ConfigurationError(
                         "{} Generic Property Package provided with a "
                         "phases_in_equilibrium argument but "
-                        "phase_equilibrium_formulation was not specified "
+                        "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
                 for j in self.component_list:
@@ -741,7 +765,7 @@ class _GenericStateBlock(StateBlock):
         if blk[k].params.config.phases_in_equilibrium is not None:
             for k in blk.keys():
                 for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_formulation[pp] \
+                    blk[k].params.config.phase_equilibrium_state[pp] \
                         .calculate_teq(blk[k], pp)
 
             init_log.info("Equilibrium temperature initialization completed.")
@@ -764,7 +788,7 @@ class _GenericStateBlock(StateBlock):
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k].params.config.phase_equilibrium_formulation is not None and
+        if (blk[k].params.config.phase_equilibrium_state is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
             for c in blk[k].component_objects(Constraint):
                 # Activate common constraints
@@ -775,7 +799,7 @@ class _GenericStateBlock(StateBlock):
                     c.activate()
             for pp in blk[k].params._pe_pairs:
                 # Activate formulation specific constraints
-                blk[k].params.config.phase_equilibrium_formulation[pp] \
+                blk[k].params.config.phase_equilibrium_state[pp] \
                     .phase_equil_initialization(blk[k], pp)
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -858,7 +882,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=value(self.temperature),
                 doc='Temperature for calculating phase equilibrium')
 
-            pe_form_config = self.params.config.phase_equilibrium_formulation
+            pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
 
