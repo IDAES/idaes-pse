@@ -18,6 +18,7 @@ shared: &shared
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
+    - run: python setup.py install
     - run: pip install --progress-bar=off -r requirements.txt
     - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
