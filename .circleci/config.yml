@@ -21,6 +21,7 @@ shared: &shared
     - run: python setup.py install
     - run: pip install --progress-bar=off -r requirements.txt
     - run: idaes get-extensions
+    - run: pyomo --version
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
