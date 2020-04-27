@@ -304,7 +304,7 @@ Gas emulsion pressure at inlet:
 
 Total gas balance at inlet:
 
-.. math:: F_{mol,g,inlet,t} = F_{mol,b,t,0} + F_{mol,ge,t,0}
+.. math:: F_{mol,b,t,0} + F_{mol,ge,t,0} = F_{mol,g,inlet,t}
 
 Superficial gas velocity at inlet:
 
@@ -312,43 +312,39 @@ Superficial gas velocity at inlet:
 
 Bubble mole fraction at inlet:
 
-.. math:: y_{g,inlet,t,j} = y_{b,t,0,j}
+.. math:: y_{b,t,0,j} = y_{g,inlet,t,j}
 
 Gas emulsion mole fraction at inlet:
 
-.. math:: y_{g,inlet,t,j} = y_{ge,t,0,j}
-
-Bubble mole fraction at inlet:
-
-.. math:: y_{g,inlet,t,j} = y_{b,t,0,j}
+.. math:: y_{ge,t,0,j} = y_{g,inlet,t,j}
 
 Solid emulsion mass flow at inlet:
 
     *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
-    .. math:: F_{mass,s,inlet,t} = F_{mass,se,t,x}
+    .. math:: F_{mass,se,t,x} = F_{mass,s,inlet,t}
 
 Solid emulsion mass fraction at inlet:
 
     *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
-    .. math:: x_{s,inlet,t} = x_{se,t,x}
+    .. math:: x_{se,t,x} = x_{s,inlet,t} 
 
 *if 'energy_balance_type' is not 'EnergyBalanceType.none':*
 
     Gas inlet energy balance:
 
-    .. math:: H_{g,inlet,t} = H_{b,t,0} + H_{ge,t,0}
+    .. math:: H_{b,t,0} + H_{ge,t,0} = H_{g,inlet,t}
 
     Gas emulsion temperature at inlet:
 
-    .. math:: T_{g,inlet,t} = T_{ge,t,0}
+    .. math:: T_{ge,t,0} = T_{g,inlet,t} 
 
 *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
     Solid inlet energy balance:
 
-    .. math:: H_{s,inlet,t} = H_{se,t,x}
+    .. math:: H_{se,t,x} = H_{s,inlet,t} 
 
 **Outlet boundary conditions**
 
