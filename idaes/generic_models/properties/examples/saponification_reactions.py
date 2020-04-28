@@ -103,7 +103,7 @@ class _ReactionBlock(ReactionBlockBase):
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
-    def initialize(blk, outlvl=0, **kwargs):
+    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
         '''
         Initialization routine for reaction package.
 

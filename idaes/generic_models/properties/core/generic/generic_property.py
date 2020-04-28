@@ -421,7 +421,7 @@ class GenericParameterData(PhysicalParameterBlock):
         """
         Placeholder method to allow users to specify parameters via a
         class. The user class should inherit from this one and implement a
-        parameters() method which creates the reqruied components.
+        parameters() method which creates the required components.
 
         Args:
             None
