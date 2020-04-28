@@ -17,7 +17,7 @@ Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
 from collections import namedtuple
-import datetime
+from datetime import datetime
 from enum import Enum
 import json
 import logging
@@ -30,15 +30,13 @@ import yaml
 
 # third-party
 import click
-import humanize
-import pendulum
 
 # package
 from idaes.dmf import DMF, DMFConfig, resource
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
-from idaes.dmf.util import ColorTerm, yaml_load
+from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
 
 __author__ = "Dan Gunter"
 
@@ -326,7 +324,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
                 (sum((fp.stat().st_size for fp in fd.glob("*"))) for fd in fdirs)
             )
             print(
-                item_fn("total_size", humanize.naturalsize(total_size), before=indent)
+                item_fn("total_size", size_prefix(total_size), before=indent)
             )
         if thing == "htmldocs" or thing == "all":
             indent = indent_spc
@@ -785,25 +783,20 @@ def find(
 
 def _date_query(datestr):
     """Transform date(s) into a query.
+
+    Raises:
+        ValueError: If date parsing fails
     """
 
     def _ts(x):  # get timestamp of date or time
         try:
             return x.timestamp()
         except AttributeError:
-            return datetime.datetime(*x.timetuple()[:6]).timestamp()
+            return datetime(*x.timetuple()[:6]).timestamp()
 
     dates = datestr.split("..", 1)
     _log.debug(f"date '{datestr}', split: {dates}")
-    try:
-        parsed_dates = [
-            pendulum.parser.parse(d, exact=True, tz=pendulum.local_timezone())
-            if d
-            else None
-            for d in dates
-        ]
-    except pendulum.exceptions.ParserError as err:
-        raise ValueError(str(err))
+    parsed_dates = [parse_datetime(d) if d else None for d in dates]
     if len(parsed_dates) == 2:
         begin_date, end_date = parsed_dates
         query = {}
@@ -813,7 +806,7 @@ def _date_query(datestr):
             query['$le'] = _ts(end_date)
     else:
         pd = parsed_dates[0]
-        if isinstance(pd, pendulum.Pendulum):
+        if isinstance(pd, datetime):
             _log.warning("datetime given, must match to the second")
             query = _ts(pd)
         else:
@@ -1152,7 +1145,7 @@ class _ShowInfo:
         val, result = self._resource.v, {}
 
         def dateize(v):
-            return pendulum.fromtimestamp(v).to_datetime_string()
+            return datetime.isoformat(datetime.fromtimestamp(v))
 
         for k, v in val.items():
             if k in ("created", "modified"):
@@ -1215,7 +1208,7 @@ class _IdentityField(_LsField):
 
 class _DateField(_LsField):
     def __str__(self):
-        return pendulum.fromtimestamp(self.value).to_datetime_string()
+        return datetime.isoformat(datetime.fromtimestamp(self.value))
 
 
 class _FilesField(_LsField):

@@ -4,13 +4,6 @@ Bubble and Dew Point Methods
 .. contents:: Contents 
     :depth: 3
 
-Introduction
-------------
-
-Bubble and dew points are often of interest to process engineers for designing process equipment, and appear in some calculations of other thermodynamic properties. Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations.
-
-The IDAES Generic Property Package Framework has a number of prebuilt methods for calculating the bubble and dew points of mixtures which are listed below.
-
 Ideal Assumptions
 -----------------
 

@@ -95,6 +95,7 @@ To determine what terms are required for the balance equations, the Control Volu
 * ``has_heat_of_reaction``
 * ``has_heat_transfer``
 * ``has_work_transfer``
+* ``has_enthalpy_transfer``
 * ``has_pressure_change``
 * ``property_package``
 * ``property_package_args``

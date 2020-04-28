@@ -48,7 +48,6 @@ kwargs = dict(
         "click",
         "colorama",
         "flask", # for ui/fsvis
-        "humanize",
         "jupyter",
         "lxml",
         "matplotlib",
@@ -58,7 +57,6 @@ kwargs = dict(
         "numpy",
         "networkx",
         "pandas",
-        "pendulum==1.4.4",
         "pint",
         "psutil",
         "pyomo",
@@ -97,7 +95,11 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
-            "sphinx-rtd-theme>=0.1.9",
+            # temporarily hold sphinx version to avoid bug with 3.x
+            # -dang 4/22/2020
+            "sphinx<3.0.0",
+            # note: 4/22/2020, removed the version requirement here
+            "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
             "sphinx-argparse",
         ]
