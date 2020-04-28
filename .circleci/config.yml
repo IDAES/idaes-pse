@@ -5,7 +5,11 @@ shared-dev: &shared-dev
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip uninstall -y pyomo 
+    - run:
+        name: Create Python 3.7 Conda environment
+        command: |
+          conda create -yv -n idaes37dev python=3.7 pip psutil
+    - run: source activate idaes37dev
     - run: pip install --progress-bar=off -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
     - run: cd docs && python build.py
@@ -19,7 +23,11 @@ shared: &shared
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip uninstall -y pyomo
+    - run:
+        name: Create Python 3.7 Conda environment
+        command: |
+          conda create -yv -n idaes37 python=3.7 pip psutil
+    - run: source activate idaes37
     - run: pip install --progress-bar=off -r requirements.txt
     - run: idaes get-extensions --platform ubuntu1804
     - run: pyomo --version
