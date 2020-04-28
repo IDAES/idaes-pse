@@ -96,10 +96,20 @@ def test_tag_reference():
 def test_SimpleVarLikeExpression():
     m = ConcreteModel()
 
-    m.e = VarLikeExpression(expr=42)
+    # Need a Var to use in the Expression to avoid being able to set the value
+    # of a float
+    m.v = Var(initialize=42)
+
+    m.e = VarLikeExpression(expr=m.v)
 
     assert m.e.type() is Expression
     assert not m.e.is_indexed()
+    assert m.e.value == 42
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and does not have a value "
+                       "which can be set."):
+        m.e.value = 10
 
     with pytest.raises(TypeError,
                        match="e is an Expression and can not have bounds. "
@@ -121,7 +131,11 @@ def test_SimpleVarLikeExpression():
 def test_IndexedVarLikeExpression():
     m = ConcreteModel()
 
-    m.e = VarLikeExpression([1, 2, 3, 4], expr=42)
+    # Need a Var to use in the Expression to avoid being able to set the value
+    # of a float
+    m.v = Var(initialize=42)
+
+    m.e = VarLikeExpression([1, 2, 3, 4], expr=m.v)
 
     assert m.e.type() is Expression
     assert m.e.is_indexed()
@@ -143,6 +157,13 @@ def test_IndexedVarLikeExpression():
         m.e.unfix()
 
     for i in m.e:
+        assert m.e[i].value == 42
+
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and does not have "
+                           "a value which can be set.".format(i)):
+            m.e[i].value = 10
+
         with pytest.raises(TypeError,
                            match="e\[{}\] is an Expression and can not have "
                            "bounds. Use an inequality Constraint instead."

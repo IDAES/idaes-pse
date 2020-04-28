@@ -204,6 +204,18 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
 
     # Define methods for common APIs on Vars in case user mistakes
     # an Expression for a Var
+    @property
+    def value(self):
+        # Overload value so it behaves like a Var
+        return pyo.value(self.expr)
+
+    @value.setter
+    def value(self, expr):
+        # Overload value seter to prevent users changing the expression body
+        raise TypeError(
+            "%s is an Expression and does not have a value which can be set."
+            % (self.name))
+
     def setlb(self, val=None):
         raise TypeError(
             "%s is an Expression and can not have bounds. "
@@ -247,13 +259,14 @@ class VarLikeExpression(pyo.Expression):
     Skip            = (1000,)
 
     def __new__(cls, *args, **kwds):
-        if cls != VarLikeExpression:
+        if cls is not VarLikeExpression:
             return super(VarLikeExpression, cls).__new__(cls)
         if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
-            return AbstractSimpleVarLikeExpression.__new__(
+            return super(VarLikeExpression, cls).__new__(
                 AbstractSimpleVarLikeExpression)
         else:
-            return IndexedVarLikeExpression.__new__(IndexedVarLikeExpression)
+            return super(VarLikeExpression, cls).__new__(
+                IndexedVarLikeExpression)
 
 
 class SimpleVarLikeExpression(_GeneralVarLikeExpressionData,
@@ -285,7 +298,7 @@ class SimpleVarLikeExpression(_GeneralVarLikeExpressionData,
         return self
 
 
-@disable_methods({'set_value', 'is_constant', 'is_fixed'})
+@disable_methods({'set_value', 'is_constant', 'is_fixed', 'expr'})
 class AbstractSimpleVarLikeExpression(SimpleVarLikeExpression):
     pass
 
@@ -301,8 +314,7 @@ class IndexedVarLikeExpression(VarLikeExpression):
     #
     def add(self, index, expr):
         """Add an expression with a given index."""
-        if (type(expr) is tuple) and \
-            (expr == pyo.Expression.Skip):
+        if (type(expr) is tuple) and (expr == pyo.Expression.Skip):
             return None
         cdata = _GeneralVarLikeExpressionData(expr, component=self)
         self._data[index] = cdata
