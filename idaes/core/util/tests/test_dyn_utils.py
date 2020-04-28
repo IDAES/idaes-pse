@@ -531,12 +531,3 @@ def test_get_implicit_index_of_set():
         get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
 
 
-if __name__ == "__main__":
-    test_is_indexed_by()
-    test_get_index_set_except()
-    test_fix_and_deactivate()
-    test_copy_non_time_indexed_values()
-    test_find_comp_in_block()
-    test_find_comp_in_block_at_time()
-    test_get_location_of_coordinate_set()
-    test_get_implicit_index_of_set()
