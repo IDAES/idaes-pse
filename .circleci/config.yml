@@ -9,14 +9,17 @@ shared-dev: &shared-dev
         name: Create Python 3.7 Conda environment
         command: |
           conda create -yv -n idaes37dev python=3.7 pip psutil
-    - run: source activate idaes37dev
-    - run: pip install --progress-bar=off -r requirements-dev.txt
-    - run: pylint -E --ignore-patterns="test_.*" idaes || true
-    - run: cd docs && python build.py
-    - run: idaes get-extensions
-    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
-    - run: coverage xml
-    - run: coveralls
+    - run:
+        name: Install and run tests in Python 3.7 dev Conda environment
+        command: |
+          source activate idaes37dev
+          pip install --progress-bar=off -r requirements-dev.txt
+          pylint -E --ignore-patterns="test_.*" idaes || true
+          cd docs && python build.py
+          idaes get-extensions
+          pytest -c pytest-dev.ini idaes -m "not nocircleci"
+          coverage xml
+          coveralls
 
 shared: &shared
   working_directory: ~/repo
@@ -27,11 +30,14 @@ shared: &shared
         name: Create Python 3.7 Conda environment
         command: |
           conda create -yv -n idaes37 python=3.7 pip psutil
-    - run: source activate idaes37
-    - run: pip install --progress-bar=off -r requirements.txt
-    - run: idaes get-extensions --platform ubuntu1804
-    - run: pyomo --version
-    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+    - run:
+        name: Install and run tests in Python 3.7 Conda environment
+        command: |
+          source activate idaes37
+          pip install --progress-bar=off -r requirements.txt
+          idaes get-extensions --platform ubuntu1804
+          pyomo --version
+          pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
   "python-3.7":
