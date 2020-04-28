@@ -28,6 +28,7 @@ variables to calculate additional scaling factors.
 import enum
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -338,82 +339,78 @@ def grad_fd(c, scaled=False, h=1e-6):
     return grad, vars
 
 
-def scale_constraint(c, v=None):
-    """This transforms a constraint with its scaling factor or a given scaling
-    factor value.  If it uses the value from the scaling factor suffix, the
-    value in the scaling factor suffix is set to 1 to avoid double scaling the
-    constraint.
+def scale_single_constraint(c):
+    """This transforms a constraint with its scaling factor. If there is no
+    scaling factor for the constraint, the constraint is not scaled and a
+    message is logged.
 
     Args:
         c: Pyomo constraint
-        v: Scale factor. If None, use value from scaling factor suffix and set
-            value to 1.
 
     Returns:
         None
     """
-    if v is None:
-        try:
-            v = c.parent_block().scaling_factor[c]
-            c.parent_block().scaling_factor[c] = 1
-        except:
-            v = None
+    try:
+        v = c.parent_block().scaling_factor[c]
+    except AttributeError:
+        raise ConfigurationError(
+            "There is no scaling factor suffix for the {} block, so the {} "
+            "constraint cannot be scaled.".format(c.parent_block().name,c.name))
+    except KeyError:
+        v = None
+        _log.info('{} constraint has no scaling factor and was not scaled. It '
+                  'is recommended to provide a scaling factor for all '
+                  'constraints and variables, even if it is well scaled '
+                  '(i.e. scaling factor = 1).'
+                  .format(c.name))
 
     if v is not None:
-        tpl = ()
+        lst = []
         for prop in ['lower', 'body', 'upper']:
             c_prop = getattr(c, prop)
             if c_prop is not None:
                 c_prop = c_prop * v
-            tpl = tpl + (c_prop,)
-        c.set_value(tpl)  # set the scaled lower, body, and upper
+            lst.append(c_prop)
+        c.set_value(tuple(lst))  # set the scaled lower, body, and upper
 
-
-def scale_block_constraints(b, sf=None):
-    """This transforms all constraints in a block with the scaling factor suffix
-    or a specified scaling factor suffix. After scaling the constraints, the
-    scaling factor for each constraint is set to 1 to avoid double scaling the
-    constraints.
+def _scale_block_constraints(b):
+    """PRIVATE FUNCTION
+    Scales all of the constraints in a block. Does not descend into other
+    blocks.
 
     Args:
-        b: block
-        sf: scaling factor suffix. If None, use scaling factor suffix for the
-        block.
+        b: Pyomo block
 
     Returns:
         None
     """
+    if not hasattr(b,'scaling_factor'):
+        raise ConfigurationError(
+            "There is no scaling factor suffix for the {} block, so its "
+            "constraints cannot be scaled.".format(b.name))
 
-    if sf is None:
-        try:
-            sf = b.scaling_factor
-        except:
-            sf = None
-
-    if sf is not None:
-        for c in b.component_objects(pyo.Constraint):
-            try:
-                v = sf[c]
-            except:
-                v = None
-            scale_constraint(c, v=v)
-            sf[c] = 1
+    for c in b.component_objects(pyo.Constraint, descend_into=False):
+        scale_single_constraint(c)
 
 
-def scale_model_constraints(m):
-    """This transforms all constraints in a block with their scaling factor
-    suffix. After scaling the constraints, the scaling factor for each
-    constraint is set to 1 to avoid double scaling the constraints.
-    This can be used to scale constraints before sending the model
-    to the solver.
+def scale_constraints(blk, descend_into=True):
+    """This scales all constraints with their scaling factor suffix for a model
+    (default, descend_into = True) or block (descend_into = False). After
+    scaling the constraints, the scaling factor for each constraint is set to 1
+    to avoid double scaling the constraints.
+
     Args:
-        m: model
+        blk: Pyomo block
+        descend_into: indicates whether to descend into the other blocks on
+            block b.
 
     Returns:
         None
     """
-
-    pass
+    _scale_block_constraints(blk)
+    if descend_into:
+        for b in blk.component_objects(pyo.Block, descend_into=True):
+            _scale_block_constraints(b)
 
 
 def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
