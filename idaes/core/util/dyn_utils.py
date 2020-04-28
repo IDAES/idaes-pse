@@ -602,11 +602,21 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
         # for which [r[1]] will result in a KeyError.
         try:
             local_parent = getattr(local_parent, r[0])[r[1]]
-        except (AttributeError, KeyError):
+        except AttributeError:
             if allow_miss:
                 return None
             else:
-                raise
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(r[1]),
+                        getattr(local_parent, r[0]).name))
 
     # This logic should return the IndexedComponent or ComponentData,
     # whichever is appropriate
@@ -616,7 +626,10 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
         if allow_miss:
             return None
         else:
-            raise
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name,
+                    src_comp.parent_component().local_name))
     # tgt_comp is now an indexed component or simple component
 
     if hasattr(src_comp, 'index'):
@@ -628,7 +641,10 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
 
     return tgt_comp
 
@@ -681,7 +697,9 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
 
         index = r[1]
 
@@ -705,7 +723,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        local_parent.name))
 
     # This logic should return the IndexedComponent or ComponentData,
     # whichever is appropriate
@@ -715,7 +736,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
         if allow_miss:
             return None
         else:
-            raise
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name, 
+                    src_comp.parent_component().local_name))
     # tgt_comp is now an indexed component or simple component
 
     if hasattr(src_comp, 'index'):
@@ -740,7 +764,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
 
     return tgt_comp
 

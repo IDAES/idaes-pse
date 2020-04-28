@@ -407,9 +407,10 @@ def test_find_comp_in_block():
     v3 = m2.b1[3].v[4]
 
     # These should result in Attribute/KeyErrors
-    with pytest.raises(AttributeError):
+
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
         find_comp_in_block(m1, m2, v2)
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
         find_comp_in_block(m1, m2, v3)
     assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
@@ -457,9 +458,9 @@ def test_find_comp_in_block_at_time():
     v4 = m2.b[4].v[1]
 
     # Should result in exceptions:
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
         find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
         find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
     assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
     assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
