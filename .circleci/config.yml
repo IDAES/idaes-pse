@@ -14,9 +14,10 @@ shared-dev: &shared-dev
         command: |
           source activate idaes37dev
           pip install --progress-bar=off -r requirements-dev.txt
+          idaes get-extensions
           pylint -E --ignore-patterns="test_.*" idaes || true
           cd docs && python build.py
-          idaes get-extensions
+          cd ..
           pytest -c pytest-dev.ini idaes -m "not nocircleci"
           coverage xml
           coveralls
