@@ -26,7 +26,8 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase)
+                        Phase, LiquidPhase, VaporPhase)
+from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import (ConfigurationError)
 
 
@@ -118,6 +119,47 @@ class TestGenericParameterBlock(object):
                                "equation_of_state": "foo"},
                         "p2": {"equation_of_state": "bar"}}})
 
+    def test_invalid_component_in_phase_component_list_2(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params phase-component list for phase p1 "
+                           "contained component a, however this component is "
+                           "not valid for the given PhaseType"):
+            m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"valid_phase_types": PT.solidPhase},
+                        "b": {},
+                        "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": "foo"},
+                        "p2": {"equation_of_state": "bar"}}})
+
+    def test_phase_component_set_from_valid_phases(self):
+        m = ConcreteModel()
+
+        m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"valid_phase_types": PT.liquidPhase},
+                    "b": {"valid_phase_types": PT.vaporPhase},
+                    "c": {"valid_phase_types": [PT.liquidPhase,
+                                                PT.vaporPhase]}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "equation_of_state": "foo"},
+                    "p2": {"type": VaporPhase,
+                           "equation_of_state": "bar"}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+        assert len(m.params._phase_component_set) == 4
+        for i in m.params._phase_component_set:
+            assert i in [("p1", "a"), ("p1", "c"),
+                         ("p2", "b"), ("p2", "c")]
+
     def test_no_state_definition(self):
         m = ConcreteModel()
 
@@ -195,7 +237,7 @@ class TestGenericParameterBlock(object):
             "pressure_ref": 1e5,
             "temperature_ref": 300,
             "phases_in_equilibrium": [("p1", "p2")],
-            "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+            "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
         assert isinstance(m.params.phase_equilibrium_idx, Set)
         assert len(m.params.phase_equilibrium_idx) == 3
@@ -227,7 +269,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
     def test_phases_in_equilibrium_missing_pair_form(self):
         m = ConcreteModel()
@@ -251,7 +293,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
     def test_phases_in_equilibrium_no_formulation(self):
         m = ConcreteModel()
@@ -260,7 +302,7 @@ class TestGenericParameterBlock(object):
                            match="params Generic Property Package provided "
                            "with a phases_in_equilibrium argument but no "
                            "method was specified for "
-                           "phase_equilibrium_formulation."):
+                           "phase_equilibrium_state."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
@@ -280,7 +322,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package provided "
                            "with a phases_in_equilibrium argument but "
-                           "phase_equilibrium_formulation was not specified "
+                           "phase_equilibrium_state was not specified "
                            "for all phase pairs."):
             # Also reverse order of phases for component a - this should pass
             # and component b should be flagged as missing
@@ -296,7 +338,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_formulation": {(1, 2): "whoop"}})
+                "phase_equilibrium_state": {(1, 2): "whoop"}})
 
     def test_parameter_construction_no_value(self):
         m = ConcreteModel()

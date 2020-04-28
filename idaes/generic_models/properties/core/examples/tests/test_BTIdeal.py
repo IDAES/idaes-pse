@@ -31,11 +31,14 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
-    import BTIdealParameterBlock
+    import configuration
 
 
 # -----------------------------------------------------------------------------
@@ -46,7 +49,7 @@ solver = get_default_solver()
 class TestParamBlock(object):
     def test_build(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=configuration)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -75,7 +78,7 @@ class TestParamBlock(object):
                 "temperature": (273.15, 450),
                 "pressure": (5e4, 1e6)}
 
-        assert model.params.config.phase_equilibrium_formulation == {
+        assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
@@ -95,7 +98,7 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=configuration)
 
         model.props = model.params.build_state_block(
                 [1],
