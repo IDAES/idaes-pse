@@ -89,7 +89,6 @@ class NMPCVarGroup(object):
             self.index_set = None
             self.t0 = None
         else:
-
             self.index_set = self.validate_index_set(index_set)
             self.t0 = self.index_set.first()
 
@@ -196,22 +195,11 @@ class ControlInitOption(NMPCEnum):
     BY_TIME_ELEMENT = 12
     FROM_INITIAL_CONDITIONS = 13
 
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        #pdb.set_trace()
-        return super(ControlInitOption, cls).from_enum_or_string(arg)
-        # Why does this work but super(NMPCEnum, cls) does not?
-        # Why is super(cls, cls) wrong?
-
 
 class ElementInitializationInputOption(NMPCEnum):
     SET_POINT = 21
     INITIAL = 22
     CURRENT_VALUES = 23
-
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        return super(ElementInitializationInputOption, cls).from_enum_or_string(arg)
 
 
 class TimeResolutionOption(NMPCEnum):
@@ -220,19 +208,11 @@ class TimeResolutionOption(NMPCEnum):
     SAMPLE_POINTS = 33
     INITIAL_POINT = 34
 
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        return super(TimeResolutionOption, cls).from_enum_or_string(arg)
-
 
 class ControlPenaltyType(NMPCEnum):
     ERROR = 41
     ACTION = 42
     NONE = 43
-
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        return super(ControlPenaltyType, cls).from_enum_or_string(arg)
 
 
 class VariableCategory(NMPCEnum):
@@ -242,10 +222,6 @@ class VariableCategory(NMPCEnum):
     INPUT = 54
     FIXED = 55
     SCALAR = 56
-
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        return super(VariableCategory, cls).from_enum_or_string(arg)
 
 
 # This function is used as the domain for the user-provided
@@ -274,8 +250,13 @@ def validate_list_of_vardata_value_tuples(varvaluelist):
 
 
 def validate_solver(solver):
-    if not isinstance(solver, SystemCallSolver):
-        raise(TypeError, 'Solver is not a SystemCallSolver')
+    if type(solver) is str:
+        solver = SolverFactory(solver)
+    if not hasattr(solver, 'solve'):
+        raise TypeError(
+            'Solver does not implement solve method')
+#    if not isinstance(solver, SystemCallSolver):
+#        raise(TypeError, 'Solver is not a SystemCallSolver')
     return solver
 
 
