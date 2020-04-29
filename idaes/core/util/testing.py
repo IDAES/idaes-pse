@@ -117,6 +117,10 @@ class StateTestBlockData(StateBlockData):
                                         initialize=50)
         self.entr_mol = Var(initialize=1000)
 
+        self.mole_frac_phase_comp = Var(self.params.phase_list,
+                                        self.params.component_list,
+                                        initialize=0.5)
+
     def get_material_flow_terms(b, p, j):
         return b.test_var
 
