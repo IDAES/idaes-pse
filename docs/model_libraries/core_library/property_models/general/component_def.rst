@@ -22,7 +22,7 @@ The configuration arguments for each chemical species are used to define methods
 Valid Phases
 ^^^^^^^^^^^^
 
-In many cases, a given chemical species can only exist in certain phases; the most common example being ionic solids which dissociate upon dissolution (thus forming new ionic species in an aqueous phase). For each component, the user can set a list of the valid phase types for the component (liquid, vapor and/or solid) using the `valid_phase_types" configuration argument. This configuration argument should be a list containing `PhaseType` `Enums` (imported from `idaes.core.phases`) indicating the types of phases in which this component can exist.
+In many cases, a given chemical species can only exist in certain phases; the most common example being ionic solids which dissociate upon dissolution (thus forming new ionic species in an aqueous phase). For each component, the user can set a list of the valid phase types for the component (liquid, vapor and/or solid) using the `valid_phase_types` configuration argument. This configuration argument should be a list containing `PhaseType` `Enums` (imported from `idaes.core.phases`) indicating the types of phases in which this component can exist.
 
 This information is used by the Generic Property Framework to automatically determine the valid phase-component pairs for the user defined system. Users can override this automatic definition by providing a component list for a given phase in the definition of each `Phase` as discussed later (note however that user-defined phase-component lists are validated against the valid phases, and an exception will be raised if a component is assigned in a phase for which it is not valid).
 

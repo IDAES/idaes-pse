@@ -30,9 +30,9 @@ from pyomo.common.config import ConfigValue
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock,
-                        Component)
-from idaes.core.phases import Phase
+                        StateBlock)
+from idaes.core.components import Component, __all_components__
+from idaes.core.phases import Phase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -220,6 +220,10 @@ class GenericParameterData(PhysicalParameterBlock):
                              "Using generic Component object."
                              .format(self.name, c))
                 ctype = Component
+            elif ctype not in __all_components__:
+                raise TypeError(
+                    "{} component {} was assigned unrecognised type {}."
+                    .format(self.name, c, str(ctype)))
 
             self.add_component(c, ctype(default=d))
 
@@ -237,6 +241,10 @@ class GenericParameterData(PhysicalParameterBlock):
                              "Using generic Phase object."
                              .format(self.name, p))
                 ptype = Phase
+            elif ptype not in __all_phases__:
+                raise TypeError(
+                    "{} phase {} was assigned unrecognised type {}."
+                    .format(self.name, p, str(ptype)))
 
             self.add_component(str(p), ptype(default=d))
 
@@ -247,7 +255,7 @@ class GenericParameterData(PhysicalParameterBlock):
             pc_list = self.get_phase(p).config.component_list
             if pc_list is None:
                 # No phase-component list, look at components to determine
-                # whihc are valid in current phase
+                # which are valid in current phase
                 for j in self.component_list:
                     if self.get_component(j)._is_phase_valid(pobj):
                         # If compoennt says phase is valid, add to set

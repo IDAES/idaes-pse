@@ -133,3 +133,7 @@ class VaporPhaseData(PhaseData):
 
     def is_vapor_phase(self):
         return True
+
+
+# List of all Phase types to use for validation
+__all_phases__ = [Phase, LiquidPhase, SolidPhase, VaporPhase]
