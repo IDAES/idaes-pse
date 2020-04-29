@@ -12,17 +12,27 @@ _conda36: &conda36
     name: Create Python 3.6 conda environment
     command: conda create -yv -n idaes python=3.6
 
+_install: &install
+  run:
+    name: Install idaes and extensions
+    command: |
+        source activate idaes
+        export LC_ALL=C.UTF-8 LANG=C.UTF-8
+        python -m pip install --progress-bar=off -r requirements.txt
+        idaes get-extensions --platform ubuntu1804
+        export PATH=$HOME/.idaes/bin:$PATH
+        export LD_LIBRARY_PATH=$HOME/.idaes/lib
+        pytest -c pytest.ini idaes -m "not nocircleci"
+
 _pytest: &pytest
   run:
-    name: Install extensions and run tests in Python conda environment
+    name: Run tests
     command: |
-      source activate idaes
-      export LC_ALL=C.UTF-8 LANG=C.UTF-8
-      python -m pip install --progress-bar=off -r requirements.txt
-      idaes get-extensions
-      export PATH=$HOME/.idaes/bin:$PATH
-      export LD_LIBRARY_PATH=$HOME/.idaes/lib
-      pytest -c pytest.ini idaes -m "not nocircleci"
+        source activate idaes
+        export LC_ALL=C.UTF-8 LANG=C.UTF-8
+        export PATH=$HOME/.idaes/bin:$PATH
+        export LD_LIBRARY_PATH=$HOME/.idaes/lib
+        pytest -c pytest.ini idaes -m "not nocircleci"
 
 _clone_examples: &clone_examples
   run:
@@ -63,6 +73,7 @@ jobs:
     steps:
         - checkout
         - <<: *conda36
+        - <<: *install
         - <<: *pytest
 
   # Python 3.7 non-developer
@@ -73,6 +84,7 @@ jobs:
     steps:
         - checkout
         - <<: *conda37
+        - <<: *install
         - <<: *pytest
 
   # Python 3.7 developer
@@ -83,6 +95,7 @@ jobs:
     steps:
         - checkout
         - <<: *conda37
+        - <<: *install
         - <<: *pytest
         - <<: *pylint
         - <<: *coverage
@@ -95,6 +108,7 @@ jobs:
     steps:
         - checkout
         - <<: *conda37
+        - <<: *install
         - <<: *pytest
         - <<: *clone_examples
         - <<: *test_examples
