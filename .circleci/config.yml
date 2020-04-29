@@ -6,12 +6,10 @@ _conda37: &conda37
   step:
     name: Create Python 3.7 conda environment
     command: conda create -yv -n idaes python=3.7
-
 _conda36: &conda36
   step:
     name: Create Python 3.6 conda environment
     command: conda create -yv -n idaes python=3.6
-
 _pytest: &pytest
   step:
     name: Install extensions and run tests in Python conda environment
@@ -20,12 +18,10 @@ _pytest: &pytest
       python -m pip install --progress-bar=off -r requirements.txt
       idaes get-extensions
       pytest -c pytest.ini idaes -m "not nocircleci"
-
 _clone_examples: &clone_examples
   step:
     name: Clone examples-dev
     command: git clone git@github.com:IDAES/examples-dev.git
-
 _test_examples: &test_examples
   step:
     name: Run examples-dev tests
@@ -46,9 +42,9 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~/repo
     steps:
-      - checkout
-      - <<: *conda36
-      - <<: *pytest
+        - checkout
+        - <<: *conda36
+        - <<: *pytest
 
   # Python 3.7 non-developer
   python37:
@@ -56,9 +52,9 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~/repo
     steps:
-      - checkout
-      - <<: *conda37
-      - <<: *pytest
+        - checkout
+        - <<: *conda37
+        - <<: *pytest
 
   # Python 3.7 examples
   examples37:
@@ -66,11 +62,11 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~/repo
     steps:
-      - checkout
-      - <<: *conda37
-      - <<: *pytest
-      - <<: *clone_examples
-      - <<: *test_examples
+        - checkout
+        - <<: *conda37
+        - <<: *pytest
+        - <<: *clone_examples
+        - <<: *test_examples
 
   "pip-install":
     docker:
@@ -99,9 +95,9 @@ workflows:
   version: 2
   build:
     jobs:
-      - python36
-      - python37
-      - examples37
+        - python36
+        - python37
+        - examples37
   nightly:
     triggers:
       - schedule:
