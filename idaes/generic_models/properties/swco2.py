@@ -66,7 +66,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 
 # Logger
 _log = idaeslog.getLogger(__name__)
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 
 def swco2_available():
