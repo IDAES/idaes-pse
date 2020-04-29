@@ -26,7 +26,7 @@ from __future__ import division
 from pyomo.environ import Reals, Param, NonNegativeReals, Set
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class
+from idaes.core import declare_process_block_class, Component
 from idaes.core.util.misc import extract_data
 
 from idaes.generic_models.properties.cubic_eos.cubic_prop_pack import (
@@ -49,11 +49,9 @@ class BTParameterData(CubicParameterData):
 
         self.cubic_type = CubicEoS.PR
 
-        self.component_list = Set(initialize=['benzene', 'toluene'])
-
-        # List of components in each phase (optional)
-        self.phase_comp = {"Liq": self.component_list,
-                           "Vap": self.component_list}
+        # Add Component objects
+        self.benzene = Component()
+        self.toluene = Component()
 
         # List of phase equilibrium index
         self.phase_equilibrium_idx = Set(initialize=[1, 2])

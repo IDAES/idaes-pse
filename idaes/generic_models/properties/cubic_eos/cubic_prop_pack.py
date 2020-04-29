@@ -39,7 +39,6 @@ from pyomo.environ import (Constraint,
                            ExternalFunction,
                            log,
                            NonNegativeReals,
-                           Set,
                            SolverFactory,
                            sqrt,
                            Param,
@@ -55,14 +54,16 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        LiquidPhase,
+                        VaporPhase)
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             fix_state_vars,
                                             revert_state_vars)
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
-from idaes import lib_directory
+from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
@@ -72,7 +73,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Set path to root finder .so file
-_so = os.path.join(lib_directory, "cubic_roots.so")
+_so = os.path.join(bin_directory, "cubic_roots.so")
 
 
 def cubic_roots_available():
@@ -120,17 +121,18 @@ conditions, and thus corresponding constraints  should be included,
         '''
         super(CubicParameterData, self).build()
 
-        self.state_block_class = CubicStateBlock
+        self._state_block_class = CubicStateBlock
 
-        # List of valid phases in property package
+        # Create Phase objects
         if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Liq':
+            self.Liq = LiquidPhase()
+
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Vap':
+            self.Vap = VaporPhase()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -494,7 +496,7 @@ class _CubicStateBlock(StateBlock):
                                     "_teq_constraint"):
                     c.activate()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Phase equilibrium init: {}.".format(
             idaeslog.condition(results))
         )
@@ -508,7 +510,7 @@ class _CubicStateBlock(StateBlock):
                     c.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Property init: {}.".format(
             idaeslog.condition(results))
         )

@@ -581,7 +581,9 @@ def path_from_block(comp, blk, include_comp=False):
 def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
     """This function finds a component in a source block, then uses the same
     local names and indices to try to find a corresponding component in a target
-    block. 
+    block. This is used when we would like to verify that a component of the 
+    same name exists in the target block, as in model predictive control where
+    certain variables must be correllated between plant and controller model.
 
     Args:
         tgt_block : Target block that will be searched for component
@@ -604,12 +606,17 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
             if allow_miss:
                 return None
             else:
-                raise
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
         except KeyError:
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(r[1]),
+                        getattr(local_parent, r[0]).name))
 
     # This logic should return the IndexedComponent or ComponentData,
     # whichever is appropriate
@@ -619,7 +626,10 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
         if allow_miss:
             return None
         else:
-            raise
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name,
+                    src_comp.parent_component().local_name))
     # tgt_comp is now an indexed component or simple component
 
     if hasattr(src_comp, 'index'):
@@ -631,7 +641,10 @@ def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
 
     return tgt_comp
 
@@ -641,7 +654,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
     """This function finds a component in a source block, then uses the same
     local names and indices to try to find a corresponding component in a target
     block, with the exception of time index in the target component, which is
-    replaced by a specified time point.
+    replaced by a specified time point. This is used for validation of a
+    component by its name in the case where blocks may differ by at most time
+    indices, for example validating a steady-state model or a model with a
+    different time discretization.
 
     Args:
         tgt_block : Target block that will be searched for component
@@ -657,9 +673,15 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
     # Could extend this to allow replacing indices of multiple sets
     # (useful for PDEs)
 
-    assert t0 in time
-    assert time.model() is tgt_block.model()
-    assert src_block.model() is src_comp.model()
+    if t0 not in time:
+        raise KeyError(
+            't0 must be in the time set')
+    if time.model() is not tgt_block.model():
+        raise ValueError(
+            'time must belong to the same model as the target block')
+    if src_block.model() is not src_comp.model():
+        raise ValueError(
+            'src_block and src_comp must be components of the same model')
 
     local_parent = tgt_block
     for r in path_from_block(src_comp, src_block, include_comp=False):
@@ -675,7 +697,9 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
 
         index = r[1]
 
@@ -699,7 +723,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        local_parent.name))
 
     # This logic should return the IndexedComponent or ComponentData,
     # whichever is appropriate
@@ -709,7 +736,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
         if allow_miss:
             return None
         else:
-            raise
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name, 
+                    src_comp.parent_component().local_name))
     # tgt_comp is now an indexed component or simple component
 
     if hasattr(src_comp, 'index'):
@@ -734,7 +764,10 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
             if allow_miss:
                 return None
             else:
-                raise
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
 
     return tgt_comp
 

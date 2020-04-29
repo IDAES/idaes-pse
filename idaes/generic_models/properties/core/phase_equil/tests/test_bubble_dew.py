@@ -17,17 +17,15 @@ Authors: Andrew Lee
 """
 
 import pytest
-import types
 from sys import modules
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
-                           Block,
-                           Set,
                            value,
                            Var)
 
-from idaes.generic_models.properties.core.phase_equil import bubble_dew
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
+    IdealBubbleDew
 from idaes.core import declare_process_block_class
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
@@ -38,8 +36,13 @@ from idaes.generic_models.properties.core.generic.tests import dummy_eos
 Psat = {"H2O": 1e5, "EtOH": 5e4}
 
 
+# Dummy method to avoid errors when setting metadata dict
+def set_metadata(b):
+    pass
+
+
 def pressure_sat_comp(b, j, T):
-    return Psat[j]
+    return Psat[j.local_name]
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -61,16 +64,17 @@ def frame():
 
     # Dummy params block
     m.params = DummyParameterBlock(default={
-                "component_list": ["H2O", "EtOH"],
-                "phase_list": ["Liq", "Vap"],
+                "components": {
+                    "H2O": {"pressure_sat_comp": pressure_sat_comp},
+                    "EtOH": {"pressure_sat_comp": pressure_sat_comp}},
+                "phases": {"Liq": {"equation_of_state": dummy_eos},
+                           "Vap": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
-                "equation_of_state": {"Vap": dummy_eos,
-                                      "Liq": dummy_eos},
-                "pressure_sat_comp": pressure_sat_comp})
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
 
-    m.props = m.params.state_block_class([1],
-                                         default={"defined_state": False,
-                                         "parameters": m.params})
+    m.props = m.params.build_state_block([1],
+                                         default={"defined_state": False})
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
@@ -88,7 +92,7 @@ class TestBubbleTempIdeal(object):
         frame.props[1]._mole_frac_tbub = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.bubble_temp_ideal(frame.props[1])
+        IdealBubbleDew.temperature_bubble(frame.props[1])
 
         assert isinstance(frame.props[1].eq_temperature_bubble, Constraint)
         assert len(frame.props[1].eq_temperature_bubble) == 1
@@ -124,7 +128,7 @@ class TestDewTempIdeal(object):
         frame.props[1]._mole_frac_tdew = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.dew_temp_ideal(frame.props[1])
+        IdealBubbleDew.temperature_dew(frame.props[1])
 
         assert isinstance(frame.props[1].eq_temperature_dew, Constraint)
         assert len(frame.props[1].eq_temperature_dew) == 1
@@ -160,7 +164,7 @@ class TestBubblePresIdeal(object):
         frame.props[1]._mole_frac_pbub = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.bubble_press_ideal(frame.props[1])
+        IdealBubbleDew.pressure_bubble(frame.props[1])
 
         assert isinstance(frame.props[1].eq_pressure_bubble, Constraint)
         assert len(frame.props[1].eq_pressure_bubble) == 1
@@ -196,7 +200,7 @@ class TestDewPressureIdeal(object):
         frame.props[1]._mole_frac_pdew = Var(frame.params.component_list,
                                              initialize=0.5)
 
-        bubble_dew.dew_press_ideal(frame.props[1])
+        IdealBubbleDew.pressure_dew(frame.props[1])
 
         assert isinstance(frame.props[1].eq_pressure_dew, Constraint)
         assert len(frame.props[1].eq_pressure_dew) == 1
