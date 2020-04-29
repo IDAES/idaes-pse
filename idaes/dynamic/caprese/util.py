@@ -255,8 +255,6 @@ def validate_solver(solver):
     if not hasattr(solver, 'solve'):
         raise TypeError(
             'Solver does not implement solve method')
-#    if not isinstance(solver, SystemCallSolver):
-#        raise(TypeError, 'Solver is not a SystemCallSolver')
     return solver
 
 
@@ -303,6 +301,26 @@ class NMPCVarLocator(object):
         if type(is_ic) is not bool:
             raise ValueError()
         self.is_ic = is_ic
+
+
+def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
+    if type(timepoints) is not list:
+        timepoints = [timepoints]
+    violated = []
+    for i, var in enumerate(group):
+        ub = group.ub[i]
+        lb = group.lb[i]
+        if ub is not None:
+            for t in timepoints:
+                if var[t].value - ub > tolerance:
+                    violated.append(var[t])
+                    continue
+        if lb is not None:
+            for t in timepoints:
+                if lb - var[t].value > tolerance:
+                    violated.append(var[t])
+                    continue
+    return violated
 
 
 def find_point_in_continuousset(point, cset, tolerance=1e-8):

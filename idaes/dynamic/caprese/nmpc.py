@@ -39,7 +39,8 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         TimeResolutionOption, ControlInitOption, ControlPenaltyType,
         VariableCategory, validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset)
+        NMPCVarGroup, find_point_in_continuousset,
+        get_violated_bounds_at_time)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -202,10 +203,8 @@ class NMPCSim(object):
     # Plus having a "config"-inside-a-config seems kind of wonky.
     CONFIG.declare('solver',
             ConfigValue(
-                default=SolverFactory('ipopt'),
-                # TODO: string ipopt, not SolverFactory
+                default='ipopt',
                 domain=validate_solver,
-                # ^ accept both strings and solvers
                 doc='Pyomo solver object to be used to solve generated NLPs'
                 )
             )
@@ -1402,7 +1401,7 @@ class NMPCSim(object):
         # ^ result should be that controller now has set point attributes
 
 
-    def add_setpoint_to_controller(self, objective_name='tracking_objective', 
+    def add_setpoint_to_controller(self, objective_name='tracking_objective',
             **kwargs):
         """User-facing function for the addition of a setpoint to the 
         controller. Assumes the controller model's setpoint attributes have
@@ -1421,6 +1420,7 @@ class NMPCSim(object):
         objective_state_categories = config.objective_state_categories
         time_resolution_option = config.time_resolution_option
         outlvl = config.outlvl
+        #objective_name = config.full_state_objective_name
 
         self.construct_objective_weights(self.c_mod,
                 objective_weight_override=weight_override,
@@ -1971,7 +1971,9 @@ class NMPCSim(object):
 
 
     def initialize_by_solving_elements(self, model, time,
-            input_type=ElementInitializationInputOption.SET_POINT):
+            input_type=ElementInitializationInputOption.SET_POINT,
+            objective_name='tracking_objective',
+            **kwargs):
         """Initializes the controller model by solving (a square simulation
         for) each time element.
 
@@ -1982,6 +1984,12 @@ class NMPCSim(object):
             telling how to fix the inputs for the simulation
 
         """
+        config = self.config(kwargs)
+        tol = config.tolerance
+        objective = getattr(model._NMPC_NAMESPACE, 
+                            objective_name)
+        namespace = model._NMPC_NAMESPACE
+
         # Strip bounds before simulation as square solves will be performed
         strip_controller_bounds = TransformationFactory(
                                       'contrib.strip_var_bounds')
@@ -2008,7 +2016,7 @@ class NMPCSim(object):
         # Deactivate objective function
         # Here I assume the name of the objective function.
         # TODO: ObjectiveType Enum and objective_dict
-        model._NMPC_NAMESPACE.tracking_objective.deactivate()
+        objective.deactivate()
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.c_mod, self.c_mod_time, 
@@ -2016,10 +2024,7 @@ class NMPCSim(object):
                     dae_vars=self.c_mod._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.c_mod._NMPC_NAMESPACE.diff_vars)
 
-        # Reactivate objective, pwc constraints, bounds
-        # TODO: safer objective name
-        # FIXME
-        self.c_mod._NMPC_NAMESPACE.tracking_objective.activate()
+        objective.activate()
         model._NMPC_NAMESPACE.pwc_constraint.activate()
 
         for _slice in self.c_mod._NMPC_NAMESPACE.input_vars:
@@ -2028,6 +2033,17 @@ class NMPCSim(object):
 
         # TODO: Check that no bounds are violated after square solves
         strip_controller_bounds.revert(self.c_mod)
+
+        timelist = list(time)
+        for cat, group in namespace.category_dict.items():
+            if (cat == VariableCategory.FIXED or cat == VariableCategory.INPUT
+                    or cat == VariableCategory.SCALAR):
+                continue
+            violated = get_violated_bounds_at_time(group, timelist, tol)
+            if violated:
+                raise ValueError(
+                    'Bounds violated after solving elements: %s'
+                    % str(violated))
 
 
     def initialize_from_previous_sample(self, model,

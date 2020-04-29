@@ -329,6 +329,32 @@ def test_add_noise_at_time():
                                      weights=[1,1,1,1,1],
                                      sig_0=0.05)
 
+    def test_get_violated_bounds_at_time():
+        m = ConcreteModel()
+        m.time = Set(initialize=[1,2,3])
+        m.v = Var(m.time, ['a','b','c'], initialize=5)
+
+        varlist = [Reference(m.v[:,'a']),
+                   Reference(m.v[:,'b']),
+                   Reference(m.v[:,'c'])]
+        group = NMPCVarGroup(varlist, m.time)
+        group.set_lb(0, 0)
+        group.set_lb(1, 6)
+        group.set_lb(2, 0)
+        group.set_ub(0, 4)
+        group.set_ub(1, 10)
+        group.set_ub(2, 10)
+        violated = get_violated_bounds_at_time(group, [1,2,3], tolerance=1e-8)
+        violated_set = ComponentSet(violated)
+        for t in m.time:
+            assert m.v[t,'a'] in violated_set
+            assert m.v[t,'b'] in violated_set
+
+        violated = get_violated_bounds_at_time(group, 2, tolerance=1e-8)
+        violated_set = ComponentSet(violated)
+        assert m.v[2,'a'] in violated_set
+        assert m.v[2,'b'] in violated_set
+
 
 if __name__ == '__main__':
     test_find_comp_in_block()
