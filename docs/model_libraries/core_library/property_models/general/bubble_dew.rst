@@ -4,10 +4,10 @@ Bubble and Dew Point Methods
 .. contents:: Contents 
     :depth: 3
 
-Ideal Assumptions
------------------
+Ideal Assumptions (IdealBubbleDew)
+----------------------------------
 
-In the case where ideal behavior can be assumed, i.e. Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
+In the case where ideal behavior can be assumed, i.e. ideal gas assumption and Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
 
 Ideal Bubble Pressure
 ^^^^^^^^^^^^^^^^^^^^^

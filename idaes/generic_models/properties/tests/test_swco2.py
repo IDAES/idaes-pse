@@ -24,7 +24,7 @@ import csv
 import os
 import idaes
 
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 def swco2_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows

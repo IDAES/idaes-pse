@@ -5,7 +5,7 @@ import os
 import importlib
 
 _log = logging.getLogger(__name__)
-default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/2.0.0/"
+default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/2.1.0dev0/"
 binary_platform_map = {
     "rhel6": "centos6",
     "rhel7": "centos7",
@@ -203,22 +203,14 @@ def get_data_directory():
     else:
         bin_directory = None
 
-    # Standard location for IDAES library files.
-    if data_directory is not None:
-        lib_directory = os.path.join(data_directory, "lib")
-    else:
-        lib_directory = None
-
-    return data_directory, bin_directory, lib_directory
+    return data_directory, bin_directory
 
 
-def setup_environment(bin_directory, lib_directory, use_idaes_solvers):
+def setup_environment(bin_directory, use_idaes_solvers):
     if use_idaes_solvers:
         # Add IDAES stuff to the path unless you configure otherwise
         os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
-        if os.name == 'nt':  # Windows (this is to find MinGW libs)
-            os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
-        else:
+        if os.name != 'nt':  # Windows (this is to find MinGW libs)
             os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
-                [os.environ.get('LD_LIBRARY_PATH', ''), lib_directory]
+                [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory]
             )
