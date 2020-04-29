@@ -18,6 +18,7 @@ Call functions defined in 'api' module to handle logic
 that is common to the API and CLI.
 """
 # stdlib
+from datetime import datetime
 import glob
 import json
 import logging
@@ -28,7 +29,6 @@ import sys
 
 # Third-party
 import jsonschema
-import pendulum
 
 # Local
 from .dmfbase import DMF, DMFConfig
@@ -317,8 +317,7 @@ def list_resources(path, long_format=None, relations=False):
         )
 
         def datestr(t):
-            p = pendulum.from_timestamp(t)
-            return p.to_datetime_string()
+            return datetime.isoformat(datetime.fromtimestamp(t))
 
         # table body
         for r in resources:

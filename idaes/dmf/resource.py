@@ -34,11 +34,10 @@ import uuid
 # third-party
 import jsonschema
 import pandas
-import pendulum
 import yaml
 
 # local
-from .util import datetime_timestamp
+from .util import datetime_timestamp, parse_datetime
 
 __author__ = "Dan Gunter"
 
@@ -279,7 +278,7 @@ class Resource(object):
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
 
     def _set_defaults(self):
-        now = date_float(pendulum.now())
+        now = datetime.now().timestamp()
         self.v = Dict(
             {
                 self.ID_FIELD: identifier_str(),
@@ -596,9 +595,7 @@ def date_float(value):
         raise ValueError('Cannot convert date "{}" to float: {}'.format(value, e))
 
     dt, usec = None, 0
-    if isinstance(value, pendulum.Pendulum):
-        return value.timestamp()
-    elif isinstance(value, datetime):
+    if isinstance(value, datetime):
         dt = value
     elif isinstance(value, tuple):
         try:
@@ -607,8 +604,8 @@ def date_float(value):
             bad_date(err)
     elif isinstance(value, str):
         try:
-            dt = pendulum.parse(value)
-        except pendulum.exceptions.ParserError as err:
+            dt = parse_datetime(value)
+        except ValueError as err:
             bad_date(err)
     elif isinstance(value, float) or isinstance(value, int):
         try:
@@ -618,10 +615,6 @@ def date_float(value):
     if dt is None:
         raise ValueError('Cannot convert date, value is "None"')
     return datetime_timestamp(dt) + usec  # just a float
-
-
-# def isoformat(ts):
-#     return datetime.fromtimestamp(ts).isoformat()
 
 
 def version_list(value):

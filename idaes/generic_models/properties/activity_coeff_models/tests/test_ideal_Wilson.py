@@ -34,18 +34,16 @@ m.fs.properties_Wilson_vl = BTXParameterBlock(default={"valid_phase":
                                                        ('Liq', 'Vap'),
                                                        "activity_coeff_model":
                                                        'Wilson'})
-m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.state_block_class(
-    default={"parameters": m.fs.properties_Wilson_vl,
-             "defined_state": True})
+m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.build_state_block(
+    default={"defined_state": True})
 
 # liquid only (Wilson)
 m.fs.properties_Wilson_l = BTXParameterBlock(default={"valid_phase":
                                                       'Liq',
                                                       "activity_coeff_model":
                                                       'Wilson'})
-m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.state_block_class(
-    default={"parameters": m.fs.properties_Wilson_l,
-             "has_phase_equilibrium": False,
+m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 # vapour only (Wilson)
@@ -53,9 +51,8 @@ m.fs.properties_Wilson_v = BTXParameterBlock(default={"valid_phase":
                                                       'Vap',
                                                       "activity_coeff_model":
                                                       'Wilson'})
-m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.state_block_class(
-    default={"parameters": m.fs.properties_Wilson_v,
-             "has_phase_equilibrium": False,
+m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": True})
 
 
@@ -140,18 +137,16 @@ m.fs1.properties_Wilson_vl = BTXParameterBlock(default={"valid_phase":
                                                         ('Liq', 'Vap'),
                                                         "activity_coeff_model":
                                                         'Wilson'})
-m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.state_block_class(
-    default={"parameters": m.fs1.properties_Wilson_vl,
-             "defined_state": False})
+m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.build_state_block(
+    default={"defined_state": False})
 
 # liquid only (Wilson)
 m.fs1.properties_Wilson_l = BTXParameterBlock(default={"valid_phase":
                                                        "Liq",
                                                        "activity_coeff_model":
                                                        'Wilson'})
-m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.state_block_class(
-    default={"parameters": m.fs1.properties_Wilson_l,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 # vapour only (Wilson)
@@ -159,9 +154,8 @@ m.fs1.properties_Wilson_v = BTXParameterBlock(default={"valid_phase":
                                                        "Vap",
                                                        "activity_coeff_model":
                                                        'Wilson'})
-m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.state_block_class(
-    default={"parameters": m.fs1.properties_Wilson_v,
-             "has_phase_equilibrium": False,
+m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.build_state_block(
+    default={"has_phase_equilibrium": False,
              "defined_state": False})
 
 

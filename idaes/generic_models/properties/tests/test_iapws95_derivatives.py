@@ -64,7 +64,7 @@ class TestIAPWS95(unittest.TestCase):
         #print("{:+.5e} {:+.5e} {:+.5e} | {:+.5e} {:+.5e} {:+.5e}".format(
         #      g[0], gfdb, gfdf, h[0], hfdb, hfdf))
 
-        zero_cut = 1e-10 # how close to zero before maybe it is zero?
+        zero_cut = 1e-9 # how close to zero before maybe it is zero?
 
         # check that the forward and backward FD approximations are close enough
         # that the accuracy is good enough for the test and that the detivative
@@ -103,7 +103,7 @@ class TestIAPWS95(unittest.TestCase):
         #        h[1], hb[1], hf[1],
         #        h[2], hb[2], hf[2]))
 
-        zero_cut = 1e-10 # how close to zero before maybe it is zero?
+        zero_cut = 1e-9 # how close to zero before maybe it is zero?
         # check that the forward and backward FD approximations are close enough
         # that the accuracy is good enough for the test and that the detivative
         # is not ~ zero.  I know this rough but what can you do?
@@ -167,7 +167,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    #@pytest.mark.skip(reason="temporary to save time")
+    @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau_sat(self):
         model = self.make_model()
         cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
@@ -217,10 +217,42 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
+    def test_derivs_sxpt(self):
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
+        phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
+        for i, c in enumerate(cond):
+            if phase[i][2] in ["liquid", "supercritical"]:
+                p = "Liq"
+                f = model.prop_in.func_slpt
+            else:
+                p = "Vap"
+                f = model.prop_in.func_svpt
+            print("{} {} {}".format(c[0], c[1], phase[i][2]))
+            self.bin_derivs_fd_test(f, c[1]/1000, 647.096/c[0], d0=1e-3, d1=1e-6, tol=0.01)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau(self):
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_tau
+        j = 0
+        for i, c in enumerate(cond):
+            j += 1
+            if j > 50: j = 0
+            if j == 0:
+                print("{} {} {}".format(c[0], c[1], c[2]))
+                self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    #@pytest.mark.skip(reason="temporary to save time")
+    def test_derivs_tau(self):
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=6)
+        f = model.prop_in.func_tau_sp
         j = 0
         for i, c in enumerate(cond):
             j += 1

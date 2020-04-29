@@ -19,13 +19,12 @@ import logging
 import os
 import webbrowser
 # third-party
-import pendulum
 from IPython.core.magic import Magics, magics_class, line_magic
 from IPython.display import display_markdown
 # local
 from . import dmfbase, errors, help, workspace
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = 'Dan Gunter'
 
 # Logging
 
@@ -218,8 +217,7 @@ class DmfMagicsImpl(object):
         lines = ['| ID | Name(s) | Type | Modified | Description | ',
                  '| -- | ------- | ---- | -------- | ----------- |']
         for rsrc in self._dmf.find():
-            msince = pendulum.from_timestamp(rsrc.v['modified']) \
-                .diff_for_humans()
+            msince = rsrc.v['modified']
             rowstr = '| {id} | {names} | {type} | {mdate} | {desc} |'.format(
                 id=rsrc.id, names=','.join(rsrc.v['aliases']), type=rsrc.type,
                 mdate=msince, desc=rsrc.v['desc'])
