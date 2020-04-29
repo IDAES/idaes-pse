@@ -24,12 +24,12 @@ from pyomo.environ import (ConcreteModel,
                            value)
 from pyomo.core.base.external import AMPLExternalFunction
 
-from idaes import lib_directory
+from idaes import bin_directory
 
 __author__ = "Andrew Lee"
 
 # Set path to root finder .so file
-_so = os.path.join(lib_directory, "cubic_roots.so")
+_so = os.path.join(bin_directory, "cubic_roots.so")
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root
