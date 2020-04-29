@@ -1,103 +1,92 @@
 version: 2.0
 
-shared-dev: &shared-dev
-  working_directory: ~/repo
-  steps:
-    - checkout
-    - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install --progress-bar=off -r requirements-dev.txt
-    - run: pylint -E --ignore-patterns="test_.*" idaes || true
-    - run: cd docs && python build.py
-    - run: idaes get-extensions
-    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
-    - run: coverage xml
-    - run: coveralls
+## Shared definitions
 
-shared: &shared
-  working_directory: ~/repo
-  steps:
-    - checkout
-    - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install --progress-bar=off -r requirements.txt
-    - run: idaes get-extensions
-    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+_conda37: &conda37
+  name: Create Python 3.7 conda environment
+  command: conda create -yv -n idaes python=3.7
 
-shared-ex: &shared-ex
-  working_directory: ~/repo
-  steps:
+_conda36: &conda36
+  name: Create Python 3.6 conda environment
+  command: conda create -yv -n idaes python=3.6
+
+_pytest: &pytest
+  name: Install extensions and run tests in Python conda environment
+  command: |
+      source activate idaes
+      python -m pip install --progress-bar=off -r requirements.txt
+      idaes get-extensions
+      pytest -c pytest.ini idaes -m "not nocircleci"
+
+_clone_examples: &clone_examples
+  name: Clone examples-dev
+  command: git clone git@github.com:IDAES/examples-dev.git
+
+_test_examples: &test_examples
+  name: Run examples-dev tests
+  command: |
+      source activate idaes
+      cd examples-dev
+      pytest -m "not integration"
+
+_vars:
+  - &ubuntu-image idaes/ubuntu18-conda:2.0
+
+## Jobs
 
 jobs:
-  "python-3.7":
-     docker:
-        - image: idaes/jupyterhub:1.4.5
-     <<: *shared
-
-  "python-3.7-dev":
+  # Python 3.6 non-developer
+  python36:
     docker:
-      - image: idaes/jupyterhub:1.4.5
-    <<: *shared-dev
-
-  # Build the examples
-  "python-3.7-ex":
-    docker:
-      - image: idaes/ubuntu18-conda:ex
+      - image: *ubuntu-image
     working_directory: ~/repo
     steps:
       - checkout
-      - run:
-          name: Install requirements.txt
-          command: pip install --progress-bar=off -r requirements.txt
-      - run: idaes get-extensions
-      - run:
-          name: Clone examples-dev
-          command: git clone git@github.com:IDAES/examples-dev.git
-      - run:
-          name: Run examples-dev tests
-          command: |
-              cd examples-dev
-              pytest -m "not integration"
-  "python-3.6":
+      - <<: *conda36
+      - <<: *pytest
+
+  # Python 3.7 non-developer
+  python37:
     docker:
-      - image: idaes/jupyterhub:1.4.5
+      - image: *ubuntu-image
     working_directory: ~/repo
     steps:
       - checkout
-      - run: ./scripts/remove-idaes-from-path.sh
-      - run:
-          name: Create Python 3.6 Conda environment
-          command: |
-            conda create -yv -n idaes36 python=3.6
-      - run:
-          name: Install and run tests in Python 3.6 Conda environment
-          command: |
-            source activate idaes36
-            python -m pip install --progress-bar=off -r requirements.txt
-            idaes get-extensions
-            pytest -c pytest.ini idaes -m "not nocircleci"
+      - <<: *conda37
+      - <<: *pytest
+
+  # Python 3.7 examples
+  examples37:
+    docker:
+      - image: *ubuntu-image
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - <<: *conda37
+      - <<: *pytest
+      - <<: *clone_examples
+      - <<: *test_examples
 
   "pip-install":
     docker:
-      - image: idaes/ubuntu18-conda:latest
+      - image: *ubuntu-image
     working_directory: ~
     steps:
-      - run:
-          name: Create Python 3.7 Conda environment
-          command: |
-            conda create -yv -n idaes-pse python=3.7
+      - <<: *conda37
       - run:
           name: Install idaes-pse
           command: |
-            source activate idaes-pse
+            source activate idaes
             python -m pip install idaes-pse
       - run:
           name: Install idaes extensions
           command: |
-            source activate idaes-pse
+            source activate idaes
             idaes get-extensions
       - run:
           name: Run tests
           command: |
-            source activate idaes-pse
+            source activate idaes
             pytest --pyargs idaes -W ignore
 
 
@@ -105,18 +94,45 @@ workflows:
   version: 2
   build:
     jobs:
-      - "python-3.7-ex"
-#      - "python-3.6"
-#      - "python-3.7"
-#      - "python-3.7-dev"
-#  nightly:
-#    triggers:
-#      - schedule:
-#          cron: "0 6 * * *"
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - nightlies
-#    jobs:
-#      - "pip-install"
+      - python36
+      - python37
+      - examples37
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - nightlies
+    jobs:
+      - "pip-install"
+
+
+#shared-dev: &shared-dev
+#  working_directory: ~/repo
+#  steps:
+#    - checkout
+#    - run: ./scripts/remove-idaes-from-path.sh
+#    - run: pip install --progress-bar=off -r requirements-dev.txt
+#    - run: pylint -E --ignore-patterns="test_.*" idaes || true
+#    - run: cd docs && python build.py
+#    - run: idaes get-extensions
+#    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
+#    - run: coverage xml
+#    - run: coveralls
+#
+#shared: &shared
+#  working_directory: ~/repo
+#  steps:
+#    - checkout
+#    - run: ./scripts/remove-idaes-from-path.sh
+#    - run: pip install --progress-bar=off -r requirements.txt
+#    - run: idaes get-extensions
+#    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+#
+#shared-ex: &shared-ex
+#  working_directory: ~/repo
+#  steps:
+#
