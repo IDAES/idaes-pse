@@ -17,14 +17,24 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import Block, ConcreteModel, Expression, Set, Var, value
+from pyomo.environ import (
+    Block, ConcreteModel, Constraint, Expression, exp, Set, Var, value)
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
         GenericReactionParameterBlock)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
+from idaes.generic_models.properties.core.reactions.rate_constant import \
+    arrhenius
+from idaes.generic_models.properties.core.reactions.rate_forms import \
+    mole_frac_power_law_rate
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
+    van_t_hoff
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
+    mole_frac_power_law_equil
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.constants import Constants as constants
 
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -331,6 +341,7 @@ class TestGenericReactionParameterBlock(object):
         assert isinstance(m.rxn_params.reaction_r1.dh_rxn_ref, Var)
         assert m.rxn_params.reaction_r1.dh_rxn_ref.fixed
         assert m.rxn_params.reaction_r1.dh_rxn_ref.value == -10000
+
         assert isinstance(m.rxn_params.reaction_e1.dh_rxn_ref, Var)
         assert m.rxn_params.reaction_e1.dh_rxn_ref.fixed
         assert m.rxn_params.reaction_e1.dh_rxn_ref.value == -20000
@@ -352,25 +363,90 @@ class TestGenericReactionBlock(object):
                 "r1": {"stoichiometry": {("p1", "c1"): -1,
                                          ("p1", "c2"): 2},
                        "heat_of_reaction": constant_dh_rxn,
-                       "rate_form": "foo",
+                       "rate_constant": arrhenius,
+                       "rate_form": mole_frac_power_law_rate,
                        "parameter_data": {
-                           "dh_rxn_ref": -10000}}},
+                           "dh_rxn_ref": -10000,
+                           "arrhenius_const": 1,
+                           "energy_activation": 1000}}},
             "equilibrium_reactions": {
                 "e1": {"stoichiometry": {("p2", "c1"): -3,
                                          ("p2", "c2"): 4},
                        "heat_of_reaction": constant_dh_rxn,
-                       "equilibrium_form": "foo",
+                       "equilibrium_constant": van_t_hoff,
+                       "equilibrium_form": mole_frac_power_law_equil,
                        "parameter_data": {
-                           "dh_rxn_ref": -20000}}}})
+                           "dh_rxn_ref": -20000,
+                           "k_eq_ref": 100,
+                           "T_eq_ref": 350}}}})
 
         m.rblock = m.rxn_params.build_reaction_block(
-            [1], default={"state_block": m.sblock})
+            [1], default={"state_block": m.sblock,
+                          "has_equilibrium": True})
 
         return m
 
     def test_dh_rxn(self, model):
+        assert isinstance(model.rxn_params.reaction_r1.dh_rxn_ref, Var)
+        assert isinstance(model.rxn_params.reaction_e1.dh_rxn_ref, Var)
+        assert model.rxn_params.reaction_r1.dh_rxn_ref.value == -10000
+        assert model.rxn_params.reaction_e1.dh_rxn_ref.value == -20000
+
         assert isinstance(model.rblock[1].dh_rxn, Expression)
         assert len(model.rblock[1].dh_rxn) == 2
-        model.rblock[1].dh_rxn.display()
         assert value(model.rblock[1].dh_rxn["r1"]) == -10000
         assert value(model.rblock[1].dh_rxn["e1"]) == -20000
+
+    def test_rate_constant(self, model):
+        assert isinstance(model.rxn_params.reaction_r1.arrhenius_const, Var)
+        assert model.rxn_params.reaction_r1.arrhenius_const.value == 1
+        assert isinstance(model.rxn_params.reaction_r1.energy_activation, Var)
+        assert model.rxn_params.reaction_r1.energy_activation.value == 1000
+
+        assert isinstance(model.rblock[1].k_rxn, Expression)
+        assert len(model.rblock[1].k_rxn) == 1
+        assert value(model.rblock[1].k_rxn["r1"]) == value(
+            1*exp(-1000/(constants.gas_constant*model.sblock[1].temperature)))
+
+    def test_reaction_rate(self, model):
+        rblk = model.rxn_params.reaction_r1
+        assert isinstance(rblk.reaction_order, Var)
+        assert len(rblk.reaction_order) == 4
+        assert rblk.reaction_order["p1", "c1"].value == 1
+        assert rblk.reaction_order["p1", "c2"].value == 0
+        assert rblk.reaction_order["p2", "c1"].value == 0
+        assert rblk.reaction_order["p2", "c2"].value == 0
+
+        assert isinstance(model.rblock[1].reaction_rate, Expression)
+        assert len(model.rblock[1].reaction_rate) == 1
+        assert value(model.rblock[1].reaction_rate["r1"]) == value(
+            model.rblock[1].k_rxn["r1"] *
+            model.sblock[1].mole_frac_phase_comp["p1", "c1"]**1)
+
+    def test_equilibrium_constant(self, model):
+        assert isinstance(model.rxn_params.reaction_e1.k_eq_ref, Var)
+        assert model.rxn_params.reaction_e1.k_eq_ref.value == 100
+        assert isinstance(model.rxn_params.reaction_e1.T_eq_ref, Var)
+        assert model.rxn_params.reaction_e1.T_eq_ref.value == 350
+
+        assert isinstance(model.rblock[1].k_eq, Expression)
+        assert len(model.rblock[1].k_eq) == 1
+        assert value(model.rblock[1].k_eq["e1"]) == value(
+            100*exp(-(-20000/constants.gas_constant) *
+                    (1/model.sblock[1].temperature - 1/350)))
+
+    def test_equilibrium_form(self, model):
+        rblk = model.rxn_params.reaction_e1
+        assert isinstance(rblk.reaction_order, Var)
+        assert len(rblk.reaction_order) == 4
+        assert rblk.reaction_order["p1", "c1"].value == 0
+        assert rblk.reaction_order["p1", "c2"].value == 0
+        assert rblk.reaction_order["p2", "c1"].value == -3
+        assert rblk.reaction_order["p2", "c2"].value == 4
+
+        assert isinstance(model.rblock[1].equilibrium_constraint, Constraint)
+        assert len(model.rblock[1].equilibrium_constraint) == 1
+        assert value(model.rblock[1].equilibrium_constraint["e1"].body) == \
+            value(model.rblock[1].k_eq["e1"] -
+                  model.sblock[1].mole_frac_phase_comp["p2", "c1"]**-3 *
+                  model.sblock[1].mole_frac_phase_comp["p2", "c2"]**4)

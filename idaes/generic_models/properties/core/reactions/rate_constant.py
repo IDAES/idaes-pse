@@ -11,18 +11,25 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Methods for calculating heat of reaction
+Methods for calculating rate constants
 """
-from pyomo.environ import Var
+from pyomo.environ import exp, Var
+
+from idaes.core.util.constants import Constants as c
 
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
-class constant_dh_rxn():
+class arrhenius():
     def build_parameters(rblock, config):
-        rblock.dh_rxn_ref = Var(
-                initialize=config.parameter_data["dh_rxn_ref"],
-                doc="Specific heat of reaction at reference state")
+        rblock.arrhenius_const = Var(
+                initialize=config.parameter_data["arrhenius_const"],
+                doc="Arrhenius constant (pre-exponential factor)")
+
+        rblock.energy_activation = Var(
+                initialize=config.parameter_data["energy_activation"],
+                doc="Activation energy")
 
     def return_expression(b, rblock, r_idx, T):
-        return rblock.dh_rxn_ref
+        return rblock.arrhenius_const * exp(
+            -rblock.energy_activation / (c.gas_constant*T))

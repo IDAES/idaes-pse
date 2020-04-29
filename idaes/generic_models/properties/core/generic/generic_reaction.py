@@ -15,6 +15,7 @@ Framework for generic reaction packages
 """
 # Import Pyomo libraries
 from pyomo.environ import (Block,
+                           Constraint,
                            Expression,
                            Set,
                            Var)
@@ -63,12 +64,20 @@ rxn_config.declare("parameter_data", ConfigValue(
     description="Dict containing initialization data for parameters"))
 
 rate_rxn_config = rxn_config()
+rate_rxn_config.declare("rate_constant", ConfigValue(
+    description="Expression form describing rate constant",
+    doc="Valid Python class containing instructions on how to construct "
+    "the rate constant for this reaction."))
 rate_rxn_config.declare("rate_form", ConfigValue(
     description="Expression form describing rate of reaction",
     doc="Valid Python class containing instructions on how to construct "
     "the rate expression for this reaction."))
 
 equil_rxn_config = rxn_config()
+equil_rxn_config.declare("equilibrium_constant", ConfigValue(
+    description="Expression form describing equilibrium constant",
+    doc="Valid Python class containing instructions on how to construct "
+    "the equilibrium constant for this reaction."))
 equil_rxn_config.declare("equilibrium_form", ConfigValue(
     description="Expression form describing reaction equilibrium",
     doc="Valid Python class containing instructions on how to construct "
@@ -264,8 +273,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
         obj.add_properties({
                 'dh_rxn': {'method': '_dh_rxn'},
                 'k_eq': {'method': '_k_eq'},
-                'k_rxn': {'method': '_rate_constant'},
-                'reaction_rate': {'method': "_rxn_rate"}
+                'k_rxn': {'method': '_k_rxn'},
+                'reaction_rate': {'method': "_reaction_rate"}
                 })
         obj.add_default_units({'time': 's',
                                'length': 'm',
@@ -303,6 +312,9 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         # TODO: Need a different error here
         super(GenericReactionBlockData, self).build()
 
+        if self.config.has_equilibrium:
+            self._equilibrium_constraint()
+
     def _dh_rxn(self):
         def dh_rule(b, r):
             rblock = getattr(b.params, "reaction_"+r)
@@ -311,8 +323,61 @@ class GenericReactionBlockData(ReactionBlockDataBase):
             else:
                 carg = b.params.config.equilibrium_reactions[r]
             return carg["heat_of_reaction"].return_expression(
-                b, rblock, b.state_ref.temperature)
+                b, rblock, r, b.state_ref.temperature)
 
         self.dh_rxn = Expression(self.params.reaction_idx,
                                  doc="Specific heat of reaction",
                                  rule=dh_rule)
+
+    def _k_rxn(self):
+        def krxn_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.rate_reactions[r]
+
+            return carg["rate_constant"].return_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.k_rxn = Expression(self.params.rate_reaction_idx,
+                                doc="Reaction rate constant",
+                                rule=krxn_rule)
+
+    def _reaction_rate(self):
+        def rate_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.rate_reactions[r]
+
+            return carg["rate_form"].return_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.reaction_rate = Expression(self.params.rate_reaction_idx,
+                                        doc="Reaction rate",
+                                        rule=rate_rule)
+
+    def _k_eq(self):
+        def keq_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.equilibrium_reactions[r]
+
+            return carg["equilibrium_constant"].return_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.k_eq = Expression(self.params.equilibrium_reaction_idx,
+                               doc="Equilibrium constant",
+                               rule=keq_rule)
+
+    def _equilibrium_constraint(self):
+        def equil_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.equilibrium_reactions[r]
+
+            return carg["equilibrium_form"].return_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.equilibrium_constraint = Constraint(
+            self.params.equilibrium_reaction_idx,
+            doc="Equilibrium constraint",
+            rule=equil_rule)
