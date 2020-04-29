@@ -16,22 +16,27 @@ _install: &install
   run:
     name: Install idaes and extensions
     command: |
-        source activate idaes
-        export LC_ALL=C.UTF-8 LANG=C.UTF-8
-        python -m pip install --progress-bar=off -r requirements.txt
+        conda activate idaes
+        pip install -e .
         idaes get-extensions --platform ubuntu1804
-        export PATH=$HOME/.idaes/bin:$PATH
-        export LD_LIBRARY_PATH=$HOME/.idaes/lib
-        pytest -c pytest.ini idaes -m "not nocircleci"
+
+_install_dev: &installdev
+  run:
+    name: Install idaes and extensions
+    command: |
+        conda activate idaes
+        pip install -e .[dev]
+        idaes get-extensions --platform ubuntu1804
+
+#        python -m pip install --progress-bar=off -r requirements.txt
+#        export PATH=$HOME/.idaes/bin:$PATH
+#        export LD_LIBRARY_PATH=$HOME/.idaes/lib
 
 _pytest: &pytest
   run:
     name: Run tests
     command: |
-        source activate idaes
-        export LC_ALL=C.UTF-8 LANG=C.UTF-8
-        export PATH=$HOME/.idaes/bin:$PATH
-        export LD_LIBRARY_PATH=$HOME/.idaes/lib
+        conda activate idaes
         pytest -c pytest.ini idaes -m "not nocircleci"
 
 _clone_examples: &clone_examples
@@ -43,7 +48,7 @@ _test_examples: &test_examples
   run:
     name: Run examples-dev tests
     command: |
-      source activate idaes
+      conda activate idaes
       cd examples-dev
       pytest -m "not integration"
 
@@ -95,7 +100,7 @@ jobs:
     steps:
         - checkout
         - <<: *conda37
-        - <<: *install
+        - <<: *installdev
         - <<: *pytest
         - <<: *pylint
         - <<: *coverage
