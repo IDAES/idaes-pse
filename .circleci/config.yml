@@ -3,15 +3,15 @@ version: 2.0
 ## Shared definitions
 
 _conda37: &conda37
-  step:
+  run:
     name: Create Python 3.7 conda environment
     command: conda create -yv -n idaes python=3.7
 _conda36: &conda36
-  step:
+  run:
     name: Create Python 3.6 conda environment
     command: conda create -yv -n idaes python=3.6
 _pytest: &pytest
-  step:
+  run:
     name: Install extensions and run tests in Python conda environment
     command: |
       source activate idaes
@@ -19,11 +19,11 @@ _pytest: &pytest
       idaes get-extensions
       pytest -c pytest.ini idaes -m "not nocircleci"
 _clone_examples: &clone_examples
-  step:
+  run:
     name: Clone examples-dev
     command: git clone git@github.com:IDAES/examples-dev.git
 _test_examples: &test_examples
-  step:
+  run:
     name: Run examples-dev tests
     command: |
       source activate idaes
