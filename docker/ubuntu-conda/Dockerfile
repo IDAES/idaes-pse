@@ -12,7 +12,8 @@ RUN apt-get -qq update \
     && rm -rf /tmp/miniconda.sh \
     && conda install -y python=3 \
     && conda update conda \
-    && apt-get -qq -y install build-essential libgfortran3 openssh-client git \
+    && apt-get -qq -y install build-essential libgfortran4 liblapack-dev \
+    && apt-get -qq -y install  openssh-client git   \
     && apt-get -qq -y autoremove \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log \
