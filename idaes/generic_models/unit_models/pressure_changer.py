@@ -381,10 +381,9 @@ see property package for documentation.}""",
         # Build isentropic state block
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = self.config.has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
-        self.properties_isentropic = self.config.property_package.state_block_class(
+        self.properties_isentropic = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             doc="isentropic properties at outlet",
             default=tmp_dict,

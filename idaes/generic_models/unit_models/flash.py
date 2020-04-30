@@ -206,7 +206,13 @@ see property package for documentation.}"""))
 
         split_map = {}
         for p in self.config.property_package.phase_list:
-            split_map[p] = p
+            p_obj = self.config.property_package.get_phase(p)
+            if p_obj.is_vapor_phase():
+                # Vapor leaves through Vap outlet
+                split_map[p] = "Vap"
+            else:
+                # All other phases leave through Liq outlet
+                split_map[p] = "Liq"
 
         self.split = Separator(default={
                 "property_package": self.config.property_package,

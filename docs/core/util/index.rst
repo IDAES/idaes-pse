@@ -13,3 +13,4 @@ Utility Methods
     scaling
     tables
     costing
+    var_like_expression

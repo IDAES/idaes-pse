@@ -14,21 +14,20 @@
 Tests for idaes.dmf.resource2 module
 """
 # stdlib
-import datetime
+from datetime import datetime
 import json
 import logging
 import math
 import os
 import shutil
 import sys
-import tempfile
 
 # third-party
-import pendulum
 import pytest
 
 # local
 from idaes.dmf import resource, propdata
+from idaes.util.system import mkdtemp
 
 # for testing
 from .util import init_logging
@@ -153,7 +152,7 @@ def test_validate_preprocess(default_resource):
 
 @pytest.fixture
 def tmpd():
-    d = tempfile.mkdtemp(prefix="test_resource_", suffix=".idaes")
+    d = mkdtemp(prefix="test_resource_", suffix=".idaes")
     yield d
     shutil.rmtree(d)
 
@@ -219,7 +218,7 @@ def test_repr(example_resource):
 
 
 def test_date_float():
-    now = pendulum.now()
+    now = datetime.now()
     now_float = now.timestamp()
     assert resource.date_float(now) == now_float
     # tuples
@@ -228,7 +227,7 @@ def test_date_float():
     with pytest.raises(ValueError):
         resource.date_float(tuple("garbage"))
     # datetime
-    assert resource.date_float(datetime.datetime(*now_tuple)) == now_float
+    assert resource.date_float(datetime(*now_tuple)) == now_float
     # strings
     with pytest.raises(ValueError):
         resource.date_float("garbage")
@@ -263,7 +262,7 @@ def test_version_list():
     with pytest.raises(ValueError):
         f((1, 2, 3, None))
     with pytest.raises(ValueError):
-        f((1, 2, 3, datetime.datetime))
+        f((1, 2, 3, datetime))
     with pytest.raises(ValueError):
         f("1.2.3.4")  # last bit can't start with '.'
     assert f("1.2.3RC3") == [1, 2, 3, "RC3"]  # extra

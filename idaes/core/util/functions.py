@@ -1,7 +1,7 @@
 def functions_lib():
     import os
     import idaes
-    plib = os.path.join(idaes.lib_directory, "functions.so")
+    plib = os.path.join(idaes.bin_directory, "functions.so")
     return plib
 
 def functions_available():
