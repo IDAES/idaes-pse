@@ -21,7 +21,7 @@ _install: &install
     name: Install idaes and extensions
     command: |
         source activate idaes
-        pip install -e .
+        pip install --no-cache-dir -q --progress-bar off -e .
         idaes get-extensions --platform ubuntu1804
 
 _install_dev: &installdev
@@ -29,7 +29,7 @@ _install_dev: &installdev
     name: Install idaes and extensions
     command: |
         source activate idaes
-        pip install -e .[dev]
+        pip install --no-cache-dir -q --progress-bar off -e .[dev]
         idaes get-extensions --platform ubuntu1804
 
 #        python -m pip install --progress-bar=off -r requirements.txt
