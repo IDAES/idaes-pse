@@ -123,10 +123,10 @@ jobs:
     steps:
         - checkout
         - setup_env
-        - create_conda
-            python_version: <<parameters.python>>
-        - install
-            target: <<parameters.pip_target>>
+        - create_conda:
+            python_version: << parameters.python >>
+        - install:
+            target: << parameters.pip_target >>
         - pytest
         - pylint
         - when:
@@ -141,14 +141,16 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~/repo
     parameters:
-      python_version:
+      python:
         type: string
         default: "3.7"
     steps:
         - checkout
         - setup_env
-        - create_conda
-        - install
+        - create_conda:
+            python_version: << parameters.python >>
+        - install:
+            target: "."
         - examples
 
   # pip install-based
@@ -157,12 +159,13 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~
     parameters:
-      python_version:
+      python:
         type: string
         default: "3.7"
     steps:
       - setup_env
-      - create_conda
+      - create_conda:
+          python_version: << parameters.python >>
       - idaes_pse
 
 ## Workflows
@@ -172,17 +175,17 @@ workflows:
   build:
     jobs:
         - idaes_dev:
-            python_version: "3.6"
+            python: "3.6"
         - idaes_dev:
-            python_version: "3.7"
+            python: "3.7"
         - idaes_dev:
-            python_version: "3.7"
+            python: "3.7"
             pip_target: ".[dev]"
             devmode: true
         - examples_dev:
-            python_version: "3.6"
+            python: "3.6"
         - examples_dev:
-            python_version: "3.7"
+            python: "3.7"
   nightly:
     triggers:
       - schedule:
@@ -194,6 +197,6 @@ workflows:
                 - nightlies
     jobs:
       - idaes_pse:
-          python_version: "3.6"
+          python: "3.6"
       - idaes_pse:
-          python_version: "3.7"
+          python: "3.7"
