@@ -263,7 +263,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    @pytest.mark.skip(reason="temporary to save time")
+    #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_1phase(self):
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
@@ -278,7 +278,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    @pytest.mark.skip(reason="temporary to save time")
+    #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_2phase(self):
         model = self.make_model()
         hvdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=17)
@@ -292,6 +292,40 @@ class TestIAPWS95(unittest.TestCase):
             hv = c[2]
             hl = hldat[i][2]
             ht = hl + (hv - hl)*0.75
+            print("{} {} {}".format(T, p, ht))
+            self.bin_derivs_fd_test(f, ht, p, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    #@pytest.mark.skip(reason="temporary to save time")
+    def test_derivs_vfs_1phase(self):
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=6)
+        f = model.prop_in.func_vfs
+        j = 0
+        for i, c in enumerate(cond):
+            j += 1
+            if j > 50: j = 0
+            if j == 0:
+                print("{} {} {}".format(c[0], c[1], c[2]))
+                self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    #@pytest.mark.skip(reason="temporary to save time")
+    def test_derivs_vfs_2phase(self):
+        model = self.make_model()
+        svdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=18)
+        sldat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=6)
+        f = model.prop_in.func_vfs
+        j = 0
+        for i, c in enumerate(svdat):
+            T = c[0]
+            if T > 647: continue
+            p = c[1]/1000
+            sv = c[2]
+            sl = sldat[i][2]
+            ht = sl + (sv - sl)*0.75
             print("{} {} {}".format(T, p, ht))
             self.bin_derivs_fd_test(f, ht, p, d0=1e-4, d1=1e-3, tol=0.001)
 
