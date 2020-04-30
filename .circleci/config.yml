@@ -35,9 +35,9 @@ commands:
           name: Install from source tree
           command: |
               source activate idaes
+              pip --no-cache-dir install --progress-bar off git+https://github.com/PyUtilib/pyutilib git+https://github.com/IDAES/pyomo.git@IDAES
               pip --no-cache-dir install --progress-bar off <<parameters.target>>
               idaes get-extensions --platform ubuntu1804
-#  pip --no-cache-dir install --progress-bar off -U git+https://github.com/PyUtilib/pyutilib git+https://github.com/IDAES/pyomo.git@IDAES
   pytest:
     description: Run tests with pytest
     parameters:
