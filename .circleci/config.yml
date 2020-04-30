@@ -19,6 +19,10 @@ commands:
             echo "export LC_ALL=C.UTF-8" >> $BASH_ENV
   create_conda:
     description: Create Python conda environment
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
     steps:
       - run: conda create -yv -n idaes python=<<parameters.python_version>>
   install:
