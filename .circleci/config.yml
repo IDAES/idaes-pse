@@ -1,71 +1,13 @@
 version: 2.1
 
-## Shared definitions
-
 # Notes:
 # - use "source activate" instead of "conda activate" since conda init bash
-#
-
-_install: &install
-  run:
-    name: Install idaes and extensions
-    command: |
-        source activate idaes
-        pip --no-cache-dir install --progress-bar off .
-        idaes get-extensions --platform ubuntu1804
-
-_install_dev: &installdev
-  run:
-    name: Install idaes and extensions
-    command: |
-        source activate idaes
-        pip --no-cache-dir install --progress-bar off .[dev]
-        idaes get-extensions --platform ubuntu1804
-
-_pytest: &pytest
-  run:
-    name: Run tests
-    command: |
-        source activate idaes
-        pytest -c pytest.ini idaes -m "not nocircleci"
-
-_docs: &build_docs
-  run:
-      name: Build Sphinx documentation
-      command: |
-          source activate idaes
-          cd docs
-          python build.py
-
-_clone_examples: &clone_examples
-  run:
-    name: Clone examples-dev
-    command: git clone git@github.com:IDAES/examples-dev.git
-
-_test_examples: &test_examples
-  run:
-    name: Run examples-dev tests
-    command: |
-      source activate idaes
-      cd examples-dev
-      pytest -m "not integration"
-
-_pylint: &pylint
-  run:
-    name: pylint
-    command: pylint -E --ignore-patterns="test_.*" idaes || true
-
-_coverage: &coverage
-  run:
-    name: Code coverage
-    command: |
-        coverage xml
-        coveralls
+#   does not seem to "take".
 
 _vars:
   - &ubuntu-image idaes/ubuntu18-conda:2.0
 
-## Commands (new in 2.1)
+## Commands shared by jobs
 
 commands:
   setup_env:
@@ -77,83 +19,62 @@ commands:
             echo "export LC_ALL=C.UTF-8" >> $BASH_ENV
   create_conda:
     description: Create Python conda environment
+    steps:
+      - run: conda create -yv -n idaes python=<<parameters.python_version>>
+  install:
+    description: Install idaes and extensions
     parameters:
-      version:
+      pip_target:
         type: string
-        default: "3.7"
+        default: "."
     steps:
-      - run: conda create -yv -n idaes python=<< parameters.version >>
-
-## Jobs
-
-jobs:
-  # Python 3.6 non-developer
-  python36:
-    docker:
-      - image: *ubuntu-image
-    working_directory: ~/repo
+      - run:
+          command: |
+              source activate idaes
+              pip --no-cache-dir install --progress-bar off <<parameters.pip_target>>
+              idaes get-extensions --platform ubuntu1804
+  pytest:
+    description: Run tests with pytest
+    parameters:
+      tags:
+        type: string
+        default: "not nocircleci"
     steps:
-        - checkout
-        - setup_env
-        - create_conda:
-            version: "3.6"
-        - <<: *install
-        - <<: *pytest
-        - <<: *pylint
-
-  # Python 3.7 non-developer
-  python37:
-    docker:
-      - image: *ubuntu-image
-    working_directory: ~/repo
+      - run:
+          command: |
+              source activate idaes
+              pytest -c pytest.ini idaes -m "<<parameters.tags>>"
+  build_docs:
+    description: Build Sphinx documentation
     steps:
-        - checkout
-        - setup_env
-        - create_conda:
-            version: "3.7"
-        - <<: *install
-        - <<: *pytest
-        - <<: *pylint
-
-  # Python 3.7 developer install
-  python37dev:
-    docker:
-      - image: *ubuntu-image
-    working_directory: ~/repo
+      - run:
+          command: |
+              source activate idaes
+              cd docs
+              python build.py
+  examples:
+    description: Run tests from examples-dev master
     steps:
-        - checkout
-        - setup_env
-        - create_conda:
-            version: "3.7"
-        - <<: *installdev
-        - <<: *pytest
-        - <<: *build_docs
-        - <<: *pylint
-        - <<: *coverage
-
-  # Python 3.7 examples
-  examples37:
-    docker:
-      - image: *ubuntu-image
-    working_directory: ~/repo
+      - run:
+          name: Clone examples-dev
+          command: git clone git@github.com:IDAES/examples-dev.git
+      - run:
+          name: Run examples-dev tests
+          command: |
+            source activate idaes
+            cd examples-dev
+            pytest -m "not integration"
+  pylint:
+    description: Run pylint
     steps:
-        - checkout
-        - setup_env
-        - create_conda:
-            version: "3.7"
-        - <<: *install
-        - <<: *clone_examples
-        - <<: *test_examples
-
-  # pip install-based
-  "pip-install":
-    docker:
-      - image: *ubuntu-image
-    working_directory: ~
+      - run: pylint -E --ignore-patterns="test_.*" idaes || true
+  coverage:
+    description: Report code coverage
     steps:
-      - setup_env
-      - create_conda:
-          version: "3.7"
+      - run: coverage xml && coveralls
+  idaes_pse:
+    description: Install and test idaes-pse
+    steps:
       - run:
           name: Install idaes-pse
           command: |
@@ -170,16 +91,86 @@ jobs:
             source activate idaes
             pytest --pyargs idaes -W ignore
 
+## Jobs
+
+jobs:
+  idaes_dev:
+    docker:
+      - image: *ubuntu-image
+    working_directory: ~/repo
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
+      pip_target:
+        type: string
+        default: "."
+      devmode:
+        type: boolean
+        default: false
+    steps:
+        - checkout
+        - setup_env
+        - create_conda
+        - install
+        - pytest
+        - pylint
+        - when:
+            condition: <<parameters.devmode>>
+            steps:
+              - build_docs
+              - coverage
+
+  # Clone and test examples
+  examples_dev:
+    docker:
+      - image: *ubuntu-image
+    working_directory: ~/repo
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
+    steps:
+        - checkout
+        - setup_env
+        - create_conda
+        - install
+        - clone_examples
+        - test_examples
+
+  # pip install-based
+  idaes_pse:
+    docker:
+      - image: *ubuntu-image
+    working_directory: ~
+    parameters:
+      python_version:
+        type: string
+        default: "3.7"
+    steps:
+      - setup_env
+      - create_conda:
+          version: <<parameters.python_version>>
+      - idaes_pse
+
 ## Workflows
 
 workflows:
   version: 2
   build:
     jobs:
-        - python36
-        - python37
-        - python37dev
-        - examples37
+        - idaes_dev:
+            python_version: "3.6"
+        - idaes_dev:
+            python_version: "3.7"
+        - idaes_dev:
+            python_version: "3.7"
+            pip_target: ".[dev]"
+            devmode: true
+        - examples_dev:
+            python_version: "3.6"
+        - examples_dev:
+            python_version: "3.7"
   nightly:
     triggers:
       - schedule:
@@ -190,4 +181,7 @@ workflows:
                 - master
                 - nightlies
     jobs:
-      - "pip-install"
+      - idaes_pse:
+          python_version: "3.6"
+      - idaes_pse:
+          python_version: "3.7"
