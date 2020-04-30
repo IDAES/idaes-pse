@@ -182,7 +182,7 @@ def test_costing_book():
     m.fs.unit.area.fix(1000)
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
     # costing
-    m.fs.unit.get_costing(hx_type='floating_head', L_factor='20ft',
+    m.fs.unit.get_costing(hx_type='floating_head', length_factor='20ft',
                           year='2018')
     m.fs.unit.area.fix(669.738)  # m2
     m.fs.unit.costing.pressure_factor.fix(1.19)

@@ -79,7 +79,7 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)  # W/m2K
     
     m.fs.unit.initialize()
-    m.fs.unit.get_costing(module=costing, L_factor='12ft')
+    m.fs.unit.get_costing(module=costing, length_factor='12ft')
     # initialize costing equations
     calculate_variable_from_constraint(
                 m.fs.unit.costing.base_cost,
@@ -97,7 +97,7 @@ Units
 -----
 
 It is important to highlight that the costing method interrogates the property 
-package to determine the unit of this model, if the user provided the correct 
+package to determine the units of this model, if the user provided the correct 
 units in the metadata dictionary (see property models for additional information), 
 the model units will be converted to the right units. 
 For example: in this example area is in m^2, while the cost correlations for heat 
@@ -131,24 +131,24 @@ Heat Exchanger Cost
 
 .. module:: idaes.core.util.unit_costing
 
-The purchse cost is computed based on the base unit cost and three correction factors. The base cost is computed depending on the heat exchanger type selected by the user:
+The purchse cost is computed based on the base unit cost and three correction factors (Eq. 22.43 in Seider et al.). The base cost is computed depending on the heat exchanger type selected by the user:
 
-.. math:: self.costing.purchase\_cost = FP*FM_{MAT}*FL*self.costing.base\_cost*(CE_{index}/500) (Eq. 22.43)
+.. math:: self.costing.purchase\_cost = pressure\_factor*material\_factor*L\_factor*self.costing.base\_cost*(CE_{index}/500)
 
 .. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
 
 where:
 
-* FP - is the pressure design correction factor
-* FM_Mat - is the construction material correction factor
-* FL - is the tube length correction factor
-* CE - index is a global parameter that includes cost indexes for years 2010-2019
+* pressure_factor - is the pressure design correction factor
+* material_factor - is the construction material correction factor
+* length_factor - is the tube length correction factor
+* CE_index - is a global parameter for Chemical Enginering cost index for years 2010-2019
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
 
 * hx_type : 'floating_head', 'fixed_head', 'U-tube'\*, 'Kettle_vap'
-* material factor (FM): 'stain_steel'\*, 'carb_steel'
-* tube length (FL): '8ft', '12ft'\*, '16ft', '20ft'
+* material factor (Mat_factor): 'stain_steel'\*, 'carb_steel'
+* tube length (length_factor): '8ft', '12ft'\*, '16ft', '20ft'
 
 where '*' corresponds to the default options, FL and FM_MAT are pyomo-mutable parameters fixed based on user selection.
 
@@ -178,7 +178,7 @@ Tube Length (ft)  FL
 
 Construction material correction factor (FM_Mat) can be computed with Eq. 22.44 (Seider et al.)
 
-.. math:: FM_{Mat} = a + (\frac{area}{100})^{b}     (Eq. 22.44)
+.. math:: material\_factor = a + (\frac{area}{100})^{b}
 
 
 Table 5. Materials of construction factors.
@@ -187,18 +187,19 @@ Table 5. Materials of construction factors.
 Materials of Construction
 Shell / Tube                       a      b
 ================================== ====== ======
-Carbon steel / carbon steel        0.00   0.00
-Carbon steel / brass               1.08   0.05
-Carbon steel / stainless steel     1.75   0.13
-Carbon steel / Monel               2.1    0.13
-Carbon steel / titanium            5.2    0.16
-Carbon steel / Cr-Mo steel         1.55   0.05
-Cr-Mo steel / Cr-Mo steel          1.7    0.07
-Stainless steel / stainless steel  2.7    0.07
-Monel / Monel                      3.3    0.08
-Titanium / titanium                9.6    0.06
+carbon steel/carbon steel          0.00   0.00
+carbon steel/brass                 1.08   0.05
+carbon steel/stainless steel       1.75   0.13
+carbon steel/monel                 2.1    0.13
+carbon steel/titanium              5.2    0.16
+carbon steel/Cr-Mo steel           1.55   0.05
+Cr-Mo steel/Cr-Mo steel            1.7    0.07
+stainless steel/stainless steel    2.7    0.07
+monel/monel                        3.3    0.08
+titanium/titanium                  9.6    0.06
 ================================== ====== ======
 
+Note that `Mat_factor` argument should be provided a string, for example: Mat_factor:'carbon steel/carbon steel'.
 
 Pressure Changer Cost
 ^^^^^^^^^^^^^^^^^^^^^
@@ -257,21 +258,21 @@ The unit purchase cost is obtained by adding the motor and pump costs.
 .. math:: self.costing.purchase\_cost = self.costing.pump\_purchase\_cost + self.costing.motor\_purchase\_cost
 
 To compute the purchase cost of the centrifugal pump, first we obtain the pump size factor (S) with Eq. 22.13, then we obtain the base cost with Eq. 22.14.
-Finally, the purchase cost of the pump is obtained in Eq. 22.15.
+Finally, the purchase cost of the pump is obtained in Eq. 22.15. (Seider et al.)
 
 .. math:: S = QH^{0.5}
 
 .. math:: self.costing.pump\_base\_cost = \exp{(9.7171 - 0.6019*\log{S} + 0.0519*(\log{S})^{2})}
 
-.. math:: self.costing.pump\_purchase\_cost = F_{T}*FM_{MAT}*self.costing.pump\_base\_cost*(CE_{index}/500)
+.. math:: self.costing.pump\_purchase\_cost = F_{T}*material_\factor*self.costing.pump\_base\_cost*(CE_{index}/500)
 
 where:
 
 * S is the pump size factor (`self.costing.size_factor`)
 * Q is the volumetric flowrate in gpm (depending on the model this variable can be found as self.unit.properties_in.flow_vol)
-* H is the head of the pump in ft (which is defined as :math:`H = \Delta P/\rho_{liq}`)
-* FT is the pump type factor (users must wisely select this factor based on the pump size factor, pump head range, and maximum motor hp)
-* FM_Mat is the material factor for the pump
+* H is the head of the pump in ft (`self.pump_head`; which is defined as :math:`H = \Delta P/\rho_{liq}`)
+* FT is a parameter fixed based on the pump_type_factor argument (users must wisely select this factor based on the pump size factor, pump head range, and maximum motor hp)
+* material_factor is the material factor for the pump
 
 Table 6. Pump Type factor (Table 22.20 in Seider et al.).
 
@@ -293,15 +294,15 @@ Table 7. Materials of construction factors for centrifugal pumps and external ge
 ================= ======
 Material Factor   FM_MAT
 ================= ======
-Cast iron         1.00
-Ductile iron      1.15
-Cast steel        1.35
-Bronze            1.90
-Stainless steel   2.00
-Hastelloy C       2.95 
-Monel             3.30
-Nickel            3.50
-Titanium          9.70
+cast iron         1.00
+ductile iron      1.15
+cast steel        1.35
+bronze            1.90
+stainless steel   2.00
+hastelloy C       2.95 
+monel             3.30
+nickel            3.50
+titanium          9.70
 ================= ======
 
 Electric Motor:
@@ -322,12 +323,11 @@ Efficiencies are valid for PB in the range of 1 to 1500Hp and Q in the range of 
 
 where:
 
-* FT is the motor type correction factor
-* PC is the power consumption in hp
-* PT is the theoretical efficiency
-* Q is the volumetric flowrate in gpm
-* H is the pump head in ft
-* PB is the pump brake hp
+* motor_FT is the motor type correction factor
+* PC is the power consumption in hp (`self.power_consumption_hp`; coded as a pyomo expression)
+* Q is the volumetric flowrate in gpm (`self.Q_gpm`)
+* H is the pump head in ft (`self.pump_head`)
+* PB is the pump brake hp (`self.work`)
 * nP is the fractional efficiency of the pump
 * nM is the fractional efficiency of the motor
 * :math:`\rho` is the liquid density in lb/gal
@@ -345,12 +345,12 @@ Explosion-proof enclosure, 1 to 25Hp     1.8     1.7
 External Gear Pumps
 +++++++++++++++++++
 
-External gear pumps are not as common as the contrifugal pump, and various methods can be used to correlate purchase cost. 
-Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm.
+External gear pumps are not as common as the contrifugal pump, and various methods can be used to correlate base cost. Eq. 22.21 in Seider et al.
+Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm Eq. 22.22 in Seider et al.
 
-.. math:: self.costing.pump\_base\_cost = \exp{(7.6964 + 0.1986\log{Q} + 0.0291(\log{Q})^{2})}           (Eq 22.21)
+.. math:: self.costing.pump\_base\_cost = \exp{(7.6964 + 0.1986\log{Q} + 0.0291(\log{Q})^{2})}
 
-.. math:: self.costing.pump\_purchase\_cost = FM_{MAT} * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
+.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)
 
 
 Reciprocating Plunger Pumps
@@ -360,17 +360,17 @@ The cost correlation method used here is based on the brake horsepower (PB).
 
 .. math:: self.costing.pump\_base\_cost = \exp{(7.8103 + 0.26986\log{PB} + 0.06718(\log{PB})^{2})} (Eq. 22.23)
 
-.. math:: self.costing.pump\_purchase\_cost = FM_{MAT} * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
+.. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
 
 Table 9. Materials of construction factors for reciprocating plunger pumps.
 
 =============== ==========
-Material        FM_MAT
+Material        Mat_factor
 =============== ==========
-Ductile iron    1.00
+ductile iron    1.00
 Ni-Al-Bronze    1.15
-Carbon steel    1.50
-Stainless steel 2.20
+carbon steel    1.50
+stainless steel 2.20
 =============== ==========
 
 

@@ -715,7 +715,7 @@ see property package for documentation.}""",
 
         return {"vars": var_dict}
 
-    def get_costing(self, module=costing, FM="stain_steel",
+    def get_costing(self, module=costing, Mat_factor="stain_steel",
                     mover_type="compressor",
                     compressor_type="centrifugal",
                     driver_mover_type="electrical_motor",
@@ -727,7 +727,7 @@ see property package for documentation.}""",
             self.flowsheet().get_costing(year=year)
 
         self.costing = Block()
-        module.pressure_changer_costing(self.costing, FM=FM,
+        module.pressure_changer_costing(self.costing, Mat_factor=Mat_factor,
                                         mover_type=mover_type,
                                         compressor_type=compressor_type,
                                         driver_mover_type=driver_mover_type,

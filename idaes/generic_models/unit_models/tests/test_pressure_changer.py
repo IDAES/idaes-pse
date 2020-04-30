@@ -767,7 +767,7 @@ class Test_costing(object):
         assert degrees_of_freedom(m) == 0
 
         m.fs.unit.get_costing(pump_type='centrifugal',
-                              FM_mat='nickel',
+                              Mat_factor='nickel',
                               pump_motor_type_factor='enclosed')
         calculate_variable_from_constraint(
                     m.fs.unit.costing.motor_purchase_cost,
