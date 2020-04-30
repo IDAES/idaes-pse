@@ -58,9 +58,13 @@ def is_explicitly_indexed_by(comp, *sets):
         # we're indexed by a _SetProduct containing all sets
         if not hasattr(comp.index_set(), 'set_tuple'):
             return False
-        # Convert set_tuple to a python:set so a different
+        # Convert set_tuple to a ComponentSet so a different
         # pyomo:Set with the same elements will not be conflated.
-        set_set = ComponentSet(comp.index_set().set_tuple)
+
+        if hasattr(comp.index_set(), 'subsets'):
+            set_set = ComponentSet(comp.index_set().subsets())
+        else:
+            set_set = ComponentSet(comp.index_set().set_tuple)
         return all([s in set_set for s in sets])
 
 
@@ -134,7 +138,10 @@ def get_index_set_except(comp, *sets):
 
     index_set = comp.index_set()
     if hasattr(index_set, 'set_tuple'):
-        set_tuple = index_set.set_tuple
+        if hasattr(index_set, 'subsets'):
+            set_tuple = list(index_set.subsets())
+        else:
+            set_tuple = index_set.set_tuple
         counter = Counter([id(_) for _ in set_tuple])
         for s in sets:
             if counter[id(s)] != 1:
@@ -239,8 +246,25 @@ def get_activity_dict(b):
         A dictionary mapping id of constraint and block data objects
         to a bool indicating if they are active
     """
+    # Note: active constraints/blocks contained in an inactive block will still
+    # be marked as active.
     return {id(con): con.active 
                      for con in b.component_data_objects((Constraint, Block))}
+
+
+def get_fixed_dict(b):
+    """
+    Function that builds a dictionary telling whether or not each VarData
+    object in a model is fixed. Uses the objects' ids as the hash.
+
+    Args:
+        b : A Pyomo block to be searched for fixed variables
+
+    Returns:
+        A dictionary mapping id of VarData objects to a bool indicating if
+        they are fixed
+    """
+    return {id(var): var.fixed for var in b.component_data_objects(Var)}
 
 
 def deactivate_model_at(b, cset, pts, outlvl=idaeslog.NOTSET):
@@ -364,6 +388,108 @@ def fix_vars_unindexed_by(b, time):
     return varlist
 
 
+def get_location_of_coordinate_set(setprod, subset):
+    """For a SetProduct and some 1-dimensional coordinate set of that
+    SetProduct, returns the location of an index of the coordinate
+    set within the index of the setproduct.
+
+    Args:
+        setprod : SetProduct containing the subset of interest
+        subset : 1-dimensional set whose location will be found in the
+                 SetProduct
+    
+    Returns:
+        Integer location of the subset within the SetProduct
+    """
+    if subset.dimen != 1:
+        # This could be supported in the future if there is demand for it
+        raise ValueError(
+            'Cannot get the location of %s because it is multi-dimensional'
+            %(subset.name))
+
+    loc = None
+    i = 0
+    found = False
+    if hasattr(setprod, 'subsets'):
+        subsets = setprod.subsets()
+    elif hasattr(setprod, 'set_tuple'):
+        subsets = setprod.set_tuple
+    else:
+        subsets = [setprod]
+    for _set in subsets:
+        if _set is subset:
+            if found:
+                raise ValueError(
+                    'Cannot get the location of %s because it appears '
+                    'multiple times'%(_set.name))
+            found = True
+            loc = i
+            i += 1
+        else:
+            i += _set.dimen
+    return loc
+
+
+def get_index_of_set(comp, wrt):
+    """For some data object of an indexed component, gets the value of the
+    index corresponding to some 1-dimensional pyomo set.
+
+    Args: 
+        comp : Component data object whose index will be searched
+        wrt : Set whose index will be searched for
+
+    Returns:
+        Value of the specified set in the component data object
+    """
+    parent = comp.parent_component()
+    if not is_explicitly_indexed_by(parent, wrt):
+        raise ValueError(
+                "Component %s is not explicitly indexed by set %s."
+                %(comp.name, wrt.name))
+
+    index = comp.index() 
+    if not type(index) is tuple:
+        index = (index,)
+    loc = get_location_of_coordinate_set(parent.index_set(), wrt)
+    return index[loc]
+
+
+def get_implicit_index_of_set(comp, wrt):
+    """For some data object contained (at some level of the hierarchy) in a
+    block indexed by wrt, returns the index corresponding to wrt in that
+    block.
+
+    Args:
+        comp : Component data object whose (parent blocks') indices will be
+               searched
+        wrt : Set whose index will be searched for
+
+    Returns:
+        Value of the specified set 
+    """
+    val = None
+    found = False
+    if is_explicitly_indexed_by(comp.parent_component(), wrt):
+        val = get_index_of_set(comp, wrt)
+        found = True
+
+    parent_block = comp.parent_block()
+    while parent_block is not None:
+        parent_component = parent_block.parent_component()
+        if is_explicitly_indexed_by(parent_component, wrt):
+            if found:
+                raise ValueError(
+                        "Cannot get the index of set %s because it appears "
+                        "multiple times in the hierarchy"%(wrt.name))
+            val = get_index_of_set(parent_block, wrt)
+            found = True
+        parent_block = parent_block.parent_block()
+
+    # Will return val even if it is None. 
+    # User can decide what to do in this case.
+    return val
+
+
 def get_derivatives_at(b, time, pts):
     """
     Finds derivatives with respect to time at points specified.
@@ -409,7 +535,7 @@ def get_derivatives_at(b, time, pts):
 #       with getname and find_component
 #       ^ not true. Cannot call find_component from a BlockData object
 #                   Or on a name containing a decimal index
-#       component looks like a similar substitue for BlockDatas, but
+#       component looks like a similar substitute for BlockDatas, but
 #       cannot seem to call on names including indices at all
 def path_from_block(comp, blk, include_comp=False):
     """
@@ -446,8 +572,204 @@ def path_from_block(comp, blk, include_comp=False):
         if hasattr(comp, 'index'):
             route.append((comp.parent_component().local_name, comp.index()))
         else:
+            # Not obvious what the right thing to do is if comp has no index
+            # attribute... 
             route.append((comp.parent_component().local_name, None))
     return route
+
+
+def find_comp_in_block(tgt_block, src_block, src_comp, allow_miss=False):
+    """This function finds a component in a source block, then uses the same
+    local names and indices to try to find a corresponding component in a target
+    block. This is used when we would like to verify that a component of the 
+    same name exists in the target block, as in model predictive control where
+    certain variables must be correllated between plant and controller model.
+
+    Args:
+        tgt_block : Target block that will be searched for component
+        src_block : Source block in which the original component is located
+        src_comp : Component whose name will be searched for in target block
+        allow_miss : If True, will ignore attribute and key errors due to 
+                     searching for non-existant components in the target model
+
+    Returns:
+        Component with the same name in the target block
+    """
+
+    local_parent = tgt_block
+    for r in path_from_block(src_comp, src_block, include_comp=False):
+        # Don't include comp as I want to use this to find IndexedComponents,
+        # for which [r[1]] will result in a KeyError.
+        try:
+            local_parent = getattr(local_parent, r[0])[r[1]]
+        except AttributeError:
+            if allow_miss:
+                return None
+            else:
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(r[1]),
+                        getattr(local_parent, r[0]).name))
+
+    # This logic should return the IndexedComponent or ComponentData,
+    # whichever is appropriate
+    try:
+        tgt_comp = getattr(local_parent, src_comp.parent_component().local_name)
+    except AttributeError:
+        if allow_miss:
+            return None
+        else:
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name,
+                    src_comp.parent_component().local_name))
+    # tgt_comp is now an indexed component or simple component
+
+    if hasattr(src_comp, 'index'):
+        # If comp has index, attempt to access it in tgt_comp
+        index = src_comp.index()
+        try:
+            tgt_comp = tgt_comp[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
+
+    return tgt_comp
+
+
+def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
+                               time, t0, allow_miss=False):
+    """This function finds a component in a source block, then uses the same
+    local names and indices to try to find a corresponding component in a target
+    block, with the exception of time index in the target component, which is
+    replaced by a specified time point. This is used for validation of a
+    component by its name in the case where blocks may differ by at most time
+    indices, for example validating a steady-state model or a model with a
+    different time discretization.
+
+    Args:
+        tgt_block : Target block that will be searched for component
+        src_block : Source block in which the original component is located
+        src_comp : Component whose name will be searched for in target block
+        time : Set whose index will be replaced in the target component
+        t0 : Index of the time set that will be used in the target
+             component
+        allow_miss : If True, will ignore attribute and key errors due to 
+                     searching for non-existant components in the target model
+
+    """
+    # Could extend this to allow replacing indices of multiple sets
+    # (useful for PDEs)
+
+    if t0 not in time:
+        raise KeyError(
+            't0 must be in the time set')
+    if time.model() is not tgt_block.model():
+        raise ValueError(
+            'time must belong to the same model as the target block')
+    if src_block.model() is not src_comp.model():
+        raise ValueError(
+            'src_block and src_comp must be components of the same model')
+
+    local_parent = tgt_block
+    for r in path_from_block(src_comp, src_block, include_comp=False):
+        # Don't include comp as I want to use this to find IndexedComponents,
+        # for which [r[1]] will result in a KeyError.
+
+        # If local_parent is indexed by time, need to replace time index
+        # in r[1]
+
+        try:
+            local_parent = getattr(local_parent, r[0])
+        except AttributeError:
+            if allow_miss:
+                return None
+            else:
+                raise AttributeError(
+                    '%s has no attribute %s. Use allow_miss=True if this '
+                    'is expected and acceptable.' % (local_parent.name, r[0]))
+
+        index = r[1]
+
+        # Can abstract the following into a function:
+        # replace_time_index or something
+        if is_explicitly_indexed_by(local_parent, time):
+            index_set = local_parent.index_set()
+            time_loc = get_location_of_coordinate_set(index_set, time)
+
+            if type(index) is not tuple:
+                index = (index,)
+            index = list(index)
+
+            # Replace time index with t0
+            index[time_loc] = t0
+            index = tuple(index)
+            
+        try:
+            local_parent = local_parent[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        local_parent.name))
+
+    # This logic should return the IndexedComponent or ComponentData,
+    # whichever is appropriate
+    try:
+        tgt_comp = getattr(local_parent, src_comp.parent_component().local_name)
+    except AttributeError:
+        if allow_miss:
+            return None
+        else:
+            raise AttributeError(
+                '%s has no attribute %s. Use allow_miss=True if this '
+                'is expected and acceptable.' % (local_parent.name, 
+                    src_comp.parent_component().local_name))
+    # tgt_comp is now an indexed component or simple component
+
+    if hasattr(src_comp, 'index'):
+        # If comp has index, attempt to access it in tgt_comp
+        index = src_comp.index()
+
+        if is_explicitly_indexed_by(tgt_comp, time):
+            index_set = tgt_comp.index_set()
+            time_loc = get_location_of_coordinate_set(index_set, time)
+
+            if type(index) is not tuple:
+                index = (index,)
+            index = list(index)
+
+            # Replace time index with t0
+            index[time_loc] = t0
+            index = tuple(index)
+
+        try:
+            tgt_comp = tgt_comp[index]
+        except KeyError:
+            if allow_miss:
+                return None
+            else:
+                raise KeyError(
+                    '%s is not a valid index for %s, use allow_miss=True '
+                    'if this is expected and acceptable.' % (str(index),
+                        tgt_comp.name))
+
+    return tgt_comp
 
 
 def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
@@ -477,7 +799,17 @@ def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
             continue
         var_src = fs_src.find_component(var_tgt.local_name)
         # ^ this find_component is fine because var_tgt is a Var not VarData
-        # and its local_name is used
+        # and its local_name is used. Assumes that there are no other decimal
+        # indices in between fs_src and var_src
+
+        if var_src is None:
+            # Log a warning
+            msg = ('Warning copying values: ' + varname + 
+                   ' does not exist in source block ' + fs_src.name)
+            init_log = idaeslog.getInitLogger(__name__, outlvl)
+            init_log.warning(msg)
+            continue
+
         for index in var_tgt:
             if not copy_fixed and var_tgt[index].fixed:
                 continue
@@ -508,9 +840,25 @@ def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
     
                 # can't used find_component(local_name) here because I might
                 # have decimal indices
-                local_parent = fs_src
-                for r in path_from_block(var_tgt, fs_tgt):
-                    local_parent = getattr(local_parent, r[0])[r[1]]
+                try:
+                    local_parent = fs_src
+                    for r in path_from_block(var_tgt, fs_tgt):
+                        local_parent = getattr(local_parent, r[0])[r[1]]
+                except AttributeError:
+                    # log warning
+                    msg = ('Warning copying values: ' + r[0] + 
+                           ' does not exist in source' + local_parent.name)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
+                    init_log.warning(msg)
+                    continue
+                except KeyError:
+                    msg = ('Warning copying values: ' + str(r[1]) + 
+                           ' is not a valid index for' + 
+                           getattr(local_parent, r[0]).name)
+                    init_log = idaeslog.getInitLogger(__name__, outlvl)
+                    init_log.warning(msg)
+                    continue
+
                 var_src = getattr(local_parent, var_tgt.local_name)
     
                 for index in var_tgt:
@@ -554,8 +902,8 @@ def copy_values_at_time(fs_tgt, fs_src, t_target, t_source,
         local_parent = fs_src
 
         varname = var_target.getname(fully_qualified=True, relative_to=fs_tgt)
-        # Calling find_component here makes the assumption that fs_src 
-        # is not indexed
+        # Calling find_component here makes the assumption that varname does not 
+        # contain decimal indices.
         var_source = fs_src.find_component(varname)
         if var_source is None:
             # Log a warning
