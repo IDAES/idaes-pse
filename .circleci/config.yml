@@ -176,16 +176,21 @@ workflows:
   build:
     jobs:
         - idaes_dev:
+            name: "python3.6"
             python: "3.6"
         - idaes_dev:
+            name: "python3.7"
             python: "3.7"
         - idaes_dev:
+            name: "python3.7 dev"
             python: "3.7"
             pip_target: ".[dev]"
             devmode: true
         - examples_dev:
+            name: "examples3.6"
             python: "3.6"
         - examples_dev:
+            name: "examples3.7"
             python: "3.7"
   nightly:
     triggers:
