@@ -33,6 +33,7 @@ commands:
         default: "."
     steps:
       - run:
+          name: Install from source tree
           command: |
               source activate idaes
               pip --no-cache-dir install --progress-bar off <<parameters.pip_target>>
