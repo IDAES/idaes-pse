@@ -507,6 +507,10 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                 print(work_hp)
 
             elif(self.parent_block().config.property_package.get_metadata().
+                 properties['enth_mol']['units']) == 'TJ/kmol':
+                work_hp = w*1.34102209e9  # assuming W is in TJ/s (TW/746=hp)
+
+            elif(self.parent_block().config.property_package.get_metadata().
                  properties['enth_mol']['units']) == 'kJ/kmol':
                 work_hp = w*0.0003725  # assuming W is in kJ/hr
 
