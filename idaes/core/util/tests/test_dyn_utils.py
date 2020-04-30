@@ -382,8 +382,153 @@ def test_copy_non_time_indexed_values():
     assert m1.b3[3].v5.value != m2.b3[3].v5.value
 
 
-if __name__ == "__main__":
-    test_is_indexed_by()
-    test_get_index_set_except()
-    test_fix_and_deactivate()
-    test_copy_non_time_indexed_values()
+def test_find_comp_in_block():
+    m1 = ConcreteModel()
+
+    @m1.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3])
+
+    m2 = ConcreteModel()
+
+    @m2.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3,4])
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var([1,2,3])
+
+    v1 = m1.b1[1].v[1]
+
+    assert find_comp_in_block(m2, m1, v1) is m2.b1[1].v[1]
+
+    v2 = m2.b2[1].v[1]
+    v3 = m2.b1[3].v[4]
+
+    # These should result in Attribute/KeyErrors
+
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+        find_comp_in_block(m1, m2, v2)
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+        find_comp_in_block(m1, m2, v3)
+    assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
+    assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
+
+
+def test_find_comp_in_block_at_time():
+    m1 = ConcreteModel()
+    m1.time = Set(initialize=[1,2,3])
+
+    @m1.Block(m1.time)
+    def b1(b):
+        b.v = Var(m1.time)
+
+    @m1.Block([1,2,3])
+    def b(bl):
+        bl.v = Var(m1.time)
+        bl.v2 = Var(m1.time, ['a','b','c'])
+
+    m2 = ConcreteModel()
+    m2.time = Set(initialize=[1,2,3,4,5,6])
+
+    @m2.Block(m2.time)
+    def b1(b):
+        b.v = Var(m2.time)
+
+    @m2.Block([1,2,3,4])
+    def b(bl):
+        bl.v = Var(m2.time)
+        bl.v2 = Var(m2.time, ['a','b','c'])
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var(m2.time)
+
+    v1 = m1.b1[1].v[1]
+    v3 = m1.b[3].v[1]
+
+    assert find_comp_in_block_at_time(m2, m1, v1, m2.time, 4) is m2.b1[4].v[4]
+    assert find_comp_in_block_at_time(m2, m1, v3, m2.time, 5) is m2.b[3].v[5]
+
+    v = m1.b[1].v2[1, 'a']
+    assert find_comp_in_block_at_time(m2, m1, v, m2.time, 6) is m2.b[1].v2[6, 'a']
+
+    v2 = m2.b2[1].v[1]
+    v4 = m2.b[4].v[1]
+
+    # Should result in exceptions:
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+        find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+        find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
+    assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
+    assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
+
+
+def test_get_location_of_coordinate_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_location_of_coordinate_set(m.v1.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v2.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v3.index_set(), m.s1) == 3
+
+    # These should each raise a ValueError
+    with pytest.raises(ValueError):
+        get_location_of_coordinate_set(m.v1.index_set(), m.s2)
+    with pytest.raises(ValueError):
+        get_location_of_coordinate_set(m.v121.index_set(), m.s1)
+
+
+def test_get_index_of_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v0 = Var()
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_index_of_set(m.v1[2], m.s1) == 2
+    assert get_index_of_set(m.v2[2,'a',1], m.s1) == 2
+    assert get_index_of_set(m.v3['b',2,1,3,'b',2], m.s1) == 3
+
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v0, m.s1)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'a',1], m.s2)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'b',2], m.s3)
+
+
+def test_get_implicit_index_of_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=['a', 'b', 'c'])
+    m.s3 = Set(initialize=[('d',4), ('e',5)])
+
+    @m.Block()
+    def b1(b):
+        @b.Block(m.s3, m.s1)
+        def b2(b):
+            @b.Block()
+            def b3(b):
+                b.v1 = Var(m.s2)
+                b.v2 = Var(m.s1)
+
+    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s1) == 1
+    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s2) == 'a'
+
+    with pytest.raises(ValueError) as exc_test:
+        get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
+
+

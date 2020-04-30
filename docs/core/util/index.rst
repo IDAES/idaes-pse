@@ -12,3 +12,4 @@ Utility Methods
     model_statistics
     scaling
     tables
+    var_like_expression
