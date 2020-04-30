@@ -28,14 +28,14 @@ commands:
   install:
     description: Install idaes and extensions
     parameters:
-      pip_target:
+      target:
         type: string
     steps:
       - run:
           name: Install from source tree
           command: |
               source activate idaes
-              pip --no-cache-dir install --progress-bar off << parameters.pip_target >>
+              pip --no-cache-dir install --progress-bar off <<parameters.target>>
               idaes get-extensions --platform ubuntu1804
   pytest:
     description: Run tests with pytest
@@ -111,7 +111,7 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~/repo
     parameters:
-      python_version:
+      python:
         type: string
         default: "3.7"
       pip_target:
@@ -124,7 +124,9 @@ jobs:
         - checkout
         - setup_env
         - create_conda
+            python_version: <<parameters.python>>
         - install
+            target: <<parameters.pip_target>>
         - pytest
         - pylint
         - when:
