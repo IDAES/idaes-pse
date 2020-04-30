@@ -1336,8 +1336,11 @@ objects linked the mixed state and all outlet states,
         )
 
         # Solve for split fractions only
+        constraint_status = {}
         for c in blk.component_objects((Block, Constraint)):
             if not c.local_name == "sum_split_frac":
+                # Record current status of constraints so they can be restored
+                constraint_status[c.name] = c.active
                 c.deactivate()
 
         if degrees_of_freedom(blk) != 0:
@@ -1349,7 +1352,12 @@ objects linked the mixed state and all outlet states,
                     )
 
         for c in blk.component_objects((Block, Constraint)):
-            c.activate()
+            try:
+                if constraint_status[c.name]:
+                    c.activate()
+            except KeyError:
+                # Component was not touched in deactivation step
+                continue
 
         if blk.config.ideal_separation:
             # If using ideal splitting, initialization should be complete
