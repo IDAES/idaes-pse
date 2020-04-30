@@ -23,7 +23,6 @@ commands:
     parameters:
       python_version:
         type: string
-        default: "3.7"
     steps:
       - run: conda create -yv -n idaes python=<<parameters.python_version>>
   install:
@@ -31,13 +30,12 @@ commands:
     parameters:
       pip_target:
         type: string
-        default: "."
     steps:
       - run:
           name: Install from source tree
           command: |
               source activate idaes
-              pip --no-cache-dir install --progress-bar off <<parameters.pip_target>>
+              pip --no-cache-dir install --progress-bar off << parameters.pip_target >>
               idaes get-extensions --platform ubuntu1804
   pytest:
     description: Run tests with pytest
