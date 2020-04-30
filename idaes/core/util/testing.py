@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Set, SolverFactory, Var
+from pyomo.environ import Constraint, Set, SolverFactory, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -31,6 +31,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              fixed_variables_set,
+                                              activated_constraints_set)
 
 
 def get_default_solver():
@@ -47,6 +50,66 @@ def get_default_solver():
 
     return solver
 
+
+def initialization_tester(m, optarg={'tol': 1e-6}, dof=0, **init_kwargs):
+    """
+    A method to test initialization methods on IDAES models. This method is
+    designed to be used as part of the tests for most models.
+
+    This method checks that the initialization methods runs as expceted
+    and that the state of the model (active/deactive and fixed/unfixed)
+    remains the same.
+
+    This method also add some dummy constraitns to the model and deactivates
+    them to make sure that the initialization does not affect their status.
+
+    Args:
+        m: a Concrete mdoel which contains a flowsheet and a model named unit
+            (i.e. m.fs.unit) which will be initialized
+        dof: expected degrees of freedom during initialization, default=0
+        init_kwargs: model specific arguments to pass to initialize method
+                     (e.g. initial guesses for states)
+
+    Returns:
+        None
+
+    Raises:
+        AssertionErrors is an issue is found
+    """
+    # Add some extra constraints and deactivate them to make sure
+    # they remain deactivated
+    m.fs.unit.__dummy_var = Var()
+    m.fs.unit.__dummy_equality = Constraint(expr=m.fs.unit.__dummy_var == 5)
+    m.fs.unit.__dummy_inequality = Constraint(expr=m.fs.unit.__dummy_var <= 10)
+    m.fs.unit.__dummy_equality.deactivate()
+    m.fs.unit.__dummy_inequality.deactivate()
+
+    orig_fixed_vars = fixed_variables_set(m)
+    orig_act_consts = activated_constraints_set(m)
+
+    m.fs.unit.initialize(optarg=optarg, **init_kwargs)
+
+    print(degrees_of_freedom(m))
+    assert degrees_of_freedom(m) == dof
+
+    fin_fixed_vars = fixed_variables_set(m)
+    fin_act_consts = activated_constraints_set(m)
+
+    assert len(fin_act_consts) == len(orig_act_consts)
+    assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+    for c in fin_act_consts:
+        assert c in orig_act_consts
+    for v in fin_fixed_vars:
+        assert v in orig_fixed_vars
+
+    # Check dummy constraints and clean up
+    assert not m.fs.unit.__dummy_equality.active
+    assert not m.fs.unit.__dummy_inequality.active
+
+    m.fs.unit.del_component(m.fs.unit.__dummy_inequality)
+    m.fs.unit.del_component(m.fs.unit.__dummy_equality)
+    m.fs.unit.del_component(m.fs.unit.__dummy_var)
 
 # -----------------------------------------------------------------------------
 # Define some generic PhysicalBlock and ReactionBlock classes for testing

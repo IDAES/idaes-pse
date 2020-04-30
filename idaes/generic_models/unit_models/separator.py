@@ -1293,7 +1293,7 @@ objects linked the mixed state and all outlet states,
                 )
 
     def initialize(
-        blk, outlvl=idaeslog.NOTSET, optarg={},
+        blk, outlvl=idaeslog.NOTSET, optarg={}, state_args=None,
         solver="ipopt", hold_state=False
     ):
         """
@@ -1304,6 +1304,8 @@ objects linked the mixed state and all outlet states,
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
+            state_args: unused, but retained for consistency with other
+                        initialization methods
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - False. **Valid values:**
