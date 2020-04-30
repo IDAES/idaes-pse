@@ -1,21 +1,10 @@
-version: 2.0
+version: 2.1
 
 ## Shared definitions
 
 # Notes:
 # - use "source activate" instead of "conda activate" since conda init bash
 #
-
-_conda37: &conda37
-  run:
-    name: Create Python 3.7 conda environment
-    command: conda create -yv -n idaes python=3.7
-
-_conda36: &conda36
-  run:
-    name: Create Python 3.6 conda environment
-    command: |
-        LC_ALL=C.UTF-8  conda create -yv -n idaes python=3.6
 
 _install: &install
   run:
@@ -76,6 +65,25 @@ _coverage: &coverage
 _vars:
   - &ubuntu-image idaes/ubuntu18-conda:2.0
 
+## Commands (new in 2.1)
+
+commands:
+  setup_env:
+    description: Set up shared environment variables
+    steps:
+      - run:
+          command: |
+            echo "export LANG=C.UTF-8" >> $BASH_ENV
+            echo "export LC_ALL=C.UTF-8" >> $BASH_ENV
+  create_conda:
+    description: Create Python conda environment
+    parameters:
+      version:
+        type: string
+        default: "3.7"
+    steps:
+      - run: conda create -yv -n idaes python=<< parameters.version >>
+
 ## Jobs
 
 jobs:
@@ -86,7 +94,9 @@ jobs:
     working_directory: ~/repo
     steps:
         - checkout
-        - <<: *conda36
+        - setup_env
+        - create_conda:
+            version: "3.6"
         - <<: *install
         - <<: *pytest
         - <<: *pylint
@@ -98,7 +108,9 @@ jobs:
     working_directory: ~/repo
     steps:
         - checkout
-        - <<: *conda37
+        - setup_env
+        - create_conda:
+            version: "3.7"
         - <<: *install
         - <<: *pytest
         - <<: *pylint
@@ -110,7 +122,9 @@ jobs:
     working_directory: ~/repo
     steps:
         - checkout
-        - <<: *conda37
+        - setup_env
+        - create_conda:
+            version: "3.7"
         - <<: *installdev
         - <<: *pytest
         - <<: *build_docs
@@ -124,7 +138,9 @@ jobs:
     working_directory: ~/repo
     steps:
         - checkout
-        - <<: *conda37
+        - setup_env
+        - create_conda:
+            version: "3.7"
         - <<: *install
         - <<: *clone_examples
         - <<: *test_examples
@@ -135,7 +151,9 @@ jobs:
       - image: *ubuntu-image
     working_directory: ~
     steps:
-      - <<: *conda37
+      - setup_env
+      - create_conda:
+          version: "3.7"
       - run:
           name: Install idaes-pse
           command: |
