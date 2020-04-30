@@ -463,6 +463,7 @@ class HelmholtzStateBlockData(StateBlockData):
         self.func_tau = EF(library=plib, function="tau")
         self.func_tau_sp = EF(library=plib, function="tau_sp")
         self.func_vf = EF(library=plib, function="vf")
+        self.func_vfs = EF(library=plib, function="vfs")
         self.func_g = EF(library=plib, function="g")
         self.func_f = EF(library=plib, function="f")
         self.func_cv = EF(library=plib, function="cv")
