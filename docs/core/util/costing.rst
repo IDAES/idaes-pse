@@ -390,9 +390,9 @@ driver mover type, and material factor (FM_MAT).
 
 * compressor_type = 'centrifugal', 'reciprocating', 'screw'
 * driver_mover_type = 'electrical_motor', 'steam_turbine', 'gas_turbine'
-* FM_mat = 'carbon_steel', 'stain_steel', 'nickel_alloy'
+* Mat_factor = 'carbon_steel', 'stain_steel', 'nickel_alloy'
 
-.. math:: self.costing.purchase\_cost = F_{D} F_{M} self.costing.base\_cost
+.. math:: self.costing.purchase\_cost = F_{D} material\_factor self.costing.base\_cost
 
 .. math:: self.costing.base\_cost = \exp{(\alpha_{1} + \alpha_{2}*\log{mechanical_{work}})}
 
@@ -413,20 +413,20 @@ Screw Compressor  8.1238             0.7243
 
 Table 11. Driver mover type (for compressors only).
 
-=============== ==========
-Mover type      FD
-=============== ==========
+=============== ===============
+Mover type      FD (mover_type)
+=============== ===============
 Electric Mover  1.00
 Steam Turbine   1.15
 Gas Turbine     1.25
-=============== ==========
+=============== ===============
 
 Table 12. Material of construction factor (for compressors only).
 
-=============== ==========
-Material        FM
-=============== ==========
+=============== ===========
+Material        Mat_factor
+=============== ===========
 Cast iron       1.00
 Stainless steel 1.15
 Nickel alloy    1.25
-=============== ==========
+=============== ===========
