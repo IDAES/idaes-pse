@@ -2,6 +2,10 @@ version: 2.0
 
 ## Shared definitions
 
+# Notes:
+# - use "source activate" instead of "conda activate" since conda init bash
+#
+
 _conda37: &conda37
   run:
     name: Create Python 3.7 conda environment
@@ -38,6 +42,14 @@ _pytest: &pytest
     command: |
         source activate idaes
         pytest -c pytest.ini idaes -m "not nocircleci"
+
+_docs: &build_docs
+  run:
+      name: Build Sphinx documentation
+      command: |
+          source activate idaes
+          cd docs
+          python build.py
 
 _clone_examples: &clone_examples
   run:
@@ -80,6 +92,7 @@ jobs:
         - <<: *conda36
         - <<: *install
         - <<: *pytest
+        - <<: *pylint
 
   # Python 3.7 non-developer
   python37:
@@ -91,8 +104,9 @@ jobs:
         - <<: *conda37
         - <<: *install
         - <<: *pytest
+        - <<: *pylint
 
-  # Python 3.7 developer
+  # Python 3.7 developer install
   python37dev:
     docker:
       - image: *ubuntu-image
@@ -102,6 +116,7 @@ jobs:
         - <<: *conda37
         - <<: *installdev
         - <<: *pytest
+        - <<: *build_docs
         - <<: *pylint
         - <<: *coverage
 
@@ -114,7 +129,6 @@ jobs:
         - checkout
         - <<: *conda37
         - <<: *install
-        - <<: *pytest
         - <<: *clone_examples
         - <<: *test_examples
 
