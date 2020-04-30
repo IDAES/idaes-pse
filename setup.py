@@ -59,9 +59,9 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
+        "pyutilib",
         "pyomo",
         "pytest",
-        "pyutilib",
         "pyyaml",
         "requests", # for ui/fsvis
         "sympy",
