@@ -139,8 +139,7 @@ jobs:
         - setup_env
         - create_conda
         - install
-        - clone_examples
-        - test_examples
+        - examples
 
   # pip install-based
   idaes_pse:
