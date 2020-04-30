@@ -47,6 +47,7 @@ commands:
         default: "not nocircleci"
     steps:
       - run:
+          name: Run pytest
           command: |
               source activate idaes
               pytest -c pytest.ini idaes -m "<<parameters.tags>>"
@@ -54,6 +55,7 @@ commands:
     description: Build Sphinx documentation
     steps:
       - run:
+          name: Build Sphinx docs
           command: |
               source activate idaes
               cd docs
@@ -73,11 +75,17 @@ commands:
   pylint:
     description: Run pylint
     steps:
-      - run: pylint -E --ignore-patterns="test_.*" idaes || true
+      - run:
+          name: pylint
+          command: pylint -E --ignore-patterns="test_.*" idaes || true
   coverage:
     description: Report code coverage
     steps:
-      - run: coverage xml && coveralls
+      - run:
+          name: coverage
+          command: |
+              coverage xml
+              coveralls
   idaes_pse:
     description: Install and test idaes-pse
     steps:
