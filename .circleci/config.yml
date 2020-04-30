@@ -14,6 +14,7 @@ commands:
     description: Set up shared environment variables
     steps:
       - run:
+          name: "Set locale to 'C.UTF-8'"
           command: |
             echo "export LANG=C.UTF-8" >> $BASH_ENV
             echo "export LC_ALL=C.UTF-8" >> $BASH_ENV
