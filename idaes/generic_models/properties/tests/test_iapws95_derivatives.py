@@ -53,6 +53,15 @@ class TestIAPWS95(unittest.TestCase):
         return model
 
     def un_derivs_fd_test(self, f, x1, d=1e-6, tol=0.01):
+        """Test derivatives for function f with 1 arguments agains f.d. approx
+        (contains assserts).
+
+        Args:
+            f: ExternalFunction to test
+            x: f argument 1
+            d: f.d. step for grad
+            tol: assert derivitive value tolerance
+        """
         assert(isinstance(f, AMPLExternalFunction))
         y, g, h = f.evaluate_fgh(args=(x1,))
         yf, gf, hf = f.evaluate_fgh(args=(x1 + d,))
@@ -78,6 +87,17 @@ class TestIAPWS95(unittest.TestCase):
                    between(h[0], hfdf, hfdb))
 
     def bin_derivs_fd_test(self, f, x1, x2, d0=1e-6, d1=1e-6, tol=0.01):
+        """Test derivatives for function f with 2 arguments agains f.d. approx
+        (contains assserts).
+
+        Args:
+            f: ExternalFunction to test
+            x1: f argument 1
+            x2: f argument 2
+            d0: f.d. step for grad[0] (x1)
+            d1: f.d. step for grad[1] (x2)
+            tol: assert derivitive value tolerance
+        """
         assert(isinstance(f, AMPLExternalFunction))
 
         y, g, h = f.evaluate_fgh(args=(x1, x2))
@@ -122,6 +142,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_sat_deltal(self):
+        """Test saturated liquid density derivatives"""
         model = self.make_model()
         cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -132,6 +153,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_sat_deltav(self):
+        """Test saturated vapor density derivatives"""
         model = self.make_model()
         cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -143,6 +165,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_psat(self):
+        """Test saturation pressure derivatives"""
         model = self.make_model()
         cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -154,6 +177,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau_sat(self):
+        """Test saturation temperature derivatives"""
         model = self.make_model()
         cond = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -166,6 +190,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_dens(self):
+        """Test density derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
@@ -186,6 +211,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_hxpt(self):
+        """Test enthalpy as a function of pressure and temperature derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
@@ -202,6 +228,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_sxpt(self):
+        """Test entropy as a function of pressure and temperature derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         phase = self.read_data("prop_iapws95_nist_webbook.txt", col=13)
@@ -218,6 +245,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_tau(self):
+        """Test temperature as a function of enthalpy and pressure derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_tau
@@ -233,6 +261,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_tau(self):
+        """Test temperature as a function of entropy and pressure derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=6)
         f = model.prop_in.func_tau_sp
@@ -248,6 +277,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_vf_1phase(self):
+        """Test vapor fraction as a function of enthalpy and pressure derivatives
+        single phase region"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
         f = model.prop_in.func_vf
@@ -263,6 +294,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_vf_2phase(self):
+        """Test vapor fraction as a function of enthalpy and pressure derivatives
+        two-phase region"""
         model = self.make_model()
         hvdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=17)
         hldat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=5)
@@ -281,6 +314,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_vfs_1phase(self):
+        """Test vapor fraction as a function of entorpy and pressure derivatives
+        single phase region"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=6)
         f = model.prop_in.func_vfs
@@ -296,6 +331,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_vfs_2phase(self):
+        """Test vapor fraction as a function of entropy and pressure derivatives
+        two-phase region"""
         model = self.make_model()
         svdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=18)
         sldat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=6)
@@ -315,6 +352,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phi0(self):
+        """Test Helmholtz energy ideal part derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -338,6 +376,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phir(self):
+        """Test Helmholtz energy residual part derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -362,6 +401,8 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     def test_derivs_pushfg(self):
+        """Test pressure, internal energy, entropy, enthalpy, Helmholtz enrgy,
+        Gibbs free energy, and speed of sound derivatives derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
@@ -389,6 +430,7 @@ class TestIAPWS95(unittest.TestCase):
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_cp_cv(self):
+        """Test heat capacity derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=2)
         for i, c in enumerate(cond):
