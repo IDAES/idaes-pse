@@ -152,8 +152,7 @@ jobs:
         default: "3.7"
     steps:
       - setup_env
-      - create_conda:
-          version: <<parameters.python_version>>
+      - create_conda
       - idaes_pse
 
 ## Workflows
