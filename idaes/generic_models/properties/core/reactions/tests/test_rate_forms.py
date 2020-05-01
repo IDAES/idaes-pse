@@ -90,9 +90,9 @@ def test_mole_frac_power_law_rate_no_order(model):
 def test_mole_frac_power_law_rate_with_order(model):
     model.rparams.config.rate_reactions.r1.parameter_data = {
         "reaction_order": {("p1", "c1"): 1,
-                           ("p1", "c2"): 2,
-                           ("p2", "c1"): 3,
-                           ("p2", "c2"): 4}}
+                            ("p1", "c2"): 2,
+                            ("p2", "c1"): 3,
+                            ("p2", "c2"): 4}}
 
     mole_frac_power_law_rate.build_parameters(
         model.rparams.reaction_r1, model.rparams.config.rate_reactions["r1"])
