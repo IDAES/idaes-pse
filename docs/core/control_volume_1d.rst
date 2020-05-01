@@ -226,13 +226,14 @@ A single enthalpy balance is written for the entire mixture at each point in the
    :header: "Variable Name", "Symbol", "Indices", "Conditions"
    :widths: 25, 15, 10, 30
 
-   "enthalpy_holdup", ":math:`E_{t,x,p}`", "t, x, p", "has_holdup = True"
+   "energy_holdup", ":math:`E_{t,x,p}`", "t, x, p", "has_holdup = True"
    "phase_fraction", ":math:`\phi_{t,x,p}`", "t, x, p", "has_holdup = True"
-   "enthalpy_accumulation", ":math:`\frac{\partial E_{t,x,p}}{\partial t}`", "t, x, p", "dynamic = True"
+   "energy_accumulation", ":math:`\frac{\partial E_{t,x,p}}{\partial t}`", "t, x, p", "dynamic = True"
    "_enthalpy_flow", ":math:`H_{t,x,p}`", "t, x, p", "None"
    "enthalpy_flow_dx", ":math:`\frac{\partial H_{t,x,p}}{\partial x}`", "t, x, p", "None"
    "heat", ":math:`Q_{t,x}`", "t, x", "has_heat_transfer = True"
    "work", ":math:`W_{t,x}`", "t, x", "has_work_transfer = True"
+   "enthalpy_transfer", ":math:`H_{transfer,t,x}`", "t, x", "has_enthalpy_transfer = True"
 
 **Expressions**
 
@@ -254,7 +255,7 @@ where :math:`Q_{rxn, t, x}` is the total enthalpy released by both kinetic and e
 
 `enthalpy_balance(t)`:
 
-.. math:: s_{energy} \times L \times \sum_p{\frac{\partial E_{t, x, p}}{\partial t}} = s_{energy} \times fd \ times \sum_p{\frac{\partial H_{t, x, p}}{\partial x}} + s_{energy} \times L \times Q_{t,x} + s_{energy} \times L \times W_{t,x} + s_{energy} \times L \times Q_{rxn, t, x} + s_{energy} \times L \times E_{custom, t, x}
+.. math:: s_{energy} \times L \times \sum_p{\frac{\partial E_{t, x, p}}{\partial t}} = s_{energy} \times fd \ times \sum_p{\frac{\partial H_{t, x, p}}{\partial x}} + s_{energy} \times L \times Q_{t,x} + s_{energy} \times L \times W_{t,x} + s_{energy} \times L \times H_{transfer,t,x} + s_{energy} \times L \times Q_{rxn, t, x} + s_{energy} \times L \times E_{custom, t, x}
 
 :math:`fd` is a flow direction term, which allows for material flow to be defined in either direction. If material flow is defined as `forward`, :math:`fd = -1`, otherwise :math:`fd = 1`.
 
@@ -266,9 +267,9 @@ This constraint is an internal constraint used to link the extensive enthalpy fl
 
 If `has_holdup` is True, `enthalpy_holdup_calculation(t, x, p)`:
 
-.. math:: E_{t, x, p} = h_{t, x, p} \times A \times \phi_{t, x, p}
+.. math:: E_{t, x, p} = u_{t, x, p} \times A \times \phi_{t, x, p}
 
-where :math:`h_{t, x, p}` is the enthalpy density (specific enthalpy) of phase :math:`p` at time :math:`t` and location :math:`x`.
+where :math:`u_{t, x, p}` is the internal density (specific internal energy) of phase :math:`p` at time :math:`t` and location :math:`x`.
 
 If `dynamic` is True:
 

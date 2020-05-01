@@ -24,7 +24,7 @@ import csv
 import os
 import idaes
 
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 def swco2_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
@@ -109,6 +109,7 @@ class TestSWCO2(object):
         model.func_tau = EF(library=plib, function="tau")
         model.func_tau_sp = EF(library=plib, function="tau_sp")
         model.func_vf = EF(library=plib, function="vf")
+        model.func_vfs = EF(library=plib, function="vfs")
         model.func_g = EF(library=plib, function="g")
         model.func_f = EF(library=plib, function="f")
         model.func_cv = EF(library=plib, function="cv")
@@ -172,6 +173,15 @@ class TestSWCO2(object):
             print("s = {}, p = {}, T = {}".format(data["S"][i], data["P"][i], T))
             temp = value(304.128/model.func_tau_sp(data["S"][i], data["P"][i]))
             assert temp == pytest.approx(T, rel=1e-3)
+
+    def test_vfs(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            x = value(model.func_vfs(data["S"][i], data["P"][i]))
+            if data["phase"][i] == "vapor":
+                assert x == pytest.approx(1.0, abs=1e-2)
+            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
+                assert x == pytest.approx(0.0, abs=1e-2)
 
     def test_solve_vapor_density(self, model):
         data = read_data("prop_swco2_nist_webbook.txt")

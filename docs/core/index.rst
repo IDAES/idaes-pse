@@ -10,6 +10,8 @@ Core Contents
     process_block
     model_concepts
     flowsheet_model
+    phase
+    comp
     properties
     unit_model
     control_volume

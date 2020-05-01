@@ -22,7 +22,7 @@ estimation problem if the VLE data is available.
 from pyomo.environ import Param, NonNegativeReals, Set
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class
+from idaes.core import declare_process_block_class, Component
 from idaes.core.util.misc import extract_data
 
 from idaes.generic_models.properties.activity_coeff_models.activity_coeff_prop_pack \
@@ -49,16 +49,13 @@ class BTXParameterData(ActivityCoeffParameterData):
                                                      'toluene',
                                                      'o-xylene'])
 
-        # Component list - a list of component identifiers
+        # Create component objects
         # NOTE: User needs to update this list; can be a subset or
         # equal to the master component list
-        self.component_list = Set(initialize=['benzene', 'toluene'])
+        self.benzene = Component()
+        self.toluene = Component()
 
         super(BTXParameterData, self).build()
-
-        # List of components in each phase (optional)
-        self.phase_comp = {"Liq": self.component_list,
-                           "Vap": self.component_list}
 
         # List of phase equilibrium index
         self.phase_equilibrium_idx_master = Set(initialize=[1, 2, 3])

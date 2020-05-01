@@ -1753,6 +1753,26 @@ def test_add_total_enthalpy_balances_work_transfer():
     assert isinstance(m.fs.cv.work, Var)
 
 
+def test_add_total_enthalpy_balances_enthalpy_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_enthalpy_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.enthalpy_transfer, Var)
+
+
 def test_add_total_enthalpy_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
