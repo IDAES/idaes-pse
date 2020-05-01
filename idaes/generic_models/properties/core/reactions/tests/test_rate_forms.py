@@ -44,7 +44,6 @@ def model():
     m.rparams.config.rate_reactions.r1 = {
         "stoichiometry": {("p1", "c1"): -1,
                           ("p1", "c2"): 2},
-        "rate_form": mole_frac_power_law_rate,
         "parameter_data": {}}
 
     m.rparams.reaction_r1 = Block()

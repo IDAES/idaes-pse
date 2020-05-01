@@ -73,7 +73,7 @@ def test_arrhenius(model):
     assert isinstance(model.rparams.reaction_r1.energy_activation, Var)
     assert model.rparams.reaction_r1.energy_activation.value == 500
 
-    # Check reaction form
+    # Check expressions
     rform = arrhenius.return_expression(
         model.rxn[1], model.rparams.reaction_r1, "r1", 300)
 
