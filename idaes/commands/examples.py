@@ -132,10 +132,10 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         sys.exit(0)
     # otherwise..
     target_dir = Path(directory)
-    # no-download mode
-    if no_download:
+    # download?
+    if no_download:  # no download
         _log.info("skipping download")
-    else:
+    else:  # download
         stable_ver = re.match(r".*-\w+$", version) is None
         if not stable_ver and not unstable:
             click.echo(f"Cannot download unstable version {version} unless you add "
@@ -145,12 +145,10 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         # give an error if selected version does not exist
         if ex_version not in [r.tag for r in releases]:
             if version == PKG_VERSION:
-                how = "n installed"
                 how_ver = " and, optionally, -V/--version to choose a desired version"
             else:
-                how = " selected"
                 how_ver = ""  # they already did this!
-            click.echo(f"Could not find a{how} examples release matching {version}")
+            click.echo(f"Could not find an examples release matching {version}")
             click.echo(f"Use -l/--list-releases to see all{how_ver}.")
             sys.exit(-1)
         click.echo("Downloading...")
@@ -163,6 +161,14 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         click.echo(f"* Downloaded examples to directory '{full_dir}'")
     # install
     if not no_install:
+        if not target_dir.exists():
+            if no_download:
+                click.echo(f"Target directory '{target_dir}' does not exist")
+                sys.exit(-1)
+            else:
+                click.echo(f"Internal error: After download, directory '{target_dir}' "
+                           f"does not exist")
+                sys.exit(-1)
         click.echo("Installing...")
         try:
             install_src(version, target_dir)
