@@ -439,6 +439,12 @@ class HeatExchangerData(UnitModelBlockData):
         init_log.info_high("Initialization Step 1b (side_2) Complete.")
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
+        # if costing block exists, deactivate
+        try:
+            self.costing.deactivate()
+        except AttributeError:
+            pass
+
         self.heat_transfer_equation.deactivate()
         self.side_2.heat.fix(duty)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -457,6 +463,11 @@ class HeatExchangerData(UnitModelBlockData):
         self.side_2.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
+        # if costing block exists, activate
+        try:
+            self.costing.activate()
+        except AttributeError:
+            pass
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
@@ -485,9 +496,12 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=costing):
+    def get_costing(self, module=costing, hx_type='U-tube',
+                    Mat_factor='stainless steel/stainless steel',
+                    length_factor='12ft', year=None):
         if not hasattr(self.flowsheet(), "costing"):
-            self.flowsheet().get_costing()
-        self.costing = Block()
+            self.flowsheet().get_costing(year=year)
 
-        module.hx_costing(self.costing)
+        self.costing = Block()
+        module.hx_costing(self.costing, hx_type=hx_type, Mat_factor=Mat_factor,
+                          length_factor=length_factor)
