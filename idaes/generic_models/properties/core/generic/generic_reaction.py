@@ -313,6 +313,13 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         super(GenericReactionBlockData, self).build()
 
         if self.config.has_equilibrium:
+            if len(self.params.config.equilibrium_reactions) == 0:
+                raise PropertyPackageError(
+                    "{} Generic Reaction Block was set to include equilibrium "
+                    "reactions, however no equilibrium reactions were "
+                    "defined. Either set has_equilibrium to be False, or "
+                    "include equikibriu mreactions in the package definition."
+                    .format(self.name))
             self._equilibrium_constraint()
 
     def _dh_rxn(self):
