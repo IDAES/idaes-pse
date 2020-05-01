@@ -564,6 +564,12 @@ see property package for documentation.}""",
         Returns:
             None
         """
+        # if costing block exists, deactivate
+        try:
+            blk.costing.deactivate()
+        except AttributeError:
+            pass
+
         if routine is None:
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
@@ -578,6 +584,11 @@ see property package for documentation.}""",
             super(PressureChangerData, blk).initialize(
                 state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
             )
+        # if costing block exists, activate
+        try:
+            blk.costing.activate()
+        except AttributeError:
+            pass
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         """

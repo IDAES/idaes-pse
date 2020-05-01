@@ -85,9 +85,11 @@ def hx_costing(self, hx_type='U-tube',
                           doc='hx tube length correction factor, FL')
 
     self.pressure_factor = Var(initialize=1,
+                               domain=NonNegativeReals,
                                doc='Pressure design factor - FP')
 
     self.material_factor = Var(initialize=3.5,
+                               domain=NonNegativeReals,
                                doc='construction material correction'
                                'factor - Mat_factor')
 
@@ -108,6 +110,7 @@ def hx_costing(self, hx_type='U-tube',
     alf3 = {'floating_head': 0.09005, 'fixed_head': 0.09861, 'U-tube': 0.09790,
             'Kettle_vap': 0.09005}
 
+    # checking units of self.parent_block().area
     if (self.parent_block().config.tube.property_package.get_metadata().
             default_units['length']) == 'm':
         area = self.parent_block().area*10.7639  # converting to ft^2
@@ -115,7 +118,7 @@ def hx_costing(self, hx_type='U-tube',
             default_units['length']) == 'ft':
         area = self.area
     else:
-        raise Exception('area units not supported')
+        raise Exception('area units not supported contact developers')
 
     def hx_cost_rule(self):
         return self.base_cost == exp(alf1[hx_type]
@@ -162,13 +165,22 @@ def hx_costing(self, hx_type='U-tube',
     # ------------------------------------------------------
     # Pressure factor calculation
     # doublecheck units (higher pressure fluid should be tube side)
-    if (self.parent_block().config.tube.property_package.get_metadata().
-            properties['pressure']['units']) == 'Pa':
+    if(self.parent_block().config.tube.property_package.get_metadata().
+       properties['pressure']['units']) == 'Pa':
         pressure = (self.parent_block().
                     tube.properties_in[0].pressure*14.69/1.01325e5)  # to psig
-    elif (self.parent_block().config.tube.property_package.get_metadata().
-            properties['pressure']['units']) == 'psig':
+    elif(self.parent_block().config.tube.property_package.get_metadata().
+         properties['pressure']['units']) == 'psig':
         pressure = self.tube.properties_in[0].pressure
+    elif(self.parent_block().config.tube.property_package.get_metadata().
+         properties['pressure']['units']) == 'bar':
+        pressure = (self.parent_block().
+                    tube.properties_in[0].pressure*14.5038)  # to psig
+    elif(self.parent_block().config.tube.property_package.get_metadata().
+         properties['pressure']['units']) == 'MPa':
+        pressure = (self.parent_block().tube.properties_in[0].pressure*145.038)
+    else:
+        raise Exception('Pressure units not supported contact developers')
 
     # units must be in psig
     def hx_P_factor(self):
@@ -245,38 +257,43 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
     self.material_factor = Param(mutable=True, initialize=3,
                                  doc='construction material correction factor')
+    
+    # checking units
+    if self.parent_block().config.thermodynamic_assumption.name == 'pump':
+        w = (self.parent_block().
+             work_fluid[self.parent_block().
+                        flowsheet().config.time.first()])
+    else:
+        w = (self.parent_block().
+             work_mechanical[self.parent_block().
+                             flowsheet().config.time.first()])
+
+    if(self.parent_block().config.property_package.get_metadata().
+       properties['enth_mol']['units']) == 'J/mol':
+        work_hp = w/746  # assuming work is in J/s
+
+    elif(self.parent_block().config.property_package.get_metadata().
+         properties['enth_mol']['units']) == 'kJ/kmol':
+        work_hp = w*0.0003725  # assuming w is in kJ/hr
+
+    elif(self.parent_block().config.property_package.get_metadata().
+         properties['enth_mol']['units']) == 'cal/mol':
+        work_hp = w * 0.00561  # assuming W is in cal/s
+
+    elif(self.parent_block().config.property_package.get_metadata().
+         properties['enth_mol']['units']) == 'cal/kmol':
+        work_hp = w/641186.48  # assuming W is in cal/hr
+
+    elif(self.parent_block().config.property_package.get_metadata().
+         properties['enth_mol']['units']) == 'TJ/kmol':
+        work_hp = w*1.34102209e9  # assuming W is in TJ/s (TW/746=hp)
+
+    else:
+        raise Exception("work units not supported contact developers")
+    # end of units check
 
     # if compressor is == False, that means pressure changer is a Turbine
     if self.parent_block().config.compressor is False:
-        # turbine purchase cost calculation W / 746 = horsepower
-        if self.parent_block().config.thermodynamic_assumption.name == 'pump':
-            w = (self.parent_block().
-                 work_fluid[self.parent_block().
-                            flowsheet().config.time.first()])
-        else:
-            w = (self.parent_block().
-                 work_mechanical[self.parent_block().
-                                 flowsheet().config.time.first()])
-
-        if(self.parent_block().config.property_package.get_metadata().
-           properties['enth_mol']['units']) == 'J/mol':
-            work_hp = w/746  # assuming work is in J/s
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'kJ/kmol':
-            work_hp = w*0.0003725  # assuming w is in kJ/hr
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'cal/mol':
-            work_hp = w * 0.00561  # assuming W is in cal/s
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'cal/kmol':
-            work_hp = w/641186.48  # assuming W is in cal/hr
-
-        else:
-            raise Exception("units not supported")
-
         #                           -1*work_hp because work is negative
         def CP_rule(self):
             return self.purchase_cost == 530*(-1 * work_hp)**0.81
@@ -293,74 +310,82 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
             # new variables only used by pump costing
             self.pump_head = Var(initialize=10,
+                                 domain=NonNegativeReals,
                                  doc='Pump Head in feet of fluid '
                                  'flowing (Pressure rise/dens)')
 
             self.size_factor = Var(initialize=10000,
+                                   domain=NonNegativeReals,
                                    doc='pump size factor,'
                                    'f(Q,pump_head) in gpm*ft^0.5')
 
             self.motor_base_cost = Var(initialize=10000,
+                                       domain=NonNegativeReals,
                                        doc='motor base purchase cost in $')
 
             self.pump_purchase_cost = Var(initialize=100000,
+                                          domain=NonNegativeReals,
                                           doc='pump purchase cost in $')
 
             self.motor_purchase_cost = Var(initialize=100000,
+                                           domain=NonNegativeReals,
                                            doc='motor purchase cost in $')
 
             self.FT = Param(mutable=True, initialize=1,
                             doc='pump-type factor')
-            # work units
+
+            # Pressure units required in lbf/ft^2
             if(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'J/mol':
-                work_hp = w/746  # assuming W is in J/s
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'kJ/kmol':
-                work_hp = w*0.0003725  # assuming W is in kJ/hr
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'cal/mol':
-                work_hp = w*0.00561  # assuming W is in cal/s
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'cal/kmol':
-                work_hp = w/641186.48  # assuming W is in cal/hr
-            # end work units
-            else:
-                raise Exception('work units are not supported')
-
-            # Pressure units
-            if(self.parent_block().config.property_package.get_metadata().
-                properties['pressure']['units']) == 'Pa' and (
-                self.parent_block().config.property_package.
-                    get_metadata().properties['dens_mass']['units']) == \
-                    'kg/m^3':
+               properties['pressure']['units']) == 'Pa':
                 #                        Pa to psi = lb/in^2  1ft^2 = 144 in^2
                 deltaP_lb_ft2 = self.parent_block().deltaP[0] \
                     * 0.00014503773 * 144
+
+            elif(self.parent_block().config.property_package.get_metadata().
+                 properties['pressure']['units']) == 'psig':
+                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 144
+
+            elif(self.parent_block().config.property_package.get_metadata().
+                 properties['pressure']['units']) == 'bar':
+                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 14.5038 * 144
+
+            elif(self.parent_block().config.property_package.get_metadata().
+                 properties['pressure']['units']) == 'MPa':
+                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 145.038 * 144
+            # end pressure units
+            else:
+                raise Exception('Pressure units not supported')
+
+            # dens mass units required in lb/ft^3
+            if(self.parent_block().config.property_package.
+               get_metadata().properties['dens_mass']['units']) == 'kg/m^3':
                 #                   kg/m^3  1 kg= 2.2 lb  1m3 = 35.3147 ft^3
                 dens_mass_lb_ft3 = self.parent_block().control_volume.\
                     properties_in[0].dens_mass * 2.2 / 35.3147
-            # 1 bar = 2088.5472 lbf/ft2 (To Do)
-            # end pressure units
+            elif(self.parent_block().config.property_package.
+                 get_metadata().properties['dens_mass']['units']) == 'g/cm^3':
+                dens_mass_lb_ft3 = self.parent_block().control_volume.\
+                    properties_in[0].dens_mass * 62.427961
             else:
-                raise Exception('Pa and/or mass density - units not supported')
+                raise Exception('mass density units not supported')
 
-            # volumetric flow units
+            # volumetric flow units required in gpm
             if(self.parent_block().config.property_package.get_metadata().
                properties['flow_vol']['units']) == 'm^3/s':
                 # 1 m3/s = 15850.32314 gal(US)/min
                 Q_gpm = self.parent_block().control_volume.\
                     properties_in[0].flow_vol * 15850.32314
-#                @self.Expression(self)
-#                def Q_gpm(self):
-#                    return self.parent_block().control_volume.\
-#                               properties_in[0].flow_vol * 15850.32314
+            elif(self.parent_block().config.property_package.get_metadata().
+                 properties['flow_vol']['units']) == 'm^3/hr':
+                Q_gpm = self.parent_block().control_volume.\
+                    properties_in[0].flow_vol * 246.172 / 60
+            elif(self.parent_block().config.property_package.get_metadata().
+                 properties['flow_vol']['units']) == 'ft^3/s':
+                Q_gpm = self.parent_block().control_volume.\
+                    properties_in[0].flow_vol * 448.83  # 1ft3/s = 448.83gpm
             # end volumetric flow units
             else:
-                raise Exception('flow vol units not supported')
+                raise Exception('volumetric flowrate units not supported')
 
             # build pump_head equation
             def p_head_rule(self):
@@ -409,7 +434,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                 self.FT = 1
 
             elif pump_type == 'reciprocating':
-                self.material_factor = material_factor_reciprocal_pumps[Mat_factor]
+                self.material_factor = \
+                    material_factor_reciprocal_pumps[Mat_factor]
                 self.FT = 1
             else:
                 raise Exception('pump type is not supported')
@@ -500,32 +526,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             w = self.parent_block().\
                 work_mechanical[self.parent_block().flowsheet().
                                 config.time.first()]
-            # check the units
-            if(self.parent_block().config.property_package.get_metadata().
-               properties['enth_mol']['units']) == 'J/mol':
-                work_hp = w/746  # assuming W is in J/s
-                print(work_hp)
 
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'TJ/kmol':
-                work_hp = w*1.34102209e9  # assuming W is in TJ/s (TW/746=hp)
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'kJ/kmol':
-                work_hp = w*0.0003725  # assuming W is in kJ/hr
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'cal/mol':
-                work_hp = w*0.00561  # assuming W is in cal/s
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['enth_mol']['units']) == 'cal/kmol':
-                work_hp = w/641186.48  # assuming W is in cal/hr
-            # finish checking the units
-            else:
-                raise Exception("units not supported")
-            # if compressor is = True, and not ThermodynamicAssumption.pump
-            # the unit could be a Fan, a Blower, or a Compressor
             # The user has to select mover_type [compressor or Fan or Blower]
             if mover_type == "compressor":
                 # Compressor Purchase Cost Correlation

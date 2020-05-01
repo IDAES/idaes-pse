@@ -135,7 +135,7 @@ The purchse cost is computed based on the base unit cost and three correction fa
 
 .. math:: self.costing.purchase\_cost = pressure\_factor*material\_factor*L\_factor*self.costing.base\_cost*(CE_{index}/500)
 
-.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area} + \alpha_{3}*(\log{area})^{2})}
+.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area*hx\_os} + \alpha_{3}*(\log{area*hx\_os})^{2})}
 
 where:
 
@@ -143,6 +143,7 @@ where:
 * material_factor - is the construction material correction factor
 * length_factor - is the tube length correction factor
 * CE_index - is a global parameter for Chemical Enginering cost index for years 2010-2019
+* hx_os - heat exchanger oversize factor (default = 1)
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
 
@@ -245,14 +246,14 @@ Three subtypes are supported for costing of pumps, which can be set using the "p
 Centrifugal Pump
 ++++++++++++++++
 
-The centrifugal cost has two main components, the cost of the pump and the cost of the motor. The pump cost is based on the fluid work (work_fluid), pump head, and size factor. 
+The centrifugal pump cost has two main components, the cost of the pump and the cost of the motor. The pump cost is based on the fluid work (work_fluid), pump head, and size factor. 
 Additional arguments are required:
 
 * pump_type_factor = '1.4' (see Table 6)
 * pump_motor_type_factor = 'open', 'enclosed', 'explosion_proof'
 
 
-Based on users inputs the get_costing method builds base_cost and purchase_cost for both the pump and the motor. 
+Based on user's inputs the get_costing method builds base_cost and purchase_cost for both the pump and the motor. 
 The unit purchase cost is obtained by adding the motor and pump costs.
 
 .. math:: self.costing.purchase\_cost = self.costing.pump\_purchase\_cost + self.costing.motor\_purchase\_cost
