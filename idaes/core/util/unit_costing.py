@@ -286,10 +286,12 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
     elif(self.parent_block().config.property_package.get_metadata().
          properties['enth_mol']['units']) == 'TJ/kmol':
-        work_hp = w*1.34102209e9  # assuming W is in TJ/s (TW/746=hp)
-
+        work_hp = w*1.34102209e9  # assuming W is in TJ/s (W/746=hp)
+    elif(self.parent_block().config.property_package.get_metadata().
+         properties['enth_mol']['units']) == 'MJ/kmol':
+        work_hp = w*1e6/746  # assuming W is in MJ/s (W/746=hp)
     else:
-        raise Exception("work units not supported contact developers")
+        raise Exception("work units not supported contact develpers")
     # end of units check
 
     # if compressor is == False, that means pressure changer is a Turbine
