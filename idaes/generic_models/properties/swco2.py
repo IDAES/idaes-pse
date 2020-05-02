@@ -104,6 +104,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="swco2",
             state_block_class=SWCO2StateBlock,
             component_list=Set(initialize=["CO2"]),
             phase_equilibrium_idx=Set(initialize=[1]),
