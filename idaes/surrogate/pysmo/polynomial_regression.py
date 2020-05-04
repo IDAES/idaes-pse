@@ -26,7 +26,7 @@ from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
-
+import os.path, pickle
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
@@ -242,7 +242,7 @@ class PolynomialRegression:
     """
 
     def __init__(self, original_data_input, regression_data_input, maximum_polynomial_order, number_of_crossvalidations=None,
-                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None):
+                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None, fname=None, overwrite=False):
         """
         Initialization of PolynomialRegression class.
 
@@ -293,6 +293,25 @@ class PolynomialRegression:
         """
 
         print('\n===========================Polynomial Regression===============================================\n')
+        # Checks if fname is provided or exists in the path
+        if not isinstance(overwrite, bool):
+            raise Exception('overwrite must be boolean.')
+        self.overwrite = overwrite
+        if fname is None:
+            fname = 'solution.pickle'
+            self.filename = 'solution.pickle'
+        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
+            raise Exception('fname must be a string with extension ".pickle". Please correct.')
+        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
+            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            self.filename = fname
+        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
+            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
+            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+            # self.filename = 'solution.pickle'
+        elif os.path.exists(fname) is False:
+            self.filename = fname
+
 
         if isinstance(original_data_input, pd.DataFrame):
             original_data = original_data_input.values
@@ -439,8 +458,8 @@ class PolynomialRegression:
         elif num_training == self.number_of_samples:
             raise Exception('The inputted of fraction_training is too high.')
         for i in range(1, self.number_of_crossvalidations + 1):
+            np.random.seed(i)
             if additional_features is None:
-                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1]))
                 A[:, :] = self.regression_data
                 np.random.shuffle(A)  # Shuffles the rows of the regression data randomly
@@ -1059,6 +1078,8 @@ class PolynomialRegression:
                 self.regression_data, dataframe_coeffs, [],
                 extra_terms_feature_vector,
                 self.additional_term_expressions)
+
+            self.pickle_save({'set-up':self, 'result':results})
             return results
 
         else:
@@ -1106,6 +1127,8 @@ class PolynomialRegression:
                 r_square, [], [], [], additional_features_array,
                 self.regression_data, dataframe_coeffs, extra_terms_coeffs,
                 extra_terms_feature_vector, self.additional_term_expressions)
+
+            self.pickle_save({'set-up':self, 'result':results})
             return results
 
     def get_feature_vector(self):
@@ -1213,3 +1236,57 @@ class PolynomialRegression:
             y_eq[j, 0] = aml.value(m.o2([m.xx[i] for i in x_list]))
         return y_eq
 
+    def pickle_save(self, solutions):
+        """
+        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        """
+        try:
+            filehandler = open(self.filename, 'wb')
+            pickle.dump(solutions, filehandler)
+            print('\nResults saved in ', str(self.filename))
+        except:
+            raise IOError('File could not be saved.')
+
+    @staticmethod
+    def pickle_load(solution_file):
+        """
+        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+
+        Input arguments:
+                solution_file            : Pickle object file containing previous solution to be loaded.
+
+        """
+        try:
+            filehandler = open(solution_file, 'rb')
+            return pickle.load(filehandler)
+        except:
+            raise Exception('File could not be loaded.')
+
+    def parity_residual_plots(self, results_vector):
+        """
+
+        inputs:
+            results_vector: Result object created by run.
+
+        Returns:
+
+        """
+        y_predicted = self.poly_predict_output(results_vector, results_vector.final_training_data[:, :-1])
+        fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
+        ax = fig1.add_subplot(121)
+        ax.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1], '-')
+        ax.plot(results_vector.final_training_data[:, -1], y_predicted, 'o')
+        ax.set_xlabel(r'True data', fontsize=12)
+        ax.set_ylabel(r'Surrogate values', fontsize=12)
+        ax.set_title(r'Parity plot', fontsize=12)
+
+        ax2 = fig1.add_subplot(122)
+        ax2.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1] - y_predicted[:, ].reshape(y_predicted.shape[0], ), 's', mfc='w', mec='m', ms=6)
+        ax2.axhline(y=0, xmin=0, xmax=1)
+        ax2.set_xlabel(r'True data', fontsize=12)
+        ax2.set_ylabel(r'Residuals', fontsize=12)
+        ax2.set_title(r'Residual plot', fontsize=12)
+
+        plt.show()
+
+        return

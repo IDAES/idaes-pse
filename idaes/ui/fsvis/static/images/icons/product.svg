@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   preserveAspectRatio="xMidYMid meet"
+   viewBox="0 0 285.26193 148.63494"
+   width="490.29395"
+   height="255.46631"
+   id="svg1187"
+   sodipodi:docname="pentagon.svg"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+  <metadata
+     id="metadata1191">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="696"
+     inkscape:window-height="480"
+     id="namedview1189"
+     showgrid="false"
+     inkscape:zoom="0.21454545"
+     inkscape:cx="397.94916"
+     inkscape:cy="55.030819"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1187" />
+  <defs
+     id="defs1163">
+    <path
+       d=""
+       id="c2dfFriK"
+       inkscape:connector-curvature="0" />
+    <path
+       d=""
+       id="c1prtneW1m"
+       inkscape:connector-curvature="0" />
+    <path
+       d="m 168.96,347.47 -75.35,-70.68 76.07,-69.9 200.53,1.03 -0.72,140.58 z"
+       id="a434bwZEoi"
+       inkscape:connector-curvature="0" />
+  </defs>
+  <g
+     id="g1185"
+     transform="translate(-88.465944,-203.38299)">
+    <g
+       id="g1183">
+      <g
+         id="g1169">
+        <g
+           id="g1167">
+          <use
+             xlink:href="#c2dfFriK"
+             id="use1165"
+             style="opacity:1;fill-opacity:0;stroke:#050502;stroke-width:1;stroke-opacity:1"
+             x="0"
+             y="0"
+             width="100%"
+             height="100%" />
+        </g>
+      </g>
+      <g
+         id="g1175">
+        <g
+           id="g1173">
+          <use
+             xlink:href="#c1prtneW1m"
+             id="use1171"
+             style="opacity:1;fill-opacity:0;stroke:#050502;stroke-width:1;stroke-opacity:1"
+             x="0"
+             y="0"
+             width="100%"
+             height="100%" />
+        </g>
+      </g>
+      <g
+         id="g1181">
+        <g
+           id="g1179">
+          <use
+             xlink:href="#a434bwZEoi"
+             id="use1177"
+             style="opacity:1;fill-opacity:0;stroke:#000000;stroke-width:7;stroke-opacity:1"
+             x="0"
+             y="0"
+             width="100%"
+             height="100%" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

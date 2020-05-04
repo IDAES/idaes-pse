@@ -37,10 +37,14 @@ from zipfile import ZipFile
 
 # third-party
 import click
+from nbconvert.exporters import NotebookExporter
+from nbconvert.writers import FilesWriter
+from traitlets.config import Config
+import nbformat
 import requests
 
 # package
-from idaes.commands.base import command_base
+from idaes.commands import cb
 from idaes.ver import package_version as V
 from idaes.util.system import TemporaryDirectory
 
@@ -58,7 +62,9 @@ REPO_NAME = "examples-pse"
 REPO_DIR = "src"
 PKG_VERSION = f"{V.major}.{V.minor}.{V.micro}"
 INSTALL_PKG = "idaes_examples"
-
+JUPYTER_NB_VERSION = 4  # for parsing
+REMOVE_CELL_TAG = "remove_cell"  # for stripping Jupyter notebook cells
+STRIPPED_NOTEBOOK_SUFFIX = "_s"
 
 class DownloadError(Exception):
     """Used for errors downloading the release files.
@@ -77,19 +83,12 @@ class InstallError(Exception):
 Release = namedtuple("Release", ["date", "tag", "info"])
 
 
-@command_base.command(
+@cb.command(
     name="get-examples", help="Fetch example scripts and Jupyter Notebooks."
 )
 @click.option(
     "--dir", "-d", "directory", help="installation target directory", default="examples",
     type=str,
-)
-@click.option(
-    "--force",
-    "-f",
-    "force_write",
-    help="Do not prompt for remove/overwrite of existing examples",
-    is_flag=True
 )
 @click.option(
     "--no-install", "-I", "no_install", help="Do *not* install examples into 'idaes_examples' package",
@@ -121,36 +120,55 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     default=PKG_VERSION,
     show_default=True,
 )
-def get_examples(directory, force_write, no_install, list_releases, no_download, version,
+def get_examples(directory, no_install, list_releases, no_download, version,
                  unstable):
     """Get the examples from Github and put them in a local directory.
     """
+    # will always need a list of releases
+    releases = get_releases(unstable)
     # list-releases mode
     if list_releases:
-        releases = get_releases(unstable)
         print_releases(releases, unstable)
         sys.exit(0)
     # otherwise..
     target_dir = Path(directory)
-    # no-download mode
-    if no_download:
+    # download?
+    if no_download:  # no download
         _log.info("skipping download")
-    else:
+    else:  # download
         stable_ver = re.match(r".*-\w+$", version) is None
         if not stable_ver and not unstable:
             click.echo(f"Cannot download unstable version {version} unless you add "
                        f"the -U/--unstable flag")
             sys.exit(-1)
+        ex_version = get_examples_version(version)
+        # give an error if selected version does not exist
+        if ex_version not in [r.tag for r in releases]:
+            if version == PKG_VERSION:
+                how_ver = " and, optionally, -V/--version to choose a desired version"
+            else:
+                how_ver = ""  # they already did this!
+            click.echo(f"Could not find an examples release matching {version}")
+            click.echo(f"Use -l/--list-releases to see all{how_ver}.")
+            sys.exit(-1)
         click.echo("Downloading...")
         try:
-            download(get_releases(unstable), target_dir, version, force_write)
+            download(target_dir, ex_version)
         except DownloadError as err:
-            _log.fatal(f"abort due to failed download: {err}")
+            _log.warning(f"abort due to failed download: {err}")
             sys.exit(-1)
         full_dir = os.path.realpath(target_dir)
         click.echo(f"* Downloaded examples to directory '{full_dir}'")
     # install
     if not no_install:
+        if not target_dir.exists():
+            if no_download:
+                click.echo(f"Target directory '{target_dir}' does not exist")
+                sys.exit(-1)
+            else:
+                click.echo(f"Internal error: After download, directory '{target_dir}' "
+                           f"does not exist")
+                sys.exit(-1)
         click.echo("Installing...")
         try:
             install_src(version, target_dir)
@@ -158,50 +176,43 @@ def get_examples(directory, force_write, no_install, list_releases, no_download,
             click.echo(f"Install error: {err}")
             sys.exit(-1)
         click.echo(f"* Installed examples in package {INSTALL_PKG}")
+    # strip notebooks
+    click.echo("Cleaning up Jupyter notebooks..")
+    strip_test_cells(target_dir)
+    # Done
+    click.echo("Done!")
 
 
-def download(releases, target_dir, version, force):
+def get_examples_version(idaes_version: str):
+    """Given the specified 'idaes-pse' repository release version,
+    figure out the matching 'examples-pse' repository release version.
+
+    Args:
+        idaes_version: IDAES version, e.g. "1.6.0"
+
+    Returns:
+        Examples version, or if there is no match, return None.
+    """
+    # TODO: fetch mapping from Github and apply mapping
+    return idaes_version
+
+
+def download(target_dir: Path, version: str):
     """Download `version` into `target_dir`.
-
     Raises:
         DownloadError
     """
-    matched_release = None
-    for rel in releases:
-        if version == rel[1]:  # matches tag
-            matched_release = rel
-            break
-    if matched_release is None:
-        # modify message slightly depending on whether they selected a version
-        if version == PKG_VERSION:
-            how = "installed"
-            how_ver = " and -V/--version to choose a desired version"
-        else:
-            how = f"selected"
-            how_ver = ""  # they already did this!
-        click.echo(
-            f"No release found matching {how} IDAES package version '{version}'."
-        )
-        click.echo(f"Use -l/--list-releases to see all{how_ver}.")
-        raise DownloadError("bad version")
     # check target directory
     if target_dir.exists():
-        why_illegal = is_illegal_dir(target_dir)
-        if why_illegal:
-            raise DownloadError(f"Refuse to remove directory '{target_dir}': "
-                                f"{why_illegal}")
-        if not force:
-            click.confirm(f"Replace existing directory '{target_dir}'", abort=True)
-        try:
-            shutil.rmtree(target_dir)
-        except Exception as err:
-            raise DownloadError(f"Cannot remove existing directory: {err}")
+        click.echo(f"Directory '{target_dir}' exists. Please move or delete and "
+                   f"try this command again")
+        raise DownloadError("directory exists")
     # download
     try:
-        download_contents(version, target_dir)
+        download_contents(target_dir, version)
     except DownloadError as err:
         click.echo(f"Download failed: {err}")
-        shutil.rmtree(target_dir)  # remove partial download
+        # shutil.rmtree(target_dir)  # remove partial download
         raise
 
 
@@ -217,7 +228,7 @@ def is_illegal_dir(d: Path):
     return None
 
 
-def download_contents(version, target_dir):
+def download_contents(target_dir, version):
     """Download the given version from the Github releases and make
     its `REPO_DIR` subdirectory be the `target_dir`.
 
@@ -396,3 +407,81 @@ def find_python_directories(target_dir: Path) -> List[Path]:
             alldirs.add(d)
             d = d.parent
     return list(alldirs)
+
+
+def find_notebook_files(target_dir: Path) -> List[Path]:
+    """Find all files ending in ".ipynb", at or below target_dir.
+    """
+    return list(target_dir.rglob("*.ipynb"))
+
+
+def strip_test_cells(target_dir: Path):
+    """Strip test cells from notebooks below `target_dir`.
+    See `strip_tags()` for how that is done.
+    """
+    nb_files = find_notebook_files(target_dir)
+    for nb_file in nb_files:
+        if has_tagged_cells(nb_file):
+            strip_tags(nb_file)
+
+
+def has_tagged_cells(nb: Path):
+    """Quickly check whether this notebook has any cells with the "special" tag.
+
+    Returns:
+        True = yes, it does; False = no specially tagged cells
+    Raises:
+        NotebookFormatError, if notebook at 'entry' is not parseable
+    """
+    # parse the notebook (assuming this is fast; otherwise should cache it)
+    try:
+        nb = nbformat.read(str(nb), as_version=JUPYTER_NB_VERSION)
+    except nbformat.reader.NotJSONError:
+        raise ValueError(f"Notebook '{nb}' is not valid JSON")
+    # look for tagged cells; return immediately if one is found
+    for i, c in enumerate(nb.cells):
+        if "tags" in c.metadata and REMOVE_CELL_TAG in c.metadata.tags:
+            _log.debug(f"Found {REMOVE_CELL_TAG} tag in cell {i}")
+            return True  # can stop now, one is enough
+    # no tagged cells
+    return False
+
+
+def strip_tags(nb: Path):
+    """Strip tags from notebook, if there are any.
+
+    Behavior depends on filename:
+
+    - ends with "_test.ipynb" or "_testing.ipynb" -> make a stripped file
+      with the suffix removed.
+    - otherwise -> make a stripped file with "_s.ipynb" at the end.
+
+    Raises:
+        IOError: If the desired target for the stripped notebook already exists
+    """
+    # Set up configuration for removing specially tagged cells
+    conf = Config()
+    conf.TagRemovePreprocessor.remove_cell_tags = (REMOVE_CELL_TAG,)
+    conf.NotebookExporter.preprocessors = [
+        "nbconvert.preprocessors.TagRemovePreprocessor"
+    ]  # for some reason, this only works with the full module path
+    # Convert from Notebook format to Notebook format, stripping tags
+    (body, resources) = NotebookExporter(config=conf).from_filename(str(nb))
+    # Set up output destination
+    wrt = FilesWriter()
+    wrt.build_directory = str(nb.parent)
+    nb_name = nb.stem
+    # Logic: (1) ends in _test.ipynb or _testing.ipynb? -> remove _test/_testing
+    # (2) otherwise -> add "_s" (for stripped) before .ipynb extension
+    if nb_name.endswith("_test"):
+        stripped_name = nb_name[:-5]
+    elif nb_name.endswith("_testing"):
+        stripped_name = nb_name[:-8]
+    else:
+        stripped_name = nb_name + STRIPPED_NOTEBOOK_SUFFIX
+    new_nb = nb.parent / (stripped_name + ".ipynb")
+    # Don't overwrite an existing file
+    if new_nb.exists():
+        raise IOError(f"Cannot create stripped notebook '{new_nb}': file exists")
+    # Write stripped notebook to output file
+    wrt.write(body, resources, notebook_name=stripped_name)

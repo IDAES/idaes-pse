@@ -50,13 +50,14 @@ class ReactionParameterData(ReactionParameterBlock):
     superheated steam.
 
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super(ReactionParameterData, self).build()
 
-        self.reaction_block_class = ReactionBlock
+        self._reaction_block_class = ReactionBlock
 
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])

@@ -78,9 +78,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+            default={"defined_state": True})
 
         m.fs.obj = Objective(expr=(m.fs.state.temperature - 510)**2)
 
@@ -113,9 +112,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         for T in range(370, 500, 25):
             m.fs.state.flow_mol.fix(100)
@@ -148,9 +146,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.5)
@@ -215,9 +212,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.5)
@@ -282,9 +278,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.5)
@@ -349,9 +344,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.5)
@@ -416,9 +410,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.5)
@@ -483,9 +476,8 @@ class TestBTExample(object):
         m.fs.props = BT_PR.BTParameterBlock(
                 default={'valid_phase': ('Vap', 'Liq')})
 
-        m.fs.state = m.fs.props.state_block_class(
-                default={'parameters': m.fs.props,
-                         'defined_state': True})
+        m.fs.state = m.fs.props.build_state_block(
+                default={'defined_state': True})
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac_comp["benzene"].fix(0.2)

@@ -34,9 +34,7 @@ def test_interrogator_state_block_methods():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].get_material_flow_terms("Liq", "A") is \
@@ -62,9 +60,7 @@ def test_interrogator_state_block_unindexed_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_unindexed is \
@@ -85,9 +81,7 @@ def test_interrogator_state_block_phase_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_phase["Liq"] is \
@@ -106,9 +100,7 @@ def test_interrogator_state_block_comp_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_comp["A"] is \
@@ -127,9 +119,7 @@ def test_interrogator_state_block_phase_comp_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_phase_comp["Liq", "A"] is \
@@ -149,9 +139,7 @@ def test_interrogator_report_method():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     with pytest.raises(TypeError,
                        match="Models constructed using the Property "
@@ -167,9 +155,7 @@ def test_interrogator_initialize_method():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     with pytest.raises(TypeError,
                        match="Models constructed using the Property "

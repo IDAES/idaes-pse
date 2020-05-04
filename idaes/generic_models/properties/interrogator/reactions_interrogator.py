@@ -25,8 +25,6 @@ from idaes.core import (declare_process_block_class,
                         ReactionParameterBlock,
                         ReactionBlockDataBase,
                         ReactionBlockBase,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
                         UnitModelBlockData)
 import idaes.logger as idaeslog
 
@@ -46,13 +44,14 @@ class ReactionInterrogatorData(ReactionParameterBlock):
     This class contains the methods and attributes for recording and displaying
     the reaction properties requried by the flowsheet.
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super(ReactionInterrogatorData, self).build()
 
-        self.reaction_block_class = InterrogatorReactionBlock
+        self._reaction_block_class = InterrogatorReactionBlock
 
         # List of valid phases in property package
         # TODO : Allow users to define a phase list

@@ -114,7 +114,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
+        # tmp_dict["parameters"] = self.config.property_package
 
         if information_flow == FlowDirection.forward:
             tmp_dict["defined_state"] = True
@@ -126,28 +126,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
 
-        try:
-            self.properties_in = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at inlet",
-                            default=tmp_dict))
+        self.properties_in = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at inlet",
+                        default=tmp_dict))
 
-            # Reverse defined_state
-            tmp_dict_2 = dict(**tmp_dict)
-            tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
+        # Reverse defined_state
+        tmp_dict_2 = dict(**tmp_dict)
+        tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
 
-            self.properties_out = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at outlet",
-                            default=tmp_dict_2))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} physical property package has not implemented the "
-                    "state_block_class attribute. Please contact the "
-                    "developer of the physical property package."
-                    .format(self.name))
+        self.properties_out = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at outlet",
+                        default=tmp_dict_2))
 
     def add_reaction_blocks(self, has_equilibrium=None):
         """
@@ -175,20 +168,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
-        tmp_dict["parameters"] = self.config.reaction_package
 
-        try:
-            self.reactions = (
-                    self.config.reaction_package.reaction_block_class(
-                            self.flowsheet().config.time,
-                            doc="Reaction properties in control volume",
-                            default=tmp_dict))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} reaction property package has not implemented the "
-                    "reaction_block_class attribute. Please contact the "
-                    "developer of the reaction property package."
-                    .format(self.name))
+        self.reactions = (
+                self.config.reaction_package.build_reaction_block(
+                        self.flowsheet().config.time,
+                        doc="Reaction properties in control volume",
+                        default=tmp_dict))
 
     def _add_material_balance_common(self,
                                      balance_type,
@@ -874,6 +859,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
+                                    has_enthalpy_transfer=False,
                                     custom_term=None):
         """
         This method constructs a set of 0D enthalpy balances indexed by time
@@ -886,6 +872,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
                     included in enthalpy balances
+            has_enthalpy_transfer - whether terms for enthalpy transfer due to
+                    mass transfer should be included in enthalpy balance. This
+                    should generally be the same as the has_mas_trasnfer
+                    argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
                     Expression must be indexed by time and phase list
@@ -963,6 +953,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             doc="Work transfered in unit [{}/{}]"
                                 .format(units['energy'], units['time']))
 
+        # Enthalpy transfer
+        if has_enthalpy_transfer:
+            self.enthalpy_transfer = Var(
+                self.flowsheet().config.time,
+                domain=Reals,
+                initialize=0.0,
+                doc="Enthalpy transfered in unit due to mass trasnfer [{}/{}]"
+                .format(units['energy'], units['time']))
+
         # Heat of Reaction
         if has_heat_of_reaction:
             @self.Expression(self.flowsheet().config.time,
@@ -999,6 +998,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def work_term(b, t):
             return b.work[t] if has_work_transfer else 0
 
+        def enthalpy_transfer_term(b, t):
+            return b.enthalpy_transfer[t] if has_enthalpy_transfer else 0
+
         def rxn_heat_term(b, t):
             return b.heat_of_reaction[t] if has_heat_of_reaction else 0
 
@@ -1023,6 +1025,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         b.scaling_factor_energy +
                         heat_term(b, t)*b.scaling_factor_energy +
                         work_term(b, t)*b.scaling_factor_energy +
+                        enthalpy_transfer_term(b, t)*b.scaling_factor_energy +
                         rxn_heat_term(b, t)*b.scaling_factor_energy +
                         user_term(t)*b.scaling_factor_energy)
 
