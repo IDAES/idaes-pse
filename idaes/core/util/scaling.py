@@ -143,7 +143,7 @@ def _calculate_scale_factors_from_nominal(m):
         None
     """
 
-    for c in m.component_data_objects((pyo.Var, pyo.Expression)):
+    for c in m.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective)):
         # Check for a scaling expression.  If there is one, use it to calculate
         # a scaling factor otherwise use autoscaling.
         if not hasattr(c.parent_block(), "nominal_value"):
@@ -245,6 +245,9 @@ def calculate_scaling_factors(
     # Then constraints
     _calculate_scale_factors_from_expr(m, replacement=replacement,
                                        cls=pyo.Constraint)
+    # Then objective
+    _calculate_scale_factors_from_expr(m, replacement=replacement,
+                                       cls=pyo.Objective)
 
 
 def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
@@ -339,6 +342,33 @@ def grad_fd(c, scaled=False, h=1e-6):
     return grad, vars
 
 
+def scale_constraint(c, v=None):
+    """DEPRECATED - This transforms a constraint with its scaling factor or a
+    given scaling factor value. If it uses the scaling factor suffix value,
+    the scaling factor suffix is set to 1 to avoid double scaling the
+    constraint. This can be used when to scale constraints before sending the
+    model to the solver.
+
+    Args:
+        c: Pyomo constraint
+        v: Scale factor. If None, use value from scaling factor suffix and set
+            suffix value to 1.
+
+    Returns:
+        None
+    """
+
+    if v is not None:
+        try:
+            c.parent_block().scaling_factor[c] = v
+        except AttributeError:
+            c.parent_block().scaling_factor = pyo.Suffix(
+                direction=pyo.Suffix.EXPORT)
+            c.parent_block().scaling_factor[c] = v
+
+    scale_single_constraint(c)
+
+
 def scale_single_constraint(c):
     """This transforms a constraint with its scaling factor. If there is no
     scaling factor for the constraint, the constraint is not scaled and a
@@ -367,11 +397,14 @@ def scale_single_constraint(c):
     if v is not None:
         lst = []
         for prop in ['lower', 'body', 'upper']:
+            print(c.name)
             c_prop = getattr(c, prop)
             if c_prop is not None:
                 c_prop = c_prop * v
             lst.append(c_prop)
         c.set_value(tuple(lst))  # set the scaled lower, body, and upper
+        c.parent_block().scaling_factor[c] = 1  # set scaling factor to 1
+
 
 def _scale_block_constraints(b):
     """PRIVATE FUNCTION
@@ -389,7 +422,7 @@ def _scale_block_constraints(b):
             "There is no scaling factor suffix for the {} block, so its "
             "constraints cannot be scaled.".format(b.name))
 
-    for c in b.component_objects(pyo.Constraint, descend_into=False):
+    for c in b.component_objects(pyo.Constraint,descend_into=False):
         scale_single_constraint(c)
 
 
@@ -401,12 +434,14 @@ def scale_constraints(blk, descend_into=True):
 
     Args:
         blk: Pyomo block
+        basis: Scaling basis, must be inverse variable scale
         descend_into: indicates whether to descend into the other blocks on
             block b.
 
     Returns:
         None
     """
+
     _scale_block_constraints(blk)
     if descend_into:
         for b in blk.component_objects(pyo.Block, descend_into=True):
