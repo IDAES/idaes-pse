@@ -83,7 +83,7 @@ class PropertyTestHarness(object):
     def test_state_block_class(self, frame):
         if not hasattr(frame.fs.params, "state_block_class"):
             raise AttributeError(
-                "Parameter blcok does not specify state_block_class.")
+                "Parameter block does not specify state_block_class.")
 
     def test_properties_meta_data(self, frame):
         if frame.fs.params.get_metadata().properties is None:
@@ -96,9 +96,8 @@ class PropertyTestHarness(object):
                 "Parameter block has not specified default_units metadata.")
 
     def test_state_block_construction(self, frame):
-        frame.fs.props = frame.fs.params.state_block_class(
-                [1], default={"parameters": frame.fs.params,
-                              "defined_state": True,
+        frame.fs.props = frame.fs.params.build_state_block(
+                [1], default={"defined_state": True,
                               **frame.prop_args})
 
         if not isinstance(frame.fs.props[1], StateBlockData):

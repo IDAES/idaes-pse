@@ -36,13 +36,9 @@ def test_interrogator_rxn_block_unindexed_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_unindexed is \
@@ -65,13 +61,9 @@ def test_interrogator_rxn_block_phase_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_phase["Liq"] is \
@@ -92,13 +84,9 @@ def test_interrogator_rxn_block_comp_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_comp["A"] is \
@@ -119,13 +107,9 @@ def test_interrogator_rxn_block_phase_comp_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].prop_phase_comp["Liq", "A"] is \
@@ -146,13 +130,9 @@ def test_interrogator_rxn_block_reaction_rate_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].reaction_rate["R1"] is \
@@ -173,13 +153,9 @@ def test_interrogator_rxn_block_dh_rxn_call():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.rxns[0].dh_rxn["R1"] is \
@@ -201,13 +177,9 @@ def test_interrogator_initialize_method():
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
-    m.fs.rxns = m.fs.rxn_params.reaction_block_class(
-            [0],
-            default={"parameters": m.fs.rxn_params,
-                     "state_block": m.fs.props})
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
 
     with pytest.raises(TypeError,
                        match="Models constructed using the Reaction "

@@ -243,7 +243,7 @@ def model():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.sb = m.fs.pp.state_block_class(default={'parameters': m.fs.pp})
+    m.fs.sb = m.fs.pp.build_state_block()
 
     for i in m.fs.sb.flow_mol_phase_comp:
         assert not m.fs.sb.flow_mol_phase_comp[i].fixed

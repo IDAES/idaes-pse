@@ -39,7 +39,8 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         TimeResolutionOption, ControlInitOption, ControlPenaltyType,
         VariableCategory, validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset)
+        NMPCVarGroup, find_point_in_continuousset,
+        get_violated_bounds_at_time)
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -54,6 +55,7 @@ class NMPCSim(object):
     """
     Main class for NMPC simulations of Pyomo models.
     """
+    # pyomo.common.config.add_docstring_list
     CONFIG = ConfigDict()
 
     # TODO: How to document config values?
@@ -201,7 +203,7 @@ class NMPCSim(object):
     # Plus having a "config"-inside-a-config seems kind of wonky.
     CONFIG.declare('solver',
             ConfigValue(
-                default=SolverFactory('ipopt'),
+                default='ipopt',
                 domain=validate_solver,
                 doc='Pyomo solver object to be used to solve generated NLPs'
                 )
@@ -531,7 +533,11 @@ class NMPCSim(object):
             # Sanity check:
             assert min_spacing > 0
             # Required so only one point can satisfy equality to tolerance
-            assert tolerance < min_spacing/2
+            if tolerance >= min_spacing/2:
+                raise ValueError(
+                    'ContinuousSet tolerance is larger than half the minimum '
+                    'spacing. An element of this set will not necessarily be '
+                    'unique within this tolerance.')
 
             off_by = abs(remainder(horizon_length, sample_time))
             if off_by > tolerance:
@@ -1365,7 +1371,7 @@ class NMPCSim(object):
         for t, complist in deactivated.items():
             for comp in complist:
                 if was_originally_active[comp]:
-                    comp.activate
+                    comp.activate()
 
 
     def solve_steady_state_setpoint(self, setpoint, steady_model, **kwargs):
@@ -1395,7 +1401,7 @@ class NMPCSim(object):
         # ^ result should be that controller now has set point attributes
 
 
-    def add_setpoint_to_controller(self, objective_name='tracking_objective', 
+    def add_setpoint_to_controller(self, objective_name='tracking_objective',
             **kwargs):
         """User-facing function for the addition of a setpoint to the 
         controller. Assumes the controller model's setpoint attributes have
@@ -1414,6 +1420,7 @@ class NMPCSim(object):
         objective_state_categories = config.objective_state_categories
         time_resolution_option = config.time_resolution_option
         outlvl = config.outlvl
+        #objective_name = config.full_state_objective_name
 
         self.construct_objective_weights(self.c_mod,
                 objective_weight_override=weight_override,
@@ -1425,6 +1432,7 @@ class NMPCSim(object):
                     VariableCategory.INPUT,
                     ])
 
+        # TODO: set point changes.
         self.add_objective_function(self.c_mod,
                 control_penalty_type=ControlPenaltyType.ACTION,
                 objective_state_categories=objective_state_categories,
@@ -1822,7 +1830,7 @@ class NMPCSim(object):
 
         obj_expr = state_term + control_term
 
-        # TODO: namespace block
+        # TODO: Deactivate existing objectives
         obj = Objective(expr=obj_expr)
         model._NMPC_NAMESPACE.add_component(name, obj)
 
@@ -1907,17 +1915,14 @@ class NMPCSim(object):
         # Can access sample_time as attribute of namespace block,
         # then rule can be located outside of class
         input_indices = [i for i in range(model._NMPC_NAMESPACE.input_vars.n_vars)]
-        def pwc_rule(m, t, i):
+        def pwc_rule(ns, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            # NOTE: m will be _NMPC_NAMESPACE, not c_mod
-            if t in m.sample_points:
+            if t in ns.sample_points:
                 return Constraint.Skip
             # ^ Here, the constraint will be applied at t == 0
-#            if (t - time.first()) % sample_time == 0:
-#                return Constraint.Skip
             t_next = time.next(t)
-            inputs = m.input_vars.varlist
+            inputs = ns.input_vars.varlist
             _slice = inputs[i]
             return _slice[t_next] == _slice[t]
 
@@ -1966,7 +1971,9 @@ class NMPCSim(object):
 
 
     def initialize_by_solving_elements(self, model, time,
-            input_type=ElementInitializationInputOption.SET_POINT):
+            input_type=ElementInitializationInputOption.SET_POINT,
+            objective_name='tracking_objective',
+            **kwargs):
         """Initializes the controller model by solving (a square simulation
         for) each time element.
 
@@ -1977,6 +1984,12 @@ class NMPCSim(object):
             telling how to fix the inputs for the simulation
 
         """
+        config = self.config(kwargs)
+        tol = config.tolerance
+        objective = getattr(model._NMPC_NAMESPACE, 
+                            objective_name)
+        namespace = model._NMPC_NAMESPACE
+
         # Strip bounds before simulation as square solves will be performed
         strip_controller_bounds = TransformationFactory(
                                       'contrib.strip_var_bounds')
@@ -2003,7 +2016,7 @@ class NMPCSim(object):
         # Deactivate objective function
         # Here I assume the name of the objective function.
         # TODO: ObjectiveType Enum and objective_dict
-        model._NMPC_NAMESPACE.tracking_objective.deactivate()
+        objective.deactivate()
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.c_mod, self.c_mod_time, 
@@ -2011,16 +2024,26 @@ class NMPCSim(object):
                     dae_vars=self.c_mod._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.c_mod._NMPC_NAMESPACE.diff_vars)
 
-        # Reactivate objective, pwc constraints, bounds
-        # TODO: safer objective name
-        self.c_mod._NMPC_NAMESPACE.tracking_objective.activate()
+        objective.activate()
         model._NMPC_NAMESPACE.pwc_constraint.activate()
 
         for _slice in self.c_mod._NMPC_NAMESPACE.input_vars:
             for t in time:
                 _slice[t].unfix()
 
+        # TODO: Check that no bounds are violated after square solves
         strip_controller_bounds.revert(self.c_mod)
+
+        timelist = list(time)
+        for cat, group in namespace.category_dict.items():
+            if (cat == VariableCategory.FIXED or cat == VariableCategory.INPUT
+                    or cat == VariableCategory.SCALAR):
+                continue
+            violated = get_violated_bounds_at_time(group, timelist, tol)
+            if violated:
+                raise ValueError(
+                    'Bounds violated after solving elements: %s'
+                    % str(violated))
 
 
     def initialize_from_previous_sample(self, model,
@@ -2065,15 +2088,8 @@ class NMPCSim(object):
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
                         t_next = find_point_in_continuousset(
-                                t + sample_time, 
+                                t + sample_time,
                                 time, tolerance=tolerance)
-
-#                        # Performing addition on CtsSet indices can result in
-#                        # rounding errors. Round to 8th decimal place here:
-#                        # TODO: config.continuous_set_tolerance
-#                        t_next = int(round(t_next*1e8))/1e8
-#
-#                        assert t_next in time
                         _slice[t].set_value(_slice[t_next].value)
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
@@ -2154,13 +2170,11 @@ class NMPCSim(object):
         calculate_error = config.calculate_error
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        tol = config.continuous_set_tolerance
 
         t_end = t_start + sample_time 
         assert t_start in self.p_mod_time
-        # TODO: add tolerance here, as t_end could change due to roundoff
-        #       Then change t_end s.t. it is a point in time
-        # A helper function may be useful - is_in_to_tolerance
-        # Need to adjust t_end 
+        t_end = find_point_in_continuousset(t_end, self.p_mod_time, tol)
         assert t_end in self.p_mod_time
 
         initialize_by_element_in_range(self.p_mod, self.p_mod_time, t_start, t_end, 

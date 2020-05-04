@@ -202,11 +202,12 @@ A single enthalpy balance is written for the entire mixture.
    :header: "Variable Name", "Symbol", "Indices", "Conditions"
    :widths: 25, 15, 10, 30
 
-   "enthalpy_holdup", ":math:`E_{t,p}`", "t, p", "has_holdup = True"
+   "energy_holdup", ":math:`E_{t,p}`", "t, p", "has_holdup = True"
    "phase_fraction", ":math:`\phi_{t,p}`", "t, p", "has_holdup = True"
-   "enthalpy_accumulation", ":math:`\frac{\partial E_{t,p}}{\partial t}`", "t, p", "dynamic = True"
+   "energy_accumulation", ":math:`\frac{\partial E_{t,p}}{\partial t}`", "t, p", "dynamic = True"
    "heat", ":math:`Q_{t}`", "t", "has_heat_transfer = True"
    "work", ":math:`W_{t}`", "t", "has_work_transfer = True"
+   "enthalpy_transfer", ":math:`H_{transfer,t}`", "t", "has_enthalpy_transfer = True"
 
 **Expressions**
 
@@ -228,15 +229,15 @@ where :math:`Q_{rxn, t}` is the total enthalpy released by both kinetic and equi
 
 `enthalpy_balance(t)`:
 
-.. math:: s_{energy} \times \sum_p{\frac{\partial E_{t, p}}{\partial t}} = s_{energy} \times \sum_p{H_{in, t, p}} - s_{energy} \times \sum_p{H_{out, t, p}} + s_{energy} \times Q_t + s_{energy} \times W_t + s_{energy} \times Q_{rxn, t} + s_{energy} \times E_{custom, t}
+.. math:: s_{energy} \times \sum_p{\frac{\partial E_{t, p}}{\partial t}} = s_{energy} \times \sum_p{H_{in, t, p}} - s_{energy} \times \sum_p{H_{out, t, p}} + s_{energy} \times Q_t + s_{energy} \times W_t + + s_{energy} \times H_{transfer,t} +s_{energy} \times Q_{rxn, t} + s_{energy} \times E_{custom, t}
 
 The :math:`E_{custom, t}` term allows the user to provide custom terms  which will be added into the energy balance.
 
 If `has_holdup` is True, `enthalpy_holdup_calculation(t, p)`:
 
-.. math:: E_{t, p} = h_{t, p} \times V_{t} \times \phi_{t, p}
+.. math:: E_{t, p} = u_{t, p} \times V_{t} \times \phi_{t, p}
 
-where :math:`h_{t, p}` is the enthalpy density (specific enthalpy) of phase :math:`p` at time :math:`t`
+where :math:`u_{t, p}` is the internal energy density (specific internal energy) of phase :math:`p` at time :math:`t`
 
 If `dynamic` is True:
 
