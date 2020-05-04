@@ -50,6 +50,18 @@ commands:
           command: |
               source activate idaes
               pytest -c pytest.ini idaes -m "<<parameters.tags>>"
+  pytest_cov:
+    description: Run tests with pytest
+    parameters:
+      tags:
+        type: string
+        default: "not nocircleci"
+    steps:
+      - run:
+          name: Run pytest
+          command: |
+              source activate idaes
+              pytest -c pytest.ini idaes --cov -m "<<parameters.tags>>"
   build_docs:
     description: Build Sphinx documentation
     steps:
@@ -129,7 +141,14 @@ jobs:
             python_version: << parameters.python >>
         - install:
             target: << parameters.pip_target >>
-        - pytest
+        - when:
+            - condition: <<parameters.devmode>>
+            - steps:
+                - pytest_cov
+        - unless:
+            - condition: <<parameters.devmode>>
+            - steps:
+                - pytest
         - pylint
         - when:
             condition: <<parameters.devmode>>
