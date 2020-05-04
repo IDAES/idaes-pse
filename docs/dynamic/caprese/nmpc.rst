@@ -13,6 +13,6 @@ The most common formulation of the NMPC optimization problem is...
 Available Methods
 ^^^^^^^^^^^^^^^^^
 
-.. automodule:: idaes.dynamic.cappresse.nmpc
+.. automodule:: idaes.dynamic.caprese.nmpc
     :members:
 
