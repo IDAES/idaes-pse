@@ -192,6 +192,7 @@ change.
         pressure_bounds,
         temperature_bounds,
         enthalpy_bounds,
+        eos_tag,
         pressure_value=1e5,
         temperature_value=300,
         enthalpy_value=1000,
@@ -203,6 +204,7 @@ change.
         """
         # Location of the *.so or *.dll file for external functions
         self.plib = library
+        self.eos_tag = eos_tag
         self._state_block_class = state_block_class
         self.component_list = component_list
         self.phase_equilibrium_idx = phase_equilibrium_idx
@@ -452,40 +454,43 @@ class HelmholtzStateBlockData(StateBlockData):
         """Create ExternalFunction components.  This includes some external
         functions that are not usually used for testing purposes."""
         plib = self.config.parameters.plib
-        self.func_p = EF(library=plib, function="p")
-        self.func_u = EF(library=plib, function="u")
-        self.func_s = EF(library=plib, function="s")
-        self.func_h = EF(library=plib, function="h")
-        self.func_hvpt = EF(library=plib, function="hvpt")
-        self.func_hlpt = EF(library=plib, function="hlpt")
-        self.func_svpt = EF(library=plib, function="svpt")
-        self.func_slpt = EF(library=plib, function="slpt")
-        self.func_tau = EF(library=plib, function="tau")
-        self.func_tau_sp = EF(library=plib, function="tau_sp")
-        self.func_vf = EF(library=plib, function="vf")
-        self.func_vfs = EF(library=plib, function="vfs")
-        self.func_g = EF(library=plib, function="g")
-        self.func_f = EF(library=plib, function="f")
-        self.func_cv = EF(library=plib, function="cv")
-        self.func_cp = EF(library=plib, function="cp")
-        self.func_w = EF(library=plib, function="w")
-        self.func_delta_liq = EF(library=plib, function="delta_liq")
-        self.func_delta_vap = EF(library=plib, function="delta_vap")
-        self.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
-        self.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
-        self.func_p_sat = EF(library=plib, function="p_sat")
-        self.func_tau_sat = EF(library=plib, function="tau_sat")
-        self.func_phi0 = EF(library=plib, function="phi0")
-        self.func_phi0_delta = EF(library=plib, function="phi0_delta")
-        self.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
-        self.func_phi0_tau = EF(library=plib, function="phi0_tau")
-        self.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
-        self.func_phir = EF(library=plib, function="phir")
-        self.func_phir_delta = EF(library=plib, function="phir_delta")
-        self.func_phir_delta2 = EF(library=plib, function="phir_delta2")
-        self.func_phir_tau = EF(library=plib, function="phir_tau")
-        self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
-        self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
+        def _fnc(x):
+            x = "_".join([x, self.config.parameters.eos_tag])
+            return x
+        self.func_p = EF(library=plib, function=_fnc("p"))
+        self.func_u = EF(library=plib, function=_fnc("u"))
+        self.func_s = EF(library=plib, function=_fnc("s"))
+        self.func_h = EF(library=plib, function=_fnc("h"))
+        self.func_hvpt = EF(library=plib, function=_fnc("hvpt"))
+        self.func_hlpt = EF(library=plib, function=_fnc("hlpt"))
+        self.func_svpt = EF(library=plib, function=_fnc("svpt"))
+        self.func_slpt = EF(library=plib, function=_fnc("slpt"))
+        self.func_tau = EF(library=plib, function=_fnc("tau"))
+        self.func_tau_sp = EF(library=plib, function=_fnc("tau_sp"))
+        self.func_vf = EF(library=plib, function=_fnc("vf"))
+        self.func_vfs = EF(library=plib, function=_fnc("vfs"))
+        self.func_g = EF(library=plib, function=_fnc("g"))
+        self.func_f = EF(library=plib, function=_fnc("f"))
+        self.func_cv = EF(library=plib, function=_fnc("cv"))
+        self.func_cp = EF(library=plib, function=_fnc("cp"))
+        self.func_w = EF(library=plib, function=_fnc("w"))
+        self.func_delta_liq = EF(library=plib, function=_fnc("delta_liq"))
+        self.func_delta_vap = EF(library=plib, function=_fnc("delta_vap"))
+        self.func_delta_sat_l = EF(library=plib, function=_fnc("delta_sat_l"))
+        self.func_delta_sat_v = EF(library=plib, function=_fnc("delta_sat_v"))
+        self.func_p_sat = EF(library=plib, function=_fnc("p_sat"))
+        self.func_tau_sat = EF(library=plib, function=_fnc("tau_sat"))
+        self.func_phi0 = EF(library=plib, function=_fnc("phi0"))
+        self.func_phi0_delta = EF(library=plib, function=_fnc("phi0_delta"))
+        self.func_phi0_delta2 = EF(library=plib, function=_fnc("phi0_delta2"))
+        self.func_phi0_tau = EF(library=plib, function=_fnc("phi0_tau"))
+        self.func_phi0_tau2 = EF(library=plib, function=_fnc("phi0_tau2"))
+        self.func_phir = EF(library=plib, function=_fnc("phir"))
+        self.func_phir_delta = EF(library=plib, function=_fnc("phir_delta"))
+        self.func_phir_delta2 = EF(library=plib, function=_fnc("phir_delta2"))
+        self.func_phir_tau = EF(library=plib, function=_fnc("phir_tau"))
+        self.func_phir_tau2 = EF(library=plib, function=_fnc("phir_tau2"))
+        self.func_phir_delta_tau = EF(library=plib, function=_fnc("phir_delta_tau"))
 
     def _state_vars(self):
         """ Create the state variables
