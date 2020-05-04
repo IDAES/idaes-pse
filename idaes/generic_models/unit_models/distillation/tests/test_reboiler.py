@@ -29,7 +29,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_variables, number_total_constraints, number_unused_variables, \
     fixed_variables_set, activated_constraints_set
 from idaes.core.util.testing import get_default_solver, \
-    PhysicalParameterTestBlock
+    PhysicalParameterTestBlock, initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -176,41 +176,8 @@ class TestBTXIdeal(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx_ftpz, btx_fctp):
-        orig_fixed_vars = fixed_variables_set(btx_ftpz)
-        orig_act_consts = activated_constraints_set(btx_ftpz)
-
-        btx_ftpz.fs.unit.initialize(solver=solver)
-
-        assert degrees_of_freedom(btx_ftpz) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx_ftpz)
-        fin_act_consts = activated_constraints_set(btx_ftpz)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
-
-        orig_fixed_vars = fixed_variables_set(btx_fctp)
-        orig_act_consts = activated_constraints_set(btx_fctp)
-
-        btx_fctp.fs.unit.initialize(solver=solver)
-
-        assert degrees_of_freedom(btx_fctp) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx_fctp)
-        fin_act_consts = activated_constraints_set(btx_fctp)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx_ftpz)
+        initialization_tester(btx_fctp)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

@@ -51,7 +51,7 @@ def get_default_solver():
     return solver
 
 
-def initialization_tester(m, optarg={'tol': 1e-6}, dof=0, **init_kwargs):
+def initialization_tester(m, dof=0, **init_kwargs):
     """
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
@@ -99,7 +99,7 @@ def initialization_tester(m, optarg={'tol': 1e-6}, dof=0, **init_kwargs):
     orig_fixed_vars = fixed_variables_set(m)
     orig_act_consts = activated_constraints_set(m)
 
-    m.fs.unit.initialize(optarg=optarg, **init_kwargs)
+    m.fs.unit.initialize(**init_kwargs)
 
     print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == dof
