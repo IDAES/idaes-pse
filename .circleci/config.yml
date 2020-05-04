@@ -83,6 +83,7 @@ commands:
       - run:
           name: coverage
           command: |
+              source activate idaes
               coverage xml
               coveralls
   idaes_pse:
