@@ -142,12 +142,12 @@ jobs:
         - install:
             target: << parameters.pip_target >>
         - when:
-            - condition: <<parameters.devmode>>
-            - steps:
+            condition: <<parameters.devmode>>
+            steps:
                 - pytest_cov
         - unless:
-            - condition: <<parameters.devmode>>
-            - steps:
+            condition: <<parameters.devmode>>
+            steps:
                 - pytest
         - pylint
         - when:
