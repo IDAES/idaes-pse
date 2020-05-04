@@ -113,6 +113,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="iapws95",
             state_block_class=Iapws95StateBlock,
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),
