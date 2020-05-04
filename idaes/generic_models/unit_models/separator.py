@@ -1338,12 +1338,13 @@ objects linked the mixed state and all outlet states,
         )
 
         # Solve for split fractions only
-        constraint_status = {}
+        component_status = {}
         for c in blk.component_objects((Block, Constraint)):
-            if not c.local_name == "sum_split_frac":
-                # Record current status of constraints so they can be restored
-                constraint_status[c.name] = c.active
-                c.deactivate()
+            for i in c:
+                if not c[i].local_name == "sum_split_frac":
+                    # Record current status of components to restore later
+                    component_status[c[i]] = c[i].active
+                    c[i].deactivate()
 
         if degrees_of_freedom(blk) != 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1353,13 +1354,9 @@ objects linked the mixed state and all outlet states,
                     .format(idaeslog.condition(res))
                     )
 
-        for c in blk.component_objects((Block, Constraint)):
-            try:
-                if constraint_status[c.name]:
-                    c.activate()
-            except KeyError:
-                # Component was not touched in deactivation step
-                continue
+        for c, s in component_status.items():
+            if s:
+                c.activate()
 
         if blk.config.ideal_separation:
             # If using ideal splitting, initialization should be complete

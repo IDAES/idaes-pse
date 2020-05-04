@@ -78,11 +78,23 @@ def initialization_tester(m, optarg={'tol': 1e-6}, dof=0, **init_kwargs):
     """
     # Add some extra constraints and deactivate them to make sure
     # they remain deactivated
+    # Test both indexed and unindexed constraints
     m.fs.unit.__dummy_var = Var()
     m.fs.unit.__dummy_equality = Constraint(expr=m.fs.unit.__dummy_var == 5)
     m.fs.unit.__dummy_inequality = Constraint(expr=m.fs.unit.__dummy_var <= 10)
+
+    def deq_idx(b, i):
+        return m.fs.unit.__dummy_var == 5
+    m.fs.unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+
+    def dieq_idx(b, i):
+        return m.fs.unit.__dummy_var <= 10
+    m.fs.unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+
     m.fs.unit.__dummy_equality.deactivate()
     m.fs.unit.__dummy_inequality.deactivate()
+    m.fs.unit.__dummy_equality_idx[1].deactivate()
+    m.fs.unit.__dummy_inequality_idx[1].deactivate()
 
     orig_fixed_vars = fixed_variables_set(m)
     orig_act_consts = activated_constraints_set(m)
@@ -106,9 +118,13 @@ def initialization_tester(m, optarg={'tol': 1e-6}, dof=0, **init_kwargs):
     # Check dummy constraints and clean up
     assert not m.fs.unit.__dummy_equality.active
     assert not m.fs.unit.__dummy_inequality.active
+    assert not m.fs.unit.__dummy_equality_idx[1].active
+    assert not m.fs.unit.__dummy_inequality_idx[1].active
 
     m.fs.unit.del_component(m.fs.unit.__dummy_inequality)
     m.fs.unit.del_component(m.fs.unit.__dummy_equality)
+    m.fs.unit.del_component(m.fs.unit.__dummy_inequality_idx)
+    m.fs.unit.del_component(m.fs.unit.__dummy_equality_idx)
     m.fs.unit.del_component(m.fs.unit.__dummy_var)
 
 # -----------------------------------------------------------------------------
