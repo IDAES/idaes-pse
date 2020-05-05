@@ -11,7 +11,7 @@ import tempfile
 import pytest
 
 # this package
-from idaes.surrogate import my_surrogate_base
+from idaes.surrogate import surrogate_base
 
 ALAMO_VALUE = 1
 PYSMO_VALUE = 2.3
