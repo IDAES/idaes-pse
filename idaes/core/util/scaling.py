@@ -31,6 +31,7 @@ from pyomo.core.expr import current as EXPR
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
+__author__ = "John Eslick, Tim Bartholomew"
 _log = idaeslog.getLogger(__name__)
 
 
@@ -170,7 +171,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
 
     Args:
         m (Block): a pyomo block to calculate scaling factors for
-        replacement (ReplacementVisitor): A pyomo replacment visitor to replace
+        replacement (ReplacementVisitor): A pyomo replacement visitor to replace
             the variable in a scaling factor expression from the scaling_factor
             suffix and return a new expression for calculating scaling factors
         cls: The class to calculate scaling factors for Var or Constraint
@@ -288,11 +289,11 @@ def grad_fd(c, scaled=False, h=1e-6):
     Args:
         c: constraint to evaluate
         scaled: if True calculate the scaled grad (default=False)
-        h: step size for calculating finite differnced derivatives
+        h: step size for calculating finite difference derivatives
 
     Returns:
-        (list of gradient values, list for varibles in the constraint) The order
-            of the variables coresoponds to the gradient values.
+        (list of gradient values, list for variables in the constraint) The
+        order of the variables corresponds to the gradient values.
     """
     try:
         ex = c.body
@@ -357,16 +358,21 @@ def scale_constraint(c, v=None):
     Returns:
         None
     """
+    if v is None:
+        try:
+            v = c.parent_block().scaling_factor[c]
+            c.parent_block().scaling_factor[c] = 1
+        except:
+            v = None
 
     if v is not None:
-        try:
-            c.parent_block().scaling_factor[c] = v
-        except AttributeError:
-            c.parent_block().scaling_factor = pyo.Suffix(
-                direction=pyo.Suffix.EXPORT)
-            c.parent_block().scaling_factor[c] = v
-
-    scale_single_constraint(c)
+        lst = []
+        for prop in ['lower', 'body', 'upper']:
+            c_prop = getattr(c, prop)
+            if c_prop is not None:
+                c_prop = c_prop * v
+            lst.append(c_prop)
+        c.set_value(tuple(lst))  # set the scaled lower, body, and upper
 
 
 def scale_single_constraint(c):
@@ -397,13 +403,20 @@ def scale_single_constraint(c):
     if v is not None:
         lst = []
         for prop in ['lower', 'body', 'upper']:
-            print(c.name)
             c_prop = getattr(c, prop)
             if c_prop is not None:
                 c_prop = c_prop * v
             lst.append(c_prop)
         c.set_value(tuple(lst))  # set the scaled lower, body, and upper
         c.parent_block().scaling_factor[c] = 1  # set scaling factor to 1
+        if hasattr(c.parent_block(),'scaling_expression'):
+            try:
+                # set expression to 1
+                c.parent_block().scaling_expression[c] = 1
+            except KeyError:
+                # no expression to set to 1
+                pass
+
 
 
 def _scale_block_constraints(b):
@@ -428,20 +441,17 @@ def _scale_block_constraints(b):
 
 def scale_constraints(blk, descend_into=True):
     """This scales all constraints with their scaling factor suffix for a model
-    (default, descend_into = True) or block (descend_into = False). After
-    scaling the constraints, the scaling factor for each constraint is set to 1
-    to avoid double scaling the constraints.
+    or block. After scaling the constraints, the scaling factor and expression
+    for each constraint is set to 1 to avoid double scaling the constraints.
 
     Args:
         blk: Pyomo block
-        basis: Scaling basis, must be inverse variable scale
-        descend_into: indicates whether to descend into the other blocks on
-            block b.
+        descend_into: indicates whether to descend into the other blocks on blk.
+        (default = True)
 
     Returns:
         None
     """
-
     _scale_block_constraints(blk)
     if descend_into:
         for b in blk.component_objects(pyo.Block, descend_into=True):
