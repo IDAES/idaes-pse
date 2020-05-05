@@ -398,7 +398,7 @@ class Pysmo_rbf(Surrogate):
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = self.pysmo_rbf_results.rmse
-		self._results[Metrics.SSE] = self.pysmo_rbf_results.rmse ** 2
+		self._results[Metrics.MSE] = self.pysmo_rbf_results.rmse ** 2
 		self._results[Metrics.R2] = self.pysmo_rbf_results.R2
 		# Generate Pyomo expression
 		if self.pyomo_vars:
@@ -446,7 +446,7 @@ class Pysmo_kriging(Surrogate):
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = self.pysmo_kriging_results.training_rmse
-		self._results[Metrics.SSE] = self.pysmo_kriging_results.training_rmse ** 2
+		self._results[Metrics.MSE] = self.pysmo_kriging_results.training_rmse ** 2
 		self._results[Metrics.R2] = self.pysmo_kriging_results.training_R2
 
 		# Generate Pyomo expression
@@ -512,7 +512,7 @@ class Pysmo_polyregression(Surrogate):
 
 	def handle_results(self, feature_vec):
 		self._results[Metrics.RMSE] = np.sqrt(self.pysmo_polyregression_results.errors['MSE'])
-		self._results[Metrics.SSE] = self.pysmo_polyregression_results.errors['MSE']
+		self._results[Metrics.MSE] = self.pysmo_polyregression_results.errors['MSE']
 		self._results[Metrics.R2] = self.pysmo_polyregression_results.errors['R2']
 
 		# Generate Pyomo expression
