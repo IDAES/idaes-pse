@@ -32,6 +32,13 @@ class Ideal(EoSBase):
         # No EoS specific parameters required
         pass
 
+    def compress_fact_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return 1
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
     def dens_mass_phase(b, p):
         return b.dens_mol_phase[p]*b.mw_phase[p]
 

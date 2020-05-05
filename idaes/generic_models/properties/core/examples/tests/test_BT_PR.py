@@ -316,10 +316,10 @@ class TestStateBlock(object):
                     for j in model.params.component_list))
 
         # Check for external function components
-        assert isinstance(model.props[1]._ext_func_param, Param)
-        assert model.props[1]._ext_func_param.value == 0  # 0 == PR
-        assert isinstance(model.props[1].proc_Z_liq, ExternalFunction)
-        assert isinstance(model.props[1].proc_Z_vap, ExternalFunction)
+        assert isinstance(model.props[1]._PR_ext_func_param, Param)
+        assert model.props[1]._PR_ext_func_param.value == 0  # 0 == PR
+        assert isinstance(model.props[1]._PR_proc_Z_liq, ExternalFunction)
+        assert isinstance(model.props[1]._PR_proc_Z_vap, ExternalFunction)
 
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:

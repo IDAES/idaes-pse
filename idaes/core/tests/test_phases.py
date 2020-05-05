@@ -32,7 +32,7 @@ def test_config():
 
     m.phase = Phase()
 
-    assert len(m.phase.config) == 3
+    assert len(m.phase.config) == 5
     for k, v in m.phase.config.items():
         if k == "_phase_list_exists":
             assert not v

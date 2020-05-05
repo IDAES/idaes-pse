@@ -66,7 +66,7 @@ CubicConfig.declare("type", ConfigValue(
 
 class Cubic(EoSBase):
     def common(b, pobj):
-        ctype = pobj.config.equation_of_state_options["type"]
+        ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
 
         if hasattr(b, cname+"_fw"):
@@ -248,14 +248,18 @@ class Cubic(EoSBase):
                                        rule=rule_delta_eq))
 
         # Set up external function calls
-        b._ext_func_param = Param(default=ctype.value)
-        b.proc_Z_liq = ExternalFunction(library=_so,
-                                        function="ceos_z_liq")
-        b.proc_Z_vap = ExternalFunction(library=_so,
-                                        function="ceos_z_vap")
+        b.add_component("_"+cname+"_ext_func_param",
+                        Param(default=ctype.value))
+        b.add_component("_"+cname+"_proc_Z_liq",
+                        ExternalFunction(library=_so,
+                                         function="ceos_z_liq"))
+        b.add_component("_"+cname+"_proc_Z_vap",
+                        ExternalFunction(library=_so,
+                                         function="ceos_z_vap"))
 
     def build_parameters(b):
-        cname = b.config.equation_of_state_options["type"].name
+        b._cubic_type = b.config.equation_of_state_options["type"]
+        cname = b._cubic_type.name
         param_block = b.parent_block()
 
         if hasattr(param_block, cname+"_kappa"):
@@ -270,6 +274,20 @@ class Cubic(EoSBase):
                 within=Reals,
                 initialize=kappa_data,
                 doc=cname+' binary interaction parameters'))
+
+    def compress_fact_phase(b, p):
+        pobj = b.params.get_phase(p)
+        cname = pobj._cubic_type.name
+        A = getattr(b, cname+"_A")
+        B = getattr(b, cname+"_B")
+        f = getattr(b, "_"+cname+"_ext_func_param")
+        if pobj.is_vapor_phase():
+            proc = getattr(b, "_"+cname+"_proc_Z_vap")
+        elif pobj.is_liquid_phase():
+            proc = getattr(b, "_"+cname+"_proc_Z_liq")
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return proc(f, A[p], B[p])
 
     def dens_mass_phase(b, p):
         return b.dens_mol_phase[p]*b.mw_phase[p]

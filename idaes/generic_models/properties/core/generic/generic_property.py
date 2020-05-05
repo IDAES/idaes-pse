@@ -364,7 +364,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         if a is None:
                             raise ConfigurationError(
                                 "{} Generic Property Package component {} is "
-                                "in equilibrium but phase_equilibrium_form"
+                                "in equilibrium but phase_equilibrium_form "
                                 "was not specified."
                                 .format(self.name, j))
                         elif (pp not in a.keys() and
@@ -462,6 +462,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'phase_frac': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
+             'compress_fact_phase': {'method': '_compress_fact_phase'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
@@ -1006,6 +1007,19 @@ class GenericStateBlockData(StateBlockData):
 
     # -------------------------------------------------------------------------
     # Property Methods
+    def _compress_fact_phase(self):
+        try:
+            def rule_Z_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.compress_fact_phase(b, p)
+            self.compress_fact_phase = Expression(
+                    self.params.phase_list,
+                    doc="Compressibility of each phase",
+                    rule=rule_Z_phase)
+        except AttributeError:
+            self.del_component(self.compress_fact_phass)
+            raise
+
     def _dens_mass(self):
         try:
             def rule_dens_mass(b):

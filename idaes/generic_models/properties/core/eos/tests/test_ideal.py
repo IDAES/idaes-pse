@@ -115,6 +115,19 @@ def test_common(m):
     assert Ideal.common(m.props, "foo") is None
 
 
+def test_compress_fact_phase_Liq(m):
+    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 1
+
+
+def test_compress_fact_phase_Vap(m):
+    assert Ideal.compress_fact_phase(m.props[1], "Vap") == 1
+
+
+def test_compress_fact_phase_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Ideal.compress_fact_phase(m_sol.props[1], "Sol")
+
+
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
