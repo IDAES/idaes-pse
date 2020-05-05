@@ -19,7 +19,7 @@ some. EoS developers should overload all these methods.
 
 
 class EoSBase():
-    def common(b):
+    def common(b, pobj):
         raise NotImplementedError(_msg(b, "common"))
 
     def build_parameters(b):

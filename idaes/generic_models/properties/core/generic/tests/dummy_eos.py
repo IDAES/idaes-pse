@@ -16,7 +16,7 @@ Mock-up EoS module for testing generic property packages
 from pyomo.environ import Var
 
 
-def common(b):
+def common(b, pobj):
     # Create dummy var to be returned by expression calls
     # This Var is used to create expressions where required.
     if not hasattr(b, "dummy_var"):
@@ -29,6 +29,11 @@ def common(b):
         b.eos_common += 1
     else:
         b.eos_common = 1
+
+
+def build_parameters(b):
+    if not hasattr(b, "dummy_param"):
+        b.dummy_param = Var(initialize=42)
 
 
 def dens_mass_phase(b, p):

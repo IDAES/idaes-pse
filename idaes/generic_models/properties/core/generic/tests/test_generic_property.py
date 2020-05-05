@@ -51,8 +51,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}},
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -71,8 +71,8 @@ class TestGenericParameterBlock(object):
             assert p in ["p1", "p2"]
         assert isinstance(m.params.get_phase("p1"), LiquidPhase)
         assert isinstance(m.params.get_phase("p2"), Phase)
-        assert m.params.p1.config.equation_of_state == "foo"
-        assert m.params.p2.config.equation_of_state == "bar"
+        assert m.params.p1.config.equation_of_state == dummy_eos
+        assert m.params.p2.config.equation_of_state == dummy_eos
 
         assert isinstance(m.params._phase_component_set, Set)
         assert len(m.params._phase_component_set) == 5
@@ -148,9 +148,9 @@ class TestGenericParameterBlock(object):
                                                 PT.vaporPhase]}},
                 "phases": {
                     "p1": {"type": LiquidPhase,
-                           "equation_of_state": "foo"},
+                           "equation_of_state": dummy_eos},
                     "p2": {"type": VaporPhase,
-                           "equation_of_state": "bar"}},
+                           "equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -231,8 +231,8 @@ class TestGenericParameterBlock(object):
                 "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
                 "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
             "phases": {
-                "p1": {"equation_of_state": "foo"},
-                "p2": {"equation_of_state": "bar"}},
+                "p1": {"equation_of_state": dummy_eos},
+                "p2": {"equation_of_state": dummy_eos}},
             "state_definition": modules[__name__],
             "pressure_ref": 1e5,
             "temperature_ref": 300,
@@ -349,7 +349,7 @@ class TestGenericParameterBlock(object):
                 c.test_var = Var()
 
         with pytest.raises(ConfigurationError,
-                           match="params parameter test_var for component a "
+                           match="params parameter test_var for component c "
                            "was not assigned a value. Please check your "
                            "configuration arguments."):
             m.params = DummyParameterBlock(default={
@@ -358,8 +358,8 @@ class TestGenericParameterBlock(object):
                     "b": {},
                     "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}},
+                    "p1": {"equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})

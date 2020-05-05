@@ -112,7 +112,7 @@ def m_sol():
 
 
 def test_common(m):
-    assert Ideal.common(m.props) is None
+    assert Ideal.common(m.props, "foo") is None
 
 
 def test_dens_mass_phase(m):

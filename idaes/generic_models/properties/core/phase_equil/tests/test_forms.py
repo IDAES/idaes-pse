@@ -27,6 +27,9 @@ class DummyEoS(object):
     def common(self):
         pass
 
+    def build_parameters(b):
+        pass
+
     def fug_phase_comp(b, p, j, pp):
         return b.x[p, j]
 

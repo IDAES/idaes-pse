@@ -34,6 +34,7 @@ class PhaseType(Enum):
     solidPhase = 3
 
 
+# TODO: Document EoS options and parameter_Data
 @declare_process_block_class("Phase")
 class PhaseData(ProcessBlockData):
     CONFIG = ConfigBlock()
@@ -49,6 +50,15 @@ class PhaseData(ProcessBlockData):
             doc="""A valid Python class with the necessary methods for
                 constructing the desired equation of state (or similar
                 model)."""))
+    CONFIG.declare("equation_of_state_options", ConfigValue(
+            default=None,
+            description="Options for equation of state",
+            doc="""A dict or ConfigBlock of options to be used when setting
+                up equation of state for phase."""))
+    CONFIG.declare("parameter_data", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict containing initialization data for parameters"))
     CONFIG.declare("_phase_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether phase_list "

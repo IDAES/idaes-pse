@@ -193,6 +193,12 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""Flag indicating what formulation to use for calculating bubble
         and dew points. Value should be a valid Python class."""))
 
+    # General parameter data dict
+    CONFIG.declare("parameter_data", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict containing initialization data for parameters"))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -377,7 +383,7 @@ class GenericParameterData(PhysicalParameterBlock):
             self.phase_equilibrium_idx = Set(initialize=pe_set,
                                              ordered=True)
 
-        # Construct parameter components
+        # Construct parameters
         for c in self.component_list:
             cobj = self.get_component(c)
             for a, v in cobj.config.items():
@@ -385,32 +391,32 @@ class GenericParameterData(PhysicalParameterBlock):
                     c_arg = getattr(v, a)
                 else:
                     c_arg = v
-                try:
-                    c_arg.build_parameters(cobj)
-                except AttributeError:
-                    pass
-                except KeyError:
-                    raise ConfigurationError(
-                        "{} values were not defined for parameter {} in "
-                        "component {}. Please check the parameter_data "
-                        "argument to ensure values are provided."
-                        .format(self.name, a, c))
+                if hasattr(c_arg, "build_parameters"):
+                    try:
+                        c_arg.build_parameters(cobj)
+                    except KeyError:
+                        raise ConfigurationError(
+                            "{} values were not defined for parameter {} in "
+                            "component {}. Please check the parameter_data "
+                            "argument to ensure values are provided."
+                            .format(self.name, a, c))
+
+        for p in self.phase_list:
+            pobj = self.get_phase(p)
+            pobj.config.equation_of_state.build_parameters(pobj)
 
         # Call custom user parameter method
         self.parameters()
 
         # For safety, fix all Vars in Component objects
-        for c in self.component_list:
-            cobj = self.get_component(c)
-            for v in cobj.component_objects(Var):
-                # if v.is_indexed():
-                for i in v:
-                    if v[i].value is None:
-                        raise ConfigurationError(
-                            "{} parameter {} for component {} was not assigned"
-                            " a value. Please check your configuration "
-                            "arguments.".format(self.name, v.local_name, c))
-                    v[i].fix()
+        for v in self.component_objects(Var, descend_into=True):
+            for i in v:
+                if v[i].value is None:
+                    raise ConfigurationError(
+                        "{} parameter {} for component {} was not assigned"
+                        " a value. Please check your configuration "
+                        "arguments.".format(self.name, v.local_name, c))
+                v[i].fix()
 
         self.config.state_definition.set_metadata(self)
 
@@ -856,19 +862,23 @@ class GenericStateBlockData(StateBlockData):
         # Add state variables and associated methods
         self.params.config.state_definition.define_state(self)
 
-        # Create common components for each property package
-        for p in self.params.phase_list:
-            self.params.get_phase(p).config.equation_of_state.common(self)
-
-        # Add phase equilibrium constraints if necessary
+        # Add equilibrium temperature variable if required
         if (self.params.config.phases_in_equilibrium is not None and
                 (not self.config.defined_state or self.always_flash)):
 
-            # Add equilibrium temperature variable
             self._teq = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
                 doc='Temperature for calculating phase equilibrium')
+
+        # Create common components for each property package
+        for p in self.params.phase_list:
+            pobj = self.params.get_phase(p)
+            pobj.config.equation_of_state.common(self, pobj)
+
+        # Add phase equilibrium constraints if necessary
+        if (self.params.config.phases_in_equilibrium is not None and
+                (not self.config.defined_state or self.always_flash)):
 
             pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:

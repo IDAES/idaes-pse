@@ -24,7 +24,7 @@ from idaes.core.util.constants import Constants as const
 
 # TODO: Add support for ideal solids
 class Ideal(EoSBase):
-    def common(b):
+    def common(b, pobj):
         # No common components required for ideal property calculations
         pass
 

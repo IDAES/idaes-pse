@@ -35,7 +35,10 @@ from idaes.core.util.exceptions import ConfigurationError
 
 # Dummy EoS to use for fugacity calls
 class DummyEoS(object):
-    def common(self):
+    def common(self, pobj):
+        pass
+
+    def build_parameters(b):
         pass
 
     def fug_phase_comp(b, p, j, pp):
