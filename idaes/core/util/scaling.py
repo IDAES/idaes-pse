@@ -358,6 +358,11 @@ def scale_constraint(c, v=None):
     Returns:
         None
     """
+    if not isinstance(c,pyo.Constraint):
+        raise TypeError(
+            "{} is not a constraint and cannot be the input to scale_constraint"
+            .format(c.name))
+
     if v is None:
         try:
             v = c.parent_block().scaling_factor[c]
@@ -386,6 +391,11 @@ def scale_single_constraint(c):
     Returns:
         None
     """
+    if not isinstance(c,pyo.Constraint):
+        raise TypeError(
+            "{} is not a constraint and cannot be the input to "
+            "scale_single_constraint".format(c.name))
+
     try:
         v = c.parent_block().scaling_factor[c]
     except AttributeError:
