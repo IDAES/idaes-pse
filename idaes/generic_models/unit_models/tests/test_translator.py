@@ -34,7 +34,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+                                     PhysicalParameterTestBlock,
+                                     initialization_tester)
 
 
 # -----------------------------------------------------------------------------
@@ -117,23 +118,7 @@ class TestTranslate(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, trans):
-        orig_fixed_vars = fixed_variables_set(trans)
-        orig_act_consts = activated_constraints_set(trans)
-
-        trans.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(trans) == 5
-
-        fin_fixed_vars = fixed_variables_set(trans)
-        fin_act_consts = activated_constraints_set(trans)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(trans, dof=5)
 
     # No solve, as problem has is missing linking constraints
 
