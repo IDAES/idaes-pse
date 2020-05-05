@@ -12,4 +12,5 @@ Utility Methods
     model_statistics
     scaling
     tables
+    costing
     var_like_expression
