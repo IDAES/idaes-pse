@@ -91,6 +91,12 @@ paper.on('cell:pointermove', function (cellView, evt, x, y) {
   if (constrained) { cellView.pointermove(evt, constrainedX, constrainedY) }
 });
 
+// Get the model from the div tag (see the html file for an explanation)
+var data_model = $("#model").data("model");
+var model_id = data_model.model.id;
+var url = "/fs?id=".concat(model_id)
+renderModel(data_model)
+
 // Send a post request to the server with the new graph 
 // This is essentially the saving mechanism (for a server instance) for right now
 // See the comments above the save button for more saving TODOs
@@ -100,7 +106,7 @@ paper.on('paper:mouseleave', evt => {
         contentType: 'application/json',
         data: JSON.stringify(graph.toJSON()),
         dataType: 'json',
-        url: '/fs?id=draftmodel',
+        url: url,
         success: function (data) {
             console.log(data);
         },
@@ -109,11 +115,6 @@ paper.on('paper:mouseleave', evt => {
         }
     });
 });
-
-// Get the model from the div tag (see the html file for an explanation)
-var data_model = $("#model").data("model");
-var model_id = data_model.id;
-renderModel(data_model)
 
 // Take a model and imports with graph.fromJSON
 function renderModel(model) {
@@ -165,7 +166,7 @@ $(document).ready( function() {
             contentType: 'application/json',
             data: JSON.stringify(graph.toJSON()),
             dataType: 'json',
-            url: 'http://127.0.0.1:5555/app?id=draftmodel',
+            url: url,
             success: function (e) {
                 console.log(e);
             },
