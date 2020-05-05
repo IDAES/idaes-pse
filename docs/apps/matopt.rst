@@ -35,15 +35,15 @@ Several pieces of information about the material and design space need to be spe
 
 Some key objects are listed as follows:
 
-.. module:: apps.matopt.materials.lattices.lattice
+.. module:: idaes.apps.matopt.materials.lattices.lattice
 
 .. autoclass:: Lattice
 
-.. module:: apps.matopt.materials.canvas
+.. module:: idaes.apps.matopt.materials.canvas
 
 .. autoclass:: Canvas
 
-.. module:: apps.matopt.materials.design
+.. module:: idaes.apps.matopt.materials.design
 
 .. autoclass:: Design
 
@@ -125,7 +125,7 @@ Several types of ``DescriptorRules`` are available.
 
 From the combination of the above pre-defined descriptors, expressions, and rules, a user can specify a wide variety of other descriptors, as necessary.
 
-.. currentmodule:: apps.matopt.opt.mat_modeling
+.. currentmodule:: idaes.apps.matopt.opt.mat_modeling
 
 .. autoclass:: MaterialDescriptor
 
@@ -133,7 +133,7 @@ From the combination of the above pre-defined descriptors, expressions, and rule
 
 Once the model is fully specified, the user can optimize it in light of a chosen descriptor to serve as the objective to be maximized or minimized, as appropriate. Several functions are provided for users to choose from.
 
-.. module:: apps.matopt.opt.mat_modeling
+.. module:: idaes.apps.matopt.opt.mat_modeling
 
 .. autoclass:: MatOptModel
    :members: optimize, populate, maximize, minimize
