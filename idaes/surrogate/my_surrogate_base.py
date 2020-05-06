@@ -91,7 +91,7 @@ class Surrogate:
 
     def modify_config(self, **kwargs):
         """
-        The ``modify_configs`` method allows users to define a new surrogate instance simply by modifying one or more of the 
+        The ``modify_config`` method allows users to define a new surrogate instance simply by modifying one or more of the 
         settings or keywords of a previously-defined surrogate instance.
 
         The values of the new keywords defined in **settings will directly replace the previous values stored in self.CONFIG. 
