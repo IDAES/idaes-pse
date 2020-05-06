@@ -30,9 +30,9 @@ from pyomo.common.config import ConfigValue
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock,
-                        Component)
-from idaes.core.phases import *
+                        StateBlock)
+from idaes.core.components import Component, __all_components__
+from idaes.core.phases import Phase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -178,7 +178,7 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""List of phase pairs for which equilibrium constraints should be
         constructed. Values should be a 2-tuples containing valid phase
         names. Default = None."""))
-    CONFIG.declare("phase_equilibrium_formulation", ConfigValue(
+    CONFIG.declare("phase_equilibrium_state", ConfigValue(
         default=None,
         domain=dict,
         description="Formulation to use when calculating equilibrium state",
@@ -188,22 +188,10 @@ class GenericParameterData(PhysicalParameterBlock):
         occur."""))
 
     # Bubble and dew point methods
-    CONFIG.declare("temperature_bubble", ConfigValue(
-        description="Method to use to calculate bubble temperature",
+    CONFIG.declare("bubble_dew_method", ConfigValue(
+        description="Method to use to calculate bubble and dew points",
         doc="""Flag indicating what formulation to use for calculating bubble
-        temperature. Value should be a valid Python method."""))
-    CONFIG.declare("temperature_dew", ConfigValue(
-        description="Method to use to calculate dew temperature",
-        doc="""Flag indicating what formulation to use for calculating dew
-        temperature. Value should be a valid Python method."""))
-    CONFIG.declare("pressure_bubble", ConfigValue(
-        description="Method to use to calculate bubble pressure",
-        doc="""Flag indicating what formulation to use for calculating bubble
-        pressure. Value should be a valid Python method."""))
-    CONFIG.declare("pressure_dew", ConfigValue(
-        description="Method to use to calculate dew pressure",
-        doc="""Flag indicating what formulation to use for calculating dew
-        pressure. Value should be a valid Python method."""))
+        and dew points. Value should be a valid Python class."""))
 
     def build(self):
         '''
@@ -225,7 +213,19 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for c, d in self.config.components.items():
-            self.add_component(c, Component(default=d))
+            ctype = d.pop("type", None)
+
+            if ctype is None:
+                _log.warning("{} component {} was not assigned a type. "
+                             "Using generic Component object."
+                             .format(self.name, c))
+                ctype = Component
+            elif ctype not in __all_components__:
+                raise TypeError(
+                    "{} component {} was assigned unrecognised type {}."
+                    .format(self.name, c, str(ctype)))
+
+            self.add_component(c, ctype(default=d))
 
         # Add Phase objects
         if self.config.phases is None:
@@ -234,36 +234,48 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for p, d in self.config.phases.items():
-            tmp_dict = {}
-            ptype = Phase
-            for k, v in d.items():
-                if k == "type":
-                    ptype = v
-                else:
-                    tmp_dict[k] = v
+            ptype = d.pop("type", None)
 
-            if ptype is Phase:
+            if ptype is None:
                 _log.warning("{} phase {} was not assigned a type. "
                              "Using generic Phase object."
                              .format(self.name, p))
-            self.add_component(str(p), ptype(default=tmp_dict))
+                ptype = Phase
+            elif ptype not in __all_phases__:
+                raise TypeError(
+                    "{} phase {} was assigned unrecognised type {}."
+                    .format(self.name, p, str(ptype)))
+
+            self.add_component(str(p), ptype(default=d))
 
         # Validate phase-component lists, and build _phase_component_set
         pc_set = []
         for p in self.phase_list:
+            pobj = self.get_phase(p)
             pc_list = self.get_phase(p).config.component_list
             if pc_list is None:
-                # No phase-component list, assume all components in phase
+                # No phase-component list, look at components to determine
+                # which are valid in current phase
                 for j in self.component_list:
-                    pc_set.append((p, j))
+                    if self.get_component(j)._is_phase_valid(pobj):
+                        # If compoennt says phase is valid, add to set
+                        pc_set.append((p, j))
             else:
                 # Validate that component names are valid and add to pc_set
                 for j in pc_list:
                     if j not in self.component_list:
+                        # Unrecognised component
                         raise ConfigurationError(
                             "{} phase-component list for phase {} contained "
                             "component {} which is not in the master "
                             "component list".format(self.name, p, j))
+                    # Check that phase is valid for component
+                    if not self.get_component(j)._is_phase_valid(pobj):
+                        raise ConfigurationError(
+                            "{} phase-component list for phase {} contained "
+                            "component {}, however this component is not "
+                            "valid for the given PhaseType"
+                            .format(self.name, p, j))
                     pc_set.append((p, j))
         self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
@@ -316,13 +328,13 @@ class GenericParameterData(PhysicalParameterBlock):
             counter = 1
 
             # Validate phase equilibrium formulation
-            if self.config.phase_equilibrium_formulation is None:
+            if self.config.phase_equilibrium_state is None:
                 raise ConfigurationError(
                     "{} Generic Property Package provided with a "
                     "phases_in_equilibrium argument but no method was "
-                    "specified for phase_equilibrium_formulation."
+                    "specified for phase_equilibrium_state."
                     .format(self.name))
-            pie_config = self.config.phase_equilibrium_formulation
+            pie_config = self.config.phase_equilibrium_state
 
             for pp in self.config.phases_in_equilibrium:
                 if (pp not in pie_config.keys() and
@@ -330,7 +342,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     raise ConfigurationError(
                         "{} Generic Property Package provided with a "
                         "phases_in_equilibrium argument but "
-                        "phase_equilibrium_formulation was not specified "
+                        "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
                 for j in self.component_list:
@@ -741,7 +753,7 @@ class _GenericStateBlock(StateBlock):
         if blk[k].params.config.phases_in_equilibrium is not None:
             for k in blk.keys():
                 for pp in blk[k].params._pe_pairs:
-                    blk[k].params.config.phase_equilibrium_formulation[pp] \
+                    blk[k].params.config.phase_equilibrium_state[pp] \
                         .calculate_teq(blk[k], pp)
 
             init_log.info("Equilibrium temperature initialization completed.")
@@ -764,7 +776,7 @@ class _GenericStateBlock(StateBlock):
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k].params.config.phase_equilibrium_formulation is not None and
+        if (blk[k].params.config.phase_equilibrium_state is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
             for c in blk[k].component_objects(Constraint):
                 # Activate common constraints
@@ -775,7 +787,7 @@ class _GenericStateBlock(StateBlock):
                     c.activate()
             for pp in blk[k].params._pe_pairs:
                 # Activate formulation specific constraints
-                blk[k].params.config.phase_equilibrium_formulation[pp] \
+                blk[k].params.config.phase_equilibrium_state[pp] \
                     .phase_equil_initialization(blk[k], pp)
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -858,7 +870,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=value(self.temperature),
                 doc='Temperature for calculating phase equilibrium')
 
-            pe_form_config = self.params.config.phase_equilibrium_formulation
+            pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].phase_equil(self, pp)
 
@@ -899,7 +911,7 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
     def _temperature_bubble(b):
-        if b.params.config.temperature_bubble is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
         try:
@@ -913,14 +925,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble temperature")
 
-            b.params.config.temperature_bubble(b)
+            b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
             b.del_component(b.temperature_bubble)
             b.del_component(b.mole_frac_tbub)
             raise
 
     def _temperature_dew(b):
-        if b.params.config.temperature_dew is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
         try:
@@ -934,14 +946,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Liquid mole fractions at dew temperature")
 
-            b.params.config.temperature_dew(b)
+            b.params.config.bubble_dew_method.temperature_dew(b)
         except AttributeError:
             b.del_component(b.temperature_dew)
             b.del_component(b.mole_frac_tdew)
             raise
 
     def _pressure_bubble(b):
-        if b.params.config.pressure_bubble is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
         try:
@@ -955,14 +967,14 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Vapor mole fractions at bubble pressure")
 
-            b.params.config.pressure_bubble(b)
+            b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
             b.del_component(b.pressure_bubble)
             b.del_component(b.mole_frac_pbub)
             raise
 
     def _pressure_dew(b):
-        if b.params.config.pressure_dew is None:
+        if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
         try:
@@ -976,7 +988,7 @@ class GenericStateBlockData(StateBlockData):
                     bounds=(0, None),
                     doc="Liquid mole fractions at dew pressure")
 
-            b.params.config.pressure_dew(b)
+            b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:
             b.del_component(b.pressure_dew)
             b.del_component(b.mole_frac_pdew)

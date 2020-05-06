@@ -11,9 +11,9 @@ Phase objects are used in the IDAES Process Modeling Framework to identify the t
 
 The IDAES Process Modeling Framework currently supports the following types of phases, along with a generic Phase object.
 
-* LiquidPhase
-* SolidPhase
-* VaporPhase
+* `LiquidPhase`
+* `SolidPhase`
+* `VaporPhase`
 
 Phase Object Methods
 --------------------

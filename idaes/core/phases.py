@@ -17,11 +17,21 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+from enum import Enum
+
 from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
+
+
+# Enumerate recognised Phase types
+class PhaseType(Enum):
+    undefined = 0
+    liquidPhase = 1
+    vaporPhase = 2
+    solidPhase = 3
 
 
 @declare_process_block_class("Phase")
@@ -36,7 +46,7 @@ class PhaseData(ProcessBlockData):
     CONFIG.declare("equation_of_state", ConfigValue(
             default=None,
             description="Equation of state for phase",
-            doc="""A valid Python module with the necessary methods for
+            doc="""A valid Python class with the necessary methods for
                 constructing the desired equation of state (or similar
                 model)."""))
     CONFIG.declare("_phase_list_exists", ConfigValue(
@@ -123,3 +133,7 @@ class VaporPhaseData(PhaseData):
 
     def is_vapor_phase(self):
         return True
+
+
+# List of all Phase types to use for validation
+__all_phases__ = [Phase, LiquidPhase, SolidPhase, VaporPhase]

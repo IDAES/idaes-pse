@@ -31,10 +31,10 @@ Define Equilibrium State Formulation
 
 Next, for each pair of phases in equilibrium, the user must define a formulation for the equilibrium state. To handle the complexities of disappearing phases, the IDAES Generic Property Package Framework allows for phase equilibrium to be solved at a separate equilibrium state rather than the actual state of the material. This allows for formulations which avoid disappearing phases by limiting the equilibrium state to exist within the valid two-phase region, whilst returning a negligible amount of any phase which is not valid at the actual material state.
 
-The equilibrium state formulation is set using the `phase_equilibrium_formulation` configuration argument. This should be a `dict` where the keys are 2-tuples of phases in equilibrium (matching those defined in the `phases_in_equilibrium` argument) and values are a phase equilibrium formulation method. The IDAES Generic Property Package Framework contains a library of methods for the formulation of the phase equilibrium state, which is shown below.
+The equilibrium state formulation is set using the `phase_equilibrium_state` configuration argument. This should be a `dict` where the keys are 2-tuples of phases in equilibrium (matching those defined in the `phases_in_equilibrium` argument) and values are a phase equilibrium state formulation method. The IDAES Generic Property Package Framework contains a library of methods for the formulation of the phase equilibrium state, which is shown below.
 
-Phase Equilibrium Libraries
-"""""""""""""""""""""""""""
+Phase Equilibrium State Libraries
+"""""""""""""""""""""""""""""""""
 
 .. toctree::
     :maxdepth: 1
@@ -62,12 +62,9 @@ Bubble and Dew Point Calculations
 
 Bubble and dew points are often of interest to process engineers for designing process equipment, and appear in some calculations of other thermodynamic properties. They are also useful in getting initial guesses for states in phase equilibrium problems, and some equilibrium state formulations rely on these properties.
 
-Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations. Calculation of these properties is generally done through calculations based on the equations of state for the liquid and vapor phases, however these calculations can be greatly simplified if ideal behavior is assume for both phases (i.e. ideal gas and Raoult's law). To allow for both cases, the IDAES Generic Property Package Framework provides a library of different formulations for the bubble and dew point calculations, which can be set using the following arguments:
+Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations. Calculation of these properties is generally done through calculations based on the equations of state for the liquid and vapor phases. However these calculations can be greatly simplified if ideal behavior is assume for both phases (i.e. ideal gas and Raoult's law). To allow for both cases, the IDAES Generic Property Package Framework provides a library of different formulations for the bubble and dew point calculations, which can be set using the following argument:
 
-* `temperature_bubble`
-* `temperature_dew`
-* `pressure_bubble`
-* `pressure_dew`
+* `bubble_dew_method`
 
 A list of available methods is given below:
 
