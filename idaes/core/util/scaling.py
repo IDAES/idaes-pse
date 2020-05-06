@@ -11,11 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-This module contains utilities to provide variable and expression scaling factors
-by providing an expression to calculate them via a suffix.
+This module contains utilities to provide variable and expression scaling
+factors by providing an expression to calculate them via a suffix.
 
-The main purpose of this code is to use the calculate_scaling_factors function to
-calculate scaling factors to be used with the Pyomo scaling transformation or
+The main purpose of this code is to use the calculate_scaling_factors function
+to calculate scaling factors to be used with the Pyomo scaling transformation or
 with solvers. A user can provide a scaling_expression suffix to calculate scale
 factors from existing variable scaling factors. This allows scaling factors from
 a small set of fundamental variables to be propagated to the rest of the model.
@@ -60,7 +60,8 @@ def _replacement(m, basis):
 
     Args:
         m (Block): model to collect vars from
-        basis (list of ScalingBasis): value type to use as basis for scaling calcs
+        basis (list of ScalingBasis): value type to use as basis for scaling
+        calcs
 
     Return:
         None or ExpressionReplacementVisitor
@@ -128,7 +129,8 @@ def _replacement(m, basis):
                 except KeyError:
                     pass
             rdict[id(v)] = val
-        # Use the substitutions dictionary from above to make a replacemnt visitor
+        # Use the substitutions dictionary from above to make a replacement
+        # visitor
         return EXPR.ExpressionReplacementVisitor(substitute=rdict)
 
 
@@ -165,9 +167,9 @@ def _calculate_scale_factors_from_nominal(m):
 def _calculate_scale_factors_from_expr(m, replacement, cls):
     """PRIVATE FUNCTION
     Take the expressions from the scaling_expression suffix and use them to
-    calculate scaling factors for the scaling_factor suffix that is used by Pyomo
-    or the solver to do variable and constraint scaling. The resulting scaling
-    factors are put into the scaling factor suffix.
+    calculate scaling factors for the scaling_factor suffix that is used by
+    Pyomo or the solver to do variable and constraint scaling. The resulting
+    scaling factors are put into the scaling factor suffix.
 
     Args:
         m (Block): a pyomo block to calculate scaling factors for
@@ -202,7 +204,7 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
                 c.parent_block().scaling_expression[c]
             )
 
-        # Add constraint scaling factor by evaluating modeler provided scale expr
+        # Add constraint scaling factor by evaluating provided scale expr
         c.parent_block().scaling_factor[c] = pyo.value(expr)
 
 
@@ -214,19 +216,21 @@ def calculate_scaling_factors(
                 ScalingBasis.Value,
         )
 ):
-    """Set scale factors for variables and constraints from expressions stored in
-    the scaling_expression suffix. The variables and Expressions in the scaling
-    expressions are replaced by the scaling basis values before calculating
-    the scaling factor. Variable scale factors are calculated first, and variable
-    scaling expressions should be based on variables whose scale factors are
-    supplied directly. Constraint scaling expressions can be based on any variables.
+    """Set scale factors for variables and constraints from expressions stored
+    in the scaling_expression suffix. The variables and Expressions in the
+    scaling expressions are replaced by the scaling basis values before
+    calculating the scaling factor. Variable scale factors are calculated first
+    , and variable scaling expressions should be based on variables whose scale
+    factors are supplied directly. Constraint scaling expressions can be based
+    on any variables.
 
     Args:
         m (Block): A Pyomo model or block to apply the scaling expressions to.
         basis: (ScalingBasis or List-like of ScalingBasis): Value to use
             when evaluating scaling expressions. A list-like of ScalingBasis can
             be used to provide fall-back values in the event that the first
-            choice is not available.  If none of the bases are available, 1 is used.
+            choice is not available.  If none of the bases are available, 1 is
+            used.
 
     Returns:
         None
@@ -252,9 +256,9 @@ def calculate_scaling_factors(
 
 
 def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
-    """This provides a rough check for variables with poor scaling based on their
-    current scale factors and values. For each potentially poorly scaled variable
-    it returns the var and its current scaled value.
+    """This provides a rough check for variables with poor scaling based on
+    their current scale factors and values. For each potentially poorly scaled
+    variable it returns the var and its current scaled value.
 
     Args:
         large: Magnitude that is considered to be too large
@@ -304,7 +308,7 @@ def grad_fd(c, scaled=False, h=1e-6):
     grad = [None] * len(vars)
 
     r = {}
-    if scaled:  # If you want the scaled grad put in variable scaling tansform
+    if scaled:  # If you want the scaled grad put in variable scaling transform
         orig = [pyo.value(v) for v in vars]
         for i, v in enumerate(vars):
             try:
@@ -358,7 +362,7 @@ def scale_constraint(c, v=None):
     Returns:
         None
     """
-    if not isinstance(c,pyo.Constraint):
+    if not isinstance(c, pyo.Constraint):
         raise TypeError(
             "{} is not a constraint and cannot be the input to scale_constraint"
             .format(c.name))
@@ -391,7 +395,7 @@ def scale_single_constraint(c):
     Returns:
         None
     """
-    if not isinstance(c,pyo.Constraint):
+    if not isinstance(c, pyo.Constraint):
         raise TypeError(
             "{} is not a constraint and cannot be the input to "
             "scale_single_constraint".format(c.name))
@@ -401,7 +405,8 @@ def scale_single_constraint(c):
     except AttributeError:
         raise ConfigurationError(
             "There is no scaling factor suffix for the {} block, so the {} "
-            "constraint cannot be scaled.".format(c.parent_block().name,c.name))
+            "constraint cannot be scaled.".format(c.parent_block().name,
+                                                  c.name))
     except KeyError:
         v = None
         _log.info('{} constraint has no scaling factor and was not scaled. It '
@@ -419,14 +424,13 @@ def scale_single_constraint(c):
             lst.append(c_prop)
         c.set_value(tuple(lst))  # set the scaled lower, body, and upper
         c.parent_block().scaling_factor[c] = 1  # set scaling factor to 1
-        if hasattr(c.parent_block(),'scaling_expression'):
+        if hasattr(c.parent_block(), 'scaling_expression'):
             try:
                 # set expression to 1
                 c.parent_block().scaling_expression[c] = 1
             except KeyError:
                 # no expression to set to 1
                 pass
-
 
 
 def _scale_block_constraints(b):
@@ -440,12 +444,12 @@ def _scale_block_constraints(b):
     Returns:
         None
     """
-    if not hasattr(b,'scaling_factor'):
+    if not hasattr(b, 'scaling_factor'):
         raise ConfigurationError(
             "There is no scaling factor suffix for the {} block, so its "
             "constraints cannot be scaled.".format(b.name))
 
-    for c in b.component_objects(pyo.Constraint,descend_into=False):
+    for c in b.component_objects(pyo.Constraint, descend_into=False):
         scale_single_constraint(c)
 
 
@@ -473,10 +477,10 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
     respect to any variable is greater than max_grad at the current variable
     values, the method will attempt to assign a scaling factor to the constraint
     that makes the maximum derivative max_grad.  The min_scale value provides a
-    lower limit allowed for constraint scaling factors.  If the caclulated
-    scaling factor to make the maxium derivative max_grad is less than min_scale,
-    min_scale is used instead.  Derivatives are approximated using finite
-    differnce.
+    lower limit allowed for constraint scaling factors.  If the calculated
+    scaling factor to make the maximuum derivative max_grad is less than
+    min_scale, min_scale is used instead.  Derivatives are approximated using
+    finite difference.
 
     Args:
         c: constraint object
