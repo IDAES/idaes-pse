@@ -61,7 +61,7 @@ def _replacement(m, basis):
     Args:
         m (Block): model to collect vars from
         basis (list of ScalingBasis): value type to use as basis for scaling
-        calcs
+            calculations
 
     Return:
         None or ExpressionReplacementVisitor
@@ -73,7 +73,7 @@ def _replacement(m, basis):
         return None  # no need to replace anything if using value
     else:
         rdict = {}
-        for v in m.component_data_objects((pyo.Var)):
+        for v in m.component_data_objects(pyo.Var):
             val = 1.0
             for b in basis:
                 try:
@@ -106,7 +106,7 @@ def _replacement(m, basis):
                 except KeyError:
                     pass
             rdict[id(v)] = val
-        for v in m.component_data_objects((pyo.Expression)):
+        for v in m.component_data_objects(pyo.Expression):
             # check for expression scaling factors, while expressions don't
             # get scaled, the factor can be used in the calculation of other
             # scale factors.
@@ -261,6 +261,7 @@ def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
     variable it returns the var and its current scaled value.
 
     Args:
+        blk: pyomo block
         large: Magnitude that is considered to be too large
         small: Magnitude that is considered to be too small
         zero: Magnitude that is considered to be zero, variables with a value of
@@ -478,7 +479,7 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
     values, the method will attempt to assign a scaling factor to the constraint
     that makes the maximum derivative max_grad.  The min_scale value provides a
     lower limit allowed for constraint scaling factors.  If the calculated
-    scaling factor to make the maximuum derivative max_grad is less than
+    scaling factor to make the maximum derivative max_grad is less than
     min_scale, min_scale is used instead.  Derivatives are approximated using
     finite difference.
 
