@@ -23,12 +23,12 @@ from idaes.core.util.scaling import (
     badly_scaled_var_generator,
     grad_fd,
     constraint_fd_autoscale,
-    scale_constraint,
     scale_single_constraint,
     scale_constraints
 )
 
 __author__ = "John Eslick, Tim Bartholomew"
+
 
 class TestCalculateScalingFactors():
     @pytest.fixture(scope="class")
@@ -110,7 +110,7 @@ class TestCalculateScalingFactors():
         # Test scaling factor based on midpoint of bounds and falling back on
         # scale factor
         calculate_scaling_factors(model, basis=[ScalingBasis.Mid,
-                                            ScalingBasis.InverseVarScale])
+                                                ScalingBasis.InverseVarScale])
         assert model.scaling_factor[model.z[1]] == pytest.approx(1 / 11)
         assert model.scaling_factor[model.z[2]] == pytest.approx(1 / 88)
         assert model.b1.scaling_factor[model.b1.c1] == pytest.approx(1 / 4)
@@ -227,13 +227,11 @@ def test_grad_fd():
     assert pyo.value(m.z) == 1e4
     assert pyo.value(m.e) == pytest.approx(pyo.value(100 * (m.x / m.z)**2))
     assert g[ix] == pytest.approx(
-        pyo.value(200*(sfz/sfx)**2*sfx*m.x/((sfz*m.z)**2))*m.scaling_factor[m.c2],
-        rel=1e-2,
-    )
+        pyo.value(200*(sfz/sfx)**2*sfx*m.x/((sfz*m.z)**2)) *
+        m.scaling_factor[m.c2], rel=1e-2, )
     assert g[iz] == pytest.approx(
-        pyo.value(-200*(sfz/sfx)**2*(sfx*m.x)**2/(sfz*m.z)**3)*m.scaling_factor[m.c2],
-        rel=1e-2,
-    )
+        pyo.value(-200*(sfz/sfx)**2*(sfx*m.x)**2/(sfz*m.z)**3) *
+        m.scaling_factor[m.c2], rel=1e-2, )
     assert g[ix] == pytest.approx(2, rel=1e-2)
     assert g[iz] == pytest.approx(-2, rel=1e-3)
 
@@ -243,64 +241,6 @@ def test_grad_fd():
     constraint_fd_autoscale(m.c2)
     assert m.scaling_factor[m.c2] == pytest.approx(5e-5, rel=1e-2)
 
-
-class TestScaleConstraint():
-    @pytest.fixture(scope="class")
-    def model(self):
-        m = pyo.ConcreteModel()
-        m.x = pyo.Var(initialize=500)
-        m.c1 = pyo.Constraint(expr=m.x <= 1e3)
-        m.c2 = pyo.Constraint(expr=m.x == 1e3)
-        m.c3 = pyo.Constraint(expr=m.x >= 1e3)
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.c1] = 1 / 1e3
-        m.scaling_factor[m.c2] = 1 / 1e3
-        m.scaling_factor[m.c3] = 1 / 1e3
-        return m
-
-    def test_unscaled_constraints(self, model):
-        assert model.c1.lower is None
-        assert model.c1.body is model.x
-        assert model.c1.upper.value == pytest.approx(1e3)
-        assert model.c2.lower.value == pytest.approx(1e3)
-        assert model.c2.body is model.x
-        assert model.c2.upper.value == pytest.approx(1e3)
-        assert model.c3.lower.value == pytest.approx(1e3)
-        assert model.c3.body is model.x
-        assert model.c3.upper is None
-
-    def test_not_constraint(self, model):
-        with pytest.raises(TypeError):
-            scale_constraint(model.x)
-
-    def test_less_than_constraint(self, model):
-        scale_constraint(model.c1)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-
-    def test_equality_constraint(self, model):
-        scale_constraint(model.c2)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c2.upper.value == pytest.approx(1)
-
-    def test_greater_than_constraint(self, model):
-        scale_constraint(model.c3)
-        assert model.c3.lower.value == pytest.approx(1)
-        assert model.c3.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c3.upper is None
-
-    def test_specified_factor(self, model):
-        value_prev = model.c2.body()
-        scale_constraint(model.c2, 1e2)
-        assert model.c2.body() == pytest.approx(value_prev * 1e2)
-
-    def test_unspecified_factor(self, model):
-        model.c4 = pyo.Constraint(expr=model.x == 1e3)
-        scale_constraint(model.c4)
-        # no scaling because there was no scaling factor provided
-        assert model.c4.body() == pytest.approx(model.x.value)
 
 class TestScaleSingleConstraint():
     @pytest.fixture(scope="class")
@@ -401,7 +341,7 @@ class TestScaleConstraints():
         return m
 
     def test_scale_one_block(self, model):
-        scale_constraints(model,descend_into=False)
+        scale_constraints(model, descend_into=False)
         # scaled
         assert model.c1.lower.value == pytest.approx(1)
         assert model.c1.body() == pytest.approx(model.x.value / 1e3)

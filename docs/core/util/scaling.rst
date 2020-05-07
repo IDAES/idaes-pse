@@ -48,7 +48,7 @@ expressions must be converted to scaling factors with the
 the scaling expression with the specified basis value, calculates the scaling factors, 
 and puts the scaling factor in the ``scaling_factor`` suffix.
 
-Specifically, for Ipopt, it is recommended to use the ``scale_constraints(m, basis)`` function 
+Specifically, for Ipopt, it is recommended to use the ``scale_constraints(m)`` function 
 to scale the constraints before sending the model to the solver. To scale the variables, the user
 must set the ``nlp_scaling_method`` option to "user-scaling".
 
@@ -129,8 +129,6 @@ IDAES includes some utility functions to help evaluate model scaling and to auto
 .. autofunction:: badly_scaled_var_generator
 
 .. autofunction:: grad_fd
-
-.. autofunction:: scale_constraint
 
 .. autofunction:: scale_single_constraint
 

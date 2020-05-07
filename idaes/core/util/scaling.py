@@ -348,43 +348,6 @@ def grad_fd(c, scaled=False, h=1e-6):
     return grad, vars
 
 
-def scale_constraint(c, v=None):
-    """DEPRECATED - This transforms a constraint with its scaling factor or a
-    given scaling factor value. If it uses the scaling factor suffix value,
-    the scaling factor suffix is set to 1 to avoid double scaling the
-    constraint. This can be used when to scale constraints before sending the
-    model to the solver.
-
-    Args:
-        c: Pyomo constraint
-        v: Scale factor. If None, use value from scaling factor suffix and set
-            suffix value to 1.
-
-    Returns:
-        None
-    """
-    if not isinstance(c, pyo.Constraint):
-        raise TypeError(
-            "{} is not a constraint and cannot be the input to scale_constraint"
-            .format(c.name))
-
-    if v is None:
-        try:
-            v = c.parent_block().scaling_factor[c]
-            c.parent_block().scaling_factor[c] = 1
-        except:
-            v = None
-
-    if v is not None:
-        lst = []
-        for prop in ['lower', 'body', 'upper']:
-            c_prop = getattr(c, prop)
-            if c_prop is not None:
-                c_prop = c_prop * v
-            lst.append(c_prop)
-        c.set_value(tuple(lst))  # set the scaled lower, body, and upper
-
-
 def scale_single_constraint(c):
     """This transforms a constraint with its scaling factor. If there is no
     scaling factor for the constraint, the constraint is not scaled and a
