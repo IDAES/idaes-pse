@@ -28,13 +28,9 @@ paper.on("link:mouseover", function(cellView, evt) {
   });
   var segmentsTool = new joint.linkTools.Segments();
 
-  var sourceArrowheadTool = new joint.linkTools.SourceArrowhead();
-  var targetArrowheadTool = new joint.linkTools.TargetArrowhead();
-
   var toolsView = new joint.dia.ToolsView({
     tools: [
-      verticesTool, segmentsTool,
-      sourceArrowheadTool, targetArrowheadTool
+      verticesTool, segmentsTool
     ]
   });
   cellView.addTools(toolsView)
