@@ -59,7 +59,30 @@ where :math:`\mu_{g}` is the gas viscosity, :math:`\epsilon` is the reactor bed 
 Initialization
 --------------
 
-The initialization method for this model uses a multi-step, sequential, hierarchical initialization approach.
+The initialization method for this model will save the current state of the model before
+commencing initialization and reloads it afterwards. The state of the model will be the same after
+initialization, only the initial guesses for unfixed variables will be changed.
+
+The model allows for the passing of a dictionary of values of the state variables of the gas and
+solid phases that can be used as initial guesses for the state variables throughout the time and
+spatial domains of the model. This is optional but recommended. A typical guess could be values
+of the gas and solid inlet port variables at time *t*=0.
+
+The model initialization proceeds through a sequential hierarchical method where the model
+equations are deactivated at the start of the initialization routine, and the complexity of the model
+is built up through activation and solution of various sub-model blocks and equations at each
+initialization step. At each step the model variables are updated to better guesses obtained from
+the model solution at that step.
+
+The initialization routine proceeds in as follows:
+
+*  Step 1:  Initialize the thermo-physical and transport properties model blocks.
+*  Step 2:  Initialize the hydrodynamic properties.
+*  Step 3a: Initialize mass balances without reactions and pressure drop.
+*  Step 3b: Initialize mass balances with reactions and without pressure drop.
+*  Step 3c: Initialize mass balances with reactions and pressure drop.
+*  Step 4:  Initialize energy balances.
+
 
 MBR Class
 ---------

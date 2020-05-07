@@ -1,8 +1,7 @@
 Gas Solid Contactors IDAES Model Library
-============================================
+========================================
 
-This specialized application library contains a suite of generic advanced models that are applicable to gas-solid processes. The axially discretized models are one dimensional, with two phases (gas and solid). The models capture the gas-solid interaction between the phases is described through reaction, mass
-and heat transfer.
+This specialized application library contains a suite of generic advanced models that are applicable to gas-solid processes. The axially discretized models are one dimensional, with two phases (gas and solid). The models capture the gas-solid interaction between the phases is described through reaction, mass and heat transfer.
 
 Contents
 --------
@@ -10,4 +9,6 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    unit_models/moving_bed
+    flowsheets/index
+    unit_models/index
+    properties/index
