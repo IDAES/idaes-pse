@@ -47,7 +47,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+                                     PhysicalParameterTestBlock,
+                                     initialization_tester)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
@@ -285,23 +286,7 @@ class TestBTX_cocurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
-        orig_fixed_vars = fixed_variables_set(btx)
-        orig_act_consts = activated_constraints_set(btx)
-
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(btx) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx)
-        fin_act_consts = activated_constraints_set(btx)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -438,23 +423,7 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
-        orig_fixed_vars = fixed_variables_set(btx)
-        orig_act_consts = activated_constraints_set(btx)
-
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(btx) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx)
-        fin_act_consts = activated_constraints_set(btx)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -597,23 +566,7 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, iapws):
-        orig_fixed_vars = fixed_variables_set(iapws)
-        orig_act_consts = activated_constraints_set(iapws)
-
-        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(iapws) == 0
-
-        fin_fixed_vars = fixed_variables_set(iapws)
-        fin_act_consts = activated_constraints_set(iapws)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -754,23 +707,7 @@ class TestSaponification_crossflow(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, sapon):
-        orig_fixed_vars = fixed_variables_set(sapon)
-        orig_act_consts = activated_constraints_set(sapon)
-
-        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(sapon) == 0
-
-        fin_fixed_vars = fixed_variables_set(sapon)
-        fin_act_consts = activated_constraints_set(sapon)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
