@@ -30,9 +30,12 @@ from operator import attrgetter
 import os
 from pathlib import Path
 import re
+from setuptools import setup, find_packages
 import shutil
 import sys
+from tempfile import mkdtemp
 from typing import List
+from uuid import uuid4
 from zipfile import ZipFile
 
 # third-party
@@ -46,7 +49,6 @@ import requests
 # package
 from idaes.commands import cb
 from idaes.ver import package_version as V
-from idaes.util.system import TemporaryDirectory
 
 __author__ = "Dan Gunter"
 
@@ -65,6 +67,12 @@ INSTALL_PKG = "idaes_examples"
 JUPYTER_NB_VERSION = 4  # for parsing
 REMOVE_CELL_TAG = "remove_cell"  # for stripping Jupyter notebook cells
 STRIPPED_NOTEBOOK_SUFFIX = "_s"
+
+# Global vars
+
+g_tempdir, g_egg = None, None
+
+# Exceptions
 
 class DownloadError(Exception):
     """Used for errors downloading the release files.
@@ -95,8 +103,9 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     is_flag=True
 )
 @click.option(
-    "--list-releases",
+    "--list",
     "-l",
+    "list_releases",
     help="List all available released versions, and stop",
     is_flag=True,
 )
@@ -117,8 +126,8 @@ Release = namedtuple("Release", ["date", "tag", "info"])
     "--version",
     "-V",
     help=f"Version of examples to download",
-    default=PKG_VERSION,
-    show_default=True,
+    default=None,
+    show_default=False,
 )
 def get_examples(directory, no_install, list_releases, no_download, version,
                  unstable):
@@ -132,35 +141,51 @@ def get_examples(directory, no_install, list_releases, no_download, version,
         sys.exit(0)
     # otherwise..
     target_dir = Path(directory)
+    # do nothing?
+    if no_download and no_install:
+        click.echo("Download and installation disabled. Done.")
+        sys.exit(0)
     # download?
     if no_download:  # no download
-        _log.info("skipping download")
+        _log.info("skipping download step (use existing examples)")
+        click.echo("Skip download")
     else:  # download
-        stable_ver = re.match(r".*-\w+$", version) is None
-        if not stable_ver and not unstable:
-            click.echo(f"Cannot download unstable version {version} unless you add "
-                       f"the -U/--unstable flag")
-            sys.exit(-1)
-        ex_version = get_examples_version(version)
+        # check that unstable flag is given before downloading unstable version
+        if version is not None:
+            stable_ver = re.match(r".*-\w+$", version) is None
+            if not stable_ver and not unstable:
+                click.echo(f"Cannot download unstable version {version} unless you add "
+                           f"the -U/--unstable flag")
+                sys.exit(-1)
+        # set version
+        if version is None:
+            ex_version = get_examples_version(PKG_VERSION)
+        else:
+            ex_version = version
         # give an error if selected version does not exist
         if ex_version not in [r.tag for r in releases]:
-            if version == PKG_VERSION:
-                how_ver = " and, optionally, -V/--version to choose a desired version"
+            if version is None:
+                click.echo(f"Internal Error: Could not find an examples release matching IDAES {ex_version}.\n"
+                           f"As a workaround, you can manually pick a version with -V/--version.\n"
+                           f"Use -l/--list-releases to see all available versions.")
             else:
-                how_ver = ""  # they already did this!
-            click.echo(f"Could not find an examples release matching {version}")
-            click.echo(f"Use -l/--list-releases to see all{how_ver}.")
+                click.echo(f"Could not find an examples release matching IDAES {version}.\n"
+                           f"Use -l/--list-releases to see all available versions.")
             sys.exit(-1)
         click.echo("Downloading...")
         try:
             download(target_dir, ex_version)
         except DownloadError as err:
             _log.warning(f"abort due to failed download: {err}")
+            clean_up_temporary_files()
             sys.exit(-1)
         full_dir = os.path.realpath(target_dir)
-        click.echo(f"* Downloaded examples to directory '{full_dir}'")
+        _log.info(f"downloaded examples to: '{full_dir}'")
     # install
-    if not no_install:
+    if no_install:
+        _log.info("skipping installation step")
+        click.echo("Skip install")
+    else:
         if not target_dir.exists():
             if no_download:
                 click.echo(f"Target directory '{target_dir}' does not exist")
@@ -171,16 +196,32 @@ def get_examples(directory, no_install, list_releases, no_download, version,
                 sys.exit(-1)
         click.echo("Installing...")
         try:
-            install_src(version, target_dir)
+            install_src(ex_version, target_dir)
         except InstallError as err:
             click.echo(f"Install error: {err}")
+            clean_up_temporary_files()
             sys.exit(-1)
-        click.echo(f"* Installed examples in package {INSTALL_PKG}")
+        _log.info(f"Installed examples as package {INSTALL_PKG}")
+
+    click.echo("Cleaning up...")
     # strip notebooks
-    click.echo("Cleaning up Jupyter notebooks..")
     strip_test_cells(target_dir)
+    # temporary files
+    clean_up_temporary_files()
+
     # Done
-    click.echo("Done!")
+    print_summary( ex_version, target_dir, not no_install)
+
+
+def print_summary(version, dirname, installed):
+    sep1, sep2 = "-" * 40, "=" * 40
+    print(f"{sep1}\nIDAES Examples {version}\n{sep2}")
+    print(f"Path   : {dirname}")
+    if installed:
+        print(f"Package: {INSTALL_PKG}")
+    else:
+        print(f"Package: not installed")
+    print(sep2)
 
 
 def get_examples_version(idaes_version: str):
@@ -212,7 +253,6 @@ def download(target_dir: Path, version: str):
         download_contents(target_dir, version)
     except DownloadError as err:
         click.echo(f"Download failed: {err}")
-        # shutil.rmtree(target_dir)  # remove partial download
         raise
 
 
@@ -235,6 +275,7 @@ def download_contents(target_dir, version):
     Raises:
         DownloadError: if the GET on the release URL returns non-200 status
     """
+    global g_tempdir
     url = archive_file_url(version)
     _log.info(f"get examples from: {url}")
     # stream out to a big .zip file
@@ -243,23 +284,48 @@ def download_contents(target_dir, version):
         if req.status_code in (400, 404):
             raise DownloadError(f"file not found")
         raise DownloadError(f"status={req.status_code}")
-    tmpdir = TemporaryDirectory()
-    _log.debug(f"created temporary directory '{tmpdir.name}'")
-    tmpfile = Path(tmpdir.name) / "examples.zip"
-    with tmpfile.open("wb") as f:
+    # note: mkdtemp() creates a directory that seems un-removable on Windows.
+    # So, instead, just create the directory yourself in the current directory
+    random_name = str(uuid4())
+    try:
+        os.mkdir(random_name)
+    except Exception as err:
+        _log.fatal(f"making directory '{random_name}': {err}")
+        click.echo("Cannot make temporary directory in current directory. Abort.")
+        sys.exit(-1)
+    g_tempdir = tempdir = Path(random_name)
+    _log.debug(f"created temporary directory '{tempdir.name}'")
+    tempfile = tempdir / "examples.zip"
+    with tempfile.open("wb") as f:
         for chunk in req.iter_content(chunk_size=65536):
             f.write(chunk)
-    _log.info(f"downloaded zipfile to {tmpfile}")
+    _log.info(f"downloaded zipfile to {tempfile}")
     # open as a zip file, and extract all files into the temporary directory
-    _log.debug(f"open zip file: {tmpfile}")
-    zipf = ZipFile(str(tmpfile))
-    zipf.extractall(path=tmpdir.name)
+    _log.debug(f"open zip file: {tempfile}")
+    zipf = ZipFile(str(tempfile))
+    zipf.extractall(path=tempdir.name)
     # move the REPO_DIR subdirectory into the target dir
-    subdir = Path(tmpdir.name) / f"{REPO_NAME}-{version}" / REPO_DIR
+    subdir = Path(tempdir.name) / f"{REPO_NAME}-{version}" / REPO_DIR
     _log.debug(f"move {subdir} -> {target_dir}")
     os.rename(str(subdir), str(target_dir))
-    _log.debug(f"removing temporary directory '{tmpdir.name}'")
-    del tmpdir
+    zipf.close()
+
+
+def clean_up_temporary_files():
+    # temporary directory created for unzipping and renaming
+    if g_tempdir:
+        d = g_tempdir
+        _log.debug(f"remove temporary directory.start name='{d}'")
+        try:
+            shutil.rmtree(d)
+        except Exception as err:  # WTF
+            _log.warning(f"remove temporary directory.error name='{d}' msg='{err}'")
+        else:
+            _log.debug(f"removed temporary directory.end name='{d}'")
+    # egg file created by setuptools
+    if g_egg:
+        _log.debug(f"remove setuptools egg path='{g_egg}'")
+        shutil.rmtree(g_egg.name)
 
 
 def archive_file_url(version, org=REPO_ORG, repo=REPO_NAME):
@@ -320,9 +386,10 @@ def install_src(version, target_dir):
     """Install the 'src' subdirectory as a package, given by `INSTALL_PKG`,
     by renaming the directory, adding '__init__.py' files,
     and then running `setuptools.setup()` on the directory tree.
-    When done, name the directory back to 'src', and remove '__init__.py' files
+    When done, name the directory back to 'src', and remove '__init__.py' files.
+    Then clean up whatever cruft is left behind..
     """
-    from setuptools import setup, find_packages
+    global g_egg
     root_dir = target_dir.parent
     examples_dir = root_dir / INSTALL_PKG
     if examples_dir.exists():
@@ -392,6 +459,12 @@ def install_src(version, target_dir):
     sys.argv = saved_args
     # change back to previous directory
     os.chdir(orig_dir)
+    # save name of egg file, for later cleanup
+    f = Path(".") / (INSTALL_PKG + ".egg-info")
+    if f.exists():
+        g_egg = f
+    else:
+        _log.warning(f"build dir not found path='{f}'")
 
 
 def find_python_directories(target_dir: Path) -> List[Path]:
@@ -459,6 +532,7 @@ def strip_tags(nb: Path):
     Raises:
         IOError: If the desired target for the stripped notebook already exists
     """
+    _log.info(f"stripping tags from notebook {nb}")
     # Set up configuration for removing specially tagged cells
     conf = Config()
     conf.TagRemovePreprocessor.remove_cell_tags = (REMOVE_CELL_TAG,)
