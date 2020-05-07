@@ -65,7 +65,7 @@ kwargs = dict(
         "pyyaml",
         "requests", # for ui/fsvis
         "sympy",
-        "tinydb<4.0.0",
+        "tinydb<=3.15.2",
         # alamopy
         # <nothing>
         # ripe
