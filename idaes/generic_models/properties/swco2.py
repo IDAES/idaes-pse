@@ -66,7 +66,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 
 # Logger
 _log = idaeslog.getLogger(__name__)
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 
 def swco2_available():
@@ -104,6 +104,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="swco2",
             state_block_class=SWCO2StateBlock,
             component_list=Set(initialize=["CO2"]),
             phase_equilibrium_idx=Set(initialize=[1]),

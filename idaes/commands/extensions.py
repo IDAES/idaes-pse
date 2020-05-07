@@ -14,12 +14,34 @@
 
 __author__ = "John Eslick"
 
+import os
 import click
 import logging
 import idaes.solvers
 from idaes.commands import cb
 
 _log = logging.getLogger("idaes.commands.extensions")
+
+
+def print_extensions_version():
+    click.echo("---------------------------------------")
+    click.echo("IDAES Extensions Build Versions")
+    click.echo("=======================================")
+    v = os.path.join(idaes.bin_directory, "version_solvers.txt")
+    try:
+        with open(v, "r") as f:
+            v = f.readline().strip()
+    except FileNotFoundError:
+        v = "no version file found"
+    click.echo("Solvers:  v{}".format(v))
+    v = os.path.join(idaes.bin_directory, "version_lib.txt")
+    try:
+        with open(v, "r") as f:
+            v = f.readline().strip()
+    except FileNotFoundError:
+        v = "no version file found"
+    click.echo("Library:  v{}".format(v))
+    click.echo("=======================================")
 
 
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")
@@ -45,5 +67,12 @@ def get_extensions(url, verbose, platform):
         click.echo("Getting files...")
         idaes.solvers.download_binaries(url, verbose, platform)
         click.echo("Done")
+        print_extensions_version()
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
+
+
+
+@cb.command(name="ver-extensions", help="Get solver and library IDAES package version")
+def ver_extensions():
+    print_extensions_version()

@@ -62,12 +62,9 @@ Bubble and Dew Point Calculations
 
 Bubble and dew points are often of interest to process engineers for designing process equipment, and appear in some calculations of other thermodynamic properties. They are also useful in getting initial guesses for states in phase equilibrium problems, and some equilibrium state formulations rely on these properties.
 
-Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations. Calculation of these properties is generally done through calculations based on the equations of state for the liquid and vapor phases, however these calculations can be greatly simplified if ideal behavior is assume for both phases (i.e. ideal gas and Raoult's law). To allow for both cases, the IDAES Generic Property Package Framework provides a library of different formulations for the bubble and dew point calculations, which can be set using the following arguments:
+Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations. Calculation of these properties is generally done through calculations based on the equations of state for the liquid and vapor phases. However these calculations can be greatly simplified if ideal behavior is assume for both phases (i.e. ideal gas and Raoult's law). To allow for both cases, the IDAES Generic Property Package Framework provides a library of different formulations for the bubble and dew point calculations, which can be set using the following argument:
 
-* `temperature_bubble`
-* `temperature_dew`
-* `pressure_bubble`
-* `pressure_dew`
+* `bubble_dew_method`
 
 A list of available methods is given below:
 

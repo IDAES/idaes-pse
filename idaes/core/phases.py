@@ -46,7 +46,7 @@ class PhaseData(ProcessBlockData):
     CONFIG.declare("equation_of_state", ConfigValue(
             default=None,
             description="Equation of state for phase",
-            doc="""A valid Python module with the necessary methods for
+            doc="""A valid Python class with the necessary methods for
                 constructing the desired equation of state (or similar
                 model)."""))
     CONFIG.declare("_phase_list_exists", ConfigValue(
