@@ -17,6 +17,8 @@ Tests for idaes.commands
 import json
 import os
 from pathlib import Path
+import subprocess
+import uuid
 
 # third-party
 import pytest
@@ -28,6 +30,12 @@ from idaes.util.system import TemporaryDirectory
 ################
 # get-examples #
 ################
+
+
+def test_examples_n():
+    target_dir = str(uuid.uuid4())  # pick something that won't exist
+    retcode = subprocess.call(["idaes", "get-examples", "-N", "-d", target_dir])
+    assert retcode == 255  # result of sys.exit(-1)
 
 
 def test_examples_list_releases():

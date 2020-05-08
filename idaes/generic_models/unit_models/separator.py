@@ -1293,7 +1293,7 @@ objects linked the mixed state and all outlet states,
                 )
 
     def initialize(
-        blk, outlvl=idaeslog.NOTSET, optarg={},
+        blk, outlvl=idaeslog.NOTSET, optarg={}, state_args=None,
         solver="ipopt", hold_state=False
     ):
         """
@@ -1304,6 +1304,8 @@ objects linked the mixed state and all outlet states,
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
+            state_args: unused, but retained for consistency with other
+                        initialization methods
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - False. **Valid values:**
@@ -1336,9 +1338,13 @@ objects linked the mixed state and all outlet states,
         )
 
         # Solve for split fractions only
+        component_status = {}
         for c in blk.component_objects((Block, Constraint)):
-            if not c.local_name == "sum_split_frac":
-                c.deactivate()
+            for i in c:
+                if not c[i].local_name == "sum_split_frac":
+                    # Record current status of components to restore later
+                    component_status[c[i]] = c[i].active
+                    c[i].deactivate()
 
         if degrees_of_freedom(blk) != 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1348,8 +1354,9 @@ objects linked the mixed state and all outlet states,
                     .format(idaeslog.condition(res))
                     )
 
-        for c in blk.component_objects((Block, Constraint)):
-            c.activate()
+        for c, s in component_status.items():
+            if s:
+                c.activate()
 
         if blk.config.ideal_separation:
             # If using ideal splitting, initialization should be complete

@@ -47,7 +47,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+                                     PhysicalParameterTestBlock,
+                                     initialization_tester)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
@@ -55,18 +56,21 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Get default solver for testing
 solver = get_default_solver()
 
+
 # -----------------------------------------------------------------------------
 def test_bad_option():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     with pytest.raises(KeyError):
-        m.fs.unit = HeatExchanger(default={"I'm a bad option":"hot"})
+        m.fs.unit = HeatExchanger(default={"I'm a bad option": "hot"})
+
 
 def test_same_name():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     with pytest.raises(NameError):
-        m.fs.unit = HeatExchanger(default={"cold_side_name":"shell"})
+        m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
+
 
 def test_config():
     m = ConcreteModel()
@@ -156,7 +160,49 @@ def test_costing():
 
     results = solver.solve(m)
     assert m.fs.unit.costing.purchase_cost.value == \
-                                            pytest.approx(52442.7363,1e-5)
+                                            pytest.approx(529738.6793, 1e-5)
+
+
+def test_costing_book():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+    #   Set inputs
+    m.fs.unit.inlet_1.flow_mol[0].fix(100)
+    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+    m.fs.unit.inlet_2.flow_mol[0].fix(100)
+    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+    m.fs.unit.area.fix(1000)
+    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+    # costing
+    m.fs.unit.get_costing(hx_type='floating_head', length_factor='20ft',
+                          year='2018')
+    m.fs.unit.area.fix(669.738)  # m2
+    m.fs.unit.costing.pressure_factor.fix(1.19)
+    m.fs.unit.costing.material_factor.fix(4.05)
+    m.fs.costing.CE_index = 550
+    m.fs.unit.costing.hx_os = 1.0
+    calculate_variable_from_constraint(
+            m.fs.unit.costing.base_cost,
+            m.fs.unit.costing.base_cost_eq)
+
+    calculate_variable_from_constraint(
+            m.fs.unit.costing.purchase_cost,
+            m.fs.unit.costing.cp_cost_eq)
+
+    assert m.fs.unit.costing.base_cost.value == \
+        pytest.approx(78802.0518, 1e-5)
+    assert m.fs.unit.costing.purchase_cost.value == \
+        pytest.approx(417765.1377, 1e-5)
+
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
@@ -240,23 +286,7 @@ class TestBTX_cocurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
-        orig_fixed_vars = fixed_variables_set(btx)
-        orig_act_consts = activated_constraints_set(btx)
-
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(btx) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx)
-        fin_act_consts = activated_constraints_set(btx)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -393,23 +423,7 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
-        orig_fixed_vars = fixed_variables_set(btx)
-        orig_act_consts = activated_constraints_set(btx)
-
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(btx) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx)
-        fin_act_consts = activated_constraints_set(btx)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -552,23 +566,7 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, iapws):
-        orig_fixed_vars = fixed_variables_set(iapws)
-        orig_act_consts = activated_constraints_set(iapws)
-
-        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(iapws) == 0
-
-        fin_fixed_vars = fixed_variables_set(iapws)
-        fin_act_consts = activated_constraints_set(iapws)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -709,23 +707,7 @@ class TestSaponification_crossflow(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, sapon):
-        orig_fixed_vars = fixed_variables_set(sapon)
-        orig_act_consts = activated_constraints_set(sapon)
-
-        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(sapon) == 0
-
-        fin_fixed_vars = fixed_variables_set(sapon)
-        fin_act_consts = activated_constraints_set(sapon)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
