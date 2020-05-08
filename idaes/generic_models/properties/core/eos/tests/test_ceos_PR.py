@@ -491,15 +491,27 @@ def test_compress_fact_phase_invalid_phase(m_sol):
 #         Cubic.fug_phase_comp(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
-# def test_fug_coeff_phase_comp(m):
-#     for p in m.params.phase_list:
-#         for j in m.params.component_list:
-#             assert Cubic.fug_coeff_phase_comp(m.props[1], p, j) == 1
+def test_fug_coeff_phase_comp_Liq(m):
+    assert pytest.approx(1.01213, rel=1e-5) == value(
+        Cubic.fug_coeff_phase_comp(m.props[1], "Liq", "a"))
+    assert pytest.approx(0.95919, rel=1e-5) == value(
+        Cubic.fug_coeff_phase_comp(m.props[1], "Liq", "b"))
+    assert pytest.approx(0.91356, rel=1e-5) == value(
+        Cubic.fug_coeff_phase_comp(m.props[1], "Liq", "c"))
 
 
-# def test_fug_coeff_phase_comp_invalid_phase(m_sol):
-#     with pytest.raises(PropertyNotSupportedError):
-#         Cubic.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
+def test_fug_coeff_phase_comp_Vap(m):
+    assert pytest.approx(1.05952, rel=1e-5) == value(
+            Cubic.fug_coeff_phase_comp(m.props[1], "Vap", "a"))
+    assert pytest.approx(0.96070, rel=1e-5) == value(
+        Cubic.fug_coeff_phase_comp(m.props[1], "Vap", "b"))
+    assert pytest.approx(0.87903, rel=1e-5) == value(
+        Cubic.fug_coeff_phase_comp(m.props[1], "Vap", "c"))
+
+
+def test_fug_coeff_phase_comp_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Cubic.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
 # def test_gibbs_mol_phase(m):

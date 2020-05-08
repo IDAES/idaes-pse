@@ -256,7 +256,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package component a "
                                  "is in equilibrium but phase_equilibrium_form"
-                                 "was not specified."):
+                                 " was not specified."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {},

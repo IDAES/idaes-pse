@@ -36,6 +36,8 @@ def test_config():
     for k, v in m.phase.config.items():
         if k == "_phase_list_exists":
             assert not v
+        elif k == "parameter_data":
+            assert v == {}
         else:
             assert v is None
 
