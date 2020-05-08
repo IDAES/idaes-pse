@@ -55,7 +55,6 @@ Contents
     surrogate/index
     apps/index
     version
-    jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary
