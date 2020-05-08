@@ -34,7 +34,14 @@ class mole_frac_power_law_equil():
                     # Assume elementary reaction and use stoichiometry
                     try:
                         # Here we use the stoic. coeff. directly
-                        order_init[p, j] = config.stoichiometry[p, j]
+                        # However, solids should be excluded as they normally
+                        # do not appear in the equilibrium relationship
+                        pobj = ppack.get_phase(p)
+                        print(p, pobj.name, pobj.is_solid_phase())
+                        if not pobj.is_solid_phase():
+                            order_init[p, j] = config.stoichiometry[p, j]
+                        else:
+                            order_init[p, j] = 0
                     except KeyError:
                         order_init[p, j] = 0
 

@@ -21,6 +21,7 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import *
 
+from idaes.core import SolidPhase
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
 
@@ -31,6 +32,10 @@ def model():
 
     # # Add a test thermo package for validation
     m.pparams = PhysicalParameterTestBlock()
+
+    # Add a solid phase for testing
+    m.pparams.sol = SolidPhase()
+
     m.thermo = m.pparams.build_state_block([1])
 
     # Create a dummy reaction parameter block
@@ -43,7 +48,9 @@ def model():
     m.rparams.config.equilibrium_reactions.r1 = ConfigBlock(implicit=True)
     m.rparams.config.equilibrium_reactions.r1 = {
         "stoichiometry": {("p1", "c1"): -1,
-                          ("p1", "c2"): 2},
+                          ("p1", "c2"): 2,
+                          ("sol", "c1"): -3,
+                          ("sol", "c2"): 4},
         "parameter_data": {}}
 
     m.rparams.reaction_r1 = Block()
@@ -65,15 +72,15 @@ def test_mole_frac_power_law_equil_no_order(model):
 
     # Check parameter construction
     assert isinstance(model.rparams.reaction_r1.reaction_order, Var)
-    assert len(model.rparams.reaction_r1.reaction_order) == 4
-    for i, v in model.rparams.reaction_r1.reaction_order.items():
-        try:
-            stoic = \
-                model.rparams.config.equilibrium_reactions.r1.stoichiometry[i]
-        except KeyError:
-            stoic = 0
+    assert len(model.rparams.reaction_r1.reaction_order) == 6
 
-        assert v.value == stoic
+    assert model.rparams.reaction_r1.reaction_order["p1", "c1"].value == -1
+    assert model.rparams.reaction_r1.reaction_order["p1", "c2"].value == 2
+    assert model.rparams.reaction_r1.reaction_order["p2", "c1"].value == 0
+    assert model.rparams.reaction_r1.reaction_order["p2", "c2"].value == 0
+    # Solids should have zero order, as they are excluded
+    assert model.rparams.reaction_r1.reaction_order["sol", "c1"].value == 0
+    assert model.rparams.reaction_r1.reaction_order["sol", "c2"].value == 0
 
     # Check reaction form
     rform = mole_frac_power_law_equil.return_expression(
@@ -92,7 +99,9 @@ def test_mole_frac_power_law_equil_with_order(model):
         "reaction_order": {("p1", "c1"): 1,
                            ("p1", "c2"): 2,
                            ("p2", "c1"): 3,
-                           ("p2", "c2"): 4}}
+                           ("p2", "c2"): 4,
+                           ("sol", "c1"): 5,
+                           ("sol", "c2"): 6}}
 
     mole_frac_power_law_equil.build_parameters(
         model.rparams.reaction_r1,
@@ -100,11 +109,13 @@ def test_mole_frac_power_law_equil_with_order(model):
 
     # Check parameter construction
     assert isinstance(model.rparams.reaction_r1.reaction_order, Var)
-    assert len(model.rparams.reaction_r1.reaction_order) == 4
-    assert model.rparams.reaction_r1.reaction_order["p1", "c1"] == 1
-    assert model.rparams.reaction_r1.reaction_order["p1", "c2"] == 2
-    assert model.rparams.reaction_r1.reaction_order["p2", "c1"] == 3
-    assert model.rparams.reaction_r1.reaction_order["p2", "c2"] == 4
+    assert len(model.rparams.reaction_r1.reaction_order) == 6
+    assert model.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
+    assert model.rparams.reaction_r1.reaction_order["p1", "c2"].value == 2
+    assert model.rparams.reaction_r1.reaction_order["p2", "c1"].value == 3
+    assert model.rparams.reaction_r1.reaction_order["p2", "c2"].value == 4
+    assert model.rparams.reaction_r1.reaction_order["sol", "c1"].value == 5
+    assert model.rparams.reaction_r1.reaction_order["sol", "c2"].value == 6
 
     # Check reaction form
     rform = mole_frac_power_law_equil.return_expression(
@@ -119,4 +130,8 @@ def test_mole_frac_power_law_equil_with_order(model):
             model.thermo[1].mole_frac_phase_comp["p2", "c1"] **
             model.rparams.reaction_r1.reaction_order["p2", "c1"] *
             model.thermo[1].mole_frac_phase_comp["p2", "c2"] **
-            model.rparams.reaction_r1.reaction_order["p2", "c2"]))
+            model.rparams.reaction_r1.reaction_order["p2", "c2"] *
+            model.thermo[1].mole_frac_phase_comp["sol", "c1"] **
+            model.rparams.reaction_r1.reaction_order["sol", "c1"] *
+            model.thermo[1].mole_frac_phase_comp["sol", "c2"] **
+            model.rparams.reaction_r1.reaction_order["sol", "c2"]))

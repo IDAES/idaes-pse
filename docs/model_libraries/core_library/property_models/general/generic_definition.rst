@@ -146,14 +146,6 @@ Parameters
 
 The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of necessary parameters is based on the configuration options and the selected methods. Each method lists their necessary parameters in their documentation. Users need only define those parameters required by the options they have chosen.
 
-Property parameters can be defined as either Pyomo `Params` or `Vars` depending upon the users needs and application. Whilst `Params` would seem to be the logical choice, be aware that for parameter estimation problems the parameters being estimated need to be defined as `Vars` (so that the solver is free to vary them). 
-
-.. note::
-
-   If using `Params`, users should consider whether these should be `mutable` or not - `Params` that are not mutable have their value defined upon creation and this cannot be changed later.
-
-   If using `Vars`, remember that you will need to fix the value unless you are trying to estimate the value of that parameter.
-
 Examples
 --------
 
