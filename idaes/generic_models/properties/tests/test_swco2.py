@@ -15,22 +15,14 @@ __author__ = "John Eslick"
 
 import pytest
 from pyomo.environ import ConcreteModel, value, Var, SolverFactory
-from pyomo.environ import ExternalFunction as EF
 from pyomo.common.fileutils import this_file_dir
 import idaes.generic_models.properties.swco2 as swco2
+from idaes.generic_models.properties.swco2 import swco2_available
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
 import csv
 import os
 import idaes
-
-_so = os.path.join(idaes.bin_directory, "swco2_external.so")
-
-def swco2_available():
-    """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
-    the .so extension is still used.
-    """
-    return os.path.isfile(_so)
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
@@ -39,6 +31,7 @@ else:
     solver = None
 
 def read_data(fname):
+    mw = 0.0440098
     dfile = os.path.join(this_file_dir(), fname)
     data = {
         "T": [], # T in K col 0
@@ -61,11 +54,11 @@ def read_data(fname):
             next(dat) # skip header
         for row in dat:
             data["T"].append(float(row[0]))
-            data["P"].append(float(row[1])*1000)
+            data["P"].append(float(row[1])*1e6)
             data["rho"].append(float(row[2]))
-            data["U"].append(float(row[4])-506.7791289) # differnt reference state
-            data["H"].append(float(row[5])-506.7791289) #different reference state
-            data["S"].append(float(row[6])-2.739003) #differnt reference state
+            data["U"].append((float(row[4])-506.7791289)*mw*1000) # differnt reference state
+            data["H"].append((float(row[5])-506.7791289)*mw*1000) #different reference state
+            data["S"].append((float(row[6])-2.739003)*mw*1000) #differnt reference state
             data["cv"].append(float(row[7]))
             data["cp"].append(float(row[8]))
             data["w"].append(float(row[9]))
@@ -88,7 +81,7 @@ def read_sat_data(fname):
             next(dat) # skip header
         for row in dat:
             data["T"].append(float(row[0]))
-            data["P"].append(float(row[1])*1000)
+            data["P"].append(float(row[1])*1e6)
             data["rhol"].append(float(row[2]))
             data["rhov"].append(float(row[14]))
     return data
@@ -99,108 +92,85 @@ class TestSWCO2(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        plib = _so
-        def _fnc(x):
-            x = "_".join([x, "swco2"])
-            return x
-        model.func_p = EF(library=plib, function=_fnc("p"))
-        model.func_u = EF(library=plib, function=_fnc("u"))
-        model.func_s = EF(library=plib, function=_fnc("s"))
-        model.func_h = EF(library=plib, function=_fnc("h"))
-        model.func_hvpt = EF(library=plib, function=_fnc("hvpt"))
-        model.func_hlpt = EF(library=plib, function=_fnc("hlpt"))
-        model.func_svpt = EF(library=plib, function=_fnc("svpt"))
-        model.func_slpt = EF(library=plib, function=_fnc("slpt"))
-        model.func_tau = EF(library=plib, function=_fnc("tau"))
-        model.func_tau_sp = EF(library=plib, function=_fnc("tau_sp"))
-        model.func_vf = EF(library=plib, function=_fnc("vf"))
-        model.func_vfs = EF(library=plib, function=_fnc("vfs"))
-        model.func_g = EF(library=plib, function=_fnc("g"))
-        model.func_f = EF(library=plib, function=_fnc("f"))
-        model.func_cv = EF(library=plib, function=_fnc("cv"))
-        model.func_cp = EF(library=plib, function=_fnc("cp"))
-        model.func_w = EF(library=plib, function=_fnc("w"))
-        model.func_delta_liq = EF(library=plib, function=_fnc("delta_liq"))
-        model.func_delta_vap = EF(library=plib, function=_fnc("delta_vap"))
-        model.func_delta_sat_l = EF(library=plib, function=_fnc("delta_sat_l"))
-        model.func_delta_sat_v = EF(library=plib, function=_fnc("delta_sat_v"))
-        model.func_p_sat = EF(library=plib, function=_fnc("p_sat"))
-        model.func_tau_sat = EF(library=plib, function=_fnc("tau_sat"))
-        model.func_phi0 = EF(library=plib, function=_fnc("phi0"))
-        model.func_phi0_delta = EF(library=plib, function=_fnc("phi0_delta"))
-        model.func_phi0_delta2 = EF(library=plib, function=_fnc("phi0_delta2"))
-        model.func_phi0_tau = EF(library=plib, function=_fnc("phi0_tau"))
-        model.func_phi0_tau2 = EF(library=plib, function=_fnc("phi0_tau2"))
-        model.func_phir = EF(library=plib, function=_fnc("phir"))
-        model.func_phir_delta = EF(library=plib, function=_fnc("phir_delta"))
-        model.func_phir_delta2 = EF(library=plib, function=_fnc("phir_delta2"))
-        model.func_phir_tau = EF(library=plib, function=_fnc("phir_tau"))
-        model.func_phir_tau2 = EF(library=plib, function=_fnc("phir_tau2"))
-        model.func_phir_delta_tau = EF(library=plib, function=_fnc("phir_delta_tau"))
+        model.prop = swco2.SWCO2ParameterBlock()
+        model.te = swco2.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
     def test_solve_sat_density(self, model):
         # test saturated liquid and vapor density solve (critical part of the
         # phase equlibrium calc)
+        te = model.te
         data = read_sat_data("sat_prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
-            rhol = value(467.6*model.func_delta_sat_l(304.128/T))
-            rhov = value(467.6*model.func_delta_sat_v(304.128/T))
-            if T > 296:
-                tol = 1e-2 #data needs more sig fig
+            if T > 304.128:
+                # if this goes over the critical temperature this makes no sense
+                pass
             else:
-                tol = 1e-3
-            assert rhol == pytest.approx(data["rhol"][i], rel=tol)
-            assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+                if T > 296:
+                    tol = 1e-2 #data needs more sig fig
+                else:
+                    tol = 1e-3
+                # test p, x spec
+                rhol = value(te.rho_liq(p=data["P"][i], x=0))
+                rhov = value(te.rho_vap(p=data["P"][i], x=1))
+                assert rhol == pytest.approx(data["rhol"][i], rel=tol)
+                assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+                # test t, x spec
+                rhol = value(te.rho_liq(T=T, x=0))
+                rhov = value(te.rho_vap(T=T, x=1))
+                assert rhol == pytest.approx(data["rhol"][i], rel=tol)
+                assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
-            # Use the data to check the regular delta(P, T) functions.
-            # need not pressure sig figs for liquid, so have to reduce tol more
+            # Ignore the phase equilibrium and use T,P data to calc densities
             if T > 296:
                 tol = 1e-1 # data needs more sig fig
-            rhol = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
-            rhov = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
+            rhol = value(te.rho_liq(p=data["P"][i], T=T, x=0))
+            rhov = value(te.rho_vap(p=data["P"][i], T=T, x=1))
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
+
     def test_solve_tau_hp(self, model):
+        te = model.te
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
-            temp_sat = value(304.128/model.func_tau_sat(data["P"][i]))
-            temp = value(304.128/model.func_tau(data["H"][i], data["P"][i]))
-            print("h = {}, p = {}, T = {}, T_sat = {}".format(data["H"][i], data["P"][i], T, temp_sat))
+            temp = value(te.T(h=data["H"][i], p=data["P"][i]))
             assert temp == pytest.approx(T, rel=0.1)
 
+
     def test_solve_tau_sp(self, model):
+        te = model.te
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
             if data["phase"][i] not in ["vapor"]:
                 continue
-            print("s = {}, p = {}, T = {}".format(data["S"][i], data["P"][i], T))
-            temp = value(304.128/model.func_tau_sp(data["S"][i], data["P"][i]))
+            temp = value(te.T(s=data["S"][i], p=data["P"][i]))
             assert temp == pytest.approx(T, rel=1e-3)
 
     def test_vfs(self, model):
+        te = model.te
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
-            x = value(model.func_vfs(data["S"][i], data["P"][i]))
+            x = value(te.x(s=data["S"][i], p=data["P"][i]))
             if data["phase"][i] == "vapor":
                 assert x == pytest.approx(1.0, abs=1e-2)
             if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
                 assert x == pytest.approx(0.0, abs=1e-2)
 
     def test_solve_vapor_density(self, model):
+        te = model.te
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
-                rho = value(467.6*model.func_delta_vap(data["P"][i], 304.128/T))
+                rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_solve_liquid_density(self, model):
+        te = model.te
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
-                rho = value(467.6*model.func_delta_liq(data["P"][i], 304.128/T))
-                print(T, data["P"][i], data["phase"][i], rho)
+                rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_functions_of_delta_and_tau(self, model):
@@ -214,15 +184,36 @@ class TestSWCO2(object):
             val = pytest.approx(val, rel=rel)
             assert value(func(delta(_rho), tau(_T))) == val
 
+        model.te.add_funcs(
+            names=[
+                "func_p",
+                "func_u",
+                "func_h",
+                "func_s",
+                "func_cp",
+                "func_cv",
+                "func_w",
+            ]
+        )
+
         data = read_data("prop_swco2_nist_webbook.txt")
+        mw = 0.0440098
         for i, T in enumerate(data["T"]):
-            check(T, data["rho"][i], func=model.func_p, val=data["P"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_u, val=data["U"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_h, val=data["H"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_s, val=data["S"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_cp, val=data["cp"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_cv, val=data["cv"][i], rel=1e-2)
-            check(T, data["rho"][i], func=model.func_w, val=data["w"][i], rel=1e-2)
+            p = data["P"][i]/1000
+            u = data["U"][i]/1000/mw
+            s = data["S"][i]/1000/mw
+            h = data["H"][i]/1000/mw
+            cp = data["cp"][i]
+            cv = data["cv"][i]
+            w = data["w"][i]
+            rho = data["rho"][i]
+            check(T, rho, func=model.func_p, val=p, rel=1e-2)
+            check(T, rho, func=model.func_u, val=u, rel=1e-2)
+            check(T, rho, func=model.func_h, val=h, rel=1e-2)
+            check(T, rho, func=model.func_s, val=s, rel=1e-2)
+            check(T, rho, func=model.func_cp, val=cp, rel=1e-2)
+            check(T, rho, func=model.func_cv, val=cv, rel=1e-2)
+            check(T, rho, func=model.func_w, val=w, rel=1e-2)
 
     @pytest.fixture(scope="class")
     def model2(self):
