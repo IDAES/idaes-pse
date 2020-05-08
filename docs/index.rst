@@ -50,12 +50,10 @@ Contents
     core/index
     transformations/index
     model_libraries/index
-    vis/index
     dmf/index
     surrogate/index
     apps/index
     version
-    jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary
