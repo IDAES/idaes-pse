@@ -34,10 +34,14 @@ Usage
 
 .. image:: ../_images/modelvis/fs_visualize_jupyter_notebook.png
 
-3. A webpage should display. If a webpage does not display then copy and
-   paste the URL that outputs from the visualize command.
+3. A webpage should display. 
 
 .. image:: ../_images/modelvis/initial_layout.png
+
+If a webpage does not display then copy and
+paste the URL that outputs from the visualize command.
+
+.. image:: ../_images/modelvis/circled_url.png
 
 4. Modify the layout of the model
 
