@@ -14,6 +14,7 @@
 Data Management Framework
 """
 # stdlib
+from datetime import datetime
 import logging
 import os
 import pathlib
@@ -24,7 +25,6 @@ import uuid
 from typing import Generator
 
 # third-party
-import pendulum
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -223,7 +223,7 @@ class DMF(workspace.Workspace, HasTraits):
             os.mkdir(self._datafile_path, 0o750)
         # add create/modified date, and optional name/description
         _w = workspace.Workspace
-        right_now = pendulum.now().to_datetime_string()
+        right_now = datetime.isoformat(datetime.now())
         meta = {_w.CONF_CREATED: right_now, _w.CONF_MODIFIED: right_now}
         if name:
             meta[_w.CONF_NAME] = name
@@ -472,7 +472,7 @@ class DMF(workspace.Workspace, HasTraits):
 
                 - "@true"/"@false": boolean (bare True/False will test existence)
 
-        3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+        3. date, as datetime.datetime  instance: Match
            resources that have this exact date for the given attribute.
         4. list: Match resources that have a list value for this attribute,
            and for which any of the values in the provided list are in the
@@ -711,7 +711,7 @@ def get_propertydb_table(rsrc):
 #
 #                 - "@true"/"@false": boolean (bare True/False will test existence)
 #
-#         3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+#         3. date, as datetime.datetime instance: Match
 #            resources that have this exact date for the given attribute.
 #         4. list: Match resources that have a list value for this attribute,
 #            and for which any of the values in the provided list are in the

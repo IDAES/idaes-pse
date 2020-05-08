@@ -47,7 +47,7 @@ kwargs = dict(
         "bunch",
         "click",
         "colorama",
-        "humanize",
+        "flask", # for ui/fsvis
         "jupyter",
         "lxml",
         "matplotlib",
@@ -57,16 +57,15 @@ kwargs = dict(
         "numpy",
         "networkx",
         "pandas",
-        "pendulum==1.4.4",
         "pint",
         "psutil",
         "pyomo",
         "pytest",
         "pyutilib",
         "pyyaml",
-        "requests",
+        "requests", # for ui/fsvis
         "sympy",
-        "tinydb",
+        "tinydb<=3.15.2",
         # alamopy
         # <nothing>
         # ripe
@@ -77,7 +76,7 @@ kwargs = dict(
     entry_points={
         "console_scripts": [
             "dmf = idaes.dmf.cli:base_command",
-            "idaes = idaes.core.commands.base:command_base",
+            "idaes = idaes.commands.base:command_base",
         ]
     },
     extras_require={
@@ -96,7 +95,11 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
-            "sphinx-rtd-theme>=0.1.9",
+            # temporarily hold sphinx version to avoid bug with 3.x
+            # -dang 4/22/2020
+            "sphinx<3.0.0",
+            # note: 4/22/2020, removed the version requirement here
+            "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
             "sphinx-argparse",
         ]

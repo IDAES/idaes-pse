@@ -29,6 +29,9 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
 from idaes.core.util.misc import add_object_reference
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -55,6 +58,10 @@ class ReactionParameterBlock(ProcessBlockData,
             description="Default arguments to use with Property Package",
             implicit=True))
 
+    def __init__(self, *args, **kwargs):
+        self.__reaction_block_class = None
+        super().__init__(*args, **kwargs)
+
     def build(self):
         """
         General build method for ReactionParameterBlocks. Inheriting models
@@ -68,9 +75,53 @@ class ReactionParameterBlock(ProcessBlockData,
         """
         super(ReactionParameterBlock, self).build()
 
+        if not hasattr(self, "_reaction_block_class"):
+            self._reaction_block_class = None
+
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
+
+    @property
+    def reaction_block_class(self):
+        if self._reaction_block_class is not None:
+            return self._reaction_block_class
+        else:
+            raise AttributeError(
+                "{} has not assigned a ReactionBlock class to be associated "
+                "with this reaction package. Please contact the developer of "
+                "the reaction package.".format(self.name))
+
+    @reaction_block_class.setter
+    def reaction_block_class(self, val):
+        _log.warning("DEPRECATED: reaction_block_class should not be set "
+                     "directly. Property package developers should set the "
+                     "_reaction_block_class attribute instead.")
+        self._reaction_block_class = val
+
+    def build_reaction_block(self, *args, **kwargs):
+        """
+        Methods to construct a ReactionBlock assoicated with this
+        ReactionParameterBlock. This will automatically set the parameters
+        construction argument for the ReactionBlock.
+
+        Returns:
+            ReactionBlock
+
+        """
+        default = kwargs.pop("default", {})
+        initialize = kwargs.pop("initialize", {})
+
+        if initialize == {}:
+            default["parameters"] = self
+        else:
+            for i in initialize.keys():
+                initialize[i]["parameters"] = self
+
+        return self.reaction_block_class(*args,
+                                         **kwargs,
+                                         default=default,
+                                         initialize=initialize)
 
     def _validate_property_parameter_units(self):
         """

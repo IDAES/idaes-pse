@@ -5,33 +5,53 @@ shared-dev: &shared-dev
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install --progress-bar=off -r requirements-dev.txt
-    - run: pylint -E --ignore-patterns="test_.*" idaes || true
-    - run: cd docs && make all
-    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
-    - run: coverage xml
-    - run: coveralls
+    - run:
+        name: Create Python 3.7 Conda environment
+        command: |
+          conda create -yv -n idaes37dev python=3.7 pip psutil
+    - run:
+        name: Install and run tests in Python 3.7 dev Conda environment
+        command: |
+          source activate idaes37dev
+          pip install --progress-bar=off -r requirements-dev.txt
+          idaes get-extensions
+          pylint -E --ignore-patterns="test_.*" idaes || true
+          cd docs && python build.py
+          cd ..
+          pytest -c pytest-dev.ini idaes -m "not nocircleci"
+          coverage xml
+          coveralls
 
 shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
     - run: ./scripts/remove-idaes-from-path.sh
-    - run: pip install --progress-bar=off -r requirements.txt
-    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+    - run:
+        name: Create Python 3.7 Conda environment
+        command: |
+          conda create -yv -n idaes37 python=3.7 pip psutil
+    - run:
+        name: Install and run tests in Python 3.7 Conda environment
+        command: |
+          source activate idaes37
+          pip install --progress-bar=off -r requirements.txt
+          idaes get-extensions --platform ubuntu1804
+          pyomo --version
+          pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
   "python-3.7":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     <<: *shared
   "python-3.7-dev":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     <<: *shared-dev
   "python-3.6":
     docker:
-      - image: idaes/jupyterhub:latest
+      - image: idaes/jupyterhub:1.4.5
     working_directory: ~/repo
     steps:
       - checkout
@@ -45,6 +65,7 @@ jobs:
           command: |
             source activate idaes36
             python -m pip install --progress-bar=off -r requirements.txt
+            idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
   "pip-install":
     docker:

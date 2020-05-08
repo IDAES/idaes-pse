@@ -82,12 +82,11 @@ see property package for documentation.}"""))
 
         # Add State Block
         self.properties = (
-                    self.config.property_package.state_block_class(
+                    self.config.property_package.build_state_block(
                             self.flowsheet().config.time,
                             doc="Material properties in feed",
                             default={
                                 "defined_state": True,
-                                "parameters": self.config.property_package,
                                 "has_phase_equilibrium": False,
                                 **self.config.property_package_args}))
 
@@ -107,7 +106,7 @@ see property package for documentation.}"""))
         # Add outlet port
         self.add_port(name="outlet", block=self.properties, doc="Outlet Port")
 
-    def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method calls the initialization method of the state block.
@@ -116,7 +115,7 @@ see property package for documentation.}"""))
             state_args : a dict of arguments to be passed to the property
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
-                           property package) (default = {}).
+                           property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
@@ -127,6 +126,9 @@ see property package for documentation.}"""))
         '''
         # ---------------------------------------------------------------------
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+
+        if state_args is None:
+            state_args = {}
 
         # Initialize state block
         blk.properties.initialize(outlvl=outlvl,

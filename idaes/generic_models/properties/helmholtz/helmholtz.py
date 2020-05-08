@@ -24,13 +24,10 @@ from pyomo.environ import (
     Expression,
     Param,
     PositiveReals,
-    RangeSet,
     Set,
     value,
     Var,
     NonNegativeReals,
-    exp,
-    sqrt,
     ConcreteModel,
     Suffix,
 )
@@ -40,12 +37,15 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES
 from idaes.core import (
-    declare_process_block_class,
     StateBlock,
     StateBlockData,
     PhysicalParameterBlock,
     MaterialBalanceType,
     EnergyBalanceType,
+    LiquidPhase,
+    VaporPhase,
+    Phase,
+    Component
 )
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
@@ -83,7 +83,7 @@ class PhaseType(enum.Enum):
     G = 4  # Assume only vapor is pressent
 
 
-def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
+def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
     """
     Convenience function to calculate enthalpy from temperature and either
     pressure or vapor fraction. This function can be used for inlet streams and
@@ -95,8 +95,10 @@ def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
         T: Temperature [K] (between Tmin and Tmax)
         Tmin: Lower bound on allowed temperatures
         Tmax: Upper bound on allowed temperatures
+        Pmin: Lower bound on allowed pressures
+        PmaxL Upper bound on allowed pressures
         prop: Property block to use for the enthalpy calcuations
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated
+        P: Pressure [Pa] (between Pmin and Pmax), None if saturated
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
@@ -108,11 +110,11 @@ def _htpx(T, Tmin, Tmax, prop=None, P=None, x=None):
             "htpx must be provided with one (and only one) of arguments P and x."
         )
     if not Tmin <= T <= Tmax:
-        raise ConfigurationError("T out of range. Must be between 2e2 and 3e3")
-    if P is not None and not 1 <= P <= 1e9:
-        raise ConfigurationError("P out of range. Must be between 1 and 1e9")
+        raise ConfigurationError("T = {}, ({} <= T <= {})".format(T, Tmin, Tmax))
+    if P is not None and not Pmin <= P <= Pmax:
+        raise ConfigurationError("P = {}, ({} <= P <= {})".format(P, Pmin, Pmax))
     if x is not None and not 0 <= x <= 1:
-        raise ConfigurationError("x must be between 0 and 1")
+        raise ConfigurationError("x = {}, (0 <= x <= 1)".format(x))
 
     model = ConcreteModel()
     model.param = prop.config.parameters
@@ -187,6 +189,13 @@ change.
         pressure_crit,
         dens_mass_crit,
         specific_gas_constant,
+        pressure_bounds,
+        temperature_bounds,
+        enthalpy_bounds,
+        eos_tag,
+        pressure_value=1e5,
+        temperature_value=300,
+        enthalpy_value=1000,
     ):
         """This function sets the parameters that are required for a Helmholtz
         equation of state parameter block, and ensures that all required parameters
@@ -195,7 +204,8 @@ change.
         """
         # Location of the *.so or *.dll file for external functions
         self.plib = library
-        self.state_block_class = state_block_class
+        self.eos_tag = eos_tag
+        self._state_block_class = state_block_class
         self.component_list = component_list
         self.phase_equilibrium_idx = phase_equilibrium_idx
         self.phase_equilibrium_list = phase_equilibrium_list
@@ -205,7 +215,12 @@ change.
         self.dens_mass_crit = dens_mass_crit
         self.specific_gas_constant = specific_gas_constant
         self.mw = mw
-
+        self.default_pressure_bounds = pressure_bounds
+        self.default_enthalpy_bounds = enthalpy_bounds
+        self.default_temperature_bounds = temperature_bounds
+        self.default_pressure_value = pressure_value
+        self.default_temperature_value = temperature_value
+        self.default_enthalpy_value = enthalpy_value
 
     def build(self):
         super().build()
@@ -213,15 +228,22 @@ change.
         # Phase list
         self.available = _available(self.plib)
 
+        # Create Component objects
+        for c in self.component_list:
+            setattr(self, str(c), Component(default={"_component_list_exists": True}))
+
+        # Create Phase objects
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
         if self.config.phase_presentation == PhaseType.MIX:
-            self.phase_list = Set(initialize=["Mix"])
-        elif self.config.phase_presentation == PhaseType.LG:
-            self.phase_list = Set(initialize=["Vap", "Liq"])
-        elif self.config.phase_presentation == PhaseType.L:
-            self.phase_list = Set(initialize=["Liq"])
-        elif self.config.phase_presentation == PhaseType.G:
-            self.phase_list = Set(initialize=["Vap"])
+            self.Mix = Phase()
+
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.L:
+            self.Liq = LiquidPhase()
+
+        if self.config.phase_presentation == PhaseType.LG or \
+                self.config.phase_presentation == PhaseType.G:
+            self.Vap = VaporPhase()
 
         # State var set
         self.state_vars = self.config.state_vars
@@ -432,60 +454,72 @@ class HelmholtzStateBlockData(StateBlockData):
         """Create ExternalFunction components.  This includes some external
         functions that are not usually used for testing purposes."""
         plib = self.config.parameters.plib
-        self.func_p = EF(library=plib, function="p")
-        self.func_u = EF(library=plib, function="u")
-        self.func_s = EF(library=plib, function="s")
-        self.func_h = EF(library=plib, function="h")
-        self.func_hvpt = EF(library=plib, function="hvpt")
-        self.func_hlpt = EF(library=plib, function="hlpt")
-        self.func_tau = EF(library=plib, function="tau")
-        self.func_vf = EF(library=plib, function="vf")
-        self.func_g = EF(library=plib, function="g")
-        self.func_f = EF(library=plib, function="f")
-        self.func_cv = EF(library=plib, function="cv")
-        self.func_cp = EF(library=plib, function="cp")
-        self.func_w = EF(library=plib, function="w")
-        self.func_delta_liq = EF(library=plib, function="delta_liq")
-        self.func_delta_vap = EF(library=plib, function="delta_vap")
-        self.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
-        self.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
-        self.func_p_sat = EF(library=plib, function="p_sat")
-        self.func_tau_sat = EF(library=plib, function="tau_sat")
-        self.func_phi0 = EF(library=plib, function="phi0")
-        self.func_phi0_delta = EF(library=plib, function="phi0_delta")
-        self.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
-        self.func_phi0_tau = EF(library=plib, function="phi0_tau")
-        self.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
-        self.func_phir = EF(library=plib, function="phir")
-        self.func_phir_delta = EF(library=plib, function="phir_delta")
-        self.func_phir_delta2 = EF(library=plib, function="phir_delta2")
-        self.func_phir_tau = EF(library=plib, function="phir_tau")
-        self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
-        self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
+        def _fnc(x):
+            x = "_".join([x, self.config.parameters.eos_tag])
+            return x
+        self.func_p = EF(library=plib, function=_fnc("p"))
+        self.func_u = EF(library=plib, function=_fnc("u"))
+        self.func_s = EF(library=plib, function=_fnc("s"))
+        self.func_h = EF(library=plib, function=_fnc("h"))
+        self.func_hvpt = EF(library=plib, function=_fnc("hvpt"))
+        self.func_hlpt = EF(library=plib, function=_fnc("hlpt"))
+        self.func_svpt = EF(library=plib, function=_fnc("svpt"))
+        self.func_slpt = EF(library=plib, function=_fnc("slpt"))
+        self.func_tau = EF(library=plib, function=_fnc("tau"))
+        self.func_tau_sp = EF(library=plib, function=_fnc("tau_sp"))
+        self.func_vf = EF(library=plib, function=_fnc("vf"))
+        self.func_vfs = EF(library=plib, function=_fnc("vfs"))
+        self.func_g = EF(library=plib, function=_fnc("g"))
+        self.func_f = EF(library=plib, function=_fnc("f"))
+        self.func_cv = EF(library=plib, function=_fnc("cv"))
+        self.func_cp = EF(library=plib, function=_fnc("cp"))
+        self.func_w = EF(library=plib, function=_fnc("w"))
+        self.func_delta_liq = EF(library=plib, function=_fnc("delta_liq"))
+        self.func_delta_vap = EF(library=plib, function=_fnc("delta_vap"))
+        self.func_delta_sat_l = EF(library=plib, function=_fnc("delta_sat_l"))
+        self.func_delta_sat_v = EF(library=plib, function=_fnc("delta_sat_v"))
+        self.func_p_sat = EF(library=plib, function=_fnc("p_sat"))
+        self.func_tau_sat = EF(library=plib, function=_fnc("tau_sat"))
+        self.func_phi0 = EF(library=plib, function=_fnc("phi0"))
+        self.func_phi0_delta = EF(library=plib, function=_fnc("phi0_delta"))
+        self.func_phi0_delta2 = EF(library=plib, function=_fnc("phi0_delta2"))
+        self.func_phi0_tau = EF(library=plib, function=_fnc("phi0_tau"))
+        self.func_phi0_tau2 = EF(library=plib, function=_fnc("phi0_tau2"))
+        self.func_phir = EF(library=plib, function=_fnc("phir"))
+        self.func_phir_delta = EF(library=plib, function=_fnc("phir_delta"))
+        self.func_phir_delta2 = EF(library=plib, function=_fnc("phir_delta2"))
+        self.func_phir_tau = EF(library=plib, function=_fnc("phir_tau"))
+        self.func_phir_tau2 = EF(library=plib, function=_fnc("phir_tau2"))
+        self.func_phir_delta_tau = EF(library=plib, function=_fnc("phir_delta_tau"))
 
     def _state_vars(self):
         """ Create the state variables
         """
+        params = self.config.parameters
+
         self.flow_mol = Var(
-            initialize=1, domain=NonNegativeReals, doc="Total flow [mol/s]"
+            initialize=1,
+            doc="Total flow [mol/s]"
         )
         self.scaling_factor[self.flow_mol] = 1e-3
 
         if self.state_vars == StateVars.PH:
             self.pressure = Var(
                 domain=PositiveReals,
-                initialize=1e5,
+                initialize=params.default_pressure_value,
                 doc="Pressure [Pa]",
-                bounds=(1, 1e9),
+                bounds=params.default_pressure_bounds,
             )
             self.enth_mol = Var(
-                initialize=1000, doc="Total molar enthalpy (J/mol)", bounds=(1, 1e5)
+                initialize=params.default_enthalpy_value,
+                doc="Total molar enthalpy (J/mol)",
+                bounds=params.default_enthalpy_bounds,
             )
             self.scaling_factor[self.enth_mol] = 1e-3
 
             P = self.pressure / 1000.0  # Pressure expr [kPA] (for external func)
             h_mass = self.enth_mol / self.mw / 1000  # enthalpy expr [kJ/kg]
-            phase_set = self.config.parameters.config.phase_presentation
+            phase_set = params.config.phase_presentation
 
             self.temperature = Expression(
                 expr=self.temperature_crit / self.func_tau(h_mass, P),
@@ -498,11 +532,13 @@ class HelmholtzStateBlockData(StateBlockData):
                 )
             elif phase_set == PhaseType.L:
                 self.vapor_frac = Expression(
-                    expr=0.0, doc="Vapor mole fraction (mol vapor/mol total)"
+                    expr=0.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)",
                 )
             elif phase_set == PhaseType.G:
                 self.vapor_frac = Expression(
-                    expr=1.0, doc="Vapor mole fraction (mol vapor/mol total)"
+                    expr=1.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)",
                 )
 
             # For variables that show up in ports specify extensive/intensive
@@ -511,17 +547,23 @@ class HelmholtzStateBlockData(StateBlockData):
 
         elif self.state_vars == StateVars.TPX:
             self.temperature = Var(
-                initialize=300, doc="Temperature [K]", bounds=(200, 3e3)
+                domain=PositiveReals,
+                initialize=params.default_temperature_value,
+                doc="Temperature [K]",
+                bounds=params.default_temperature_bounds
             )
-
             self.pressure = Var(
                 domain=PositiveReals,
-                initialize=1e5,
+                initialize=params.default_pressure_value,
                 doc="Pressure [Pa]",
-                bounds=(1, 1e9),
+                bounds=params.default_pressure_bounds,
             )
-
-            self.vapor_frac = Var(initialize=0.0, doc="Vapor fraction [none]")
+            self.vapor_frac = Var(
+                initialize=0.0,
+                doc="Vapor fraction [none]"
+                # No bounds here, since it is often (usually) on it's bound
+                # and that's not the best for IPOPT
+            )
 
             # enth_mol is defined later, since in this case it needs
             # enth_mol_phase to be defined first

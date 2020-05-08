@@ -25,7 +25,7 @@ from pyomo.environ import (Constraint,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
-from pyutilib.enum import Enum
+from enum import Enum
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -51,9 +51,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Enumerate options for area
-DistributedVars = Enum(
-    'variant',
-    'uniform')
+class DistributedVars(Enum):
+    variant = 0
+    uniform = 1
 
 
 @declare_process_block_class("ControlVolume1DBlock", doc="""
@@ -246,7 +246,6 @@ argument)."""))
         # d0 is config for defined state d1 is config for not defined state
         d0 = dict(**self.config.property_package_args)
         d0.update(has_phase_equilibrium=has_phase_equilibrium,
-                  parameters=self.config.property_package,
                   defined_state=True)
         d1 = copy.copy(d0)
         d1["defined_state"] = False
@@ -260,7 +259,7 @@ argument)."""))
                 return 0
             else:
                 return 1
-        self.properties = self.config.property_package.state_block_class(
+        self.properties = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             self.length_domain,
             doc="Material properties",
@@ -294,9 +293,8 @@ argument)."""))
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
-        tmp_dict["parameters"] = self.config.reaction_package
 
-        self.reactions = self.config.reaction_package.reaction_block_class(
+        self.reactions = self.config.reaction_package.build_reaction_block(
                 self.flowsheet().config.time,
                 self.length_domain,
                 doc="Reaction properties in control volume",
@@ -1050,6 +1048,7 @@ argument)."""))
                                     has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
+                                    has_enthalpy_transfer=False,
                                     custom_term=None):
         """
         This method constructs a set of 1D enthalpy balances indexed by time
@@ -1062,6 +1061,10 @@ argument)."""))
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
                     included in enthalpy balances
+            has_enthalpy_transfer - whether terms for enthalpy transfer due to
+                    mass transfer should be included in enthalpy balance. This
+                    should generally be the same as the has_mas_trasnfer
+                    argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
                     Expression must be indexed by time, length and phase list
@@ -1160,6 +1163,18 @@ argument)."""))
                                         units['length'],
                                         units['time']))
 
+        # Enthalpy transfer
+        if has_enthalpy_transfer:
+            self.enthalpy_transfer = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                domain=Reals,
+                initialize=0.0,
+                doc="Enthalpy transfered due to mass transfer per unit length "
+                    "[{}/{}.{}]".format(units['energy'],
+                                        units['length'],
+                                        units['time']))
+
         # Heat of Reaction
         if has_heat_of_reaction:
             @self.Expression(self.flowsheet().config.time,
@@ -1199,6 +1214,9 @@ argument)."""))
         def work_term(b, t, x):
             return b.work[t, x] if has_work_transfer else 0
 
+        def enthalpy_transfer_term(b, t, x):
+            return b.enthalpy_transfer[t, x] if has_enthalpy_transfer else 0
+
         def rxn_heat_term(b, t, x):
             return b.heat_of_reaction[t, x] if has_heat_of_reaction else 0
 
@@ -1230,6 +1248,8 @@ argument)."""))
                     b.scaling_factor_energy +
                     b.length*heat_term(b, t, x)*b.scaling_factor_energy +
                     b.length*work_term(b, t, x)*b.scaling_factor_energy +
+                    b.length*enthalpy_transfer_term(b, t, x) *
+                    b.scaling_factor_energy +
                     b.length*rxn_heat_term(b, t, x)*b.scaling_factor_energy +
                     b.length*user_term(t, x)*b.scaling_factor_energy)
                     # TODO : Add conduction/dispersion term

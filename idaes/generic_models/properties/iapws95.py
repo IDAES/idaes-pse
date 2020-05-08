@@ -75,7 +75,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 
 # Logger
 _log = idaeslog.getLogger(__name__)
-_so = os.path.join(idaes.lib_directory, "iapws95_external.so")
+_so = os.path.join(idaes.bin_directory, "iapws95_external.so")
 
 
 def iapws95_available():
@@ -103,7 +103,7 @@ def htpx(T, P=None, x=None):
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
-    return _htpx(T=T, Tmin=200, Tmax=3e3, P=P, x=x, prop=prop)
+    return _htpx(T=T, P=P, x=x, prop=prop, Tmin=270, Tmax=3e3, Pmin=0.1, Pmax=1e9)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -113,6 +113,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="iapws95",
             state_block_class=Iapws95StateBlock,
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),
@@ -128,6 +129,9 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 initialize=461.51805,
                 doc="Water Specific Gas Constant [J/kg/K]",
             ),
+            pressure_bounds=(0.1, 1e9),
+            temperature_bounds=(250, 2500),
+            enthalpy_bounds=(0, 1e5),
         )
         super().build()
         # Thermal conductivity parameters.

@@ -59,6 +59,11 @@ Additionally, StateBlocks contain information on the extensive flow of material 
 
 The calculations involved in property blocks of both types generally require a set of parameters which are constant across all instances of that type of property block. Rather than each property block containing its own copy of each of these parameters (thus duplicating parameters between blocks), each type of property block is associated with a Property Parameter Block (PhysicalParameterBlock or ReactionParameterBlock). Property Parameter Blocks serve as a centralized location for the constant parameters involved in property calculations, and all property blocks of the associated type link to the parameters contained in the parameter block.
 
+Phases and Components
+---------------------
+
+Finally, in order to describe a material it is necessary to define the chemcial species (components) which make up the material, and the potential thermodynamic phases of interest. Due ot the equation-oriented nature of the IDAES platform, it is necessary to specify the potential phases *a priori* as these determine the structure of the eventual model. IDAES uses Phase and Component objects which serve to define the phases and components of interest for a given material and also to organize data and information related to these. Phase and Component objects are defined as part of each property parameter block.
+
 Component References
 --------------------
 
