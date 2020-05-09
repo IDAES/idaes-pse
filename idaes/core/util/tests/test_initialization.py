@@ -242,7 +242,7 @@ def model():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.sb = m.fs.pp.build_state_block()
+    m.fs.sb = m.fs.pp.state_block_class(default={'parameters': m.fs.pp})
 
     for i in m.fs.sb.flow_mol_phase_comp:
         assert not m.fs.sb.flow_mol_phase_comp[i].fixed
@@ -802,25 +802,25 @@ def test_initialize_by_time_element():
     for t, j in m.fs.time*m.fs.properties.component_list:
         if t <= 2:
             if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(11.91*0.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(11.91*0.1/2.2)
             elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
             else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         elif t <= 4:
             if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(5.95*0.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(5.95*0.1/2.2)
             elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(12.92*2.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
             else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         else:
             if j == 'E':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(8.95*0.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(8.95*0.1/2.2)
             elif j == 'S':
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(16.75*2.1)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(16.75*2.1/2.2)
             else:
-                m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
+                m.fs.cstr.inlet.conc_mol[t, j].fix(0)
 
     m.fs.cstr.inlet.flow_vol.fix(2.2)
     m.fs.cstr.inlet.temperature.fix(300)
@@ -856,8 +856,8 @@ def test_initialize_by_time_element():
     m.fs.cstr.control_volume.material_holdup_calculation[t, 'aq', 'C'].active)
 
         assert m.fs.cstr.control_volume.properties_out[t].active
-        assert not m.fs.cstr.outlet.flow_mol_comp[t, 'S'].fixed
-        assert m.fs.cstr.inlet.flow_mol_comp[t, 'S'].fixed
+        assert not m.fs.cstr.outlet.conc_mol[t, 'S'].fixed
+        assert m.fs.cstr.inlet.conc_mol[t, 'S'].fixed
 
     # Assert that constraints are feasible after initialization
     for con in m.fs.component_data_objects(Constraint, active=True):
