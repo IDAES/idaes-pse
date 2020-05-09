@@ -266,6 +266,7 @@ class HelmholtzThermoExpressions(object):
             # h, p
             self.add_funcs(names=["func_p_htau", "func_vf"])
             p = blk.func_p_htau(h, tau)
+            print(p)
             x = blk.func_vf(h, p)
         #elif s is not None and T is not None:
         #    # s, p

@@ -57,7 +57,7 @@ def read_data(fname):
             data["P"].append(float(row[1])*1e6)
             data["rho"].append(float(row[2]))
             data["U"].append((float(row[4])-506.7791289)*mw*1000) # differnt reference state
-            data["H"].append((float(row[5])-506.7791289)*mw*1000) #different reference state
+            data["H"].append((float(row[5])*mw*1000) + -22303.24810876697) #different reference state
             data["S"].append((float(row[6])-2.739003)*mw*1000) #differnt reference state
             data["cv"].append(float(row[7]))
             data["cp"].append(float(row[8]))
@@ -101,8 +101,13 @@ class TestSWCO2(object):
 
         data = read_data("prop_swco2_nist_webbook.txt")
         for i, T in enumerate(data["T"]):
+            if T < 240:
+                continue
+            if data["P"][i] > 9e6:
+                continue
+            print("T = {}, P = {}".format(T, data["P"][i]))
+
             temp = value(te.p(h=data["H"][i], T=T))
-            print(T)
             assert temp == pytest.approx(data["P"][i], rel=0.1)
 
 
@@ -217,6 +222,9 @@ class TestSWCO2(object):
             cv = data["cv"][i]
             w = data["w"][i]
             rho = data["rho"][i]
+
+            print("offset {}".format(value(model.func_h(delta(rho), tau(T)) - h)*1000*mw))
+
             check(T, rho, func=model.func_p, val=p, rel=1e-2)
             check(T, rho, func=model.func_u, val=u, rel=1e-2)
             check(T, rho, func=model.func_h, val=h, rel=1e-2)
