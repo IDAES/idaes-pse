@@ -407,9 +407,10 @@ def test_find_comp_in_block():
     v3 = m2.b1[3].v[4]
 
     # These should result in Attribute/KeyErrors
-    with pytest.raises(AttributeError):
+
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
         find_comp_in_block(m1, m2, v2)
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
         find_comp_in_block(m1, m2, v3)
     assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
@@ -457,9 +458,9 @@ def test_find_comp_in_block_at_time():
     v4 = m2.b[4].v[1]
 
     # Should result in exceptions:
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
         find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
         find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
     assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
     assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
@@ -531,12 +532,3 @@ def test_get_implicit_index_of_set():
         get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
 
 
-if __name__ == "__main__":
-    test_is_indexed_by()
-    test_get_index_set_except()
-    test_fix_and_deactivate()
-    test_copy_non_time_indexed_values()
-    test_find_comp_in_block()
-    test_find_comp_in_block_at_time()
-    test_get_location_of_coordinate_set()
-    test_get_implicit_index_of_set()

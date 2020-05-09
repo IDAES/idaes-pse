@@ -24,7 +24,7 @@ import csv
 import os
 import idaes
 
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 def swco2_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
@@ -100,36 +100,43 @@ class TestSWCO2(object):
     def model(self):
         model = ConcreteModel()
         plib = _so
-        model.func_p = EF(library=plib, function="p")
-        model.func_u = EF(library=plib, function="u")
-        model.func_s = EF(library=plib, function="s")
-        model.func_h = EF(library=plib, function="h")
-        model.func_hvpt = EF(library=plib, function="hvpt")
-        model.func_hlpt = EF(library=plib, function="hlpt")
-        model.func_tau = EF(library=plib, function="tau")
-        model.func_vf = EF(library=plib, function="vf")
-        model.func_g = EF(library=plib, function="g")
-        model.func_f = EF(library=plib, function="f")
-        model.func_cv = EF(library=plib, function="cv")
-        model.func_cp = EF(library=plib, function="cp")
-        model.func_w = EF(library=plib, function="w")
-        model.func_delta_liq = EF(library=plib, function="delta_liq")
-        model.func_delta_vap = EF(library=plib, function="delta_vap")
-        model.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
-        model.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
-        model.func_p_sat = EF(library=plib, function="p_sat")
-        model.func_tau_sat = EF(library=plib, function="tau_sat")
-        model.func_phi0 = EF(library=plib, function="phi0")
-        model.func_phi0_delta = EF(library=plib, function="phi0_delta")
-        model.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
-        model.func_phi0_tau = EF(library=plib, function="phi0_tau")
-        model.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
-        model.func_phir = EF(library=plib, function="phir")
-        model.func_phir_delta = EF(library=plib, function="phir_delta")
-        model.func_phir_delta2 = EF(library=plib, function="phir_delta2")
-        model.func_phir_tau = EF(library=plib, function="phir_tau")
-        model.func_phir_tau2 = EF(library=plib, function="phir_tau2")
-        model.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
+        def _fnc(x):
+            x = "_".join([x, "swco2"])
+            return x
+        model.func_p = EF(library=plib, function=_fnc("p"))
+        model.func_u = EF(library=plib, function=_fnc("u"))
+        model.func_s = EF(library=plib, function=_fnc("s"))
+        model.func_h = EF(library=plib, function=_fnc("h"))
+        model.func_hvpt = EF(library=plib, function=_fnc("hvpt"))
+        model.func_hlpt = EF(library=plib, function=_fnc("hlpt"))
+        model.func_svpt = EF(library=plib, function=_fnc("svpt"))
+        model.func_slpt = EF(library=plib, function=_fnc("slpt"))
+        model.func_tau = EF(library=plib, function=_fnc("tau"))
+        model.func_tau_sp = EF(library=plib, function=_fnc("tau_sp"))
+        model.func_vf = EF(library=plib, function=_fnc("vf"))
+        model.func_vfs = EF(library=plib, function=_fnc("vfs"))
+        model.func_g = EF(library=plib, function=_fnc("g"))
+        model.func_f = EF(library=plib, function=_fnc("f"))
+        model.func_cv = EF(library=plib, function=_fnc("cv"))
+        model.func_cp = EF(library=plib, function=_fnc("cp"))
+        model.func_w = EF(library=plib, function=_fnc("w"))
+        model.func_delta_liq = EF(library=plib, function=_fnc("delta_liq"))
+        model.func_delta_vap = EF(library=plib, function=_fnc("delta_vap"))
+        model.func_delta_sat_l = EF(library=plib, function=_fnc("delta_sat_l"))
+        model.func_delta_sat_v = EF(library=plib, function=_fnc("delta_sat_v"))
+        model.func_p_sat = EF(library=plib, function=_fnc("p_sat"))
+        model.func_tau_sat = EF(library=plib, function=_fnc("tau_sat"))
+        model.func_phi0 = EF(library=plib, function=_fnc("phi0"))
+        model.func_phi0_delta = EF(library=plib, function=_fnc("phi0_delta"))
+        model.func_phi0_delta2 = EF(library=plib, function=_fnc("phi0_delta2"))
+        model.func_phi0_tau = EF(library=plib, function=_fnc("phi0_tau"))
+        model.func_phi0_tau2 = EF(library=plib, function=_fnc("phi0_tau2"))
+        model.func_phir = EF(library=plib, function=_fnc("phir"))
+        model.func_phir_delta = EF(library=plib, function=_fnc("phir_delta"))
+        model.func_phir_delta2 = EF(library=plib, function=_fnc("phir_delta2"))
+        model.func_phir_tau = EF(library=plib, function=_fnc("phir_tau"))
+        model.func_phir_tau2 = EF(library=plib, function=_fnc("phir_tau2"))
+        model.func_phir_delta_tau = EF(library=plib, function=_fnc("phir_delta_tau"))
         return model
 
     def test_solve_sat_density(self, model):
@@ -155,6 +162,31 @@ class TestSWCO2(object):
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
+    def test_solve_tau_hp(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            temp_sat = value(304.128/model.func_tau_sat(data["P"][i]))
+            temp = value(304.128/model.func_tau(data["H"][i], data["P"][i]))
+            print("h = {}, p = {}, T = {}, T_sat = {}".format(data["H"][i], data["P"][i], T, temp_sat))
+            assert temp == pytest.approx(T, rel=0.1)
+
+    def test_solve_tau_sp(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] not in ["vapor"]:
+                continue
+            print("s = {}, p = {}, T = {}".format(data["S"][i], data["P"][i], T))
+            temp = value(304.128/model.func_tau_sp(data["S"][i], data["P"][i]))
+            assert temp == pytest.approx(T, rel=1e-3)
+
+    def test_vfs(self, model):
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            x = value(model.func_vfs(data["S"][i], data["P"][i]))
+            if data["phase"][i] == "vapor":
+                assert x == pytest.approx(1.0, abs=1e-2)
+            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
+                assert x == pytest.approx(0.0, abs=1e-2)
 
     def test_solve_vapor_density(self, model):
         data = read_data("prop_swco2_nist_webbook.txt")
@@ -235,6 +267,9 @@ class TestSWCO2(object):
             if P >= 7.377e6 and T >= 304.1282:
                 # super critical, which we clasify as liquid
                 ph = "Liq"
+            if P <= 0.5179e6:
+                # below triple point
+                ph = "Vap"
             elif T > Tsat + 0.5:
                 ph = "Vap"
             elif T < Tsat - 0.5:

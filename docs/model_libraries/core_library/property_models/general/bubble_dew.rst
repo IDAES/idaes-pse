@@ -4,17 +4,10 @@ Bubble and Dew Point Methods
 .. contents:: Contents 
     :depth: 3
 
-Introduction
-------------
+Ideal Assumptions (IdealBubbleDew)
+----------------------------------
 
-Bubble and dew points are often of interest to process engineers for designing process equipment, and appear in some calculations of other thermodynamic properties. Whilst calculation of the saturation pressure for single components is relatively simple, calculating the bubble and dew points of mixtures is more challenging due to the non-linear nature of the equations.
-
-The IDAES Generic Property Package Framework has a number of prebuilt methods for calculating the bubble and dew points of mixtures which are listed below.
-
-Ideal Assumptions
------------------
-
-In the case where ideal behavior can be assumed, i.e. Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
+In the case where ideal behavior can be assumed, i.e. ideal gas assumption and Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
 
 Ideal Bubble Pressure
 ^^^^^^^^^^^^^^^^^^^^^

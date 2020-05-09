@@ -21,10 +21,8 @@ from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            Reals,
-                           Set,
                            value,
                            Var)
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -34,6 +32,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
+from idaes.core.phases import LiquidPhase
+from idaes.core.components import Component
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.logger as idaeslog
@@ -55,22 +55,24 @@ class PhysicalParameterData(PhysicalParameterBlock):
     superheated steam.
 
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = SaponificationStateBlock
+        self._state_block_class = SaponificationStateBlock
 
-        # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq'])
+        # Add Phase objects
+        self.Liq = LiquidPhase()
 
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2O', 'NaOH',
-                                              'EthylAcetate',
-                                              'SodiumAcetate',
-                                              'Ethanol'])
+        # Add Component objects
+        self.H2O = Component()
+        self.NaOH = Component()
+        self.EthylAcetate = Component()
+        self.SodiumAcetate = Component()
+        self.Ethanol = Component()
 
         # Heat capacity of water
         self.cp_mol = Param(mutable=False,
