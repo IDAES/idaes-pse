@@ -129,7 +129,6 @@ class AqueousEnzymeStateBlockData(StateBlockData):
 
     def define_state_vars(b):
         return {'conc_mol': b.conc_mol,
-                'flow_mol_comp': b.flow_mol_comp,
                 'temperature': b.temperature,
                 'flow_vol': b.flow_vol}
 
