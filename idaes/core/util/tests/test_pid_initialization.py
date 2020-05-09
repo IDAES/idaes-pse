@@ -23,6 +23,7 @@ from pyomo.environ import (Block, ConcreteModel, Constraint, Expression,
                            exp)
 from pyomo.network import Arc, Port
 from pyomo.dae import DerivativeVar
+from pyomo.core.kernel.component_map import ComponentMap
 
 from idaes.core import (FlowsheetBlock, 
                         MaterialBalanceType, 
@@ -157,7 +158,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     '''
     In the PID controlled case, volume can vary. Outlet flow
     rate will be determined by controller.
-    Alternative: calculate outlet flow rate by ~sqrt(V), 
+    Alternative: calculate outlet flow rate by ~sqrt(V),
     let inlet flow rate be controlled.
     '''
     @m.fs.cstr.Constraint(m.fs.time,
@@ -175,10 +176,6 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
 
     TransformationFactory('network.expand_arcs').apply_to(m.fs)
 
-    # Need to deactivate some arc equations because they over-specify.
-    # Not sure how to avoid this...
-    m.fs.inlet_expanded.flow_mol_comp_equality.deactivate()
-
     return m
 
 
@@ -188,10 +185,21 @@ def test_initialize():
     '''
     mod = make_model(horizon=2, ntfe=20, ntcp=1, inlet_E=11.91, inlet_S=12.92)
     assert degrees_of_freedom(mod) == 0
+
+    originally_active = ComponentMap([(comp, comp.active) 
+        for comp in mod.component_data_objects((Block, Constraint))])
+    originally_fixed = ComponentMap([(var, var.fixed)
+        for var in mod.component_data_objects(Var)])
+
     initialize_by_time_element(mod.fs, mod.fs.time, solver=solver, 
             outlvl=idaeslog.DEBUG,
             fix_diff_only=False)
     assert degrees_of_freedom(mod) == 0
+
+    for comp in mod.component_data_objects((Block, Constraint)):
+        assert comp.active == originally_active[comp]
+    for var in mod.component_data_objects(Var):
+        assert var.fixed == originally_fixed[var]
 
 
 if __name__ == '__main__':
