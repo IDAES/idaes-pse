@@ -99,14 +99,14 @@ class AqueousEnzymeStateBlockData(StateBlockData):
                                  domain=Reals, 
                                  doc='Molar component flow rate [kmol/min]')
 
-        self.flow_rate = Var(domain=Reals,
+        self.flow_vol = Var(domain=Reals,
                              doc='Volumetric flow rate out of reactor [m^3/min]')
 
         self.temperature = Var(initialize=303, domain=Reals,
                                doc='Temperature within reactor [K]')
 
         def flow_mol_comp_rule(b, j):
-            return b.flow_mol_comp[j] == b.flow_rate*b.conc_mol[j]
+            return b.flow_mol_comp[j] == b.flow_vol*b.conc_mol[j]
         
         self.flow_mol_comp_eqn = Constraint(self._params.component_list,
                 rule=flow_mol_comp_rule,
@@ -122,7 +122,7 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         return MaterialFlowBasis.molar
 
     def get_enthalpy_flow_terms(b, p):
-        return b.flow_rate*b.temperature
+        return b.flow_vol*b.temperature
 
     def get_energy_density_terms(b, p):
         return b.temperature
@@ -131,7 +131,7 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         return {'conc_mol': b.conc_mol,
                 'flow_mol_comp': b.flow_mol_comp,
                 'temperature': b.temperature,
-                'flow_rate': b.flow_rate}
+                'flow_vol': b.flow_vol}
 
 @declare_process_block_class('EnzymeReactionParameterBlock')
 class EnzymeReactionParameterData(ReactionParameterBlock):
@@ -823,11 +823,11 @@ def test_initialize_by_time_element():
             else:
                 m.fs.cstr.inlet.flow_mol_comp[t, j].fix(0)
 
-    m.fs.cstr.inlet.flow_rate.fix(2.2)
+    m.fs.cstr.inlet.flow_vol.fix(2.2)
     m.fs.cstr.inlet.temperature.fix(300)
 
     # Fix outlet conditions
-    m.fs.cstr.outlet.flow_rate.fix(2.2)
+    m.fs.cstr.outlet.flow_vol.fix(2.2)
     m.fs.cstr.outlet.temperature[m.fs.time.first()].fix(300)
 
     assert degrees_of_freedom(m) == 0

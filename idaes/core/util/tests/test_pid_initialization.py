@@ -96,7 +96,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
 
     m.fs.pid = PIDBlock(default={'pv': m.fs.cstr.volume,
-                                 'output': m.fs.cstr.outlet.flow_rate,
+                                 'output': m.fs.cstr.outlet.flow_vol,
                                  'upper': 5.0,
                                  'lower': 0.5,
                                  'calculate_initial_integral': True,
@@ -127,27 +127,27 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
         elif j == 'S':
             m.fs.mixer.S_inlet.conc_mol[t, j].fix(inlet_S)
 
-    m.fs.mixer.E_inlet.flow_rate.fix(0.1)
-    m.fs.mixer.S_inlet.flow_rate.fix(2.1)
+    m.fs.mixer.E_inlet.flow_vol.fix(0.1)
+    m.fs.mixer.S_inlet.flow_vol.fix(2.1)
 
     # Specify a perturbation to substrate flow rate:
     for t in m.fs.time:
         if t < horizon/4:
             continue
         else:
-            m.fs.mixer.S_inlet.flow_rate[t].fix(3.0)
+            m.fs.mixer.S_inlet.flow_vol[t].fix(3.0)
     
     '''
     Not sure what the 'proper' way to enforce this balance is...
-    Should have some sort of 'sum_flow_rate_eqn' constraint, but
+    Should have some sort of 'sum_flow_vol_eqn' constraint, but
     that doesn't really make sense for my aqueous property package
     with dilute components...
     '''
     @m.fs.mixer.Constraint(m.fs.time,
             doc='Solvent flow rate balance')
     def total_flow_balance(mx, t):
-        return (mx.E_inlet.flow_rate[t] + mx.S_inlet.flow_rate[t]
-                == mx.outlet.flow_rate[t])
+        return (mx.E_inlet.flow_vol[t] + mx.S_inlet.flow_vol[t]
+                == mx.outlet.flow_vol[t])
 
     m.fs.mixer.E_inlet.temperature.fix(290)
     m.fs.mixer.S_inlet.temperature.fix(310)
@@ -162,7 +162,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
 #    @m.fs.cstr.Constraint(m.fs.time,
 #        doc='Total flow rate balance')
 #    def total_flow_balance(cstr, t):
-#        return (cstr.inlet.flow_rate[t] == cstr.outlet.flow_rate[t])
+#        return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
     '''
     This constraint is omitted in the PID controlled case - outlet flow
     rate will be determined by controller
@@ -171,11 +171,11 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
             doc='Total volume balance')
     def total_volume_balance(cstr, t):
         return (cstr.control_volume.dVdt[t] ==
-                cstr.inlet.flow_rate[t] - cstr.outlet.flow_rate[t])
+                cstr.inlet.flow_vol[t] - cstr.outlet.flow_vol[t])
 
     # Fix "initial condition" for outlet flow rate, as here it cannot be
     # specified by the PID controller
-    m.fs.cstr.outlet.flow_rate[m.fs.time.first()].fix(2.2)
+    m.fs.cstr.outlet.flow_vol[m.fs.time.first()].fix(2.2)
 
     # Specify initial condition for energy
     m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
