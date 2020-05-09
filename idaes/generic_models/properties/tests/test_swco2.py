@@ -96,6 +96,16 @@ class TestSWCO2(object):
         model.te = swco2.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
+    def test_thero_basic(self, model):
+        te = model.te
+
+        data = read_data("prop_swco2_nist_webbook.txt")
+        for i, T in enumerate(data["T"]):
+            temp = value(te.p(h=data["H"][i], T=T))
+            print(T)
+            assert temp == pytest.approx(data["P"][i], rel=0.1)
+
+
     def test_solve_sat_density(self, model):
         # test saturated liquid and vapor density solve (critical part of the
         # phase equlibrium calc)

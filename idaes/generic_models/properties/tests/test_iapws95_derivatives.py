@@ -244,7 +244,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    def test_derivs_tau(self):
+    def test_derivs_tau_h(self):
         """Test temperature as a function of enthalpy and pressure derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
@@ -260,7 +260,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    def test_derivs_tau(self):
+    def test_derivs_tau_s(self):
         """Test temperature as a function of entropy and pressure derivatives"""
         model = self.make_model()
         cond = self.read_data("prop_iapws95_nist_webbook.txt", col=6)
@@ -273,6 +273,39 @@ class TestIAPWS95(unittest.TestCase):
             if j == 0:
                 # Asserts are in the function below
                 self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    def test_derivs_tau_u(self):
+        """Test temperature as a function of entropy and pressure derivatives"""
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=4)
+        f = model.prop_in.func_tau_up
+        j = 0
+        for i, c in enumerate(cond):
+            j += 1
+            if j > 50:
+                j = 0 # Do every 50th data point
+            if j == 0:
+                # Asserts are in the function below
+                self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    def test_derivs_p_htau(self):
+        """Test temperature as a function of enthalpy and pressure derivatives"""
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=5)
+        f = model.prop_in.func_p_htau
+        j = 0
+        for i, c in enumerate(cond):
+            j += 1
+            if j > 50:
+                j = 0 # do every 50th data point
+            if j == 0:
+                # Asserts are in the function below
+                self.bin_derivs_fd_test(f, c[2], c[0], d0=1e-4, d1=1e-3, tol=0.001)
+
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -347,6 +380,43 @@ class TestIAPWS95(unittest.TestCase):
             ht = sl + (sv - sl)*0.75
             # Asserts are in the function below
             self.bin_derivs_fd_test(f, ht, p, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    def test_derivs_vfu_1phase(self):
+        """Test vapor fraction as a function of entorpy and pressure derivatives
+        single phase region"""
+        model = self.make_model()
+        cond = self.read_data("prop_iapws95_nist_webbook.txt", col=4)
+        f = model.prop_in.func_vfu
+        j = 0
+        for i, c in enumerate(cond):
+            j += 1
+            if j > 50:
+                j = 0 # do every 50th point
+            if j == 0:
+                # Asserts are in the function below
+                self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+    def test_derivs_vfu_2phase(self):
+        """Test vapor fraction as a function of entropy and pressure derivatives
+        two-phase region"""
+        model = self.make_model()
+        uvdat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=16)
+        uldat = self.read_data("sat_prop_iapws95_nist_webbook.txt", col=4)
+        f = model.prop_in.func_vfu
+        j = 0
+        for i, c in enumerate(uvdat):
+            T = c[0]
+            if T > 647: continue
+            p = c[1]/1000
+            uv = c[2]
+            ul = uldat[i][2]
+            ut = ul + (uv - ul)*0.75
+            # Asserts are in the function below
+            self.bin_derivs_fd_test(f, ut, p, d0=1e-4, d1=1e-3, tol=0.001)
 
     @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")

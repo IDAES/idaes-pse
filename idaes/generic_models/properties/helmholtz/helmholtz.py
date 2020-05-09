@@ -72,10 +72,15 @@ _external_function_map = {
     "func_hlpt": "hlpt",
     "func_svpt": "svpt",
     "func_slpt": "slpt",
+    "func_uvpt": "uvpt",
+    "func_ulpt": "ulpt",
     "func_tau": "tau",
     "func_tau_sp": "tau_sp",
+    "func_tau_up": "tau_up",
+    "func_p_htau": "p_htau",
     "func_vf": "vf",
     "func_vfs": "vfs",
+    "func_vfu": "vfu",
     "func_g": "g",
     "func_f": "f",
     "func_cv": "cv",
@@ -200,7 +205,7 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
 
 class HelmholtzThermoExpressions(object):
     """Class to write thermodynamic property expressions.  Take two of the state
-    variables in {h, s, p, T, x} (except TP) and return a thermo property.
+    variables in {h, u, s, p, T, x} (except TP) and return a thermo property.
     This works by converting the given state varaibles and writing expressions
     for liquid and vapor density, vapor fraction, and temerature.  Then those
     can be used to calculate any other property.
@@ -252,6 +257,26 @@ class HelmholtzThermoExpressions(object):
             self.add_funcs(names=["func_tau_sp", "func_vfs"])
             tau = blk.func_tau_sp(s, p)
             x = blk.func_vfs(s, p)
+        elif u is not None and p is not None:
+            # s, p
+            self.add_funcs(names=["func_tau_up", "func_vfu"])
+            tau = blk.func_tau_up(u, p)
+            x = blk.func_vfu(u, p)
+        elif h is not None and T is not None:
+            # h, p
+            self.add_funcs(names=["func_p_htau", "func_vf"])
+            p = blk.func_p_htau(h, tau)
+            x = blk.func_vf(h, p)
+        #elif s is not None and T is not None:
+        #    # s, p
+        #    self.add_funcs(names=["func_tau_sp", "func_vfs"])
+        #    tau = blk.func_tau_sp(s, p)
+        #    x = blk.func_vfs(s, p)
+        #elif u is not None and T is not None:
+        #    # s, p
+        #    self.add_funcs(names=["func_tau_up", "func_vfu"])
+        #    tau = blk.func_tau_up(u, p)
+        #    x = blk.func_vfu(u, p)
         elif x is not None and T is not None and p is not None:
             # T, P, x (okay, but I hope you know what you're doing)
             pass
@@ -363,7 +388,6 @@ class HelmholtzThermoExpressions(object):
     def rho_mol_vap(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_vap*self.param.dens_mass_crit/self.param.mw
-
 
 
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
