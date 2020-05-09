@@ -52,9 +52,7 @@ __author__ = "Robert Parker"
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
+    solver.options = {'tol': 1e-6}
 else:
     solver = None
 
@@ -82,6 +80,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
         'property_package': m.fs.properties,
         'material_balance_type': MaterialBalanceType.componentTotal,
         'momentum_mixing_type': MomentumMixingType.none,
+        # MomentumMixingType.none used because the property package doesn't 
+        # include pressure.
         'num_inlets': 2,
         'inlet_list': ['S_inlet', 'E_inlet']})
     # Allegedly the proper energy balance is being used...
@@ -155,17 +155,10 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     m.fs.inlet = Arc(source=m.fs.mixer.outlet, destination=m.fs.cstr.inlet)
 
     '''
-    This constraint is in lieu of tracking the CSTR's level and allowing
-    the outlet flow rate to be another degree of freedom.
-    ^ Not sure best way to do this in IDAES.
-    '''
-#    @m.fs.cstr.Constraint(m.fs.time,
-#        doc='Total flow rate balance')
-#    def total_flow_balance(cstr, t):
-#        return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
-    '''
-    This constraint is omitted in the PID controlled case - outlet flow
-    rate will be determined by controller
+    In the PID controlled case, volume can vary. Outlet flow
+    rate will be determined by controller.
+    Alternative: calculate outlet flow rate by ~sqrt(V), 
+    let inlet flow rate be controlled.
     '''
     @m.fs.cstr.Constraint(m.fs.time,
             doc='Total volume balance')
@@ -180,10 +173,6 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     # Specify initial condition for energy
     m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
 
-    # This generates constraints for my arc, but shouldn't I be able to
-    # enforce that the variables in mixer.outlet are the same as cstr.inlet,
-    # insteady of having two collections of 'the same' variables with an
-    # equality constraint?
     TransformationFactory('network.expand_arcs').apply_to(m.fs)
 
     # Need to deactivate some arc equations because they over-specify.
