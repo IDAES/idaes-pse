@@ -76,6 +76,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
                               'energy_balance_type': EnergyBalanceType.enthalpyTotal,
                               'momentum_balance_type': MomentumBalanceType.none,
                               'has_heat_of_reaction': True})
+    # MomentumBalanceType.none used because the property package doesn't 
+    # include pressure.
 
     m.fs.mixer = Mixer(default={
         'property_package': m.fs.properties,
