@@ -64,6 +64,8 @@ class PlotData(object):
 
 def main():
 
+    plot_switch = False
+
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
@@ -142,34 +144,32 @@ def main():
         
         nmpc.simulate_plant(t)
 
-    # TODO: add code for creating NMPC controller plots
     # TODO: add option for specifying "user-interest variables"
 
-    temp_info = p_mod._NMPC_NAMESPACE.var_locator[
-            p_mod.cstr.outlet.temperature[0.]]
-    temp_location = temp_info.location
-    temp_group = temp_info.group
-    temperature_data = PlotData(temp_group, temp_location, name='Temperature')
-    fig, ax = temperature_data.plot()
-    fig.savefig(temperature_data.name)
-
-    P_info = p_mod._NMPC_NAMESPACE.var_locator[
-            p_mod.cstr.outlet.conc_mol[0.,'P']]
-    P_location = P_info.location
-    P_group = P_info.group
-    P_data = PlotData(P_group, P_location, name='P_conc')
-    fig, ax = P_data.plot()
-    fig.savefig(P_data.name)
-
-    S_info = p_mod._NMPC_NAMESPACE.var_locator[
-            p_mod.cstr.outlet.conc_mol[0.,'S']]
-    S_location = S_info.location
-    S_group = S_info.group
-    S_data = PlotData(S_group, S_location, name='S_conc')
-    fig, ax = S_data.plot()
-    fig.savefig(S_data.name)
-
-    pdb.set_trace()
+    if plot_switch:
+        temp_info = p_mod._NMPC_NAMESPACE.var_locator[
+                p_mod.cstr.outlet.temperature[0.]]
+        temp_location = temp_info.location
+        temp_group = temp_info.group
+        temperature_data = PlotData(temp_group, temp_location, name='Temperature')
+        fig, ax = temperature_data.plot()
+        fig.savefig(temperature_data.name)
+    
+        P_info = p_mod._NMPC_NAMESPACE.var_locator[
+                p_mod.cstr.outlet.conc_mol[0.,'P']]
+        P_location = P_info.location
+        P_group = P_info.group
+        P_data = PlotData(P_group, P_location, name='P_conc')
+        fig, ax = P_data.plot()
+        fig.savefig(P_data.name)
+    
+        S_info = p_mod._NMPC_NAMESPACE.var_locator[
+                p_mod.cstr.outlet.conc_mol[0.,'S']]
+        S_location = S_info.location
+        S_group = S_info.group
+        S_data = PlotData(S_group, S_location, name='S_conc')
+        fig, ax = S_data.plot()
+        fig.savefig(S_data.name)
 
 
 if __name__ == '__main__':
