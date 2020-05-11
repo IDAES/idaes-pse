@@ -210,127 +210,128 @@ def nmpc():
     return nmpc
 
 
-def test_validate_setpoint(nmpc, steady_cstr_model):
-
-    m_steady = steady_cstr_model
-    nmpc.s_mod = steady_cstr_model
-
-    # set_point is a list of VarData, Value tuples
-    # with VarDatas from the controller model,
-    # at any point in time.
-    # If multiple points in time are given, the last provided is used.
-    # TODO: Should probably issue warning if a set point is overwritten in
-    # this way...
+def test_calculate_full_state_setpoint(nmpc):
     c_mod = nmpc.c_mod
-    # This is just a random set point I chose, no specific physical
-    # meaning, or any reason to think it will be feasible as is.
+
+    # Deactivate tracking objective from previous tests
+    #c_mod._NMPC_NAMESPACE.tracking_objective.deactivate()
+    
     set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
                  (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
                  (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
                  (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
                  (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
-    # Interestingly, this (st.st. set point) solve converges infeasible
-    # if energy_holdup set point is not 300. (Needs higher weight?)
+
+    c_mod.mixer.E_inlet.flow_rate[0].fix(0.1)
+    c_mod.mixer.S_inlet.flow_rate[0].fix(2.0)
 
     weight_tolerance = 5e-7
+    weight_override = [
+            (c_mod.mixer.E_inlet.flow_rate[0.], 20.),
+            (c_mod.mixer.S_inlet.flow_rate[0.], 2.),
+            (c_mod.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
+            (c_mod.cstr.outlet.conc_mol[0., 'P'], 1.),
+            (c_mod.cstr.outlet.conc_mol[0., 'S'], 1.),
+            ]
 
-    # Weight overwrite expects a list of VarData, value tuples
-    # in the STEADY MODEL
-    # User should /probably/ overwrite weights.
-    weight_overwrite = [(m_steady.mixer.E_inlet.flow_rate[0], 20.0)]
-
-    nmpc.add_namespace_to(m_steady, m_steady.time)
-    nmpc.validate_models(m_steady, c_mod)
-
-    nmpc.validate_steady_setpoint(set_point, m_steady,
-            outlvl=idaeslog.DEBUG, 
-            solver=solver,
+    nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_tolerance=weight_tolerance,
-            objective_weight_override=weight_overwrite)
+            objective_weight_override=weight_override)
 
-    for con in activated_equalities_generator(m_steady):
-        assert value(con.body) - value(con.upper) < 1e-6
-        assert value(con.lower) - value(con.body) < 1e-6
+    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint')
+    user_setpoint = c_mod._NMPC_NAMESPACE.user_setpoint
+    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_weights')
+    user_setpoint_weights = c_mod._NMPC_NAMESPACE.user_setpoint_weights
+    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_vars')
+    user_setpoint_vars = c_mod._NMPC_NAMESPACE.user_setpoint_vars
 
-    # Validate that steady model has positive objective
-    assert hasattr(m_steady._NMPC_NAMESPACE, 'user_setpoint_objective')
-    assert isinstance(m_steady._NMPC_NAMESPACE.user_setpoint_objective, 
-                      Objective)
-    assert value(m_steady._NMPC_NAMESPACE.user_setpoint_objective.expr) > 0
+    for i, var in enumerate(user_setpoint_vars):
+        if var.local_name.startswith('conc'):
+            assert user_setpoint_weights[i] == 1.
+        elif var.local_name.startswith('energy'):
+            assert user_setpoint_weights[i] == 0.1
+        elif var.local_name.startswith('E_'):
+            assert user_setpoint_weights[i] == 20.
+        elif var.local_name.startswith('S_'):
+            assert user_setpoint_weights[i] == 2.
+        
+    alg_vars = c_mod._NMPC_NAMESPACE.alg_vars
+    diff_vars = c_mod._NMPC_NAMESPACE.diff_vars
+    input_vars = c_mod._NMPC_NAMESPACE.input_vars
+    categories = [
+            VariableCategory.DIFFERENTIAL,
+            VariableCategory.ALGEBRAIC,
+            VariableCategory.DERIVATIVE,
+            VariableCategory.INPUT,
+            ]
+    category_dict = c_mod._NMPC_NAMESPACE.category_dict
+    for categ in categories:
+        group = category_dict[categ]
+        # Assert that setpoint has been populated with non-None values
+        assert not any([sp is None for sp in group.setpoint])
+        # Assert that setpoint (target) and reference (initial) values are 
+        # different in some way
+        assert not all([sp == ref for sp, ref in 
+            zip(group.setpoint, group.reference)])
+        # Assert that initial and reference values are the same
+        assert all([ref == var[0].value for ref, var in 
+            zip(group.reference, group.varlist)])
 
-    assert hasattr(m_steady._NMPC_NAMESPACE, 'var_locator')
+def test_add_setpoint_to_controller(nmpc):
+    c_mod = nmpc.c_mod
+    weight_override = []
+    for j in c_mod.properties.component_list:
+        weight_override.append(
+                (c_mod.cstr.control_volume.material_holdup[0, 'aq', j], 1))
+    weight_override.append(
+            (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 0.1))
+    weight_override.append((c_mod.mixer.E_inlet.flow_rate[0], 2))
+    weight_override.append((c_mod.mixer.S_inlet.flow_rate[0], 0.2))
 
-    steady_cat_dict = m_steady._NMPC_NAMESPACE.category_dict
-    diff_weights = steady_cat_dict[VariableCategory.DIFFERENTIAL].weights
-    alg_weights = steady_cat_dict[VariableCategory.ALGEBRAIC].weights
-    input_weights = steady_cat_dict[VariableCategory.INPUT].weights
-    diff_sp = steady_cat_dict[VariableCategory.DIFFERENTIAL].setpoint
-    alg_sp = steady_cat_dict[VariableCategory.ALGEBRAIC].setpoint
-    input_sp = steady_cat_dict[VariableCategory.INPUT].setpoint
-    var_locator = m_steady._NMPC_NAMESPACE.var_locator
+    state_categories = [VariableCategory.DIFFERENTIAL]
+    nmpc.add_setpoint_to_controller(
+            objective_weight_override=weight_override,
+            objective_state_categories=state_categories,
+            time_resolution_option=TimeResolutionOption.FINITE_ELEMENTS,
+            objective_name='test_objective')
 
-    real_diff_weights = [w for w in diff_weights if w is not None]
-    real_alg_weights = [w for w in alg_weights if w is not None]
-    real_input_weights = [w for w in input_weights if w is not None]
+    diff_vars = c_mod._NMPC_NAMESPACE.diff_vars
+    input_vars = c_mod._NMPC_NAMESPACE.input_vars
+    diff_weights = diff_vars.weights
+    diff_sp = diff_vars.setpoint
+    input_weights = input_vars.weights
+    input_sp = input_vars.setpoint
+    for i, var in enumerate(c_mod._NMPC_NAMESPACE.diff_vars):
+        if var[0].local_name.startswith('material_holdup'):
+            assert diff_weights[i] == 1
+        elif var[0].local_name.startswith('energy_holdup'):
+            assert diff_weights[i] == 0.1
+    for i, var in enumerate(c_mod._NMPC_NAMESPACE.input_vars):
+        if var[0].local_name.startswith('E'):
+            assert input_weights[i] == 2.
+        elif var[0].local_name.startswith('S'):
+            assert input_weights[i] == 0.2
 
-    assert len(real_diff_weights) == 1
-    assert len(real_alg_weights) == 2
-    assert len(real_input_weights) == 2
+    # Then assert that objective has correct value
+    time = list(c_mod._NMPC_NAMESPACE.get_time().get_finite_elements())
+    time.pop(0)
 
-    # Validate that correct bounds have been added
-    for j in m_steady.properties.component_list:
-        assert (m_steady.cstr.control_volume.material_holdup[0, 'aq', j].lb
-                == 0)
+    obj_state_term = sum(sum(diff_weights[i]*(var[t] - diff_sp[i])**2
+                        for i, var in enumerate(diff_vars))
+                        for t in time)
 
-    assert m_steady.mixer.S_inlet.flow_rate[0].lb == 0.5
-    assert m_steady.mixer.S_inlet.flow_rate[0].ub == 5
-    assert m_steady.mixer.E_inlet.flow_rate[0].lb == 0.01
+    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] - 
+                        var[time[k-1]])**2
+                        for i, var in enumerate(input_vars))
+                        for k in range(1, len(time)))
 
-    # Validate that weights are correct
-    C_P_location = var_locator[m_steady.cstr.outlet.conc_mol[0, 'P']].location
-    assert (alg_weights[C_P_location] == approx(1/(0.4-0.001), abs=1e-8))
+    obj_expr = obj_state_term + obj_control_term
 
-    C_S_location = var_locator[m_steady.cstr.outlet.conc_mol[0, 'S']].location
-    assert (alg_weights[C_S_location] == approx(1/(0.001), abs=1e-8))
+    assert hasattr(c_mod._NMPC_NAMESPACE, 'test_objective')
+    assert (value(obj_expr) == 
+            approx(value(c_mod._NMPC_NAMESPACE.test_objective.expr), 1e-6))
 
-    energy_location = var_locator\
-            [m_steady.cstr.control_volume.energy_holdup[0, 'aq']].location
-    assert (diff_weights[energy_location] ==
-            approx(1/weight_tolerance, rel=1e-8))
-
-    E_inlet_location = var_locator[m_steady.mixer.E_inlet.flow_rate[0]].location
-    assert (input_weights[E_inlet_location] == weight_overwrite[0][1])
-
-    S_inlet_location = var_locator[m_steady.mixer.S_inlet.flow_rate[0]].location
-    assert (input_weights[S_inlet_location] == approx(1/0.1, abs=1e-8))
-
-    # Validate correct objective function
-    obj_expr = (alg_weights[C_P_location]*
-    (m_steady.cstr.outlet.conc_mol[0, 'P'] - alg_sp[C_P_location])**2
-              + alg_weights[C_S_location]*
-    (m_steady.cstr.outlet.conc_mol[0, 'S'] - alg_sp[C_S_location])**2
-              + diff_weights[energy_location]*
-    (m_steady.cstr.control_volume.energy_holdup[0, 'aq'] - 
-        diff_sp[energy_location])**2
-              + input_weights[E_inlet_location]*
-    (m_steady.mixer.E_inlet.flow_rate[0] - input_sp[E_inlet_location])**2
-              + input_weights[S_inlet_location]*
-    (m_steady.mixer.S_inlet.flow_rate[0] - input_sp[S_inlet_location])**2)
-    
-    assert (value(m_steady._NMPC_NAMESPACE.user_setpoint_objective.expr) ==
-            approx(value(obj_expr), rel=1e-6))
-
-    # Validate that set point attributes have been correctly added to 
-    # controller model
-    c_cat_dict = c_mod._NMPC_NAMESPACE.category_dict
-    for categ, group in c_cat_dict.items():
-        if (categ == VariableCategory.DERIVATIVE or 
-            categ == VariableCategory.FIXED):
-            continue
-        for i, var in enumerate(steady_cat_dict[categ]):
-            c_sp = c_cat_dict[categ].setpoint[i]
-            assert var[0].value == c_sp
-
+    c_mod._NMPC_NAMESPACE.test_objective.deactivate()
 
 def test_construct_objective_weights(nmpc):
     
@@ -395,63 +396,6 @@ def test_add_objective_function(nmpc):
             approx(value(c_mod._NMPC_NAMESPACE.tracking_objective.expr), 1e-6))
     # Controller model has not been initialized yet, so value of
     # objective function may not be meaningful
-
-
-def test_add_setpoint_to_controller(nmpc):
-    c_mod = nmpc.c_mod
-    weight_override = []
-    for j in c_mod.properties.component_list:
-        weight_override.append(
-                (c_mod.cstr.control_volume.material_holdup[0, 'aq', j], 1))
-    weight_override.append(
-            (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 0.1))
-    weight_override.append((c_mod.mixer.E_inlet.flow_rate[0], 2))
-    weight_override.append((c_mod.mixer.S_inlet.flow_rate[0], 0.2))
-
-    state_categories = [VariableCategory.DIFFERENTIAL]
-    nmpc.add_setpoint_to_controller(
-            objective_weight_override=weight_override,
-            objective_state_categories=state_categories,
-            time_resolution_option=TimeResolutionOption.FINITE_ELEMENTS,
-            objective_name='test_objective')
-
-    diff_vars = c_mod._NMPC_NAMESPACE.diff_vars
-    input_vars = c_mod._NMPC_NAMESPACE.input_vars
-    diff_weights = diff_vars.weights
-    diff_sp = diff_vars.setpoint
-    input_weights = input_vars.weights
-    input_sp = input_vars.setpoint
-    for i, var in enumerate(c_mod._NMPC_NAMESPACE.diff_vars):
-        if var[0].local_name.startswith('material_holdup'):
-            assert diff_weights[i] == 1
-        elif var[0].local_name.startswith('energy_holdup'):
-            assert diff_weights[i] == 0.1
-    for i, var in enumerate(c_mod._NMPC_NAMESPACE.input_vars):
-        if var[0].local_name.startswith('E'):
-            assert input_weights[i] == 2.
-        elif var[0].local_name.startswith('S'):
-            assert input_weights[i] == 0.2
-
-    # Then assert that objective has correct value
-    time = list(c_mod._NMPC_NAMESPACE.get_time().get_finite_elements())
-    time.pop(0)
-
-    obj_state_term = sum(sum(diff_weights[i]*(var[t] - diff_sp[i])**2
-                        for i, var in enumerate(diff_vars))
-                        for t in time)
-
-    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] - 
-                        var[time[k-1]])**2
-                        for i, var in enumerate(input_vars))
-                        for k in range(1, len(time)))
-
-    obj_expr = obj_state_term + obj_control_term
-
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'test_objective')
-    assert (value(obj_expr) == 
-            approx(value(c_mod._NMPC_NAMESPACE.test_objective.expr), 1e-6))
-
-    c_mod._NMPC_NAMESPACE.test_objective.deactivate()
 
 
 def test_constrain_control_inputs_piecewise_constant(nmpc):
@@ -723,72 +667,72 @@ def test_transfer_current_plant_state_to_controller(nmpc):
         assert p_var[3.].value == approx(c_var[0.].value, rel=0.1)
 
 
-def test_calculate_full_state_setpoint(nmpc):
-    c_mod = nmpc.c_mod
-
-    # Deactivate tracking objective from previous tests
-    c_mod._NMPC_NAMESPACE.tracking_objective.deactivate()
-    
-    set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
-                 (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
-
-    c_mod.mixer.E_inlet.flow_rate[0].fix(0.1)
-    c_mod.mixer.S_inlet.flow_rate[0].fix(2.0)
-
-    weight_tolerance = 5e-7
-    weight_override = [
-            (c_mod.mixer.E_inlet.flow_rate[0.], 20.),
-            (c_mod.mixer.S_inlet.flow_rate[0.], 2.),
-            (c_mod.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
-            (c_mod.cstr.outlet.conc_mol[0., 'P'], 1.),
-            (c_mod.cstr.outlet.conc_mol[0., 'S'], 1.),
-            ]
-
-    nmpc.calculate_full_state_setpoint(set_point,
-            objective_weight_tolerance=weight_tolerance,
-            objective_weight_override=weight_override)
-
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint')
-    user_setpoint = c_mod._NMPC_NAMESPACE.user_setpoint
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_weights')
-    user_setpoint_weights = c_mod._NMPC_NAMESPACE.user_setpoint_weights
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_vars')
-    user_setpoint_vars = c_mod._NMPC_NAMESPACE.user_setpoint_vars
-
-    for i, var in enumerate(user_setpoint_vars):
-        if var.local_name.startswith('conc'):
-            assert user_setpoint_weights[i] == 1.
-        elif var.local_name.startswith('energy'):
-            assert user_setpoint_weights[i] == 0.1
-        elif var.local_name.startswith('E_'):
-            assert user_setpoint_weights[i] == 20.
-        elif var.local_name.startswith('S_'):
-            assert user_setpoint_weights[i] == 2.
-        
-    alg_vars = c_mod._NMPC_NAMESPACE.alg_vars
-    diff_vars = c_mod._NMPC_NAMESPACE.diff_vars
-    input_vars = c_mod._NMPC_NAMESPACE.input_vars
-    categories = [
-            VariableCategory.DIFFERENTIAL,
-            VariableCategory.ALGEBRAIC,
-            VariableCategory.DERIVATIVE,
-            VariableCategory.INPUT,
-            ]
-    category_dict = c_mod._NMPC_NAMESPACE.category_dict
-    for categ in categories:
-        group = category_dict[categ]
-        # Assert that setpoint has been populated with non-None values
-        assert not any([sp is None for sp in group.setpoint])
-        # Assert that setpoint (target) and reference (initial) values are 
-        # different in some way
-        assert not all([sp == ref for sp, ref in 
-            zip(group.setpoint, group.reference)])
-        # Assert that initial and reference values are the same
-        assert all([ref == var[0].value for ref, var in 
-            zip(group.reference, group.varlist)])
+#def test_calculate_full_state_setpoint(nmpc):
+#    c_mod = nmpc.c_mod
+#
+#    # Deactivate tracking objective from previous tests
+#    c_mod._NMPC_NAMESPACE.tracking_objective.deactivate()
+#    
+#    set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
+#                 (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
+#                 (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+#                 (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
+#                 (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
+#
+#    c_mod.mixer.E_inlet.flow_rate[0].fix(0.1)
+#    c_mod.mixer.S_inlet.flow_rate[0].fix(2.0)
+#
+#    weight_tolerance = 5e-7
+#    weight_override = [
+#            (c_mod.mixer.E_inlet.flow_rate[0.], 20.),
+#            (c_mod.mixer.S_inlet.flow_rate[0.], 2.),
+#            (c_mod.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
+#            (c_mod.cstr.outlet.conc_mol[0., 'P'], 1.),
+#            (c_mod.cstr.outlet.conc_mol[0., 'S'], 1.),
+#            ]
+#
+#    nmpc.calculate_full_state_setpoint(set_point,
+#            objective_weight_tolerance=weight_tolerance,
+#            objective_weight_override=weight_override)
+#
+#    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint')
+#    user_setpoint = c_mod._NMPC_NAMESPACE.user_setpoint
+#    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_weights')
+#    user_setpoint_weights = c_mod._NMPC_NAMESPACE.user_setpoint_weights
+#    assert hasattr(c_mod._NMPC_NAMESPACE, 'user_setpoint_vars')
+#    user_setpoint_vars = c_mod._NMPC_NAMESPACE.user_setpoint_vars
+#
+#    for i, var in enumerate(user_setpoint_vars):
+#        if var.local_name.startswith('conc'):
+#            assert user_setpoint_weights[i] == 1.
+#        elif var.local_name.startswith('energy'):
+#            assert user_setpoint_weights[i] == 0.1
+#        elif var.local_name.startswith('E_'):
+#            assert user_setpoint_weights[i] == 20.
+#        elif var.local_name.startswith('S_'):
+#            assert user_setpoint_weights[i] == 2.
+#        
+#    alg_vars = c_mod._NMPC_NAMESPACE.alg_vars
+#    diff_vars = c_mod._NMPC_NAMESPACE.diff_vars
+#    input_vars = c_mod._NMPC_NAMESPACE.input_vars
+#    categories = [
+#            VariableCategory.DIFFERENTIAL,
+#            VariableCategory.ALGEBRAIC,
+#            VariableCategory.DERIVATIVE,
+#            VariableCategory.INPUT,
+#            ]
+#    category_dict = c_mod._NMPC_NAMESPACE.category_dict
+#    for categ in categories:
+#        group = category_dict[categ]
+#        # Assert that setpoint has been populated with non-None values
+#        assert not any([sp is None for sp in group.setpoint])
+#        # Assert that setpoint (target) and reference (initial) values are 
+#        # different in some way
+#        assert not all([sp == ref for sp, ref in 
+#            zip(group.setpoint, group.reference)])
+#        # Assert that initial and reference values are the same
+#        assert all([ref == var[0].value for ref, var in 
+#            zip(group.reference, group.varlist)])
 
 
 @pytest.fixture
