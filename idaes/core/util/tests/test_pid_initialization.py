@@ -76,23 +76,18 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
                               'energy_balance_type': EnergyBalanceType.enthalpyTotal,
                               'momentum_balance_type': MomentumBalanceType.none,
                               'has_heat_of_reaction': True})
-    # MomentumBalanceType.none used because the property package doesn't 
+    # MomentumBalanceType.none used because the property package doesn't
     # include pressure.
 
     m.fs.mixer = Mixer(default={
         'property_package': m.fs.properties,
         'material_balance_type': MaterialBalanceType.componentTotal,
         'momentum_mixing_type': MomentumMixingType.none,
-        # MomentumMixingType.none used because the property package doesn't 
+        # MomentumMixingType.none used because the property package doesn't
         # include pressure.
         'num_inlets': 2,
-        'inlet_list': ['S_inlet', 'E_inlet']})
+       'inlet_list': ['S_inlet', 'E_inlet']})
     # Allegedly the proper energy balance is being used...
-
-    # Add DerivativeVar for CSTR volume
-    m.fs.cstr.control_volume.dVdt = DerivativeVar(
-            m.fs.cstr.control_volume.volume,
-            wrt=m.fs.time)
 
     # Time discretization
     disc = TransformationFactory('dae.collocation')
@@ -118,11 +113,16 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
 
     # Fix initial conditions for other variables:
     for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
+        if j == 'Solvent':
+            continue
         m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0.001)
     # Note: Model does not solve when initial conditions are empty tank
+    m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
 
     m.fs.mixer.E_inlet.conc_mol.fix(0)
     m.fs.mixer.S_inlet.conc_mol.fix(0)
+    m.fs.mixer.E_inlet.conc_mol[:,'Solvent'].fix(1.)
+    m.fs.mixer.S_inlet.conc_mol[:,'Solvent'].fix(1.)
 
     for t, j in m.fs.time*m.fs.properties.component_list:
         if j == 'E':
@@ -139,42 +139,15 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
             continue
         else:
             m.fs.mixer.S_inlet.flow_vol[t].fix(3.0)
-    
-    '''
-    Not sure what the 'proper' way to enforce this balance is...
-    Should have some sort of 'sum_flow_vol_eqn' constraint, but
-    that doesn't really make sense for my aqueous property package
-    with dilute components...
-    '''
-    @m.fs.mixer.Constraint(m.fs.time,
-            doc='Solvent flow rate balance')
-    def total_flow_balance(mx, t):
-        return (mx.E_inlet.flow_vol[t] + mx.S_inlet.flow_vol[t]
-                == mx.outlet.flow_vol[t])
 
     m.fs.mixer.E_inlet.temperature.fix(290)
     m.fs.mixer.S_inlet.temperature.fix(310)
 
     m.fs.inlet = Arc(source=m.fs.mixer.outlet, destination=m.fs.cstr.inlet)
 
-    '''
-    In the PID controlled case, volume can vary. Outlet flow
-    rate will be determined by controller.
-    Alternative: calculate outlet flow rate by ~sqrt(V),
-    let inlet flow rate be controlled.
-    '''
-    @m.fs.cstr.Constraint(m.fs.time,
-            doc='Total volume balance')
-    def total_volume_balance(cstr, t):
-        return (cstr.control_volume.dVdt[t] ==
-                cstr.inlet.flow_vol[t] - cstr.outlet.flow_vol[t])
-
     # Fix "initial condition" for outlet flow rate, as here it cannot be
     # specified by the PID controller
     m.fs.cstr.outlet.flow_vol[m.fs.time.first()].fix(2.2)
-
-    # Specify initial condition for energy
-    m.fs.cstr.control_volume.energy_holdup[m.fs.time.first(), 'aq'].fix(300)
 
     TransformationFactory('network.expand_arcs').apply_to(m.fs)
 
@@ -186,6 +159,7 @@ def test_initialize():
     '''Very rough test, just to make sure degrees of freedom are not violated.
     '''
     mod = make_model(horizon=2, ntfe=20, ntcp=1, inlet_E=11.91, inlet_S=12.92)
+
     assert degrees_of_freedom(mod) == 0
 
     originally_active = ComponentMap([(comp, comp.active) 

@@ -67,7 +67,7 @@ class ParameterData(PhysicalParameterBlock):
 
         # all components are in the aqueous phase
         self.phase_list = Set(initialize=['aq'])
-        self.component_list = Set(initialize=['S', 'E', 'C', 'P'])
+        self.component_list = Set(initialize=['S', 'E', 'C', 'P','Solvent'])
 
         self.state_block_class = AqueousEnzymeStateBlock
 
@@ -105,6 +105,8 @@ class AqueousEnzymeStateBlockData(StateBlockData):
         self.temperature = Var(initialize=303, domain=Reals,
                                doc='Temperature within reactor [K]')
 
+        if not self.config.defined_state:
+            self.conc_mol['Solvent'].fix(1.)
         def flow_mol_comp_rule(b, j):
             return b.flow_mol_comp[j] == b.flow_vol*b.conc_mol[j]
         
@@ -148,14 +150,17 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
                                             ('R1', 'aq', 'E'): -1,
                                             ('R1', 'aq', 'C'): 1,
                                             ('R1', 'aq', 'P'): 0,
+                                            ('R1', 'aq', 'Solvent'): 0,
                                             ('R2', 'aq', 'S'): 1,
                                             ('R2', 'aq', 'E'): 1,
                                             ('R2', 'aq', 'C'): -1,
                                             ('R2', 'aq', 'P'): 0,
+                                            ('R2', 'aq', 'Solvent'): 0,
                                             ('R3', 'aq', 'S'): 0,
                                             ('R3', 'aq', 'E'): 1,
                                             ('R3', 'aq', 'C'): -1,
-                                            ('R3', 'aq', 'P'): 1}
+                                            ('R3', 'aq', 'P'): 1,
+                                            ('R3', 'aq', 'Solvent'): 0}
 
         self.act_energy = Param(self.rate_reaction_idx,
                 initialize={'R1': 8.0e3,
@@ -789,10 +794,12 @@ def test_initialize_by_time_element():
     disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
 
     # Fix geometry variables
-    m.fs.cstr.volume.fix(1.0)
+    m.fs.cstr.volume[0].fix(1.0)
 
     # Fix initial conditions:
     for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
+        if j == 'Solvent':
+            continue
         m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0)
 
     # Fix inlet conditions
@@ -805,22 +812,24 @@ def test_initialize_by_time_element():
                 m.fs.cstr.inlet.conc_mol[t, j].fix(11.91*0.1/2.2)
             elif j == 'S':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
-            else:
+            elif j != 'Solvent':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         elif t <= 4:
             if j == 'E':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(5.95*0.1/2.2)
             elif j == 'S':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(12.92*2.1/2.2)
-            else:
+            elif j != 'Solvent':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
         else:
             if j == 'E':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(8.95*0.1/2.2)
             elif j == 'S':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(16.75*2.1/2.2)
-            else:
+            elif j != 'Solvent':
                 m.fs.cstr.inlet.conc_mol[t, j].fix(0)
+
+    m.fs.cstr.inlet.conc_mol[:, 'Solvent'].fix(1.)
 
     m.fs.cstr.inlet.flow_vol.fix(2.2)
     m.fs.cstr.inlet.temperature.fix(300)
