@@ -2332,7 +2332,7 @@ class TestPHvalues(object):
         )
 
         return model
-    
+
     def test_tau_sat(self, model):
         cond = read_data("sat_prop_iapws95_nist_webbook.txt", col=2)
         for c in cond:

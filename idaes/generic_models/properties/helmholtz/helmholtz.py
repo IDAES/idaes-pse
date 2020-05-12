@@ -77,7 +77,7 @@ _external_function_map = {
     "func_tau": "tau",
     "func_tau_sp": "tau_sp",
     "func_tau_up": "tau_up",
-    "func_p_htau": "p_htau",
+    "func_p_stau": "p_stau",
     "func_vf": "vf",
     "func_vfs": "vfs",
     "func_vfu": "vfu",
@@ -204,11 +204,13 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
 
 
 class HelmholtzThermoExpressions(object):
-    """Class to write thermodynamic property expressions.  Take two of the state
-    variables in {h, u, s, p, T, x} (except TP) and return a thermo property.
+    """Class to write thermodynamic property expressions.  Take one of these
+    possible sets of state variables: {h, p}, {u, p}, {s, p}, {s, T}, {T, x},
+    {P, x}, or {T, P, x}, and return an expression for thermo property.
     This works by converting the given state varaibles and writing expressions
     for liquid and vapor density, vapor fraction, and temerature.  Then those
-    can be used to calculate any other property.
+    can be used to calculate any other property.  You can specify an integer
+    value 1 or 0 for x with any state varaibles to get liquid or vapor properies.
     """
     def __init__(self, blk, parameters):
         self.param = parameters
@@ -219,7 +221,6 @@ class HelmholtzThermoExpressions(object):
         a = [x for x in kwargs if kwargs[x] is not None]
         return ", ".join(a)
 
-
     def add_funcs(self, names=None):
         _add_external_functions(
             self.blk,
@@ -228,7 +229,7 @@ class HelmholtzThermoExpressions(object):
             names=names
         )
 
-    def basic_calculations(self, h=None, s=None, p=None, T=None, u=None, x=None, y=None):
+    def basic_calculations(self, h=None, s=None, p=None, T=None, u=None, x=None):
         mw = self.param.mw
         # 1.) convert units to those expected by external functions
         if h is not None:
@@ -251,33 +252,26 @@ class HelmholtzThermoExpressions(object):
             # h, p
             self.add_funcs(names=["func_tau", "func_vf"])
             tau = blk.func_tau(h, p)
-            x = blk.func_vf(h, p)
+            if x is None:
+                x = blk.func_vf(h, p)
         elif s is not None and p is not None:
             # s, p
             self.add_funcs(names=["func_tau_sp", "func_vfs"])
             tau = blk.func_tau_sp(s, p)
-            x = blk.func_vfs(s, p)
+            if x is None:
+                x = blk.func_vfs(s, p)
         elif u is not None and p is not None:
-            # s, p
+            # u, p
             self.add_funcs(names=["func_tau_up", "func_vfu"])
             tau = blk.func_tau_up(u, p)
-            x = blk.func_vfu(u, p)
-        elif h is not None and T is not None:
-            # h, p
-            self.add_funcs(names=["func_p_htau", "func_vf"])
-            p = blk.func_p_htau(h, tau)
-            print(p)
-            x = blk.func_vf(h, p)
-        #elif s is not None and T is not None:
-        #    # s, p
-        #    self.add_funcs(names=["func_tau_sp", "func_vfs"])
-        #    tau = blk.func_tau_sp(s, p)
-        #    x = blk.func_vfs(s, p)
-        #elif u is not None and T is not None:
-        #    # s, p
-        #    self.add_funcs(names=["func_tau_up", "func_vfu"])
-        #    tau = blk.func_tau_up(u, p)
-        #    x = blk.func_vfu(u, p)
+            if x is None:
+                x = blk.func_vfu(u, p)
+        elif s is not None and T is not None:
+            # s, p
+            self.add_funcs(names=["func_p_stau", "func_vfs"])
+            p = blk.func_p_stau(s, tau)
+            if x is None:
+                x = blk.func_vfs(s, p)
         elif x is not None and T is not None and p is not None:
             # T, P, x (okay, but I hope you know what you're doing)
             pass

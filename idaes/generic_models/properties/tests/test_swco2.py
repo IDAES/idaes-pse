@@ -16,8 +16,9 @@ __author__ = "John Eslick"
 import pytest
 from pyomo.environ import ConcreteModel, value, Var, SolverFactory
 from pyomo.common.fileutils import this_file_dir
+from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.swco2 as swco2
-from idaes.generic_models.properties.swco2 import swco2_available
+from idaes.generic_models.properties.swco2 import swco2_available as prop_available
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
 import csv
@@ -87,44 +88,200 @@ def read_sat_data(fname):
     return data
 
 
-@pytest.mark.skipif(not swco2_available(), reason="Span-Wagner lib not available")
-class TestSWCO2(object):
+def between(y, x0, x1):
+    return 0 > (y-x0)*(y-x1)
+
+
+def unary_derivative_test(f, x0, d=1e-5, tol=0.02):
+    """Test derivatives for function f(x) against f.d. approx (with assert)
+
+    Args:
+        f: ExternalFunction to test
+        x: f argument 1
+        d: f.d. step for grad
+        tol: assert derivitive value tolerance
+    """
+    assert(isinstance(f, AMPLExternalFunction))
+    y, g, h = f.evaluate_fgh(args=(x0,))
+    yf, gf, hf = f.evaluate_fgh(args=(x0 + d,))
+    yb, gb, hb = f.evaluate_fgh(args=(x0 - d,))
+    gfdf = (yf - y)/d
+    gfdb = -(yb - y)/d
+    hfdf = (gf[0] - g[0])/d
+    hfdb = -(gb[0] - g[0])/d
+
+    zero_cut = 1e-9 # how close to zero before maybe it is zero?
+
+    # check that the forward and backward FD approximations are close enough
+    # that the accuracy is good enough for the test and that the detivative
+    # is not ~ zero.  I know this rough but what can you do?
+    if abs(g[0]) > zero_cut:
+        assert (abs((gfdf - g[0])/g[0]) < tol or
+               abs((gfdb - g[0])/g[0]) < tol or
+               between(g[0], gfdf, gfdb))
+
+    if abs(h[0]) > zero_cut:
+        assert (abs((hfdf - h[0])/h[0]) < tol or
+               abs((hfdb - h[0])/h[0]) < tol or
+               between(h[0], hfdf, hfdb))
+
+def binary_derivative_test(f, x0, x1, d0=1e-5, d1=1e-5, tol=0.02):
+    """Test derivatives for function f(x0, x1) against f.d. approx (with assert)
+
+    Args:
+        f: ExternalFunction to test
+        x0: f argument 1
+        x1: f argument 2
+        d0: f.d. step for grad[0] (x0)
+        d1: f.d. step for grad[1] (x1)
+        tol: assert derivitive value tolerance
+    """
+    assert(isinstance(f, AMPLExternalFunction))
+    y, g, h = f.evaluate_fgh(args=(x0, x1))
+    yf0, gf0, hf0 = f.evaluate_fgh(args=(x0 + d0, x1))
+    yb0, gb0, hb0 = f.evaluate_fgh(args=(x0 - d0, x1))
+    yf1, gf1, hf1 = f.evaluate_fgh(args=(x0, x1 + d1))
+    yb1, gb1, hb1 = f.evaluate_fgh(args=(x0, x1 - d1))
+    gf = [(yf0 - y)/d0, (yf1 - y)/d1]
+    gb = [-(yb0 - y)/d0, -(yb1 - y)/d1]
+    hf = [(gf0[0] - g[0])/d0, (gf0[1] - g[1])/d0, (gf1[1] - g[1])/d1]
+    hb = [-(gb0[0] - g[0])/d0, -(gb0[1] - g[1])/d0, -(gb1[1] - g[1])/d1]
+
+    zero_cut = 1e-9 # how close to zero before maybe it is zero?
+    # check that the forward and backward FD approximations are close enough
+    # that the accuracy is good enough for the test and that the detivative
+    # is not ~ zero.  I know this rough but what can you do?
+
+    if abs(g[0]) > zero_cut: # derivative is not 0
+        assert(abs((gf[0] - g[0])/g[0]) < tol or
+               abs((gb[0] - g[0])/g[0]) < tol or
+               between(g[0], gf[0], gb[0]))
+
+    if abs(g[1]) > zero_cut and abs((gf[1] - gb[1])/g[1]) < tol:
+        assert (abs((gf[1] - g[1])/g[1]) < tol or
+               abs((gb[1] - g[1])/g[1]) < tol or
+               between(g[1], gf[1], gb[1]))
+
+    if abs(h[0]) > zero_cut and abs((hf[0] - hb[0])/h[0]) < tol:
+        assert (abs((hf[0] - h[0])/h[0]) < tol or
+               abs((hb[0] - h[0])/h[0]) < tol or
+               between(h[0], hf[0], hb[0]))
+
+    if abs(h[1]) > zero_cut and abs((hf[1] - hb[1])/h[1]) < tol:
+        assert (abs((hf[1] - h[1])/h[1]) < tol or
+               abs((hb[1] - h[1])/h[1]) < tol or
+               between(h[1], hf[1], hb[1]))
+
+    if abs(h[2]) > zero_cut and abs((hf[2] - hb[2])/h[2]) < tol:
+        assert (abs((hf[2] - h[2])/h[2]) < tol or
+               abs((hb[2] - h[2])/h[2]) < tol or
+               between(h[2], hf[2], hb[2]))
+
+
+@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
+class TestHelm(object):
+    mw = 0.0440098
+    Tc = 304.128 #
+    Pc = 7377300 # Pa
+    Pmin = 1000 # Pa
+    Pmax = 100*Pc # Pa
+    Tmax = 800 # K
+    Tmin = 270
+    pparam = swco2
+    pparam_construct = swco2.SWCO2ParameterBlock
+    pdata = "prop_swco2_nist_webbook.txt"
+    pdata_sat = "sat_prop_swco2_nist_webbook.txt"
+
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.prop = swco2.SWCO2ParameterBlock()
-        model.te = swco2.HelmholtzThermoExpressions(model, parameters=model.prop)
+        model.prop = self.pparam_construct()
+        model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
-    def test_thero_basic(self, model):
+    def test_thero_expression_writter(self, model):
         te = model.te
+        mw = self.mw
+        Tc = self.Tc
 
-        data = read_data("prop_swco2_nist_webbook.txt")
+        data = read_data(self.pdata)
         for i, T in enumerate(data["T"]):
-            if T < 240:
-                continue
-            if data["P"][i] > 9e6:
-                continue
-            print("T = {}, P = {}".format(T, data["P"][i]))
+            p = data["P"][i]
+            h = data["H"][i]
+            s = data["S"][i]
+            u = data["U"][i]
+            if data["phase"][i] == "vapor":
+                x = 1
+            else:
+                x = 0
 
-            temp = value(te.p(h=data["H"][i], T=T))
-            assert temp == pytest.approx(data["P"][i], rel=0.1)
+            if p < self.Pmin or p > self.Pmax:
+                continue
+            if T < self.Tmin or T > self.Tmax:
+                continue
 
+            # if it fails I want to know where so pring T and P
+            print("T = {}, P = {}".format(T, p))
+
+            # Test state variable with P in the set, these are pretty reliable
+            assert value(te.s(h=h, p=p)) == pytest.approx(s, rel=0.05)
+            assert value(te.s(u=u, p=p)) == pytest.approx(s, rel=0.05)
+            assert value(te.h(T=T, p=p, x=x)) == pytest.approx(h, rel=0.05)
+            assert value(te.h(s=s, p=p)) == pytest.approx(h, rel=0.05)
+            assert value(te.p(s=s, T=T)) == pytest.approx(p, rel=0.05)
+
+            # test the deriviatives that are critical to the thermo expressions
+            binary_derivative_test(f=model.func_p_stau, x0=s/mw/1000, x1=Tc/T)
+            binary_derivative_test(f=model.func_tau, x0=h/mw/1000, x1=p/1000)
+            binary_derivative_test(f=model.func_tau_sp, x0=s/mw/1000, x1=p/1000)
+            binary_derivative_test(f=model.func_tau_up, x0=u/mw/1000, x1=p/1000)
+            binary_derivative_test(f=model.func_vf, x0=h/mw/1000, x1=p/1000)
+            binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
+            binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
+
+
+    def test_solve_vapor_density(self, model):
+        """ The density calculations should be tested by the thermo expression
+        tests, but they are pretty fundimental to everything else, so test them
+        a little more on their own.
+        """
+        te = model.te
+        data = read_data(self.pdata)
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
+                rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
+                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
+
+
+    def test_solve_liquid_density(self, model):
+        """ The density calculations should be tested by the thermo expression
+        tests, but they are pretty fundimental to everything else, so test them
+        a little more on their own.
+        """
+        te = model.te
+        data = read_data(self.pdata)
+        for i, T in enumerate(data["T"]):
+            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
+                rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
+                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_solve_sat_density(self, model):
+        """ The density calculations should be tested by the thermo expression
+        tests, but they are pretty fundimental to everything else, so test them
+        a little more on their own.
+        """
         # test saturated liquid and vapor density solve (critical part of the
         # phase equlibrium calc)
         te = model.te
-        data = read_sat_data("sat_prop_swco2_nist_webbook.txt")
+        data = read_sat_data(self.pdata_sat)
         for i, T in enumerate(data["T"]):
             if T > 304.128:
                 # if this goes over the critical temperature this makes no sense
+                # while we're looking at the two phase region. (not sure how it
+                # got in the data)
                 pass
             else:
-                if T > 296:
-                    tol = 1e-2 #data needs more sig fig
-                else:
-                    tol = 1e-3
+                tol = 1e-2
                 # test p, x spec
                 rhol = value(te.rho_liq(p=data["P"][i], x=0))
                 rhov = value(te.rho_vap(p=data["P"][i], x=1))
@@ -144,51 +301,11 @@ class TestSWCO2(object):
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
-
-    def test_solve_tau_hp(self, model):
-        te = model.te
-        data = read_data("prop_swco2_nist_webbook.txt")
-        for i, T in enumerate(data["T"]):
-            temp = value(te.T(h=data["H"][i], p=data["P"][i]))
-            assert temp == pytest.approx(T, rel=0.1)
-
-
-    def test_solve_tau_sp(self, model):
-        te = model.te
-        data = read_data("prop_swco2_nist_webbook.txt")
-        for i, T in enumerate(data["T"]):
-            if data["phase"][i] not in ["vapor"]:
-                continue
-            temp = value(te.T(s=data["S"][i], p=data["P"][i]))
-            assert temp == pytest.approx(T, rel=1e-3)
-
-    def test_vfs(self, model):
-        te = model.te
-        data = read_data("prop_swco2_nist_webbook.txt")
-        for i, T in enumerate(data["T"]):
-            x = value(te.x(s=data["S"][i], p=data["P"][i]))
-            if data["phase"][i] == "vapor":
-                assert x == pytest.approx(1.0, abs=1e-2)
-            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
-                assert x == pytest.approx(0.0, abs=1e-2)
-
-    def test_solve_vapor_density(self, model):
-        te = model.te
-        data = read_data("prop_swco2_nist_webbook.txt")
-        for i, T in enumerate(data["T"]):
-            if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
-                rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
-                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
-
-    def test_solve_liquid_density(self, model):
-        te = model.te
-        data = read_data("prop_swco2_nist_webbook.txt")
-        for i, T in enumerate(data["T"]):
-            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
-                rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
-                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
-
     def test_functions_of_delta_and_tau(self, model):
+        """
+        These are the bisic direct from density and temperature propery
+        calculation tests.
+        """
         def tau(_T):
             return 304.128/_T
         def delta(_rho):
@@ -208,10 +325,12 @@ class TestSWCO2(object):
                 "func_cp",
                 "func_cv",
                 "func_w",
+                "func_g",
+                "func_f",
             ]
         )
 
-        data = read_data("prop_swco2_nist_webbook.txt")
+        data = read_data(self.pdata)
         mw = 0.0440098
         for i, T in enumerate(data["T"]):
             p = data["P"][i]/1000
@@ -223,7 +342,7 @@ class TestSWCO2(object):
             w = data["w"][i]
             rho = data["rho"][i]
 
-            print("offset {}".format(value(model.func_h(delta(rho), tau(T)) - h)*1000*mw))
+            #print("offset {}".format(value(model.func_h(delta(rho), tau(T)) - h)*1000*mw))
 
             check(T, rho, func=model.func_p, val=p, rel=1e-2)
             check(T, rho, func=model.func_u, val=u, rel=1e-2)
@@ -233,133 +352,15 @@ class TestSWCO2(object):
             check(T, rho, func=model.func_cv, val=cv, rel=1e-2)
             check(T, rho, func=model.func_w, val=w, rel=1e-2)
 
-    @pytest.fixture(scope="class")
-    def model2(self):
-        model = ConcreteModel()
-        model.prop_param = swco2.SWCO2ParameterBlock()
-        model.prop_in = swco2.SWCO2StateBlock(
-            default={"parameters": model.prop_param}
-        )
-        return model
-
-    def test_transport(self, model2):
-        data = (
-           #(T,      P,        mu,          tc,         tol_mu,  tol_tc)
-            (200,    0.1e6,    10.06e-6,    9.63e-3,    0.02,    0.02),
-            (240,    0.1e6,    12.07e-6,    12.23e-3,   0.02,    0.02),
-            (240,    10.0e6,   188.91e-6,   159.24e-3,  0.02,    0.02),
-            (240,    25e6,     214.16e-6,   171.59e-3,  0.02,    0.02),
-            (280,    0.1e6,    14.05e-6,    15.19e-3,   0.02,    0.02),
-            (280,    2.5e6,    14.51e-6,    17.46e-3,   0.02,    0.04),
-            (280,    30.0e6,   134.98e-6,   136.63e-3,  0.02,    0.02),
-            (280,    50.0e6,   160.73e-6,   152.67e-3,  0.02,    0.02),
-            (306,    7.5e6,    24.06e-6,    23.93e-3,   0.02,    0.40), # supercritcal near critical
-            (400,    5.0e6,    20.37e-6,    27.46e-3,   0.02,    0.02),
-            (400,    50.0e6,   65.67e-6,    86.48e-3,   0.02,    0.02),
-            (400,    100e6,    101.41e-6,   121.41e-3,  0.02,    0.02),
-            (600,    50e6,     42.20e-6,    64.11e-3,   0.02,    0.02),
-            (1000,   5e6,      41.42e-6,    71.18e-3,   0.02,    0.02),
-            (1000,   50e6,     46.16e-6,    80.33e-3,   0.02,    0.02),
-            (1000,   100e6,    54.79e-6,    92.16e-3,   0.02,    0.02),
-        )
-
-        for d in data:
-            tol_mu = d[4]
-            tol_tc = d[5]
-            P = d[1]
-            T = d[0]
-            mu_data = d[2]
-            tc_data = d[3]
-            model2.prop_in.temperature.set_value(T)
-            model2.prop_in.pressure = P
-            Tsat = value(model2.prop_in.temperature_sat)
-            if P >= 7.377e6 and T >= 304.1282:
-                # super critical, which we clasify as liquid
-                ph = "Liq"
-            if P <= 0.5179e6:
-                # below triple point
-                ph = "Vap"
-            elif T > Tsat + 0.5:
-                ph = "Vap"
-            elif T < Tsat - 0.5:
-                ph = "Liq"
-            else:
-                # if too close to sat, don't want to get into a situation where
-                # I don't know if it's liquid or vapor, so using extreme caution
-                # If we're woried about it, we can add tests on the sat curve, and
-                # test both liquid and vapor
+            if p < 1000:
                 continue
 
-            rho = value(model2.prop_in.dens_mass_phase[ph])
-            mu = value(model2.prop_in.visc_d_phase[ph])
-            tc = value(model2.prop_in.therm_cond_phase[ph])
-            print("T = {}, P = {}, mu = {}, tc = {}, rho = {}, phase = {}".format(
-                    T, P, mu, tc, rho, ph
-                )
-            )
-            print("Data: mu = {}, tc = {}".format(mu_data, tc_data))
-            assert tc == pytest.approx(tc_data, rel=tol_tc)
-            assert mu == pytest.approx(mu_data, rel=tol_mu)
-
-
-@pytest.mark.skipif(not swco2.swco2_available(), reason="Library not available")
-class TestIntegration(object):
-    @pytest.fixture(scope="class")
-    def compressor_model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": False})
-        m.fs.properties = swco2.SWCO2ParameterBlock()
-        m.fs.unit = Compressor(default={"property_package": m.fs.properties})
-        return m
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_verify(self, compressor_model):
-        model = compressor_model
-        # Verify the turbine results against 3 known test cases
-
-        # Case Data (90% isentropic efficency)
-        cases = {
-            "F": (1000, 1000), # mol/s
-            "Tin": (500, 300), # K
-            "Pin": (10, 100), # kPa
-            "W": (3414.29266, 2796.30966), # kW
-            "Tout": (574.744119, 372.6675676), # K
-            "Pout": (20, 250), # kPa
-            "xout": (1.0, 1.0), # vapor fraction
-            "Tisen": (567.418852, 365.7680891),
-        }
-
-        for i , F in enumerate(cases["F"]):
-            Tin = cases["Tin"][i]
-            Tout = cases["Tout"][i]
-            Pin = cases["Pin"][i]*1000
-            Pout = cases["Pout"][i]*1000
-            hin = swco2.htpx(T=Tin, P=Pin)
-            W = cases["W"][i]*1000
-            Tis = cases["Tisen"][i]
-            xout = cases["xout"][i]
-
-            model.fs.unit.inlet.flow_mol[0].fix(F)
-            model.fs.unit.inlet.enth_mol[0].fix(hin)
-            model.fs.unit.inlet.pressure[0].fix(Pin)
-            model.fs.unit.deltaP.fix(Pout - Pin)
-            model.fs.unit.efficiency_isentropic.fix(0.9)
-            model.fs.unit.initialize(optarg={'tol': 1e-6})
-            results = solver.solve(model)
-
-            Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
-            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
-            Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)
-            W = pytest.approx(cases["W"][i]*1000, rel=1e-2)
-            xout = pytest.approx(xout, rel=1e-2)
-            prop_out = model.fs.unit.control_volume.properties_out[0]
-            prop_in = model.fs.unit.control_volume.properties_in[0]
-            prop_is = model.fs.unit.properties_isentropic[0]
-
-            assert value(prop_in.temperature) == pytest.approx(Tin, rel=1e-3)
-            assert value(prop_is.temperature) == pytest.approx(Tis, rel=1e-3)
-            assert value(model.fs.unit.control_volume.work[0]) == W
-            assert value(prop_out.pressure) == Pout
-            assert value(prop_out.temperature) == Tout
-            assert value(prop_out.vapor_frac) == xout
+            binary_derivative_test(f=model.func_p, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_u, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_s, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_h, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_cp, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_cv, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_w, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_f, x0=delta(rho), x1=tau(T))
+            binary_derivative_test(f=model.func_g, x0=delta(rho), x1=tau(T))
