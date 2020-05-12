@@ -24,17 +24,17 @@ The most common way to use the Generic Reaction Package Framework is to create a
 
     m.fs.reaction_properties = GenericReactionParameterBlock(default={"property_package": m.fs.thermo_properties, config_dict})
 
-In the above example, the PhysicalParameterBlock object can be from any thermophysical property package suitable for the users application.
+In the above example, the PhysicalParameterBlock object can be from any thermophysical property package suitable for the user's application.
 
 Users need to populate `config_dict` with the desired options for their system as described in the other parts of this documentation. An example of a configuration dictionary can be found later on this page. For details on each configuration option, please see the relevant documentation.
 
 Linking to a Thermophysical Property Package
---------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As state information is defined by thermophysical property packages in IDAES, each reaction reaction packages must be linked to an appropriate thermophysical property package. This linkage is used by the reaction package to find the state information required to calculate the reaction properties, and thus the thermophysical property package must support all the properties required by the reaction package.
+As state information is defined by thermophysical property packages in IDAES, each reaction package must be linked to an appropriate thermophysical property package. This linkage is used by the reaction package to find the state information required to calculate the reaction properties, and thus the thermophysical property package must support all the properties required by the reaction package.
 
 Configuration Example
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -96,10 +96,3 @@ Parameters
 
 The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of necessary parameters is based on the configuration options and the selected methods. Each method lists their necessary parameters in their documentation. Users need only define those parameters required by the options they have chosen.
 
-Property parameters can be defined as either Pyomo `Params` or `Vars` depending upon the users needs and application. Whilst `Params` would seem to be the logical choice, be aware that for parameter estimation problems the parameters being estimated need to be defined as `Vars` (so that the solver is free to vary them). 
-
-.. note::
-
-   If using `Params`, users should consider whether these should be `mutable` or not - `Params` that are not mutable have their value defined upon creation and this cannot be changed later.
-
-   If using `Vars`, remember that you will need to fix the value unless you are trying to estimate the value of that parameter.

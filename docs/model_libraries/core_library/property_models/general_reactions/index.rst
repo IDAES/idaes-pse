@@ -29,3 +29,7 @@ The components which make up a generic reaction package are as follows:
 3. Define the :ref:`equilibrium-based reactions<model_libraries/core_library/property_models/general_reactions/equil_rxns:Defining Equilibrium Reactions>` of interest in the system. Nore that phase equilibrium is generally handled in the thermodynamic property package.
 
 The following sections will describe how to define a reaction package using the Generic Reaction Package Framework along with the libraries of sub-models currently available. Finally, the :ref:`developers<model_libraries/core_library/property_models/general/developers:Developing New Property Libraries>` section describes how to go about defining your own custom components to use when creating custom property packages.
+
+.. note::
+   Within most IDAES models "parameters" are in fact defined as Pyomo 'Vars' (i.e. variables) which are fixed at their defined values. Whilst `Params` would seem to be the logical choice for these, parameter estimation problems require the parameters being estimated to be defined as `Vars` so that the solver is free to vary them.
+

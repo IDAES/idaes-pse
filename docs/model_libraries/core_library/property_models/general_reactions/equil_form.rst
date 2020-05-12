@@ -18,4 +18,4 @@ The method uses a power law form using the component mole fractions to calculate
 
    ":math:`O`", "reaction_order", "phase, component", "Reaction order"
 
-Providing a `reaction_order` dict is optional. If one is not provided, it will be assumed that this is an elementary reaction and that the reaction order is equal to the stoichiometric coefficient for all all phase-component pairs.
+Providing a `reaction_order` dict is optional. If one is not provided, it will be assumed that this is an elementary reaction and that the reaction order is equal to the stoichiometric coefficient for all component in non-solid phases (the contribution of solid phases is assumed to be constant and included in the equilibrium constant, thus an order of zero is assumed).
