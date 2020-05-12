@@ -30,7 +30,7 @@ class DummyEoS(object):
     def build_parameters(b):
         pass
 
-    def fug_phase_comp(b, p, j, pp):
+    def fug_phase_comp_eq(b, p, j, pp):
         return b.x[p, j]
 
 
