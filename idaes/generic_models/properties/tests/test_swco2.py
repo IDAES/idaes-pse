@@ -199,10 +199,52 @@ class TestHelm(object):
         model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
+    def test_external_memo(self, model):
+        """ This tests the memoization in the external functions.  There is a
+        special set of functions that return the memoized value of a function.
+        This test should catch things like functions that aren't memoized, or
+        function with the wrong lookup tag getting or setting the wrong value."""
+        te = model.te
+        mw = self.mw
+        Tc = self.Tc
+
+        model.te.add_funcs(
+            names=[
+                "memo_test_tau",
+            ]
+        )
+
+        data = read_data(self.pdata)
+        il = None
+        ig = None
+        for i, phase in enumerate(data["phase"]):
+            if phase == "vapor" and ig is None:
+                ig = i
+            elif phase == "liquid" and il is None:
+                il = i
+
+        for i in [il, ig]:
+            T = data["T"][i]
+            p = data["P"][i]
+            u = data["U"][i]
+            s = data["S"][i]
+            h = data["H"][i]
+            phase = data["phase"][i]
+
+            assert (value(model.memo_test_tau(h/mw/1000, p/1000)) ==
+                pytest.approx(Tc/T, rel=0.10))
+
+
     def test_thero_expression_writter(self, model):
         te = model.te
         mw = self.mw
         Tc = self.Tc
+
+        model.te.add_funcs(
+            names=[
+                "memo_test_tau",
+            ]
+        )
 
         data = read_data(self.pdata)
         for i, T in enumerate(data["T"]):
@@ -222,6 +264,11 @@ class TestHelm(object):
 
             # if it fails I want to know where so pring T and P
             print("T = {}, P = {}".format(T, p))
+
+
+
+            #assert value(model.memo_test_tau(h/mw/1000, p/1000)) == pytest.approx(Tc/T, rel=0.05)
+
 
             # Test state variable with P in the set, these are pretty reliable
             assert value(te.s(h=h, p=p)) == pytest.approx(s, rel=0.05)

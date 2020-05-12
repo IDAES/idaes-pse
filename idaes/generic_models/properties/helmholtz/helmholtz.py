@@ -75,6 +75,7 @@ _external_function_map = {
     "func_uvpt": "uvpt",
     "func_ulpt": "ulpt",
     "func_tau": "tau",
+    "memo_test_tau": "memo_test_tau",
     "func_tau_sp": "tau_sp",
     "func_tau_up": "tau_up",
     "func_p_stau": "p_stau",

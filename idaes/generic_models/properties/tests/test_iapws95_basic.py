@@ -226,17 +226,23 @@ class TestHelm(object):
             if p < 2e6 or T < 290:
                 # need data with more significant figure to test here
                 # generally p(s, T) prbably isn't that useful for liquids
+                # so I'll come back to it later with high precision data.
                 continue
             assert value(te.p(s=s, T=T)) == pytest.approx(p, rel=0.1)
 
+            # Commenting out the deriative test for now.  The derivatives are
+            # tested in the CO2 tests and are the same for all Helmholtz EOSs
+            # running all these is pretty time consuming since there are so many
+            # data points for water.
+
             # test the deriviatives that are critical to the thermo expressions
-            binary_derivative_test(f=model.func_p_stau, x0=s/mw/1000, x1=Tc/T)
-            binary_derivative_test(f=model.func_tau, x0=h/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_tau_sp, x0=s/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_tau_up, x0=u/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_vf, x0=h/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_p_stau, x0=s/mw/1000, x1=Tc/T)
+            #binary_derivative_test(f=model.func_tau, x0=h/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_tau_sp, x0=s/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_tau_up, x0=u/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_vf, x0=h/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
+            #binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
 
 
     def test_solve_vapor_density(self, model):
