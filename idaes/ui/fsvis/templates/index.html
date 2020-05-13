@@ -47,7 +47,9 @@ body {
   flex-direction: column;
   align-items: center;
 }
-.idaes-canvas {
+#idaes-canvas {
+  min-width: 800px;
+  min-height: 800px;
   flex-grow: 1;
   background-color: white;
   box-shadow: 4px 4px 4px #e5e5e5;
@@ -64,15 +66,6 @@ body {
   background: #e5e5e5;
   margin: 5px 0;
 }
-
-#show_hide_all-on {  display: none; }
-#show_hide_all-off { }
-
-#idaes_flowsheet_visualizer {
-    min-height: 600px;
-}
-
-
 
 .tooltip {
   position: relative;
@@ -122,20 +115,19 @@ alt="IDAES logo"/></div>
     <i class="fas fa-save"></i>
 </div>
 <div class="idaes-groupsep"></div>
-<div id="show_hide_all_button" class="tooltip">
-    <span class="tooltiptext">Show/hide all annotations</span>
-    <span id="show_hide_all-on">
-        <i class="fas fa-comments"></i>
-    </span>
-    <span class="fa-stack" id="show_hide_all-off">
+<span id="show_hide_all_button" class="tooltip">
+    <span class="tooltiptext">Toggle arc labels</span>
+    <span class="fa-stack">
         <i class="fas fa-comments fa-stack-1x"></i>
         <i class="fas fa-ban fa-stack-2x" style="color: #aaaaaa"></i>
     </span>
-</div>
+</span>
+    <!--
 <div id="show_hide_button" class="tooltip">
     <span class="tooltiptext">Show/hide one annotation</span>
     <i class="fas fa-comment"></i>
 </div>
+-->
 <div class="idaes-groupsep"></div>
 <div id="help_button" class="tooltip">
     <span class="tooltiptext">Help</span>
@@ -143,11 +135,7 @@ alt="IDAES logo"/></div>
 </div>
 </div>
 
-<div class="idaes-canvas">
-<!-- Create a div tag for the jointjs stuff -->
-<div id="idaes_flowsheet_visualizer"></div>
-</div>
-
+<div id="idaes-canvas">
 </div> <!-- end idaes-content -->
 
 
@@ -157,6 +145,14 @@ alt="IDAES logo"/></div>
  -->
 <div id="model" data-model='{{ model | tojson | safe }}'></div>
 </div>
+
+<!-- dependencies -->
+<script src="/lib/jquery.js" type="text/javascript"></script>
+<script src="/lib/lodash.js" type="text/javascript"></script>
+<script src="/lib/backbone.js" type="text/javascript"></script>
+<script src="/lib/joint.min.js" type="text/javascript"></script>
+<script src="/main.js" type="module" ></script>
+
 </body>
 
 </html>

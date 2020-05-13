@@ -3,11 +3,11 @@
 // then you get /images/icons that do not drop
 // when the mouseup event is emitted
 var standard = joint.shapes.standard
-var width = 10000;
-var height = 10000;
+var width = 800;
+var height = 800;
 var gridSize = 1;
 var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
-var holder = document.getElementById("idaes_flowsheet_visualizer");
+var holder = $("#idaes-canvas")[0];
 var paper = new joint.dia.Paper({
   el: holder,
   model: graph,
@@ -17,6 +17,7 @@ var paper = new joint.dia.Paper({
   gridSize: gridSize,
   interactive: true
 });
+
 
 // Adds link tools (adding vertices, moving segments) to links when your mouse over
 paper.on("link:mouseover", function(cellView, evt) {
@@ -114,36 +115,44 @@ paper.on('paper:mouseleave', evt => {
 
 // Take a model and imports with graph.fromJSON
 function renderModel(model) {
-    $('#idaes-fs-name').text(model['id']);  // set flowsheet name
+    console.log("rendering model..", model.model.id);
+    $('#idaes-fs-name').text(model.model.id);  // set flowsheet name
     graph.fromJSON(model);
 }
 
-// For show/hide, attrs to turn them on/off
-var rect_attr = { fill: '#d7dce0',
-                  stroke: 'white',
-                  'stroke-width': 0,
-                  'fill-opacity': '0' };
-var show_arc_label_attr = {'text': {display: 'block'}, 'rect': rect_attr };
-var hide_arc_label_attr = {'text': {display: 'none'}, 'rect': rect_attr };
-
-// Toggle arc labels
-var show_hide_button = document.getElementById("show_hide_all_button");
-show_hide_button.innerText = "Show/Hide Arc Labels";  
-show_hide_button.onclick = () => {
-  paper.model.getLinks().forEach(function (link) {
-    link.attr((link.attr('text/display') == 'none') ?
-              show_arc_label_attr : hide_arc_label_attr);
-  });
-}
 
 // Set up the help button
 // Not implemented yet
 var help_button = document.getElementById("help_button");
 
-help_button.innerText = "Help";  
+//help_button.innerText = "Help";
 help_button.onclick = () => {
   window.alert("Not implemented yet")
 }
+
+// Set up the toggle arc label button
+var show_hide_button = $("#show_hide_all_button");
+// show_hide_button.innerText = "Show/Hide Arc Labels";
+show_hide_button.on('click', function() {
+  paper.model.getLinks().forEach(function (link) {
+    if (link.attr('text/display') == 'none') {
+      link.attr({
+        'text': {
+          display: "block",
+        },
+        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
+      });
+    }
+    else {
+      link.attr({
+        'text': {
+          display: "none",
+        },
+        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+      });
+    }
+  });
+});
 
 // When the save button is clicked send a post request to the server with the layout
 // We still need to differentiate between the saving the layout in the server and the
@@ -166,4 +175,12 @@ $(document).ready( function() {
             }
         });
     });
+
+    $(window).resize(function() {
+        var canvas = $("#idaes-canvas")[0];
+        console.debug('resizing width=', canvas.width(), 'height=', canvas.height());
+        paper.setDimensions(canvas.width(), canvas.height());
+
+    });
+
 });
