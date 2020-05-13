@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for IAPWS using a heater block.  This is an easy way to tes the different
+Tests for IAPWS using a heater block.  This is an easy way to test the different
 calculation method options.
 
 Author: John Eslick
