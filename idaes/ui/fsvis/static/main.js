@@ -114,30 +114,25 @@ paper.on('paper:mouseleave', evt => {
 
 // Take a model and imports with graph.fromJSON
 function renderModel(model) {
+    $('#idaes-fs-name').text(model['id']);  // set flowsheet name
     graph.fromJSON(model);
 }
 
-// Set up the toggle arc label button
-var show_hide_button = document.getElementById("show_hide_button");
+// For show/hide, attrs to turn them on/off
+var rect_attr = { fill: '#d7dce0',
+                  stroke: 'white',
+                  'stroke-width': 0,
+                  'fill-opacity': '0' };
+var show_arc_label_attr = {'text': {display: 'block'}, 'rect': rect_attr };
+var hide_arc_label_attr = {'text': {display: 'none'}, 'rect': rect_attr };
+
+// Toggle arc labels
+var show_hide_button = document.getElementById("show_hide_all_button");
 show_hide_button.innerText = "Show/Hide Arc Labels";  
 show_hide_button.onclick = () => {
-  paper.model.getLinks().forEach(function (link) {        
-    if (link.attr('text/display') == 'none') {
-      link.attr({
-        'text': {
-          display: "block",
-        },
-        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
-      });
-    }
-    else {
-      link.attr({
-        'text': {
-          display: "none",
-        },
-        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
-      });
-    }
+  paper.model.getLinks().forEach(function (link) {
+    link.attr((link.attr('text/display') == 'none') ?
+              show_arc_label_attr : hide_arc_label_attr);
   });
 }
 
