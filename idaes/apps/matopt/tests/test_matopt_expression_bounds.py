@@ -1,5 +1,5 @@
 from pyomo.core.expr.numeric_expr import MonomialTermExpression
-from apps.matopt.opt.pyomo_modeling import getLB, getUB
+from idaes.apps.matopt.opt.pyomo_modeling import getLB, getUB
 from pyomo.environ import *
 
 
