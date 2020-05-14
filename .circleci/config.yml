@@ -36,7 +36,7 @@ commands:
           command: |
               source activate idaes
               pip --no-cache-dir install --progress-bar off git+https://github.com/PyUtilib/pyutilib git+https://github.com/IDAES/pyomo.git@IDAES
-              pip --no-cache-dir install --progress-bar off <<parameters.target>>
+              pip --no-cache-dir install --progress-bar off -e <<parameters.target>>
               idaes get-extensions --platform ubuntu1804
   pytest:
     description: Run tests with pytest
