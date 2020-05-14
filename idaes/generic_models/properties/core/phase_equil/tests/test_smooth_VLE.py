@@ -63,8 +63,8 @@ def frame():
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
 
-    m.props[1].temperature_bubble = Var(initialize=300)
-    m.props[1].temperature_dew = Var(initialize=300)
+    m.props[1].temperature_bubble = Var([("Liq", "Vap")], initialize=300)
+    m.props[1].temperature_dew = Var([("Liq", "Vap")], initialize=300)
     m.props[1]._teq = Var([("Liq", "Vap")], initialize=300)
 
     m.props[1].fug_phase_comp = Var(m.params.phase_list,
@@ -95,7 +95,7 @@ def test_t1(frame):
     for t in [200, 300, 400, 500]:
         for tb in [200, 300, 400, 500]:
             frame.props[1].temperature.value = t
-            frame.props[1].temperature_bubble.value = tb
+            frame.props[1].temperature_bubble[("Liq", "Vap")].value = tb
             frame.props[1]._t1_Liq_Vap.value = max(t, tb)
             assert value(frame.props[1]._t1_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)
@@ -107,7 +107,7 @@ def test_t_eq(frame):
     for t1 in [200, 300, 400, 500]:
         for td in [200, 300, 400, 500]:
             frame.props[1]._t1_Liq_Vap.value = t1
-            frame.props[1].temperature_dew.value = td
+            frame.props[1].temperature_dew[("Liq", "Vap")].value = td
             frame.props[1]._teq[("Liq", "Vap")].value = min(t1, td)
             assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)

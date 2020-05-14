@@ -583,151 +583,157 @@ class _GenericStateBlock(StateBlock):
         for k in blk.keys():
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
-                # Use lowest component critical temperature as starting point
-                # Starting high and moving down generally works better,
-                # as it under-predicts next step due to exponential form of
-                # Psat.
-                # Subtract 1 to avoid potential singularities at Tcrit
-                Tbub0 = min(blk[k].params.get_component(j)
-                            .temperature_crit.value
-                            for j in blk[k].params.component_list) - 1
-
-                err = 1
-                counter = 0
-
-                # Newton solver with step limiter to prevent overshoot
-                # Tolerance only needs to be ~1e-1
-                # Iteration limit of 30
-                while err > 1e-1 and counter < 30:
-                    f = value(sum(get_method(blk[k], "pressure_sat_comp", j)(
-                                      blk[k],
-                                      blk[k].params.get_component(j),
-                                      Tbub0) *
-                                  blk[k].mole_frac_comp[j]
-                                  for j in blk[k].params.component_list) -
-                              blk[k].pressure)
-                    df = value(sum(
-                           get_method(blk[k], "pressure_sat_comp", j)(
-                                      blk[k],
-                                      blk[k].params.get_component(j),
-                                      Tbub0,
-                                      dT=True)
-                           for j in blk[k].params.component_list))
-
-                    # Limit temperature step to avoid excessive overshoot
-                    # Only limit positive steps due to non-linearity
-                    if f/df < -50:
-                        Tbub1 = Tbub0 + 50
-                    else:
-                        Tbub1 = Tbub0 - f/df
-
-                    err = abs(Tbub1 - Tbub0)
-                    Tbub0 = Tbub1
-                    counter += 1
-
-                blk[k].temperature_bubble.value = Tbub0
-
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_tbub[j].value = value(
-                            blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            get_method(blk[k], "pressure_sat_comp", j)(
-                                       blk[k],
-                                       blk[k].params.get_component(j),
-                                       Tbub0))
-
-            # Bubble temperature initialization
-            if hasattr(blk[k], "_mole_frac_tdew"):
-                if hasattr(blk[k], "_mole_frac_tbub"):
-                    # If Tbub has been calculated above, use this as the
-                    # starting point
-                    Tdew0 = blk[k].temperature_bubble.value
-                else:
-                    # Otherwise, use lowest component critical temperature as
-                    # starting point
+                for pp in blk[k].params._pe_pairs:
+                    # Use lowest component temperature_crit as starting point
+                    # Starting high and moving down generally works better,
+                    # as it under-predicts next step due to exponential form of
+                    # Psat.
                     # Subtract 1 to avoid potential singularities at Tcrit
-                    Tdew0 = min(blk[k].params.get_component(j).temperature_crit
+                    Tbub0 = min(blk[k].params.get_component(j)
+                                .temperature_crit.value
                                 for j in blk[k].params.component_list) - 1
 
-                err = 1
-                counter = 0
+                    err = 1
+                    counter = 0
 
-                # Newton solver with step limiter to prevent overshoot
-                # Tolerance only needs to be ~1e-1
-                # Iteration limit of 30
-                while err > 1e-1 and counter < 30:
-                    f = value(blk[k].pressure *
-                              sum(blk[k].mole_frac_comp[j] /
-                                  get_method(blk[k], "pressure_sat_comp", j)(
-                                       blk[k],
-                                       blk[k].params.get_component(j),
-                                       Tdew0)
-                                  for j in blk[k].params.component_list) - 1)
-                    df = -value(
+                    # Newton solver with step limiter to prevent overshoot
+                    # Tolerance only needs to be ~1e-1
+                    # Iteration limit of 30
+                    while err > 1e-1 and counter < 30:
+                        f = value(sum(
+                            get_method(blk[k], "pressure_sat_comp", j)(
+                                    blk[k],
+                                    blk[k].params.get_component(j),
+                                    Tbub0) *
+                            blk[k].mole_frac_comp[j]
+                            for j in blk[k].params.component_list) -
+                            blk[k].pressure)
+                        df = value(sum(
+                               get_method(blk[k], "pressure_sat_comp", j)(
+                                          blk[k],
+                                          blk[k].params.get_component(j),
+                                          Tbub0,
+                                          dT=True)
+                               for j in blk[k].params.component_list))
+
+                        # Limit temperature step to avoid excessive overshoot
+                        # Only limit positive steps due to non-linearity
+                        if f/df < -50:
+                            Tbub1 = Tbub0 + 50
+                        else:
+                            Tbub1 = Tbub0 - f/df
+
+                        err = abs(Tbub1 - Tbub0)
+                        Tbub0 = Tbub1
+                        counter += 1
+
+                    blk[k].temperature_bubble[pp].value = Tbub0
+
+                    for j in blk[k].params.component_list:
+                        blk[k]._mole_frac_tbub[pp, j].value = value(
+                                blk[k].mole_frac_comp[j]*blk[k].pressure /
+                                get_method(blk[k], "pressure_sat_comp", j)(
+                                           blk[k],
+                                           blk[k].params.get_component(j),
+                                           Tbub0))
+
+            # DEw temperature initialization
+            if hasattr(blk[k], "_mole_frac_tdew"):
+                for pp in blk[k].params._pe_pairs:
+                    if hasattr(blk[k], "_mole_frac_tbub"):
+                        # If Tbub has been calculated above, use this as the
+                        # starting point
+                        Tdew0 = blk[k].temperature_bubble[pp].value
+                    else:
+                        # Otherwise, use lowest component critical temperature
+                        # as starting point
+                        # Subtract 1 to avoid potential singularities at Tcrit
+                        Tdew0 = min(
+                            blk[k].params.get_component(j).temperature_crit
+                            for j in blk[k].params.component_list) - 1
+
+                    err = 1
+                    counter = 0
+
+                    # Newton solver with step limiter to prevent overshoot
+                    # Tolerance only needs to be ~1e-1
+                    # Iteration limit of 30
+                    while err > 1e-1 and counter < 30:
+                        f = value(
                             blk[k].pressure *
                             sum(blk[k].mole_frac_comp[j] /
                                 get_method(blk[k], "pressure_sat_comp", j)(
-                                       blk[k],
-                                       blk[k].params.get_component(j),
-                                       Tdew0)**2 *
+                                           blk[k],
+                                           blk[k].params.get_component(j),
+                                           Tdew0)
+                                for j in blk[k].params.component_list) - 1)
+                        df = -value(
+                                blk[k].pressure *
+                                sum(blk[k].mole_frac_comp[j] /
+                                    get_method(blk[k], "pressure_sat_comp", j)(
+                                           blk[k],
+                                           blk[k].params.get_component(j),
+                                           Tdew0)**2 *
+                                    get_method(blk[k], "pressure_sat_comp", j)(
+                                           blk[k],
+                                           blk[k].params.get_component(j),
+                                           Tdew0,
+                                           dT=True)
+                                    for j in blk[k].params.component_list))
+
+                        # Limit temperature step to avoid excessive overshoot
+                        if f/df < -50:
+                            Tdew1 = Tdew0 + 50
+                        else:
+                            Tdew1 = Tdew0 - f/df
+
+                        err = abs(Tdew1 - Tdew0)
+                        Tdew0 = Tdew1
+                        counter += 1
+
+                    blk[k].temperature_dew[pp].value = Tdew0
+
+                    for j in blk[k].params.component_list:
+                        blk[k]._mole_frac_tdew[pp, j].value = value(
+                                blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
-                                       blk[k],
-                                       blk[k].params.get_component(j),
-                                       Tdew0,
-                                       dT=True)
-                                for j in blk[k].params.component_list))
-
-                    # Limit temperature step to avoid excessive overshoot
-                    if f/df < -50:
-                        Tdew1 = Tdew0 + 50
-                    else:
-                        Tdew1 = Tdew0 - f/df
-
-                    err = abs(Tdew1 - Tdew0)
-                    Tdew0 = Tdew1
-                    counter += 1
-
-                blk[k].temperature_dew.value = Tdew0
-
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_tdew[j].value = value(
-                            blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            get_method(blk[k], "pressure_sat_comp", j)(
-                                       blk[k],
-                                       blk[k].params.get_component(j),
-                                       Tdew0))
+                                           blk[k],
+                                           blk[k].params.get_component(j),
+                                           Tdew0))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
-                blk[k].pressure_bubble.value = value(
-                        sum(blk[k].mole_frac_comp[j] *
+                for pp in blk[k].params._pe_pairs:
+                    blk[k].pressure_bubble[pp].value = value(
+                            sum(blk[k].mole_frac_comp[j] *
+                                blk[k].params.config.pressure_sat_comp
+                                      .pressure_sat_comp(
+                                              blk[k], j, blk[k].temperature)
+                                for j in blk[k].params.component_list))
+
+                    for j in blk[k].params.component_list:
+                        blk[k]._mole_frac_pbub[pp, j].value = value(
+                            blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(
-                                          blk[k], j, blk[k].temperature)
-                            for j in blk[k].params.component_list))
-
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_pbub[j].value = value(
-                        blk[k].mole_frac_comp[j] *
-                        blk[k].params.config.pressure_sat_comp
-                              .pressure_sat_comp(
-                                      blk[k], j, blk[k].temperature) /
-                        blk[k].pressure_bubble)
+                                          blk[k], j, blk[k].temperature) /
+                            blk[k].pressure_bubble)
 
             # Dew pressure initialization
             if hasattr(blk[k], "_mole_frac_pdew"):
-                blk[k].pressure_dew.value = value(
-                        sum(1/(blk[k].mole_frac_comp[j] /
-                               blk[k].params.config.pressure_sat_comp
-                               .pressure_sat_comp(
-                                       blk[k], j, blk[k].temperature))
-                            for j in blk[k].params.component_list))
+                for pp in blk[k].params._pe_pairs:
+                    blk[k].pressure_dew[pp].value = value(
+                            sum(1/(blk[k].mole_frac_comp[j] /
+                                   blk[k].params.config.pressure_sat_comp
+                                   .pressure_sat_comp(
+                                           blk[k], j, blk[k].temperature))
+                                for j in blk[k].params.component_list))
 
-                for j in blk[k].params.component_list:
-                    blk[k]._mole_frac_pdew[j].value = value(
+                    for j in blk[k].params.component_list:
+                        blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
-                                  .pressure_sat_comp(
-                                          blk[k], j, blk[k].temperature))
+                            .pressure_sat_comp(blk[k], j, blk[k].temperature))
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
@@ -927,10 +933,12 @@ class GenericStateBlockData(StateBlockData):
 
         try:
             b.temperature_bubble = Var(
+                    b.params._pe_pairs,
                     doc="Bubble point temperature",
                     bounds=(b.temperature.lb, b.temperature.ub))
 
             b._mole_frac_tbub = Var(
+                    b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
@@ -948,10 +956,12 @@ class GenericStateBlockData(StateBlockData):
 
         try:
             b.temperature_dew = Var(
+                    b.params._pe_pairs,
                     doc="Dew point temperature",
                     bounds=(b.temperature.lb, b.temperature.ub))
 
             b._mole_frac_tdew = Var(
+                    b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
@@ -969,10 +979,12 @@ class GenericStateBlockData(StateBlockData):
 
         try:
             b.pressure_bubble = Var(
+                    b.params._pe_pairs,
                     doc="Bubble point pressure",
                     bounds=(b.pressure.lb, b.pressure.ub))
 
             b._mole_frac_pbub = Var(
+                    b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
@@ -990,10 +1002,12 @@ class GenericStateBlockData(StateBlockData):
 
         try:
             b.pressure_dew = Var(
+                    b.params._pe_pairs,
                     doc="Dew point pressure",
                     bounds=(b.pressure.lb, b.pressure.ub))
 
             b._mole_frac_pdew = Var(
+                    b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
