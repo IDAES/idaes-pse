@@ -327,7 +327,8 @@ class Cubic(EoSBase):
         return (((blk.temperature*dadT - am) *
                  log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
                  const.gas_constant*blk.temperature*(Z-1)*bm*EoS_p) /
-                (bm*EoS_p) + sum(blk.enth_mol_phase_comp[p, j]
+                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
+                                 blk.enth_mol_phase_comp[p, j]
                                  for j in blk.params.component_list))
 
     def enth_mol_phase_comp(b, p, j):
@@ -360,7 +361,8 @@ class Cubic(EoSBase):
                  log(Z*blk.params.pressure_ref/blk.pressure)*bm*EoS_p +
                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
                           (2*Z + B*(EoS_u - EoS_p)))) /
-                (bm*EoS_p) + sum(blk.entr_mol_phase_comp[p, j]
+                (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
+                                 blk.entr_mol_phase_comp[p, j]
                                  for j in blk.params.component_list))
 
     def entr_mol_phase_comp(b, p, j):

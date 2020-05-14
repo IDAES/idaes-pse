@@ -441,9 +441,9 @@ def test_enth_mol_phase(m):
                                          initialize=1)
 
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == -818.31
+        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == -820.31
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -251.21
+        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -253.211
 
 
 def test_enth_mol_phase_comp(m):
@@ -466,9 +466,9 @@ def test_entr_mol_phase(m):
                                          initialize=1)
 
     assert pytest.approx(value(
-        Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5) == 0.92189
+        Cubic.entr_mol_phase(m.props[1], "Vap")), rel=1e-5) == -1.07811
     assert pytest.approx(value(
-        Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5) == 2.16214
+        Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5) == 0.162139
 
 
 def test_entr_mol_phase_comp(m):
