@@ -40,6 +40,8 @@ def test_fugacity():
     # Add a dummy var for use in constructing expressions
     m.x = Var(["Vap", "Liq"], ["H2O"], initialize=1)
 
+    m.mole_frac_phase_comp = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
         "components": {"H2O": {"parameter_data": {"temperature_crit": 647.3},
@@ -52,4 +54,5 @@ def test_fugacity():
         "temperature_ref": 300})
 
     assert str(fugacity(m, "Vap", "Liq", "H2O")) == str(
-        m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
+        m.mole_frac_phase_comp["Vap", "H2O"]*m.x["Vap", "H2O"] ==
+        m.mole_frac_phase_comp["Liq", "H2O"]*m.x["Liq", "H2O"])

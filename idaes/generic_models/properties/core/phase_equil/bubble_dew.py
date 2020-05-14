@@ -16,12 +16,29 @@ from idaes.generic_models.properties.core.generic.generic_property import \
         get_method, get_component_object as cobj
 
 
+def vle_check(b, p1, p2):
+    # Bubble nad dew point only make snese for a vapor-liquid pair
+    # Check if this is the case
+    p1_obj = b.params.get_phase(p1)
+    p2_obj = b.params.get_phase(p2)
+    # One phase must be liquid nad the other vapor
+    # If not, these don't make sense so skip the constraints
+    if not (p1_obj.is_liquid_phase() or p2_obj.is_liquid_phase()):
+        return False
+    elif not (p1_obj.is_vapor_phase() or p2_obj.is_vapor_phase()):
+        return False
+    return True
+
+
 class IdealBubbleDew():
     # -------------------------------------------------------------------------
     # Bubble temperature methods
     def temperature_bubble(b):
         try:
             def rule_bubble_temp(b, p1, p2):
+                if not vle_check(b, p1, p2):
+                    return Constraint.Skip
+
                 return (sum(b.mole_frac_comp[j] *
                             get_method(b, "pressure_sat_comp", j)(
                                 b, cobj(b, j), b.temperature_bubble[p1, p2])
@@ -35,6 +52,8 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_bubble_temp(b, p1, p2, j):
+            if not vle_check(b, p1, p2):
+                return Constraint.Skip
             return b._mole_frac_tbub[p1, p2, j]*b.pressure == (
                 b.mole_frac_comp[j] *
                 get_method(b, "pressure_sat_comp", j)(
@@ -48,6 +67,8 @@ class IdealBubbleDew():
     def temperature_dew(b):
         try:
             def rule_dew_temp(b, p1, p2):
+                if not vle_check(b, p1, p2):
+                    return Constraint.Skip
                 return (b.pressure*sum(
                             b.mole_frac_comp[j] /
                             get_method(b, "pressure_sat_comp", j)(
@@ -62,6 +83,8 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_dew_temp(b, p1, p2, j):
+            if not vle_check(b, p1, p2):
+                return Constraint.Skip
             return (b._mole_frac_tdew[p1, p2, j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), b.temperature_dew[p1, p2]) ==
@@ -75,6 +98,8 @@ class IdealBubbleDew():
     def pressure_bubble(b):
         try:
             def rule_bubble_press(b, p1, p2):
+                if not vle_check(b, p1, p2):
+                    return Constraint.Skip
                 return b.pressure_bubble[p1, p2] == sum(
                         b.mole_frac_comp[j] *
                         get_method(b, "pressure_sat_comp", j)(
@@ -88,6 +113,8 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_bubble_press(b, p1, p2, j):
+            if not vle_check(b, p1, p2):
+                return Constraint.Skip
             return b._mole_frac_pbub[p1, p2, j]*b.pressure_bubble[p1, p2] == (
                 b.mole_frac_comp[j] *
                 get_method(b, "pressure_sat_comp", j)(
@@ -101,6 +128,8 @@ class IdealBubbleDew():
     def pressure_dew(b):
         try:
             def rule_dew_press(b, p1, p2):
+                if not vle_check(b, p1, p2):
+                    return Constraint.Skip
                 return 0 == 1 - b.pressure_dew[p1, p2]*sum(
                         b.mole_frac_comp[j] /
                         get_method(b, "pressure_sat_comp", j)(
@@ -114,6 +143,8 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_dew_press(b, p1, p2, j):
+            if not vle_check(b, p1, p2):
+                return Constraint.Skip
             return (b._mole_frac_pdew[p1, p2, j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), b.temperature) ==

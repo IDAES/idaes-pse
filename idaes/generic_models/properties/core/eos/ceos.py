@@ -376,16 +376,14 @@ class Cubic(EoSBase):
     def fug_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.mole_frac_phase_comp[p, j]*b.pressure * \
-               b.fug_coeff_phase_comp[p, j]
+            return b.pressure * b.fug_coeff_phase_comp[p, j]
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     def fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.mole_frac_phase_comp[p, j]*b.pressure * \
-               _fug_coeff_phase_comp_eq(b, p, j, pp)
+            return b.pressure * _fug_coeff_phase_comp_eq(b, p, j, pp)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

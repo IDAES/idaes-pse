@@ -17,7 +17,9 @@ Library of common forms for phase equilibrium constraints
 
 def fugacity(b, phase1, phase2, comp):
     pp = (phase1, phase2)
-    return (b.params.get_phase(phase1)
+    return (b.mole_frac_phase_comp[phase1, comp] *
+            b.params.get_phase(phase1)
             .config.equation_of_state.fug_phase_comp_eq(b, phase1, comp, pp) ==
+            b.mole_frac_phase_comp[phase2, comp] *
             b.params.get_phase(phase2)
             .config.equation_of_state.fug_phase_comp_eq(b, phase2, comp, pp))
