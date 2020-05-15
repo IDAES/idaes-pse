@@ -12,7 +12,7 @@
 ##############################################################################
 from pyomo.environ import Constraint, log
 
-from idaes.generic_models.properties.core.generic.generic_property import \
+from idaes.generic_models.properties.core.generic.utility import \
         get_method, get_component_object as cobj
 
 

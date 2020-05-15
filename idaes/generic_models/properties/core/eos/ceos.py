@@ -29,7 +29,7 @@ from pyomo.environ import (exp,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core.util.exceptions import PropertyNotSupportedError
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
 from idaes import bin_directory

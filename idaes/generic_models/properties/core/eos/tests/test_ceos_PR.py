@@ -561,26 +561,26 @@ def test_fug_coeff_phase_comp_eq_invalid_phase(m_sol):
             m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
-# def test_gibbs_mol_phase(m):
-#     m.props[1].gibbs_mol_phase_comp = Var(m.params.phase_list,
-#                                           m.params.component_list)
+def test_gibbs_mol_phase(m):
+    m.props[1].gibbs_mol_phase_comp = Var(m.params.phase_list,
+                                          m.params.component_list)
 
-#     for p in m.params.phase_list:
-#         assert str(Cubic.gibbs_mol_phase(m.props[1], p)) == str(
-#             sum(m.props[1].mole_frac_phase_comp[p, j] *
-#                 m.props[1].gibbs_mol_phase_comp[p, j]
-#                 for j in m.params.component_list))
+    for p in m.params.phase_list:
+        assert str(Cubic.gibbs_mol_phase(m.props[1], p)) == str(
+            sum(m.props[1].mole_frac_phase_comp[p, j] *
+                m.props[1].gibbs_mol_phase_comp[p, j]
+                for j in m.params.component_list))
 
 
-# def test_gibbs_mol_phase_comp(m):
-#     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
-#                                          m.params.component_list)
-#     m.props[1].entr_mol_phase_comp = Var(m.params.phase_list,
-#                                          m.params.component_list)
+def test_gibbs_mol_phase_comp(m):
+    m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
+                                         m.params.component_list)
+    m.props[1].entr_mol_phase_comp = Var(m.params.phase_list,
+                                         m.params.component_list)
 
-#     for p in m.params.phase_list:
-#         for j in m.params.component_list:
-#             assert str(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)) == str(
-#                     m.props[1].enth_mol_phase_comp[p, j] -
-#                     m.props[1].entr_mol_phase_comp[p, j] *
-#                     m.props[1].temperature)
+    for p in m.params.phase_list:
+        for j in m.params.component_list:
+            assert str(Cubic.gibbs_mol_phase_comp(m.props[1], p, j)) == str(
+                    m.props[1].enth_mol_phase_comp[p, j] -
+                    m.props[1].entr_mol_phase_comp[p, j] *
+                    m.props[1].temperature)

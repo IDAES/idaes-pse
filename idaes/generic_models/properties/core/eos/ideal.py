@@ -16,7 +16,7 @@ Methods for ideal equations of state.
 Currently only supports liquid and vapor phases
 """
 from idaes.core.util.exceptions import PropertyNotSupportedError
-from idaes.generic_models.properties.core.generic.generic_property import (
+from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
 from idaes.core.util.constants import Constants as const
