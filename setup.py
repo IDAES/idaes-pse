@@ -46,7 +46,7 @@ kwargs = dict(
         "bunch",
         "click",
         "colorama",
-        "flask", # for ui/fsvis
+        "flask",  # for ui/fsvis
         "jupyter",
         "lxml",
         "matplotlib",
@@ -62,14 +62,9 @@ kwargs = dict(
         "pytest",
         "pyutilib",
         "pyyaml",
-        "requests", # for ui/fsvis
+        "requests",  # for ui/fsvis
         "sympy",
-        "tinydb<=3.15.2",
-        # alamopy
-        # <nothing>
-        # ripe
-        # <nothing>
-        # helmet
+        "tinydb",
         "rbfopt",
     ],
     entry_points={
