@@ -18,181 +18,12 @@ import pytest
 from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
         TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.dae.set_utils import (is_explicitly_indexed_by,
+        is_in_block_indexed_by, get_index_set_except)
 import idaes.logger as idaeslog
 from idaes.core.util.dyn_utils import *
 
 __author__ = "Robert Parker"
-
-
-# Test explicit/implicit index detection functions
-def test_is_indexed_by():
-    m = ConcreteModel()
-    m.time = ContinuousSet(bounds=(0, 10))
-    m.space = ContinuousSet(bounds=(0, 10))
-    m.set = Set(initialize=['a', 'b', 'c'])
-    m.v = Var()
-    m.v1 = Var(m.time)
-    m.v2 = Var(m.time, m.space)
-    m.v3 = Var(m.set, m.space, m.time)
-
-    @m.Block()
-    def b(b):
-        b.v = Var()
-        b.v1 = Var(m.time)
-        b.v2 = Var(m.time, m.space)
-        b.v3 = Var(m.set, m.space, m.time)
-
-    @m.Block(m.time)
-    def b1(b):
-        b.v = Var()
-        b.v1 = Var(m.space)
-        b.v2 = Var(m.space, m.set)
-
-    @m.Block(m.time, m.space)
-    def b2(b):
-        b.v = Var()
-        b.v1 = Var(m.set)
-
-        @b.Block()
-        def b(bl):
-            bl.v = Var()
-            bl.v1 = Var(m.set)
-            bl.v2 = Var(m.time)
-
-    disc = TransformationFactory('dae.collocation')
-    disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
-    disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
-
-    assert not is_explicitly_indexed_by(m.v, m.time)
-    assert is_explicitly_indexed_by(m.b.v2, m.space)
-
-    assert not is_implicitly_indexed_by(m.v1, m.time)
-    assert not is_implicitly_indexed_by(m.v2, m.set)
-    assert is_implicitly_indexed_by(m.b1[m.time[1]].v2, m.time)
-
-    assert is_implicitly_indexed_by(m.b2[m.time[1], 
-        m.space[1]].b.v1, m.time)
-    assert (is_implicitly_indexed_by(m.b2[m.time[1], 
-        m.space[1]].b.v2, m.time) ==
-        is_explicitly_indexed_by(m.b2[m.time[1], 
-            m.space[1]].b.v2, m.time))
-    assert (not is_implicitly_indexed_by(m.b2[m.time[1], 
-        m.space[1]].b.v1, m.set))
-
-    assert (not is_implicitly_indexed_by(m.b2[m.time[1],
-        m.space[1]].b.v1, m.space, stop_at=m.b2[m.time[1], m.space[1]]))
-
-# Test get index_set_except and _complete_index
-def test_get_index_set_except():
-    '''
-    Tests:
-      For components indexed by 0, 1, 2, 3, 4 sets:
-        get_index_set_except one, then two (if any) of those sets
-        check two items that should be in set_except
-        insert item(s) back into these sets via index_getter
-    '''
-    m = ConcreteModel()
-    m.time = ContinuousSet(bounds=(0, 10))
-    m.space = ContinuousSet(bounds=(0, 10))
-    m.set1 = Set(initialize=['a', 'b', 'c'])
-    m.set2 = Set(initialize=['d', 'e', 'f'])
-    m.v = Var()
-    m.v1 = Var(m.time)
-    m.v2 = Var(m.time, m.space)
-    m.v3 = Var(m.time, m.space, m.set1)
-    m.v4 = Var(m.time, m.space, m.set1, m.set2)
-
-    # Try a multi-dimensional set
-    m.set3 = Set(initialize=[('a', 1), ('b', 2)])
-    m.v5 = Var(m.set3)
-    m.v6 = Var(m.time, m.space, m.set3)
-
-    disc = TransformationFactory('dae.collocation')
-    disc.apply_to(m, wrt=m.time, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
-    disc.apply_to(m, wrt=m.space, nfe=5, ncp=2, scheme='LAGRANGE-RADAU')
-
-    # Want this to give a TypeError
-    # info = get_index_set_except(m.v, m.time)
-
-    # Indexed by one set
-    info = get_index_set_except(m.v1, m.time)
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert (set_except == [None])
-    # Variable is not indexed by anything except time
-    # Test that index_getter returns only the new value given,
-    # regardless of whether it was part of the set excluded (time):
-    assert (index_getter((), -1) == -1)
-
-    # Indexed by two sets
-    info = get_index_set_except(m.v2, m.time)
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert (m.space[1] in set_except
-                    and m.space.last() in set_except)
-    # Here (2,) is the partial index, corresponding to space.
-    # Can be provided as a scalar or tuple. 4, the time index,
-    # should be inserted before (2,)
-    assert (index_getter((2,), 4) == (4, 2))
-    assert (index_getter(2, 4) == (4, 2))
-
-    # Case where every set is "omitted," now for multiple sets
-    info = get_index_set_except(m.v2, m.space, m.time)
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert (set_except == [None])
-    # 5, 7 are the desired index values for space, time 
-    # index_getter should put them in the right order for m.v2,
-    # even if they are not valid indices for m.v2
-    assert (index_getter((), 5, 7) == (7, 5))
-
-    # Indexed by three sets
-    info = get_index_set_except(m.v3, m.time)
-    # In this case set_except is a product of the two non-time sets
-    # indexing v3
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert ((m.space[1], 'b') in set_except
-                    and (m.space.last(), 'a') in set_except)
-    # index_getter inserts a scalar index into an index of length 2
-    assert (index_getter((2, 'b'), 7) == (7, 2, 'b'))
-
-    info = get_index_set_except(m.v3, m.space, m.time)
-    # Two sets omitted. Now set_except is just set1
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert ('a' in set_except)
-    # index_getter inserts the two new indices in the right order
-    assert (index_getter('b', 1.2, 1.1) == (1.1, 1.2, 'b'))
-
-    # Indexed by four sets
-    info = get_index_set_except(m.v4, m.set1, m.space)
-    # set_except is a product, and there are two indices to insert
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert ((m.time[1], 'd') in set_except)
-    assert (index_getter((4, 'f'), 'b', 8) == (4, 8, 'b', 'f'))
-    
-    # The intended usage of this function looks something like:
-    index_set = m.v4.index_set()
-    for partial_index in set_except:
-        complete_index = index_getter(partial_index, 'a', m.space[2])
-        assert (complete_index in index_set)
-        # Do something for every index of v4 at 'a' and space[2]
-
-    # Indexed by a multi-dimensional set
-    info = get_index_set_except(m.v5, m.set3)
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert (set_except == [None])
-    assert (index_getter((), ('a', 1)) == ('a', 1))
-
-    info = get_index_set_except(m.v6, m.set3, m.time)
-    set_except = info['set_except']
-    index_getter = info['index_getter']
-    assert (m.space[1] in set_except)
-    assert (index_getter(m.space[1], ('b', 2), m.time[1])
-            == (m.time[1], m.space[1], 'b', 2))
 
 
 def test_fix_and_deactivate():
@@ -382,8 +213,153 @@ def test_copy_non_time_indexed_values():
     assert m1.b3[3].v5.value != m2.b3[3].v5.value
 
 
-if __name__ == "__main__":
-    test_is_indexed_by()
-    test_get_index_set_except()
-    test_fix_and_deactivate()
-    test_copy_non_time_indexed_values()
+def test_find_comp_in_block():
+    m1 = ConcreteModel()
+
+    @m1.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3])
+
+    m2 = ConcreteModel()
+
+    @m2.Block([1,2,3])
+    def b1(b):
+        b.v = Var([1,2,3,4])
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var([1,2,3])
+
+    v1 = m1.b1[1].v[1]
+
+    assert find_comp_in_block(m2, m1, v1) is m2.b1[1].v[1]
+
+    v2 = m2.b2[1].v[1]
+    v3 = m2.b1[3].v[4]
+
+    # These should result in Attribute/KeyErrors
+
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+        find_comp_in_block(m1, m2, v2)
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+        find_comp_in_block(m1, m2, v3)
+    assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
+    assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
+
+
+def test_find_comp_in_block_at_time():
+    m1 = ConcreteModel()
+    m1.time = Set(initialize=[1,2,3])
+
+    @m1.Block(m1.time)
+    def b1(b):
+        b.v = Var(m1.time)
+
+    @m1.Block([1,2,3])
+    def b(bl):
+        bl.v = Var(m1.time)
+        bl.v2 = Var(m1.time, ['a','b','c'])
+
+    m2 = ConcreteModel()
+    m2.time = Set(initialize=[1,2,3,4,5,6])
+
+    @m2.Block(m2.time)
+    def b1(b):
+        b.v = Var(m2.time)
+
+    @m2.Block([1,2,3,4])
+    def b(bl):
+        bl.v = Var(m2.time)
+        bl.v2 = Var(m2.time, ['a','b','c'])
+
+    @m2.Block([1,2,3])
+    def b2(b):
+        b.v = Var(m2.time)
+
+    v1 = m1.b1[1].v[1]
+    v3 = m1.b[3].v[1]
+
+    assert find_comp_in_block_at_time(m2, m1, v1, m2.time, 4) is m2.b1[4].v[4]
+    assert find_comp_in_block_at_time(m2, m1, v3, m2.time, 5) is m2.b[3].v[5]
+
+    v = m1.b[1].v2[1, 'a']
+    assert find_comp_in_block_at_time(m2, m1, v, m2.time, 6) is m2.b[1].v2[6, 'a']
+
+    v2 = m2.b2[1].v[1]
+    v4 = m2.b[4].v[1]
+
+    # Should result in exceptions:
+    with pytest.raises(AttributeError, match=r'.*has no attribute.*'):
+        find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
+    with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
+        find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
+    assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
+    assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
+
+
+def test_get_location_of_coordinate_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_location_of_coordinate_set(m.v1.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v2.index_set(), m.s1) == 0
+    assert get_location_of_coordinate_set(m.v3.index_set(), m.s1) == 3
+
+    # These should each raise a ValueError
+    with pytest.raises(ValueError):
+        get_location_of_coordinate_set(m.v1.index_set(), m.s2)
+    with pytest.raises(ValueError):
+        get_location_of_coordinate_set(m.v121.index_set(), m.s1)
+
+
+def test_get_index_of_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=[('a',1), ('b',2)])
+    m.s3 = Set(initialize=[('a',1,0), ('b',2,1)])
+    m.v0 = Var()
+    m.v1 = Var(m.s1)
+    m.v2 = Var(m.s1, m.s2)
+    m.v121 = Var(m.s1, m.s2, m.s1)
+    m.v3 = Var(m.s3, m.s1, m.s2)
+
+    assert get_index_of_set(m.v1[2], m.s1) == 2
+    assert get_index_of_set(m.v2[2,'a',1], m.s1) == 2
+    assert get_index_of_set(m.v3['b',2,1,3,'b',2], m.s1) == 3
+
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v0, m.s1)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'a',1], m.s2)
+    with pytest.raises(ValueError) as exc_test:
+        get_index_of_set(m.v2[1,'b',2], m.s3)
+
+
+def test_get_implicit_index_of_set():
+    m = ConcreteModel()
+    m.s1 = Set(initialize=[1,2,3])
+    m.s2 = Set(initialize=['a', 'b', 'c'])
+    m.s3 = Set(initialize=[('d',4), ('e',5)])
+
+    @m.Block()
+    def b1(b):
+        @b.Block(m.s3, m.s1)
+        def b2(b):
+            @b.Block()
+            def b3(b):
+                b.v1 = Var(m.s2)
+                b.v2 = Var(m.s1)
+
+    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s1) == 1
+    assert get_implicit_index_of_set(m.b1.b2['d',4,1].b3.v1['a'], m.s2) == 'a'
+
+    with pytest.raises(ValueError) as exc_test:
+        get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
+
+

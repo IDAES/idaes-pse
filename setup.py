@@ -47,7 +47,7 @@ kwargs = dict(
         "bunch",
         "click",
         "colorama",
-        "flask", # for ui/fsvis
+        "flask",  # for ui/fsvis
         "jupyter",
         "lxml",
         "matplotlib",
@@ -63,14 +63,9 @@ kwargs = dict(
         "pytest",
         "pyutilib",
         "pyyaml",
-        "requests", # for ui/fsvis
+        "requests",  # for ui/fsvis
         "sympy",
         "tinydb",
-        # alamopy
-        # <nothing>
-        # ripe
-        # <nothing>
-        # helmet
         "rbfopt",
     ],
     entry_points={
@@ -95,7 +90,11 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
-            "sphinx-rtd-theme>=0.1.9",
+            # temporarily hold sphinx version to avoid bug with 3.x
+            # -dang 4/22/2020
+            "sphinx<3.0.0",
+            # note: 4/22/2020, removed the version requirement here
+            "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
             "sphinx-argparse",
         ]

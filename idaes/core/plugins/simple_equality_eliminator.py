@@ -155,8 +155,9 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 descend_into=True,
                 active=True
             ):
-                self._original[id(c)] = c.expr
-                self._expr_map[id(c)] = c
+                if id(c) not in self._original and reversible:
+                    self._original[id(c)] = c.expr
+                    self._expr_map[id(c)] = c
                 c.set_value(expr=vis.dfs_postorder_stack(c.expr))
 
         _log.info("Eliminated {} variables and constraints".format(nr_tot))
