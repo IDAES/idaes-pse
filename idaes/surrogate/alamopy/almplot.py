@@ -19,11 +19,17 @@ def almplot(res, show=True):
     try:
         import matplotlib.pyplot as plt
         import numpy as np
-        from alamopy.writethis import writethis
+        # from alamopy.writethis import writethis
     except Exception:
         writethis("Cannot plot, possibly missing matplotlib package")
 
-    model = res['model'].replace(' - ', ' + -') 
+    model = res['model']
+
+    if type(model) is dict:
+        firstKey = list(res['model'].keys())[0]
+        model = res['model'][firstKey].replace(' - ', ' + -')
+    else:
+        model = res['model'].replace(' - ', ' + -')
     model = model.split('=')[1]
     model = model.split(' + ')
     if model[0] == ' ':  # if there are more than one terms, the first split is ' '

@@ -23,7 +23,7 @@ from .almerror import almerror, AlamoError, AlamoInputError
 from .almpywriter import almpywriter, almcvwriter, wrapwriter
 from .mapminmax import mapminmax
 from .remapminmax import remapminmax
-from .shared import data, debug
+from .shared import data, debug, initialize
 from .almplot import almplot
 from .multos import deletefile, movefile, catfile, copyfile, has_alamo
 from .examples import sixcamel, ackley, branin

@@ -13,12 +13,13 @@
 import re
 
 
-def almpywriter(data):
-    # This funciton writes the file
+def almpywriter(data, debug):
+    # This function writes the file
     # - <almname>alm.py
     #    y=<fname>.f(X)
     # handle the multiple output
-    if data['opts']['noutputs'] > 1:
+    if data['opts']['noutputs'] > 1 or debug['expandoutput']:
+        print(data['opts']['noutputs'], debug['expandoutput'], debug['outkeys'])
         for output_name, mod_res in data['results']['model'].items():
             almpywriter_help(data, mod_res, output_name)
     else:
@@ -26,10 +27,10 @@ def almpywriter(data):
 
 
 def almpywriter_help(data, mod_res, output_name):
-    # This funciton writes the file
+    # This function writes the file
     # - <almname>alm.py
     #    y=<fname>.f(X)
-    # preliminary formating to get the model ready to write
+    # preliminary formatting to get the model ready to write
     model = mod_res.split('=')[1]
     model = model + ' '
     tlist = ('sin', 'cos', 'log', 'exp')

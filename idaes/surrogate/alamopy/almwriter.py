@@ -58,7 +58,7 @@ def almwriter(data, debug, vargs, kwargs):
                 a.write(arg + ' ' + str(data['stropts'][arg]) + '\n')
 
         # xmax and xmin writing in set4
-        if kwargs['xmin'] is not None:
+        if kwargs.get('xmin', None) is not None:
             for arg in data['set4'].keys():
                 temp = arg + ' '
                 for value in data['set4'][arg]:
