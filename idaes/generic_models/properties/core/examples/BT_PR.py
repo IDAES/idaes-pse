@@ -29,7 +29,7 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
-        IdealBubbleDew
+        LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.RPP as RPP
@@ -112,7 +112,7 @@ configuration = {
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
-    "bubble_dew_method": IdealBubbleDew,
+    "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000,
                                     ("benzene", "toluene"): 0.000,
                                     ("toluene", "benzene"): 0.000,

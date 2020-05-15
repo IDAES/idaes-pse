@@ -389,6 +389,8 @@ class Cubic(EoSBase):
 
     def fug_coeff_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
+        ctype = pobj._cubic_type
+
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
             raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
 
@@ -400,26 +402,205 @@ class Cubic(EoSBase):
         delta = getattr(blk, cname+"_delta")[p, j]
         Z = blk.compress_fact_phase[p]
 
-        EoS_u = EoS_param[pobj._cubic_type]['u']
-        EoS_w = EoS_param[pobj._cubic_type]['w']
-        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
-
-        return exp((b/bm*(Z-1)*(B*EoS_p) - log(Z-B)*(B*EoS_p) +
-                    A*(b/bm - delta) *
-                    log((2*Z + B*(EoS_u + EoS_p))/(2*Z + B*(EoS_u - EoS_p)))) /
-                   (B*EoS_p))
+        return _fug_coeff_method(A, b, bm, B, delta, Z, ctype)
 
     def fug_coeff_phase_comp_eq(blk, p, j, pp):
         return _fug_coeff_phase_comp_eq(blk, p, j, pp)
 
-    # def gibbs_mol_phase(b, p):
-    #     return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
-    #                for j in b.components_in_phase(p))
+    def fug_phase_comp_Tbub(blk, p, j, pp):
+        pobj = blk.params.get_phase(p)
+        ctype = pobj._cubic_type
+        cname = pobj.config.equation_of_state_options["type"].name
 
-    # def gibbs_mol_phase_comp(b, p, j):
-    #     return (b.enth_mol_phase_comp[p, j] -
-    #             b.entr_mol_phase_comp[p, j] *
-    #             b.temperature)
+        if pobj.is_liquid_phase():
+            x = blk.mole_frac_comp
+            xidx = ()
+        elif pobj.is_vapor_phase():
+            x = blk._mole_frac_tbub
+            xidx = pp
+        else:
+            raise BurntToast("{} non-vapor or liquid phase called for bubble "
+                             "temperature calculation. This should never "
+                             "happen, so please contact the IDAES developers "
+                             "with this bug.".format(blk.name))
+
+        def a(k):
+            cobj = blk.params.get_component(k)
+            fw = getattr(blk, cname+"_fw")[k]
+            return (EoS_param[ctype]['omegaA'] *
+                    ((const.gas_constant * cobj.temperature_crit)**2 /
+                     cobj.pressure_crit) *
+                    ((1+fw*(1-sqrt(blk.temperature_bubble[pp] /
+                                   cobj.temperature_crit)))**2))
+
+        kappa = getattr(blk.params, cname+"_kappa")
+        am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
+                     for j in blk.params.component_list)
+                 for i in blk.params.component_list)
+
+        b = getattr(blk, cname+"_b")
+        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+
+        A = am*blk.pressure/(const.gas_constant*blk.temperature_bubble[pp])**2
+        B = bm*blk.pressure/(const.gas_constant*blk.temperature_bubble[pp])
+
+        delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
+                                       for i in blk.params.component_list))
+
+        f = getattr(blk, "_"+cname+"_ext_func_param")
+        if pobj.is_vapor_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+        elif pobj.is_liquid_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+        Z = proc(f, A, B)
+
+        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+
+    def fug_phase_comp_Tdew(blk, p, j, pp):
+        pobj = blk.params.get_phase(p)
+        ctype = pobj._cubic_type
+        cname = pobj.config.equation_of_state_options["type"].name
+
+        if pobj.is_liquid_phase():
+            x = blk._mole_frac_tdew
+            xidx = pp
+        elif pobj.is_vapor_phase():
+            x = blk.mole_frac_comp
+            xidx = ()
+        else:
+            raise BurntToast("{} non-vapor or liquid phase called for bubble "
+                             "temperature calculation. This should never "
+                             "happen, so please contact the IDAES developers "
+                             "with this bug.".format(blk.name))
+
+        def a(k):
+            cobj = blk.params.get_component(k)
+            fw = getattr(blk, cname+"_fw")[k]
+            return (EoS_param[ctype]['omegaA'] *
+                    ((const.gas_constant * cobj.temperature_crit)**2 /
+                     cobj.pressure_crit) *
+                    ((1+fw*(1-sqrt(blk.temperature_dew[pp] /
+                                   cobj.temperature_crit)))**2))
+
+        kappa = getattr(blk.params, cname+"_kappa")
+        am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
+                     for j in blk.params.component_list)
+                 for i in blk.params.component_list)
+
+        b = getattr(blk, cname+"_b")
+        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+
+        A = am*blk.pressure/(const.gas_constant*blk.temperature_dew[pp])**2
+        B = bm*blk.pressure/(const.gas_constant*blk.temperature_dew[pp])
+
+        delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
+                                       for i in blk.params.component_list))
+
+        f = getattr(blk, "_"+cname+"_ext_func_param")
+        if pobj.is_vapor_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+        elif pobj.is_liquid_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+        Z = proc(f, A, B)
+
+        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+
+    def fug_phase_comp_Pbub(blk, p, j, pp):
+        pobj = blk.params.get_phase(p)
+        ctype = pobj._cubic_type
+        cname = pobj.config.equation_of_state_options["type"].name
+
+        if pobj.is_liquid_phase():
+            x = blk.mole_frac_comp
+            xidx = ()
+        elif pobj.is_vapor_phase():
+            x = blk._mole_frac_pbub
+            xidx = pp
+        else:
+            raise BurntToast("{} non-vapor or liquid phase called for bubble "
+                             "temperature calculation. This should never "
+                             "happen, so please contact the IDAES developers "
+                             "with this bug.".format(blk.name))
+
+        a = getattr(blk, cname+"_a")
+        kappa = getattr(blk.params, cname+"_kappa")
+        am = sum(sum(x[xidx, i]*x[xidx, j] *
+                     sqrt(a[i]*a[j])*(1-kappa[i, j])
+                     for j in blk.params.component_list)
+                 for i in blk.params.component_list)
+
+        b = getattr(blk, cname+"_b")
+        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+
+        A = am*blk.pressure_bubble[pp]/(const.gas_constant*blk.temperature)**2
+        B = bm*blk.pressure_bubble[pp]/(const.gas_constant*blk.temperature)
+
+        delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
+                                       for i in blk.params.component_list))
+
+        f = getattr(blk, "_"+cname+"_ext_func_param")
+        if pobj.is_vapor_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+        elif pobj.is_liquid_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+        Z = proc(f, A, B)
+
+        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+
+    def fug_phase_comp_Pdew(blk, p, j, pp):
+        pobj = blk.params.get_phase(p)
+        ctype = pobj._cubic_type
+        cname = pobj.config.equation_of_state_options["type"].name
+
+        if pobj.is_liquid_phase():
+            x = blk._mole_frac_pdew
+            xidx = pp
+        elif pobj.is_vapor_phase():
+            x = blk.mole_frac_comp
+            xidx = ()
+        else:
+            raise BurntToast("{} non-vapor or liquid phase called for bubble "
+                             "temperature calculation. This should never "
+                             "happen, so please contact the IDAES developers "
+                             "with this bug.".format(blk.name))
+
+        a = getattr(blk, cname+"_a")
+        kappa = getattr(blk.params, cname+"_kappa")
+        am = sum(sum(x[xidx, i]*x[xidx, j] *
+                     sqrt(a[i]*a[j])*(1-kappa[i, j])
+                     for j in blk.params.component_list)
+                 for i in blk.params.component_list)
+
+        b = getattr(blk, cname+"_b")
+        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+
+        A = am*blk.pressure_dew[pp]/(const.gas_constant*blk.temperature)**2
+        B = bm*blk.pressure_dew[pp]/(const.gas_constant*blk.temperature)
+
+        delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
+                                       for i in blk.params.component_list))
+
+        f = getattr(blk, "_"+cname+"_ext_func_param")
+        if pobj.is_vapor_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_vap")
+        elif pobj.is_liquid_phase():
+            proc = getattr(blk, "_"+cname+"_proc_Z_liq")
+
+        Z = proc(f, A, B)
+
+        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+
+    def gibbs_mol_phase(b, p):
+        return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
+                    for j in b.components_in_phase(p))
+
+    def gibbs_mol_phase_comp(b, p, j):
+        return (b.enth_mol_phase_comp[p, j] -
+                b.entr_mol_phase_comp[p, j] *
+                b.temperature)
 
 
 def _invalid_phase_msg(name, phase):
@@ -440,10 +621,6 @@ def _fug_coeff_phase_comp_eq(blk, p, j, pp):
     Beq = getattr(blk, "_"+cname+"_B_eq")
     delta_eq = getattr(blk, "_"+cname+"_delta_eq")
 
-    EoS_u = EoS_param[pobj._cubic_type]['u']
-    EoS_w = EoS_param[pobj._cubic_type]['w']
-    EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
-
     f = getattr(blk, "_"+cname+"_ext_func_param")
     if pobj.is_vapor_phase():
         proc = getattr(blk, "_"+cname+"_proc_Z_vap")
@@ -453,9 +630,15 @@ def _fug_coeff_phase_comp_eq(blk, p, j, pp):
     def Zeq(p):
         return proc(f, Aeq[pp, p], Beq[pp, p])
 
-    return exp((b[j]/bm[p]*(Zeq(p)-1)*(Beq[pp, p]*EoS_p) -
-                log(Zeq(p)-Beq[pp, p])*(Beq[pp, p]*EoS_p) +
-                Aeq[pp, p]*(b[j]/bm[p] - delta_eq[pp, p, j]) *
-                log((2*Zeq(p) + Beq[pp, p]*(EoS_u + EoS_p)) /
-                    (2*Zeq(p) + Beq[pp, p]*(EoS_u - EoS_p)))) /
-               (Beq[pp, p]*EoS_p))
+    return _fug_coeff_method(Aeq[pp, p], b[j], bm[p], Beq[pp, p],
+                             delta_eq[pp, p, j], Zeq(p), pobj._cubic_type)
+
+
+def _fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
+    u = EoS_param[cubic_type]['u']
+    w = EoS_param[cubic_type]['w']
+    p = sqrt(u**2 - 4*w)
+
+    return exp((b/bm*(Z-1)*(B*p) - log(Z-B)*(B*p) +
+                A*(b/bm - delta)*log((2*Z + B*(u + p))/(2*Z + B*(u - p)))) /
+               (B*p))

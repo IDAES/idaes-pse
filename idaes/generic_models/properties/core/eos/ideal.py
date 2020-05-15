@@ -85,24 +85,10 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     def fug_phase_comp(b, p, j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase():
-            return b.pressure
-        elif pobj.is_liquid_phase():
-            return get_method(b, "pressure_sat_comp", j)(
-                       b, cobj(b, j), b.temperature)
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return _fug_phase_comp(b, p, j)
 
     def fug_phase_comp_eq(b, p, j, pp):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase():
-            return b.pressure
-        elif pobj.is_liquid_phase():
-            return get_method(b, "pressure_sat_comp", j)(
-                       b, cobj(b, j), b._teq[pp])
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return _fug_phase_comp(b, p, j)
 
     def fug_coeff_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
@@ -116,15 +102,17 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return 1
 
-    # def fug_phase_comp_Tbub(b, p, j, pp):
-    #     pobj = b.params.get_phase(p)
-    #     if pobj.is_vapor_phase():
-    #         return b.pressure
-    #     elif pobj.is_liquid_phase():
-    #         return get_method(b, "pressure_sat_comp", j)(
-    #                    b, cobj(b, j), b.temperature)
-    #     else:
-    #         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    def fug_phase_comp_Tbub(b, p, j, pp):
+        return _fug_phase_comp(b, p, j)
+
+    def fug_phase_comp_Tdew(b, p, j, pp):
+        return _fug_phase_comp(b, p, j)
+
+    def fug_phase_comp_Pbub(b, p, j, pp):
+        return _fug_phase_comp(b, p, j)
+
+    def fug_phase_comp_Pdew(b, p, j, pp):
+        return _fug_phase_comp(b, p, j)
 
     def gibbs_mol_phase(b, p):
         return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
@@ -140,3 +128,14 @@ def _invalid_phase_msg(name, phase):
     return ("{} received unrecognised phase name {}. Ideal property "
             "libray only supports Vap and Liq phases."
             .format(name, phase))
+
+
+def _fug_phase_comp(b, p, j):
+    pobj = b.params.get_phase(p)
+    if pobj.is_vapor_phase():
+        return b.pressure
+    elif pobj.is_liquid_phase():
+        return get_method(b, "pressure_sat_comp", j)(
+                   b, cobj(b, j), b.temperature)
+    else:
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))

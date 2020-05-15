@@ -75,6 +75,6 @@ class EoSBase():
 
 
 def _msg(b, attr):
-    return ("{} Equation of State module has not implemented a method for {}."
+    return ("{} Equation of State module has not implemented a method for {}. "
             "Please contact the EoS developer or use a different module."
             .format(b.name, attr))

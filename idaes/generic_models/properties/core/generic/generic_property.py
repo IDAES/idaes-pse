@@ -947,7 +947,7 @@ class GenericStateBlockData(StateBlockData):
             b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
             b.del_component(b.temperature_bubble)
-            b.del_component(b.mole_frac_tbub)
+            b.del_component(b._mole_frac_tbub)
             raise
 
     def _temperature_dew(b):
@@ -970,7 +970,7 @@ class GenericStateBlockData(StateBlockData):
             b.params.config.bubble_dew_method.temperature_dew(b)
         except AttributeError:
             b.del_component(b.temperature_dew)
-            b.del_component(b.mole_frac_tdew)
+            b.del_component(b._mole_frac_tdew)
             raise
 
     def _pressure_bubble(b):
@@ -993,7 +993,7 @@ class GenericStateBlockData(StateBlockData):
             b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
             b.del_component(b.pressure_bubble)
-            b.del_component(b.mole_frac_pbub)
+            b.del_component(b._mole_frac_pbub)
             raise
 
     def _pressure_dew(b):
@@ -1016,7 +1016,7 @@ class GenericStateBlockData(StateBlockData):
             b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:
             b.del_component(b.pressure_dew)
-            b.del_component(b.mole_frac_pdew)
+            b.del_component(b._mole_frac_pdew)
             raise
 
     # -------------------------------------------------------------------------
