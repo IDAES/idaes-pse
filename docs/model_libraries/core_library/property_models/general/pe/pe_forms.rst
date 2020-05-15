@@ -11,4 +11,4 @@ Fugacity
 
 Fugacity of each component must be equal between interacting phases
 
-.. math:: \Phi_{p1, j} = \Phi_{p2, j}
+.. math:: x_{p1, j} \times f_{p1, j} = x_{p2, j} \times f_{p2, j}

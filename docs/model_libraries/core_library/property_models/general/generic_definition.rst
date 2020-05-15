@@ -9,6 +9,15 @@ Introduction
 
 In order to create and use a property package using the IDAES Generic Property Package Framework, users must provide a definition for the material they wish to model. The framework supports two approaches for defining the property package, which are described below, both of which are equivalent in practice.
 
+Property Parameters
+-------------------
+
+Thermophysical property models all depend upon a set of parameters to describe the fundamental behavior of the system. For the purposes of the Generic Property Framework, these parameters are grouped into three types:
+
+1. Component-specific parameters - these are parameters that are specific to a given chemical species, and are defined in the `parameter_data` argument for each component and stored in the associated `Component` block. Examples of these parameters include those used to calculate the ideal, pure component properties.
+2. Phase-specific parameters - these are parameters that are specific to a given phase, and are defined in the `parameter_data` argument for each phase and stored in the associated `Phase` block. These types of parameters are relatively uncommon.
+3. Package-wide parameters - these are parameters that are not necessarily confined to a single phase or species, and are defined in the `parameter_data` argument of the overall property package and stored in the main `Physical Parameter` block. Examples of these types of parameters include binary interaction parameters, which involve multiple species and can be used in multiple phases.
+
 Config Dictionary
 -----------------
 
