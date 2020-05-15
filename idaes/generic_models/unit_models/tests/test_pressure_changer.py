@@ -24,6 +24,8 @@ from pyomo.environ import (ConcreteModel,
                            value,
                            Var)
 
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -51,7 +53,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+                                     PhysicalParameterTestBlock,
+                                     initialization_tester)
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 
 
@@ -245,23 +248,7 @@ class TestBTX_isothermal(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
-        orig_fixed_vars = fixed_variables_set(btx)
-        orig_act_consts = activated_constraints_set(btx)
-
-        btx.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(btx) == 0
-
-        fin_fixed_vars = fixed_variables_set(btx)
-        fin_act_consts = activated_constraints_set(btx)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -383,23 +370,7 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, iapws):
-        orig_fixed_vars = fixed_variables_set(iapws)
-        orig_act_consts = activated_constraints_set(iapws)
-
-        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(iapws) == 0
-
-        fin_fixed_vars = fixed_variables_set(iapws)
-        fin_act_consts = activated_constraints_set(iapws)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -588,23 +559,7 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, sapon):
-        orig_fixed_vars = fixed_variables_set(sapon)
-        orig_act_consts = activated_constraints_set(sapon)
-
-        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(sapon) == 0
-
-        fin_fixed_vars = fixed_variables_set(sapon)
-        fin_act_consts = activated_constraints_set(sapon)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -686,6 +641,7 @@ class TestTurbine(object):
             ThermodynamicAssumption.isentropic
         assert m.fs.unit.config.property_package is m.fs.properties
 
+
 class TestCompressor(object):
     def test_config(self):
         m = ConcreteModel()
@@ -712,6 +668,7 @@ class TestCompressor(object):
             ThermodynamicAssumption.isentropic
         assert m.fs.unit.config.property_package is m.fs.properties
 
+
 class TestPump(object):
     def test_config(self):
         m = ConcreteModel()
@@ -737,3 +694,106 @@ class TestPump(object):
         assert m.fs.unit.config.thermodynamic_assumption == \
             ThermodynamicAssumption.pump
         assert m.fs.unit.config.property_package is m.fs.properties
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+class Test_costing(object):
+    def test_pump(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.pump,
+                "compressor": True})
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(10000)
+        m.fs.unit.inlet.enth_mol[0].fix(4000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.deltaP.fix(50000)
+        m.fs.unit.efficiency_pump.fix(0.9)
+        m.fs.unit.initialize()
+        m.fs.unit.work_fluid.display()
+
+        assert degrees_of_freedom(m) == 0
+
+        m.fs.unit.get_costing(pump_type='centrifugal',
+                              Mat_factor='nickel',
+                              pump_motor_type_factor='enclosed')
+        calculate_variable_from_constraint(
+                    m.fs.unit.costing.motor_purchase_cost,
+                    m.fs.unit.costing.cp_motor_cost_eq)
+
+        calculate_variable_from_constraint(
+                m.fs.unit.costing.pump_purchase_cost,
+                m.fs.unit.costing.cp_pump_cost_eq)
+
+        calculate_variable_from_constraint(
+                m.fs.unit.costing.purchase_cost,
+                m.fs.unit.costing.total_cost_eq)
+
+        results = solver.solve(m, tee=True)
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(70141.395, 1e-5)
+
+    def test_compressor(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption":
+                ThermodynamicAssumption.isentropic,
+                "compressor": True})
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(10000)
+        m.fs.unit.inlet.enth_mol[0].fix(4000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+        m.fs.unit.deltaP.fix(500000)
+        m.fs.unit.efficiency_isentropic.fix(0.9)
+        m.fs.unit.initialize()
+        m.fs.unit.work_mechanical.display()
+        assert degrees_of_freedom(m) == 0
+        m.fs.unit.get_costing(mover_type="compressor")
+        calculate_variable_from_constraint(
+                    m.fs.unit.costing.purchase_cost,
+                    m.fs.unit.costing.cp_cost_eq)
+        results = solver.solve(m, tee=True)
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(334540.7, 1e-5)
+
+    def test_turbine(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption":
+                ThermodynamicAssumption.isentropic,
+                "compressor": False})
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        Pout = 700000  # Pa
+        hin = iapws95.htpx(Tin, Pin)
+        m.fs.unit.inlet.enth_mol[0].fix(hin)
+        m.fs.unit.inlet.pressure[0].fix(Pin)
+
+        m.fs.unit.deltaP.fix(Pout - Pin)
+        m.fs.unit.efficiency_isentropic.fix(0.9)
+        m.fs.unit.initialize()
+
+        m.fs.unit.get_costing()
+    #    calculate_variable_from_constraint(
+    #                m.fs.unit.costing.base_cost,
+    #                m.fs.unit.costing.cb_cost_eq)
+        calculate_variable_from_constraint(
+                    m.fs.unit.costing.purchase_cost,
+                    m.fs.unit.costing.cp_cost_eq)
+        assert degrees_of_freedom(m) == 0
+        results = solver.solve(m, tee=True)
+        assert m.fs.unit.costing.purchase_cost.value ==\
+            pytest.approx(213129.6059, 1e-5)

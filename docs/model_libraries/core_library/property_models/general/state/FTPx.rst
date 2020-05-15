@@ -59,14 +59,14 @@ If the property package supports only one phase:
 If the property package supports only two phases, the Rachford-Rice formulation is used:
 
 .. math:: \sum_p{F_{mol, p}} = F_{mol}
-.. math:: F_{mol} \times x_{j} = sum_p{F_{mol, p} \times x_{p, j}} \text{ for all }j
+.. math:: F_{mol} \times x_{j} = \sum_p{F_{mol, p} \times x_{p, j}} \text{ for all }j
 .. math:: \sum_j{x_{\text{phase 1}, j}} - \sum_j{x_{\text{phase 2}, j}} = 0
 .. math:: \psi_p \times F_{mol} = F_{mol, p} \text{ for all }p
 
 If the property package supports more than two phases, the following general formulation is used:
 
-.. math:: F_{mol} \times x_{j} = sum_p{F_{mol, p} \times x_{p, j}} \text{ for all }j
-.. math:: sum_j{x_{p, j}} = 1 \text{ for all }p
+.. math:: F_{mol} \times x_{j} = \sum_p{F_{mol, p} \times x_{p, j}} \text{ for all }j
+.. math:: \sum_j{x_{p, j}} = 1 \text{ for all }p
 .. math:: \psi_p \times F_{mol} = F_{mol, p} \text{ for all }p
 
 Default Balance Types and Flow Basis
