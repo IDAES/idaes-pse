@@ -8,16 +8,14 @@ RUN echo "\n____ INSTALL PACKAGES ___\n" \
     && apt-get -qq -y upgrade \
     && apt-get -qq -y install curl bzip2 locales \
     && apt-get -qq -y install build-essential libgfortran4 liblapack-dev \
-    && apt-get -qq -y install  openssh-client git
+    && apt-get -qq -y install  openssh-client git \
+    && apt-get -qq -y autoremove \
+    && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log
 
 RUN echo "\n___ SET LOCALE AND TIMEZONE ___\n" \
     && echo "Etc/UTC" > /etc/timezone \
     && update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8
-
-#    && apt-get -qq -y autoremove \
-#    && apt-get autoclean \
-#    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log \
-
 
 RUN useradd --no-log-init --create-home --shell /bin/bash $IUSER
 
