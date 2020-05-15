@@ -31,8 +31,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-def read_data(fname):
-    mw = 0.0440098
+def read_data(fname, mw):
     dfile = os.path.join(this_file_dir(), fname)
     data = {
         "T": [], # T in K col 0
@@ -68,7 +67,7 @@ def read_data(fname):
             data["phase"].append(row[13])
     return data
 
-def read_sat_data(fname):
+def read_sat_data(fname, mw):
     dfile = os.path.join(this_file_dir(), fname)
     data = {}
     data["T"] = [] # T in K col 0
@@ -183,6 +182,7 @@ class TestHelm(object):
     mw = 0.0440098
     Tc = 304.128 #
     Pc = 7377300 # Pa
+    rhoc = 467.6 # kg/m3
     Pmin = 1000 # Pa
     Pmax = 100*Pc # Pa
     Tmax = 800 # K
@@ -199,6 +199,53 @@ class TestHelm(object):
         model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
+    def tst_hs_state(self, model):
+        """test development of a p(h, s) function """
+        mw = self.mw
+        data = read_data(self.pdata, self.mw)
+        model.te.add_funcs(
+            names=[
+                "func_h", "func_s"
+            ]
+        )
+
+
+        from scipy.optimize import fsolve
+
+        data = read_data(self.pdata, self.mw)
+        for i, T in enumerate(data["T"]):
+            p = data["P"][i]
+            h = data["H"][i]
+            s = data["S"][i]
+            u = data["U"][i]
+            rho = data["rho"][i]
+            if data["phase"][i] == "vapor":
+                x = 1
+            else:
+                x = 0
+
+            if p < self.Pmin or p > self.Pmax:
+                continue
+            if T < self.Tmin or T > self.Tmax:
+                continue
+
+            def f(a):
+                _delta = a[0]
+                _tau = a[1]
+                fh = (value(model.func_h(_delta, _tau)) - h/mw/1000)
+                fs = (value(model.func_s(_delta, _tau)) - s/mw/1000)
+                return fh, fs
+
+            x0 = [rho/self.rhoc, self.Tc/T]
+            print("solve")
+            print(f(x0))
+            xs = fsolve(f, x0)
+            print(xs)
+            print(f(xs))
+            print("T = {}, {}".format(self.Tc/xs[1], T))
+            #assert sum(map(abs, f)) < 1e-5
+        assert False
+
     def test_external_memo(self, model):
         """ This tests the memoization in the external functions.  There is a
         special set of functions that return the memoized value of a function.
@@ -214,7 +261,7 @@ class TestHelm(object):
             ]
         )
 
-        data = read_data(self.pdata)
+        data = read_data(self.pdata, self.mw)
         il = None
         ig = None
         for i, phase in enumerate(data["phase"]):
@@ -233,6 +280,7 @@ class TestHelm(object):
 
             assert (value(model.memo_test_tau(h/mw/1000, p/1000)) ==
                 pytest.approx(Tc/T, rel=0.10))
+            binary_derivative_test(f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
 
 
     def test_thero_expression_writter(self, model):
@@ -246,7 +294,7 @@ class TestHelm(object):
             ]
         )
 
-        data = read_data(self.pdata)
+        data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             p = data["P"][i]
             h = data["H"][i]
@@ -264,11 +312,6 @@ class TestHelm(object):
 
             # if it fails I want to know where so pring T and P
             print("T = {}, P = {}".format(T, p))
-
-
-
-            #assert value(model.memo_test_tau(h/mw/1000, p/1000)) == pytest.approx(Tc/T, rel=0.05)
-
 
             # Test state variable with P in the set, these are pretty reliable
             assert value(te.s(h=h, p=p)) == pytest.approx(s, rel=0.05)
@@ -293,12 +336,11 @@ class TestHelm(object):
         a little more on their own.
         """
         te = model.te
-        data = read_data(self.pdata)
+        data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
                 rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
-
 
     def test_solve_liquid_density(self, model):
         """ The density calculations should be tested by the thermo expression
@@ -306,7 +348,7 @@ class TestHelm(object):
         a little more on their own.
         """
         te = model.te
-        data = read_data(self.pdata)
+        data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
                 rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
@@ -320,7 +362,7 @@ class TestHelm(object):
         # test saturated liquid and vapor density solve (critical part of the
         # phase equlibrium calc)
         te = model.te
-        data = read_sat_data(self.pdata_sat)
+        data = read_sat_data(self.pdata_sat, self.mw)
         for i, T in enumerate(data["T"]):
             if T > 304.128:
                 # if this goes over the critical temperature this makes no sense
@@ -354,12 +396,11 @@ class TestHelm(object):
         calculation tests.
         """
         def tau(_T):
-            return 304.128/_T
+            return self.Tc/_T
         def delta(_rho):
-            return _rho/467.6
+            return _rho/self.rhoc
 
         def check(_T, _rho, func, val, rel=1e-4):
-            print(func.name)
             val = pytest.approx(val, rel=rel)
             assert value(func(delta(_rho), tau(_T))) == val
 
@@ -377,8 +418,8 @@ class TestHelm(object):
             ]
         )
 
-        data = read_data(self.pdata)
-        mw = 0.0440098
+        data = read_data(self.pdata, self.mw)
+        mw = self.mw
         for i, T in enumerate(data["T"]):
             p = data["P"][i]/1000
             u = data["U"][i]/1000/mw
