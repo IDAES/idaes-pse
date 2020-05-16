@@ -231,6 +231,11 @@ class HelmholtzThermoExpressions(object):
         )
 
     def basic_calculations(self, h=None, s=None, p=None, T=None, u=None, x=None):
+        """This function is called as this basis for most thermo expression writer
+        functions.  It takes the given state variables and returns expressions for
+        liqid density, vapor density, vapor fraction and temperature, which can be
+        used to write an expression for any thermo quantity.
+        """
         mw = self.param.mw
         # 1.) convert units to those expected by external functions
         if h is not None:
@@ -296,7 +301,7 @@ class HelmholtzThermoExpressions(object):
         delta_liq = blk.func_delta_liq(p, tau)
         delta_vap = blk.func_delta_vap(p, tau)
 
-        # 5.) From here its straight forward to caculate any property
+        # 5.) From here its straight forward to calculate any property
         return blk, delta_liq, delta_vap, tau, x
 
     def s(self, **kwargs):
