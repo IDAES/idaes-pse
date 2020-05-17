@@ -78,16 +78,21 @@ class GeneralSurrogate(Surrogate):
 
         modeler_alamo = Alamopy(**self._alamo_settings)
         modeler_alamo.regressed_data(self._rdata_in, self._rdata_out)
-        modeler_alamo.build_model()
-        self._models.append(modeler_alamo)
+        has_alamo_flag = alamopy.multos.has_alamo()
+        if has_alamo_flag:
+            modeler_alamo.build_model()
+            self._models.append(modeler_alamo)
+        else:
+            print("ALAMO is not installed, and wasn't used for the General Surrogate.")
 
         _alamo_settings_rbf = self._alamo_settings
         if self.config['rbf']:
             _alamo_settings_rbf['grbfcns'] = self.config['rbf']
             modeler_alamo_rbf = Alamopy(**_alamo_settings_rbf)
             modeler_alamo_rbf.regressed_data(self._rdata_in, self._rdata_out)
-            modeler_alamo_rbf.build_model()
-            self._models.append(modeler_alamo_rbf)
+            if has_alamo_flag:
+                modeler_alamo_rbf.build_model()
+                self._models.append(modeler_alamo_rbf)
 
         best_metric = 10e16
         best_config = {}
@@ -255,6 +260,9 @@ class Alamopy(Surrogate):
         else:
             model_string = res['model'].split('=')[1]
         model_symp = parse_expr(model_string.replace("^", "**"), local_dict=sympy_locals)
+        print("Symbol Model", model_symp)
+        for obj in obj_map.sympy2pyomo.items():
+            print(obj)
         model_pyomo = sympy2pyomo_expression(model_symp, obj_map)
         self._model = model_pyomo
 

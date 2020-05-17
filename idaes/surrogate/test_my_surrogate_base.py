@@ -14,6 +14,8 @@ from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression,
                                 Alamopy, Metrics, GeneralSurrogate
 from pyomo.environ import Var, ConcreteModel, Objective
 
+import idaes.surrogate.alamopy as alamopy
+
 @pytest.fixture
 def branin_dataset():
     def branin_function(x1, x2):
@@ -44,16 +46,23 @@ def test_alamopy(branin_dataset):
     modeler = Alamopy(**alamo_settings)
 
     modeler.regressed_data(x, y)
-    modeler.build_model()
+    
+    has_alamo_flag = alamopy.multos.has_alamo()
+    if has_alamo_flag:
 
-    print(modeler.get_results())
-    m.obj = Objective(expr=modeler._model)
-    m.pprint()
+        modeler.build_model()
 
-    modeler.save_results('results.pickle', overwrite=True)
+        print(modeler.get_results())
+        m.obj = Objective(expr=modeler._model)
+        m.pprint()
 
-    check_metrics(modeler.get_results())
-    # check_model_returns(modeler.get_model())
+        modeler.save_results('results.pickle', overwrite=True)
+
+        check_metrics(modeler.get_results())
+        # check_model_returns(modeler.get_model())
+    else:
+        with pytest.raises(alamopy.AlamoError):
+            modeler.build_model()
 
     return True
 
@@ -120,29 +129,29 @@ def test_pysmo_poly(branin_dataset):
 
     return True
 
-def test_general_interface(branin_dataset):
-    m, x, y = branin_dataset
-
-    general_settings = {'linear':True,
-                        # 'ratio': True,
-                        'pyomo_vars': [m.x[1], m.x[2]],
-                        'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])',
-                                                     'pyo.exp(ft[1])'],
-                        'maximum_polynomial_order': 6,
-                        'multinomials': True,
-                        'regularization': True}
-
-    modeler = GeneralSurrogate(**general_settings)
-    #
-    # modeler.regressed_data(x, y)
-    # modeler.build_model()
-    #
-    # m.obj = Objective(expr=modeler._model)
-    # m.pprint()
-    #
-    # modeler.save_results('results.pickle', overwrite=True)
-    #
-    # check_metrics(modeler.get_results())
+# def test_general_interface(branin_dataset):
+#     m, x, y = branin_dataset
+#
+#     general_settings = {'linear':True,
+#                         # 'ratio': True,
+#                         'pyomo_vars': [m.x[1], m.x[2]],
+#                         'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])',
+#                                                      'pyo.exp(ft[1])'],
+#                         'maximum_polynomial_order': 6,
+#                         'multinomials': True,
+#                         'regularization': True}
+#
+#     modeler = GeneralSurrogate(**general_settings)
+#
+#     modeler.regressed_data(x, y)
+#     modeler.build_model()
+#
+#     m.obj = Objective(expr=modeler._model)
+#     m.pprint()
+#
+#     modeler.save_results('results.pickle', overwrite=True)
+#
+#     check_metrics(modeler.get_results())
 
 
 # Interface consistency
