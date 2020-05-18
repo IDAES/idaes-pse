@@ -1100,6 +1100,8 @@ class NMPCSim(object):
         model._NMPC_NAMESPACE.fixed_vars = NMPCVarGroup(fixed_vars, time)
         model._NMPC_NAMESPACE.n_fixed_vars = len(fixed_vars)
 
+        model._NMPC_NAMESPACE.variables_categorized = True
+
 
     def build_variable_locator(self, model, category_dict, ic_vars=[]):
         """Constructs a ComponentMap mapping each VarData object
