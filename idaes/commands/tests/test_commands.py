@@ -116,15 +116,21 @@ def test_examples_cli_copy(runner, random_tempdir):
 
 # non-CLI
 
+@pytest.mark.nocircleci()  # goes out to network
+def test_examples_n():
+    target_dir = str(uuid.uuid4())  # pick something that won't exist
+    retcode = subprocess.call(["idaes", "get-examples", "-N", "-d", target_dir])
+    assert retcode == 255  # result of sys.exit(-1)
 
+@pytest.mark.nocircleci()  # goes out to network
 def test_examples_list_releases():
     releases = examples.get_releases(True)
     assert len(releases) > 0
     examples.print_releases(releases, True)
 
 
+@pytest.mark.nocircleci()  # goes out to network
 def test_examples_download_bad_version():
-    releases = [examples.Release("baddate", "badtag", "info")]
     assert pytest.raises(examples.DownloadError, examples.download, Path("."), "1.2.3")
 
 
@@ -355,6 +361,9 @@ def test_illegal_dirs():
         finally:
             (root / ".git").rmdir()
 
+def test_get_examples_version():
+    assert examples.get_examples_version("1.5.0") == "1.5.1"
+    assert examples.get_examples_version("foo") == None
 
 test_cell_nb = {
     "cells": [
@@ -501,3 +510,4 @@ def test_strip_test_cells_nosuffix(remove_cells_notebooks_nosuffix):
                     if examples.REMOVE_CELL_TAG in tags:
                         n += 1
                 assert n > 0  # tag still there
+

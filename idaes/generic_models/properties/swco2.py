@@ -59,6 +59,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     _htpx,
     HelmholtzParameterBlockData,
     HelmholtzStateBlockData,
+    HelmholtzThermoExpressions,
     PhaseType,
     StateVars,
     _StateBlock,

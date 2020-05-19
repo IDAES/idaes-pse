@@ -273,7 +273,7 @@ class TestIAPWS(object):
 
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(iapws.fs.unit.liq_outlet.pressure[0]))
-        assert (pytest.approx(7549.4, abs=1e-1) ==
+        assert (pytest.approx(7549.4, abs=1) ==
                 value(iapws.fs.unit.liq_outlet.enth_mol[0]))
         assert (pytest.approx(59.532, abs=1e-3) ==
                 value(iapws.fs.unit.liq_outlet.flow_mol[0]))
