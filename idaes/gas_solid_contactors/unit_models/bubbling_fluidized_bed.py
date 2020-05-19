@@ -33,7 +33,6 @@ Gas feeds into emulsion region before the excess enters into the bubble region
 from __future__ import division
 
 # Import Python libraries
-from math import pi
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
@@ -58,6 +57,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
+from idaes.core.util.constants import Constants as constants
 import idaes.logger as idaeslog
 
 __author__ = "Chinedu Okoli"
@@ -71,29 +71,9 @@ class BubblingFluidizedBedData(UnitModelBlockData):
     """Standard Bubbling Fluidized Bed Unit Model Class."""
 
     # Create template for unit level config arguments
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
 
     # Unit level config arguments
-    CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
     CONFIG.declare("finite_elements", ConfigValue(
         default=10,
         domain=int,
@@ -182,7 +162,7 @@ discretizing length domain (default=3)"""))
         by time and space.}"""))
 
     # Create template for phase/side specific config arguments
-    _SideTemplate = ConfigBlock()
+    _SideTemplate = UnitModelBlockData.CONFIG()
 
     # Populate the side template to default values
     _SideTemplate.declare("momentum_balance_type", ConfigValue(
@@ -278,8 +258,6 @@ see reaction package for documentation.}"""))
         # Call UnitModel.build to build default attributes
         super(BubblingFluidizedBedData, self).build()
 
-    # =========================================================================
-        """ Set argument values for gas and solid phases"""
         # Consistency check for transformation method and transformation scheme
         if (self.config.transformation_method == "dae.finite_difference" and
                 self.config.transformation_scheme is None):
@@ -619,7 +597,7 @@ see reaction package for documentation.}"""))
                                  reaction_package.rate_reaction_idx)
 
         # Declare Imutable Parameters
-        self.pi = Param(initialize=pi, doc="pi")
+        self.pi = constants.pi
         self.gc = Param(default=9.81,
                         doc='Gravitational Acceleration Constant [m^2/s]')
         self._eps = Param(default=1e-8,
@@ -1471,7 +1449,6 @@ see reaction package for documentation.}"""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialisation routine
-
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
@@ -1480,10 +1457,10 @@ see reaction package for documentation.}"""))
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
-#
-#        Returns:
-#            None
-#        """
+
+        Returns:
+            None
+        """
         # Set logger for initialization and solve
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1499,37 +1476,21 @@ see reaction package for documentation.}"""))
         # In control volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
-        geometry_constraints_list = ["orifice_area", "bed_area_eqn",
-                                     "bubble_area", "gas_emulsion_area",
-                                     "solid_emulsion_area", "bubble_length",
-                                     "gas_emulsion_length",
-                                     "solid_emulsion_length"]
+        geometry_constraints_terms = ["orifice_area", "bed_area_eqn",
+                                      "bubble_area", "gas_emulsion_area",
+                                      "solid_emulsion_area", "bubble_length",
+                                      "gas_emulsion_length",
+                                      "solid_emulsion_length"]
+        endswith_terms = ("_disc_eq", "linking_constraint",
+                          "linking_constraints", "_holdup_calculation")
+        startswith_terms = ("properties", "gas_inlet_block",
+                            "gas_outlet_block", "solid_inlet_block",
+                            "solid_outlet_block")
 
-        def constraints_generator(obj):
-            for c in obj.component_objects(Constraint, descend_into=True):
-                if not c.local_name.endswith("_disc_eq") \
-                    and \
-                    "_linking_constraint" not in c.local_name \
-                    and not \
-                    c.parent_block().local_name.startswith("properties") \
-                    and not \
-                        c.parent_block().local_name.startswith(
-                                "gas_inlet_block") \
-                    and not \
-                        c.parent_block().local_name.startswith(
-                                "solid_inlet_block") \
-                    and not \
-                        c.parent_block().local_name.startswith(
-                                "gas_outlet_block") \
-                    and not \
-                        c.parent_block().local_name.startswith(
-                                "solid_outlet_block") \
-                    and \
-                        "_holdup_calculation" not in c.local_name:
-                    yield c
-
-        for c in constraints_generator(blk):
-            if (c.local_name not in geometry_constraints_list):
+        for c in blk.component_objects(Constraint, descend_into=True):
+            if not c.parent_block().local_name.startswith(startswith_terms) \
+                and not c.local_name.endswith(endswith_terms) \
+                    and c.local_name not in geometry_constraints_terms:
                 c.deactivate()
 
         # Deactivate outlet blocks (activate at last initialization solve)
@@ -2052,7 +2013,7 @@ see reaction package for documentation.}"""))
             _log.warning('{} Initialisation Step 6 Failed.'
                          .format(blk.name))
 
-    def _results_plot_FR(blk):
+    def results_plot_FR(blk):
         '''
         Plot method for common bubbling fluidized bed variables
 

@@ -304,166 +304,171 @@ Gas emulsion pressure at inlet:
 
 Total gas balance at inlet:
 
-.. math:: F_{mol,b,t,0} + F_{mol,ge,t,0} = F_{mol,g,inlet,t}
+.. math:: F_{mol,b,t,0} + F_{mol,ge,t,0} = F_{mol,g,t,inlet}
 
 Superficial gas velocity at inlet:
 
-.. math:: v_{g,t,0} = \frac{F_{mol,g,inlet,t}}{C_{ge,total,t,0} A_{bed}} 
+.. math:: v_{g,t,0} = \frac{F_{mol,g,t,inlet}}{C_{ge,total,t,0} A_{bed}} 
 
 Bubble mole fraction at inlet:
 
-.. math:: y_{b,t,0,j} = y_{g,inlet,t,j}
+.. math:: y_{b,t,0,j} = y_{g,t,inlet,j}
 
 Gas emulsion mole fraction at inlet:
 
-.. math:: y_{ge,t,0,j} = y_{g,inlet,t,j}
+.. math:: y_{ge,t,0,j} = y_{g,t,inlet,j}
 
 Solid emulsion mass flow at inlet:
 
     *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
-    .. math:: F_{mass,se,t,x} = F_{mass,s,inlet,t}
+    .. math:: F_{mass,se,t,x} = F_{mass,s,t,inlet}
 
 Solid emulsion mass fraction at inlet:
 
     *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
-    .. math:: x_{se,t,x} = x_{s,inlet,t} 
+    .. math:: x_{se,t,x} = x_{s,t,inlet} 
 
 *if 'energy_balance_type' is not 'EnergyBalanceType.none':*
 
     Gas inlet energy balance:
 
-    .. math:: H_{b,t,0} + H_{ge,t,0} = H_{g,inlet,t}
+    .. math:: H_{b,t,0} + H_{ge,t,0} = H_{g,t,inlet}
 
     Gas emulsion temperature at inlet:
 
-    .. math:: T_{ge,t,0} = T_{g,inlet,t} 
+    .. math:: T_{ge,t,0} = T_{g,t,inlet} 
 
 *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
     Solid inlet energy balance:
 
-    .. math:: H_{se,t,x} = H_{s,inlet,t} 
+    .. math:: H_{se,t,x} = H_{s,t,inlet} 
 
 **Outlet boundary conditions**
 
 Gas emulsion pressure at outlet:
 
-.. math:: P_{g,outlet,t} = P_{ge,t,1} 
+.. math:: P_{g,t,outlet} = P_{ge,t,1} 
 
 Total gas balance at outlet:
 
-.. math:: F_{mol,g,outlet,t} = F_{mol,b,t,1} + F_{mol,ge,t,1}
+.. math:: F_{mol,g,t,outlet} = F_{mol,b,t,1} + F_{mol,ge,t,1}
 
 Solid outlet material balance:
 
     *if 'flow_type' is 'co_current' x = 1 else if 'flow_type' is 'counter_current' x = 0:*
 
-    .. math:: F_{mass,s,outlet,t} = F_{mass,se,t,x}
+    .. math:: F_{mass,s,t,outlet} = F_{mass,se,t,x}
 
 *if 'energy_balance_type' is not 'EnergyBalanceType.none':*
 
     Gas outlet energy balance:
 
-    .. math:: H_{g,outlet,t} = H_{b,t,1} + H_{ge,t,1}
+    .. math:: H_{g,t,outlet} = H_{b,t,1} + H_{ge,t,1}
 
     Solid outlet energy balance:
 
         *if 'flow_type' is 'co_current' x = 1 else if 'flow_type' is 'counter_current' x = 0:*
 
-        .. math:: H_{s,outlet,t} = H_{se,t,x}
+        .. math:: H_{s,t,outlet} = H_{se,t,x}
 
 Variables
 ---------
 
 List of variables in the BFBR model:
 
-=========================== ============================= ===============================================================
-Variable                    Name                          Notes
-=========================== ============================= ===============================================================
-:math:`L_{bed}`             bed_height                    Bed height
-:math:`D_{bed}`             bed_diameter                  Reactor diameter
-:math:`A_{bed}`             bed_area                      Reactor cross-sectional area
-:math:`A_{or}`              area_orifice                  Distributor plate area per orifice
-:math:`n_{or}`              number_orifice                Number of distributor plate orifices per area
-:math:`\delta_{t,x}`        delta                         Volume fraction occupied by bubble region
-:math:`\delta_{e,t,x}`      delta_e                       Volume fraction occupied by emulsion region                           
-:math:`\varepsilon_{t,x}`   voidage_average               Cross-sectional average voidage
-:math:`\varepsilon_{e,t,x}` voidage_emulsion              Emulsion region voidage fraction
-:math:`\gamma_{t,x}`        bubble_growth_coeff           Bubble growth coefficient
-:math:`d_{bm,t,x}`          bubble_diameter_max           Maximum theoretical bubble diameter 
-:math:`d_{b,t,x}`           bubble_diameter               Average bubble diameter
-:math:`v_{g,t,x}`           velocity_superficial_gas      Gas superficial velocity  
-:math:`v_{ge,t,x}`          velocity_emulsion_gas         Emulsion region superficial gas velocity  
-:math:`v_{br,t,x}`          velocity_bubble_rise          Bubble rise velocity
-:math:`v_{b,t,x}`           velocity_bubble               Average bubble diameter  
-:math:`K_{be,t,x,j}`        Kbe                           Bubble to emulsion gas mass transfer coefficient
-:math:`K_{gbulkc,t,x,j}`    Kgbulk_c                      Gas phase component bulk transfer rate
-:math:`H_{be,t,x,j}`        Hbe                           Bubble to emulsion gas heat transfer coefficient
-:math:`c_{p\_vap,b,t,x}`    cp_mol                        Mixture mole heat capacity
-:math:`h_{tc,t,x}`          htc_conv                      Gas to solid convective heat transfer coefficient
-:math:`\mu_{vap,ge,t,x}`       visc_d                     Mixture dynamic viscosity
-:math:`h_{t\_gs,t,x}`       ht_conv                       Gas to solid convective enthalpy transfer
-:math:`H_{gbulk,t,x}`       Hgbulk                        Bulk gas heat transfer between bubble and emulsion
-:math:`r_{hetero,ge,t,x,j}` gas_emulsion_hetero_rxn       Gas emulsion heterogeneous rate reaction generation  
-:math:`L_{b}`               length                        Reference to bubble_region.length
-:math:`L_{ge}`              length                        Reference to gas_emulsion_region.length
-:math:`L_{se}`              length                        Reference to solid_emulsion_region.length
-:math:`A_{b,t,x}`           area                          Reference to bubble_region.area
-:math:`A_{ge,t,x}`          area                          Reference to gas_emulsion_region.area
-:math:`A_{se,t,x}`          area                          Reference to solid_emulsion_region.area
-:math:`\Delta P_{ge,t,x}`   deltaP                        Reference to gas_emulsion_region.deltaP
-:math:`\rho_{mass,se,t,x}`  dens_mass_sol                 Reference to solid_emulsion_region.properties.dens_mass_sol
-:math:`D_{vap,ge,t,x,j}`    diffusion_comp                Reference to gas_emulsion_region.properties.diffusion_comp
-:math:`C_{b,total,t,x}`     dens_mole_vap                 Reference to bubble_region.properties.dens_mole_vap
-:math:`C_{ge,total,t,x}`    dens_mole_vap                 Reference to gas_emulsion_region.properties.dens_mole_vap
-:math:`M_{tr,b,t,x,p,j}`    mass_transfer_term            Reference to bubble_region.mass_transfer_term  
-:math:`M_{tr,ge,t,x,p,j}`   mass_transfer_term            Reference to gas_emulsion_region.mass_transfer_term 
-:math:`M_{tr,se,t,x,p,j}`   mass_transfer_term            Reference to solid_emulsion_region.mass_transfer_term
-:math:`r_{ext,b,t,x,r}`     rate_reaction_extent          Reference to bubble_region.rate_reaction_extent
-:math:`r_{ext,ge,t,x,r}`    rate_reaction_extent          Reference to gas_emulsion_region.rate_reaction_extent
-:math:`r_{ext,se,t,x,r}`    rate_reaction_extent          Reference to solid_emulsion_region.rate_reaction_extent
-:math:`r_{b,t,x,r}`         reaction_rate                 Reference to bubble_region.reactions.reaction_rate
-:math:`r_{ge,t,x,r}`        reaction_rate                 Reference to gas_emulsion_region.reactions.reaction_rate
-:math:`r_{se,t,x,r}`        reaction_rate                 Reference to solid_emulsion_region.reactions.reaction_rate 
-:math:`k_{vap,b,t,x}`       therm_cond                    Reference to bubble_region.properties.therm_cond 
-:math:`k_{vap,e,t,x}`       therm_cond                    Reference to gas_emulsion_region.properties.therm_cond 
-:math:`T_{b,t,x}`           temperature                   Reference to bubble_region.properties.temperature
-:math:`T_{ge,t,x}`          temperature                   Reference to gas_emulsion_region.properties.temperature
-:math:`T_{se,t,x}`          temperature                   Reference to solid_emulsion_region.properties.temperature
-:math:`H_{tr, b, t,x}`      heat                          Reference to bubble_region.heat (heat transfer term)
-:math:`H_{tr, ge, t,x}`     heat                          Reference to gas_emulsion_region.heat (heat transfer term) 
-:math:`H_{tr, se, t,x}`     heat                          Reference to solid_emulsion_region.heat (heat transfer term)
-:math:`F_{mol,b,t,x}`       flow_mol                      Reference to bubble_region.properties.flow_mol
-:math:`F_{mol,ge,t,x}`      flow_mol                      Reference to gas_emulsion_region.properties.flow_mol
-:math:`y_{b,t,x,j}`         mole_frac                     Reference to bubble_region.properties.mole_frac
-:math:`y_{ge,t,x,j}`        mole_frac                     Reference to gas_emulsion_region.properties.mole_frac
-:math:`x_{se,t,x,j}`        mass_frac                     Reference to solid_emulsion_region.properties.mass_frac
-:math:`P_{ge,t,x}`          pressure                      Reference to gas_emulsion_region.properties.pressure
-:math:`F_{mol,g,inlet,t}`   flow_mol                      Reference to gas_inlet.flow_mol
-:math:`y_{g,inlet,t,j}`     mole_frac                     Reference to gas_inlet.mole_frac
-:math:`P_{g,t,inlet}`       pressure                      Reference to gas_inlet.pressure
-:math:`T_{g,t,inlet}`       temperature                   Reference to gas_inlet.temperature
-:math:`H_{g,inlet,t}`       enthalpy                      Reference to gas_inlet.enthalpy
-:math:`F_{mass,s,inlet,t}`  flow_mass                     Reference to solid_inlet.flow_mass
-:math:`x_{s,inlet,t}`       mass_frac                     Reference to solid_inlet.mass_frac
-:math:`T_{s,inlet,t}`       temperature                   Reference to solid_inlet.temperature
-:math:`H_{s,inlet,t}`       enthalpy                      Reference to solid_inlet.enthalpy
-:math:`F_{mass,se,t,x}`     flow_mass                     Reference to solid_emulsion_region.properties.flow_mass
-:math:`H_{b,t,x}`           enthalpy                      Reference to bubble_region.properties.enthalpy
-:math:`H_{ge,t,x}`          enthalpy                      Reference to gas_emulsion_region.properties.enthalpy
-:math:`H_{se,t,x}`          enthalpy                      Reference to solid_emulsion_region.properties.enthalpy
-:math:`F_{mol,g,outlet,t}`  flow_mol                      Reference to gas_outlet.flow_mol
-:math:`y_{g,outlet,t,j}`    mole_frac                     Reference to gas_outlet.mole_frac
-:math:`P_{g,outlet,t}`      pressure                      Reference to gas_outlet.pressure
-:math:`T_{g,outlet,t}`      temperature                   Reference to gas_outlet.temperature
-:math:`H_{g,outlet,t}`      enthalpy                      Reference to gas_outlet.enthalpy
-:math:`F_{mass,s,outlet,t}` flow_mass                     Reference to solid_outlet.flow_mass
-:math:`x_{s,outlet,t}`      mass_frac                     Reference to solid_outlet.mass_frac
-:math:`T_{s,outlet,t}`      temperature                   Reference to solid_outlet.mole_frac
-:math:`H_{s,outlet,t}`      enthalpy                      Reference to solid_outlet.mole_enthalpy
-=========================== ============================= ===============================================================
+=========================== ===================================================== ====================================================
+Variable                    Name                                                  Notes
+=========================== ===================================================== ====================================================
+:math:`L_{bed}`             bed_height                                            Bed height
+:math:`D_{bed}`             bed_diameter                                          Reactor diameter
+:math:`A_{bed}`             bed_area                                              Reactor cross-sectional area
+:math:`A_{or}`              area_orifice                                          Distributor plate area per orifice
+:math:`n_{or}`              number_orifice                                        Number of distributor plate orifices per area
+:math:`\delta_{t,x}`        delta                                                 Volume fraction occupied by bubble region
+:math:`\delta_{e,t,x}`      delta_e                                               Volume fraction occupied by emulsion region                           
+:math:`\varepsilon_{t,x}`   voidage_average                                       Cross-sectional average voidage
+:math:`\varepsilon_{e,t,x}` voidage_emulsion                                      Emulsion region voidage fraction
+:math:`\gamma_{t,x}`        bubble_growth_coeff                                   Bubble growth coefficient
+:math:`d_{bm,t,x}`          bubble_diameter_max                                   Maximum theoretical bubble diameter 
+:math:`d_{b,t,x}`           bubble_diameter                                       Average bubble diameter
+:math:`v_{g,t,x}`           velocity_superficial_gas                              Gas superficial velocity  
+:math:`v_{ge,t,x}`          velocity_emulsion_gas                                 Emulsion region superficial gas velocity  
+:math:`v_{br,t,x}`          velocity_bubble_rise                                  Bubble rise velocity
+:math:`v_{b,t,x}`           velocity_bubble                                       Average bubble diameter  
+:math:`K_{be,t,x,j}`        Kbe                                                   Bubble to emulsion gas mass transfer coefficient
+:math:`K_{gbulkc,t,x,j}`    Kgbulk_c                                              Gas phase component bulk transfer rate
+:math:`H_{be,t,x,j}`        Hbe                                                   Bubble to emulsion gas heat transfer coefficient
+:math:`c_{p\_vap,b,t,x}`    cp_mol                                                Mixture mole heat capacity
+:math:`h_{tc,t,x}`          htc_conv                                              Gas to solid convective heat transfer coefficient
+:math:`\mu_{vap,ge,t,x}`    visc_d                                                Mixture dynamic viscosity
+:math:`h_{t\_gs,t,x}`       ht_conv                                               Gas to solid convective enthalpy transfer
+:math:`H_{gbulk,t,x}`       Hgbulk                                                Bulk gas heat transfer between bubble and emulsion
+:math:`r_{hetero,ge,t,x,j}` gas_emulsion_hetero_rxn                               Gas emulsion heterogeneous rate reaction generation  
+:math:`L_{b}`               bubble_region.length                                  
+:math:`L_{ge}`              gas_emulsion_region.length                            
+:math:`L_{se}`              solid_emulsion_region.length                          
+:math:`A_{b,t,x}`           bubble_region.area                          
+:math:`A_{ge,t,x}`          gas_emulsion_region.area                          
+:math:`A_{se,t,x}`          solid_emulsion_region.area                          
+:math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                            pressure drop across gas emulsion region
+:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol        solid mass density         
+:math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
+:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mole_vap                gas mole density in the bubble region 
+:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mole_vap          gas mole density in the emulsion region       
+:math:`M_{tr,b,t,x,p,j}`    bubble_region.mass_transfer_term              
+:math:`M_{tr,ge,t,x,p,j}`   gas_emulsion_region.mass_transfer_term             
+:math:`M_{tr,se,t,x,p,j}`   solid_emulsion_region.mass_transfer_term            
+:math:`r_{ext,b,t,x,r}`     bubble_region.rate_reaction_extent          
+:math:`r_{ext,ge,t,x,r}`    gas_emulsion_region.rate_reaction_extent          
+:math:`r_{ext,se,t,x,r}`    solid_emulsion_region.rate_reaction_extent          
+:math:`r_{b,t,x,r}`         bubble_region.reactions.reaction_rate                 
+:math:`r_{ge,t,x,r}`        gas_emulsion_region.reactions.reaction_rate                 
+:math:`r_{se,t,x,r}`        solid_emulsion_region.reactions.reaction_rate                  
+:math:`k_{vap,b,t,x}`       bubble_region.properties.therm_cond                   bubble region thermal conductivity  
+:math:`k_{vap,e,t,x}`       gas_emulsion_region.properties.therm_cond             gas emulsion region thermal conductivity        
+:math:`T_{b,t,x}`           bubble_region.properties.temperature                   
+:math:`T_{ge,t,x}`          gas_emulsion_region.properties.temperature                   
+:math:`T_{se,t,x}`          solid_emulsion_region.properties.temperature                   
+:math:`H_{tr, b, t,x}`      bubble_region.heat                                    bubble region heat transfer term
+:math:`H_{tr, ge, t,x}`     gas_emulsion_region.heat                              gas emulsion region heat transfer term
+:math:`H_{tr, se, t,x}`     solid_emulsion_region.heat                            solid emulsion region heat transfer term
+:math:`F_{mol,b,t,x}`       bubble_region.properties.flow_mol                  
+:math:`F_{mol,ge,t,x}`      gas_emulsion_region.properties.flow_mol            
+:math:`y_{b,t,x,j}`         bubble_region.properties.mole_frac                  
+:math:`y_{ge,t,x,j}`        gas_emulsion_region.properties.mole_frac            
+:math:`x_{se,t,x,j}`        solid_emulsion_region.properties.mass_frac          
+:math:`P_{ge,t,x}`          gas_emulsion_region.properties.pressure             
+:math:`F_{mol,g,t,inlet}`   gas_inlet.flow_mol                      
+:math:`y_{g,t,inlet,j}`     gas_inlet.mole_frac                     
+:math:`P_{g,t,inlet}`       gas_inlet.pressure                     
+:math:`T_{g,t,inlet}`       gas_inlet.temperature                   
+:math:`H_{g,t,inlet}`       gas_inlet.enthalpy                      
+:math:`F_{mass,s,t,inlet}`  solid_inlet.flow_mass                     
+:math:`x_{s,t,inlet}`       solid_inlet.mass_frac                    
+:math:`T_{s,t,inlet}`       solid_inlet.temperature                   
+:math:`H_{s,t,inlet}`       solid_inlet.enthalpy                      
+:math:`F_{mass,se,t,x}`     solid_emulsion_region.properties.flow_mass                     
+:math:`H_{b,t,x}`           bubble_region.properties.enthalpy                      
+:math:`H_{ge,t,x}`          gas_emulsion_region.properties.enthalpy                      
+:math:`H_{se,t,x}`          solid_emulsion_region.properties.enthalpy                      
+:math:`F_{mol,g,t,outlet}`  gas_outlet.flow_mol                      
+:math:`y_{g,t,outlet,j}`    gas_outlet.mole_frac                     
+:math:`P_{g,t,outlet}`      gas_outlet.pressure                      
+:math:`T_{g,t,outlet}`      gas_outlet.temperature                   
+:math:`H_{g,t,outlet}`      gas_outlet.enthalpy                      
+:math:`F_{mass,s,t,outlet}` solid_outlet.flow_mass                     
+:math:`x_{s,t,outlet}`      solid_outlet.mass_frac                     
+:math:`T_{s,t,outlet}`      solid_outlet.temperature                   
+:math:`H_{s,t,outlet}`      solid_outlet.mass_enthalpy                      
+:math:`v_{mf,se}`           solid_emulsion_region.properties.velocity_mf          velocity at minimum fluidization
+:math:`\varepsilon_{mf,se}` solid_emulsion_region.properties.voidage_mf           voidage at minimum fluidization
+:math:`K_{d}`               Kd                                                    bulk gas permeation coefficient
+:math:`d_{p,se}`            solid_emulsion_region.properties._params.particle_dia                  
+:math:`\Delta P_{or}`       deltaP_orifice                                        Pressure drop across orifice
+=========================== ===================================================== ====================================================
 
 Parameters
 ----------
@@ -473,14 +478,7 @@ List of parameters in the BFBR model:
 ============================ ============================= =========================================================================
 Parameter                    Name                          Notes
 ============================ ============================= =========================================================================
-:math:`\pi`                  pi                            Mathematical constant
-:math:`v_{mf,se}`            velocity_mf                   Velocity at minimum fluidization
-:math:`\varepsilon_{mf,se}`  voidage_mf                    Voidage at minimum fluidization
-:math:`g`                    gc                            Gravitational constant
-:math:`K_{d}`                Kd                            Bulk Gas Permeation Coefficient
-:math:`d_{p,se}`             particle_dia                  Reference to solid_emulsion_region.properties._params.particle_dia
 :math:`s_{se,j,r}`           rate_reaction_stoichiometry   Reference to solid_emulsion_region.reactions.rate_reaction_stoichiometry 
-:math:`\Delta P_{or}`        deltaP_orifice                Pressure drop across orifice
 ============================ ============================= =========================================================================
 
 Subscripts
@@ -528,15 +526,15 @@ The initialization routine proceeds as follows:
 * Step 5. Initialize energy balances 
 
 BFBR Class
----------
+----------
 
 .. module:: idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed
 
-.. autoclass:: BFBR
+.. autoclass:: BubblingFluidizedBed
   :members:
 
 BFBRData Class
--------------
+--------------
 
-.. autoclass:: BFBRData
+.. autoclass:: BubblingFluidizedBedData
   :members:

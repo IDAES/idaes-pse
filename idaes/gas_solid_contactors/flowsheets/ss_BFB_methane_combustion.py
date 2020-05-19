@@ -257,6 +257,6 @@ if __name__ == "__main__":
 
     # Plot some results
     print_summary(m)
-    m.fs.BFB._results_plot_FR()
+    m.fs.BFB.results_plot_FR()
     stream_table = m.fs.BFB._get_stream_table_contents()
     print(stream_table)
