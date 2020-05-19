@@ -23,7 +23,7 @@ def get_version():
 NAME = "idaes-pse"
 VERSION = get_version()
 README = open("README.md").read()
-README = README[README.find("#") :]  # ignore everything before title
+README = README[README.find("#"):]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -59,9 +59,9 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyomo",
-        "pytest",
         "pyutilib",
+        "pyomo>=5.6.9",
+        "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
         "sympy",
