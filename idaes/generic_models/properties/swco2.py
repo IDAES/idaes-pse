@@ -59,6 +59,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     _htpx,
     HelmholtzParameterBlockData,
     HelmholtzStateBlockData,
+    HelmholtzThermoExpressions,
     PhaseType,
     StateVars,
     _StateBlock,
@@ -122,7 +123,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             ),
             pressure_bounds=(0.1, 1e9),
             temperature_bounds=(210, 2500),
-            enthalpy_bounds=(-1e4, 1e5),
+            enthalpy_bounds=(-2e4, 1e5),
         )
 
         super().build()
