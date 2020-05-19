@@ -1,10 +1,10 @@
 import numpy as np
 
-from apps.matopt.materials import Atom, Canvas, Design, PlanarTiling, CubicTiling
-from apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube
-from apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice
-from apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
-from apps.matopt.opt import Coef, LinearExpr, MatOptModel, SumNeighborSites, SumNeighborBonds, SumSites, SumBonds, \
+from idaes.apps.matopt.materials import Atom, Canvas, Design, PlanarTiling, CubicTiling
+from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube
+from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice
+from idaes.apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
+from idaes.apps.matopt.opt import Coef, LinearExpr, MatOptModel, SumNeighborSites, SumNeighborBonds, SumSites, SumBonds, \
     SumSiteTypes, SumBondTypes, SumSitesAndTypes, SumBondsAndTypes, SumConfs, SumSitesAndConfs, LessThan, EqualTo, \
     GreaterThan, FixedTo, Disallow, PiecewiseLinear, Implies, NegImplies, ImpliesSiteCombination, ImpliesNeighbors
 
