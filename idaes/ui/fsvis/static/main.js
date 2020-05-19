@@ -68,21 +68,18 @@ paper.on("link:contextmenu", function(linkView, evt) {
   }
 });
 
-// Constrain the elements to the paper
+// Constrain the elements to the paper on the top and left side as the elements can be lost
+// if they go off the paper in those directions. Elements can be recovered from the right 
+// and bottom if the user resizes the paper
 paper.on('cell:pointermove', function (cellView, evt, x, y) {
-
   var bbox = cellView.getBBox();
   var constrained = false;
 
   var constrainedX = x;
-
   if (bbox.x <= 0) { constrainedX = x + gridSize; constrained = true }
-  if (bbox.x + bbox.width >= width) { constrainedX = x - gridSize; constrained = true }
 
   var constrainedY = y;
-
   if (bbox.y <= 0) {  constrainedY = y + gridSize; constrained = true }
-  if (bbox.y + bbox.height >= height) { constrainedY = y - gridSize; constrained = true }
 
   //if you fire the event all the time you get a stack overflow
   if (constrained) { cellView.pointermove(evt, constrainedX, constrainedY) }
@@ -177,9 +174,8 @@ $(document).ready( function() {
     });
 
     $(window).resize(function() {
-        var canvas = $("#idaes-canvas")[0];
-        console.debug('resizing width=', canvas.width(), 'height=', canvas.height());
-        paper.setDimensions(canvas.width(), canvas.height());
+        var canvas = $("#idaes-canvas")[0].getBoundingClientRect();
+        paper.setDimensions(canvas.width, canvas.height);
 
     });
 
