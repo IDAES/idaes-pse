@@ -55,7 +55,7 @@ def test_init(initialize_model):
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_init_value(initialize_model):
     m, solver = initialize_model
-    assert gross_power_mw(m) == pytest.approx(620.8100259113626, abs=1e-3)
+    assert gross_power_mw(m) == pytest.approx(620.8100259113626, abs=1e-2)
 
 
 @pytest.mark.slow
@@ -66,4 +66,4 @@ def test_valve_change(initialize_model):
     m, solver = initialize_model
     m.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
     solver.solve(m, tee=True)
-    assert gross_power_mw(m) == pytest.approx(580.9566851114142, abs=1e-3)
+    assert gross_power_mw(m) == pytest.approx(580.9566851114142, abs=1e-2)
