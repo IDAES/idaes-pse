@@ -103,6 +103,16 @@ class UnitNames(object):
     LI = LUMINOUS_INTENSITY = 'luminous intensity'
 
 
+_base_units = {
+    'time': None,
+    'length': None,
+    'mass': None,
+    'amount': None,
+    'temperature': None,
+    'current': None,
+    'luminous intensity': None}
+
+
 class PropertyClassMetadata(object):
     """Container for metadata about the property class, which includes
        default units and properties.
@@ -122,7 +132,7 @@ class PropertyClassMetadata(object):
     U = UnitNames
 
     def __init__(self):
-        self._default_units = {}
+        self._default_units = _base_units.copy()
         self._properties = {}
         self._required_properties = {}
 

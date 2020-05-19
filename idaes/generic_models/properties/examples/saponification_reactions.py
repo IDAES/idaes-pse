@@ -20,6 +20,7 @@ from pyomo.environ import (Constraint,
                            exp,
                            Param,
                            Set,
+                           units,
                            Var)
 
 # Import IDAES cores
@@ -71,17 +72,20 @@ class ReactionParameterData(ReactionParameterBlock):
 
         # Arrhenius Constant
         self.arrhenius = Param(default=3.132e6,
-                               doc="Arrhenius constant")
+                               doc="Arrhenius constant",
+                               units=units.m**3/units.mol/units.s)
 
         # Activation Energy
         self.energy_activation = Param(default=43000,
-                                       doc="Activation energy [J/mol]")
+                                       doc="Activation energy [J/mol]",
+                                       units=units.J/units.mol)
 
         # Heat of Reaction
         dh_rxn_dict = {"R1": -49000}
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
-                            doc="Heat of reaction [J/mol]")
+                            doc="Heat of reaction [J/mol]",
+                            units=units.J/units.mol)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -89,13 +93,13 @@ class ReactionParameterData(ReactionParameterBlock):
                 'k_rxn': {'method': '_rate_constant', 'units': 'm^3/mol.s'},
                 'reaction_rate': {'method': "_rxn_rate", 'units': 'mol/m^3.s'}
                 })
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': units.s,
+                               'length': units.m,
+                               'mass': units.g,
+                               'amount': units.mol,
+                               'temperature': units.K,
+                               'energy': units.J,
+                               'holdup': units.mol})
 
 
 class _ReactionBlock(ReactionBlockBase):
@@ -150,7 +154,8 @@ class ReactionBlockData(ReactionBlockDataBase):
     # Rate constant method
     def _rate_constant(self):
         self.k_rxn = Var(initialize=1,
-                         doc="Rate constant [m^3/mol.s]")
+                         doc="Rate constant [m^3/mol.s]",
+                         units=units.m**3/units.mol/units.s)
 
         try:
             self.arrhenius_eqn = Constraint(
@@ -167,7 +172,8 @@ class ReactionBlockData(ReactionBlockDataBase):
     def _rxn_rate(self):
         self.reaction_rate = Var(self.params.rate_reaction_idx,
                                  initialize=0,
-                                 doc="Rate of reaction [mol/m^3.s]")
+                                 doc="Rate of reaction [mol/m^3.s]",
+                                 units=units.mol/units.m**3/units.s)
 
         try:
             def rate_rule(b, r):

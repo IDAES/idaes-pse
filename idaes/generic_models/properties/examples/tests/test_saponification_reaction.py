@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Param,
+                           units,
                            value,
                            Var)
 from idaes.core import MaterialFlowBasis
@@ -113,3 +114,6 @@ class TestReactionBlock(object):
 
     def test_initialize(self, model):
         assert model.rxns.initialize(outlvl=1) is None
+
+    def check_units(self, model):
+        units.assert_units_consistent(model)
