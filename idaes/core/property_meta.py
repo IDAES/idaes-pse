@@ -47,7 +47,14 @@ Example::
 
 """
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+from pyomo.core.base.units_container import _PyomoUnit
+
+from idaes.core.util.exceptions import PropertyPackageError
+import idaes.logger as idaeslog
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>, Andrew Lee'
+
+_log = idaeslog.getLogger(__name__)
 
 
 class HasPropertyClassMetadata(object):
@@ -151,7 +158,7 @@ class PropertyClassMetadata(object):
     def add_default_units(self, u):
         """Add a dict with keys for the
         quantities used in the property package (as strings) and values of
-        their default units as strings.
+        their default units as unit objects or strings.
 
         The quantities used by the framework are in constants
         defined in :class:`UnitNames`, aliased here in the class
@@ -164,6 +171,32 @@ class PropertyClassMetadata(object):
             None
         """
         self._default_units.update(u)
+
+        # Validate values. Pyomo units are all-or-nothing, so check to see that
+        # this is the case
+        _units = 0
+        for q, u in self._default_units.items():
+            if isinstance(u, _PyomoUnit):
+                _units += 1
+            elif u is None and (q == "luminous intensity" or q == "current"):
+                # these units are infrequently used in PSE, so allow users
+                # to skip these
+                continue
+            elif _units > 0:
+                # Mix of units and non-unit objects
+                raise PropertyPackageError(
+                    "default_units: if using Pyomo Units objects, all "
+                    "units must be defined using Units objects ({}: {})."
+                    .format(q, u))
+
+        # Take opportunity to log a deprecation warning if units are not used
+        if _units == 0:
+            _log.warning("DEPRECATED: IDAES is moving to using Pyomo Units "
+                         "when defining default units, which are used "
+                         "to automatically determine units of measurement "
+                         "for quantities and convert where necessary. "
+                         "Users are strongly encouraged to convert their "
+                         "property packages to use Pyomo Units obejcts.")
 
     def add_properties(self, p):
         """Add properties to the metadata.
@@ -214,6 +247,7 @@ class PropertyMetadata(dict):
     only difference being some guidance on the values expected in the
     dictionary from the constructor.
     """
+
     def __init__(self, name=None, method=None, units=None):
         if name is None:
             raise TypeError('"name" is required')
