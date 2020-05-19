@@ -37,6 +37,7 @@ import sys
 from typing import List
 from uuid import uuid4
 from zipfile import ZipFile
+import json
 
 # third-party
 import click
@@ -273,16 +274,52 @@ def print_summary(version, dirname, installed):
 
 def get_examples_version(idaes_version: str):
     """Given the specified 'idaes-pse' repository release version,
-    figure out the matching 'examples-pse' repository release version.
+    identify the matching 'examples-pse' repository release version.
 
     Args:
-        idaes_version: IDAES version, e.g. "1.6.0"
+        idaes_version: IDAES version, e.g. "1.5.0" or "1.5.0.dev0+e1bbb[...]"
 
     Returns:
         Examples version, or if there is no match, return None.
     """
-    # TODO: fetch mapping from Github and apply mapping
-    return idaes_version
+    # Fetch the idaes:examples version mapping from Github
+    compat_file = 'idaes-compatibility.json'
+    url = f"{GITHUB_API}/repos/{REPO_ORG}/{REPO_NAME}/contents/{compat_file}"
+    headers = {'Accept': 'application/vnd.github.v3.raw'}
+    _log.debug(f'About to call requests.get({url}, {headers})')
+    res = requests.get(url, headers=headers)
+    if not res.ok:
+        _log.debug(f'Problem getting mapping file: {res.json()}')
+        raise DownloadError(res.json())
+
+    try:
+        compat_mapping = json.loads(res.text)['mapping']
+    except KeyError:
+        # return the latest version instead
+        _log.warning('Ill-formed compatibility mapping file for examples repository:')
+        _log.debug(f'compat_mapping: {res.text}')
+        _log.info('Defaulting to latest released version of examples.')
+        return None
+
+    idaes_version_num = idaes_version
+    version_numbers = idaes_version.split('.')
+    if len(version_numbers) > 3:
+        idaes_version_num = '.'.join(version_numbers[:3])
+        click.echo(f"Warning: non-release version of IDAES detected. "
+                   f"Using IDAES {idaes_version_num} as reference; "
+                   f"examples version compatibility is not guaranteed.")
+
+    try:
+        examples_version = compat_mapping[idaes_version_num]
+    except KeyError:
+        # return the latest version instead, as above
+        _log.warning('IDAES version not found in compatibility mapping file. \
+                Defaulting to latest released version of examples.')
+        return None
+
+    _log.debug(f'get_examples_version({idaes_version}: {examples_version}')
+
+    return examples_version
 
 
 def download(target_dir: Path, version: str):
