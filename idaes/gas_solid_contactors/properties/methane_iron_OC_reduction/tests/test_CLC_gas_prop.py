@@ -24,7 +24,7 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import Gas_Phase_Thermo_ParameterBlock
+    gas_phase_thermo import GasPhaseThermoParameterBlock
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -36,7 +36,7 @@ else:
 m = ConcreteModel()
 
 # gas properties and state inlet block
-m.properties = Gas_Phase_Thermo_ParameterBlock()
+m.properties = GasPhaseThermoParameterBlock()
 m.state_block = m.properties.state_block_class(
     default={"parameters": m.properties,
              "defined_state": True})

@@ -26,7 +26,8 @@ Process Syst. Eng. (PSE 2018), Computer-Aided Chemical Engineering 2018,
 pp. 325–330 , San Diego, CA.
 
 Assumptions:
-Property package contains temperature and pressure variables
+Property package contains temperature and pressure variables.
+Property package contains minimum fluidization velocity.
 
 """
 from __future__ import division
@@ -66,8 +67,8 @@ __author__ = "Chinedu Okoli", "Anca Ostace"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("MovingBed")
-class MovingBedData(UnitModelBlockData):
+@declare_process_block_class("MBR")
+class MBRData(UnitModelBlockData):
     """Standard Moving Bed Unit Model Class."""
 
     # Create template for unit level config arguments
@@ -279,7 +280,7 @@ see reaction package for documentation.}"""))
             None
         """
         # Call UnitModel.build to build default attributes
-        super(MovingBedData, self).build()
+        super(MBRData, self).build()
 
     # =========================================================================
         """ Set argument values for gas and solid sides"""
@@ -829,10 +830,10 @@ see reaction package for documentation.}"""))
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
-#
-#        Returns:
-#            None
-#        """
+
+        Returns:
+            None
+        """
         # Set up logger for initialization and solve
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")

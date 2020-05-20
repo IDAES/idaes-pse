@@ -24,9 +24,9 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import Solid_Phase_Thermo_ParameterBlock
+    solid_phase_thermo import SolidPhaseThermoParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import Gas_Phase_Thermo_ParameterBlock
+    gas_phase_thermo import GasPhaseThermoParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
@@ -40,12 +40,12 @@ else:
 m = ConcreteModel()
 
 # Set up thermo props and reaction props
-m.solid_properties = Solid_Phase_Thermo_ParameterBlock()
+m.solid_properties = SolidPhaseThermoParameterBlock()
 m.solid_state_block = m.solid_properties.state_block_class(
     default={"parameters": m.solid_properties,
              "defined_state": True})
 
-m.gas_properties = Gas_Phase_Thermo_ParameterBlock()
+m.gas_properties = GasPhaseThermoParameterBlock()
 m.gas_state_block = m.gas_properties.state_block_class(
     default={"parameters": m.gas_properties,
              "defined_state": True})

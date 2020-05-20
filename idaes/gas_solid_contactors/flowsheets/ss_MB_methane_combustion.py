@@ -20,21 +20,21 @@ Author: Chinedu Okoli
 
 import time
 import sys
-import os
+
 
 from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 
-# Access parent directory (chemical_looping) of the current directory
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+# Import MBR unit model
+from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
 
-from unit_models.moving_bed import MovingBed
-from property_packages.methane_iron_OC_reduction.gas_phase_thermo \
-    import Gas_Phase_Thermo_ParameterBlock
-from property_packages.methane_iron_OC_reduction.solid_phase_thermo \
-    import Solid_Phase_Thermo_ParameterBlock
-from property_packages.methane_iron_OC_reduction.hetero_reactions \
+# Import property packages
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo \
+    import GasPhaseThermoParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo \
+    import SolidPhaseThermoParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions \
     import HeteroReactionParameterBlock
 
 
@@ -44,8 +44,8 @@ def main():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo props and reaction props
-    m.fs.gas_properties = Gas_Phase_Thermo_ParameterBlock()
-    m.fs.solid_properties = Solid_Phase_Thermo_ParameterBlock()
+    m.fs.gas_properties = GasPhaseThermoParameterBlock()
+    m.fs.solid_properties = SolidPhaseThermo_ParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
         default={"solid_property_package": m.fs.solid_properties,
@@ -65,7 +65,7 @@ def main():
 #        else:
 #            fe_set.append(fe_b + (i-nfe*fe_a)*(1-fe_b)/(nfe*(1-fe_a)))
 
-    m.fs.MB = MovingBed(default={
+    m.fs.MB = MBR(default={
         "finite_elements": nfe,
         "length_domain_set": fe_set,
         "transformation_method": "dae.collocation",

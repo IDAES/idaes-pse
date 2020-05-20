@@ -60,7 +60,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Gas_Phase_Thermo_ParameterBlock")
+@declare_process_block_class("GasPhaseThermoParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -75,7 +75,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = Gas_Phase_Thermo_StateBlock
+        self._state_block_class = GasPhaseThermoStateBlock
 
         # Create Phase object
         self.Vap = VaporPhase()
@@ -229,7 +229,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'holdup': 'mol'})
 
 
-class _Gas_Phase_Thermo_StateBlock(StateBlock):
+class _GasPhaseThermoStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -408,9 +408,9 @@ class _Gas_Phase_Thermo_StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
-@declare_process_block_class("Gas_Phase_Thermo_StateBlock",
-                             block_class=_Gas_Phase_Thermo_StateBlock)
-class Gas_Phase_Thermo_StateBlockData(StateBlockData):
+@declare_process_block_class("GasPhaseThermoStateBlock",
+                             block_class=_GasPhaseThermoStateBlock)
+class GasPhaseThermoStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -419,7 +419,7 @@ class Gas_Phase_Thermo_StateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(Gas_Phase_Thermo_StateBlockData, self).build()
+        super(GasPhaseThermoStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights

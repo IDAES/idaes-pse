@@ -1,1 +1,1 @@
-from .moving_bed import MovingBed
+from .moving_bed import MBR

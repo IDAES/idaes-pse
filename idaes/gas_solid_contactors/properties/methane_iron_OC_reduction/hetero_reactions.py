@@ -13,7 +13,7 @@
 """
 Property package for the reaction of CH4 with an iron-based OC.
 Overall reducer reactions for Methane combustion:
-    (1) CH4 + 12Fe2O3 => 8Fe3O4 + CO2 + 2H2O
+(1) CH4 + 12Fe2O3 => 8Fe3O4 + CO2 + 2H2O
 
 Equations written in this model were primarily derived from:
 A. Abad, J. Adánez, F. García-Labiano, L.F. de Diego, P. Gayán, J. Celaya,

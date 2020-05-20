@@ -55,7 +55,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Solid_Phase_Thermo_ParameterBlock")
+@declare_process_block_class("SolidPhaseThermoParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -70,7 +70,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = Solid_Phase_Thermo_StateBlock
+        self._state_block_class = SolidPhaseThermoStateBlock
 
         # Create Phase object
         self.Sol = SolidPhase()
@@ -224,7 +224,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'holdup': 'kg'})
 
 
-class _Solid_Phase_Thermo_StateBlock(StateBlock):
+class _SolidPhaseThermoStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -364,9 +364,9 @@ class _Solid_Phase_Thermo_StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
-@declare_process_block_class("Solid_Phase_Thermo_StateBlock",
-                             block_class=_Solid_Phase_Thermo_StateBlock)
-class Solid_Phase_Thermo_StateBlockData(StateBlockData):
+@declare_process_block_class("SolidPhaseThermoStateBlock",
+                             block_class=_SolidPhaseThermoStateBlock)
+class SolidPhaseThermoStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -375,7 +375,7 @@ class Solid_Phase_Thermo_StateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(Solid_Phase_Thermo_StateBlockData, self).build()
+        super(SolidPhaseThermoStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
