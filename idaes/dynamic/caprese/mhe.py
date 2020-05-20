@@ -41,6 +41,7 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
         get_violated_bounds_at_time)
+from idaes.dynamic.caprese.base_class import DynamicSimulation
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -51,32 +52,18 @@ import pdb
 __author__ = "Robert Parker and David Thierry"
 
 
-class MHESim(object):
+class MHESim(DynamicSimulation):
     """
 
     """
-    CONFIG = ConfigDict()
-    CONFIG.declare('sample_time',
-            ConfigValue(
-                default=1,
-                domain=float,
-                doc='Time period between plant measurements',
-                )
-            )
+    CONFIG = DynamicSimulation.CONFIG
 
     def __init__(self, plant_model, plant_time_set, controller_model,
             controller_time_set, measurements, 
             inputs=None, **kwargs):
 
         self.config = self.CONFIG(kwargs)
-
-        self.p_mod = plant_model
-        self.p_mod_time = plant_time_set
-        self.c_mod = controller_model
-        self.c_mod_time = controller_time_set
-
-        # validate time sets/sample_time
-        # categorize variables, create list of measurement vars
+        super(MHESim, self).__init__()
 
 
     def add_namespace_to(self, model, time):
@@ -87,11 +74,7 @@ class MHESim(object):
             raise ValueError('%s already exists on model. Please fix this.'
                     % name)
         model.add_component(name, Block())
-        namespace = getattr(model, name)
-
-        def get_time():
-            return time
-        namespace.get_time = get_time
+        super(MHESim, self).add_namespace_to(model, time)
 
     def validate_time_sets(self):
         """
@@ -125,6 +108,7 @@ class MHESim(object):
 
 
     def validate_sample_time(plant):
+        pass
 
         
 
