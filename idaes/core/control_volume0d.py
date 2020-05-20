@@ -28,8 +28,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         BurntToast,
                                         ConfigurationError,
-                                        PropertyNotSupportedError,
-                                        PropertyPackageError)
+                                        PropertyNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
 
 import idaes.logger as idaeslog
@@ -239,13 +238,20 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units from property package
         units = {}
-        for u in ['amount', 'time']:
+        for u in ['mass', 'amount', 'time']:
             units[u] = \
                    self.config.property_package.get_metadata().default_units[u]
             if not isinstance(units[u], _PyomoUnit):
                 units[u] = None
         if units['amount'] is not None:
-            units['flow'] = units['amount']/units['time']
+            if (self.properties_in[self.flowsheet().time.first()]
+                    .get_material_flow_basis() == MaterialFlowBasis.molar):
+                units['flow'] = units['amount']/units['time']
+            elif (self.properties_in[self.flowsheet().time.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.mass):
+                units['flow'] = units['mass']/units['time']
+            else:
+                units['flow'] = None
         else:
             units['flow'] = None
 

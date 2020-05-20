@@ -16,7 +16,8 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
+from pyomo.environ import (ConcreteModel, Constraint, Expression,
+                           Set, units, Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.constraint import _GeneralConstraintData
@@ -25,8 +26,7 @@ from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
                         FlowDirection,
                         MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                        EnergyBalanceType)
 from idaes.core.control_volume1d import ControlVolume1DBlockData
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
@@ -922,6 +922,8 @@ def test_add_material_balances_default():
             assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
                 _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test add_phase_component_balances
@@ -953,6 +955,8 @@ def test_add_phase_component_balances_default():
             assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
                 _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_phase_component_balances_default_FFD():
     m = ConcreteModel()
@@ -982,6 +986,8 @@ def test_add_phase_component_balances_default_FFD():
             assert type(m.fs.cv.material_balances[0, 0, p, j]) is \
                 _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_phase_component_balances_distrubuted_area():
     m = ConcreteModel()
@@ -1005,6 +1011,8 @@ def test_add_phase_component_balances_distrubuted_area():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_dynamic():
@@ -1033,6 +1041,8 @@ def test_add_phase_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_phase_component_balances_rate_rxns():
     m = ConcreteModel()
@@ -1059,6 +1069,8 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
@@ -1127,6 +1139,8 @@ def test_add_phase_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_eq_rxns_not_active():
@@ -1214,6 +1228,8 @@ def test_add_phase_component_balances_phase_eq():
     assert len(mb) == 4
     assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_phase_component_balances_phase_eq_not_active():
     m = ConcreteModel()
@@ -1281,6 +1297,8 @@ def test_add_phase_component_balances_mass_transfer():
     assert len(mb) == 4
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_phase_component_balances_custom_molar_term():
     m = ConcreteModel()
@@ -1304,12 +1322,14 @@ def test_add_phase_component_balances_custom_molar_term():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.mol/units.s/units.m
 
     mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_molar_term_no_mw():
@@ -1364,17 +1384,20 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.mol/units.s/units.m
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             m.fs.cv.properties[t, x].mw = Var(
-                m.fs.cv.properties[t, x].config.parameters.component_list)
+                m.fs.cv.properties[t, x].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_molar_term_undefined_basis():
@@ -1429,12 +1452,14 @@ def test_add_phase_component_balances_custom_mass_term():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.kg/units.s/units.m
 
     mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_mass_term_no_mw():
@@ -1489,17 +1514,20 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.kg/units.s/units.m
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             m.fs.cv.properties[t, x].mw = Var(
-                m.fs.cv.properties[t, x].config.parameters.component_list)
+                m.fs.cv.properties[t, x].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+
+    units.assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_mass_term_undefined_basis():
@@ -1561,6 +1589,8 @@ def test_add_total_component_balances_default():
         assert type(m.fs.cv.material_balances[0, 1, j]) is \
             _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_component_balances_default_FFD():
     m = ConcreteModel()
@@ -1590,6 +1620,8 @@ def test_add_total_component_balances_default_FFD():
         assert type(m.fs.cv.material_balances[0, 0, j]) is \
             _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_component_balances_distrubuted_area():
     m = ConcreteModel()
@@ -1613,6 +1645,8 @@ def test_add_total_component_balances_distrubuted_area():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_dynamic():
@@ -1641,6 +1675,8 @@ def test_add_total_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_component_balances_rate_rxns():
     m = ConcreteModel()
@@ -1667,6 +1703,8 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
@@ -1735,6 +1773,8 @@ def test_add_total_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_eq_rxns_not_active():
@@ -1843,6 +1883,8 @@ def test_add_total_component_balances_mass_transfer():
     assert len(mb) == 2
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_component_balances_custom_molar_term():
     m = ConcreteModel()
@@ -1865,12 +1907,14 @@ def test_add_total_component_balances_custom_molar_term():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.mol/units.s/units.m
 
     mb = m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_molar_term_no_mw():
@@ -1923,17 +1967,20 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.mol/units.s/units.m
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             m.fs.cv.properties[t, x].mw = Var(
-                m.fs.cv.properties[t, x].config.parameters.component_list)
+                m.fs.cv.properties[t, x].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_molar_term_undefined_basis():
@@ -1986,12 +2033,14 @@ def test_add_total_component_balances_custom_mass_term():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.kg/units.s/units.m
 
     mb = m.fs.cv.add_total_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_mass_term_no_mw():
@@ -2044,17 +2093,20 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
                            m.fs.pp.component_list)
 
     def custom_method(t, x, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.kg/units.s/units.m
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             m.fs.cv.properties[t, x].mw = Var(
-                m.fs.cv.properties[t, x].config.parameters.component_list)
+                m.fs.cv.properties[t, x].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_total_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_mass_term_undefined_basis():
@@ -2115,6 +2167,8 @@ def test_add_total_element_balances_default():
         assert type(m.fs.cv.element_balances[0, 1, j]) is \
             _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_element_balances_default_FFD():
     m = ConcreteModel()
@@ -2144,6 +2198,8 @@ def test_add_total_element_balances_default_FFD():
         assert type(m.fs.cv.element_balances[0, 0, j]) is \
             _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_element_balances_distrubuted_area():
     m = ConcreteModel()
@@ -2167,6 +2223,8 @@ def test_add_total_element_balances_distrubuted_area():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_element_balances_properties_not_supported():
@@ -2216,6 +2274,8 @@ def test_add_total_element_balances_dynamic():
     assert isinstance(m.fs.cv.phase_fraction, Var)
     assert isinstance(m.fs.cv.element_holdup, Var)
     assert isinstance(m.fs.cv.element_accumulation, Var)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_element_balances_rate_rxns():
@@ -2304,6 +2364,8 @@ def test_add_total_element_balances_mass_transfer():
     assert len(mb) == 3
     assert isinstance(m.fs.cv.elemental_mass_transfer_term, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_element_balances_custom_term():
     m = ConcreteModel()
@@ -2326,13 +2388,15 @@ def test_add_total_element_balances_custom_term():
                            m.fs.pp.element_list)
 
     def custom_method(t, x, e):
-        return m.fs.cv.test_var[t, e]
+        return m.fs.cv.test_var[t, e]*units.mol/units.s/units.m
 
     mb = m.fs.cv.add_total_element_balances(
             custom_elemental_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
+
+    units.assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -2414,6 +2478,8 @@ def test_add_energy_balances_default():
     assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
         _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test phase enthalpy balances
@@ -2447,6 +2513,8 @@ def test_add_total_enthalpy_balances_default():
     assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
         _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_default_FFD():
     m = ConcreteModel()
@@ -2478,6 +2546,8 @@ def test_add_total_enthalpy_balances_default_FFD():
     assert type(m.fs.cv.enthalpy_balances[0, 0]) is \
         _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_distributed_area():
     m = ConcreteModel()
@@ -2504,6 +2574,8 @@ def test_add_total_enthalpy_balances_distributed_area():
     assert isinstance(m.fs.cv._enthalpy_flow, Var)
     assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_dynamic():
@@ -2532,6 +2604,8 @@ def test_add_total_enthalpy_balances_dynamic():
     assert isinstance(m.fs.cv.energy_holdup, Var)
     assert isinstance(m.fs.cv.energy_accumulation, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_heat_transfer():
     m = ConcreteModel()
@@ -2555,6 +2629,8 @@ def test_add_total_enthalpy_balances_heat_transfer():
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
     assert isinstance(m.fs.cv.heat, Var)
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_work_transfer():
@@ -2580,6 +2656,8 @@ def test_add_total_enthalpy_balances_work_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.work, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_enthalpy_transfer():
     m = ConcreteModel()
@@ -2604,6 +2682,8 @@ def test_add_total_enthalpy_balances_enthalpy_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.enthalpy_transfer, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_custom_term():
     m = ConcreteModel()
@@ -2625,12 +2705,14 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t, x):
-        return m.fs.cv.test_var[t]
+        return m.fs.cv.test_var[t]*units.J/units.s/units.m
 
     mb = m.fs.cv.add_total_enthalpy_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
+
+    units.assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_dh_rxn_no_extents():
@@ -2675,6 +2757,8 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m = ConcreteModel()
@@ -2696,6 +2780,8 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
 
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
+
+    units.assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -2798,6 +2884,8 @@ def test_add_total_pressure_balances_default():
     assert type(m.fs.cv.pressure_balance[0, 1]) is \
         _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_pressure_balances_default_FFD():
     m = ConcreteModel()
@@ -2829,6 +2917,8 @@ def test_add_total_pressure_balances_default_FFD():
     assert type(m.fs.cv.pressure_balance[0, 0]) is \
         _GeneralConstraintData
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_pressure_balances_deltaP():
     m = ConcreteModel()
@@ -2853,6 +2943,8 @@ def test_add_total_pressure_balances_deltaP():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.deltaP, Var)
 
+    units.assert_units_consistent(m)
+
 
 def test_add_total_pressure_balances_custom_term():
     m = ConcreteModel()
@@ -2874,12 +2966,14 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t, x):
-        return m.fs.cv.test_var[t]
+        return m.fs.cv.test_var[t]*units.Pa/units.m
 
     mb = m.fs.cv.add_total_pressure_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
+
+    units.assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
