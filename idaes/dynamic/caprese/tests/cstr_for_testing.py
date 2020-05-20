@@ -88,11 +88,13 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
         disc.apply_to(m, wrt=m.fs.time, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
 
     # Fix geometry variables
-    m.fs.cstr.volume.fix(1.0)
+    m.fs.cstr.volume[0].fix(1.0)
 
     # Fix initial conditions:
     if not steady:
         for p, j in m.fs.properties.phase_list*m.fs.properties.component_list:
+            if j == 'Solvent':
+                continue
             m.fs.cstr.control_volume.material_holdup[0, p, j].fix(0.001)
     # Note: Model does not solve when initial conditions are empty tank
 
@@ -105,18 +107,20 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
         elif j == 'S':
             m.fs.mixer.S_inlet.conc_mol[t, j].fix(inlet_S)
 
-    m.fs.mixer.E_inlet.flow_rate.fix(0.1)
-    m.fs.mixer.S_inlet.flow_rate.fix(2.1)
+    m.fs.mixer.E_inlet.flow_vol.fix(0.1)
+    m.fs.mixer.S_inlet.flow_vol.fix(2.1)
+    m.fs.mixer.E_inlet.conc_mol[:, 'Solvent'].fix(1.)
+    m.fs.mixer.S_inlet.conc_mol[:, 'Solvent'].fix(1.)
     
-    # Not sure what the 'proper' way to enforce this balance is...
-    # Should have some sort of 'sum_flow_rate_eqn' constraint, but
-    # that doesn't really make sense for my aqueous property package
-    # with dilute components...
-    @m.fs.mixer.Constraint(m.fs.time,
-            doc='Solvent flow rate balance')
-    def total_flow_balance(mx, t):
-        return (mx.E_inlet.flow_rate[t] + mx.S_inlet.flow_rate[t]
-                == mx.outlet.flow_rate[t])
+#    # Not sure what the 'proper' way to enforce this balance is...
+#    # Should have some sort of 'sum_flow_rate_eqn' constraint, but
+#    # that doesn't really make sense for my aqueous property package
+#    # with dilute components...
+#    @m.fs.mixer.Constraint(m.fs.time,
+#            doc='Solvent flow rate balance')
+#    def total_flow_balance(mx, t):
+#        return (mx.E_inlet.flow_vol[t] + mx.S_inlet.flow_vol[t]
+#                == mx.outlet.flow_vol[t])
 
     m.fs.mixer.E_inlet.temperature.fix(290)
     m.fs.mixer.S_inlet.temperature.fix(310)
@@ -129,7 +133,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
     @m.fs.cstr.Constraint(m.fs.time,
         doc='Total flow rate balance')
     def total_flow_balance(cstr, t):
-        return (cstr.inlet.flow_rate[t] == cstr.outlet.flow_rate[t])
+        return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
 
     # Specify initial condition for energy
     if not steady:
@@ -141,15 +145,15 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
     # equality constraint?
     TransformationFactory('network.expand_arcs').apply_to(m.fs)
 
-    # Need to deactivate some arc equations because they over-specify.
-    # Not sure how to avoid this...
-    m.fs.inlet_expanded.flow_mol_comp_equality.deactivate()
+#    # Need to deactivate some arc equations because they over-specify.
+#    # Not sure how to avoid this...
+#    m.fs.inlet_expanded.flow_mol_comp_equality.deactivate()
 
     if bounds:
-        m.fs.mixer.E_inlet.flow_rate.setlb(0.01)
-        m.fs.mixer.E_inlet.flow_rate.setub(1.0)
-        m.fs.mixer.S_inlet.flow_rate.setlb(0.5)
-        m.fs.mixer.S_inlet.flow_rate.setub(5.0)
+        m.fs.mixer.E_inlet.flow_vol.setlb(0.01)
+        m.fs.mixer.E_inlet.flow_vol.setub(1.0)
+        m.fs.mixer.S_inlet.flow_vol.setlb(0.5)
+        m.fs.mixer.S_inlet.flow_vol.setub(5.0)
 
         m.fs.cstr.control_volume.material_holdup.setlb(0)
         holdup = m.fs.cstr.control_volume.material_holdup
