@@ -178,6 +178,9 @@ argument)."""))
         # property packages not using Pyomo Units
         if not isinstance(l_units, _PyomoUnit):
             l_units = None
+            a_units = None
+        else:
+            a_units = l_units**2
 
         if length_domain is not None:
             # Validate domain and make a reference
@@ -212,11 +215,11 @@ argument)."""))
                             self.length_domain,
                             initialize=1.0,
                             doc='Cross-sectional area of Control Volume',
-                            units=l_units**2)
+                            units=a_units)
         else:
             self.area = Var(initialize=1.0,
                             doc='Cross-sectional area of Control Volume',
-                            units=l_units**2)
+                            units=a_units)
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume',
                           units=l_units)

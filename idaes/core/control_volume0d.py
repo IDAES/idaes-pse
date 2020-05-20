@@ -84,11 +84,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # TODO : This check is needed for backwards compatability with
         # property packages not using Pyomo Units
         if not isinstance(l_units, _PyomoUnit):
-            l_units = None
+            v_units = None
+        else:
+            v_units = l_units**3
 
         self.volume = Var(self.flowsheet().config.time, initialize=1.0,
                           doc='Volume of material in control volume',
-                          units=l_units**3)
+                          units=v_units)
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,

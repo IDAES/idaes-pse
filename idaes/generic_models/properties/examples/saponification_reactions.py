@@ -95,7 +95,7 @@ class ReactionParameterData(ReactionParameterBlock):
                 })
         obj.add_default_units({'time': units.s,
                                'length': units.m,
-                               'mass': units.g,
+                               'mass': units.kg,
                                'amount': units.mol,
                                'temperature': units.K})
 

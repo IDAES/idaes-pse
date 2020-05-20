@@ -109,7 +109,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'dens_mol': {'method': None, 'units': 'mol/m^3'}})
         obj.add_default_units({'time': units.s,
                                'length': units.m,
-                               'mass': units.g,
+                               'mass': units.kg,
                                'amount': units.mol,
                                'temperature': units.K})
 
