@@ -105,7 +105,6 @@ class UnitNames(object):
     MA = MASS = 'mass'
     AM = AMOUNT = 'amount'
     TE = TEMPERATURE = 'temperature'
-    EN = ENERGY = 'energy'
     CU = CURRENT = 'current'
     LI = LUMINOUS_INTENSITY = 'luminous intensity'
 

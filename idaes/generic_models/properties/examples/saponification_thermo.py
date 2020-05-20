@@ -111,9 +111,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'length': units.m,
                                'mass': units.g,
                                'amount': units.mol,
-                               'temperature': units.K,
-                               'energy': units.J,
-                               'holdup': units.mol})
+                               'temperature': units.K})
 
 
 class _StateBlock(StateBlock):

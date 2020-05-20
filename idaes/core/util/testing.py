@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Constraint, Set, SolverFactory, Var
+from pyomo.environ import Constraint, Set, SolverFactory, units, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -153,13 +153,11 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': units.s,
+                               'length': units.m,
+                               'mass': units.kg,
+                               'amount': units.mol,
+                               'temperature': units.K})
 
 
 class SBlockBase(StateBlock):
@@ -181,32 +179,42 @@ class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 
-        self.flow_vol = Var(initialize=20)
+        self.flow_vol = Var(initialize=20, units=units.m**3/units.s)
         self.flow_mol_phase_comp = Var(self.params.phase_list,
                                        self.params.component_list,
-                                       initialize=2)
+                                       initialize=2,
+                                       units=units.mol/units.s)
         self.test_var = Var(initialize=1)
-        self.pressure = Var(initialize=1e5)
-        self.temperature = Var(initialize=300)
+        self.pressure = Var(initialize=1e5, units=units.Pa)
+        self.temperature = Var(initialize=300, units=units.K)
 
-        self.enth_mol = Var(initialize=10000)
+        self.enth_mol = Var(initialize=10000, units=units.J/units.mol)
 
         self.gibbs_mol_phase_comp = Var(self.params.phase_list,
                                         self.params.component_list,
-                                        initialize=50)
-        self.entr_mol = Var(initialize=1000)
+                                        initialize=50,
+                                        units=units.J/units.mol)
+        self.entr_mol = Var(initialize=1000, units=units.J/units.mol/units.K)
 
     def get_material_flow_terms(b, p, j):
-        return b.test_var
+        if b.config.parameters.basis_switch == 2:
+            u = units.kg/units.s
+        else:
+            u = units.mol/units.s
+        return b.test_var*u
 
     def get_material_density_terms(b, p, j):
-        return b.test_var
+        if b.config.parameters.basis_switch == 2:
+            u = units.kg/units.m**3
+        else:
+            u = units.mol/units.m**3
+        return b.test_var*u
 
     def get_enthalpy_flow_terms(b, p):
-        return b.test_var
+        return b.test_var*units.J/units.s
 
     def get_energy_density_terms(b, p):
-        return b.test_var
+        return b.test_var*units.J/units.m**3
 
     def model_check(self):
         self.check = True
@@ -272,13 +280,11 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': units.s,
+                               'length': units.m,
+                               'mass': units.kg,
+                               'amount': units.mol,
+                               'temperature': units.K})
 
     @classmethod
     def get_required_properties(self):
@@ -299,12 +305,13 @@ class ReactionBlockData(ReactionBlockDataBase):
     def build(self):
         super(ReactionBlockData, self).build()
 
-        self.reaction_rate = Var(["r1", "r2"])
+        self.reaction_rate = Var(["r1", "r2"],
+                                 units=units.mol/units.m**3/units.s)
 
-        self.dh_rxn = {"r1": 10,
-                       "r2": 20,
-                       "e1": 30,
-                       "e2": 40}
+        self.dh_rxn = {"r1": 10*units.J/units.mol,
+                       "r2": 20*units.J/units.mol,
+                       "e1": 30*units.J/units.mol,
+                       "e2": 40*units.J/units.mol}
 
     def model_check(self):
         self.check = True
