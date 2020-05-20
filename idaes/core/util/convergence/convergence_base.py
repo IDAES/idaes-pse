@@ -297,7 +297,7 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
 
         comp = model.find_component(pyomo_path)
         try:
-            ctype = comp.type()
+            ctype = comp.ctype
         except AttributeError:
             ctype = None
 
