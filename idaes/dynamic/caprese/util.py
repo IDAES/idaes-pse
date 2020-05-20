@@ -45,6 +45,7 @@ import pdb
 __author__ = "Robert Parker and David Thierry"
 
 
+# TODO: clean up this file - add license, remove solver_available
 # See if ipopt is available and set up solver
 solver_available = SolverFactory('ipopt').available()
 if solver_available:
