@@ -18,6 +18,8 @@ import pytest
 from pyomo.environ import (ConcreteModel, Block, Constraint, Var, Set,
         TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.dae.set_utils import (is_explicitly_indexed_by,
+        is_in_block_indexed_by, get_index_set_except)
 import idaes.logger as idaeslog
 from idaes.core.util.dyn_utils import *
 
