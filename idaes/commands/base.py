@@ -44,6 +44,21 @@ def level_from_verbosity(vb):
     return level
 
 
+def how_to_report_an_error(embed=False):
+    msg = ["You can report this error by visiting the Github",
+           "software page at:",
+           "    https://github.com/idaes/idaes-pse/issues",
+           "and clicking on 'New issue', or by sending email",
+           "to 'idaes-support@idaes.org'. Please include the",
+           "command or actions you took, and the resulting",
+           "message, in the report."]
+    if not embed:
+        bar = '-' * 50
+        msg.insert(0, bar)
+        msg.append(bar)
+    return "\n".join(msg)
+
+
 @click.group()
 @click.version_option(version=None)
 @click.option(
