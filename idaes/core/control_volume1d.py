@@ -23,6 +23,7 @@ from pyomo.environ import (Constraint,
                            Param,
                            Reals,
                            TransformationFactory,
+                           units as pyunits,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
@@ -387,6 +388,27 @@ argument)."""))
             units['flow'] = None
             units['flow_l'] = None
 
+        if self.config.dynamic:
+            f_time_units = self.flowsheet()._time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            elif (self.properties[self.flowsheet().time.first(),
+                                  self.length_domain.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.molar):
+                acc_units = units['amount']/units['length']/f_time_units
+            elif (self.properties[self.flowsheet().time.first(),
+                                  self.length_domain.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.mass):
+                acc_units = units['mass']/units['length']/f_time_units
+            else:
+                acc_units = None
+
         # Get phase component set and lists
         pc_set = self.config.property_package.get_phase_component_set()
 
@@ -405,7 +427,7 @@ argument)."""))
                     self.material_holdup,
                     wrt=self.flowsheet().config.time,
                     doc="Material accumulation per unit length",
-                    units=units['flow_l'])
+                    units=acc_units)
 
         # Create material balance terms as required
         # Flow terms and derivatives
@@ -501,7 +523,8 @@ argument)."""))
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, x, p, j):
-            return b.material_accumulation[t, x, p, j] if dynamic else 0
+            return pyunits.convert(b.material_accumulation[t, x, p, j],
+                                   to_units=units['flow_l']) if dynamic else 0
 
         def kinetic_term(b, t, x, p, j):
             return (b.rate_reaction_generation[t, x, p, j]
@@ -928,7 +951,6 @@ argument)."""))
                 .format(self.name))
 
         # Get units from property package
-        # Get units from property package
         units = {}
         for u in ['amount', 'length', 'time']:
             units[u] = \
@@ -943,6 +965,19 @@ argument)."""))
             units['amount_l'] = None
             units['flow'] = None
             units['flow_l'] = None
+
+        if self.config.dynamic:
+            f_time_units = self.flowsheet()._time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            else:
+                acc_units = units['amount']/units['length']/f_time_units
 
         # Add Material Balance terms
         if has_holdup:
@@ -960,7 +995,7 @@ argument)."""))
                 self.element_holdup,
                 wrt=self.flowsheet().config.time,
                 doc="Elemental accumulation per unit length",
-                units=units['flow_l'])
+                units=acc_units)
 
         self.elemental_flow_term = Var(self.flowsheet().config.time,
                                        self.length_domain,
@@ -1003,7 +1038,8 @@ argument)."""))
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, x, e):
-            return b.element_accumulation[t, x, e] if dynamic else 0
+            return pyunits.convert(b.element_accumulation[t, x, e],
+                                   to_units=units['flow_l']) if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, x, e):
@@ -1124,6 +1160,19 @@ argument)."""))
             units['energy_flow'] = None
             units['energy_flow_l'] = None
 
+        if self.config.dynamic:
+            f_time_units = self.flowsheet()._time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            else:
+                acc_units = units['energy']/units['length']/f_time_units
+
         # Create variables
         self._enthalpy_flow = Var(self.flowsheet().config.time,
                                   self.length_domain,
@@ -1162,7 +1211,7 @@ argument)."""))
                         self.energy_holdup,
                         wrt=self.flowsheet().config.time,
                         doc="Energy accumulation per unit length",
-                        units=units['energy_flow_l'])
+                        units=acc_units)
 
         # Create scaling factor
         self.scaling_factor_energy = Param(
@@ -1227,7 +1276,9 @@ argument)."""))
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, x, p):
-            return b.energy_accumulation[t, x, p] if dynamic else 0
+            return (pyunits.convert(b.energy_accumulation[t, x, p],
+                                    to_units=units['energy_flow_l'])
+                    if dynamic else 0)
 
         def heat_term(b, t, x):
             return b.heat[t, x] if has_heat_transfer else 0
@@ -1325,7 +1376,7 @@ argument)."""))
         Returns:
             Constraint object representing pressure balances
         """
-        # Get units from property package
+
         # Get units from property package
         units = {}
         for u in ['mass', 'length', 'time']:
