@@ -67,12 +67,10 @@ def main():
                     "flow_type": "co_current",
                     "finite_elements": 5,
                     "transformation_method": "dae.collocation",
-                    "bubble_config":
+                    "has_pressure_change": True,
+                    "gas_phase_config":
                     {"property_package": m.fs.gas_properties},
-                    "gas_emulsion_config":
-                    {"property_package": m.fs.gas_properties,
-                     "has_pressure_change": True},
-                    "solid_emulsion_config":
+                    "solid_phase_config":
                     {"property_package": m.fs.solid_properties,
                      "reaction_package": m.fs.hetero_reactions
                      }})
@@ -156,7 +154,7 @@ def main():
 
 # Function to print some variables of interest
 def print_summary(self):
-    if m.fs.BFB.config.solid_emulsion_config.reaction_package is not None:
+    if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
         print()
         print("Reaction stoichiometry ratio check (expected value is 12) =>")
 
@@ -216,7 +214,7 @@ def print_summary(self):
             (m.fs.BFB.solid_outlet.flow_mass[0].value *
              m.fs.BFB.solid_outlet_block[0].enth_mass.value))
 
-        if m.fs.BFB.config.solid_emulsion_config.reaction_package is not None:
+        if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
             e_reaction = (mole_gas_reacted *
                           m.fs.BFB.solid_emulsion_region.reactions[0, 0].
                           _params.dh_rxn["R1"])
@@ -230,7 +228,7 @@ def print_summary(self):
         print('Energy balance solids_FR:', ebal_solid)
         print('Total heat due to reaction:', e_reaction)
 
-    if m.fs.BFB.config.solid_emulsion_config.reaction_package is not None:
+    if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
         print()
         # Oxygen carrier and fuel conversion
         Conv_gas = 1 - (
