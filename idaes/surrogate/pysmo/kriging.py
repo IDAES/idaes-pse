@@ -633,3 +633,42 @@ class KrigingModel:
         plt.show()
 
         return
+
+    def _report(self, results_vector):
+        ## Will only work with Python > 3.5
+        variable_headers = self.get_feature_vector()
+        var_list = []
+        for i in variable_headers:
+            var_list.append(variable_headers[i])
+        eqn = results_vector.kriging_generate_expression(var_list)
+
+        double_line = "=" * 120
+        s = (f"\n{double_line}"
+             f"\nResults of Kriging run:\n"
+             f"\nKriging mean                     : {results_vector.optimal_mean}\n"
+             f"Kriging variance                 : {results_vector.optimal_variance}\n"
+             f"Kriging weights                  : {results_vector.optimal_weights}\n"
+             f"Regularization parameter         : {results_vector.regularization_parameter}\n"
+             f"Number of terms in Kriging model : {results_vector.optimal_y_mu.size + 1}\n"
+             f"\nKriging Expression:\n"
+             f"--------------------\n"
+             f"\n{eqn}\n"
+             f"--------------------------\n"
+             f"\nModel training errors:"
+             f"\n-----------------------\n"
+             f"Mean Squared Error (MSE)         : {results_vector.training_rmse ** 2}\n"
+             f"Root Mean Squared Error (RMSE)   : {results_vector.training_rmse}\n"
+             f"Goodness of fit (R2)             : {results_vector.training_R2}\n"
+             f"\n{double_line}"
+             )
+        return(s)
+
+    def print_report(self, results_vector):
+        s = self._report(results_vector)
+        print(s)
+
+    def _repr_pretty_(self, results_vector):
+        import pprint
+        s = self._report(results_vector)
+        j = pprint.PrettyPrinter(width=80)
+        j.pprint(s)
