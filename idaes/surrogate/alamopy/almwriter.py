@@ -27,11 +27,11 @@ def almwriter(data, debug, vargs, kwargs):
         for arg in data['opts'].keys():
             if arg == 'sigma' and data['opts'][arg] < 0 : 
                 continue
-            elif (arg == 'modeler' and data['opts'][arg] == 6):
-                a.write(arg + ' ' + str(data['opts'][arg]) + '\n')
-                a.write('builder 0\n')
-                a.write('enumall 1\n')
-                a.write('enum1 1\n')          
+            # elif (arg == 'modeler' and data['opts'][arg] == 6):
+            #    a.write(arg + ' ' + str(data['opts'][arg]) + '\n')
+            #    a.write('builder 0\n')
+            #    a.write('enumall 1\n')
+            #    a.write('enum1 1\n')          
             else: 
                 a.write(arg + ' ' + str(data['opts'][arg]) + '\n')
 
