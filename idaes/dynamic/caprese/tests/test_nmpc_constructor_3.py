@@ -47,24 +47,25 @@ else:
 
 
 def assert_categorization(model):
-    init_input_set = ComponentSet([model.mixer.S_inlet.flow_rate[0],
-                                   model.mixer.E_inlet.flow_rate[0]])
+    init_input_set = ComponentSet([model.mixer.S_inlet.flow_vol[0],
+                                   model.mixer.E_inlet.flow_vol[0]])
 
     init_deriv_list = []
     init_diff_list = []
-    init_fixed_list = [model.cstr.control_volume.volume[0],
+    init_fixed_list = [
                        model.mixer.E_inlet.temperature[0],
                        model.mixer.S_inlet.temperature[0],
                        model.cstr.control_volume.energy_holdup[0, 'aq']]
 
-    init_ic_list = []
+    init_ic_list = [model.cstr.control_volume.volume[0]]
 
     init_alg_list = [
-        model.cstr.outlet.flow_rate[0],
+        model.cstr.control_volume.volume[0],
+        model.cstr.outlet.flow_vol[0],
         model.cstr.outlet.temperature[0],
-        model.cstr.inlet.flow_rate[0],
+        model.cstr.inlet.flow_vol[0],
         model.cstr.inlet.temperature[0],
-        model.mixer.outlet.flow_rate[0],
+        model.mixer.outlet.flow_vol[0],
         model.mixer.outlet.temperature[0],
         model.cstr.control_volume.energy_accumulation[0, 'aq'],
         ]
@@ -79,19 +80,24 @@ def assert_categorization(model):
         init_fixed_list.append(model.mixer.S_inlet.conc_mol[0, j])
 
         init_alg_list.extend([
-            model.cstr.outlet.conc_mol[0, j],
-            model.cstr.outlet.flow_mol_comp[0, j],
+            model.cstr.control_volume.properties_out[0].flow_mol_comp[j],
             model.cstr.inlet.conc_mol[0, j],
-            model.cstr.inlet.flow_mol_comp[0, j],
+            model.cstr.control_volume.properties_in[0].flow_mol_comp[j],
             model.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
-            model.mixer.outlet.conc_mol[0, j],
-            model.mixer.outlet.flow_mol_comp[0, j],
-            model.mixer.E_inlet.flow_mol_comp[0, j],
-            model.mixer.S_inlet.flow_mol_comp[0, j]
+            model.mixer.mixed_state[0].flow_mol_comp[j],
+            model.mixer.E_inlet_state[0].flow_mol_comp[j],
+            model.mixer.S_inlet_state[0].flow_mol_comp[j]
             ])
+        if j != 'Solvent':
+            init_alg_list.append(model.cstr.outlet.conc_mol[0, j])
+            init_alg_list.append(model.mixer.outlet.conc_mol[0, j])
+        else:
+            init_fixed_list.append(model.cstr.outlet.conc_mol[0, j])
+            init_fixed_list.append(model.mixer.outlet.conc_mol[0, j])
 
-        init_ic_list.append(
-                model.cstr.control_volume.material_holdup[0, 'aq', j])
+        if j != 'Solvent':
+            init_ic_list.append(
+                    model.cstr.control_volume.material_holdup[0, 'aq', j])
 
     for r in model.reactions.rate_reaction_idx:
         init_alg_list.extend([
@@ -146,8 +152,8 @@ def test_constructor_3():
     sample_time = 0.5
     # Six samples per horizon, five elements per sample
 
-    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
-                            m_plant.fs.mixer.E_inlet.flow_rate[0]]
+    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_vol[0],
+                            m_plant.fs.mixer.E_inlet.flow_vol[0]]
 
     # energy_holdup should now be a fixed variable 
     # (only in plant model...)

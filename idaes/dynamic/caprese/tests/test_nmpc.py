@@ -53,23 +53,25 @@ else:
 
 
 def assert_categorization(model):
-    init_input_set = ComponentSet([model.mixer.S_inlet.flow_rate[0],
-                                   model.mixer.E_inlet.flow_rate[0]])
+    init_input_set = ComponentSet([model.mixer.S_inlet.flow_vol[0],
+                                   model.mixer.E_inlet.flow_vol[0]])
 
     init_deriv_list = [model.cstr.control_volume.energy_accumulation[0, 'aq']]
     init_diff_list = [model.cstr.control_volume.energy_holdup[0, 'aq']]
-    init_fixed_list = [model.cstr.control_volume.volume[0],
+    init_fixed_list = [
                        model.mixer.E_inlet.temperature[0],
                        model.mixer.S_inlet.temperature[0]]
 
-    init_ic_list = [model.cstr.control_volume.energy_holdup[0, 'aq']]
+    init_ic_list = [model.cstr.control_volume.energy_holdup[0, 'aq'],
+                    model.cstr.control_volume.volume[0]]
 
     init_alg_list = [
-        model.cstr.outlet.flow_rate[0],
+        model.cstr.control_volume.volume[0],
+        model.cstr.outlet.flow_vol[0],
         model.cstr.outlet.temperature[0],
-        model.cstr.inlet.flow_rate[0],
+        model.cstr.inlet.flow_vol[0],
         model.cstr.inlet.temperature[0],
-        model.mixer.outlet.flow_rate[0],
+        model.mixer.outlet.flow_vol[0],
         model.mixer.outlet.temperature[0]
         ]
 
@@ -82,20 +84,25 @@ def assert_categorization(model):
         init_fixed_list.append(model.mixer.E_inlet.conc_mol[0, j])
         init_fixed_list.append(model.mixer.S_inlet.conc_mol[0, j])
 
-        init_ic_list.append(
-                model.cstr.control_volume.material_holdup[0, 'aq', j])
+        if j != 'Solvent':
+            init_ic_list.append(
+                    model.cstr.control_volume.material_holdup[0, 'aq', j])
 
         init_alg_list.extend([
-            model.cstr.outlet.conc_mol[0, j],
-            model.cstr.outlet.flow_mol_comp[0, j],
+            model.cstr.control_volume.properties_out[0].flow_mol_comp[j],
             model.cstr.inlet.conc_mol[0, j],
-            model.cstr.inlet.flow_mol_comp[0, j],
+            model.cstr.control_volume.properties_in[0].flow_mol_comp[j],
             model.cstr.control_volume.rate_reaction_generation[0, 'aq', j],
-            model.mixer.outlet.conc_mol[0, j],
-            model.mixer.outlet.flow_mol_comp[0, j],
-            model.mixer.E_inlet.flow_mol_comp[0, j],
-            model.mixer.S_inlet.flow_mol_comp[0, j]
+            model.mixer.mixed_state[0].flow_mol_comp[j],
+            model.mixer.E_inlet_state[0].flow_mol_comp[j],
+            model.mixer.S_inlet_state[0].flow_mol_comp[j],
             ])
+        if j != 'Solvent':
+            init_alg_list.append(model.mixer.outlet.conc_mol[0, j])
+            init_alg_list.append(model.cstr.outlet.conc_mol[0, j])
+        else:
+            init_fixed_list.append(model.mixer.outlet.conc_mol[0, j])
+            init_fixed_list.append(model.cstr.outlet.conc_mol[0, j])
 
     for r in model.reactions.rate_reaction_idx:
         init_alg_list.extend([
@@ -152,8 +159,8 @@ def nmpc():
     sample_time = 0.5
     # Six samples per horizon, five elements per sample
 
-    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
-                            m_plant.fs.mixer.E_inlet.flow_rate[0]]
+    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_vol[0],
+                            m_plant.fs.mixer.E_inlet.flow_vol[0]]
 
     nmpc = NMPCSim(m_plant.fs, m_plant.fs.time,
             m_controller.fs, m_controller.fs.time, 
@@ -219,16 +226,16 @@ def test_calculate_full_state_setpoint(nmpc):
     set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
                  (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
                  (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
-                 (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
+                 (c_mod.mixer.E_inlet.flow_vol[0], 0.1),
+                 (c_mod.mixer.S_inlet.flow_vol[0], 2.0)]
 
-    c_mod.mixer.E_inlet.flow_rate[0].fix(0.1)
-    c_mod.mixer.S_inlet.flow_rate[0].fix(2.0)
+    c_mod.mixer.E_inlet.flow_vol[0].fix(0.1)
+    c_mod.mixer.S_inlet.flow_vol[0].fix(2.0)
 
     weight_tolerance = 5e-7
     weight_override = [
-            (c_mod.mixer.E_inlet.flow_rate[0.], 20.),
-            (c_mod.mixer.S_inlet.flow_rate[0.], 2.),
+            (c_mod.mixer.E_inlet.flow_vol[0.], 20.),
+            (c_mod.mixer.S_inlet.flow_vol[0.], 2.),
             (c_mod.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
             (c_mod.cstr.outlet.conc_mol[0., 'P'], 1.),
             (c_mod.cstr.outlet.conc_mol[0., 'S'], 1.),
@@ -285,8 +292,8 @@ def test_add_setpoint_to_controller(nmpc):
                 (c_mod.cstr.control_volume.material_holdup[0, 'aq', j], 1))
     weight_override.append(
             (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 0.1))
-    weight_override.append((c_mod.mixer.E_inlet.flow_rate[0], 2))
-    weight_override.append((c_mod.mixer.S_inlet.flow_rate[0], 0.2))
+    weight_override.append((c_mod.mixer.E_inlet.flow_vol[0], 2))
+    weight_override.append((c_mod.mixer.S_inlet.flow_vol[0], 0.2))
 
     state_categories = [VariableCategory.DIFFERENTIAL]
     nmpc.add_setpoint_to_controller(
@@ -676,16 +683,16 @@ def test_transfer_current_plant_state_to_controller(nmpc):
 #    set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
 #                 (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
 #                 (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-#                 (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
-#                 (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
+#                 (c_mod.mixer.E_inlet.flow_vol[0], 0.1),
+#                 (c_mod.mixer.S_inlet.flow_vol[0], 2.0)]
 #
-#    c_mod.mixer.E_inlet.flow_rate[0].fix(0.1)
-#    c_mod.mixer.S_inlet.flow_rate[0].fix(2.0)
+#    c_mod.mixer.E_inlet.flow_vol[0].fix(0.1)
+#    c_mod.mixer.S_inlet.flow_vol[0].fix(2.0)
 #
 #    weight_tolerance = 5e-7
 #    weight_override = [
-#            (c_mod.mixer.E_inlet.flow_rate[0.], 20.),
-#            (c_mod.mixer.S_inlet.flow_rate[0.], 2.),
+#            (c_mod.mixer.E_inlet.flow_vol[0.], 20.),
+#            (c_mod.mixer.S_inlet.flow_vol[0.], 2.),
 #            (c_mod.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
 #            (c_mod.cstr.outlet.conc_mol[0., 'P'], 1.),
 #            (c_mod.cstr.outlet.conc_mol[0., 'S'], 1.),
