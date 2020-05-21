@@ -10,10 +10,13 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""Commandline Utilities for Managing the IDAES Data Directory"""
+"""Commandline interface for convergence testing tools"""
 
 __author__ = "John Eslick"
 
+import inspect
+import pkgutil
+import re
 import os
 import click
 import logging
@@ -64,3 +67,20 @@ def convergence_eval(sample_file, dmf):
     )
     if results is not None:
         cnv.save_convergence_statistics(inputs, results, dmf=dmf)
+
+
+@cb.command(name="convergence-search", help="Search for convergence test classes.")
+@click.option('-r', '--regex', default=".+ConvergenceEvaluation$", type=str)
+def convergence_search(regex):
+    pat = re.compile(regex)
+    for loader, module_name, is_pkg in pkgutil.walk_packages(idaes.__path__):
+        try:
+            m = loader.find_module(module_name).load_module(module_name)
+            c = inspect.getmembers(m, inspect.isclass)
+        except:
+            continue
+        if c:
+            for i in c:
+                cname = ".".join(["idaes", m.__name__, i[0]])
+                if pat.match(i[0]):
+                    click.echo(cname)
