@@ -21,13 +21,14 @@ import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, In
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.fsvis.fsvis import visualize
 
@@ -84,6 +85,10 @@ reference it here."""))
         doc="""Set of points for initializing time domain. This should be a
 list of floating point numbers,
 **default** - [0]."""))
+    CONFIG.declare("time_units", ConfigValue(
+        description="Units for time domain",
+        doc="""Pyomo Units object describing the units of the time domain.
+This must be defined for dynamic simulations, default = None."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -231,6 +236,20 @@ within this flowsheet if not otherwise specified,
                         'declaring some models as steady-state.'
                         .format(self.name))
 
+        # Validate units for time domain
+        if self.config.time_units is None:
+            _log.warning("DEPRECATED: No units were specified for the time "
+                         "domain. Users should provide unit via the "
+                         "time_units. This will not affect steady-state "
+                         "flowsheets, but for dynamic cases unitless time "
+                         "domains will only work with unitless property "
+                         "packages, and vice versa.")
+        elif not isinstance(self.config.time_units, _PyomoUnit):
+            raise ConfigurationError(
+                "{} unrecognised value for time_units argument. This must be "
+                "a Pyomo Unit object (not a compound unit)."
+                .format(self.name))
+
         if self.config.time is not None:
             # Validate user provided time domain
             if (self.config.dynamic is True and
@@ -238,6 +257,7 @@ within this flowsheet if not otherwise specified,
                 raise DynamicError(
                         '{} was set as a dynamic flowsheet, but time domain '
                         'provided was not a ContinuousSet.'.format(self.name))
+            self._time_units = self.config.time_units
         else:
             # If no parent flowsheet, set up time domain
             if fs is None:
@@ -261,9 +281,11 @@ within this flowsheet if not otherwise specified,
                     # For steady-state, use an ordered Set
                     self.time = pe.Set(initialize=self.config.time_set,
                                        ordered=True)
+                self._time_units = self.config.time_units
 
                 # Set time config argument as reference to time domain
                 self.config.time = self.time
             else:
                 # Set time config argument to parent time
                 self.config.time = fs.config.time
+                self._time_units = fs._time_units

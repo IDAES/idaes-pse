@@ -533,7 +533,7 @@ def test_add_phase_component_balances_default():
 
 def test_add_phase_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1035,7 +1035,7 @@ def test_add_total_component_balances_default():
 
 def test_add_total_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1503,7 +1503,7 @@ def test_add_total_element_balances_properties_not_supported():
 
 def test_add_total_element_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1729,7 +1729,7 @@ def test_add_total_enthalpy_balances_default():
 
 def test_add_total_enthalpy_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -2186,7 +2186,7 @@ def test_get_stream_table_contents():
 
 def test_get_performance_contents():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -2252,7 +2252,7 @@ def test_get_performance_contents():
 
 def test_get_performance_contents_elemental():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
