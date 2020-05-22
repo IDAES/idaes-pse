@@ -42,7 +42,7 @@ The cubic equation of state is solved for each phase via a call to an external f
 Property Package Options
 ------------------------
 
-When using the general cubic equation of state module, users must specify the type of cubic to use. This is done using by providing a `type` option in the `equation_of_state_options` argument in the `Phase` definition, as shown in the example below.
+When using the general cubic equation of state module, users must specify the type of cubic to use. This is done by providing a `type` option in the `equation_of_state_options` argument in the `Phase` definition, as shown in the example below.
 
 .. code-block:: python
 
@@ -62,7 +62,7 @@ Required Parameters
 Cubic equations of state require the following parameters to be defined:
 
 1. `omega` (Pitzer acentricity factor) needs to be defined for each component (in the `parameter_data` for each component).
-2. `kappa` (binary interaction parameters) need to be defined for each component pair in the system. This parameter needs to be defined in the general `parameter_data` argument for the overall property package (as it can be used in multiple phases).
+2. `kappa` (binary interaction parameters) needs to be defined for each component pair in the system. This parameter needs to be defined in the general `parameter_data` argument for the overall property package (as it can be used in multiple phases).
 
 Calculation of Properties
 -------------------------
