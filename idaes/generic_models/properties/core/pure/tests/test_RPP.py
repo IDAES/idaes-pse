@@ -96,10 +96,10 @@ def test_entr_mol_ig_comp(frame):
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(373.541, abs=1e-3)
+    assert value(expr) == pytest.approx(191.780, abs=1e-3)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(383.542, abs=1e-3)
+    assert value(expr) == pytest.approx(201.780, abs=1e-3)
 
 
 def test_pressure_sat_comp(frame):

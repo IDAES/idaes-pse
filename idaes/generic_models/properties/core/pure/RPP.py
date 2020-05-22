@@ -73,10 +73,14 @@ class entr_mol_ig_comp():
 
     def return_expression(b, cobj, T):
         # Specific entropy
-        return ((cobj.cp_mol_ig_comp_coeff['D']/3)*T**3 +
-                (cobj.cp_mol_ig_comp_coeff['C']/2)*T**2 +
-                cobj.cp_mol_ig_comp_coeff['B']*T +
-                cobj.cp_mol_ig_comp_coeff['A']*log(T) +
+        return ((cobj.cp_mol_ig_comp_coeff['D']/3) *
+                (T**3-b.params.temperature_ref**3) +
+                (cobj.cp_mol_ig_comp_coeff['C']/2) *
+                (T**2-b.params.temperature_ref**2) +
+                cobj.cp_mol_ig_comp_coeff['B'] *
+                (T-b.params.temperature_ref) +
+                cobj.cp_mol_ig_comp_coeff['A'] *
+                log(T/b.params.temperature_ref) +
                 cobj.entr_mol_form_vap_comp_ref)
 
 
