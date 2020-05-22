@@ -389,7 +389,7 @@ argument)."""))
             units['flow_l'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -967,7 +967,7 @@ argument)."""))
             units['flow_l'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -1175,7 +1175,7 @@ argument)."""))
             units['energy_flow_l'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "

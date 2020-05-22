@@ -259,7 +259,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             units['flow'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -794,7 +794,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             units['flow'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -987,7 +987,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             units['energy_flow'] = None
 
         if self.config.dynamic:
-            f_time_units = self.flowsheet()._time_units
+            f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "

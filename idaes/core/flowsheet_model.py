@@ -116,8 +116,14 @@ within this flowsheet if not otherwise specified,
         """
         super(FlowsheetBlockData, self).build()
 
+        self._time_units = None
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
+
+    @property
+    def time_units(self):
+        return self._time_units
 
     def is_flowsheet(self):
         """
