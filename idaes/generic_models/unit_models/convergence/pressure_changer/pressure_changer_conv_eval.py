@@ -14,7 +14,10 @@ import idaes.core.util.convergence.convergence_base as cb
 import pyomo.environ as pe
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.pressure_changer import PressureChanger
+from idaes.generic_models.unit_models.pressure_changer import (
+    PressureChanger,
+    ThermodynamicAssumption,
+)
 
 # Import property package for testing
 from idaes.generic_models.properties import iapws95 as pp
@@ -62,7 +65,7 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
 
         m.fs.pc = PressureChanger(default={
                 "property_package": m.fs.props,
-                "thermodynamic_assumption": 'isothermal'})
+                "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
 
         m.fs.pc.deltaP.fix(-1e3)
         m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
