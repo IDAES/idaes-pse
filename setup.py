@@ -43,7 +43,6 @@ kwargs = dict(
     install_requires=[
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bokeh==0.12.9",
         "bunch",
         "click",
         "colorama",
