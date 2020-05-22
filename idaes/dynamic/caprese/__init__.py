@@ -2,6 +2,9 @@
 """ __init__.py for Caprese module
 """
 from .nmpc import NMPCSim
+from .mhe import MHESim
+from .base_class import DynamicSimulation
+from .common import config
 from .util import (ControlInitOption, ElementInitializationInputOption,
         TimeResolutionOption, ControlPenaltyType, VariableCategory,
         NMPCVarGroup)
