@@ -39,7 +39,12 @@ To help other modelers and users understand the how a model works, model builder
 
 Units of Measurement and Reference States
 -----------------------------------------
-Due to the flexibility provided by the IDAES modeling framework, there is no standard set of units of measurement or standard reference state that should be used in models. This places the onus on the user to understand the units of measurement being used within their models and to ensure that they are consistent.
+Due to the flexibility provided by the IDAES modeling framework, there is no standard set of units of measurement or standard reference state that should be used in models. Units of measurement are defined by the modeler for the 7 base quantities (time, length, mass, amount, temperature, current and luminous intensity) in each property package, and the framework makes use of this and Pyomo's Units container to automatically determine the units of all variables and expressions within a model. Thus, all components within a model using a given property package must use units based on the units chosen for the base quantities (to ensure consistency of units). However, flowsheets may contain property packages which use different sets of base units, however users should be careful to ensure units are converted correctly where property packages interact. For more detail on defining units of measurement see :ref:`Defining Units of Measurement<core/uom:Defining Units of Measurement>`.
+
+Pyomo also provides convenient tools for converting between different units of measurement and checking for unit consistency, of which a few are highlighted below:
+
+* ``units.convert(var, to_units=units)`` - returns a Pyomo expression including the variable `var` and the necessary conversion factors to convert it to the desired set of units (`units`). This method will return an `Exception` if the units of `var` are not consistent with those requested by the user.
+* ``units.assert_units_consistent(object)`` - checks for consistency of units in `object` and raises an `AssertionError` if they are not. `object` may be a `Block`, `Constraint` or `Expression`.
 
 The IDAES developers have generally used SI units without prefixes (i.e. Pa, not kPa) within models developed by the institute, with a default thermodynamic reference state of 298.15 K and 101325 Pa. Supercritical fluids have been consider to be part of the liquid phase, as they will be handled via pumps rather than compressors.
 
@@ -108,6 +113,10 @@ Reference State    ref
 Constants
 ^^^^^^^^^
 IDAES contains a library of common physical constants of use in process systems engineering models, which can be imported from `idaes.core.util.constants`. Below is a list of these constants with their standard names and values (SI units).
+
+.. note::
+
+    It is important to note that these constants are represented as Pyomo `expressions` in order to include units of measurement. As such, they can be directly included in other `expressions` within a model. However, if the user desires to use their value directly (e.g. to initialize a variable), the `value()` method must be used to extract the value of the constant from the `expression`.
 
 ================================= ====================== ================ =============
 Constant                          Standard Name          Value            Units
@@ -227,4 +236,3 @@ conc_phase_comp["liq", "H2O"]  Concentration of H2O in the liquid phase
 temperature_red                Reduced temperature
 pressure_crit                  Critical pressure
 ============================== ===========================================================
-

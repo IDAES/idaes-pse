@@ -4,6 +4,7 @@ Property Packages
 .. toctree::
     :maxdepth: 1
 
+    uom
     state_block
     reaction_block
 
@@ -16,6 +17,13 @@ The IDAES process modeling framework divides property calculations into two part
 * chemical reaction properties
 
 Defining the calculations to be used when calculating properties is done via "property packages", which contain a set of related calculations for a number of properties of interest. Property packages may be general in purpose, such as ideal gas equations, or specific to a certain application.
+
+Units of Measurement
+--------------------
+
+One of the most important roles property packages play within the modeling framework is to define the units of measurement that will be used for those models which use the property packages. Any variable which is created in a unit model will derive its units of measurement from those defined in the associated property package in order to ensure consistency of units.
+
+Defining units of measurement in property packages is :ref:`discussed here<core/uom:Defining Units of Measurement>`.
 
 As Needed Properties
 --------------------
