@@ -14,9 +14,16 @@
 """
 Base class for dynamic simulation objects.
 """
-
 from pyutilib.misc.config import ConfigDict, ConfigValue
-import idaes.dynamic.caprese.common.config as dyn_config
+from pyomo.core.base.block import Block
+from pyomo.dae import DerivativeVar
+from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.core.kernel.component_set import ComponentSet
+from pyomo.core.kernel.component_map import ComponentMap
+from idaes.dynamic.caprese.common import config as dyn_config
+from idaes.dynamic.caprese.common.config import (VariableCategory)
+from idaes.dynamic.caprese.util import NMPCVarGroup, NMPCVarLocator
+import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
 # Don't think base class should need to import from util
 
@@ -49,7 +56,7 @@ class DynamicSimulation(object):
     CONFIG.declare(
             'solver',
             ConfigValue(
-                default=1e-8,
+                default='ipopt',
                 domain=dyn_config.validate_solver,
                 doc='Pyomo solver object to be used to solve generated NLPs',
                 )
@@ -72,7 +79,7 @@ class DynamicSimulation(object):
     def add_namespace_to(cls, model, time):
         """
         """
-        name = cls.get_namespace_name()
+        name = DynamicSimulation.get_namespace_name()
         if hasattr(model, name):
             # Return if namespace has already been added. Don't throw an error
             # as this is expected if the user, say wants to use the same model
@@ -82,16 +89,21 @@ class DynamicSimulation(object):
             raise ValueError(
                 'time must belong to same top-level model as model')
         model.add_component(name, Block())
+        namespace = getattr(model, name)
 
         def get_time():
             return time
         namespace.get_time = get_time
+        # Validate discretization scheme and get ncp:
+        namespace.ncp = dyn_config.get_ncp(time)
+
+        namespace.variables_vategorized = False
 
     @classmethod
     def remove_namespace_from(cls, model):
         """
         """
-        name = cls.get_namespace_name()
+        name = DynamicSimulation.get_namespace_name()
         if not hasattr(model, name):
             raise RuntimeError(
                 'Trying to delete block %s that does not exist on model'
@@ -101,6 +113,45 @@ class DynamicSimulation(object):
     @classmethod
     def get_logger_name(cls):
         return 'dynamic'
+
+    def _populate_namespace(self, model):
+        """
+        Given a model with categorized variables, a category_dict, and a
+        var_locator, each referenced through the DynamicSimulation namespace,
+        adds references to each of these objects through model's namespace
+        corresponding to this particular instance of DynamicSimulation
+        (i.e. NMPCSim or MHESim).
+        """
+        if self.get_namespace_name() == DynamicSimulation.get_namespace_name():
+            return
+        derived_namespace = getattr(model, self.get_namespace_name())
+        base_namespace = getattr(model, DynamicSimulation.get_namespace_name())
+
+        derived_namespace.dae_vars = base_namespace.dae_vars
+        derived_namespace.diff_vars = base_namespace.diff_vars
+        derived_namespace.n_diff_vars = base_namespace.n_diff_vars
+        derived_namespace.deriv_vars = base_namespace.deriv_vars
+        derived_namespace.n_deriv_vars = base_namespace.n_deriv_vars
+        derived_namespace.input_vars = base_namespace.input_vars
+        derived_namespace.n_input_vars = base_namespace.n_input_vars
+        derived_namespace.alg_vars = base_namespace.alg_vars
+        derived_namespace.n_alg_vars = base_namespace.n_alg_vars
+        derived_namespace.fixed_vars = base_namespace.fixed_vars
+        derived_namespace.n_fixed_vars = base_namespace.n_fixed_vars
+        derived_namespace.scalar_vars = base_namespace.scalar_vars
+        derived_namespace.n_scalar_vars = base_namespace.n_scalar_vars
+
+        derived_namespace.ic_vars = base_namespace.ic_vars
+        derived_namespace.n_ic_vars = base_namespace.n_ic_vars
+
+        derived_namespace.variables_categorized = \
+                base_namespace.variables_categorized
+
+        derived_namespace.get_time = base_namespace.get_time
+        derived_namespace.ncp = base_namespace.ncp
+
+        derived_namespace.category_dict = base_namespace.category_dict
+        derived_namespace.var_locator = base_namespace.var_locator
 
 
     def __init__(self, plant, plant_time, controller, controller_time,
@@ -123,12 +174,48 @@ class DynamicSimulation(object):
 
         # categorize, create category dicts, create locator
         # ^should this be done separately for NMPC/MHE?
+        self.categorize_variables(self.plant, inputs_at_t0)
+        namespace = getattr(self.plant, DynamicSimulation.get_namespace_name())
 
-        # validate discretization scheme
-        namespace = getattr(self, self.get_namespace_name())
-        namespace.ncp = dyn_config.get_ncp(self.plant_time)
-        namespace.ncp = dyn_config.get_ncp(self.controller_time)
-        # ^Add these to namespace
+        namespace.category_dict = {
+                VariableCategory.DIFFERENTIAL: namespace.diff_vars,
+                VariableCategory.DERIVATIVE: namespace.deriv_vars,
+                VariableCategory.ALGEBRAIC: namespace.alg_vars,
+                VariableCategory.INPUT: namespace.input_vars,
+                VariableCategory.FIXED: namespace.fixed_vars,
+                VariableCategory.SCALAR: namespace.scalar_vars,
+                }
+        self.build_variable_locator(self.plant,
+                namespace.category_dict,
+                ic_vars=namespace.ic_vars)
+#                measurement_vars=namespace.measurement_vars)
+
+        # find input and measurement vars in controller model
+        init_controller_inputs = [
+                dyn_utils.find_comp_in_block(self.controller, self.plant, comp)
+                for comp in inputs_at_t0]
+
+        self.categorize_variables(self.controller, init_controller_inputs)
+        namespace = getattr(self.controller,
+                DynamicSimulation.get_namespace_name())
+
+        namespace.category_dict = {
+                VariableCategory.DIFFERENTIAL: namespace.diff_vars,
+                VariableCategory.DERIVATIVE: namespace.deriv_vars,
+                VariableCategory.ALGEBRAIC: namespace.alg_vars,
+                VariableCategory.INPUT: namespace.input_vars,
+                VariableCategory.FIXED: namespace.fixed_vars,
+                VariableCategory.SCALAR: namespace.scalar_vars,
+                }
+        self.build_variable_locator(self.controller,
+                namespace.category_dict,
+                ic_vars=namespace.ic_vars)
+
+        # Populate derived-class namespaces with attributes just constructed
+        # on the base class namespace
+        self._populate_namespace(self.plant)
+        self._populate_namespace(self.controller)
+
 
     def set_sample_time(self, sample_time):
         """
@@ -144,7 +231,7 @@ class DynamicSimulation(object):
             'Derived class must implement method for validating sample time')
 
     @staticmethod
-    def categorize_variables(cls, model, initial_inputs):
+    def categorize_variables(model, initial_inputs):
         """Creates lists of time-only-slices of the different types of variables
         in a model, given knowledge of which are inputs. These lists are added 
         as attributes to the model's namespace.
@@ -174,7 +261,7 @@ class DynamicSimulation(object):
                              at the initial time point
 
         """
-        namespace = getattr(self, 
+        namespace = getattr(model,
                 DynamicSimulation.get_namespace_name())
         time = namespace.get_time()
         t0 = time.first()
@@ -186,6 +273,7 @@ class DynamicSimulation(object):
         fixed_vars = []
 
         ic_vars = []
+#        measurement_vars = []
 
         # Create list of time-only-slices of time indexed variables
         # (And list of VarData objects for scalar variables)
@@ -202,6 +290,7 @@ class DynamicSimulation(object):
                 namespace.scalar_vars.n_vars
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
+#        measurement_set = ComponentSet(initial_measurements)
         diff_set = ComponentSet()
 
         # Iterate over initial vardata, popping from dae map when an input,
@@ -211,6 +300,12 @@ class DynamicSimulation(object):
                 input_set.remove(var0)
                 time_slice = dae_map.pop(var0)
                 input_vars.append(time_slice)
+
+#                if var0 in measurement_set:
+#                    # Don't think inputs should ever be measurements,
+#                    # but maybe under some circumstances
+#                    measurement_vars.append(time_slice)
+#                    measurement_set.remove(var0)
              
             parent = var0.parent_component()
             if not isinstance(parent, DerivativeVar):
@@ -228,6 +323,11 @@ class DynamicSimulation(object):
                 # Should be safe to remove state from dae_map here
                 state_slice = dae_map.pop(state[index0])
                 fixed_vars.append(state_slice)
+
+#                if state[index0] in measurement_set:
+#                    measurement_vars.append(state_slice)
+#                    measurement_set.remove(state[index0])
+
                 continue
             if state[index0] in input_set:
                 # If differential variable is an input, then this DerivativeVar
@@ -235,6 +335,12 @@ class DynamicSimulation(object):
                 continue
 
             deriv_slice = dae_map.pop(var0)
+#            if var0 in measurement_set:
+#                # Don't think derivative vars will ever be measurements,
+#                # but don't want to preclude
+#                measurement_vars.append(deriv_slice)
+#                measurement_set.remove(var0)
+
             if var1.fixed:
                 # Assume derivative has been fixed everywhere.
                 # Add to list of fixed variables, and don't remove its state variable.
@@ -246,6 +352,9 @@ class DynamicSimulation(object):
                 state_slice = dae_map.pop(state[index0])
                 if state[index0].fixed:
                     ic_vars.append(state_slice)
+#                if state[index0] in measurement_set:
+#                    measurement_vars.append(state_slice)
+#                    measurement_set.remove(state[index0])
                 deriv_vars.append(deriv_slice)
                 diff_vars.append(state_slice)
             else:
@@ -253,6 +362,9 @@ class DynamicSimulation(object):
                 state_slice = dae_map.pop(state[index0])
                 if state[index0].fixed:
                     ic_vars.append(state_slice)
+#                if state[index0] in measurement_set:
+#                    measurement_vars.append(state_slice)
+#                    measurement_set.remove(state[index0])
                 deriv_vars.append(deriv_slice)
                 diff_vars.append(state_slice)
 
@@ -264,6 +376,11 @@ class DynamicSimulation(object):
             var1 = time_slice[t1]
             # If the variable is still in the list of time-indexed vars,
             # it must either be fixed (not a var) or be an algebraic var
+            # In either case it could be a measurement var. (Could a fixed
+            # var ever be a measurement var? Don't want to preclude)
+#            if var0 in measurement_set:
+#                measurement_vars.append(time_slice)
+#                measurement_set.remove(var0)
             if var1.fixed:
                 fixed_vars.append(time_slice)
             else:
@@ -286,6 +403,11 @@ class DynamicSimulation(object):
         # Would like this to be true, but accurately detecting differential
         # variables that are not implicitly fixed (by fixing some input)
         # is difficult
+        # Also, a categorization can have no input vars and still be
+        # valid for MHE
+
+#        namespace.measurement_vars = measurement_vars
+#        namespace.n_measurement_vars = len(measurement_vars)
 
         namespace.input_vars = NMPCVarGroup(input_vars, time)
         namespace.n_input_vars = len(input_vars)
@@ -297,3 +419,48 @@ class DynamicSimulation(object):
         namespace.n_fixed_vars = len(fixed_vars)
 
         namespace.variables_categorized = True
+
+    @staticmethod
+    def build_variable_locator(model, category_dict, ic_vars=[],
+            measurement_vars=[]):
+        """Constructs a ComponentMap mapping each VarData object
+        to a NMPCVarLocator object. This dictionary is added as an attribute to
+        the model's namespace.
+
+        Args:
+            model : Flowsheet model containing the variables provided
+            category_dict : Dictionary mapping VariableCategory enum items
+                            to NMPCVarGroup instances
+            ic_vars : List of variables (time-only slices) that are fixed
+                      only at the initial time point
+
+        """
+        namespace = getattr(model,
+                DynamicSimulation.get_namespace_name())
+        time = namespace.get_time()
+        ic_list = ic_vars
+
+        locator = ComponentMap()
+        for categ, vargroup in category_dict.items():
+            varlist = vargroup.varlist
+            if categ == VariableCategory.SCALAR:
+                for i, var in enumerate(varlist):
+                    locator[var] = NMPCVarLocator(categ, vargroup, i)
+            else:
+                for i, var in enumerate(varlist):
+                    for t in time:
+                        locator[var[t]] = NMPCVarLocator(categ, vargroup, i)
+
+        # Since these variables already have NMPCVarLocator objects,
+        # just set the desired attribute.
+        for i, _slice in enumerate(ic_list):
+            for t in time:
+                locator[_slice[t]].is_ic = True
+
+        for i, _slice in enumerate(measurement_vars):
+            for t in time:
+                locator[_slice[t]].is_measurement = True
+
+        namespace.var_locator = locator
+
+
