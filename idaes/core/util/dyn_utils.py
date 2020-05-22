@@ -28,6 +28,12 @@ import idaes.logger as idaeslog
 __author__ = "Robert Parker"
 
 
+def is_implicitly_indexed_by(comp, s, stop_at=None):
+    raise NotImplementedError(
+        'The name is_implicitly_indexed_by is deprecated. Please import '
+        'is_in_block_indexed_by from pyomo.dae.set_utils instead.')
+
+
 def get_activity_dict(b):
     """
     Function that builds a dictionary telling whether or not each

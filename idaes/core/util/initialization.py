@@ -15,16 +15,19 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Var, TerminationCondition, SolverFactory
+from pyomo.environ import (Block, Var, TerminationCondition, SolverFactory,
+        Constraint)
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
+from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (get_activity_dict,
         deactivate_model_at, deactivate_constraints_unindexed_by,
-        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time)
+        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
+        get_implicit_index_of_set)
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
@@ -270,9 +273,15 @@ def initialize_by_time_element(fs, time, **kwargs):
     init_log = idaeslog.getInitLogger(__name__, level=outlvl) 
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
-    solver = kwargs.pop('solver', SolverFactory('ipopt'))
-
     ignore_dof = kwargs.pop('ignore_dof', False)
+    solver = kwargs.pop('solver', SolverFactory('ipopt'))
+    fix_diff_only = kwargs.pop('fix_diff_only', True)
+    # This option makes the assumption that the only variables that
+    # link constraints to previous points in time (which must be fixed)
+    # are the derivatives and differential variables. Not true if a controller
+    # is being present, but should be a good assumption otherwise, and is
+    # significantly faster than searching each constraint for time-linking
+    # variables.
 
     if not ignore_dof:
         if degrees_of_freedom(fs) != 0:
@@ -357,24 +366,33 @@ def initialize_by_time_element(fs, time, **kwargs):
         init_deriv_list = derivs_at_time[t_prev]
         init_dvar_list = dvars_at_time[t_prev]
 
-        # Record original fixed status of each of these variables
-        was_originally_fixed = {}
-        for drv in init_deriv_list:
-            was_originally_fixed[id(drv)] = drv.fixed
-            # Cannot fix variables with value None.
-            # Any variable with value None was not solved for
-            # (either stale or not included in previous solve)
-            # and we don't want to fix it.
-            if not drv.value is None:
-                drv.fix()
-        for dv in init_dvar_list:
-            was_originally_fixed[id(dv)] = dv.fixed
-            if not drv.value is None:
-                dv.fix()
-        # This assumes that only derivative and differential variables can
-        # participate in a constraint with a different time-index than
-        # themselves. This will be likely be violated by flowsheets
-        # involving controllers. FIXME
+        # Variables that were originally fixed
+        fixed_vars = []
+        if fix_diff_only:
+            for drv in init_deriv_list:
+                # Cannot fix variables with value None.
+                # Any variable with value None was not solved for
+                # (either stale or not included in previous solve)
+                # and we don't want to fix it.
+                if not drv.fixed:
+                    fixed_vars.append(drv)
+                if not drv.value is None:
+                    drv.fix()
+            for dv in init_dvar_list:
+                if not dv.fixed:
+                    fixed_vars.append(dv)
+                if not dv.value is None:
+                    dv.fix()
+        else:
+            for con in fs.component_data_objects(Constraint, active=True):
+                for var in identify_variables(con.expr,
+                                              include_fixed=False):
+                    t_idx = get_implicit_index_of_set(var, time)
+                    if t_idx is None:
+                        continue
+                    if t_idx <= t_prev:
+                        fixed_vars.append(var)
+                        var.fix()
 
         # Initialize finite element from its initial conditions
         for t in fe:
@@ -406,12 +424,8 @@ def initialize_by_time_element(fs, time, **kwargs):
                 comp.deactivate()
 
         # Unfix variables that have been fixed
-        for drv in init_deriv_list:
-            if not was_originally_fixed[id(drv)]:
-                drv.unfix()
-        for dv in init_dvar_list:
-            if not was_originally_fixed[id(dv)]:
-                dv.unfix()
+        for var in fixed_vars:
+            var.unfix()
 
         # Log that initialization step {i} has been finished
         init_log.info(f'Initialization step {i} complete')

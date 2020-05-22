@@ -2,13 +2,10 @@ Applications
 ============
 
 This section contains applications that can be used in conjunction with the IDAES
-framework and libraries, but which are not closely tied to the implementation.
-
-Contents
---------
+framework and libraries.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     matopt
     caprese/index

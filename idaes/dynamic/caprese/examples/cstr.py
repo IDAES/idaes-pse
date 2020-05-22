@@ -83,8 +83,8 @@ def main():
         assert t in time_plant
     # Six samples per horizon, five elements per sample
 
-    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_rate[0],
-                            m_plant.fs.mixer.E_inlet.flow_rate[0]]
+    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_vol[0],
+                            m_plant.fs.mixer.E_inlet.flow_vol[0]]
     
     nmpc = NMPCSim(plant_model=m_plant.fs, 
                    plant_time_set=m_plant.fs.time,
@@ -100,8 +100,8 @@ def main():
     set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
                  (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
                  (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (c_mod.mixer.E_inlet.flow_rate[0], 0.1),
-                 (c_mod.mixer.S_inlet.flow_rate[0], 2.0)]
+                 (c_mod.mixer.E_inlet.flow_vol[0], 0.1),
+                 (c_mod.mixer.S_inlet.flow_vol[0], 2.0)]
     # Interestingly, this (st.st. set point) solve converges infeasible
     # if energy_holdup set point is not 300. (Needs higher weight?)
 
@@ -109,7 +109,7 @@ def main():
     
     # Weight overwrite expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    weight_override = [(c_mod.mixer.E_inlet.flow_rate[0], 20.0)]
+    weight_override = [(c_mod.mixer.E_inlet.flow_vol[0], 20.0)]
 
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,

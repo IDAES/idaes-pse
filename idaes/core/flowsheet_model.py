@@ -29,7 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_floats)
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.ui.flowsheet_serializer import FlowsheetSerializer
+from idaes.ui.fsvis.fsvis import visualize
 
 from idaes.core.util import unit_costing as costing
 
@@ -177,30 +177,19 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def serialize(self, file_base_name, overwrite=False):
+    def visualize(self, model_name):
         """
-        Serializes the flowsheet and saves it to a file that can be read by the
-        idaes-model-vis  jupyter lab extension.
+        Starts up a flask server that serializes the model and pops up a 
+        webpage with the visualization
 
         Args:
-            file_base_name : The file prefix to the .idaes.vis file produced.
-                             The file is created/saved in the directory that
-                             you ran from Jupyter Lab.
-
-            overwrite : Boolean to overwrite an existing file_base_name.idaes.vis.
-                        If True, the existing file with the same file_base_name will be
-                        overwritten.  This will cause you to lose any saved layout.
-                        If False and there is an existing file with that file_base_name,
-                        you will get an error message stating that you cannot save a file
-                        to the file_base_name (and therefore overwriting the saved layout).
-                        If there is not an existing file with that file_base_name then it
-                        saves as normal.  Defaults to False.
+            model_name : The name of the model that flask will use as an argument
+                         for the webpage
 
         Returns:
             None
         """
-        serializer = FlowsheetSerializer()
-        serializer.serialize(self, file_base_name, overwrite)
+        visualize(self, model_name)
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()

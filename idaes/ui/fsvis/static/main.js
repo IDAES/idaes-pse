@@ -3,11 +3,11 @@
 // then you get /images/icons that do not drop
 // when the mouseup event is emitted
 var standard = joint.shapes.standard
-var width = 10000;
-var height = 10000;
+var width = 800;
+var height = 800;
 var gridSize = 1;
 var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
-var holder = document.getElementById("idaes_flowsheet_visualizer");
+var holder = $("#idaes-canvas")[0];
 var paper = new joint.dia.Paper({
   el: holder,
   model: graph,
@@ -17,6 +17,7 @@ var paper = new joint.dia.Paper({
   gridSize: gridSize,
   interactive: true
 });
+
 
 // Adds link tools (adding vertices, moving segments) to links when your mouse over
 paper.on("link:mouseover", function(cellView, evt) {
@@ -28,13 +29,9 @@ paper.on("link:mouseover", function(cellView, evt) {
   });
   var segmentsTool = new joint.linkTools.Segments();
 
-  var sourceArrowheadTool = new joint.linkTools.SourceArrowhead();
-  var targetArrowheadTool = new joint.linkTools.TargetArrowhead();
-
   var toolsView = new joint.dia.ToolsView({
     tools: [
-      verticesTool, segmentsTool,
-      sourceArrowheadTool, targetArrowheadTool
+      verticesTool, segmentsTool
     ]
   });
   cellView.addTools(toolsView)
@@ -91,6 +88,12 @@ paper.on('cell:pointermove', function (cellView, evt, x, y) {
   if (constrained) { cellView.pointermove(evt, constrainedX, constrainedY) }
 });
 
+// Get the model from the div tag (see the html file for an explanation)
+var data_model = $("#model").data("model");
+var model_id = data_model.model.id;
+var url = "/fs?id=".concat(model_id)
+renderModel(data_model)
+
 // Send a post request to the server with the new graph 
 // This is essentially the saving mechanism (for a server instance) for right now
 // See the comments above the save button for more saving TODOs
@@ -100,7 +103,7 @@ paper.on('paper:mouseleave', evt => {
         contentType: 'application/json',
         data: JSON.stringify(graph.toJSON()),
         dataType: 'json',
-        url: '/fs?id=draftmodel',
+        url: url,
         success: function (data) {
             console.log(data);
         },
@@ -110,21 +113,28 @@ paper.on('paper:mouseleave', evt => {
     });
 });
 
-// Get the model from the div tag (see the html file for an explanation)
-var data_model = $("#model").data("model");
-var model_id = data_model.id;
-renderModel(data_model)
-
 // Take a model and imports with graph.fromJSON
 function renderModel(model) {
+    console.log("rendering model..", model.model.id);
+    $('#idaes-fs-name').text(model.model.id);  // set flowsheet name
     graph.fromJSON(model);
 }
 
+
+// Set up the help button
+// Not implemented yet
+var help_button = document.getElementById("help_button");
+
+//help_button.innerText = "Help";
+help_button.onclick = () => {
+  window.alert("Not implemented yet")
+}
+
 // Set up the toggle arc label button
-var show_hide_button = document.getElementById("show_hide_button");
-show_hide_button.innerText = "Show/Hide Arc Labels";  
-show_hide_button.onclick = () => {
-  paper.model.getLinks().forEach(function (link) {        
+var show_hide_button = $("#show_hide_all_button");
+// show_hide_button.innerText = "Show/Hide Arc Labels";
+show_hide_button.on('click', function() {
+  paper.model.getLinks().forEach(function (link) {
     if (link.attr('text/display') == 'none') {
       link.attr({
         'text': {
@@ -142,16 +152,7 @@ show_hide_button.onclick = () => {
       });
     }
   });
-}
-
-// Set up the help button
-// Not implemented yet
-var help_button = document.getElementById("help_button");
-
-help_button.innerText = "Help";  
-help_button.onclick = () => {
-  window.alert("Not implemented yet")
-}
+});
 
 // When the save button is clicked send a post request to the server with the layout
 // We still need to differentiate between the saving the layout in the server and the
@@ -165,7 +166,7 @@ $(document).ready( function() {
             contentType: 'application/json',
             data: JSON.stringify(graph.toJSON()),
             dataType: 'json',
-            url: 'http://127.0.0.1:5555/app?id=draftmodel',
+            url: url,
             success: function (e) {
                 console.log(e);
             },
@@ -174,4 +175,12 @@ $(document).ready( function() {
             }
         });
     });
+
+    $(window).resize(function() {
+        var canvas = $("#idaes-canvas")[0];
+        console.debug('resizing width=', canvas.width(), 'height=', canvas.height());
+        paper.setDimensions(canvas.width(), canvas.height());
+
+    });
+
 });

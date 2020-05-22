@@ -23,7 +23,7 @@ def get_version():
 NAME = "idaes-pse"
 VERSION = get_version()
 README = open("README.md").read()
-README = README[README.find("#") :]  # ignore everything before title
+README = README[README.find("#"):]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -43,11 +43,10 @@ kwargs = dict(
     install_requires=[
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bokeh==0.12.9",
         "bunch",
         "click",
         "colorama",
-        "flask", # for ui/fsvis
+        "flask",  # for ui/fsvis
         "jupyter",
         "lxml",
         "matplotlib",
@@ -59,18 +58,13 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyomo",
-        "pytest",
         "pyutilib",
+        "pyomo>=5.6.9",
+        "pytest",
         "pyyaml",
-        "requests", # for ui/fsvis
+        "requests",  # for ui/fsvis
         "sympy",
-        "tinydb<=3.15.2",
-        # alamopy
-        # <nothing>
-        # ripe
-        # <nothing>
-        # helmet
+        "tinydb",
         "rbfopt",
     ],
     entry_points={
