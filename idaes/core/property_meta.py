@@ -184,8 +184,9 @@ class PropertyClassMetadata(object):
             elif _units > 0:
                 # Mix of units and non-unit objects
                 raise PropertyPackageError(
-                    "default_units: if using Pyomo Units objects, all "
-                    "units must be defined using Units objects ({}: {})."
+                    "default_units ({}: {}): if using Pyomo Units objects, "
+                    "all units must be defined using Units objects (not "
+                    "compount units)."
                     .format(q, u))
 
         # Take opportunity to log a deprecation warning if units are not used
