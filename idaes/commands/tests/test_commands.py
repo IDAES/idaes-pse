@@ -60,11 +60,13 @@ def test_examples_cli_noop(runner):
     assert result.exit_code == 0
 
 
+@pytest.mark.nocircleci()  # because it goes out to Github
 def test_examples_cli_list(runner):
     result = runner.invoke(examples.get_examples, ["-l"])
     assert result.exit_code == 0
 
 
+@pytest.mark.nocircleci()  # because it goes out to Github
 def test_examples_cli_download(runner, random_tempdir):
     # failure with existing dir
     result = runner.invoke(examples.get_examples, ["-d", str(random_tempdir), "-I"])
@@ -88,6 +90,7 @@ def test_examples_cli_download_unstable(runner, random_tempdir):
     assert result.exit_code == -1
 
 
+@pytest.mark.nocircleci()  # because it goes out to Github
 def test_examples_cli_copy(runner, random_tempdir):
     dirname = str(random_tempdir / "examples")
     # local path is bad
@@ -121,6 +124,7 @@ def test_examples_n():
     target_dir = str(uuid.uuid4())  # pick something that won't exist
     retcode = subprocess.call(["idaes", "get-examples", "-N", "-d", target_dir])
     assert retcode == 255  # result of sys.exit(-1)
+
 
 @pytest.mark.nocircleci()  # goes out to network
 def test_examples_list_releases():
