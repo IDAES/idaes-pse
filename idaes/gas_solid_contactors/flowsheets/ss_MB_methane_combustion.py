@@ -45,7 +45,7 @@ def main():
 
     # Set up thermo props and reaction props
     m.fs.gas_properties = GasPhaseThermoParameterBlock()
-    m.fs.solid_properties = SolidPhaseThermo_ParameterBlock()
+    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
         default={"solid_property_package": m.fs.solid_properties,
