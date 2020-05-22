@@ -1432,7 +1432,7 @@ dmf rm usage
             fp.write(f"file #{i}")
         runner.invoke(register, [filename])
 
-.. testcleanup:: dmf-register
+.. testcleanup:: dmf-rm
 
     fsctx.__exit__(None, None, None)
     DMFConfig._filename = str(Path('~/.dmf').expanduser())
@@ -1613,11 +1613,6 @@ limited understanding of how to do colored text in our documentation tool
     fsctx.__enter__()
     DMFConfig._filename = str(Path('.dmf').absolute())
     runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-
-.. testcleanup:: dmf-status
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
 
 Show basic workspace status:
 
