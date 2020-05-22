@@ -34,6 +34,7 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
         get_fixed_dict, deactivate_constraints_unindexed_by, find_comp_in_block)
 from idaes.core.util.initialization import initialize_by_time_element
+from idaes.dynamic.caprese.common.config import VariableCategory
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -216,13 +217,13 @@ class ControlPenaltyType(NMPCEnum):
     NONE = 43
 
 
-class VariableCategory(NMPCEnum):
-    DIFFERENTIAL = 51
-    ALGEBRAIC = 52
-    DERIVATIVE = 53
-    INPUT = 54
-    FIXED = 55
-    SCALAR = 56
+#class VariableCategory(NMPCEnum):
+#    DIFFERENTIAL = 51
+#    ALGEBRAIC = 52
+#    DERIVATIVE = 53
+#    INPUT = 54
+#    FIXED = 55
+#    SCALAR = 56
 
 
 # This function is used as the domain for the user-provided
@@ -267,7 +268,8 @@ class NMPCVarLocator(object):
     proper container.
     """
 
-    def __init__(self, category, group, location, is_ic=False):
+    def __init__(self, category, group, location, is_ic=False, 
+            is_measurement=False):
         """Constructor method. Assigns attributes based on arguments.
 
         Args:
@@ -300,8 +302,14 @@ class NMPCVarLocator(object):
         self.location = location
 
         if type(is_ic) is not bool:
-            raise ValueError()
+            raise TypeError(
+                    'is_ic must be a bool')
         self.is_ic = is_ic
+
+        if type(is_measurement) is not bool:
+            raise TypeError(
+                    'is_measurement must be a bool')
+        self.is_measurement = is_measurement
 
 
 def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
