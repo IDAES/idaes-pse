@@ -142,15 +142,15 @@ def test_convergence_evaluation_fixedvar_mutableparam():
     # compare results
     assert global_results[0]['name'] == 'Sample-1'
     assert global_results[0]['solved']
-    assert global_results[0]['iters'] == 14
+    assert global_results[0]['iters'] > 0
 
     assert global_results[1]['name'] == 'Sample-2'
     assert global_results[1]['solved']
-    assert global_results[1]['iters'] == 15
+    assert global_results[1]['iters'] > 0
 
     assert global_results[2]['name'] == 'Sample-3'
     assert global_results[2]['solved']
-    assert global_results[2]['iters'] == 12
+    assert global_results[2]['iters'] > 0
 
     if os.path.exists(fname):
         os.remove(fname)

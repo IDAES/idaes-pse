@@ -60,7 +60,7 @@ def test_config():
     m.fs.unit = Heater(default={"property_package": m.fs.properties})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 11
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \

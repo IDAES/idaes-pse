@@ -64,7 +64,8 @@ def _make_heater_control_volume(o, name, config,
     # add energy balance
     control_volume.add_energy_balances(
         balance_type=config.energy_balance_type,
-        has_heat_transfer=True)
+        has_heat_transfer=True,
+        has_work_transfer=config.has_work_transfer)
     # add momentum balance
     control_volume.add_momentum_balances(
         balance_type=config.momentum_balance_type,
@@ -104,6 +105,15 @@ balance type
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+    config.declare("has_work_transfer", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Work transfer term construction flag",
+        doc="""Indicates whether terms for work transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include work transfer terms,
+**False** - exclude work transfer terms.}"""))
     config.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
