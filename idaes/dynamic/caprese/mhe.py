@@ -30,8 +30,9 @@ from pyutilib.misc.config import ConfigDict, ConfigValue
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom, 
         activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
+#from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
+#        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
+from idaes.core.util import dyn_utils
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
@@ -58,12 +59,44 @@ class MHESim(DynamicSimulation):
     """
     CONFIG = DynamicSimulation.CONFIG
 
+    @classmethod
+    def get_namespace_name(cls):
+        return '_MHE_NAMESPACE'
+
     def __init__(self, plant_model, plant_time_set, controller_model,
-            controller_time_set, measurements, 
-            inputs=None, **kwargs):
+            controller_time_set, measurements_at_t0, 
+            inputs_at_t0=[], **kwargs):
 
         self.config = self.CONFIG(kwargs)
-        super(MHESim, self).__init__()
+        super(MHESim, self).__init__(plant_model, plant_time_set,
+                controller_model, controller_time_set, inputs_at_t0)
+
+        # Tag measurement vars in plant appropriately
+        namespace = getattr(self.plant, self.get_namespace_name())
+        namespace.measurement_vars = []
+        for var in measurements_at_t0:
+            info = namespace.var_locator[var]
+            group = info.group
+            loc = info.location
+            _slice = group.varlist[loc]
+            namespace.measurement_vars.append(_slice)
+            for t in plant_time_set:
+                namespace.var_locator[_slice[t]].is_measurement = True
+
+        # Find measurement vars in controller and tag them appropriately
+        init_controller_measurements = [
+                dyn_utils.find_comp_in_block(self.controller, self.plant, comp)
+                for comp in measurements_at_t0]
+        namespace = getattr(self.controller, self.get_namespace_name())
+        namespace.measurement_vars = []
+        for var in init_controller_measurements:
+            info = namespace.var_locator[var]
+            group = info.group
+            loc = info.location
+            _slice = group.varlist[loc]
+            namespace.measurement_vars.append(_slice)
+            for t in controller_time_set:
+                namespace.var_locator[_slice[t]].is_measurement = True
 
 
     def add_namespace_to(self, model, time):
@@ -78,6 +111,8 @@ class MHESim(DynamicSimulation):
 
     def validate_time_sets(self):
         """
+        Is this necessary, or should it be done in same function as
+        validate_sample_time
         """
         # NOTE: What I consider "valid" may need to change significantly
         # when I start allowing more general (concise) plant models
@@ -108,6 +143,8 @@ class MHESim(DynamicSimulation):
 
 
     def validate_sample_time(plant):
+        """
+        """
         pass
 
         
