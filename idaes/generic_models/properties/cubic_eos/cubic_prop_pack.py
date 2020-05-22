@@ -1246,7 +1246,7 @@ class CubicStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
 # All of these equations drawn from Properties of Gases and Liquids
-# Quantities appended with _eq represent calcuations at equilibrium temperature
+# Quantities appended with _eq represent calculations at equilibrium temperature
     def common_cubic(blk):
         if hasattr(blk, "omegaA"):
             return
