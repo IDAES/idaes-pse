@@ -1005,13 +1005,27 @@ argument)."""))
                                        doc="Elemental flow terms",
                                        units=units['flow'])
 
+        # Method to convert mass flow basis to mole flow basis
+        def cf(b, t, x, j):
+            flow_basis = b.properties[t, x].get_material_flow_basis()
+            if flow_basis == MaterialFlowBasis.molar:
+                return 1
+            elif flow_basis == MaterialFlowBasis.mass:
+                return 1/b.properties[t, x].mw
+            else:
+                raise BalanceTypeNotSupportedError(
+                    "{} property package MaterialFlowBasis == 'other'. Cannot "
+                    "automatically generate elemental balances."
+                    .format(self.name))
+
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          self.config.property_package.element_list,
                          doc="Elemental flow constraints")
         def elemental_flow_constraint(b, t, x, e):
             return b.elemental_flow_term[t, x, e] == (
-                sum(sum(b.properties[t, x].get_material_flow_terms(p, j) *
+                sum(sum(cf(b, t, x, j) *
+                        b.properties[t, x].get_material_flow_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
                         for j in b.config.property_package.component_list)
                     for p in b.config.property_package.phase_list))
@@ -1085,7 +1099,7 @@ argument)."""))
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
                     b._area_func(t, x) *
-                    sum(b.phase_fraction[t, x, p] *
+                    sum(cf(b, t, x, j)*b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
                         for p in b.config.property_package.phase_list
