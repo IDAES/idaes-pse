@@ -823,12 +823,26 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     doc="Elemental accumulation in control volume",
                     units=acc_units)
 
+        # Method to convert mass flow basis to mole flow basis
+        def cf(b, t, j):
+            flow_basis = b.properties_out[t].get_material_flow_basis()
+            if flow_basis == MaterialFlowBasis.molar:
+                return 1
+            elif flow_basis == MaterialFlowBasis.mass:
+                return 1/b.properties_out[t].mw
+            else:
+                raise BalanceTypeNotSupportedError(
+                    "{} property package MaterialFlowBasis == 'other'. Cannot "
+                    "automatically generate elemental balances."
+                    .format(self.name))
+
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.element_list,
                          doc="Inlet elemental flow terms")
         def elemental_flow_in(b, t, p, e):
-            return sum(b.properties_in[t].get_material_flow_terms(p, j) *
+            return sum(cf(b, t, j) *
+                       b.properties_in[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
@@ -837,7 +851,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          self.config.property_package.element_list,
                          doc="Outlet elemental flow terms")
         def elemental_flow_out(b, t, p, e):
-            return sum(b.properties_out[t].get_material_flow_terms(p, j) *
+            return sum(cf(b, t, j) *
+                       b.properties_out[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
@@ -893,7 +908,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def elemental_holdup_calculation(b, t, e):
                 return b.element_holdup[t, e] == (
                     b.volume[t] *
-                    sum(b.phase_fraction[t, p] *
+                    sum(cf(b, t, j)*b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
                         .params.element_comp[j][e]
