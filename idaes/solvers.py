@@ -20,10 +20,9 @@ def download_binaries(url=None, verbose=False, platform="auto"):
     """
     if verbose:
         _log.setLevel(idaeslog.DEBUG)
-    idaes._create_lib_dir()
     idaes._create_bin_dir()
     solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
-    libs_tar = os.path.join(idaes.lib_directory, "idaes-lib.tar.gz")
+    libs_tar = os.path.join(idaes.bin_directory, "idaes-lib.tar.gz")
     fd = FileDownloader()
     arch = fd.get_sysinfo()
     if url is not None:
@@ -53,6 +52,6 @@ def download_binaries(url=None, verbose=False, platform="auto"):
     _log.debug("Extracting files in {}".format(idaes.bin_directory))
     with tarfile.open(solvers_tar, 'r') as f:
         f.extractall(idaes.bin_directory)
-    _log.debug("Extracting files in {}".format(idaes.lib_directory))
+    _log.debug("Extracting files in {}".format(idaes.bin_directory))
     with tarfile.open(libs_tar, 'r') as f:
-        f.extractall(idaes.lib_directory)
+        f.extractall(idaes.bin_directory)

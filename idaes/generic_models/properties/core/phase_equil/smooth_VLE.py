@@ -18,61 +18,73 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
-from pyomo.environ import Constraint, Expression, Param, Var
+from pyomo.environ import Constraint, Param, Var, value
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
 
 
-def phase_equil(b):
-    # Definition of equilibrium temperature for smooth VLE
-    b._teq = Var(initialize=b.temperature.value,
-                 doc='Temperature for calculating phase equilibrium')
-    b._t1 = Var(initialize=b.temperature.value,
-                doc='Intermediate temperature for calculating Teq')
+def phase_equil(b, phase_pair):
+    # This method is called via StateBlock.build, thus does not need clean-up
+    # try/except statements
+    suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
 
-    b.eps_1 = Param(default=0.01,
-                    mutable=True,
-                    doc='Smoothing parameter for Teq')
-    b.eps_2 = Param(default=0.0005,
-                    mutable=True,
-                    doc='Smoothing parameter for Teq')
+    # Smooth VLE assumes a liquid and a vapor phase, so validate this
+    phase_1 = b.params.get_phase(phase_pair[0])
+    phase_2 = b.params.get_phase(phase_pair[1])
+
+    liq_phase = phase_1.is_liquid_phase() or phase_2.is_liquid_phase()
+    vap_phase = phase_1.is_vapor_phase() or phase_2.is_vapor_phase()
+
+    if not (liq_phase and vap_phase):
+        raise ConfigurationError(
+            "{} Generic Property Package phase pair {}-{} was set to use "
+            "Smooth VLE formulation, however this is not a vapor-liquid pair."
+            .format(b.params.name, phase_pair[0], phase_pair[1]))
+
+    # Definition of equilibrium temperature for smooth VLE
+    b.add_component("_t1"+suffix, Var(
+            initialize=b.temperature.value,
+            doc='Intermediate temperature for calculating Teq'))
+    _t1 = getattr(b, "_t1"+suffix)
+
+    b.add_component("eps_1"+suffix, Param(default=0.01,
+                                          mutable=True,
+                                          doc='Smoothing parameter for Teq'))
+    b.add_component("eps_2"+suffix, Param(default=0.0005,
+                                          mutable=True,
+                                          doc='Smoothing parameter for Teq'))
+    eps_1 = getattr(b, "eps_1"+suffix)
+    eps_2 = getattr(b, "eps_1"+suffix)
 
     # PSE paper Eqn 13
     def rule_t1(b):
-        return b._t1 == smooth_max(b.temperature,
-                                   b.temperature_bubble,
-                                   b.eps_1)
-    b._t1_constraint = Constraint(rule=rule_t1)
+        return _t1 == smooth_max(b.temperature,
+                                 b.temperature_bubble,
+                                 eps_1)
+    b.add_component("_t1_constraint"+suffix, Constraint(rule=rule_t1))
 
     # PSE paper Eqn 14
     # TODO : Add option for supercritical extension
     def rule_teq(b):
-        return b._teq == smooth_min(b._t1,
-                                    b.temperature_dew,
-                                    b.eps_2)
-    b._teq_constraint = Constraint(rule=rule_teq)
-
-    def rule_tr_eq(b, i):
-        return b._teq / b.params.temperature_crit_comp[i]
-    b._tr_eq = Expression(b.params.component_list,
-                          rule=rule_tr_eq,
-                          doc='Component reduced temperatures [-]')
-
-    def rule_equilibrium(b, j):
-        return (b.params.config.equation_of_state["Vap"].fug_phase_comp(
-                    b, "Vap", j) ==
-                b.params.config.equation_of_state["Liq"].fug_phase_comp(
-                    b, "Liq", j))
-    b.equilibrium_constraint = \
-        Constraint(b.params.component_list, rule=rule_equilibrium)
+        return b._teq[phase_pair] == smooth_min(_t1,
+                                                b.temperature_dew,
+                                                eps_2)
+    b.add_component("_teq_constraint"+suffix, Constraint(rule=rule_teq))
 
 
-def phase_equil_initialization(b):
+def phase_equil_initialization(b, phase_pair):
+    suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
+
     for c in b.component_objects(Constraint):
         # Activate equilibrium constraints
-        if c.local_name in ("total_flow_balance",
-                            "component_flow_balances",
-                            "equilibrium_constraint",
-                            "sum_mole_frac",
-                            "_t1_constraint",
-                            "_teq_constraint"):
+        if c.local_name in ("_t1_constraint"+suffix,
+                            "_teq_constraint"+suffix):
             c.activate()
+
+
+def calculate_teq(b, phase_pair):
+    suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
+    _t1 = getattr(b, "_t1"+suffix)
+
+    _t1.value = max(value(b.temperature), b.temperature_bubble.value)
+    b._teq[phase_pair].value = min(_t1.value, b.temperature_dew.value)

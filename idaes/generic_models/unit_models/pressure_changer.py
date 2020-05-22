@@ -19,7 +19,8 @@ Standard IDAES pressure changer model.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var, Expression, Constraint
+from pyomo.environ import SolverFactory, value, Var, Block, Expression,\
+    Constraint
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -37,6 +38,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 import idaes.logger as idaeslog
+import idaes.core.util.unit_costing as costing
+
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 _log = idaeslog.getLogger(__name__)
@@ -561,6 +564,12 @@ see property package for documentation.}""",
         Returns:
             None
         """
+        # if costing block exists, deactivate
+        try:
+            blk.costing.deactivate()
+        except AttributeError:
+            pass
+
         if routine is None:
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
@@ -575,6 +584,11 @@ see property package for documentation.}""",
             super(PressureChangerData, blk).initialize(
                 state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
             )
+        # if costing block exists, activate
+        try:
+            blk.costing.activate()
+        except AttributeError:
+            pass
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         """
@@ -706,9 +720,31 @@ see property package for documentation.}""",
         if hasattr(self, "efficiency_pump"):
             var_dict["Efficiency"] = self.efficiency_pump[time_point]
         if hasattr(self, "efficiency_isentropic"):
-            var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
+            var_dict["Isentropic Efficiency"] = \
+                self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
+
+    def get_costing(self, module=costing, Mat_factor="stain_steel",
+                    mover_type="compressor",
+                    compressor_type="centrifugal",
+                    driver_mover_type="electrical_motor",
+                    pump_type="centrifugal",
+                    pump_type_factor='1.4',
+                    pump_motor_type_factor='open',
+                    year=None):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year)
+
+        self.costing = Block()
+        module.pressure_changer_costing(self.costing, Mat_factor=Mat_factor,
+                                        mover_type=mover_type,
+                                        compressor_type=compressor_type,
+                                        driver_mover_type=driver_mover_type,
+                                        pump_type=pump_type,
+                                        pump_type_factor=pump_type_factor,
+                                        pump_motor_type_factor=pump_motor_type_factor)
+
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
 class TurbineData(PressureChangerData):
@@ -738,4 +774,5 @@ class PumpData(PressureChangerData):
     CONFIG.get("compressor")._default = True
     CONFIG.get("compressor")._domain = In([True])
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.pump
-    CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.pump
+    CONFIG.get("thermodynamic_assumption")._default = \
+        ThermodynamicAssumption.pump

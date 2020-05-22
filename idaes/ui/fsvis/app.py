@@ -25,6 +25,9 @@ from flask import Flask, request, render_template#, send_static_file
 # local
 from idaes.ui.fsvis.server import DataStorage
 
+from werkzeug.serving import make_server
+import threading
+
 # globals
 
 app = Flask(__name__, static_url_path='', 
@@ -50,6 +53,21 @@ class NoIdError(Exception):
 
 # classes/functions
 
+class ServerThread(threading.Thread):
+
+    def __init__(self, app, host, pport):
+        threading.Thread.__init__(self)
+        self.srv = make_server(host, pport, app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        self.srv.serve_forever()
+
+    def shutdown(self):
+        self.srv.shutdown()
+
+
 class App:
     """Singleton to run flask server as a forked process.
     """
@@ -70,12 +88,11 @@ class App:
             """
             if self._server:
                 return
-            self._server = "starting"
             pport = self._probe_ports(host, port, probe)
             if pport == 0:
                 p1, p2 = port, port + probe - 1
                 raise RuntimeError(f"Could not find an open port in range {p1}..{p2}")
-            self._server = Process(target=app.run, args=(host, pport))
+            self._server = ServerThread(app, host, pport)
             self._server.start()
             self.host, self.port = host, pport
 
@@ -99,8 +116,7 @@ class App:
             """Stop server.
             """
             if self.is_running():
-                self._server.terminate()
-                self._server.join()
+                self._server.shutdown()
 
     def __init__(self, **kwargs):
         if App.instance is None:

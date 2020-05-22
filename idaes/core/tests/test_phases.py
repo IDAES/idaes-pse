@@ -17,7 +17,14 @@ Author: Andrew Lee
 """
 from pyomo.environ import ConcreteModel, Set
 
-from idaes.core.phases import Phase, LiquidPhase, SolidPhase, VaporPhase
+from idaes.core.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
+                               PhaseType)
+
+
+def test_PhaseType():
+    assert len(PhaseType) == 4
+    for i in PhaseType.__members__:
+        assert i in ["undefined", "liquidPhase", "vaporPhase", "solidPhase"]
 
 
 def test_config():
@@ -25,9 +32,12 @@ def test_config():
 
     m.phase = Phase()
 
-    assert len(m.phase.config) == 2
-    assert m.phase.config.component_list is None
-    assert not m.phase.config._phase_list_exists
+    assert len(m.phase.config) == 3
+    for k, v in m.phase.config.items():
+        if k == "_phase_list_exists":
+            assert not v
+        else:
+            assert v is None
 
 
 def test_populate_phase_list():

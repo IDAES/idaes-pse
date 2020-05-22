@@ -16,7 +16,6 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
-                           Param,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -25,26 +24,21 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        Component)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
-import idaes.generic_models.properties.core.eos.ideal as ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
-        bubble_temp_ideal,
-        dew_temp_ideal,
-        bubble_press_ideal,
-        dew_press_ideal)
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
 
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
+from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
-    import BTIdealParameterBlock
+    import configuration
 
 
 # -----------------------------------------------------------------------------
@@ -53,26 +47,29 @@ solver = get_default_solver()
 
 
 class TestParamBlock(object):
-    @pytest.fixture(scope="class")
-    def model(self):
+    def test_build(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=configuration)
 
-        return model
-
-    def test_config(self, model):
-        assert len(model.params.config) == 19
-
-        assert len(model.params.config.phase_list) == 2
-        for i in model.params.config.phase_list:
+        assert isinstance(model.params.phase_list, Set)
+        assert len(model.params.phase_list) == 2
+        for i in model.params.phase_list:
             assert i in ["Liq", "Vap"]
+        assert model.params.Liq.is_liquid_phase()
+        assert model.params.Vap.is_vapor_phase()
 
-        assert len(model.params.config.component_list) == 2
-        for i in model.params.config.component_list:
+        assert isinstance(model.params.component_list, Set)
+        assert len(model.params.component_list) == 2
+        for i in model.params.component_list:
             assert i in ['benzene',
                          'toluene']
+            assert isinstance(model.params.get_component(i), Component)
 
-        assert model.params.config.phase_component_list is None
+        assert isinstance(model.params._phase_component_set, Set)
+        assert len(model.params._phase_component_set) == 4
+        for i in model.params._phase_component_set:
+            assert i in [("Liq", "benzene"), ("Liq", "toluene"),
+                         ("Vap", "benzene"), ("Vap", "toluene")]
 
         assert model.params.config.state_definition == FTPx
 
@@ -81,54 +78,27 @@ class TestParamBlock(object):
                 "temperature": (273.15, 450),
                 "pressure": (5e4, 1e6)}
 
-        assert model.params.config.equation_of_state == {
-                "Vap": ideal,
-                "Liq": ideal}
-
-        assert model.params.config.phase_equilibrium_formulation == smooth_VLE
-        assert len(model.params.config.phase_equilibrium_dict) == 2
-        assert model.params.config.phase_equilibrium_dict == {
-                1: ["benzene", ("Vap", "Liq")],
-                2: ["toluene", ("Vap", "Liq")]}
-
-        assert model.params.config.temperature_bubble == bubble_temp_ideal
-        assert model.params.config.temperature_dew == dew_temp_ideal
-        assert model.params.config.pressure_bubble == bubble_press_ideal
-        assert model.params.config.pressure_dew == dew_press_ideal
-
-        assert model.params.config.dens_mol_liq_comp == Perrys
-        assert model.params.config.enth_mol_liq_comp == Perrys
-        assert model.params.config.enth_mol_ig_comp == RPP
-        assert model.params.config.entr_mol_liq_comp == Perrys
-        assert model.params.config.entr_mol_ig_comp == RPP
-        assert model.params.config.pressure_sat_comp == RPP
-
-    def test_build(self, model):
-        assert len(model.params.phase_list) == 2
-        for i in model.params.phase_list:
-            assert i in ["Liq", "Vap"]
-
-        assert len(model.params.component_list) == 2
-        for i in model.params.component_list:
-            assert i in ['benzene',
-                         'toluene']
+        assert model.params.config.phase_equilibrium_state == {
+            ("Vap", "Liq"): smooth_VLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2
+        for i in model.params.phase_equilibrium_idx:
+            assert i in ["PE1", "PE2"]
 
         assert model.params.phase_equilibrium_list == {
-                1: ["benzene", ("Vap", "Liq")],
-                2: ["toluene", ("Vap", "Liq")]}
+            "PE1": {"benzene": ("Vap", "Liq")},
+            "PE2": {"toluene": ("Vap", "Liq")}}
 
-        assert isinstance(model.params.pressure_ref, Param)
-        assert isinstance(model.params.temperature_ref, Param)
+        assert model.params.pressure_ref.value == 1e5
+        assert model.params.temperature_ref.value == 300
 
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = BTIdealParameterBlock()
+        model.params = GenericParameterBlock(default=configuration)
 
         model.props = model.params.build_state_block(
                 [1],

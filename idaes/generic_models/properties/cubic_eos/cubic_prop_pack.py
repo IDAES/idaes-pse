@@ -63,7 +63,7 @@ from idaes.core.util.initialization import (solve_indexed_blocks,
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
-from idaes import lib_directory
+from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
@@ -73,7 +73,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Set path to root finder .so file
-_so = os.path.join(lib_directory, "cubic_roots.so")
+_so = os.path.join(bin_directory, "cubic_roots.so")
 
 
 def cubic_roots_available():
