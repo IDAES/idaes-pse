@@ -94,14 +94,14 @@ def main():
                    solver=solver, outlvl=idaeslog.DEBUG,
                    sample_time=sample_time)
     
-    p_mod = nmpc.p_mod
-    c_mod = nmpc.c_mod
+    plant = nmpc.plant
+    controller = nmpc.controller
     
-    set_point = [(c_mod.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (c_mod.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (c_mod.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (c_mod.mixer.E_inlet.flow_vol[0], 0.1),
-                 (c_mod.mixer.S_inlet.flow_vol[0], 2.0)]
+    set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
+                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
+                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
+                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
     # Interestingly, this (st.st. set point) solve converges infeasible
     # if energy_holdup set point is not 300. (Needs higher weight?)
 
@@ -109,7 +109,7 @@ def main():
     
     # Weight overwrite expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    weight_override = [(c_mod.mixer.E_inlet.flow_vol[0], 20.0)]
+    weight_override = [(controller.mixer.E_inlet.flow_vol[0], 20.0)]
 
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
@@ -147,24 +147,24 @@ def main():
     # TODO: add option for specifying "user-interest variables"
 
     if plot_switch:
-        temp_info = p_mod._NMPC_NAMESPACE.var_locator[
-                p_mod.cstr.outlet.temperature[0.]]
+        temp_info = plant._NMPC_NAMESPACE.var_locator[
+                plant.cstr.outlet.temperature[0.]]
         temp_location = temp_info.location
         temp_group = temp_info.group
         temperature_data = PlotData(temp_group, temp_location, name='Temperature')
         fig, ax = temperature_data.plot()
         fig.savefig(temperature_data.name)
     
-        P_info = p_mod._NMPC_NAMESPACE.var_locator[
-                p_mod.cstr.outlet.conc_mol[0.,'P']]
+        P_info = plant._NMPC_NAMESPACE.var_locator[
+                plant.cstr.outlet.conc_mol[0.,'P']]
         P_location = P_info.location
         P_group = P_info.group
         P_data = PlotData(P_group, P_location, name='P_conc')
         fig, ax = P_data.plot()
         fig.savefig(P_data.name)
     
-        S_info = p_mod._NMPC_NAMESPACE.var_locator[
-                p_mod.cstr.outlet.conc_mol[0.,'S']]
+        S_info = plant._NMPC_NAMESPACE.var_locator[
+                plant.cstr.outlet.conc_mol[0.,'S']]
         S_location = S_info.location
         S_group = S_info.group
         S_data = PlotData(S_group, S_location, name='S_conc')

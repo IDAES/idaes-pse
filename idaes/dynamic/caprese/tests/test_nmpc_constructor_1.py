@@ -159,36 +159,36 @@ def test_constructor_1():
             solver=solver, outlvl=idaeslog.DEBUG,
             sample_time=sample_time)
 
-    assert hasattr(nmpc, 'p_mod')
-    assert hasattr(nmpc, 'c_mod')
+    assert hasattr(nmpc, 'plant')
+    assert hasattr(nmpc, 'controller')
     assert hasattr(nmpc, 'sample_time')
 
-    p_mod = nmpc.p_mod
-    c_mod = nmpc.c_mod
+    plant = nmpc.plant
+    controller = nmpc.controller
 
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'diff_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'deriv_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'alg_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'input_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'fixed_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'scalar_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'ic_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'n_diff_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'n_input_vars')
-    assert hasattr(p_mod._NMPC_NAMESPACE, 'n_alg_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'diff_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'deriv_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'alg_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'input_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'fixed_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'scalar_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'ic_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'n_diff_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'n_input_vars')
+    assert hasattr(plant._NMPC_NAMESPACE, 'n_alg_vars')
 
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'diff_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'deriv_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'alg_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'input_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'fixed_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'scalar_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'ic_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'n_diff_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'n_input_vars')
-    assert hasattr(c_mod._NMPC_NAMESPACE, 'n_alg_vars')
-    assert_categorization(c_mod)
-    assert_categorization(p_mod)
+    assert hasattr(controller._NMPC_NAMESPACE, 'diff_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'deriv_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'alg_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'input_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'fixed_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'scalar_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'ic_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'n_diff_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'n_input_vars')
+    assert hasattr(controller._NMPC_NAMESPACE, 'n_alg_vars')
+    assert_categorization(controller)
+    assert_categorization(plant)
 
 
 if __name__ == '__main__':
