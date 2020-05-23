@@ -1,106 +1,110 @@
 Scaling
 =======
-
 .. module:: idaes.core.util.scaling
 
 This section describes scaling utility functions and methods.
 
-Standard Practice
------------------
+Context
+-------
+Creating well scaled models is important for increasing the efficiency and 
+reliability of solvers. Since the standard units for IDAES are SI, oftentimes 
+variables and constraints are considered badly scaled (values less than 
+:math:`10^{-3}` and greater than :math:`10^3`).
 
 Scaling factors can be specified for any variable or constraint. Pyomo and many
 solvers support the ``scaling_factor`` suffix. IDAES, as described below, also
 supports the ``scaling_expression`` suffix which can be used to calculate
-``scaling_factor`` values (e.g. based on state block units of measure).
+``scaling_factor`` values (e.g. based on the scaling factors of other variables).
 
-To eliminate the possibility of defining, conflicting scaling factors in various
-places in the model the IDAES standard is to define the ``scaling_factor`` and
+To eliminate the possibility of defining conflicting scaling factors in various
+places in the model, the IDAES standard is to define the ``scaling_factor`` and
 ``scaling_expression`` suffixes in the same block as the variable or constraint
 that they are scaling.  This ensures that each scale factor is defined in only
 one place, and is organized based on the model block structure.
 
 Scaling factors in IDAES (and Pyomo) are multiplied by the variable or constraint
 they scale.  For example, a Pressure variable in Pa units may be expected to have
-a magnitude of around :math:`1\times10^6` for a specific process.  To scale the
+a magnitude of around :math:`10^6` for a specific process.  To scale the
 variable to a more reasonable magnitude the scale factor for the variable could
-be defined to be :math:`1\times10^-5`.
+be defined to be :math:`10^{-5}`.
 
+Specifying Scaling
+------------------
+Suffixes are used to specify scaling factors for IDAES models.
 
-Specifying Variable Scaling
----------------------------
+To supply variable and constraint scaling factors, an export suffix called 
+``scaling_factor`` should be created in the same block as the variable or constraint. 
+Additionally, if the scaling factor for variables or constraints will be based on
+other variables, a local suffix called ``scaling_expression`` should be created. 
 
-Suffixes are used to specify scaling factors for IDAES models.  Some solvers, such
-as Ipopt, support supplying scale factors. Pyomo also supplies scaling
+Implementing Scaling
+--------------------
+While some solvers, such as Ipopt, support scaling factors, Pyomo also supplies scaling
 transformations for models when solver scaling is not supported.
 
-To supply variable and constraint scaling factors, a suffix called ``scaling_factor``
-should be created in the same block as the variable or constraint. For example:
+Neither Pyomo or other solvers use the IDAES ``scaling_expression``, so the scaling 
+expressions must be converted to scaling factors with the 
+``calculate_scaling_factors(m, basis)`` function. This function replaces the variables in 
+the scaling expression with the specified basis value, calculates the scaling factors, 
+and puts the scaling factor in the ``scaling_factor`` suffix.
 
+Specifically, for Ipopt, it is recommended to use the ``scale_constraints(m)`` function 
+to scale the constraints before sending the model to the solver. To scale the variables, the user
+must set the ``nlp_scaling_method`` option to "user-scaling".
+
+Example
+-------
 .. testcode::
 
-    from pyomo.environ import Suffix, ConcreteModel, Var
+    from pyomo.environ import Suffix, ConcreteModel, Var, NonNegativeReals, \
+        Constraint, Objective, SolverFactory
+    from idaes.core.util.scaling import (scale_constraints, ScalingBasis,
+                                     calculate_scaling_factors)
+    from math import isclose
 
+    # create badly scaled model
+    var_value_magnitude = 1e-12
     m = ConcreteModel()
-    m.scaling_factor = Suffix(direction=Suffix.EXPORT)
-    m.P = Var(initialize=1e6, doc="Pressure [Pa]")
-    m.conc = Var(["Na+", "Cl-"], initialize=1e-4)
-    m.scaling_factor[m.P] = 1e-5
-    m.scaling_factor[m.conc["Na+"]] = 1e3
-    m.scaling_factor[m.conc["Cl-"]] = 1e3
 
-Variable scaling in state blocks is provided by the developer of a state
-block and can be used as a basis for scaling other model variables and
-constraints. Scaling factors can be modified by users to better
-represent the process they are modeling.
+    m.x = Var(initialize=var_value_magnitude, domain=NonNegativeReals)
+    m.y = Var(initialize=var_value_magnitude, domain=NonNegativeReals)
+    m.z = Var(initialize=var_value_magnitude ** 2, domain=NonNegativeReals)
 
-Specifying Scaling Factor Expressions
--------------------------------------
+    m.c_1 = Constraint(expr=m.x + m.y <= var_value_magnitude)
+    m.c_2 = Constraint(expr=m.z == (m.x * m.y))
+    m.obj = Objective(expr=-m.z)
 
-Scaling factors for variables and constraints can be calculated based on variable
-scaling factors, bounds, or values that have been provided.  The calculation for
-a scaling factor can be provided as a python expression using model variables in
-the ``scaling_expression`` suffix. For variables, generally the expression should
-only depend on variables where scaling factors have been defined.
-
-The ``calculate_scaling_factors(m, basis)`` function replaces the variables in the scaling
-expression with the specified basis values, calculates the scaling factors, and
-puts the scaling factor in the ``scaling_factor`` suffix.
-
-
-.. testcode::
-
-    from pyomo.environ import Suffix, ConcreteModel, Var, Constraint
-    from idaes.core.util.scaling import (
-        ScalingBasis,
-        calculate_scaling_factors,
-    )
-
-    m = ConcreteModel()
+    # create and specify scaling factors and expressions
     m.scaling_factor = Suffix(direction=Suffix.EXPORT)
     m.scaling_expression = Suffix(direction=Suffix.LOCAL)
+    # NOTE: the direction of the scaling_expression is LOCAL
+    m.scaling_factor[m.x] = 1 / var_value_magnitude
+    m.scaling_factor[m.y] = 1 / var_value_magnitude
+    m.scaling_factor[m.c_1] = 1 / var_value_magnitude
+    m.scaling_expression[m.z] = 1 / (m.x * m.y)
+    m.scaling_expression[m.c_2] = 1 / (m.x * m.y)
+    m.scaling_expression[m.obj] = 1 / (m.x * m.y)
 
-    m.x = Var(initialize=1e6)
-    m.y = Var(initialize=1e6)
-    m.z = Var(initialize=1e12)
-
-    m.scaling_factor[m.x] = 1e-5
-    m.scaling_factor[m.y] = 1e-5
-    m.scaling_expression[m.z] = 1/(m.x*m.y)
-
-    m.c = Constraint(expr=m.z == m.x*m.y)
-    m.scaling_expression[m.c] = 1/(m.x*m.y)
-
+    # calculate scaling factors from scaling expression
     calculate_scaling_factors(m, basis=ScalingBasis.InverseVarScale)
+    # scale constraints
+    scale_constraints(m)
+    # NOTE: After the constraints are scaled, their scaling factor and expression
+    # are set to 1.
 
-    # Show that the constraint scaling factor is 1/((1/1e-5)*(1/1e-5))
-    assert(m.scaling_factor[m.c] - 1e-10 < 1e-12)
-    # Show that the z variable scaling factor is 1/((1/1e-5)*(1/1e-5))
-    assert(m.scaling_factor[m.z] - 1e-10 < 1e-12)
+    # call solver with user-scaling option
+    solver = SolverFactory('ipopt')
+    solver.options = {'nlp_scaling_method': 'user-scaling'}
+    results = solver.solve(m, tee=False)
+    assert (isclose(m.z.value, (0.5 * var_value_magnitude) ** 2, rel_tol=1e-3))
 
-In the scaling expression the general guideline is that a scaling factor is being
-calculated based on the expected magnitude of the variable values.  The magnitude
-could be estimated in different ways, but the most common way should be the inverse
-variable scale.  The list below shows variable scaling bases that are provided.
+
+Scaling Expression Basis
+------------------------
+The general guideline for calculating scaling factors from scaling expressions
+is to use the expected magnitude of the variables. The magnitude
+could be estimated in different ways, but the IDAES standard is the inverse 
+variable scale. The list below shows variable scaling bases that are provided.
 
 ScalingBasis.InverseVarScale:
   Use the inverse variable scaling factors in scaling expressions.
@@ -118,27 +122,19 @@ ScalingBasis.VarScale:
   factor.
 
 
-.. autofunction:: calculate_scaling_factors
-
 Scaling Utility Functions
 -------------------------
-
-IDAES includes some utility functions to help evaluate model scaling and to
-auto-scale constraints.
+IDAES includes some utility functions to help evaluate model scaling and to auto-scale constraints.
 
 .. autofunction:: badly_scaled_var_generator
 
 .. autofunction:: grad_fd
 
-.. autofunction:: scale_constraint
+.. autofunction:: scale_single_constraint
+
+.. autofunction:: scale_constraints
 
 .. autofunction:: constraint_fd_autoscale
 
 .. autofunction:: set_scaling_factor
 
-
-Scaling with Ipopt
-------------------
-
-To use the supplied scaling factors with Ipopt the ``nlp_scaling_method`` solver
-option should be set to "user-scaling."

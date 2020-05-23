@@ -16,11 +16,12 @@ This module contains miscalaneous utility functions for use in IDAES models.
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Set, Block, Var
+from pyomo.environ import ConcreteModel, Expression, Set, Block, Var
 from pyomo.network import Port
 
 from idaes.core.util.misc import (add_object_reference, copy_port_values,
-    TagReference)
+                                  TagReference, VarLikeExpression)
+
 
 # Author: Andrew Lee
 def test_add_object_reference():
@@ -33,6 +34,7 @@ def test_add_object_reference():
     assert hasattr(m, "test_ref")
     assert m.test_ref == m.s
 
+
 # Author: Andrew Lee
 def test_add_object_reference_fail():
     m = ConcreteModel()
@@ -40,18 +42,19 @@ def test_add_object_reference_fail():
     with pytest.raises(AttributeError):
         add_object_reference(m, "test_ref", m.s)
 
+
 # Author: John Eslick
 def test_port_copy():
     m = ConcreteModel()
     m.b1 = Block()
     m.b2 = Block()
     m.b1.x = Var(initialize=3)
-    m.b1.y = Var([0,1], initialize={0:4,1:5})
-    m.b1.z = Var([0,1], ["A", "B"], initialize={
-        (0, "A"):6, (0, "B"):7, (1,"A"):8, (1,"B"):9})
+    m.b1.y = Var([0, 1], initialize={0: 4, 1: 5})
+    m.b1.z = Var([0, 1], ["A", "B"], initialize={
+        (0, "A"): 6, (0, "B"): 7, (1, "A"): 8, (1, "B"): 9})
     m.b2.x = Var(initialize=1)
-    m.b2.y = Var([0,1], initialize=1)
-    m.b2.z = Var([0,1], ["A", "B"], initialize=1)
+    m.b2.y = Var([0, 1], initialize=1)
+    m.b2.z = Var([0, 1], ["A", "B"], initialize=1)
     m.b1.port = Port()
     m.b2.port = Port()
     m.b1.port.add(m.b1.x, "x")
@@ -69,21 +72,114 @@ def test_port_copy():
     assert(m.b2.z[1, "A"] == 8)
     assert(m.b2.z[1, "B"] == 9)
 
+
 # Author: John Eslick
 def test_tag_reference():
     m = ConcreteModel()
-    m.z = Var([0,1], ["A", "B"], initialize={
-        (0, "A"):6, (0, "B"):7, (1,"A"):8, (1,"B"):9})
+    m.z = Var([0, 1], ["A", "B"], initialize={
+        (0, "A"): 6, (0, "B"): 7, (1, "A"): 8, (1, "B"): 9})
     test_tag = {}
-    test_tag["MyTag34&@!e.5"] = TagReference(m.z[:,"A"], description="z tag")
+    test_tag["MyTag34&@!e.5"] = TagReference(m.z[:, "A"], description="z tag")
     assert(len(test_tag["MyTag34&@!e.5"]) == 2)
     assert(test_tag["MyTag34&@!e.5"][0].value == 6)
     assert(test_tag["MyTag34&@!e.5"][1].value == 8)
     assert(test_tag["MyTag34&@!e.5"].description == "z tag")
-    m.b = Block([0,1])
+    m.b = Block([0, 1])
     m.b[0].y = Var(initialize=1)
     m.b[1].y = Var(initialize=2)
     test_tag = TagReference(m.b[:].y, description="y tag")
     assert(test_tag[0] == 1)
     assert(test_tag[1] == 2)
     assert(test_tag.description == "y tag")
+
+
+def test_SimpleVarLikeExpression():
+    m = ConcreteModel()
+
+    # Need a Var to use in the Expression to avoid being able to set the value
+    # of a float
+    m.v = Var(initialize=42)
+
+    m.e = VarLikeExpression(expr=m.v)
+
+    assert m.e.type() is Expression
+    assert not m.e.is_indexed()
+    assert m.e.value == 42
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and does not have a value "
+                       "which can be set."):
+        m.e.value = 10
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not have bounds. "
+                       "Use an inequality Constraint instead."):
+        m.e.setub(10)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not have bounds. "
+                       "Use an inequality Constraint instead."):
+        m.e.setlb(0)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not be fixed. "
+                       "Use an equality Constraint instead."):
+        m.e.fix(8)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not be unfixed."):
+        m.e.unfix()
+
+
+def test_IndexedVarLikeExpression():
+    m = ConcreteModel()
+
+    # Need a Var to use in the Expression to avoid being able to set the value
+    # of a float
+    m.v = Var(initialize=42)
+
+    m.e = VarLikeExpression([1, 2, 3, 4], expr=m.v)
+
+    assert m.e.type() is Expression
+    assert m.e.is_indexed()
+
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not have bounds. "
+                       "Use inequality Constraints instead."):
+        m.e.setub(10)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not have bounds. "
+                       "Use inequality Constraints instead."):
+        m.e.setlb(0)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not be fixed. "
+                       "Use equality Constraints instead."):
+        m.e.fix(8)
+    with pytest.raises(TypeError,
+                       match="e is an Expression and can not be unfixed."):
+        m.e.unfix()
+
+    for i in m.e:
+        assert m.e[i].value == 42
+
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and does not have "
+                           "a value which can be set.".format(i)):
+            m.e[i].value = 10
+
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and can not have "
+                           "bounds. Use an inequality Constraint instead."
+                           .format(i)):
+            m.e[i].setub(10)
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and can not have "
+                           "bounds. Use an inequality Constraint instead."
+                           .format(i)):
+            m.e[i].setlb(0)
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and can not be "
+                           "fixed. Use an equality Constraint instead."
+                           .format(i)):
+            m.e[i].fix(8)
+        with pytest.raises(TypeError,
+                           match="e\[{}\] is an Expression and can not be "
+                           "unfixed.".format(i)):
+            m.e[i].unfix()

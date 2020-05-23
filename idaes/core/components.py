@@ -76,7 +76,7 @@ class ComponentData(ProcessBlockData):
             self.mw = Param(initialize=self.config.parameter_data["mw"])
 
         # Create Vars for common parameters
-        for p in ["pressure_crit", "temperature_crit"]:
+        for p in ["pressure_crit", "temperature_crit", "omega"]:
             if p in self.config.parameter_data:
                 self.add_component(p, Var(
                     initialize=self.config.parameter_data[p]))
