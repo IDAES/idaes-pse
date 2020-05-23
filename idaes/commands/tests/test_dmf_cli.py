@@ -15,7 +15,7 @@ from idaes.dmf.cli import init, register, info, ls, related, rm, status
 from idaes.dmf.dmfbase import DMFConfig, DMF
 from idaes.dmf.workspace import Workspace
 from idaes.dmf import resource
-from . import random_tempdir, tempdir_list
+from . import random_tempdir
 
 
 @pytest.fixture(scope="module")
