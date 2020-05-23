@@ -394,7 +394,7 @@ class DMF(workspace.Workspace, HasTraits):
                 # datafile-dir, say /a/dir/for/resources/, resulting in
                 # e.g. /a/dir/for/resources/file.
                 filepath = datafile['path']
-                filedir, filename = os.path.split(filepath)
+                _, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
                 _log.debug(
                     'Copying datafile "{}" to directory "{}"'.format(filepath, copydir)

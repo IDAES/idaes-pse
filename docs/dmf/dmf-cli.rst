@@ -316,39 +316,36 @@ dmf info usage
 
 The default is to show, with some terminal colors, a summary of the resource:
 
-
-# cleanup:: dmf-info
 .. code-block:: console
 
-    $ dmf info 0b62
+        $ dmf info 0b62
 
-                              Resource 0b62d999f0c44b678980d6a5e4f5d37d
-      created
-         '2019-03-23 17:49:35'
-      creator
-         name: dang
-      datafiles
-         - desc: foo13
-           is_copy: true
-           path: foo13
-           sha1: feee44ad365b6b1ec75c5621a0ad067371102854
-      datafiles_dir
-         /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52
-      desc
-         foo13
-      doc_id
-         4
-      id_
-         0b62d999f0c44b678980d6a5e4f5d37d
-      modified
-         '2019-03-23 17:49:35'
-      relations
-         - 1e41e6ae882b4622ba9043f4135f2143 --[derived]--> ME
-      type
-         data
-      version
-         0.0.0 @ 2019-03-23 17:49:35
-
+        Resource 0b62d999f0c44b678980d6a5e4f5d37d
+        created
+            '2019-03-23 17:49:35'
+        creator
+            name: dang
+        datafiles
+            - desc: foo13
+            is_copy: true
+            path: foo13
+            sha1: feee44ad365b6b1ec75c5621a0ad067371102854
+        datafiles_dir
+            /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52
+        desc
+            foo13
+        doc_id
+            4
+        id_
+            0b62d999f0c44b678980d6a5e4f5d37d
+        modified
+            '2019-03-23 17:49:35'
+        relations
+            - 1e41e6ae882b4622ba9043f4135f2143 --[derived]--> ME
+        type
+            data
+        version
+            0.0.0 @ 2019-03-23 17:49:35
 
 The same resource in JSON format:
 
@@ -725,12 +722,11 @@ dmf register usage
 Register a new file, which is a CSV data file, and use the ``--info``
 option to show the created resource.
 
-# cleanup:: dmf-register
 .. code-block:: console
 
-    $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
-    $ dmf reg file.csv --info
-                          Resource 117a42287aec4c5ca333e0ff3ac89639
+  $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
+  $ dmf reg file.csv --info
+    Resource 117a42287aec4c5ca333e0ff3ac89639
   created
      '2019-04-11 03:58:52'
   creator
@@ -983,7 +979,6 @@ In the following examples, we work with 4 resources arranged as a fully
 connected square (A, B, C, D). This is not currently possible just with the
 command-line, but the following Python code does the job:
 
-# cleanup:: dmf-related
 .. code-block:: python
 
     from idaes.dmf import DMF, resource

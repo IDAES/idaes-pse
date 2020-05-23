@@ -1083,7 +1083,7 @@ class _ShowInfo:
         width = min(term_width, self._longest_line(rval) + 3 + self.contents_indent)
         self._print_info_term_header(width)
         top_keys = sorted(rval.keys())
-        for rownum, tk in enumerate(top_keys):
+        for tk in top_keys:
             val = rval[tk]
             if self._has_values(val):
                 contents_str = yaml.dump(
@@ -1105,7 +1105,7 @@ class _ShowInfo:
 
     def _longest_line(self, formatted_resource):
         longest = 0
-        for k, v in formatted_resource.items():
+        for v in formatted_resource.values():
             v_longest = max(
                 (len(s) for s in json.dumps(v, indent=self.json_indent).split('\n'))
             )
@@ -1295,5 +1295,5 @@ base_command.add_command(info)
 base_command.add_command(related)
 base_command.add_command(rm)
 
-if __name__ == '__main__':
-    base_command()
+# if __name__ == '__main__':
+#     base_command()
