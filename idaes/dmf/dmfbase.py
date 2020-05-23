@@ -371,12 +371,14 @@ class DMF(workspace.Workspace, HasTraits):
         if rsrc.v.get('datafiles_dir', None):
             # If there is a datafiles_dir, use it
             ddir = rsrc.v['datafiles_dir']
+            _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
         else:
             # If no datafiles_dir, create a random subdir of the DMF
             # configured `_datafile_path`. The subdir prevents name
             # collisions across resources.
             random_subdir = uuid.uuid4().hex
             ddir = os.path.join(self._datafile_path, random_subdir)
+            _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
         try:
             mkdir_p(ddir)
         except os.error as err:

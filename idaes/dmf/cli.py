@@ -41,7 +41,7 @@ from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
-
+_dmf_log = logging.getLogger("idaes.dmf")
 
 class Code(Enum):
     """Return codes from the CLI.
@@ -184,9 +184,9 @@ def base_command(verbose, quiet):
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
-        _log.setLevel(level_from_verbosity(verbose))
+        _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
-        _log.setLevel(level_from_verbosity(-quiet))
+        _dmf_log.setLevel(level_from_verbosity(-quiet))
 
 
 @click.command(
