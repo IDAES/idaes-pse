@@ -43,6 +43,7 @@ __author__ = "Dan Gunter"
 _log = logging.getLogger(__name__)
 _dmf_log = logging.getLogger("idaes.dmf")
 
+
 class Code(Enum):
     """Return codes from the CLI.
     """
