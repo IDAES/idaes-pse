@@ -283,7 +283,8 @@ class NMPCSim(DynamicSimulation):
         """
         self.config = self.CONFIG(kwargs)
         super(NMPCSim, self).__init__(plant_model, plant_time_set,
-                controller_model, controller_time_set, inputs_at_t0)
+                controller_model, controller_time_set, inputs_at_t0,
+                **kwargs)
 
         # Should I provide solver and outlvl as explicit args here?
         self.config.sample_time = sample_time
