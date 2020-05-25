@@ -102,6 +102,8 @@ class NMPCVarGroup(object):
         # Can I get time set here? From an element (slice) of varlist
         # Complicated by the fact that varlist could be scalar_vars
 
+        self.cache = self.n_vars*[None]
+
     def __iter__(self):
         for var in self.varlist:
             yield var
