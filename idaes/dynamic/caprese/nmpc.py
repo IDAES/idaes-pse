@@ -979,8 +979,12 @@ class NMPCSim(DynamicSimulation):
 
         # populate reference list from consistent values
         for categ, vargroup in category_dict.items():
-            for i, var in enumerate(vargroup.varlist):
-                vargroup.set_reference(i, var[t0].value)
+            if categ == VariableCategory.SCALAR:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_reference(i, var.value)
+            else:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_reference(i, var[t0].value)
 
         override = config.objective_weight_override
         tolerance = config.objective_weight_tolerance
@@ -1011,6 +1015,10 @@ class NMPCSim(DynamicSimulation):
         self.add_objective_function(controller,
                 control_penalty_type=ControlPenaltyType.ERROR,
                 name=user_objective_name,
+                objective_state_categories=[
+                    VariableCategory.DIFFERENTIAL,
+                    VariableCategory.ALGEBRAIC,
+                    ],
                 time_resolution_option=TimeResolutionOption.INITIAL_POINT)
         temp_objective = getattr(controller._NMPC_NAMESPACE, user_objective_name)
 
@@ -1051,9 +1059,14 @@ class NMPCSim(DynamicSimulation):
         # Transfer setpoint values and reset initial values
         for categ in categories:
             vargroup = category_dict[categ]
-            for i, var in enumerate(vargroup.varlist):
-                vargroup.set_setpoint(i, var[t0].value)
-                var[t0].set_value(vargroup.reference[i])
+            if categ == VariableCategory.SCALAR:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_setpoint(i, var.value)
+                    var.set_value(vargroup.reference[i])
+            else:
+                for i, var in enumerate(vargroup.varlist):
+                    vargroup.set_setpoint(i, var[t0].value)
+                    var[t0].set_value(vargroup.reference[i])
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
@@ -1180,7 +1193,7 @@ class NMPCSim(DynamicSimulation):
     
                 # If value is None, but variable was provided as override,
                 # weight can still be non-None. This is okay.
-                if sp_value is None:
+                if sp_value is None or reference[loc] is None:
                     weights[loc] = None
                     continue
     
