@@ -33,7 +33,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
+from idaes.apps.caprese.util import (initialize_by_element_in_range,
         find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
         add_noise_at_time, ElementInitializationInputOption, 
         TimeResolutionOption, ControlInitOption, ControlPenaltyType,
@@ -41,7 +41,7 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
         get_violated_bounds_at_time)
-from idaes.dynamic.caprese.base_class import DynamicBase
+from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
 from collections import OrderedDict

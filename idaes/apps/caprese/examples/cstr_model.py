@@ -31,10 +31,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
-from idaes.dynamic.caprese import nmpc
-from idaes.dynamic.caprese.nmpc import *
+from idaes.apps.caprese import nmpc
+from idaes.apps.caprese.nmpc import *
 import idaes.logger as idaeslog
-import pdb
 
 __author__ = "Robert Parker"
 

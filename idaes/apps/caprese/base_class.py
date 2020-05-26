@@ -20,9 +20,9 @@ from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.core.kernel.component_map import ComponentMap
-from idaes.dynamic.caprese.common import config as dyn_config
-from idaes.dynamic.caprese.common.config import (VariableCategory)
-from idaes.dynamic.caprese.util import NMPCVarGroup, NMPCVarLocator
+from idaes.apps.caprese.common import config as dyn_config
+from idaes.apps.caprese.common.config import (VariableCategory)
+from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
 # Don't think base class should need to import from util

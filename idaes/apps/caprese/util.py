@@ -34,7 +34,7 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
         path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
         get_fixed_dict, deactivate_constraints_unindexed_by, find_comp_in_block)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.dynamic.caprese.common.config import VariableCategory
+from idaes.apps.caprese.common.config import VariableCategory
 import idaes.logger as idaeslog
 
 from collections import OrderedDict

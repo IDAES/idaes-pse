@@ -32,8 +32,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
-from idaes.dynamic.caprese.util import *
-from idaes.dynamic.caprese.examples.cstr_model import make_model
+from idaes.apps.caprese.util import *
+from idaes.apps.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
 
 import random

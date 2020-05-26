@@ -13,10 +13,10 @@
 """
 Example for Cappresse's module for NMPC.
 """
-from idaes.dynamic.caprese import nmpc
-from idaes.dynamic.caprese.nmpc import *
+from idaes.apps.caprese import nmpc
+from idaes.apps.caprese.nmpc import *
 import idaes.logger as idaeslog
-from idaes.dynamic.caprese.examples.cstr_model import make_model
+from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
 import matplotlib.pyplot as plt
 
