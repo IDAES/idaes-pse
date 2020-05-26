@@ -283,8 +283,7 @@ class NMPCSim(DynamicSimulation):
         """
         self.config = self.CONFIG(kwargs)
         super(NMPCSim, self).__init__(plant_model, plant_time_set,
-                controller_model, controller_time_set, inputs_at_t0,
-                **kwargs)
+                controller_model, controller_time_set, inputs_at_t0)
 
         # Should I provide solver and outlvl as explicit args here?
         self.config.sample_time = sample_time
@@ -979,12 +978,8 @@ class NMPCSim(DynamicSimulation):
 
         # populate reference list from consistent values
         for categ, vargroup in category_dict.items():
-            if categ == VariableCategory.SCALAR:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_reference(i, var.value)
-            else:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_reference(i, var[t0].value)
+            for i, var in enumerate(vargroup.varlist):
+                vargroup.set_reference(i, var[t0].value)
 
         override = config.objective_weight_override
         tolerance = config.objective_weight_tolerance
@@ -1015,10 +1010,6 @@ class NMPCSim(DynamicSimulation):
         self.add_objective_function(controller,
                 control_penalty_type=ControlPenaltyType.ERROR,
                 name=user_objective_name,
-                objective_state_categories=[
-                    VariableCategory.DIFFERENTIAL,
-                    VariableCategory.ALGEBRAIC,
-                    ],
                 time_resolution_option=TimeResolutionOption.INITIAL_POINT)
         temp_objective = getattr(controller._NMPC_NAMESPACE, user_objective_name)
 
@@ -1059,14 +1050,9 @@ class NMPCSim(DynamicSimulation):
         # Transfer setpoint values and reset initial values
         for categ in categories:
             vargroup = category_dict[categ]
-            if categ == VariableCategory.SCALAR:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_setpoint(i, var.value)
-                    var.set_value(vargroup.reference[i])
-            else:
-                for i, var in enumerate(vargroup.varlist):
-                    vargroup.set_setpoint(i, var[t0].value)
-                    var[t0].set_value(vargroup.reference[i])
+            for i, var in enumerate(vargroup.varlist):
+                vargroup.set_setpoint(i, var[t0].value)
+                var[t0].set_value(vargroup.reference[i])
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
@@ -1193,7 +1179,7 @@ class NMPCSim(DynamicSimulation):
     
                 # If value is None, but variable was provided as override,
                 # weight can still be non-None. This is okay.
-                if sp_value is None or reference[loc] is None:
+                if sp_value is None:
                     weights[loc] = None
                     continue
     

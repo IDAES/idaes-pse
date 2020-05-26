@@ -1,15 +1,7 @@
 import enum
 from pyomo.environ import SolverFactory
 from pyomo.core.base.var import _GeneralVarData
-#from pyomo.common.config import ConfigEnum
-
-class ConfigEnum(enum.Enum):
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        if type(arg) is str:
-            return cls[arg]
-        else:
-            return cls(arg)
+from pyomo.common.config import ConfigEnum
 
 
 class ControlInitOption(ConfigEnum):

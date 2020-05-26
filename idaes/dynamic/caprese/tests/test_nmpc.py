@@ -674,6 +674,74 @@ def test_transfer_current_plant_state_to_controller(nmpc):
         assert p_var[3.].value == approx(c_var[0.].value, rel=0.1)
 
 
+#def test_calculate_full_state_setpoint(nmpc):
+#    controller = nmpc.controller
+#
+#    # Deactivate tracking objective from previous tests
+#    controller._NMPC_NAMESPACE.tracking_objective.deactivate()
+#    
+#    set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
+#                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
+#                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+#                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
+#                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
+#
+#    controller.mixer.E_inlet.flow_vol[0].fix(0.1)
+#    controller.mixer.S_inlet.flow_vol[0].fix(2.0)
+#
+#    weight_tolerance = 5e-7
+#    weight_override = [
+#            (controller.mixer.E_inlet.flow_vol[0.], 20.),
+#            (controller.mixer.S_inlet.flow_vol[0.], 2.),
+#            (controller.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
+#            (controller.cstr.outlet.conc_mol[0., 'P'], 1.),
+#            (controller.cstr.outlet.conc_mol[0., 'S'], 1.),
+#            ]
+#
+#    nmpc.calculate_full_state_setpoint(set_point,
+#            objective_weight_tolerance=weight_tolerance,
+#            objective_weight_override=weight_override)
+#
+#    assert hasattr(controller._NMPC_NAMESPACE, 'user_setpoint')
+#    user_setpoint = controller._NMPC_NAMESPACE.user_setpoint
+#    assert hasattr(controller._NMPC_NAMESPACE, 'user_setpoint_weights')
+#    user_setpoint_weights = controller._NMPC_NAMESPACE.user_setpoint_weights
+#    assert hasattr(controller._NMPC_NAMESPACE, 'user_setpoint_vars')
+#    user_setpoint_vars = controller._NMPC_NAMESPACE.user_setpoint_vars
+#
+#    for i, var in enumerate(user_setpoint_vars):
+#        if var.local_name.startswith('conc'):
+#            assert user_setpoint_weights[i] == 1.
+#        elif var.local_name.startswith('energy'):
+#            assert user_setpoint_weights[i] == 0.1
+#        elif var.local_name.startswith('E_'):
+#            assert user_setpoint_weights[i] == 20.
+#        elif var.local_name.startswith('S_'):
+#            assert user_setpoint_weights[i] == 2.
+#        
+#    alg_vars = controller._NMPC_NAMESPACE.alg_vars
+#    diff_vars = controller._NMPC_NAMESPACE.diff_vars
+#    input_vars = controller._NMPC_NAMESPACE.input_vars
+#    categories = [
+#            VariableCategory.DIFFERENTIAL,
+#            VariableCategory.ALGEBRAIC,
+#            VariableCategory.DERIVATIVE,
+#            VariableCategory.INPUT,
+#            ]
+#    category_dict = controller._NMPC_NAMESPACE.category_dict
+#    for categ in categories:
+#        group = category_dict[categ]
+#        # Assert that setpoint has been populated with non-None values
+#        assert not any([sp is None for sp in group.setpoint])
+#        # Assert that setpoint (target) and reference (initial) values are 
+#        # different in some way
+#        assert not all([sp == ref for sp, ref in 
+#            zip(group.setpoint, group.reference)])
+#        # Assert that initial and reference values are the same
+#        assert all([ref == var[0].value for ref, var in 
+#            zip(group.reference, group.varlist)])
+
+
 @pytest.fixture
 def dynamic_cstr_model():
     return make_model().fs
