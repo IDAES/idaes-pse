@@ -273,7 +273,6 @@ class DynamicBase(object):
         fixed_vars = []
 
         ic_vars = []
-#        measurement_vars = []
 
         # Create list of time-only-slices of time indexed variables
         # (And list of VarData objects for scalar variables)
@@ -290,7 +289,6 @@ class DynamicBase(object):
                 namespace.scalar_vars.n_vars
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
-#        measurement_set = ComponentSet(initial_measurements)
         diff_set = ComponentSet()
 
         # Iterate over initial vardata, popping from dae map when an input,
@@ -301,12 +299,6 @@ class DynamicBase(object):
                 time_slice = dae_map.pop(var0)
                 input_vars.append(time_slice)
 
-#                if var0 in measurement_set:
-#                    # Don't think inputs should ever be measurements,
-#                    # but maybe under some circumstances
-#                    measurement_vars.append(time_slice)
-#                    measurement_set.remove(var0)
-             
             parent = var0.parent_component()
             if not isinstance(parent, DerivativeVar):
                 continue
@@ -323,11 +315,6 @@ class DynamicBase(object):
                 # Should be safe to remove state from dae_map here
                 state_slice = dae_map.pop(state[index0])
                 fixed_vars.append(state_slice)
-
-#                if state[index0] in measurement_set:
-#                    measurement_vars.append(state_slice)
-#                    measurement_set.remove(state[index0])
-
                 continue
             if state[index0] in input_set:
                 # If differential variable is an input, then this DerivativeVar
@@ -335,11 +322,6 @@ class DynamicBase(object):
                 continue
 
             deriv_slice = dae_map.pop(var0)
-#            if var0 in measurement_set:
-#                # Don't think derivative vars will ever be measurements,
-#                # but don't want to preclude
-#                measurement_vars.append(deriv_slice)
-#                measurement_set.remove(var0)
 
             if var1.fixed:
                 # Assume derivative has been fixed everywhere.
@@ -352,9 +334,6 @@ class DynamicBase(object):
                 state_slice = dae_map.pop(state[index0])
                 if state[index0].fixed:
                     ic_vars.append(state_slice)
-#                if state[index0] in measurement_set:
-#                    measurement_vars.append(state_slice)
-#                    measurement_set.remove(state[index0])
                 deriv_vars.append(deriv_slice)
                 diff_vars.append(state_slice)
             else:
@@ -362,9 +341,6 @@ class DynamicBase(object):
                 state_slice = dae_map.pop(state[index0])
                 if state[index0].fixed:
                     ic_vars.append(state_slice)
-#                if state[index0] in measurement_set:
-#                    measurement_vars.append(state_slice)
-#                    measurement_set.remove(state[index0])
                 deriv_vars.append(deriv_slice)
                 diff_vars.append(state_slice)
 
@@ -376,11 +352,6 @@ class DynamicBase(object):
             var1 = time_slice[t1]
             # If the variable is still in the list of time-indexed vars,
             # it must either be fixed (not a var) or be an algebraic var
-            # In either case it could be a measurement var. (Could a fixed
-            # var ever be a measurement var? Don't want to preclude)
-#            if var0 in measurement_set:
-#                measurement_vars.append(time_slice)
-#                measurement_set.remove(var0)
             if var1.fixed:
                 fixed_vars.append(time_slice)
             else:
@@ -405,9 +376,6 @@ class DynamicBase(object):
         # is difficult
         # Also, a categorization can have no input vars and still be
         # valid for MHE
-
-#        namespace.measurement_vars = measurement_vars
-#        namespace.n_measurement_vars = len(measurement_vars)
 
         namespace.input_vars = NMPCVarGroup(input_vars, time)
         namespace.n_input_vars = len(input_vars)
