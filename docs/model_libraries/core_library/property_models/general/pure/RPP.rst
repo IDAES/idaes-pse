@@ -49,7 +49,7 @@ Ideal Gas Molar Entropy
 
 The correlation for the ideal gas molar entropy is derived from the correlation for the molar heat capacity and is given below:
 
-.. math:: s_{\text{ig}} = A \times ln(T) + B \times T + \frac{C}{2} \times T^2 + \frac{D}{3} \times T^3 + s_{\text{form, Vap}}
+.. math:: s_{\text{ig}} = A \times ln(T/T_{ref}) + B \times (T - T_{ref}) + \frac{C}{2} \times (T^2 - T_{ref}^2) + \frac{D}{3} \times (T^3 - T_{ref}^3) + s_{\text{form, Vap}}
 
 **Parameters**
 

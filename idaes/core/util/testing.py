@@ -33,6 +33,7 @@ from idaes.core import (declare_process_block_class,
                         EnergyBalanceType,
                         Component,
                         Phase)
+
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -252,8 +253,6 @@ class _ReactionParameterBlock(ReactionParameterBlock):
     def build(self):
         super(_ReactionParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
         self.rate_reaction_idx = Set(initialize=["r1", "r2"])
         self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
 
