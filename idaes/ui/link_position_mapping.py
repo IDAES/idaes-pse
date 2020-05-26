@@ -12,101 +12,943 @@
 ##############################################################################
 link_position_mapping = {
     "cstr": {
-        "inlet_anchors": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {
-            "name": "bottomRight",
-            "args": {"rotate": "false", "padding": 0},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":15,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
         },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "equilibrium_reactor": {
-        "inlet_anchors": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {
-            "name": "bottomRight",
-            "args": {"rotate": "false", "padding": 0},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":5,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":45,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
         },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "gibbs_reactor": {
-        "inlet_anchors": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {
-            "name": "bottomRight",
-            "args": {"rotate": "false", "padding": 0},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":5,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":45,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
         },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "pfr": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":5,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":45,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "stoichiometric_reactor": {
-        "inlet_anchors": {"name": "topLeft", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {
-            "name": "bottomRight",
-            "args": {"rotate": "false", "padding": 0},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":5,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":45,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
         },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "flash": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "top_outlet_anchor": {"name": "top", "args": {"rotate": "false", "padding": 0}},
-        "bottom_outlet_anchor": {
-            "name": "bottom",
-            "args": {"rotate": "false", "padding": 0},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":25,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":25,
+                       "y":50,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
         },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "mixer": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "feed": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "out":{
+                "position": {
+                    "name": "left",
+                    "args": {
+                       "x": 48,
+                       "y": 25,
+                       "dx": 1,
+                       "dy": 1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            }
+        },
+        "items":[
+           {
+              "group":"out",
+              "id":"out"
+           },
+        ]
     },
     "feed_flash": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":25,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":25,
+                       "y":50,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "product": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+        ]
     },
     "separator": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in": {
+                "position": {
+                    "name":"left",
+                    "args": {
+                       "x": 2,
+                       "y": 25,
+                       "dx": 1,
+                       "dy": 1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"right",
+                    "args":{
+                       "x":48,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "heater": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in": {
+                "position": {
+                    "name": "left",
+                    "args": {
+                       "x": 6,
+                       "y": 25,
+                       "dx": 1,
+                       "dy": 1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":43,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "pressure_changer": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "heat_exchanger": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     # TODO When we get to using different icons we need to figure out how
     #  to deal with mutiple inlets and outlets in different places
     "heat_exchanger1d": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":25,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     },
     "packed_column": {
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":40,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ],
         "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "top_outlet_anchor": {"name": "top", "args": {"rotate": "false", "padding": 0}},
+        "left_outlet_anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}},
         "bottom_outlet_anchor": {
             "name": "bottom",
             "args": {"rotate": "false", "padding": 0},
         },
     },
     "tray_column": {
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":10,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":40,
+                       "dx":1,
+                       "dy":1
+                    }
+                }
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ],
         "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "top_outlet_anchor": {"name": "top", "args": {"rotate": "false", "padding": 0}},
+        "left_outlet_anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}},
         "bottom_outlet_anchor": {
             "name": "bottom",
             "args": {"rotate": "false", "padding": 0},
         },
     },
     "default": {
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}}, 
-        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}}
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":2,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":50,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
     }
 }

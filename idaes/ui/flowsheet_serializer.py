@@ -124,7 +124,7 @@ class FlowsheetSerializer:
             self.edges[name] = {"source": self.ports[arc.source], 
                                 "dest": self.ports[arc.dest]}
 
-    def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title):
+    def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
         entry["type"] = "standard.Image"
         # for now, just tile the positions diagonally
@@ -135,19 +135,22 @@ class FlowsheetSerializer:
         entry["angle"] = 0
         entry["id"] = name
         entry["z"] = (1,)
+        entry["ports"] = port_groups
         entry["attrs"] = {
             "image": {"xlinkHref": "/images/icons/" + image},
-            "label": {"text": name},
+            "label": {
+                "text": name
+            },
             "root": {"title": title},
         }
         out_json["cells"].append(entry)
 
-    def create_link_jointjs_json(self, out_json, source_anchor, dest_anchor, 
-                                 source_id, dest_id, name, label):
+    def create_link_jointjs_json(self, out_json, source_port, dest_port, 
+                                 source_id, dest_id, name, label):      
         entry = {
             "type": "standard.Link",
-            "source": {"anchor": source_anchor, "id": source_id},
-            "target": {"anchor": dest_anchor, "id": dest_id},
+            "source": {"id": source_id, "port": source_port},
+            "target": {"id": dest_id, "port": dest_port},
             "router": {"name": "orthogonal", "padding": 10},
             "connector": {"name": "normal", 
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
@@ -206,6 +209,7 @@ class FlowsheetSerializer:
         y_pos = 100
 
         for component, unit_attrs in self.unit_models.items():
+            print(link_position_mapping[unit_attrs["type"]])
             try:
                 self.create_image_jointjs_json(
                     self.out_json,
@@ -214,13 +218,15 @@ class FlowsheetSerializer:
                     unit_attrs["name"],
                     icon_mapping(unit_attrs["type"]),
                     unit_attrs["type"],
+                    link_position_mapping[unit_attrs["type"]]
                 )
             except KeyError:
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
                                                y_pos, 
                                                unit_attrs["name"], 
-                                               "default", unit_attrs["type"])
+                                               "default", unit_attrs["type"],
+                                               link_position_mapping[unit_attrs["type"]])
 
             x_pos += 100
             y_pos += 100
@@ -230,53 +236,12 @@ class FlowsheetSerializer:
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
 
-            try:
-                if hasattr(ports_dict["source"], "vap_outlet"):
-                    # TODO Figure out how to denote different outlet types. Need to
-                    #  deal with multiple input/output offsets
-                    for arc in list(self.arcs.values()):
-                        if (
-                            self.ports[arc.dest] == dest
-                            and arc.source == ports_dict["source"].vap_outlet
-                        ):
-                            source_anchor = link_position_mapping[umst][
-                                "top_outlet_anchor"
-                            ]
-                        elif (
-                            self.ports[arc.dest] == dest
-                            and arc.source == ports_dict["source"].liq_outlet
-                        ):
-                            source_anchor = link_position_mapping[umst][
-                                "bottom_outlet_anchor"
-                            ]
-
-                elif "top_outlet_anchor" in link_position_mapping[umst]:
-                    source_anchor = \
-                        link_position_mapping[umst]["top_outlet_anchor"]
-                else:
-                    source_anchor = link_position_mapping[umst]["outlet_anchors"]
-                    # TODO figure out offsets when mutiple things come
-                    #  from/into the same side:
-                    # source_anchor["args"]["dy"] = str(100/(len(dest) + 1)) + "%"
-
-            except KeyError:
-                source_anchor = link_position_mapping["default"]["outlet_anchors"]
-                # TODO figure out offsets when mutiple things come from/into the 
-                # same side:
-                # source_anchor["args"]["dy"] = str(100/(len(dest) + 1)) + "%"
-            try:
-                unit_type = self.unit_models[dest]["type"]
-                dest_anchor = \
-                    link_position_mapping[unit_type]["inlet_anchors"]
-            except KeyError:
-                dest_anchor = link_position_mapping["default"]["inlet_anchors"]
             self.create_link_jointjs_json(
                 self.out_json, 
-                source_anchor, 
-                dest_anchor, 
+                "in", 
+                "out", 
                 ports_dict["source"].getname(), 
                 dest.getname(), 
                 name,
                 self.labels[name]
             )
-            id_counter += 1
