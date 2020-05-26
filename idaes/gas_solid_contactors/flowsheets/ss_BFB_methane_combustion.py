@@ -28,6 +28,9 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock, EnergyBalanceType
 
+# Import IDAES logger
+import idaes.logger as idaeslog
+
 # Import BFB unit model
 from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
     import BubblingFluidizedBed
@@ -122,7 +125,7 @@ def main():
                     'Fe3O4': blk.solid_inlet.mass_frac[0, 'Fe3O4'].value,
                     'Al2O3': blk.solid_inlet.mass_frac[0, 'Al2O3'].value}}
 
-    m.fs.BFB.initialize(outlvl=0,
+    m.fs.BFB.initialize(outlvl=idaeslog.INFO,
                         gas_phase_state_args=gas_phase_state_args,
                         solid_phase_state_args=solid_phase_state_args)
 

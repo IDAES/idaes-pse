@@ -269,7 +269,7 @@ class _Gas_Phase_Thermo_StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
 
-        init_log.info('Starting initialization')
+        init_log.info_high('Starting initialization')
 
         # Deactivate the constraints specific for non-inlet blocks i.e.
         # when defined state is False
@@ -371,7 +371,7 @@ class _Gas_Phase_Thermo_StateBlock(StateBlock):
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
             res = ""
-        init_log.info("Gas properties initialization complete {}.".format(
+        init_log.info_high("Initialization complete {}.".format(
             idaeslog.condition(res))
         )
 
@@ -381,8 +381,6 @@ class _Gas_Phase_Thermo_StateBlock(StateBlock):
                 return flags
             else:
                 blk.release_state(flags)
-
-        init_log.info("Initialization complete.")
 
     def release_state(blk, flags, outlvl=0):
         """

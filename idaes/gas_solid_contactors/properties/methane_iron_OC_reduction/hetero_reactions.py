@@ -233,7 +233,7 @@ class _ReactionBlock(ReactionBlockBase):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="reactions")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="reactions")
 
-        init_log.info('Starting initialization')
+        init_log.info_high('Starting initialization')
 
         # TODO - Update in the future as needed
         # Get a single representative block for getting config arguments
@@ -302,7 +302,7 @@ class _ReactionBlock(ReactionBlockBase):
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
             res = ""
-        init_log.info("reactions initialization complete {}.".format(
+        init_log.info_high("reactions initialization complete {}.".format(
             idaeslog.condition(res))
                         )
 
