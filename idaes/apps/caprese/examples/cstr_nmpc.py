@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example for Cappresse's module for NMPC.
+Example for Caprese's module for NMPC.
 """
 from idaes.apps.caprese import nmpc
 from idaes.apps.caprese.nmpc import *
