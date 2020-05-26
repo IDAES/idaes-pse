@@ -1444,14 +1444,14 @@ class NMPCSim(DynamicBase):
         time = self.controller_time
 
         if strategy == ControlInitOption.FROM_PREVIOUS:
-            self.initialize_from_previous_sample(self.controller)
+            self.initialize_from_previous_sample(self.controller, **kwargs)
 
         elif strategy == ControlInitOption.BY_TIME_ELEMENT:
             self.initialize_by_solving_elements(self.controller, self.controller_time,
-                    input_type=input_type)
+                    input_type=input_type, **kwargs)
 
         elif strategy == ControlInitOption.FROM_INITIAL_CONDITIONS:
-            self.initialize_from_initial_conditions(self.controller)
+            self.initialize_from_initial_conditions(self.controller, **kwargs)
         
         # Add check that initialization did not violate bounds/equalities?
 
@@ -1586,7 +1586,8 @@ class NMPCSim(DynamicBase):
     def initialize_from_initial_conditions(self, model, 
             categories=[VariableCategory.DERIVATIVE,
                         VariableCategory.DIFFERENTIAL,
-                        VariableCategory.ALGEBRAIC]):
+                        VariableCategory.ALGEBRAIC],
+            **kwargs):
         """ 
         Set values of differential, algebraic, and derivative variables to
         their values at the initial conditions.
@@ -1600,6 +1601,7 @@ class NMPCSim(DynamicBase):
                          and ALGEBRAIC.
 
         """
+        config = self.config(kwargs)
         time = model._NMPC_NAMESPACE.get_time()
         cat_dict = model._NMPC_NAMESPACE.category_dict
         for categ in categories:
