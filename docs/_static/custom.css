@@ -20,4 +20,10 @@ div.highlight pre {
 }
 
 /* Make headings more distinct */
-/* TBD */
+h1 {
+    color: rgb(36,112,161);
+    font-size: 180%;
+}
+h2 {
+    font-size: 140%;
+}
