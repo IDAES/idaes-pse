@@ -29,7 +29,7 @@ import  idaes.logger as idaeslog
 
 __author__ = "Robert Parker"
 
-class DynamicSimulation(object):
+class DynamicBase(object):
     """
     Base class for dynamic simulations objects.
     """
@@ -78,7 +78,7 @@ class DynamicSimulation(object):
     def add_namespace_to(cls, model, time):
         """
         """
-        name = DynamicSimulation.get_namespace_name()
+        name = DynamicBase.get_namespace_name()
         if hasattr(model, name):
             # Return if namespace has already been added. Don't throw an error
             # as this is expected if the user, say wants to use the same model
@@ -103,7 +103,7 @@ class DynamicSimulation(object):
         """
         """
         # TODO: add remove_namespace_from to derived classes
-        name = DynamicSimulation.get_namespace_name()
+        name = DynamicBase.get_namespace_name()
         if not hasattr(model, name):
             raise RuntimeError(
                 'Trying to delete block %s that does not exist on model'
@@ -117,15 +117,15 @@ class DynamicSimulation(object):
     def _populate_namespace(self, model):
         """
         Given a model with categorized variables, a category_dict, and a
-        var_locator, each referenced through the DynamicSimulation namespace,
+        var_locator, each referenced through the DynamicBase namespace,
         adds references to each of these objects through model's namespace
-        corresponding to this particular instance of DynamicSimulation
+        corresponding to this particular instance of DynamicBase
         (i.e. NMPCSim or MHESim).
         """
-        if self.get_namespace_name() == DynamicSimulation.get_namespace_name():
+        if self.get_namespace_name() == DynamicBase.get_namespace_name():
             return
         derived_namespace = getattr(model, self.get_namespace_name())
-        base_namespace = getattr(model, DynamicSimulation.get_namespace_name())
+        base_namespace = getattr(model, DynamicBase.get_namespace_name())
 
         derived_namespace.dae_vars = base_namespace.dae_vars
         derived_namespace.diff_vars = base_namespace.diff_vars
@@ -175,7 +175,7 @@ class DynamicSimulation(object):
         # categorize, create category dicts, create locator
         # ^should this be done separately for NMPC/MHE?
         self.categorize_variables(self.plant, inputs_at_t0)
-        namespace = getattr(self.plant, DynamicSimulation.get_namespace_name())
+        namespace = getattr(self.plant, DynamicBase.get_namespace_name())
 
         namespace.category_dict = {
                 VariableCategory.DIFFERENTIAL: namespace.diff_vars,
@@ -197,7 +197,7 @@ class DynamicSimulation(object):
 
         self.categorize_variables(self.controller, init_controller_inputs)
         namespace = getattr(self.controller,
-                DynamicSimulation.get_namespace_name())
+                DynamicBase.get_namespace_name())
 
         namespace.category_dict = {
                 VariableCategory.DIFFERENTIAL: namespace.diff_vars,
@@ -262,7 +262,7 @@ class DynamicSimulation(object):
 
         """
         namespace = getattr(model,
-                DynamicSimulation.get_namespace_name())
+                DynamicBase.get_namespace_name())
         time = namespace.get_time()
         t0 = time.first()
         t1 = time.get_finite_elements()[1]
@@ -436,7 +436,7 @@ class DynamicSimulation(object):
 
         """
         namespace = getattr(model,
-                DynamicSimulation.get_namespace_name())
+                DynamicBase.get_namespace_name())
         time = namespace.get_time()
         ic_list = ic_vars
 

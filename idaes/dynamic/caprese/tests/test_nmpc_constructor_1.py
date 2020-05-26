@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Test for Cappresse's module for NMPC.
+Test for Caprese's module for NMPC.
 """
 
 import pytest
@@ -31,8 +31,7 @@ from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.caprese import nmpc
 from idaes.dynamic.caprese.nmpc import *
 import idaes.logger as idaeslog
-from cstr_for_testing import make_model
-import pdb
+from idaes.dynamic.caprese.examples.cstr_model import make_model
 
 __author__ = "Robert Parker"
 

@@ -30,8 +30,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.caprese import nmpc
 from idaes.dynamic.caprese.nmpc import *
+from idaes.dynamic.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
-from cstr_for_testing import make_model
 
 __author__ = "Robert Parker"
 
@@ -40,7 +40,6 @@ __author__ = "Robert Parker"
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6,
-#                      'mu_init': 1e-8,
                       'bound_push': 1e-8}
 else:
     solver = None

@@ -33,9 +33,8 @@ from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.dynamic.caprese.util import *
-from idaes.dynamic.caprese.tests.cstr_for_testing import make_model
+from idaes.dynamic.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
-from cstr_for_testing import make_model
 
 import random
 

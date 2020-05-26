@@ -42,7 +42,7 @@ from idaes.dynamic.caprese.util import (initialize_by_element_in_range,
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
         get_violated_bounds_at_time)
-from idaes.dynamic.caprese.base_class import DynamicSimulation
+from idaes.dynamic.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
@@ -53,11 +53,11 @@ import pdb
 __author__ = "Robert Parker and David Thierry"
 
 
-class MHESim(DynamicSimulation):
+class MHESim(DynamicBase):
     """
 
     """
-    CONFIG = DynamicSimulation.CONFIG
+    CONFIG = DynamicBase.CONFIG
 
     @classmethod
     def get_namespace_name(cls):
