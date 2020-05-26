@@ -52,11 +52,34 @@ solver_available = SolverFactory('ipopt').available()
 if solver_available:
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
+#                      'mu_init': 1e-8,
                       'bound_push': 1e-8,
                       'halt_on_ampl_error': 'yes'}
 else:
     solver = None
+
+
+class CachedVarsContext(object):
+    def __init__(self, varlist, nvars, tlist):
+        if type(tlist) is not list:
+            tlist = [tlist]
+        self.n_t = len(tlist)
+        self.vars = varlist
+        self.nvars = nvars
+        self.tlist = tlist
+        self.cache = [[None for j in range(self.n_t)] 
+                for i in range(self.nvars)]
+
+    def __enter__(self):
+        for i in range(self.nvars):
+            for j, t in enumerate(self.tlist):
+                self.cache[i][j] = self.vars[i][t].value
+        return self
+
+    def __exit__(self, a, b, c):
+        for i in range(self.nvars):
+            for j, t in enumerate(self.tlist):
+                self.vars[i][t].set_value(self.cache[i][j])
 
 
 # NMPC Var could inherit from "DAE Var" - just add setpoint
@@ -101,6 +124,8 @@ class NMPCVarGroup(object):
         self.weights = self.n_vars*[None]
         # Can I get time set here? From an element (slice) of varlist
         # Complicated by the fact that varlist could be scalar_vars
+
+        self.cache = self.n_vars*[None]
 
     def __iter__(self):
         for var in self.varlist:
