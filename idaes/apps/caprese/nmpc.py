@@ -1457,7 +1457,7 @@ class NMPCSim(DynamicBase):
             model : Model to initialize
             time : Set to treat as time
             input_type : ElementInitializationInputOption enum item 
-            telling how to fix the inputs for the simulation
+                         telling how to fix the inputs for the simulation
 
         """
         config = self.config(kwargs)
