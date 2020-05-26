@@ -209,7 +209,6 @@ class FlowsheetSerializer:
         y_pos = 100
 
         for component, unit_attrs in self.unit_models.items():
-            print(link_position_mapping[unit_attrs["type"]])
             try:
                 self.create_image_jointjs_json(
                     self.out_json,
