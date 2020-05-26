@@ -59,6 +59,29 @@ else:
     solver = None
 
 
+class CachedVarsContext(object):
+    def __init__(self, varlist, nvars, tlist):
+        if type(tlist) is not list:
+            tlist = [tlist]
+        self.n_t = len(tlist)
+        self.vars = varlist
+        self.nvars = nvars
+        self.tlist = tlist
+        self.cache = [[None for j in range(self.n_t)] 
+                for i in range(self.nvars)]
+
+    def __enter__(self):
+        for i in range(self.nvars):
+            for j, t in enumerate(self.tlist):
+                self.cache[i][j] = self.vars[i][t].value
+        return self
+
+    def __exit__(self, a, b, c):
+        for i in range(self.nvars):
+            for j, t in enumerate(self.tlist):
+                self.vars[i][t].set_value(self.cache[i][j])
+
+
 # NMPC Var could inherit from "DAE Var" - just add setpoint
 # Inherit from Var? Advantage is that it could behave like Var
 # fix(), setub() etc.
