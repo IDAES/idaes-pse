@@ -70,7 +70,6 @@ class DynamicSimulation(object):
                 )
             )
 
-    # TODO: classmethods for logger and namespace names
     @classmethod
     def get_namespace_name(cls):
         return '_DYNAMIC_NAMESPACE'
@@ -103,6 +102,7 @@ class DynamicSimulation(object):
     def remove_namespace_from(cls, model):
         """
         """
+        # TODO: add remove_namespace_from to derived classes
         name = DynamicSimulation.get_namespace_name()
         if not hasattr(model, name):
             raise RuntimeError(
