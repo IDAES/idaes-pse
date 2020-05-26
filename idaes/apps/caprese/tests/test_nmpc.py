@@ -44,7 +44,7 @@ __author__ = "Robert Parker"
 solver_available = SolverFactory('ipopt').available()
 if solver_available:
     solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
+    solver.options = {'tol': 1e-8,
                       'mu_init': 1e-8,
                       'bound_push': 1e-8,
                       'halt_on_ampl_error': 'yes'}
@@ -457,7 +457,8 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
 def test_initialization_by_time_element(nmpc):
 
     nmpc.initialize_control_problem(
-            control_init_option=ControlInitOption.BY_TIME_ELEMENT)
+            control_init_option=ControlInitOption.BY_TIME_ELEMENT,
+            tolerance=1e-4)
 
     controller = nmpc.controller
     time = controller.time
@@ -671,7 +672,7 @@ def test_transfer_current_plant_state_to_controller(nmpc):
     c_ic_vars = nmpc.controller._NMPC_NAMESPACE.ic_vars
 
     for p_var, c_var in zip(p_ic_vars, c_ic_vars):
-        assert p_var[3.].value == approx(c_var[0.].value, rel=0.1)
+        assert p_var[3.].value == approx(c_var[0.].value, rel=0.15)
 
 
 @pytest.fixture
