@@ -8,11 +8,12 @@ the plant is sampled.
 Optimization Problem
 --------------------
 
-The most common formulation of the NMPC optimization problem is...
+An explanation of the optimization problem solved in this implementation
+of NMPC is forthcoming. 
 
 Available Methods
 ^^^^^^^^^^^^^^^^^
 
-.. automodule:: idaes.dynamic.caprese.nmpc
+.. automodule:: idaes.apps.caprese.nmpc
     :members:
 

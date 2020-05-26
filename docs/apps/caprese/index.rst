@@ -8,9 +8,6 @@ Caprese
     nmpc
     mhe
 
-All happy dynamic models solve in the same way; each unhappy dynamic model 
-fails to solve in its own way.
-
 .. image:: ../../_images/logocappresse-01.png
     :width: 300px
     :align: center
