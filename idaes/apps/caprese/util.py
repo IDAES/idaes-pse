@@ -415,7 +415,8 @@ def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
             var_tgt.set_value(src_value)
 
 
-def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
+def find_slices_in_model(tgt_model, tgt_time, src_model, src_time, 
+        tgt_locator, src_slices):
     """
     Given list of time-only slices in a source model and dictionary mapping
     VarData ids to VarLocator objects, attempts to find each slice
@@ -436,18 +437,15 @@ def find_slices_in_model(tgt_model, src_model, tgt_locator, src_slices):
     # tgt_slice (via locator) -> append to list 
     # (need both models to find_comp_in_block, and to get some point
     # in time at which to access slices)
-    t0_src = src_model.time.first()
-    t0_tgt = tgt_model.time.first()
+    t0_src = src_time.first()
+    t0_tgt = tgt_time.first()
     tgt_slices = []
     for _slice in src_slices:
         init_var = _slice[t0_src]
-#        tgt_var = find_comp_in_block(tgt_model, 
-#                                     src_model, 
-#                                     init_var)
         tgt_vardata = find_comp_in_block_at_time(tgt_model,
                                                  src_model,
                                                  init_var,
-                                                 tgt_model.time,
+                                                 tgt_time,
                                                  t0_tgt)
         # This logic is bad because tgt_var might not be explicitly
         # time-indexed, or it may be indexed by things other than time

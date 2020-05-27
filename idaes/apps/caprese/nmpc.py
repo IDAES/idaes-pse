@@ -313,13 +313,13 @@ class NMPCSim(DynamicBase):
         # in the control model.
         # TODO: allow user to specify this if names don't match
         self.plant._NMPC_NAMESPACE.controller_ic_vars = find_slices_in_model(
-                self.plant,
-                self.controller,
+                self.plant, self.plant_time,
+                self.controller, self.controller_time,
                 self.plant._NMPC_NAMESPACE.var_locator,
                 self.controller._NMPC_NAMESPACE.ic_vars)
         self.controller._NMPC_NAMESPACE.plant_input_vars = find_slices_in_model(
-                self.controller,
-                self.plant,
+                self.controller, self.controller_time,
+                self.plant, self.plant_time,
                 self.controller._NMPC_NAMESPACE.var_locator,
                 self.plant._NMPC_NAMESPACE.input_vars.varlist)
 
@@ -460,7 +460,7 @@ class NMPCSim(DynamicBase):
             model._NMPC_NAMESPACE.sample_points = sample_points
 
 
-    def validate_slices(self, tgt_model, src_model, src_slices):
+    def validate_slices(self, tgt_model, src_model, src_time, src_slices):
         """
         Given list of time-only slices in a source model, attempts to find
         each of them in the target model and returns a list of the found 
@@ -478,7 +478,7 @@ class NMPCSim(DynamicBase):
             List of time-only slices to same-named variables in the target 
             model
         """
-        t0 = src_model.time.first()
+        t0 = src_time.first()
         tgt_slices = []
         locator = tgt_model._NMPC_NAMESPACE.var_locator
         for _slice in src_slices:
@@ -1108,7 +1108,9 @@ class NMPCSim(DynamicBase):
 
         # TODO: set point changes.
         self.add_objective_function(self.controller,
-                control_penalty_type=ControlPenaltyType.ACTION,
+#                control_penalty_type=ControlPenaltyType.ACTION,
+# NOTE: Leaving this commented here in case this breaks something
+                control_penalty_type=config.control_penalty_type,    
                 objective_state_categories=objective_state_categories,
                 time_resolution_option=time_resolution_option,
                 name=objective_name)
@@ -1396,7 +1398,7 @@ class NMPCSim(DynamicBase):
                     self.controller, self.plant)
             self.config.sample_time = sample_time
 
-        time = model.time
+        time = model._NMPC_NAMESPACE.get_time()
 
         # This rule will not be picklable as it is not declared
         # at module namespace
@@ -1415,7 +1417,7 @@ class NMPCSim(DynamicBase):
             return _slice[t_next] == _slice[t]
 
         name = 'pwc_constraint'
-        pwc_constraint = Constraint(model.time, input_indices, 
+        pwc_constraint = Constraint(time, input_indices, 
                 rule=pwc_rule)
         model._NMPC_NAMESPACE.add_component(name, pwc_constraint)
 
@@ -1675,7 +1677,7 @@ class NMPCSim(DynamicBase):
                 'beginning at ' + str(t_start))
         init_log.info(msg)
 
-        tc1 = self.controller.time.first() + sample_time
+        tc1 = self.controller_time.first() + sample_time
 
         if self.controller_solved and calculate_error:
             self.state_error[t_end] = self.calculate_error_between_states(

@@ -176,7 +176,8 @@ def test_find_slices_in_model():
     locator = ComponentMap([(var[t0_tgt], NMPCVarLocator(categ, group, i))
                                 for i, var in enumerate(dae_vars_1)])
 
-    tgt_slices = find_slices_in_model(m1, m2, locator, dae_vars_2)
+    tgt_slices = find_slices_in_model(m1, m1.time, m2, m2.time, 
+            locator, dae_vars_2)
 
     dae_var_set_1 = ComponentSet(dae_vars_1)
     assert len(dae_var_set_1) == len(tgt_slices)
