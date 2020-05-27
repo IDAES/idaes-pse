@@ -19,6 +19,11 @@ Configuration Arguments
 
 The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found :ref:`here<core/comp:Component Class>`.
 
+Type Argument
+^^^^^^^^^^^^^
+
+Each component in the `component` argument must be assigned a valid component type from those supported by the IDAES Framework (e.g. Component, Solvent, Solute, etc.). This should be provided using the `type` argument.
+
 Valid Phases
 ^^^^^^^^^^^^
 
