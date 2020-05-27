@@ -19,6 +19,18 @@ Configuration Arguments
 
 The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found :ref:`here<core/comp:Component Class>`.
 
+Elemental Composition
+^^^^^^^^^^^^^^^^^^^^^
+
+If a user wishes to use elemental balances as part of their flowsheet (e.g. a Gibbs equilibrium reactor), it is necessary to specify the elemental composition of each Component. This can be done using the `elemental_composition` configuration argument, which takes a dictionary where the keys are the constituent elements and the values re the number of atoms of that element which compose the Components.
+
+.. code-block:: python
+
+    "components": {
+        "water": {"elemental_composition": {"H": 2, "O": 1}}}
+
+If users specify an elemental composition for one Component, they must specify elemental compositions for all Components. The Generic Property Package framework will then compile the list of elements composing all species and the overall composition matrix automatically.
+
 Valid Phases
 ^^^^^^^^^^^^
 
