@@ -837,12 +837,6 @@ link_position_mapping = {
               "id":"out"
            }
         ],
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "left_outlet_anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "bottom_outlet_anchor": {
-            "name": "bottom",
-            "args": {"rotate": "false", "padding": 0},
-        },
     },
     "tray_column": {
         "groups": {
@@ -889,12 +883,6 @@ link_position_mapping = {
               "id":"out"
            }
         ],
-        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "left_outlet_anchor": {"name": "left", "args": {"rotate": "false", "padding": 0}},
-        "bottom_outlet_anchor": {
-            "name": "bottom",
-            "args": {"rotate": "false", "padding": 0},
-        },
     },
     "default": {
         "groups": {
