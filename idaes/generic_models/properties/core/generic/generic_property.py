@@ -245,7 +245,8 @@ class GenericParameterData(PhysicalParameterBlock):
             # Add these to element_list
             for ec in element_comp.values():
                 for e in ec.keys():
-                    self.element_list.add(e)
+                    if e not in self.element_list:
+                        self.element_list.add(e)
 
             self.element_comp = {}
             for c in self.component_list:
