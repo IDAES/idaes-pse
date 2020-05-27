@@ -525,7 +525,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
 
     fe_in_range = [i for i, fe in enumerate(time.get_finite_elements())
                             if fe >= t_start and fe <= t_end]
-    t_in_range = [t for t in model.time if t >= t_start and t <= t_end]
+    t_in_range = [t for t in time if t >= t_start and t <= t_end]
 
     fe_in_range.pop(0)
     n_fe_in_range = len(fe_in_range)
