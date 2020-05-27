@@ -300,6 +300,7 @@ def test_add_setpoint_to_controller(nmpc):
             objective_weight_override=weight_override,
             objective_state_categories=state_categories,
             time_resolution_option=TimeResolutionOption.FINITE_ELEMENTS,
+            control_penalty_type=ControlPenaltyType.ACTION,
             objective_name='test_objective')
 
     diff_vars = controller._NMPC_NAMESPACE.diff_vars
