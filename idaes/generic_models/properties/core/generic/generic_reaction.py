@@ -233,10 +233,14 @@ class GenericReactionParameterData(ReactionParameterBlock):
                         pass
 
         # As a saftey check, make sure all Vars in reaction blocks are fixed
-        for r in self.reaction_idx:
-            rblock = getattr(self, "reaction_"+r)
-            for v in self.component_objects(Var):
-                v.fixed = True
+        for v in self.component_objects(Var, descend_into=True):
+            for i in v:
+                if v[i].value is None:
+                    raise ConfigurationError(
+                        "{} parameter {} was not assigned"
+                        " a value. Please check your configuration "
+                        "arguments.".format(self.name, v.local_name))
+                v[i].fix()
 
     def configure(self):
         """

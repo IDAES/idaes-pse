@@ -349,9 +349,9 @@ class TestGenericParameterBlock(object):
                 c.test_var = Var()
 
         with pytest.raises(ConfigurationError,
-                           match="params parameter test_var for component c "
-                           "was not assigned a value. Please check your "
-                           "configuration arguments."):
+                           match="params parameter test_var was not assigned "
+                           "a value. Please check your configuration "
+                           "arguments."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {"dens_mol_liq_comp": test_class},

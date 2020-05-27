@@ -338,9 +338,9 @@ class GenericParameterData(PhysicalParameterBlock):
             for i in v:
                 if v[i].value is None:
                     raise ConfigurationError(
-                        "{} parameter {} for component {} was not assigned"
+                        "{} parameter {} was not assigned"
                         " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name, c))
+                        "arguments.".format(self.name, v.local_name))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)

@@ -16,8 +16,7 @@ Methods for defining equibilibrium reactions
 from pyomo.environ import Var
 
 
-# -----------------------------------------------------------------------------
-# Constant dh_rxn
+# ----------------------------------------------------------------------------
 class mole_frac_power_law_equil():
     def build_parameters(rblock, config):
         order_init = {}
@@ -37,7 +36,6 @@ class mole_frac_power_law_equil():
                         # However, solids should be excluded as they normally
                         # do not appear in the equilibrium relationship
                         pobj = ppack.get_phase(p)
-                        print(p, pobj.name, pobj.is_solid_phase())
                         if not pobj.is_solid_phase():
                             order_init[p, j] = config.stoichiometry[p, j]
                         else:
