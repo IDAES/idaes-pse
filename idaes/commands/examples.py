@@ -49,6 +49,7 @@ import requests
 
 # package
 from idaes.commands import cb
+from idaes.commands.base import how_to_report_an_error
 from idaes.ver import package_version as V
 
 __author__ = "Dan Gunter"
@@ -209,10 +210,12 @@ def get_examples(directory, no_install, list_releases, no_download, version,
             # give an error if selected version does not exist
             if ex_version not in [r.tag for r in releases]:
                 if version is None:
-                    click.echo(f"Internal Error: Could not find an examples release "
-                               f"matching IDAES {ex_version}.\nAs a workaround, you can"
-                               f" manually pick a version with -V/--version.\n Use "
-                               f"-l/--list-releases to see all available versions.")
+                    click.echo(f"Internal Error: Could not find an examples release\n"
+                               f"matching IDAES version == {PKG_VERSION}\n"
+                               f"You can manually pick  version with '-V/--version'\n"
+                               f"or install from a local directory with '--local'.\n"
+                               f"Use '-l/--list-releases' to see all versions.\n"
+                               f"{how_to_report_an_error()}\n")
                 else:
                     click.echo(f"Could not find an examples release matching IDAES"
                                f"{version}.\n Use -l/--list-releases to see all "
@@ -237,8 +240,9 @@ def get_examples(directory, no_install, list_releases, no_download, version,
                 click.echo(f"Target directory '{target_dir}' does not exist")
                 sys.exit(-1)
             else:
-                click.echo(f"Internal error: After download, directory '{target_dir}' "
-                           f"does not exist")
+                click.echo(f"Internal error: After download, directory '{target_dir}'\n"
+                           f"does not exist.\n"
+                           f"{how_to_report_an_error()}")
                 sys.exit(-1)
         click.echo("Installing...")
         try:
