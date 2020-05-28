@@ -10,6 +10,42 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
+"""
+Description
+-----------
+This mapping defines the ports for a given icon which makes the arcs point 
+to the correct place on the icon
+
+When a unit model or icon is added
+----------------------------------
+If it does not have a section already in this mapping:
+Copy "cstr" and paste it at the bottom of link_position_mapping. Then, modify 
+the "x" and "y" of each of the groups inside of the "group" dict in order to 
+get the arcs to point to the appropriate icon edges.
+
+If it does have a section in the mapping:
+Modify the "x" and "y" of each of the groups inside of the "group" dict to 
+get the arcs to point to the appropriate icon edges
+
+Dependencies
+------------
+flowsheet_serializer depends on this to give the arcs a place to point to
+
+If you do this it will break
+----------------------------
+Removing anything from inside of one of the groups (ie "in" or "out") in 
+"groups" you will break the ports that allow for the arcs to point to the 
+correct place on the icon
+
+Note
+----
+The current implementation is simple and only handles one place of input 
+and one place of output. I (Makayla) think that adding a new input or output 
+will be easy in terms of the mapping (just add another group) but then you 
+have to figure out the name of the port to point to/from when serializing 
+the model
+"""
 link_position_mapping = {
     "cstr": {
         "groups": {
