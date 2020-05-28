@@ -17,6 +17,8 @@ Created on Tue Feb 18 10:54:52 2020
 
 @author: alee
 """
+from enum import Enum
+
 from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 
@@ -24,6 +26,15 @@ from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 
 
+# Enumerate recognised Phase types
+class PhaseType(Enum):
+    undefined = 0
+    liquidPhase = 1
+    vaporPhase = 2
+    solidPhase = 3
+
+
+# TODO: Document EoS options and parameter_Data
 @declare_process_block_class("Phase")
 class PhaseData(ProcessBlockData):
     CONFIG = ConfigBlock()
@@ -33,6 +44,21 @@ class PhaseData(ProcessBlockData):
             description="List of components in phase",
             doc="List of components which are present in phase. This is used "
             "to construct the phase-component Set for the property package."))
+    CONFIG.declare("equation_of_state", ConfigValue(
+            default=None,
+            description="Equation of state for phase",
+            doc="""A valid Python class with the necessary methods for
+                constructing the desired equation of state (or similar
+                model)."""))
+    CONFIG.declare("equation_of_state_options", ConfigValue(
+            default=None,
+            description="Options for equation of state",
+            doc="""A dict or ConfigBlock of options to be used when setting
+                up equation of state for phase."""))
+    CONFIG.declare("parameter_data", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict containing initialization data for parameters"))
     CONFIG.declare("_phase_list_exists", ConfigValue(
             default=False,
             doc="Internal config argument indicating whether phase_list "
@@ -79,7 +105,8 @@ class PhaseData(ProcessBlockData):
             phase_list.add(self.local_name)
         except AttributeError:
             # Parent does not have a phase_list yet, so create one
-            parent.phase_list = Set(initialize=[self.local_name])
+            parent.phase_list = Set(initialize=[self.local_name],
+                                    ordered=True)
 
 
 @declare_process_block_class("LiquidPhase")
@@ -116,3 +143,7 @@ class VaporPhaseData(PhaseData):
 
     def is_vapor_phase(self):
         return True
+
+
+# List of all Phase types to use for validation
+__all_phases__ = [Phase, LiquidPhase, SolidPhase, VaporPhase]

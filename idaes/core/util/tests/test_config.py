@@ -25,11 +25,13 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         ReactionParameterBlock,
                         useDefault)
+from idaes.core.phases import PhaseType as PT
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
+                                    list_of_phase_types,
                                     is_port,
                                     is_time_domain,
                                     is_transformation_method,
@@ -230,3 +232,14 @@ def test_is_transformation_scheme():
 
     with pytest.raises(ConfigurationError):
         is_transformation_scheme("foo")
+
+
+def test_list_of_phase_types():
+    assert list_of_phase_types(PT.liquidPhase) == [PT.liquidPhase]
+    assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
+    assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == \
+        [PT.liquidPhase, PT.vaporPhase]
+    with pytest.raises(ConfigurationError,
+                       match="valid_phase_types configuration argument must "
+                       "be a list of PhaseTypes."):
+        list_of_phase_types("foo")

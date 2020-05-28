@@ -160,6 +160,20 @@ def test_make_component_objects():
     assert isinstance(m.p.comp2, Component)
 
 
+def test_make_component_objects_already_exists():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+    
+    m.p.comp1 = object()
+
+    m.p.component_list = Set(initialize=["comp1", "comp2"])
+
+    with pytest.raises(PropertyPackageError,
+                       match="p could not add Component object comp1 - an "
+                       "object with that name already exists."):
+        m.p._make_component_objects()
+
+
 def test_make_phase_objects():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -175,6 +189,20 @@ def test_make_phase_objects():
 
     assert m.p.phase1.config.component_list == [1, 2, 3]
     assert m.p.phase2.config.component_list == [4, 5, 6]
+
+
+def test_make_phase_objects_already_exists():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.phase1 = object()
+
+    m.p.phase_list = Set(initialize=["phase1", "phase2"])
+
+    with pytest.raises(PropertyPackageError,
+                       match="p could not add Phase object phase1 - an "
+                       "object with that name already exists."):
+        m.p._make_phase_objects()
 
 
 def test_validate_parameter_block_no_component_list():

@@ -77,7 +77,6 @@ class ResourceDB(object):
         Returns:
             generator of int|Resource, depending on the value of `id_only`
         """
-
         def as_resource(_r):
             _log.debug(f"as_resource: id_={_r['id_']}")
             rsrc = Resource(value=_r)
@@ -88,7 +87,7 @@ class ResourceDB(object):
         if not filter_dict:
             for r in self._db.all():
                 if id_only:
-                    yield r.eid
+                    yield r.doc_id
                 else:
                     yield as_resource(r)
             return
@@ -99,7 +98,7 @@ class ResourceDB(object):
         results = self._db.search(filter_expr)
         for r in results:
             if id_only:
-                yield r.eid
+                yield r.doc_id
             else:
                 _log.debug(f"got resource: {r}")
                 yield as_resource(r)

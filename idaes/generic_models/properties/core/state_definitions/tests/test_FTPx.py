@@ -29,11 +29,15 @@ from pyomo.environ import ConcreteModel, Constraint, Block, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.generic_models.properties.core.state_definitions.FTPx import \
-    define_state, state_initialization
+    define_state, state_initialization, set_metadata
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.core.util.misc import add_object_reference
+
+
+def test_set_metadata():
+    assert set_metadata(None) is None
 
 
 class Test1PhaseDefinedStateFalseNoBounds(object):

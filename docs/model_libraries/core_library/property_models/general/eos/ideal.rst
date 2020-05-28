@@ -64,11 +64,11 @@ Component Fugacity by Phase
 
 For the vapor phase, ideal behavior is assumed:
 
-.. math:: \Phi_{Vap, j} = x_{Vap, j} \times P
+.. math:: f_{Vap, j} = P
 
 For the liquid phase, Raoult's Law is used:
 
-.. math:: \Phi_{Liq, j} = x_{Vap, j} \times P_{sat, j}
+.. math:: f_{Liq, j} = P_{sat, j}
 
 Component Fugacity Coefficient by Phase
 ---------------------------------------
