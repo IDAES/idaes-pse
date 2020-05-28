@@ -13,15 +13,18 @@
 
 
 def almconfidence(data, *vargs):
-    # This function calulates a covariance matrix 
-    # and confidence intervals of the estimated alamo regression coeficients
+    # This function calculates a covariance matrix
+    # and confidence intervals of the estimated alamo regression coefficients
     import numpy as np
-    # import sympy
     from scipy.stats import t  # 2.7
     from sympy.parsing.sympy_parser import parse_expr
     from sympy import symbols, lambdify
 
-    if('xdata' not in data.keys()):
+    # Initialize additional metric dictionaries
+    data['covariance'] = {}
+    data['conf_inv'] = {}
+
+    if data.get('xdata', None) is None: # ('xdata' is not in data.keys()):
         xdata = vargs[0]
         # zdata = vargs[1]
     else:
@@ -34,16 +37,19 @@ def almconfidence(data, *vargs):
     if(isinstance(data['model'], type({}))):
         for okey in data['model'].keys():
             model = data['model'][okey]
-            model.split('=')[1]
-            # out = model.split('=')[0]
             model = model.split('=')[1]
+
             # split the model on +/- to isolate each linear term
             # This section is not currently in compliance with custom basis functions
             model = model.replace(' - ', ' + ').split(" + ")
+            if model[0] == ' ' or model[0] == '':
+                model = model[1:]
+
             nlinterms = len(model)
             sensmat = np.zeros([ndata, nlinterms])
             covar = np.zeros([nlinterms, nlinterms])
             coeffs = np.zeros([nlinterms])
+
             for j in range(nlinterms):
                 thisterm = model[j].split(' * ')
                 coeffs[j] = float(eval(thisterm[0]))
@@ -106,4 +112,4 @@ def almconfidence(data, *vargs):
         for j in range(nlinterms):
             data['conf_inv'].append('B' + str(j + 1)
                                     + ' : ' + str(coeffs[j]) + '+/-' + str(ci[j]))
-        return data
+    return data

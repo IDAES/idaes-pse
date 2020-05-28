@@ -19,7 +19,6 @@ def almpywriter(data, debug):
     #    y=<fname>.f(X)
     # handle the multiple output
     if data['opts']['noutputs'] > 1 or debug['expandoutput']:
-        print(data['opts']['noutputs'], debug['expandoutput'], debug['outkeys'])
         for output_name, mod_res in data['results']['model'].items():
             almpywriter_help(data, mod_res, output_name)
     else:
@@ -64,7 +63,7 @@ def almcvwriter_help(data, mod_res, output_name):
     # This funciton writes the file
     # - <almname>cv.py
     #    y=<fname>.f(X,params)
-    # print data['results']['model']
+
     model = mod_res.split('=')[1]
     model = model + ' '
     tlist = ('sin', 'cos', 'log', 'exp')

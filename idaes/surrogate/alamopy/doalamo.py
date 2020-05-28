@@ -181,7 +181,7 @@ def alamo(xdata, zdata, **kwargs):
         debug["validation"] = True
         debug["savetrace"] = False
         numOfFolds = debug["lmo"]
-        print(xdata)
+
         if numOfFolds > len(xdata):
             raise Exception(
                 "Number of Cross validation \
