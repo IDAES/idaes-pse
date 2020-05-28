@@ -389,9 +389,9 @@ class GenericParameterData(PhysicalParameterBlock):
             for i in v:
                 if v[i].value is None:
                     raise ConfigurationError(
-                        "{} parameter {} for component {} was not assigned"
+                        "{} parameter {} was not assigned"
                         " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name, c))
+                        "arguments.".format(self.name, v.local_name))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
@@ -415,7 +415,7 @@ class GenericParameterData(PhysicalParameterBlock):
         """
         Placeholder method to allow users to specify parameters via a
         class. The user class should inherit from this one and implement a
-        parameters() method which creates the reqruied components.
+        parameters() method which creates the required components.
 
         Args:
             None
