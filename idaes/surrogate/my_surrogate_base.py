@@ -14,7 +14,7 @@ class Metrics:
     """
     Names for known types of metrics.
     Use these as keys in dictionaries, e.g.:
-        m = {Metrics.RMSE: self.rmse}
+    m = {Metrics.RMSE: self.rmse}
     When adding attributes to this class, please include a comment with the
     prefix "#:" immediately above it, so Sphinx knows that this is documentation
     for the attribute.
@@ -40,6 +40,10 @@ class Metrics:
 
 
 class ConfigurationError(Exception):
+    """
+    IDAES exception to be used when configuration arguments are incorrect
+    or inconsistent.
+    """
     pass
 
 
@@ -109,7 +113,6 @@ class Surrogate:
 
         self.pkl_info = {'In data': self._rdata_in.tolist(),
                          'Out data': self._rdata_out.tolist()}
-        # 'Run settings': self.config}
 
         pass
 
@@ -122,7 +125,7 @@ class Surrogate:
         self.build_model()
         pass
 
-    # def generate_expression(self, variable_list):
+    # def generate_expression(self, variable_list): # TODO
     #     pass
 
     # Get Results
@@ -135,8 +138,6 @@ class Surrogate:
         """
         return self._model
 
-    # def get_metrics(self):  # Metrics Object
-    #     return self._metrics
 
     def get_results(self):  # Metrics Object
         """
@@ -204,7 +205,7 @@ class Surrogate:
 
     # Additional Metrics - MUST NOT OVERWRITE MODELER METRICS
 
-    # def get_trained_metrics():  # 2D Nparray, 2D Numparray
+    # def get_trained_metrics():  # 2D Nparray, 2D Numparray # TODO
     #     if not _b_built:
     #         print("Warning: No surrogate model regressed.")
     #         return

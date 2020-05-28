@@ -89,7 +89,7 @@ def alamo(xdata, zdata, **kwargs):
     data, debug = alamopy.data, alamopy.debug
 
     # patched together validation data check
-    if kwargs.get("xval", None) is not None:
+    if kwargs.get("xval", None) is not None and kwargs.get("zval",None) is not None:
         vargs = (kwargs["xval"], kwargs["zval"])
     else:
         vargs = ()
@@ -1124,7 +1124,6 @@ def readTraceFile(vargs, data, debug):
 
         # determine which output label to write
         # if debug['outkeys'] == True use olab as a key if not dont
-        print(debug['outkeys'])
         if debug["expandoutput"] or debug["outkeys"]:
         # if debug["outkeys"]:
             olab = model.split("=")[0]

@@ -11,7 +11,12 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Set the alamo and gams paths here.
+Shared default values for alamopy passed between methods
+Includes:
+- the alamo and gams paths
+- initializes important data dictionaries
+- list kwargs options for alamo to parse
+- list kwargs options for alamopy for additional capabilities
 """
 import collections as col
 import idaes.surrogate as alamopy
@@ -87,7 +92,9 @@ data['stropts']['almname'] = 'temp.alm'
 # data['almopts']['sampler'] = 1
 
 def initialize():
-
+    """
+    Initializes or resets shared default values and dictionaries for alamopy
+    """
     debug = {}
     data = {}
 

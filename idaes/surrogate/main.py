@@ -221,17 +221,7 @@ class Alamopy(Surrogate):
 
     def handle_results(self, res):
         # sympy to pyomo converter
-        # sympyp2pyomo_expression
-        # if self.config['expandoutput']:
-        #     key = list(self.alamopy_results.keys())[0]
-        #     print(self.alamopy_results)
-        #     self._results[Metrics.RMSE] = self.alamopy_results[key]['rmse']
-        #     self._results[Metrics.SSE] = self.alamopy_results[key]['ssr']
-        #     self._results[Metrics.Time] = self.alamopy_results[key]['totaltime']
-        #     self._results[Metrics.MSE] = float(self.alamopy_results[key]['rmse']) ** 2
-        #     self._results[Metrics.Order] = self.alamopy_results[key]['nbas']
-        #     self._results[Metrics.R2] = self.alamopy_results[key]['R2']
-        # else:
+
         self._results[Metrics.RMSE] = self.alamopy_results['rmse']
         self._results[Metrics.SSE] = self.alamopy_results['ssr']
         self._results[Metrics.Time] = self.alamopy_results['totaltime']
