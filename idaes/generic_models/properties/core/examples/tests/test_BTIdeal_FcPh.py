@@ -38,13 +38,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.generic_models.properties.core.state_definitions import FcPh
-import idaes.generic_models.properties.core.eos.ideal as ideal
+from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
-        bubble_temp_ideal,
-        dew_temp_ideal,
-        bubble_press_ideal,
-        dew_press_ideal)
+        IdealBubbleDew)
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
@@ -118,9 +115,9 @@ config_dict = {
                                             'C': -2.83433,
                                             'D': -2.79168}}}},
     "phases":  {'Liq': {"type": LiquidPhase,
-                        "equation_of_state": ideal},
+                        "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
-                        "equation_of_state": ideal}},
+                        "equation_of_state": Ideal}},
     "state_definition": FcPh,
     "state_bounds": {"flow_mol_comp": (0, 1000),
                      "temperature": (273.15, 450),
@@ -130,10 +127,7 @@ config_dict = {
     "temperature_ref": 300,
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
-    "temperature_bubble": bubble_temp_ideal,
-    "temperature_dew": dew_temp_ideal,
-    "pressure_bubble": bubble_press_ideal,
-    "pressure_dew": dew_press_ideal}
+    "bubble_dew_method": IdealBubbleDew}
 
 
 class TestParamBlock(object):

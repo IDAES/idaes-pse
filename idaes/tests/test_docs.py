@@ -108,15 +108,11 @@ def _have_sphinx():
         have_sphinx = False
     return have_sphinx
 
-_log.setLevel(logging.INFO)
 
 def test_doctests(docs_path):
     if _have_sphinx():
         build_path = os.path.join(docs_path, "build")
         command = ["sphinx-build", "-M", "doctest", docs_path, build_path]
-        _log.info(f"Running: {' '.join(command)}")
         proc = Popen(command)
-        _log.info(f"Waiting 360 seconds for it to complete")
-        proc.wait(360)  # 6 minute ceiling
-        _log.info("Doctests completed")
+        proc.wait(600)
         assert proc.returncode == 0
