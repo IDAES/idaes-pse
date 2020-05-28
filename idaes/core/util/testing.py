@@ -30,7 +30,10 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         MaterialFlowBasis,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        Component,
+                        Phase)
+
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -134,8 +137,12 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
+        self.p1 = Phase()
+        self.p2 = Phase()
+
+        self.c1 = Component()
+        self.c2 = Component()
+
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
         self.element_list = Set(initialize=["H", "He", "Li"])
         self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
@@ -196,6 +203,10 @@ class StateTestBlockData(StateBlockData):
                                         initialize=50)
         self.entr_mol = Var(initialize=1000)
 
+        self.mole_frac_phase_comp = Var(self.params.phase_list,
+                                        self.params.component_list,
+                                        initialize=0.5)
+
     def get_material_flow_terms(b, p, j):
         return b.test_var
 
@@ -242,8 +253,6 @@ class _ReactionParameterBlock(ReactionParameterBlock):
     def build(self):
         super(_ReactionParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
         self.rate_reaction_idx = Set(initialize=["r1", "r2"])
         self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
 

@@ -469,12 +469,18 @@ def mkdir_p(path, *args):
         # do not try to create filesystem root
         dir_name = os.path.sep
         plist = plist[1:]
+    elif plist[0].endswith(":"):  # windows root
+        dir_name = plist[0] + os.path.sep
+        plist = plist[1:]
     else:
         dir_name = ""
     for p in plist:
         dir_name = os.path.join(dir_name, p)
         if not os.path.exists(dir_name):
+            _log.debug(f"mkdir_p: create directory '{dir_name}' args={args}")
             os.mkdir(dir_name, *args)
+        else:
+            _log.debug(f"mkdir_p: directory '{dir_name}' exists, do not create")
 
 
 def uuid_prefix_len(uuids, step=4, maxlen=32):
