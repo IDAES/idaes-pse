@@ -198,7 +198,7 @@ class FileModifier(object):
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument('root', help='Root path from which to find files')
-    p.add_argument('pattern', nargs='*', default=[],
+    p.add_argument('pattern', nargs='*', default=["*.py", "~__init__.py"],
                    help='UNIX glob-style pattern of files to match'
                         ' (default=*.py) Prefix with "~" to take complement')
     p.add_argument('-n', '--dry-run', action='store_true', dest='dry',
