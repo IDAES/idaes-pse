@@ -54,6 +54,7 @@ configuration = {
     # Specifying components
     "components": {
         'benzene': {"type": Component,
+                    "elemental_composition": {"C": 6, "H": 6},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP,
@@ -83,6 +84,7 @@ configuration = {
                                                     'C': -2.62863,
                                                     'D': -3.33399}}},
         'toluene': {"type": Component,
+                    "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP,

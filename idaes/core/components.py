@@ -33,6 +33,12 @@ class ComponentData(ProcessBlockData):
             domain=list_of_phase_types,
             doc="List of valid PhaseTypes (Enums) for this Component."))
 
+    CONFIG.declare("elemental_composition", ConfigValue(
+            domain=dict,
+            description="Elemental composition of component",
+            doc="Dict containing elemental composition in the form element "
+                ": stoichiometry"))
+
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
