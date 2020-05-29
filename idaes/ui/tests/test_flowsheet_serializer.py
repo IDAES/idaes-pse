@@ -179,8 +179,8 @@ def test_create_image_jointjs_json():
 def test_create_link_jointjs_json():
     out_json = {"model": {}}
     out_json["cells"] = []
-    source_port = "in"
-    dest_port = "out"
+    source_port = "out"
+    dest_port = "in"
     source_id = "M101"
     dest_id = "F101"
     link_id = "s03"
@@ -191,11 +191,11 @@ def test_create_link_jointjs_json():
     assert out_json == {'cells': [{
                             'type': 'standard.Link', 
                             'source': {
-                              'port': 'in',
+                              'port': 'out',
                               'id': 'M101'
                             },
                             'target': {
-                              'port': 'out',
+                              'port': 'in',
                               'id': 'F101'
                             }, 
                             'router': {

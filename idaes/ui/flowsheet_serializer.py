@@ -237,8 +237,8 @@ class FlowsheetSerializer:
 
             self.create_link_jointjs_json(
                 self.out_json, 
-                "in", 
                 "out", 
+                "in", 
                 ports_dict["source"].getname(), 
                 dest.getname(), 
                 name,

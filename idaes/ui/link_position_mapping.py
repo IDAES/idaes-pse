@@ -323,8 +323,8 @@ link_position_mapping = {
                 "position":{
                     "name":"left",
                     "args":{
-                       "x":25,
-                       "y":0,
+                       "x":8,
+                       "y":25,
                        "dx":1,
                        "dy":1
                     }
@@ -342,7 +342,7 @@ link_position_mapping = {
 
             "out": {
                 "position":{
-                    "name":"left",
+                    "name":"bottom",
                     "args":{
                        "x":25,
                        "y":50,
