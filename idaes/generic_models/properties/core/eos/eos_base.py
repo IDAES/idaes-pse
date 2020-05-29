@@ -19,7 +19,7 @@ some. EoS developers should overload all these methods.
 
 
 class EoSBase():
-    def common(b):
+    def common(b, pobj):
         raise NotImplementedError(_msg(b, "common"))
 
     def build_parameters(b):
@@ -43,11 +43,29 @@ class EoSBase():
     def entr_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "entr_mol_phase_comp"))
 
-    def fug_phase_comp(b, p, j, pp):
+    def fug_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_phase_comp"))
+
+    def fug_phase_comp_eq(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_phase_comp_eq"))
 
     def fug_coeff_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_coeff_phase_comp"))
+
+    def fug_coeff_phase_comp_eq(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_coeff_phase_comp_eq"))
+
+    def fug_phase_comp_Tbub(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_phase_comp_Tbub"))
+
+    def fug_phase_comp_Tdew(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_phase_comp_Tdew"))
+
+    def fug_phase_comp_Pbub(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_phase_comp_Pbub"))
+
+    def fug_phase_comp_Pdew(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "fug_phase_comp_Pdew"))
 
     def gibbs_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "gibbs_mol_phase"))
@@ -57,6 +75,6 @@ class EoSBase():
 
 
 def _msg(b, attr):
-    return ("{} Equation of State module has not implemented a method for {}."
+    return ("{} Equation of State module has not implemented a method for {}. "
             "Please contact the EoS developer or use a different module."
             .format(b.name, attr))

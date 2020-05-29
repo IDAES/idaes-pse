@@ -9,6 +9,15 @@ Introduction
 
 In order to create and use a property package using the IDAES Generic Property Package Framework, users must provide a definition for the material they wish to model. The framework supports two approaches for defining the property package, which are described below, both of which are equivalent in practice.
 
+Property Parameters
+-------------------
+
+Thermophysical property models all depend upon a set of parameters to describe the fundamental behavior of the system. For the purposes of the Generic Property Framework, these parameters are grouped into three types:
+
+1. Component-specific parameters - these are parameters that are specific to a given chemical species, and are defined in the `parameter_data` argument for each component and stored in the associated `Component` block. Examples of these parameters include those used to calculate the ideal, pure component properties.
+2. Phase-specific parameters - these are parameters that are specific to a given phase, and are defined in the `parameter_data` argument for each phase and stored in the associated `Phase` block. These types of parameters are relatively uncommon.
+3. Package-wide parameters - these are parameters that are not necessarily confined to a single phase or species, and are defined in the `parameter_data` argument of the overall property package and stored in the main `Physical Parameter` block. Examples of these types of parameters include binary interaction parameters, which involve multiple species and can be used in multiple phases.
+
 Config Dictionary
 -----------------
 
@@ -145,14 +154,6 @@ Parameters
 ^^^^^^^^^^
 
 The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of necessary parameters is based on the configuration options and the selected methods. Each method lists their necessary parameters in their documentation. Users need only define those parameters required by the options they have chosen.
-
-Property parameters can be defined as either Pyomo `Params` or `Vars` depending upon the users needs and application. Whilst `Params` would seem to be the logical choice, be aware that for parameter estimation problems the parameters being estimated need to be defined as `Vars` (so that the solver is free to vary them). 
-
-.. note::
-
-   If using `Params`, users should consider whether these should be `mutable` or not - `Params` that are not mutable have their value defined upon creation and this cannot be changed later.
-
-   If using `Vars`, remember that you will need to fix the value unless you are trying to estimate the value of that parameter.
 
 Examples
 --------

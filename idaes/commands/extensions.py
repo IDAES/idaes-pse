@@ -24,9 +24,9 @@ _log = logging.getLogger("idaes.commands.extensions")
 
 
 def print_extensions_version():
-    click.echo("---------------------------------------")
+    click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
-    click.echo("=======================================")
+    click.echo("===================================================")
     v = os.path.join(idaes.bin_directory, "version_solvers.txt")
     try:
         with open(v, "r") as f:
@@ -41,7 +41,7 @@ def print_extensions_version():
     except FileNotFoundError:
         v = "no version file found"
     click.echo("Library:  v{}".format(v))
-    click.echo("=======================================")
+    click.echo("===================================================")
 
 
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")
