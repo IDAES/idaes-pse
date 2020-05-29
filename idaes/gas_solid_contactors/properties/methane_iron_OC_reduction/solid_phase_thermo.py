@@ -25,9 +25,11 @@ https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 from __future__ import division
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, Param,
-                           PositiveReals, Reals,
-                           value, Var)
+from pyomo.environ import (Constraint,
+                           Param,
+                           Reals,
+                           value,
+                           Var)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.opt import SolverFactory
 
@@ -55,7 +57,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("Solid_Phase_Thermo_ParameterBlock")
+@declare_process_block_class("SolidPhaseThermoParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -70,7 +72,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = Solid_Phase_Thermo_StateBlock
+        self._state_block_class = SolidPhaseThermoStateBlock
 
         # Create Phase object
         self.Sol = SolidPhase()
@@ -80,58 +82,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Fe3O4 = Component()
         self.Al2O3 = Component()
 
-        # Thermodynamic reference state
-        self.temperature_ref = Param(default=298.15,
-                                     doc='Thermodynamic Reference'
-                                     'Temperature [K]')
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               default=8.314459848e-3,
-                               doc='Gas Constant [kJ/mol.K]')
-
-        # Particle size
-        self.particle_dia = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=1.5e-3,
-                                  doc='Diameter of solid particles [m]')
-
-#        # Bulk solid density of fresh oxygen carrier
-#        self.dens_mass_sol_fresh = Param(within=PositiveReals,
-#                                         mutable=True,
-#                                         default=3251.75,
-#                                         doc='Bulk density of solid particles'
-#                                         '[kg/m3]')
-
-        # Particle porosity:
-        # The porosity of the OC particle is assumed to be a known parameter,
-        # and it is calculated from the known bulk density of the fresh OC
-        # particle (3251.75 kg/m3), and the known skeletal density of the
-        # fresh OC particle (calculated from the known composition of the
-        # fresh particle, and the skeletal density of its components)
-        self.particle_porosity = Param(within=PositiveReals,
-                                       mutable=True,
-                                       default=0.28617,
-                                       doc='Porosity of oxygen carrier [-]')
-
-        # Minimum fluidization velocity - EPAT value used for Davidson model
-        self.velocity_mf = Param(within=PositiveReals,
-                                 mutable=True,
-                                 default=0.039624,
-                                 doc='Velocity at minimum fluidization [m/s]')
-
-        # Minimum fluidization voidage - educated guess (EPAT) as rough
-        # estimate from ergun equation results (0.4) are suspicious
-        self.voidage_mf = Param(within=PositiveReals,
-                                mutable=True,
-                                default=0.45,
-                                doc='Voidage at minimum fluidization [-]')
-
-        # Particle thermal conductivity
-        self.therm_cond_sol = Param(within=PositiveReals,
-                                    mutable=True,
-                                    default=12.3e-3,
-                                    doc='Thermal conductivity of solid'
-                                    'particles [kJ/m.K.s]')
+    # -------------------------------------------------------------------------
+        """ Pure solid component properties"""
 
         # Mol. weights of solid components - units = kg/mol. ref: NIST webbook
         mw_comp_dict = {'Fe2O3': 0.15969, 'Fe3O4': 0.231533, 'Al2O3': 0.10196}
@@ -150,15 +102,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                     initialize=dens_mass_comp_sol_dict,
                                     doc='Particle density of solid components'
                                         '[kg/m3]')
-
-        # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
-        enth_mol_form_comp_dict = {'Fe2O3': -825.5032, 'Fe3O4': -1120.894,
-                                   'Al2O3': -1675.690}
-        self.enth_mol_form_comp = Param(
-                self.component_list,
-                mutable=False,
-                initialize=enth_mol_form_comp_dict,
-                doc="Component molar heats of formation [kJ/mol]")
 
         # Ideal gas spec. heat capacity parameters(Shomate) of
         # components - ref: NIST webbook. Shomate equations from NIST.
@@ -199,6 +142,57 @@ class PhysicalParameterData(PhysicalParameterBlock):
                               initialize=cp_param_dict,
                               doc="Shomate equation heat capacity parameters")
 
+        # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
+        enth_mol_form_comp_dict = {'Fe2O3': -825.5032, 'Fe3O4': -1120.894,
+                                   'Al2O3': -1675.690}
+        self.enth_mol_form_comp = Param(
+                self.component_list,
+                mutable=False,
+                initialize=enth_mol_form_comp_dict,
+                doc="Component molar heats of formation [kJ/mol]")
+
+    # -------------------------------------------------------------------------
+        """ Mixed solid properties"""
+        # These are setup as fixed vars to allow for parameter estimation
+
+        # Particle size
+        self.particle_dia = Var(domain=Reals,
+                                initialize=1.5e-3,
+                                doc='Diameter of solid particles [m]')
+        self.particle_dia.fix()
+
+        # Particle porosity:
+        # The porosity of the OC particle is assumed to be a known parameter,
+        # and it is calculated from the known bulk density of the fresh OC
+        # particle (3251.75 kg/m3), and the known skeletal density of the
+        # fresh OC particle (calculated from the known composition of the
+        # fresh particle, and the skeletal density of its components)
+        self.particle_porosity = Var(domain=Reals,
+                                     initialize=1.5e-3,
+                                     doc='Porosity of oxygen carrier [-]')
+        self.particle_porosity.fix()
+
+        # TODO -provide reference
+        # Minimum fluidization velocity - EPAT value used for Davidson model
+        self.velocity_mf = Var(domain=Reals,
+                               initialize=0.039624,
+                               doc='Velocity at minimum fluidization [m/s]')
+        self.velocity_mf.fix()
+
+        # Minimum fluidization voidage - educated guess as rough
+        # estimate from ergun equation results (0.4) are suspicious
+        self.voidage_mf = Var(domain=Reals,
+                              initialize=0.45,
+                              doc='Voidage at minimum fluidization [-]')
+        self.voidage_mf.fix()
+
+        # Particle thermal conductivity
+        self.therm_cond_sol = Var(domain=Reals,
+                                  initialize=12.3e-3,
+                                  doc='Thermal conductivity of solid'
+                                  'particles [kJ/m.K.s]')
+        self.therm_cond_sol.fix()
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
@@ -224,7 +218,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'holdup': 'kg'})
 
 
-class _Solid_Phase_Thermo_StateBlock(StateBlock):
+class _SolidPhaseThermoStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -362,9 +356,9 @@ class _Solid_Phase_Thermo_StateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
-@declare_process_block_class("Solid_Phase_Thermo_StateBlock",
-                             block_class=_Solid_Phase_Thermo_StateBlock)
-class Solid_Phase_Thermo_StateBlockData(StateBlockData):
+@declare_process_block_class("SolidPhaseThermoStateBlock",
+                             block_class=_SolidPhaseThermoStateBlock)
+class SolidPhaseThermoStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -373,7 +367,7 @@ class Solid_Phase_Thermo_StateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(Solid_Phase_Thermo_StateBlockData, self).build()
+        super(SolidPhaseThermoStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights

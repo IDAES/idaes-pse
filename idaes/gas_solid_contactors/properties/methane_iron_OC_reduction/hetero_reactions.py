@@ -15,7 +15,7 @@ Property package for the reaction of CH4 with an iron-based OC.
 Overall reducer reactions for Methane combustion:
     (1) CH4 + 12Fe2O3 => 8Fe3O4 + CO2 + 2H2O
 
-Equations written in this model were primarily derived from:
+Parameters and equations written in this model were primarily derived from:
 A. Abad, J. Adánez, F. García-Labiano, L.F. de Diego, P. Gayán, J. Celaya,
 Mapping of the range of operational conditions for cu-, Fe-, and Ni-based
 oxygen carriers in chemical-looping combustion,
@@ -117,6 +117,22 @@ class ReactionParameterData(ReactionParameterBlock):
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
+        # Gas Constant
+        self.gas_const = Param(within=PositiveReals,
+                               mutable=False,
+                               default=8.314459848e-3,
+                               doc='Gas Constant [kJ/mol.K]')
+
+        # Smoothing factor
+        self._eps = Param(mutable=True,
+                          default=1e-8,
+                          doc='Smoothing Factor')
+        # Reaction rate scale factor
+        self._scale_factor_rxn = Param(mutable=True,
+                                       default=1,
+                                       doc='Scale Factor for reaction eqn.'
+                                       'Used to help initialization routine')
+
         # Reaction Stoichiometry
         self.rate_reaction_stoichiometry = {("R1", "Vap", "CH4"): -1,
                                             ("R1", "Vap", "CO2"): 1,
@@ -125,42 +141,6 @@ class ReactionParameterData(ReactionParameterBlock):
                                             ("R1", "Sol", "Fe3O4"): 8,
                                             ("R1", "Sol", "Al2O3"): 0}
 
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               mutable=False,
-                               default=8.314459848e-3,
-                               doc='Gas Constant [kJ/mol.K]')
-
-        # Particle grain radius within OC particle
-        self.grain_radius = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=2.6e-7,
-                                  doc='Representative particle grain'
-                                  'radius within OC particle [m]')
-
-        # Molar density OC particle
-        self.dens_mol_sol = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=32811,
-                                  doc='Molar density of OC particle [mol/m^3]')
-
-        # Available volume for reaction - from EPAT report (1-ep)'
-        self.a_vol = Param(default=0.28,
-                           mutable=True,
-                           doc='Available reaction vol. per vol. of OC')
-
-        # Activation Energy
-        self.energy_activation = Param(self.rate_reaction_idx,
-                                       default=4.9e1,
-                                       mutable=True,
-                                       doc='Activation energy [kJ/mol]')
-
-        # Reaction order
-        self.rxn_order = Param(self.rate_reaction_idx,
-                               default=1.3,
-                               mutable=True,
-                               doc='Reaction order in gas species [-]')
-
         # Reaction stoichiometric coefficient
         self.rxn_stoich_coeff = Param(self.rate_reaction_idx,
                                       default=12,
@@ -168,24 +148,55 @@ class ReactionParameterData(ReactionParameterBlock):
                                       doc='Reaction stoichiometric'
                                       'coefficient [-]')
 
-        # Pre-exponential factor
-        self.k0_rxn = Param(self.rate_reaction_idx,
-                            default=8e-4,
-                            mutable=True,
-                            doc='Pre-exponential factor'
-                                '[mol^(1-N_reaction)m^(3*N_reaction -2)/s]')
-
-        # TODO - Generalize this for r equations to compute automatically
         # Standard Heat of Reaction - kJ/mol_rxn
         dh_rxn_dict = {"R1": 136.5843}
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
                             doc="Heat of reaction [kJ/mol]")
 
-        self._eps = Param(default=1e-8, doc='Smoothing Factor')
-        self._scale_factor_rxn = Param(mutable=True, default=1,
-                                       doc='Scale Factor for reaction eqn.'
-                                       'Used to help initialization routine')
+    # -------------------------------------------------------------------------
+        """ Reaction properties that can be estimated"""
+
+        # Particle grain radius within OC particle
+        self.grain_radius = Var(domain=Reals,
+                                initialize=2.6e-7,
+                                doc='Representative particle grain'
+                                'radius within OC particle [m]')
+        self.grain_radius.fix()
+
+        # Molar density OC particle
+        self.dens_mol_sol = Var(domain=Reals,
+                                initialize=32811,
+                                doc='Molar density of OC particle [mol/m^3]')
+        self.dens_mol_sol.fix()
+
+        # Available volume for reaction - from EPAT report (1-ep)'
+        self.a_vol = Var(domain=Reals,
+                         initialize=0.28,
+                         doc='Available reaction vol. per vol. of OC')
+        self.a_vol.fix()
+
+        # Activation Energy
+        self.energy_activation = Var(self.rate_reaction_idx,
+                                     domain=Reals,
+                                     initialize=4.9e1,
+                                     doc='Activation energy [kJ/mol]')
+        self.energy_activation.fix()
+
+        # Reaction order
+        self.rxn_order = Var(self.rate_reaction_idx,
+                             domain=Reals,
+                             initialize=1.3,
+                             doc='Reaction order in gas species [-]')
+        self.rxn_order.fix()
+
+        # Pre-exponential factor
+        self.k0_rxn = Var(self.rate_reaction_idx,
+                          domain=Reals,
+                          initialize=8e-4,
+                          doc='Pre-exponential factor'
+                          '[mol^(1-N_reaction)m^(3*N_reaction -2)/s]')
+        self.k0_rxn.fix()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -252,12 +263,12 @@ class _ReactionBlock(ReactionBlockBase):
 
         for k in blk.keys():
             for j in blk[k]._params.gas_component_list:
-                if blk[k].gas_state_ref.dens_mole_comp_vap[j].fixed is True:
+                if blk[k].gas_state_ref.dens_mol_vap_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
                     Cflag[k, j] = False
-                    blk[k].gas_state_ref.dens_mole_comp_vap[j].fix(
-                            blk[k].gas_state_ref.dens_mole_comp_vap[j].value)
+                    blk[k].gas_state_ref.dens_mol_vap_comp[j].fix(
+                            blk[k].gas_state_ref.dens_mol_vap_comp[j].value)
             if blk[k].solid_state_ref.dens_mass_sol.fixed is True:
                 Dflag[k] = True
             else:
@@ -314,7 +325,7 @@ class _ReactionBlock(ReactionBlockBase):
         for k in blk.keys():
             for j in blk[k]._params.gas_component_list:
                 if Cflag[k, j] is False:
-                    blk[k].gas_state_ref.dens_mole_comp_vap[j].unfix()
+                    blk[k].gas_state_ref.dens_mol_vap_comp[j].unfix()
             if Dflag[k] is False:
                 blk[k].solid_state_ref.dens_mass_sol.unfix()
 
@@ -462,7 +473,7 @@ should be constructed,
                 b.solid_state_ref.dens_mass_sol *
                 (b._params.a_vol/(b.solid_state_ref._params.mw['Fe2O3'])) *
                 3*b._params.rxn_stoich_coeff[r]*b.k_rxn[r] *
-                (((b.gas_state_ref.dens_mole_comp_vap['CH4']**2 +
+                (((b.gas_state_ref.dens_mol_vap_comp['CH4']**2 +
                   b._params._eps**2)**0.5) **
                  b._params.rxn_order[r]) *
                 b.OC_conv_temp/(b._params.dens_mol_sol *

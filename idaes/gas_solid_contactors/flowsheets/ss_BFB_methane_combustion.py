@@ -37,9 +37,9 @@ from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
 
 # Import property packages
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import Gas_Phase_Thermo_ParameterBlock
+    gas_phase_thermo import GasPhaseThermoParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import Solid_Phase_Thermo_ParameterBlock
+    solid_phase_thermo import SolidPhaseThermoParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
@@ -57,8 +57,8 @@ def main():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo-physical and reaction properties
-    m.fs.gas_properties = Gas_Phase_Thermo_ParameterBlock()
-    m.fs.solid_properties = Solid_Phase_Thermo_ParameterBlock()
+    m.fs.gas_properties = GasPhaseThermoParameterBlock()
+    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
             default={"solid_property_package": m.fs.solid_properties,
@@ -219,7 +219,7 @@ def print_summary(self):
 
         if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
             e_reaction = (mole_gas_reacted *
-                          m.fs.BFB.solid_emulsion_region.reactions[0, 0].
+                          m.fs.BFB.solid_emulsion.reactions[0, 0].
                           _params.dh_rxn["R1"])
         else:
             e_reaction = 0
@@ -241,10 +241,10 @@ def print_summary(self):
              m.fs.BFB.gas_inlet_block[0].mole_frac['CH4'].value))
 
         if m.fs.BFB.config.flow_type == "counter_current":
-            Conv_OC = (m.fs.BFB.solid_emulsion_region.reactions[0, 0].
+            Conv_OC = (m.fs.BFB.solid_emulsion.reactions[0, 0].
                        OC_conv.value)
         else:
-            Conv_OC = (m.fs.BFB.solid_emulsion_region.reactions[0, 1].
+            Conv_OC = (m.fs.BFB.solid_emulsion.reactions[0, 1].
                        OC_conv.value)
 
         print('Fuel and OC conversion =>')
@@ -258,6 +258,7 @@ if __name__ == "__main__":
 
     # Plot some results
     print_summary(m)
-    m.fs.BFB.results_plot_FR()
+    print()
     stream_table = m.fs.BFB._get_stream_table_contents()
     print(stream_table)
+    m.fs.BFB.results_plot_FR()

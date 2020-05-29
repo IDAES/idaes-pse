@@ -26,7 +26,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Access parent directory (property_packages_subfolder) of the current dir
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 
-from gas_phase_thermo import Gas_Phase_Thermo_ParameterBlock
+from gas_phase_thermo import GasPhaseThermoParameterBlock
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -38,7 +38,7 @@ else:
 m = ConcreteModel()
 
 # gas properties and state inlet block
-m.properties = Gas_Phase_Thermo_ParameterBlock()
+m.properties = GasPhaseThermoParameterBlock()
 m.state_block = m.properties.state_block_class(
     default={"parameters": m.properties,
              "defined_state": True})

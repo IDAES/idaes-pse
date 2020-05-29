@@ -26,8 +26,8 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Access parent directory (property_packages_subfolder) of the current dir
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 
-from solid_phase_thermo import Solid_Phase_Thermo_ParameterBlock
-from gas_phase_thermo import Gas_Phase_Thermo_ParameterBlock
+from solid_phase_thermo import SolidPhaseThermoParameterBlock
+from gas_phase_thermo import GasPhaseThermoParameterBlock
 from hetero_reactions import HeteroReactionParameterBlock
 
 # See if ipopt is available and set up solver
@@ -40,12 +40,12 @@ else:
 m = ConcreteModel()
 
 # Set up thermo props and reaction props
-m.solid_properties = Solid_Phase_Thermo_ParameterBlock()
+m.solid_properties = SolidPhaseThermoParameterBlock()
 m.solid_state_block = m.solid_properties.state_block_class(
     default={"parameters": m.solid_properties,
              "defined_state": True})
 
-m.gas_properties = Gas_Phase_Thermo_ParameterBlock()
+m.gas_properties = GasPhaseThermoParameterBlock()
 m.gas_state_block = m.gas_properties.state_block_class(
     default={"parameters": m.gas_properties,
              "defined_state": True})

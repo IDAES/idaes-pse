@@ -413,11 +413,11 @@ Variable                    Name                                                
 :math:`A_{b,t,x}`           bubble_region.area                          
 :math:`A_{ge,t,x}`          gas_emulsion_region.area                          
 :math:`A_{se,t,x}`          solid_emulsion_region.area                          
-:math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                            pressure drop across gas emulsion region
-:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol        solid mass density         
-:math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
-:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mole_vap                gas mole density in the bubble region 
-:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mole_vap          gas mole density in the emulsion region       
+:math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                           pressure drop across gas emulsion region
+:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol       solid mass density         
+:math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp        gas component diffusion in gas emulsion region       
+:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                gas mole density in the bubble region 
+:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap          gas mole density in the emulsion region       
 :math:`M_{tr,b,t,x,p,j}`    bubble_region.mass_transfer_term              
 :math:`M_{tr,ge,t,x,p,j}`   gas_emulsion_region.mass_transfer_term             
 :math:`M_{tr,se,t,x,p,j}`   solid_emulsion_region.mass_transfer_term            
