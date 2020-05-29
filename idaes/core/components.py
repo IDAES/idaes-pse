@@ -33,6 +33,12 @@ class ComponentData(ProcessBlockData):
             domain=list_of_phase_types,
             doc="List of valid PhaseTypes (Enums) for this Component."))
 
+    CONFIG.declare("elemental_composition", ConfigValue(
+            domain=dict,
+            description="Elemental composition of component",
+            doc="Dict containing elemental composition in the form element "
+                ": stoichiometry"))
+
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
@@ -76,7 +82,7 @@ class ComponentData(ProcessBlockData):
             self.mw = Param(initialize=self.config.parameter_data["mw"])
 
         # Create Vars for common parameters
-        for p in ["pressure_crit", "temperature_crit"]:
+        for p in ["pressure_crit", "temperature_crit", "omega"]:
             if p in self.config.parameter_data:
                 self.add_component(p, Var(
                     initialize=self.config.parameter_data[p]))

@@ -11,8 +11,16 @@ Each `GenericParameterBlock` has a configuration argument named `phases` which i
 .. code-block:: python
 
     "phases": {
-        "phase_1": {"type": Phase, "equation_of_state": EoS},
-        "phase_2": {"type": Phase, "equation_of_state": EoS}}
+        "phase_1": {
+            "type": Phase,
+            "equation_of_state": EoS,
+            "equation_of_state_options": {},
+            "parameter_data": {}},
+        "phase_2": {
+            "type": Phase,
+            "equation_of_state": EoS,
+            "equation_of_state_options": {},
+            "parameter_data": {}}}
 
 Type Argument
 ^^^^^^^^^^^^^
@@ -26,6 +34,8 @@ Equations of state (or equivalent methods) describe the relationship between dif
 
 A wide range of equations of states are available in literature for different applications and levels of rigor, and the IDAES Generic Property Package Framework provides a number of prebuilt modules for users, which are listed below.
 
+Equation of state packages may allow for user options (e.g. choosing a specific type of cubic equation of state). The options are set using the `equation_of_state_options` argument, and the options available are described in the documentation of each equation of state module.
+
 Equation of State Libraries
 """""""""""""""""""""""""""
 
@@ -33,6 +43,12 @@ Equation of State Libraries
     :maxdepth: 1
 
     eos/ideal
+    eos/cubic
+
+Phase-Specific Parameter
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+In some cases, a property package may include parameters which are specific to a given phase. In these cases, these parameters are stored as part of the associated `Phase` object and the values of these set using the `parameter_data` argument when declaring the phase.
 
 Phases with Partial Component Lists
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

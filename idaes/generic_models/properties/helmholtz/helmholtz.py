@@ -62,6 +62,74 @@ def _available(shared_lib):
     """
     return os.path.isfile(shared_lib)
 
+#python external function object name to ASL user function name
+_external_function_map = {
+    "func_p": "p",
+    "func_u": "u",
+    "func_s": "s",
+    "func_h": "h",
+    "func_hvpt": "hvpt",
+    "func_hlpt": "hlpt",
+    "func_svpt": "svpt",
+    "func_slpt": "slpt",
+    "func_uvpt": "uvpt",
+    "func_ulpt": "ulpt",
+    "func_tau": "tau",
+    "memo_test_tau": "memo_test_tau",
+    "func_tau_sp": "tau_sp",
+    "func_tau_up": "tau_up",
+    "func_p_stau": "p_stau",
+    "func_vf": "vf",
+    "func_vfs": "vfs",
+    "func_vfu": "vfu",
+    "func_g": "g",
+    "func_f": "f",
+    "func_cv": "cv",
+    "func_cp": "cp",
+    "func_w": "w",
+    "func_delta_liq": "delta_liq",
+    "func_delta_vap": "delta_vap",
+    "func_delta_sat_l": "delta_sat_l",
+    "func_delta_sat_v": "delta_sat_v",
+    "func_p_sat": "p_sat",
+    "func_tau_sat": "tau_sat",
+    "func_phi0": "phi0",
+    "func_phi0_delta": "phi0_delta",
+    "func_phi0_delta2": "phi0_delta2",
+    "func_phi0_tau": "phi0_tau",
+    "func_phi0_tau2": "phi0_tau2",
+    "func_phir": "phir",
+    "func_phir_delta": "phir_delta",
+    "func_phir_delta2": "phir_delta2",
+    "func_phir_tau": "phir_tau",
+    "func_phir_tau2": "phir_tau2",
+    "func_phir_delta_tau": "phir_delta_tau",
+}
+
+
+def _available(shared_lib):
+    """Make sure the compiled library functions are available. Yes, in Windows
+    the .so extension is still used.
+    """
+    return os.path.isfile(shared_lib)
+
+
+def _add_external_functions(blk, eos_tag, shared_lib, names=None):
+    """Create ExternalFunction components."""
+    def _fnc(x):
+        x = "_".join([x, eos_tag])
+        return x
+    if names is None:
+        names = _external_function_map.keys()
+    for name in names:
+        if hasattr(blk, name):
+            continue
+        setattr(
+            blk,
+            name,
+            EF(library=shared_lib, function=_fnc(_external_function_map[name]))
+        )
+
 
 class StateVars(enum.Enum):
     """
@@ -134,6 +202,193 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
             value(prop.func_hlpt(Psat, Tc / T) * prop.mw * 1000.0) * (1 - x)
             + value(prop.func_hvpt(Psat, Tc / T) * prop.mw * 1000.0) * x
         )
+
+
+class HelmholtzThermoExpressions(object):
+    """Class to write thermodynamic property expressions.  Take one of these
+    possible sets of state variables: {h, p}, {u, p}, {s, p}, {s, T}, {T, x},
+    {P, x}, or {T, P, x}, and return an expression for thermo property.
+    This works by converting the given state varaibles and writing expressions
+    for liquid and vapor density, vapor fraction, and temerature.  Then those
+    can be used to calculate any other property.  You can specify an integer
+    value 1 or 0 for x with any state varaibles to get liquid or vapor properies.
+    """
+    def __init__(self, blk, parameters):
+        self.param = parameters
+        self.blk=blk
+
+    @staticmethod
+    def _sv_str(**kwargs):
+        a = [x for x in kwargs if kwargs[x] is not None]
+        return ", ".join(a)
+
+    def add_funcs(self, names=None):
+        _add_external_functions(
+            self.blk,
+            eos_tag=self.param.eos_tag,
+            shared_lib=self.param.plib,
+            names=names
+        )
+
+    def basic_calculations(self, h=None, s=None, p=None, T=None, u=None, x=None):
+        """This function is called as this basis for most thermo expression writer
+        functions.  It takes the given state variables and returns expressions for
+        liqid density, vapor density, vapor fraction and temperature, which can be
+        used to write an expression for any thermo quantity.
+        """
+        mw = self.param.mw
+        # 1.) convert units to those expected by external functions
+        if h is not None:
+            h = h/mw/1000 # J/mol -> kJ/kg
+        if u is not None:
+            u = u/mw/1000 # J/mol -> kJ/kg
+        if s is not None:
+            s = s/mw/1000 # J/mol/K -> kJ/kg/K
+        if p is not None:
+            p = p/1000 # Pa -> kPa
+        if T is not None:
+            tau = self.param.temperature_crit/T
+
+        # 2.) find the block with the external functions
+        blk = self.blk
+
+        # 3.) Take given state varaibles and convert to density, T, and x
+
+        if h is not None and p is not None:
+            # h, p
+            self.add_funcs(names=["func_tau", "func_vf"])
+            tau = blk.func_tau(h, p)
+            if x is None:
+                x = blk.func_vf(h, p)
+        elif s is not None and p is not None:
+            # s, p
+            self.add_funcs(names=["func_tau_sp", "func_vfs"])
+            tau = blk.func_tau_sp(s, p)
+            if x is None:
+                x = blk.func_vfs(s, p)
+        elif u is not None and p is not None:
+            # u, p
+            self.add_funcs(names=["func_tau_up", "func_vfu"])
+            tau = blk.func_tau_up(u, p)
+            if x is None:
+                x = blk.func_vfu(u, p)
+        elif s is not None and T is not None:
+            # s, p
+            self.add_funcs(names=["func_p_stau", "func_vfs"])
+            p = blk.func_p_stau(s, tau)
+            if x is None:
+                x = blk.func_vfs(s, p)
+        elif x is not None and T is not None and p is not None:
+            # T, P, x (okay, but I hope you know what you're doing)
+            pass
+        elif x is not None and p is not None:
+            # x, p
+            self.add_funcs(names=["func_tau_sat"])
+            tau = blk.func_tau_sat(p)
+        elif x is not None and T is not None:
+            # x, T
+            self.add_funcs(names=["func_p_sat"])
+            p = blk.func_p_sat(tau)
+        else:
+            m = "This choice of state variables ({}) are not yet supported.".format(
+                self._sv_str(h=h, s=s, p=p, T=T, u=u, x=x, y=y)
+            )
+            _log.error(m)
+            raise NotImplementedError(m)
+
+        # 4.) Calculate density
+        self.add_funcs(names=["func_delta_liq", "func_delta_vap"])
+        delta_liq = blk.func_delta_liq(p, tau)
+        delta_vap = blk.func_delta_vap(p, tau)
+
+        # 5.) From here its straight forward to calculate any property
+        return blk, delta_liq, delta_vap, tau, x
+
+    def s(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_s"])
+        s = blk.func_s(delta_liq, tau)*(1-x) + blk.func_s(delta_vap, tau)*x
+        s = s*self.param.mw*1000 # kJ/kg/K -> J/mol/K
+        return s
+
+    def h(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_h"])
+        h = blk.func_h(delta_liq, tau)*(1-x) + blk.func_h(delta_vap, tau)*x
+        h = h*self.param.mw*1000 # kJ/kg -> J/mol
+        return h
+
+    def u(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_u"])
+        u = blk.func_u(delta_liq, tau)*(1-x) + blk.func_u(delta_vap, tau)*x
+        u = u*self.param.mw*1000 # kJ/kg -> J/mol
+        return u
+
+    def g(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_g"])
+        g = blk.func_g(delta_liq, tau)*(1-x) + blk.func_g(delta_vap, tau)*x
+        g = g*self.param.mw*1000 # kJ/kg -> J/mol
+        return g
+
+    def f(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_f"])
+        f = blk.func_f(delta_liq, tau)*(1-x) + blk.func_f(delta_vap, tau)*x
+        f = f*self.param.mw*1000 # kJ/kg -> J/mol
+        return f
+
+    def p(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_p"])
+        # The following line looks a bit weird, but it is okay.  When in the
+        # two-phase region the pressure for both phases is the same
+        p = blk.func_p(delta_liq, tau)*(1-x) + blk.func_p(delta_vap, tau)*x
+        p = p*1000 # kPa -> Pa
+        return p
+
+    def v(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_p"])
+        v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.mw
+        return v
+
+    def x(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return x
+
+    def T(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return self.param.temperature_crit/tau
+
+    def tau(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return tau
+
+    def delta_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_liq
+
+    def rho_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_liq*self.param.dens_mass_crit
+
+    def rho_mol_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_liq*self.param.dens_mass_crit/self.param.mw
+
+    def delta_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_vap
+
+    def rho_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_vap*self.param.dens_mass_crit
+
+    def rho_mol_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        return delta_vap*self.param.dens_mass_crit/self.param.mw
 
 
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
@@ -444,7 +699,6 @@ class HelmholtzStateBlockData(StateBlockData):
     This is a base clase for Helmholtz equations of state using IDAES standard
     Helmholtz EOS external functions written in C++.
     """
-
     def initialize(self, *args, **kwargs):
         # With this particualr property pacakage there is not need for
         # initialization
@@ -453,44 +707,11 @@ class HelmholtzStateBlockData(StateBlockData):
     def _external_functions(self):
         """Create ExternalFunction components.  This includes some external
         functions that are not usually used for testing purposes."""
-        plib = self.config.parameters.plib
-        def _fnc(x):
-            x = "_".join([x, self.config.parameters.eos_tag])
-            return x
-        self.func_p = EF(library=plib, function=_fnc("p"))
-        self.func_u = EF(library=plib, function=_fnc("u"))
-        self.func_s = EF(library=plib, function=_fnc("s"))
-        self.func_h = EF(library=plib, function=_fnc("h"))
-        self.func_hvpt = EF(library=plib, function=_fnc("hvpt"))
-        self.func_hlpt = EF(library=plib, function=_fnc("hlpt"))
-        self.func_svpt = EF(library=plib, function=_fnc("svpt"))
-        self.func_slpt = EF(library=plib, function=_fnc("slpt"))
-        self.func_tau = EF(library=plib, function=_fnc("tau"))
-        self.func_tau_sp = EF(library=plib, function=_fnc("tau_sp"))
-        self.func_vf = EF(library=plib, function=_fnc("vf"))
-        self.func_vfs = EF(library=plib, function=_fnc("vfs"))
-        self.func_g = EF(library=plib, function=_fnc("g"))
-        self.func_f = EF(library=plib, function=_fnc("f"))
-        self.func_cv = EF(library=plib, function=_fnc("cv"))
-        self.func_cp = EF(library=plib, function=_fnc("cp"))
-        self.func_w = EF(library=plib, function=_fnc("w"))
-        self.func_delta_liq = EF(library=plib, function=_fnc("delta_liq"))
-        self.func_delta_vap = EF(library=plib, function=_fnc("delta_vap"))
-        self.func_delta_sat_l = EF(library=plib, function=_fnc("delta_sat_l"))
-        self.func_delta_sat_v = EF(library=plib, function=_fnc("delta_sat_v"))
-        self.func_p_sat = EF(library=plib, function=_fnc("p_sat"))
-        self.func_tau_sat = EF(library=plib, function=_fnc("tau_sat"))
-        self.func_phi0 = EF(library=plib, function=_fnc("phi0"))
-        self.func_phi0_delta = EF(library=plib, function=_fnc("phi0_delta"))
-        self.func_phi0_delta2 = EF(library=plib, function=_fnc("phi0_delta2"))
-        self.func_phi0_tau = EF(library=plib, function=_fnc("phi0_tau"))
-        self.func_phi0_tau2 = EF(library=plib, function=_fnc("phi0_tau2"))
-        self.func_phir = EF(library=plib, function=_fnc("phir"))
-        self.func_phir_delta = EF(library=plib, function=_fnc("phir_delta"))
-        self.func_phir_delta2 = EF(library=plib, function=_fnc("phir_delta2"))
-        self.func_phir_tau = EF(library=plib, function=_fnc("phir_tau"))
-        self.func_phir_tau2 = EF(library=plib, function=_fnc("phir_tau2"))
-        self.func_phir_delta_tau = EF(library=plib, function=_fnc("phir_delta_tau"))
+        _add_external_functions(
+            blk=self,
+            eos_tag=self.config.parameters.eos_tag,
+            shared_lib=self.config.parameters.plib
+        )
 
     def _state_vars(self):
         """ Create the state variables
@@ -659,6 +880,12 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Add external functions
         self._external_functions()
+
+        # Thermo expression writer
+        te = HelmholtzThermoExpressions(
+            blk=self,
+            parameters=self.config.parameters
+        )
 
         # Which state vars to use
         self.state_vars = self.config.parameters.state_vars
@@ -913,9 +1140,7 @@ class HelmholtzStateBlockData(StateBlockData):
         )
         self.scaling_factor[self.energy_internal_mol] = 1e-3
         # Entropy
-        self.entr_mol = Expression(
-            expr=sum(self.phase_frac[p] * self.entr_mol_phase[p] for p in phlist)
-        )
+        self.entr_mol = Expression(expr=te.s(h=self.enth_mol, p=self.pressure))
         self.scaling_factor[self.entr_mol] = 1e-1
         # cp
         self.cp_mol = Expression(

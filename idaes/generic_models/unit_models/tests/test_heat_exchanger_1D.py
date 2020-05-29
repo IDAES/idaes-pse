@@ -547,7 +547,7 @@ class TestIAPWS_cocurrent(object):
         assert pytest.approx(5, abs=1e-5) == \
             value(iapws.fs.unit.tube_outlet.flow_mol[0])
 
-        assert pytest.approx(46298, abs=1e0) == \
+        assert pytest.approx(46298, abs=4e0) == \
             value(iapws.fs.unit.shell_outlet.enth_mol[0])
         assert pytest.approx(7370, abs=1e0) == \
             value(iapws.fs.unit.tube_outlet.enth_mol[0])

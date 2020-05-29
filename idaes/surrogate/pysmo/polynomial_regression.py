@@ -1290,3 +1290,40 @@ class PolynomialRegression:
         plt.show()
 
         return
+
+    def _report(self, results_vector):
+        ## Will only work with Python > 3.5
+        variable_headers = self.get_feature_vector()
+        var_list = []
+        for i in variable_headers:
+            var_list.append(variable_headers[i])
+        eqn = results_vector.generate_expression(var_list)
+
+        double_line = "=" * 120
+        s = (f"\n{double_line}"
+             f"\nResults of polynomial regression run:\n"
+             f"\nPolynomial order                   : {results_vector.polynomial_order}\n"
+             f"Number of terms in polynomial model: {results_vector.optimal_weights_array.size}\n"
+             f"\nPolynomial Expression:\n"
+             f"--------------------------\n"
+             f"\n{eqn}\n"
+             f"--------------------------\n"
+             f"\nModel training errors:"
+             f"\n-----------------------\n"
+             f"Mean Squared Error (MSE)         : {results_vector.errors['MSE']}\n"
+             f"Root Mean Squared Error (RMSE)   : {np.sqrt(results_vector.errors['MSE'])}\n"
+             f"Mean Absolute error (MSE)        : {results_vector.errors['MAE']}\n"
+             f"Goodness of fit (R2)             : {results_vector.errors['R2']}\n"             
+             f"\n{double_line}"
+             )
+        return s
+
+    def print_report(self, results_vector):
+        s = self._report(results_vector)
+        print(s)
+
+    def _repr_pretty_(self, results_vector):
+        import pprint
+        s = self._report(results_vector)
+        j = pprint.PrettyPrinter(width=80)
+        j.pprint(s)
