@@ -143,8 +143,8 @@ class FileModifier(object):
         wfname = fname + '.orig'
         shutil.move(fname, wfname)
         # re-open input filename as the output file
-        f = open(wfname, 'r')
-        out = open(fname, 'w')
+        f = open(wfname, 'r', encoding='utf8')
+        out = open(fname, 'w', encoding='utf8')
         # re-create the file, modified
         state = 'head'
         if remove:
@@ -169,24 +169,33 @@ class FileModifier(object):
                 out.write('{}\n'.format(self.comment_sep))
                 out.write(self._txt)
                 out.write('\n{}\n'.format(self.comment_sep))
-            for line in f:
-                lineno += 1
-                sline = line.strip()
-                if state == 'head':
-                    if sline.startswith(self.comment_minsep):
-                        state = 'copyright'  # skip past this
-                    elif lineno < 3 and ex.match(sline):
+            try:
+                for line in f:
+                    lineno += 1
+                    sline = line.strip()
+                    if state == 'head':
+                        if sline.startswith(self.comment_minsep):
+                            state = 'copyright'  # skip past this
+                        elif lineno < 3 and ex.match(sline):
+                            out.write(line)
+                        else:
+                            state = 'text'
+                            write_copyright()
+                            out.write(line)
+                    elif state == 'copyright':
+                        if sline.startswith(self.comment_minsep):
+                            state = 'text'
+                            write_copyright()
+                    elif state == 'text':
                         out.write(line)
-                    else:
-                        state = 'text'
-                        write_copyright()
-                        out.write(line)
-                elif state == 'copyright':
-                    if sline.startswith(self.comment_minsep):
-                        state = 'text'
-                        write_copyright()
-                elif state == 'text':
-                    out.write(line)
+            except UnicodeDecodeError as err:
+                _log.error(f"File {fname}:{lineno} error: {err}")
+                _log.error(f"Previous line: {line}")
+                _log.warning(f"Restoring original file '{fname}'. You must manually fix it!")
+                out.close()
+                f.close()
+                shutil.move(wfname, fname)
+                return
         # finalize the output
         out.close()
         f.close()
