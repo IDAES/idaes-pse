@@ -8,5 +8,6 @@ Property Model Library
     activity_coefficient
     water
     general/index
+    general_reactions/index
     interrogator
     
