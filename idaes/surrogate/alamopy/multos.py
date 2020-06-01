@@ -19,7 +19,9 @@ import subprocess
 
 
 def deletefile(*fname):
-    "Deletes files"
+    """
+    Delete Files
+    """
     tos = platform.platform()
     currentDirectory = os.getcwd()
     if 'Windows' in tos:
@@ -31,7 +33,9 @@ def deletefile(*fname):
 
 
 def movefile(*fname):
-    "Moves files"
+    """
+    Moves files
+    """
     tos = platform.platform()
     if 'Windows' in tos:
         for name in fname:
@@ -42,7 +46,9 @@ def movefile(*fname):
 
 
 def copyfile(outf, inf):
-    "Copies files"
+    """
+    Copies files
+    """
     tos = platform.platform()
     if 'Windows' in tos:
         os.system("copy " + inf + ' ' + outf)
@@ -51,7 +57,9 @@ def copyfile(outf, inf):
 
 
 def catfile(outf, *fname):
-    "Concatenates files"
+    """
+    Concatenates files
+    """
     tos = platform.platform()
     if 'Windows' in tos:
         ostr = ''
@@ -68,7 +76,8 @@ def catfile(outf, *fname):
 
 
 def has_alamo():
-    """Checks for ALAMO
+    """
+    Checks for ALAMO
     """
     try:
         s = subprocess.check_output(["alamo"])

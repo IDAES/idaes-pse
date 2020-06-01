@@ -18,10 +18,8 @@ import collections
 import numpy as np
 import os
 
-#
 from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import almerror
-from idaes.surrogate.alamopy.writethis import writethis
 from idaes.surrogate.alamopy.multos import deletefile, has_alamo
 
 
@@ -109,7 +107,6 @@ def alamo(xdata, zdata, **kwargs):
         if debug["outkeys"] or debug["expandoutput"]:
             q2 = {}
 
-        # size = len(xdata) - 1
         data["opts"]["ndata"] = data["opts"]["ndata"] - 1
         kwargValidation = debug["validation"]
         kwargSaveTrace = debug["savetrace"]
@@ -188,7 +185,6 @@ def alamo(xdata, zdata, **kwargs):
                             folds exceeds the number of data points %i" % debug["lmo"]
             )
 
-        # size = len(xdata)
         sizeOfFolds = int(len(xdata) / numOfFolds)
         r = len(xdata) % numOfFolds
         remS = 0
@@ -278,7 +274,6 @@ def alamo(xdata, zdata, **kwargs):
         if debug["showalm"]:
             os.system(debug["almloc"] + " " + str(data["stropts"]["almname"]))
         else:
-            # writethis("Calling ALAMO now:\n")
             os.system(
                 debug["almloc"]
                 + " "
@@ -287,7 +282,6 @@ def alamo(xdata, zdata, **kwargs):
             )
 
     # Check to see if additional data was sampled and add it
-    # if "sampler" in kwargs.keys():
     if kwargs.get("simulator", None) is not None:
         xdata, zdata = checkForSampledData(data, debug)
 
@@ -492,12 +486,14 @@ def getValidationData(vargs, data, debug):
         if len(np.shape(zvaldata)) == 1:
             zvaldata = np.reshape(zvaldata, (data["opts"]["nvaldata"], 1))
         if temp[1] != data["opts"]["ninputs"]:
-            writethis("Number of input variables inconsistent between x and xval")
-            almerror("p2")
+            raise almerror.AlamoInputError(
+                "Number of input variables inconsistent between x and xval"
+            )
         temp = np.shape(zvaldata)
         if temp[0] != data["opts"]["nvaldata"] or temp[1] != data["opts"]["noutputs"]:
-            writethis("Problem with zval")
-            almerror("p2")
+            raise almerror.AlamoInputError(
+                "Problem with zval"
+            )
         return xvaldata, zvaldata
 
 
@@ -765,15 +761,11 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
     # Specific check to see if the labels of the response variables
     # should be used in the output dictionary
     # This is important for systematic testing vs. single model input
-    # if debug["outkeys"]:
-        # outkeys are specified to be used
     if data["opts"]["noutputs"] > 1:
         # 'Must use outkeys for multiple outputs'
-        writethis("outkeys set to TRUE for multiple outputs")
         debug["outkeys"] = True
 
     # Construct xmin and xmax vector based on training data if not provided
-    # if "xmin" not in kwargs.keys():
     if kwargs.get('xmin', None) is None:
         constructXBounds(xdata, zdata, data, debug)
 
@@ -845,10 +837,6 @@ def constructXBounds(xdata, zdata, data, debug):
                 to the .alm
     """
 
-    # writethis(
-    #     "min and max values of inputs are not provided, \
-    #           they will be calculated from the training data\n"
-    # )
     xmin = ""
     xmax = ""
     if data["opts"]["ninputs"] > 1:
@@ -939,12 +927,6 @@ def expandOutput(xdata, zdata, vargs, data, debug):
         data["results"]["zdata"] = zdata
         data["results"]["xlabels"] = data["labs"]["savexlabels"]
         data["results"]["zlabels"] = data["labs"]["savezlabels"]
-    # try:
-    #     # import sympy
-    #     from sympy.parsing.sympy_parser import parse_expr
-    #     from sympy import symbols, lambdify
-    # except Exception:
-    #     writethis('Cannot import sympy')
 
     if debug["expandoutput"]:
         data["results"]["model"] = {}
@@ -996,7 +978,6 @@ def readTraceFile(vargs, data, debug):
     """
 
     trace_file = data["stropts"]["tracefname"]
-    # currentDirectory = os.getcwd()
     trace_str = trace_file  # currentDirectory + "/" + trace_file
     try:
         lf = open(trace_str).read()
@@ -1007,30 +988,15 @@ def readTraceFile(vargs, data, debug):
         else:
             error_message = _diagnose_alamo_failure(trace_str, err)
             raise almerror.AlamoError(error_message)
-            # b_alamo = has_alamo()
-            # lf_logscratch = open("logscratch").read()
-            # if not b_alamo:
-            #     raise almerror.AlamoError(
-            #         'Alamo cannot be found. Please check Alamo is installed.'
-            #     )
-            # elif "termination code" in lf_logscratch:
-            #     raise almerror.AlamoError(
-            #         '{}'.format(lf_logscratch)
-            #     )
-            # else:
-            #     raise almerror.AlamoError(
-            #         'Cannot read from trace file "{}": {}'.format(trace_str, err)
-            #     )
 
     try:
-        # import sympy
         from sympy.parsing.sympy_parser import parse_expr
         from sympy import symbols, lambdify
     except Exception:
         writethis("Cannot import sympy")
 
     lf2 = lf.split("\n")
-    lf2_ind = 0  # ENGLE Allows for multiple writings to trace.trc file 5/30/19
+    lf2_ind = 0  # Allows for multiple writings to trace.trc file
 
     dict_out_str = (
         "#filename, NINPUTS, NOUTPUTS, INITIALPOINTS, OUTPUT, SET, "
@@ -1125,7 +1091,6 @@ def readTraceFile(vargs, data, debug):
         # determine which output label to write
         # if debug['outkeys'] == True use olab as a key if not dont
         if debug["expandoutput"] or debug["outkeys"]:
-        # if debug["outkeys"]:
             olab = model.split("=")[0]
             olab = olab.replace(" ", "")
 

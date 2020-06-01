@@ -1,7 +1,7 @@
 __all__ = ['alamo', 'doalamo', 'getlabels', 'makelabs', 'addCustomFunctions', 
            'addCustomConstraints', 'addBasisGroups', 'addBasisGroup', 
            'addBasisConstraints', 'addBasisConstraint',
-           'get_alamo_version', 'writethis', 'almwriter', 
+           'get_alamo_version', 'almwriter',
            'almconfidence', 'almpickle', 'postpickle', 'almunpickle',
            'almerror', 'AlamoError', 'AlamoInputError',
            'almpywriter', 'almcvwriter', 'wrapwriter',
@@ -15,7 +15,6 @@ from .doalamo import alamo, doalamo, getlabels, makelabs, addCustomFunctions, \
     addCustomConstraints, addBasisGroups, addBasisGroup, addBasisConstraints, \
     addBasisConstraint, get_alamo_version
 from .allcard import allcard, almlsq, almlsqjac, almfeatmat
-from .writethis import writethis
 from .almwriter import almwriter
 from .almconfidence import almconfidence
 from .almpickle import almpickle, postpickle, almunpickle

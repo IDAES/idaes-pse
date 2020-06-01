@@ -13,8 +13,10 @@
 
 
 def almconfidence(data, *vargs):
-    # This function calculates a covariance matrix
+    """
+    This function calculates a covariance matrix
     # and confidence intervals of the estimated alamo regression coefficients
+    """
     import numpy as np
     from scipy.stats import t  # 2.7
     from sympy.parsing.sympy_parser import parse_expr
@@ -24,7 +26,7 @@ def almconfidence(data, *vargs):
     data['covariance'] = {}
     data['conf_inv'] = {}
 
-    if data.get('xdata', None) is None: # ('xdata' is not in data.keys()):
+    if data.get('xdata', None) is None:
         xdata = vargs[0]
         # zdata = vargs[1]
     else:
@@ -32,8 +34,6 @@ def almconfidence(data, *vargs):
         # zdata = data['zdata']
         
     ndata = np.shape(xdata)[0]
-    # ninputs = np.shape(xdata)[1]
-    # noutputs = np.shape(zdata)[1]
     if(isinstance(data['model'], type({}))):
         for okey in data['model'].keys():
             model = data['model'][okey]
@@ -73,7 +73,6 @@ def almconfidence(data, *vargs):
     else:
         model = data['model']
         model.split('=')[1]
-        # out = model.split('=')[0]
         model = model.split('=')[1]
         # split the model on +/- to isolate each linear term
         # This section is not currently in compliance with custom basis functions
