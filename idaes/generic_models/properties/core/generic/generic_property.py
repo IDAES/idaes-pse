@@ -210,6 +210,57 @@ class GenericParameterData(PhysicalParameterBlock):
                     pc_set.append((p, j))
         self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
+        # Validate and construct elemental composition objects as appropriate
+        element_comp = {}
+        for c in self.component_list:
+            cobj = self.get_component(c)
+            e_comp = cobj.config.elemental_composition
+
+            if e_comp is None:
+                # Do nothing
+                continue
+            else:
+                for k, v in e_comp.items():
+                    if not isinstance(v, int):
+                        raise ConfigurationError(
+                            "{} values in elemental_composition must be "
+                            "integers (not floats): {}: {}."
+                            .format(self.name, k, str(v)))
+                element_comp[c] = e_comp
+
+        if len(element_comp) == 0:
+            # No elemental compositions defined, don't define components
+            pass
+        elif len(element_comp) != len(self.component_list):
+            # Not all components defined elemental compositions
+            raise ConfigurationError(
+                "{} not all Components declared an elemental_composition "
+                "argument. Either all Components must declare this, or none."
+                .format(self.name))
+        else:
+            # Add elemental composition components
+            self.element_list = Set(ordered=True)
+
+            # Iterate through all componets and collectcomposing elements
+            # Add these to element_list
+            for ec in element_comp.values():
+                for e in ec.keys():
+                    if e not in self.element_list:
+                        self.element_list.add(e)
+
+            self.element_comp = {}
+            for c in self.component_list:
+                cobj = self.get_component(c)
+
+                self.element_comp[c] = {}
+                for e in self.element_list:
+
+                    if e not in cobj.config.elemental_composition:
+                        self.element_comp[c][e] = 0
+                    else:
+                        self.element_comp[c][e] = \
+                            cobj.config.elemental_composition[e]
+
         # Validate state definition
         if self.config.state_definition is None:
             raise ConfigurationError(
