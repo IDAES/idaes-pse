@@ -509,6 +509,11 @@ class _GenericStateBlock(StateBlock):
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     # Use lowest component temperature_crit as starting point
                     # Starting high and moving down generally works better,
                     # as it under-predicts next step due to exponential form of
@@ -516,7 +521,7 @@ class _GenericStateBlock(StateBlock):
                     # Subtract 1 to avoid potential singularities at Tcrit
                     Tbub0 = min(blk[k].params.get_component(j)
                                 .temperature_crit.value
-                                for j in blk[k].params.component_list) - 1
+                                for j in valid_comps) - 1
 
                     err = 1
                     counter = 0
@@ -531,7 +536,7 @@ class _GenericStateBlock(StateBlock):
                                     blk[k].params.get_component(j),
                                     Tbub0) *
                             blk[k].mole_frac_comp[j]
-                            for j in blk[k].params.component_list) -
+                            for j in valid_comps) -
                             blk[k].pressure)
                         df = value(sum(
                                get_method(blk[k], "pressure_sat_comp", j)(
@@ -539,7 +544,7 @@ class _GenericStateBlock(StateBlock):
                                           blk[k].params.get_component(j),
                                           Tbub0,
                                           dT=True)
-                               for j in blk[k].params.component_list))
+                               for j in valid_comps))
 
                         # Limit temperature step to avoid excessive overshoot
                         # Only limit positive steps due to non-linearity
@@ -554,7 +559,7 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_bubble[pp].value = Tbub0
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_tbub[pp, j].value = value(
                                 blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
@@ -565,6 +570,11 @@ class _GenericStateBlock(StateBlock):
             # DEw temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     if hasattr(blk[k], "_mole_frac_tbub"):
                         # If Tbub has been calculated above, use this as the
                         # starting point
@@ -575,7 +585,7 @@ class _GenericStateBlock(StateBlock):
                         # Subtract 1 to avoid potential singularities at Tcrit
                         Tdew0 = min(
                             blk[k].params.get_component(j).temperature_crit
-                            for j in blk[k].params.component_list) - 1
+                            for j in valid_comps) - 1
 
                     err = 1
                     counter = 0
@@ -591,7 +601,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k],
                                            blk[k].params.get_component(j),
                                            Tdew0)
-                                for j in blk[k].params.component_list) - 1)
+                                for j in valid_comps) - 1)
                         df = -value(
                                 blk[k].pressure *
                                 sum(blk[k].mole_frac_comp[j] /
@@ -604,7 +614,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tdew0,
                                            dT=True)
-                                    for j in blk[k].params.component_list))
+                                    for j in valid_comps))
 
                         # Limit temperature step to avoid excessive overshoot
                         if f/df < -50:
@@ -618,7 +628,7 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_dew[pp].value = Tdew0
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_tdew[pp, j].value = value(
                                 blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
@@ -629,14 +639,19 @@ class _GenericStateBlock(StateBlock):
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     blk[k].pressure_bubble[pp].value = value(
                             sum(blk[k].mole_frac_comp[j] *
                                 blk[k].params.config.pressure_sat_comp
                                       .pressure_sat_comp(
                                               blk[k], j, blk[k].temperature)
-                                for j in blk[k].params.component_list))
+                                for j in valid_comps))
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_pbub[pp, j].value = value(
                             blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
@@ -647,14 +662,19 @@ class _GenericStateBlock(StateBlock):
             # Dew pressure initialization
             if hasattr(blk[k], "_mole_frac_pdew"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     blk[k].pressure_dew[pp].value = value(
                             sum(1/(blk[k].mole_frac_comp[j] /
                                    blk[k].params.config.pressure_sat_comp
                                    .pressure_sat_comp(
                                            blk[k], j, blk[k].temperature))
-                                for j in blk[k].params.component_list))
+                                for j in valid_comps))
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
@@ -1178,3 +1198,25 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
             raise
+
+
+def _valid_VL_component_list(blk, pp):
+    valid_comps = []
+    # Only need to do this for V-L pairs, so check
+    pparams = blk.params
+    if ((pparams.get_phase(pp[0]).is_liquid_phase() and
+         pparams.get_phase(pp[1]).is_vapor_phase()) or
+        (pparams.get_phase(pp[0]).is_vapor_phase() and
+         pparams.get_phase(pp[1]).is_liquid_phase())):
+
+        # Next, only consider components valid in both these phases
+        for j in blk.params.component_list:
+            p_comp_0 = pparams.get_phase(pp[0]).config.component_list
+            p_comp_1 = pparams.get_phase(pp[1]).config.component_list
+
+            if p_comp_0 is None and p_comp_1 is None:
+                valid_comps.append(j)
+            elif j in p_comp_0 and j in p_comp_1:
+                valid_comps.append(j)
+
+    return valid_comps
