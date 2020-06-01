@@ -26,6 +26,8 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 
 from pyomo.environ import (ConcreteModel,
                            SolverFactory,
+                           SolverStatus,
+                           TerminationCondition,
                            value)
 
 from idaes.core.util.testing import get_default_solver
@@ -79,7 +81,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), abs=1e-1) == 365
@@ -136,7 +143,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 431.47
@@ -193,7 +205,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 371.4
@@ -250,7 +267,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 436.93
@@ -307,7 +329,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 368
@@ -367,7 +394,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+        
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 376
