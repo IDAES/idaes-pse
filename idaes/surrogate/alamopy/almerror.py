@@ -13,21 +13,6 @@
 """
 Errors
 """
-from idaes.surrogate.alamopy import writethis
-
-
-def almerror(code):
-    # reports errors encountered
-
-    if (code == 'p1'):
-        writethis('Inconsistent number of data points provided between input arrays')
-        quit()
-    elif (code == 'p2'):
-        writethis('Error in structure of validation data')
-        quit()
-    elif (code == 'p3'):
-        writethis('Inputs option not understood')
-        quit()
 
 
 class AlamoError(Exception):

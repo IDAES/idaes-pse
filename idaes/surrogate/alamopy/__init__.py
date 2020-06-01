@@ -3,7 +3,7 @@ __all__ = ['alamo', 'doalamo', 'getlabels', 'makelabs', 'addCustomFunctions',
            'addBasisConstraints', 'addBasisConstraint',
            'get_alamo_version', 'almwriter',
            'almconfidence', 'almpickle', 'postpickle', 'almunpickle',
-           'almerror', 'AlamoError', 'AlamoInputError',
+           'AlamoError', 'AlamoInputError',
            'almpywriter', 'almcvwriter', 'wrapwriter',
            'almplot', 'mapminmax', 'remapminmax', 
            'data', 'debug', 'deletefile', 'movefile', 'catfile', 
@@ -18,7 +18,7 @@ from .allcard import allcard, almlsq, almlsqjac, almfeatmat
 from .almwriter import almwriter
 from .almconfidence import almconfidence
 from .almpickle import almpickle, postpickle, almunpickle
-from .almerror import almerror, AlamoError, AlamoInputError
+from .almerror import AlamoError, AlamoInputError
 from .almpywriter import almpywriter, almcvwriter, wrapwriter
 from .mapminmax import mapminmax
 from .remapminmax import remapminmax
