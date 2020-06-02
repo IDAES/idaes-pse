@@ -62,7 +62,6 @@ from collections import OrderedDict
 import getpass
 import importlib as il
 import json
-import enum
 import logging
 import numpy as np
 import sys
