@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -54,6 +54,7 @@ configuration = {
     # Specifying components
     "components": {
         'benzene': {"type": Component,
+                    "elemental_composition": {"C": 6, "H": 6},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP,
@@ -83,6 +84,7 @@ configuration = {
                                                     'C': -2.62863,
                                                     'D': -3.33399}}},
         'toluene': {"type": Component,
+                    "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP,

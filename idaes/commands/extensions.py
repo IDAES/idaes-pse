@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -24,9 +24,9 @@ _log = logging.getLogger("idaes.commands.extensions")
 
 
 def print_extensions_version():
-    click.echo("---------------------------------------")
+    click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
-    click.echo("=======================================")
+    click.echo("===================================================")
     v = os.path.join(idaes.bin_directory, "version_solvers.txt")
     try:
         with open(v, "r") as f:
@@ -41,7 +41,7 @@ def print_extensions_version():
     except FileNotFoundError:
         v = "no version file found"
     click.echo("Library:  v{}".format(v))
-    click.echo("=======================================")
+    click.echo("===================================================")
 
 
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")

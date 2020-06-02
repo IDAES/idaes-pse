@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -112,7 +112,20 @@ def m_sol():
 
 
 def test_common(m):
-    assert Ideal.common(m.props) is None
+    assert Ideal.common(m.props, "foo") is None
+
+
+def test_compress_fact_phase_Liq(m):
+    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 1
+
+
+def test_compress_fact_phase_Vap(m):
+    assert Ideal.compress_fact_phase(m.props[1], "Vap") == 1
+
+
+def test_compress_fact_phase_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Ideal.compress_fact_phase(m_sol.props[1], "Sol")
 
 
 def test_dens_mass_phase(m):
@@ -199,20 +212,38 @@ def test_fug_phase_comp_liq(m):
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
 
         assert str(Ideal.fug_phase_comp(
-                        m.props[1], "Liq", j, ("Vap", "Liq"))) == str(
-            m.props[1].mole_frac_phase_comp["Liq", j]*42)
+                        m.props[1], "Liq", j)) == str(42)
 
 
 def test_fug_phase_comp_vap(m):
     for j in m.params.component_list:
         assert str(Ideal.fug_phase_comp(
-                        m.props[1], "Vap", j, ("Vap", "Liq"))) == str(
-            m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure)
+                        m.props[1], "Vap", j)) == str(m.props[1].pressure)
 
 
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
+        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo")
+
+
+def test_fug_phase_comp_liq_eq(m):
+    for j in m.params.component_list:
+        m.params.get_component(j).config.pressure_sat_comp = dummy_call
+
+        assert str(Ideal.fug_phase_comp_eq(
+                        m.props[1], "Liq", j, ("Vap", "Liq"))) == str(42)
+
+
+def test_fug_phase_comp_vap_eq(m):
+    for j in m.params.component_list:
+        assert str(Ideal.fug_phase_comp_eq(
+                        m.props[1], "Vap", j, ("Vap", "Liq"))) == str(
+            m.props[1].pressure)
+
+
+def test_fug_phase_comp_invalid_phase_Eq(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
 def test_fug_coeff_phase_comp(m):

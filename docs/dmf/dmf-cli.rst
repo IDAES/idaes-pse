@@ -238,23 +238,6 @@ Look for "value" as the value of the `type` field.
 dmf find usage
 ^^^^^^^^^^^^^^
 
-.. testsetup:: dmf-find
-
-    from pathlib import Path
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, register, info
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-
-.. testcleanup:: dmf-find
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
 By default, find will essentially provide a filtered listing of
 resources. If used without options, it is basically an alias for
 `ls`.
@@ -332,70 +315,36 @@ dmf info usage
 
 The default is to show, with some terminal colors, a summary of the resource:
 
-
-.. testsetup:: dmf-info
-
-    from pathlib import Path
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, register, info
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-    filename = "foo.txt"
-    with open(filename, 'w') as fp:
-        fp.write("This is some sample data")
-    result = runner.invoke(register, [filename])
-    id_all = result.output.strip()
-    id_4 = id_all[:4]
-
-
-.. testcleanup:: dmf-info
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
 .. code-block:: console
 
-    $ dmf info 0b62
+        $ dmf info 0b62
 
-                              Resource 0b62d999f0c44b678980d6a5e4f5d37d
-      created
-         '2019-03-23 17:49:35'
-      creator
-         name: dang
-      datafiles
-         - desc: foo13
-           is_copy: true
-           path: foo13
-           sha1: feee44ad365b6b1ec75c5621a0ad067371102854
-      datafiles_dir
-         /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52
-      desc
-         foo13
-      doc_id
-         4
-      id_
-         0b62d999f0c44b678980d6a5e4f5d37d
-      modified
-         '2019-03-23 17:49:35'
-      relations
-         - 1e41e6ae882b4622ba9043f4135f2143 --[derived]--> ME
-      type
-         data
-      version
-         0.0.0 @ 2019-03-23 17:49:35
-
-
-.. testcode:: dmf-info
-    :hide:
-
-    result = runner.invoke(info, ["--no-color", id_4], catch_exceptions=False)
-    assert result.exit_code == 0
-    assert filename in result.output
+        Resource 0b62d999f0c44b678980d6a5e4f5d37d
+        created
+            '2019-03-23 17:49:35'
+        creator
+            name: dang
+        datafiles
+            - desc: foo13
+            is_copy: true
+            path: foo13
+            sha1: feee44ad365b6b1ec75c5621a0ad067371102854
+        datafiles_dir
+            /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52
+        desc
+            foo13
+        doc_id
+            4
+        id_
+            0b62d999f0c44b678980d6a5e4f5d37d
+        modified
+            '2019-03-23 17:49:35'
+        relations
+            - 1e41e6ae882b4622ba9043f4135f2143 --[derived]--> ME
+        type
+            data
+        version
+            0.0.0 @ 2019-03-23 17:49:35
 
 The same resource in JSON format:
 
@@ -446,35 +395,12 @@ The same resource in JSON format:
           "doc_id": 4
         }
 
-.. testcode:: dmf-info
-    :hide:
-
-    result = runner.invoke(info, ["--no-color", "--format", "json", id_4],
-                           catch_exceptions=False)
-    assert result.exit_code == 0
-    assert filename in result.output
-    out = result.output.strip()
-    assert out.startswith("{") and out.endswith("}")
-    assert '"relations"' in out
-
 And one more time, in "compact" JSON:
 
 .. code-block:: console
 
         $ dmf info --format jsonc 0b62
         {"id_": "0b62d999f0c44b678980d6a5e4f5d37d", "type": "data", "aliases": [], "codes": [], "collaborators": [], "created": 1553363375.817961, "modified": 1553363375.817961, "creator": {"name": "dang"}, "data": {}, "datafiles": [{"desc": "foo13", "path": "foo13", "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854", "is_copy": true}], "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52", "desc": "foo13", "relations": [{"predicate": "derived", "identifier": "1e41e6ae882b4622ba9043f4135f2143", "role": "object"}], "sources": [], "tags": [], "version_info": {"created": 1553363375.817961, "version": [0, 0, 0, ""], "name": ""}, "doc_id": 4}
-
-.. testcode:: dmf-info
-    :hide:
-
-    result = runner.invoke(info, ["--no-color", "--format", "jsonc", id_4],
-                           catch_exceptions=False)
-    assert result.exit_code == 0
-    assert filename in result.output
-    out = result.output.strip()
-    import json
-    j = json.loads(out)
-    assert len(j['datafiles']) == 1
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
@@ -520,32 +446,12 @@ in ``.dmf``, in the user's home directory, so that all other dmf
 commands know which workspace to use. With the :option:`--create` option,
 a new empty workspace can be created.
 
-.. testsetup:: dmf-init
-
-    import pathlib
-    import os
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init
-    from idaes.dmf.workspace import Workspace
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
 Create new workspace in sub-directory ``ws``, with given name and description:
 
 .. code-block:: console
 
     $ dmf init ws --create --name "foo" --desc "foo workspace description"
     Configuration in '/home/myuser/ws/config.yaml
-
-.. testcode:: dmf-init
-    :hide:
-
-    with runner.isolated_filesystem():
-        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
-        result = runner.invoke(init, ['ws', '--create', '--name', 'foo',
-            '--desc', 'foo workspace description'])
-        assert result.exit_code == 0
-        assert (pathlib.Path('ws') / Workspace.WORKSPACE_CONFIG).exists()
 
 Create new workspace in sub-directory ``ws``, providing the name and
 description interactively:
@@ -556,15 +462,6 @@ description interactively:
     New workspace name: foo
     New workspace description: foo workspace description
     Configuration in '/home/myuser/ws/config.yaml
-
-.. testcode:: dmf-init
-    :hide:
-
-    with runner.isolated_filesystem():
-        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
-        result = runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
-        assert result.exit_code == 0
-        assert (pathlib.Path('ws') / Workspace.WORKSPACE_CONFIG).exists()
 
 Switch to workspace ``ws2``:
 
@@ -583,19 +480,6 @@ If you try to switch to a non-existent workspace, you will get an error message:
     $ dmf init some_random_directory
     Workspace configuration not found at path='some_random_directory/'
 
-.. testcode:: dmf-init
-    :hide:
-
-    with runner.isolated_filesystem():
-        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
-        runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
-        result = runner.invoke(init, ['doesnotexist'])
-        assert result.exit_code != 0
-        assert 'not found' in result.output
-        os.mkdir('some_random_directory')
-        result = runner.invoke(init, ['some_random_directory'])
-        assert result.exit_code != 0
-
 If the workspace exists, you cannot create it:
 
 .. code-block:: console
@@ -604,16 +488,6 @@ If the workspace exists, you cannot create it:
     Configuration in '/home/myuser/ws/config.yaml
     $ dmf init ws --create
     Cannot create workspace: path 'ws' already exists
-
-.. testcode:: dmf-init
-    :hide:
-
-    with runner.isolated_filesystem():
-        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
-        runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
-        result = runner.invoke(init, ['ws', '--create'])
-        assert result.exit_code != 0
-        assert 'exists' in result.output
 
 And, of course, you can't create workspaces anywhere you don't
 have permissions to create directories:
@@ -624,18 +498,6 @@ have permissions to create directories:
     $ chmod 000 forbidden
     $ dmf init forbidden/ws --create
     Cannot create workspace: path 'forbidden/ws' not accessible
-
-.. testcode:: dmf-init
-    :hide:
-
-    with runner.isolated_filesystem():
-        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
-        os.mkdir('forbidden')
-        os.chmod('forbidden', 0)
-        result = runner.invoke(init, ['forbidden/ws', '--create'])
-        assert result.exit_code != 0
-        os.chmod('forbidden', 0o700)
-
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
@@ -709,31 +571,6 @@ dmf ls usage
 .. note:: In the following examples, the current working directory is
           set to ``/home/myuser`` and the workspace is named ``ws``.
 
-.. testsetup:: dmf-ls
-
-    from pathlib import Path
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, ls, register
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-    files = [f"foo1{n}" for n in range(5)]
-    files.append("bar1")
-    for f in files:
-        with open(f, 'w') as fp:
-            fp.write("This is some sample data")
-        runner.invoke(register, [f])  # add file to DMF
-
-.. testcleanup:: dmf-ls
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
-
 Without arguments, show the resources in an arbitrary (though consistent)
 order:
 
@@ -748,15 +585,6 @@ order:
     e780 data foo11 2019-03-23 17:48:11
     eb60 data foo12 2019-03-23 17:49:08
 
-.. testcode:: dmf-ls
-    :hide:
-
-    result = runner.invoke(ls, ['--no-color'])
-    assert result.exit_code == 0
-    output1 = result.output
-    result = runner.invoke(ls, ['--no-color'])
-    assert result.output == output1
-
 Add a sort key to sort by, e.g. modified date
 
 .. code-block:: console
@@ -769,16 +597,6 @@ Add a sort key to sort by, e.g. modified date
     0b62 data foo13 2019-03-23 17:49:35
     6c9a data foo14 2019-03-23 17:51:59
     d3d5 data bar1  2019-03-26 13:07:02
-
-
-.. testcode:: dmf-ls
-    :hide:
-
-    result = runner.invoke(ls, ['--no-color', '-S', 'modified'])
-    assert result.exit_code == 0
-    output1 = result.output
-    result = runner.invoke(ls, ['--no-color', '--sort', 'modified'])
-    assert result.output == output1
 
 
 Especially for resources of type "data", showing the first (possibly only) file
@@ -902,35 +720,11 @@ dmf register usage
 Register a new file, which is a CSV data file, and use the ``--info``
 option to show the created resource.
 
-.. testsetup:: dmf-register
-
-    from pathlib import Path
-    import re, json
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, register, info
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-    filename = "file.csv"
-    with open(filename, 'w') as fp:
-        fp.write("index,time,value\n1,0.1,1.0\n2,0.2,1.3\n")
-
-
-.. testcleanup:: dmf-register
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
-
 .. code-block:: console
 
-    $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
-    $ dmf reg file.csv --info
-                          Resource 117a42287aec4c5ca333e0ff3ac89639
+  $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
+  $ dmf reg file.csv --info
+    Resource 117a42287aec4c5ca333e0ff3ac89639
   created
      '2019-04-11 03:58:52'
   creator
@@ -955,14 +749,6 @@ option to show the created resource.
   version
      0.0.0 @ 2019-04-11 03:58:52
 
-.. testcode:: dmf-register
-    :hide:
-
-    result = runner.invoke(register, ["file.csv", "--info"], catch_exceptions=False)
-    assert result.exit_code == 0
-    assert filename in result.output
-    assert "version" in result.output
-
 If you try to register (add) the same file twice, it will be an error by default.
 You need to add the :option:`--no-unique` option to allow it.
 
@@ -975,14 +761,6 @@ You need to add the :option:`--no-unique` option to allow it.
     This file is already in 1 resource(s): 2315bea239c147e4bc6d2e1838e4101f
     $ dmf add --no-unique timeseries.csv
     3f95851e4931491b995726f410998491
-
-.. testcode:: dmf-register
-    :hide:
-
-    result = runner.invoke(register, ["file.csv",], catch_exceptions=False)
-    assert result.exit_code != 0
-    result = runner.invoke(register, ["file.csv", "--no-unique"], catch_exceptions=False)
-    assert result.exit_code == 0
 
 If you register a file ending in ".json", it will be parsed (unless it is
 over 1MB) and, if it passes, registered as type JSON. If the parse fails, it
@@ -998,17 +776,6 @@ given (with this option, failure to parse will be an error):
     $ dmf reg --strict notreally.json
     Failed to infer resource: File ending in '.json' is not valid JSON
 
-.. testcode:: dmf-register
-    :hide:
-
-    not_json = "notreally.json"
-    with open(not_json, "w") as fp:
-        fp.write("totally bogus\n")
-    result = runner.invoke(register, [not_json], catch_exceptions=False)
-    assert result.exit_code == 0
-    result = runner.invoke(register, [not_json, "--strict", "--no-unique"], catch_exceptions=False)
-    assert result.exit_code != 0
-
 You can explicitly specify the type of the resource with the
 :option:`-t,--type` option. In that case, any failure
 to validate will be an error. For example, if you say the resource is a Jupyter
@@ -1022,18 +789,6 @@ will be fine:
     Failed to load resource: resource type 'notebook': not valid JSON
     $ dmf reg -t data my.ipynb
     0197a82abab44ecf980d6e42e299b258
-
-.. testcode:: dmf-register
-    :hide:
-
-    not_nb = "my.ipynb"
-    with open(not_nb, "w") as fp:
-        fp.write("foo\n")
-    result = runner.invoke(register, [not_nb, '-t', 'notebook'])
-    assert result.exit_code != 0
-    result = runner.invoke(register, [not_nb, '-t', 'data'])
-    assert result.exit_code == 0
-
 
 You can add links to existing resources with the options :option:`--contained`,
 :option:`--derived`, :option:`--used`, and :option:`--prev`. For all of these,
@@ -1107,20 +862,6 @@ in it:
       version
          0.0.0 @ 2019-04-11 20:17:28
 
-.. testcode:: dmf-register
-    :hide:
-
-    for text_file in "shoebox", "shoes", "closet":
-        open(f"{text_file}.txt", "w")
-    result = runner.invoke(register, ["shoebox.txt"], catch_exceptions=False)
-    assert result.exit_code == 0
-    shoebox_id = result.output.strip()
-    result = runner.invoke(register, ["shoes.txt", "--contained", shoebox_id], catch_exceptions=False)
-    assert result.exit_code == 0
-    shoe_id = result.output.strip()
-    result = runner.invoke(info, [shoe_id, "--format", "jsonc"])
-    assert result.exit_code == 0
-
 To reverse the sense of the relation, add the :option:`--is-subject` flag.
 For example, we now add a "closet" resource that contains the existing "shoebox".
 This means the shoebox now has two different "contains" type of relations.
@@ -1157,25 +898,6 @@ This means the shoebox now has two different "contains" type of relations.
          data
       version
          0.0.0 @ 2019-04-11 20:16:50
-
-.. testcode:: dmf-register
-    :hide:
-
-    for text_file in "shoebox", "shoes", "closet":
-        open(f"{text_file}.txt", "w")
-    result = runner.invoke(register, ["closet.txt", "--is-subject",
-                           "--contained", shoebox_id], catch_exceptions=False)
-    assert result.exit_code == 0
-    closet_id = result.output.strip()
-    result = runner.invoke(info, [shoebox_id, "--format", "jsonc"])
-    assert result.exit_code == 0
-    data = json.loads(result.output)
-    assert len(data["relations"]) == 2
-    for rel in data["relations"]:
-        if rel["role"] == "subject":
-            assert rel["identifier"] == shoe_id
-        else:
-            assert rel["identifier"] == closet_id
 
 You can give your new resource a version with the :option:`--version` option.
 You can use this together with the :option:`--prev` option to link
@@ -1255,41 +977,6 @@ In the following examples, we work with 4 resources arranged as a fully
 connected square (A, B, C, D). This is not currently possible just with the
 command-line, but the following Python code does the job:
 
-.. testsetup:: dmf-related
-
-    from pathlib import Path
-    import re, json
-    from click.testing import CliRunner
-    from idaes.dmf import DMF, resource
-    from idaes.dmf.cli import init, related
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-    # add the fully-connected 4 resources
-    dmf = DMF()
-    rlist = [resource.Resource(value={"desc": ltr, "aliases": [ltr],
-                               "tags": ["graph"]})
-             for ltr in "ABCD"]
-    A_id = rlist[0].id  # root resource id, used in testcode
-    relation = resource.PR_USES
-    for r in rlist:
-        for r2 in rlist:
-            if r is r2:
-                continue
-            resource.create_relation_args(r, relation, r2)
-    for r in rlist:
-        dmf.add(r)
-
-.. testcleanup:: dmf-related
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
-
 .. code-block:: python
 
     from idaes.dmf import DMF, resource
@@ -1351,17 +1038,6 @@ four resource (e.g., `A`):
            │
            └──┤uses├─▶ ba67 other A
 
-.. testcode:: dmf-related
-    :hide:
-
-    result = runner.invoke(related, [A_id, '--no-unicode', '--no-color'],
-                           catch_exceptions=False)
-    assert result.exit_code == 0
-    rlines = result.output.split('\n')
-    nrelations = sum(1 for _ in filter(lambda s: resource.PR_USES in s, rlines))
-    assert nrelations == 12  # 3 blocks of (1 + 3)
-
-
 If you change the direction of relations, you will get much the same
 result, but with the arrows reversed.
 
@@ -1406,42 +1082,6 @@ dmf rm usage
 .. note:: In the following examples, there are 5 text files named "file1.txt", "file2.txt", .., "file5.txt", in the workspace.
           The identifiers for these files may be different in each example.
 
-.. testsetup:: dmf-rm
-
-    from pathlib import Path
-    import re, json
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, register, ls, rm
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-    # logging
-    import logging
-    log = logging.getLogger("cli")
-    _h = logging.FileHandler("/tmp/sphinx-dmf-cli.log")
-    log.addHandler(_h)
-    log.setLevel(logging.INFO)
-    # setup workspace
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-    # add some files named `file{1-5}`
-    for i in range(1,6):
-        filename = f"file{i}.txt"
-        with open(filename, 'w') as fp:
-            fp.write(f"file #{i}")
-        runner.invoke(register, [filename])
-
-.. testcleanup:: dmf-register
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-    # Comment to save log for debugging:
-    try:
-        Path("/tmp/sphinx-dmf-cli.log").unlink()
-    except FileNotFoundError:
-        pass
-
 Remove one resource, by its full identifier:
 
 .. code-block:: console
@@ -1465,23 +1105,6 @@ Remove one resource, by its full identifier:
     c8f2b5cb80824e649008c414db5287f7 data file3.txt 2019-04-16 02:51:28
     cd62e3bcb9a4459c9f2f5405ca442961 data file2.txt 2019-04-16 02:51:26
 
-.. testcode:: dmf-rm
-    :hide:
-
-    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
-    assert result.exit_code == 0
-    output1 = result.output
-    output1_lines = output1.split('\n')
-    rsrc_id = output1_lines[1].split()[0] # first token
-    log.info(f"resource id=`{rsrc_id}`")
-    result = runner.invoke(rm, [rsrc_id, "--yes", "--no-list"], catch_exceptions=False)
-    assert result.exit_code == 0
-    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
-    assert result.exit_code == 0
-    output2 = result.output
-    output2_lines = output2.split('\n')
-    assert len(output2_lines) == len(output1_lines) - 1
-
 Remove a single resource by its prefix:
 
 .. code-block:: console
@@ -1504,23 +1127,6 @@ Remove a single resource by its prefix:
     7a06 data file4.txt 2019-04-16 18:51:13
     e5d7 data file1.txt 2019-04-16 18:51:08
     fe0c data file5.txt 2019-04-16 18:51:15
-
-.. testcode:: dmf-rm
-    :hide:
-
-    result = runner.invoke(ls, ['--no-color'])
-    assert result.exit_code == 0
-    output1 = result.output
-    output1_lines = output1.split('\n')
-    rsrc_id = output1_lines[1].split()[0] # first token
-    log.info(f"resource id=`{rsrc_id}`")
-    result = runner.invoke(rm, [rsrc_id, "--yes", "--no-list"], catch_exceptions=False)
-    assert result.exit_code == 0
-    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
-    assert result.exit_code == 0
-    output2 = result.output
-    output2_lines = output2.split('\n')
-    assert len(output2_lines) == len(output1_lines) - 1
 
 Remove multiple resources that share a common prefix. In this case, use the
 :option:`-y,--yes` option to remove without prompting.
@@ -1601,24 +1207,6 @@ Also note that the output shown below is plain (black) text. This is due to our
 limited understanding of how to do colored text in our documentation tool
 (Sphinx). In a color-capable terminal, the output will be more colorful.
 
-.. testsetup:: dmf-status
-
-    from pathlib import Path
-    from click.testing import CliRunner
-    from idaes.dmf.cli import init, status
-    from idaes.dmf.dmfbase import DMFConfig
-    runner = CliRunner()
-
-    fsctx = runner.isolated_filesystem()
-    fsctx.__enter__()
-    DMFConfig._filename = str(Path('.dmf').absolute())
-    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
-
-.. testcleanup:: dmf-status
-
-    fsctx.__exit__(None, None, None)
-    DMFConfig._filename = str(Path('~/.dmf').expanduser())
-
 Show basic workspace status:
 
 .. code-block:: console
@@ -1632,14 +1220,6 @@ Show basic workspace status:
       description: my workspace
       created: 2019-04-09 12:46:40
       modified: 2019-04-09 12:46:40
-
-.. testcode:: dmf-status
-    :hide:
-
-    result = runner.invoke(status, ['--no-color'])
-    assert result.exit_code == 0
-    assert "settings" in result.output
-    assert "name: foo" in result.output
 
 Add the file information:
 
@@ -1657,15 +1237,6 @@ Add the file information:
       files:
         count: 3
         total_size: 1.3 MB
-
-.. testcode:: dmf-status
-    :hide:
-
-    result = runner.invoke(status, ['--no-color', '--show', 'files'])
-    assert result.exit_code == 0
-    assert "settings" in result.output
-    assert "name: foo" in result.output
-    assert "files:" in result.output
 
 You can repeat the :option:`-s,--show` option to add more things:
 
@@ -1685,16 +1256,6 @@ You can repeat the :option:`-s,--show` option to add more things:
         total_size: 1.3 MB
       html_documentation_paths:
         -: /home/myuser/idaes/docs/build
-
-.. testcode:: dmf-status
-    :hide:
-
-    result = runner.invoke(status, ['--no-color', '--show', 'files',
-        '--show', 'htmldocs'])
-    assert result.exit_code == 0
-    assert "settings" in result.output
-    assert "name: foo" in result.output
-    assert "html" in result.output
 
 However, showing everything is less typing, and not overwhelming:
 
@@ -1717,12 +1278,3 @@ However, showing everything is less typing, and not overwhelming:
       logging:
         not configured
 
-.. testcode:: dmf-status
-    :hide:
-
-    result = runner.invoke(status, ['--no-color', '-a'])
-    assert result.exit_code == 0
-    assert "settings" in result.output
-    assert "name: foo" in result.output
-    assert "html" in result.output
-    assert "logging:" in result.output

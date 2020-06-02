@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -59,7 +59,7 @@ def phase_equil(b, phase_pair):
     # PSE paper Eqn 13
     def rule_t1(b):
         return _t1 == smooth_max(b.temperature,
-                                 b.temperature_bubble,
+                                 b.temperature_bubble[phase_pair],
                                  eps_1)
     b.add_component("_t1_constraint"+suffix, Constraint(rule=rule_t1))
 
@@ -67,7 +67,7 @@ def phase_equil(b, phase_pair):
     # TODO : Add option for supercritical extension
     def rule_teq(b):
         return b._teq[phase_pair] == smooth_min(_t1,
-                                                b.temperature_dew,
+                                                b.temperature_dew[phase_pair],
                                                 eps_2)
     b.add_component("_teq_constraint"+suffix, Constraint(rule=rule_teq))
 
@@ -86,5 +86,7 @@ def calculate_teq(b, phase_pair):
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
     _t1 = getattr(b, "_t1"+suffix)
 
-    _t1.value = max(value(b.temperature), b.temperature_bubble.value)
-    b._teq[phase_pair].value = min(_t1.value, b.temperature_dew.value)
+    _t1.value = max(value(b.temperature),
+                    b.temperature_bubble[phase_pair].value)
+    b._teq[phase_pair].value = min(_t1.value,
+                                   b.temperature_dew[phase_pair].value)

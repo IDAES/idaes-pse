@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -27,7 +27,10 @@ class DummyEoS(object):
     def common(self):
         pass
 
-    def fug_phase_comp(b, p, j, pp):
+    def build_parameters(b):
+        pass
+
+    def fug_phase_comp_eq(b, p, j, pp):
         return b.x[p, j]
 
 
@@ -36,6 +39,8 @@ def test_fugacity():
 
     # Add a dummy var for use in constructing expressions
     m.x = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
+    m.mole_frac_phase_comp = Var(["Vap", "Liq"], ["H2O"], initialize=1)
 
     # Create a dummy parameter block
     m.params = GenericParameterBlock(default={
@@ -49,4 +54,5 @@ def test_fugacity():
         "temperature_ref": 300})
 
     assert str(fugacity(m, "Vap", "Liq", "H2O")) == str(
-        m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
+        m.mole_frac_phase_comp["Vap", "H2O"]*m.x["Vap", "H2O"] ==
+        m.mole_frac_phase_comp["Liq", "H2O"]*m.x["Liq", "H2O"])

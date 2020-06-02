@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -51,8 +51,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}},
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -71,8 +71,8 @@ class TestGenericParameterBlock(object):
             assert p in ["p1", "p2"]
         assert isinstance(m.params.get_phase("p1"), LiquidPhase)
         assert isinstance(m.params.get_phase("p2"), Phase)
-        assert m.params.p1.config.equation_of_state == "foo"
-        assert m.params.p2.config.equation_of_state == "bar"
+        assert m.params.p1.config.equation_of_state == dummy_eos
+        assert m.params.p2.config.equation_of_state == dummy_eos
 
         assert isinstance(m.params._phase_component_set, Set)
         assert len(m.params._phase_component_set) == 5
@@ -148,9 +148,9 @@ class TestGenericParameterBlock(object):
                                                 PT.vaporPhase]}},
                 "phases": {
                     "p1": {"type": LiquidPhase,
-                           "equation_of_state": "foo"},
+                           "equation_of_state": dummy_eos},
                     "p2": {"type": VaporPhase,
-                           "equation_of_state": "bar"}},
+                           "equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -231,8 +231,8 @@ class TestGenericParameterBlock(object):
                 "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
                 "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
             "phases": {
-                "p1": {"equation_of_state": "foo"},
-                "p2": {"equation_of_state": "bar"}},
+                "p1": {"equation_of_state": dummy_eos},
+                "p2": {"equation_of_state": dummy_eos}},
             "state_definition": modules[__name__],
             "pressure_ref": 1e5,
             "temperature_ref": 300,
@@ -256,7 +256,7 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params Generic Property Package component a "
                                  "is in equilibrium but phase_equilibrium_form"
-                                 "was not specified."):
+                                 " was not specified."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {},
@@ -349,17 +349,17 @@ class TestGenericParameterBlock(object):
                 c.test_var = Var()
 
         with pytest.raises(ConfigurationError,
-                           match="params parameter test_var for component a "
-                           "was not assigned a value. Please check your "
-                           "configuration arguments."):
+                           match="params parameter test_var was not assigned "
+                           "a value. Please check your configuration "
+                           "arguments."):
             m.params = DummyParameterBlock(default={
                 "components": {
                     "a": {"dens_mol_liq_comp": test_class},
                     "b": {},
                     "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}},
+                    "p1": {"equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -388,6 +388,85 @@ class TestGenericParameterBlock(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
+
+    def test_no_elements(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+        assert not hasattr(m.params, "element_list")
+        assert not hasattr(m.params, "element_comp")
+
+    def test_partial_elements(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params not all Components declared an "
+                           "elemental_composition argument. Either all "
+                           "Components must declare this, or none."):
+            m.params = DummyParameterBlock(default={
+                    "components": {"a": {"elemental_composition": {"e1": 1}},
+                                   "b": {},
+                                   "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": dummy_eos},
+                        "p2": {"equation_of_state": dummy_eos}},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300})
+
+    def test_elements_not_float(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params values in elemental_composition must "
+                           "be integers \(not floats\)\: e1\: 2.0."):
+            m.params = DummyParameterBlock(default={
+                    "components": {"a": {"elemental_composition": {"e1": 2.0}},
+                                   "b": {},
+                                   "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": dummy_eos},
+                        "p2": {"equation_of_state": dummy_eos}},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300})
+
+    def test_elements(self):
+        m = ConcreteModel()
+
+        m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"elemental_composition": {"e1": 1, "e2": 2}},
+                    "b": {"elemental_composition": {"e3": 3, "e4": 4}},
+                    "c": {"elemental_composition": {"e1": 5, "e3": 6}}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+        assert isinstance(m.params.element_list, Set)
+        assert len(m.params.element_list) == 4
+        assert m.params.element_comp == {
+            "a": {"e1": 1, "e2": 2, "e3": 0, "e4": 0},
+            "b": {"e1": 0, "e2": 0, "e3": 3, "e4": 4},
+            "c": {"e1": 5, "e2": 0, "e3": 6, "e4": 0}}
 
 
 # -----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -41,6 +41,7 @@ from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
+_dmf_log = logging.getLogger("idaes.dmf")
 
 
 class Code(Enum):
@@ -184,9 +185,9 @@ def base_command(verbose, quiet):
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
-        _log.setLevel(level_from_verbosity(verbose))
+        _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
-        _log.setLevel(level_from_verbosity(-quiet))
+        _dmf_log.setLevel(level_from_verbosity(-quiet))
 
 
 @click.command(
@@ -1082,7 +1083,7 @@ class _ShowInfo:
         width = min(term_width, self._longest_line(rval) + 3 + self.contents_indent)
         self._print_info_term_header(width)
         top_keys = sorted(rval.keys())
-        for rownum, tk in enumerate(top_keys):
+        for tk in top_keys:
             val = rval[tk]
             if self._has_values(val):
                 contents_str = yaml.dump(
@@ -1104,7 +1105,7 @@ class _ShowInfo:
 
     def _longest_line(self, formatted_resource):
         longest = 0
-        for k, v in formatted_resource.items():
+        for v in formatted_resource.values():
             v_longest = max(
                 (len(s) for s in json.dumps(v, indent=self.json_indent).split('\n'))
             )
@@ -1294,5 +1295,5 @@ base_command.add_command(info)
 base_command.add_command(related)
 base_command.add_command(rm)
 
-if __name__ == '__main__':
-    base_command()
+# if __name__ == '__main__':
+#     base_command()
