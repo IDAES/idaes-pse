@@ -717,7 +717,7 @@ class _GenericStateBlock(StateBlock):
             init_log.info("Equilibrium temperature initialization completed.")
 
         # ---------------------------------------------------------------------
-        # Initialize state variables
+        # Initialize flow rates and compositions
         for k in blk.keys():
             blk[k].params.config.state_definition.state_initialization(blk[k])
 
@@ -747,12 +747,6 @@ class _GenericStateBlock(StateBlock):
                 # Activate formulation specific constraints
                 blk[k].params.config.phase_equilibrium_state[pp] \
                     .phase_equil_initialization(blk[k], pp)
-
-
-            print("\n\n\n")
-            blk.display()
-            print("\n\n\n")
-
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
