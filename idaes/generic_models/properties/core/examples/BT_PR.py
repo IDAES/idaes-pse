@@ -104,7 +104,7 @@ configuration = {
     # Specifying state definition
     "state_definition": FTPx,
     "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 450),
+                     "temperature": (273.15, 500),
                      "pressure": (5e4, 1e6)},
     "pressure_ref": 101325,
     "temperature_ref": 298.15,
