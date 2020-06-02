@@ -49,6 +49,9 @@ class EoSBase():
     def fug_phase_comp_eq(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_eq"))
 
+    def log_fug_phase_comp_eq(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "log_fug_phase_comp_eq"))
+
     def fug_coeff_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_coeff_phase_comp"))
 

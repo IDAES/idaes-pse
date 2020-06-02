@@ -420,7 +420,7 @@ class Cubic(EoSBase):
     def fug_coeff_phase_comp_eq(blk, p, j, pp):
         return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
 
-    def fug_phase_comp_Tbub(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Tbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -468,9 +468,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return exp(_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype))
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Tdew(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Tdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -518,9 +518,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return exp(_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype))
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Pbub(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Pbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -561,9 +561,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return exp(_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype))
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Pdew(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Pdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -604,7 +604,7 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return exp(_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype))
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
     def gibbs_mol_phase(b, p):
         return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
