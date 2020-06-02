@@ -25,6 +25,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from pyomo.environ import (ConcreteModel,
+                           Objective,
                            SolverFactory,
                            SolverStatus,
                            TerminationCondition,
@@ -47,7 +48,6 @@ solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
-# TODO :ADD T and P sweeps - these did not work when first tried
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.skipif(not prop_available,
@@ -66,6 +66,57 @@ class TestBTExample(object):
                 default={"defined_state": True})
 
         return m
+
+    # @pytest.mark.slow
+    # def test_T_sweep(self, m):
+    #     m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510)**2)
+
+    #     for logP in range(8, 13, 1):
+    #         m.fs.obj.deactivate()
+
+    #         m.fs.state[1].flow_mol.fix(100)
+    #         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
+    #         m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
+    #         m.fs.state[1].temperature.fix(300)
+    #         m.fs.state[1].pressure.fix(10**(0.5*logP))
+
+    #         m.fs.state.initialize(outlvl=0)
+
+    #         m.fs.state[1].temperature.unfix()
+    #         m.fs.obj.activate()
+
+    #         solver = SolverFactory('ipopt')
+    #         results = solver.solve(m, tee=True)
+
+    #         assert results.solver.termination_condition == \
+    #             TerminationCondition.optimal
+    #         assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
+
+    # @pytest.mark.slow
+    # def test_P_sweep(self, m):
+    #     for T in range(370, 500, 25):
+    #         m.fs.state[1].flow_mol.fix(100)
+    #         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
+    #         m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
+    #         m.fs.state[1].temperature.fix(T)
+    #         m.fs.state[1].pressure.fix(1e5)
+
+    #         m.fs.state.initialize(outlvl=0)
+
+    #         solver = SolverFactory('ipopt')
+    #         results = solver.solve(m)
+
+    #         assert results.solver.termination_condition == \
+    #             TerminationCondition.optimal
+
+    #         while m.fs.state[1].pressure.value <= 1e6:
+    #             m.fs.state[1].pressure.value = (
+    #                 m.fs.state[1].pressure.value + 1e5)
+    #             solver = SolverFactory('ipopt')
+    #             results = solver.solve(m)
+    #             assert results.solver.termination_condition == \
+    #                 TerminationCondition.optimal
+    #             print(T, m.fs.state[1].pressure.value)
 
     def test_T350_P1_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
