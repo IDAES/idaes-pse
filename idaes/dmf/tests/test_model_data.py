@@ -109,7 +109,7 @@ def test_unit_coversion():
 
     # ppb is on the list of units to ignore, and not attempt to convert
     p, unit = da.unit_convert(p_atm, "ppb", "psi")
-    assert (p[0], pytest.approx(1, rel=1e-2))
+    assert p[0] == pytest.approx(1, rel=1e-2)
     assert unit == "ppb"
 
     # psig is on the list of gauge pressures.

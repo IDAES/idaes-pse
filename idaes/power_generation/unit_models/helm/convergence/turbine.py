@@ -1,6 +1,6 @@
 import pyomo.environ as pyo
 import idaes.core as idaes_core
-from idaes.power_generation.unit_models.helm import IsentropicTurbine,
+from idaes.power_generation.unit_models.helm import IsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.generic_models.properties import iapws95
 
