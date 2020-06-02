@@ -21,8 +21,10 @@ import idaes.power_generation.unit_models.helm as hmodels
 from idaes.generic_models.properties import iapws95
 
 def test_convergence_test_class_import():
-    import idaes.power_generation.unit_models.helm.convergence.heater
-    import idaes.power_generation.unit_models.helm.convergence.models
+    import idaes.power_generation.unit_models.helm.convergenc.heater
+    import idaes.power_generation.unit_models.helm.convergence.turbine
+    import idaes.power_generation.unit_models.helm.convergence.compressor
+
 
 def test_pump():
     m = pyo.ConcreteModel()
