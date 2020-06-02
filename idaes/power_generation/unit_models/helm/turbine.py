@@ -11,9 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import pyomo.environ as pyo
-from pyomo.common.config import In
+from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
-from idaes.generic_models.unit_models.heater import HeaterData
+from idaes.generic_models.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
@@ -38,14 +38,14 @@ def _assert_properties(pb):
 
 
 @declare_process_block_class("IsentropicTurbine")
-class IsentropicTurbineData(HeaterData):
+class IsentropicTurbineData(BalanceBlockData):
     """
     Basic isentropic 0D turbine model.  This inherits the heater block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and
     pressure equations.  This model is intended to be used only with Helmholtz
     EOS property pacakges in mixed or single phase mode with P-H state vars.
 
-    Since this inherits HeaterData, and only operates in steady-state or
+    Since this inherits BalanceBlockData, and only operates in steady-state or
     pseudo-steady-state (for dynamic models) the following mass, energy and
     pressure equations are implicitly writen.
 
@@ -57,7 +57,7 @@ class IsentropicTurbineData(HeaterData):
         0 = P_in[t] + deltaP[t] - P_out[t]
     """
 
-    CONFIG = HeaterData.CONFIG()
+    CONFIG = BalanceBlockData.CONFIG()
     # For dynamics assume pseudo-steady-state
     CONFIG.dynamic = False
     CONFIG.get("dynamic")._default = False
@@ -69,9 +69,18 @@ class IsentropicTurbineData(HeaterData):
     CONFIG.has_pressure_change = True
     CONFIG.get("has_pressure_change")._default = True
     CONFIG.get("has_pressure_change")._domain = In([True])
-    CONFIG.has_work_transfer = True
-    CONFIG.get("has_work_transfer")._default = True
-    CONFIG.get("has_work_transfer")._domain = In([True])
+    CONFIG.declare("has_work_transfer", ConfigValue(
+            default=True,
+            domain=In([True]),
+            description="Turbine has work transfer term.",
+        )
+    )
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+            default=False,
+            domain=In([False]),
+            description="Turbine does not have heat transfer term.",
+        )
+    )
 
     def build(self):
         """
@@ -97,8 +106,6 @@ class IsentropicTurbineData(HeaterData):
             initialize=0.7,
             doc="Ratio of outlet to inlet pressure"
         )
-
-        self.control_volume.heat.fix()
 
         # Some shorter refernces to property blocks
         prp_i = self.control_volume.properties_in

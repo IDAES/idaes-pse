@@ -39,7 +39,7 @@ def _make_heater_config_block(config):
     config.declare("has_work_transfer", ConfigValue(
             default=False,
             domain=In([False]),
-            description="Heater does not have wrok transfer term.",
+            description="Heater does not have work transfer term.",
         )
     )
     config.declare("has_heat_transfer", ConfigValue(

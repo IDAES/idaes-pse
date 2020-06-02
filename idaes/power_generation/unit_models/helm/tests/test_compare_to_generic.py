@@ -104,10 +104,10 @@ def test_compressor():
 
     # set inputs
     Fin = 1000 # mol/s
-    #Tin = 500 # K
+    Tin = 500 # K
     Pin = 2222782.4 # Pa
     Pout = 2.7*Pin # Pa
-    hin = 76303.57 #iapws95.htpx(Tin, Pin) # J/mol
+    hin = iapws95.htpx(Tin, Pin) # J/mol
     eff = 0.324
 
     m.fs.unit1.inlet.flow_mol[0].fix(Fin)
@@ -123,7 +123,6 @@ def test_compressor():
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
 
-    m.fs.unit1.control_volume.properties_in[0].temperature.display()
     assert pyo.value(m.fs.unit1.control_volume.properties_out[0].temperature) == \
         pytest.approx(
             pyo.value(m.fs.unit2.control_volume.properties_out[0].temperature),
@@ -131,7 +130,6 @@ def test_compressor():
         )
     assert pyo.value(m.fs.unit1.control_volume.work[0]) == pytest.approx(
         pyo.value(m.fs.unit2.control_volume.work[0]), rel=1e-7)
-    raise
 
 def test_compressor_pump_compare():
     m = pyo.ConcreteModel()
