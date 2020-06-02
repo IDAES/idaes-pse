@@ -238,7 +238,6 @@ Look for "value" as the value of the `type` field.
 dmf find usage
 ^^^^^^^^^^^^^^
 
-# cleanup:: dmf-find
 By default, find will essentially provide a filtered listing of
 resources. If used without options, it is basically an alias for
 `ls`.
@@ -572,7 +571,6 @@ dmf ls usage
 .. note:: In the following examples, the current working directory is
           set to ``/home/myuser`` and the workspace is named ``ws``.
 
-# cleanup:: dmf-ls
 Without arguments, show the resources in an arbitrary (though consistent)
 order:
 
@@ -1084,7 +1082,6 @@ dmf rm usage
 .. note:: In the following examples, there are 5 text files named "file1.txt", "file2.txt", .., "file5.txt", in the workspace.
           The identifiers for these files may be different in each example.
 
-# cleanup:: dmf-rm
 Remove one resource, by its full identifier:
 
 .. code-block:: console
@@ -1210,7 +1207,6 @@ Also note that the output shown below is plain (black) text. This is due to our
 limited understanding of how to do colored text in our documentation tool
 (Sphinx). In a color-capable terminal, the output will be more colorful.
 
-# cleanup:: dmf-status
 Show basic workspace status:
 
 .. code-block:: console
