@@ -446,15 +446,15 @@ see reaction package for documentation.}"""))
             # Thus appending the heterogeneous reaction block to the
             # solid state block is currently hard coded here.
 
-            tmp_dict = dict(**self.config.solid_phase_config.
-                            reaction_package_args)
+            tmp_dict = dict(
+                    **self.config.solid_phase_config.reaction_package_args)
             tmp_dict["gas_state_block"] = self.gas_emulsion.properties
             tmp_dict["solid_state_block"] = (
                     self.solid_emulsion.properties)
-            tmp_dict["has_equilibrium"] = (self.config.solid_phase_config.
-                                           has_equilibrium_reactions)
-            tmp_dict["parameters"] = (self.config.solid_phase_config.
-                                      reaction_package)
+            tmp_dict["has_equilibrium"] = (
+                    self.config.solid_phase_config.has_equilibrium_reactions)
+            tmp_dict["parameters"] = (
+                    self.config.solid_phase_config.reaction_package)
             self.solid_emulsion.reactions = (
                     self.config.solid_phase_config.reaction_package.
                     reaction_block_class(
@@ -1399,7 +1399,6 @@ see reaction package for documentation.}"""))
                     return (b.solid_outlet_block[t].
                             get_enthalpy_flow_terms(p) ==
                             b.solid_emulsion._enthalpy_flow[t, 0, p])
-
     # =========================================================================
     # Model initialization routine
 
@@ -2067,8 +2066,8 @@ see reaction package for documentation.}"""))
                     y_b.append(value(blk.bubble.properties[t, x].mole_frac[i]))
                 plt.figure(5)
                 plt.plot(blk.gas_emulsion.length_domain, y_b, label=i)
-        plt.legend(loc=9, ncol=len(blk.config.gas_phase_config.
-                                   property_package.component_list))
+        plt.legend(loc=9, ncol=len(
+                blk.config.gas_phase_config.property_package.component_list))
         plt.grid()
         plt.xlabel("Bed height")
         plt.ylabel("Gas bubble mole frac. (-)")
