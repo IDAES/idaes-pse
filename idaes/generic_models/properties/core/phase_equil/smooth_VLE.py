@@ -54,7 +54,7 @@ def phase_equil(b, phase_pair):
                                           mutable=True,
                                           doc='Smoothing parameter for Teq'))
     eps_1 = getattr(b, "eps_1"+suffix)
-    eps_2 = getattr(b, "eps_1"+suffix)
+    eps_2 = getattr(b, "eps_2"+suffix)
 
     # PSE paper Eqn 13
     def rule_t1(b):
