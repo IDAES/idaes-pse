@@ -58,12 +58,9 @@ def test_build():
                     "flow_type": "co_current",
                     "finite_elements": 5,
                     "transformation_method": "dae.collocation",
-                    "bubble_config":
+                    "gas_phase_config":
                     {"property_package": m.fs.gas_properties},
-                    "gas_emulsion_config":
-                    {"property_package": m.fs.gas_properties,
-                     "has_pressure_change": True},
-                    "solid_emulsion_config":
+                    "solid_phase_config":
                     {"property_package": m.fs.solid_properties,
                      "reaction_package": m.fs.hetero_reactions
                      }})
@@ -86,8 +83,8 @@ def test_initialize():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo props and reaction props
-    m.fs.gas_properties = Gas_Phase_Thermo_ParameterBlock()
-    m.fs.solid_properties = Solid_Phase_Thermo_ParameterBlock()
+    m.fs.gas_properties = GasPhaseThermoParameterBlock()
+    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
             default={"solid_property_package": m.fs.solid_properties,
                      "gas_property_package": m.fs.gas_properties})
@@ -97,16 +94,12 @@ def test_initialize():
                     "flow_type": "co_current",
                     "finite_elements": 5,
                     "transformation_method": "dae.collocation",
-                    "bubble_config":
+                    "gas_phase_config":
                     {"property_package": m.fs.gas_properties},
-                    "gas_emulsion_config":
-                    {"property_package": m.fs.gas_properties,
-                     "has_pressure_change": True},
-                    "solid_emulsion_config":
+                    "solid_phase_config":
                     {"property_package": m.fs.solid_properties,
                      "reaction_package": m.fs.hetero_reactions
                      }})
-
     # Fix geometry variables
     m.fs.BFB.number_orifice.fix(2500)  # [-]
     m.fs.BFB.bed_diameter.fix(6.5)  # m

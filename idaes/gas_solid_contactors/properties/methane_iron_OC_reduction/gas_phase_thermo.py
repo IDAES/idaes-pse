@@ -213,9 +213,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 'units': 'kJ/mol.K'},
                 'cp_mass': {'method': '_cp_mass', 'units': 'kJ/kg.K'},
                 'dens_mol_vap': {'method': '_dens_mol_vap',
-                                  'units': 'mol/m^3'},
+                                 'units': 'mol/m^3'},
                 'dens_mol_vap_comp': {'method': '_dens_mol_vap_comp',
-                                       'units': 'mol/m^3'},
+                                      'units': 'mol/m^3'},
                 'dens_mass_vap': {'method': '_dens_mass_vap',
                                   'units': 'kg/m^3'},
                 'enth_mol': {'method': '_enth_mol', 'units': 'kJ/mol'},
@@ -475,8 +475,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
     def _dens_mol_vap(self):
         # Molar density
         self.dens_mol_vap = Var(domain=Reals,
-                                 initialize=1.0,
-                                 doc="Molar density/concentration [mol/m3]")
+                                initialize=1.0,
+                                doc="Molar density/concentration [mol/m3]")
 
         def ideal_gas(b):
             return (b.dens_mol_vap*b._params.gas_const*b.temperature*1e-2 ==
@@ -493,10 +493,10 @@ class GasPhaseThermoStateBlockData(StateBlockData):
     def _dens_mol_vap_comp(self):
         # Mixture heat capacities
         self.dens_mol_vap_comp = Var(self._params.component_list,
-                                      domain=Reals,
-                                      initialize=1.0,
-                                      doc='Component molar concentration'
-                                      '[mol/m3]')
+                                     domain=Reals,
+                                     initialize=1.0,
+                                     doc='Component molar concentration'
+                                     '[mol/m3]')
 
         def comp_conc_eqn(b, j):
             return b.dens_mol_vap_comp[j] == b.dens_mol_vap*b.mole_frac[j]

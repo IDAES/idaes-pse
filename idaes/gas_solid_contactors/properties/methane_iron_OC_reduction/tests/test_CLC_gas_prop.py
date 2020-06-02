@@ -46,8 +46,8 @@ m.state_block = m.properties.state_block_class(
 
 def test_build_inlet_state_block():
     assert hasattr(m.state_block, "mw_gas")
-    assert hasattr(m.state_block, "dens_mole_vap")
-    assert hasattr(m.state_block, "dens_mole_comp_vap")
+    assert hasattr(m.state_block, "dens_mol_vap")
+    assert hasattr(m.state_block, "dens_mol_vap_comp")
     assert hasattr(m.state_block, "dens_mass_vap")
     assert hasattr(m.state_block, "cp_mol_comp")
     assert hasattr(m.state_block, "cp_mol")

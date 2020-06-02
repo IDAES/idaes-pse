@@ -71,7 +71,7 @@ def test_build_reaction_block():
 def test_solve():
     # Fix required variables to make reaction model square
     # (gas density, solid density, temperature and component fractions)
-    m.reaction_block.gas_state_ref.dens_mole_comp_vap['CH4'].fix(10)
+    m.reaction_block.gas_state_ref.dens_mol_vap_comp['CH4'].fix(10)
     m.reaction_block.solid_state_ref.dens_mass_sol.fix(
             m.reaction_block.solid_state_ref.dens_mass_sol.value)
     m.reaction_block.solid_state_ref.temperature.fix(1183.15)
