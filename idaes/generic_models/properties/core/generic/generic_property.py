@@ -688,10 +688,10 @@ class _GenericStateBlock(StateBlock):
                                         "eq_pressure_bubble",
                                         "eq_temperature_dew",
                                         "eq_temperature_bubble",
-                                        "_sum_mole_frac_tbub",
-                                        "_sum_mole_frac_tdew",
-                                        "_sum_mole_frac_pbub",
-                                        "_sum_mole_frac_pdew"):
+                                        "eq_mole_frac_tbub",
+                                        "eq_mole_frac_tdew",
+                                        "eq_mole_frac_pbub",
+                                        "eq_mole_frac_pdew"):
                     c.deactivate()
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew

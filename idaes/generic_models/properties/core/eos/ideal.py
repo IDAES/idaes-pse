@@ -133,9 +133,10 @@ def _invalid_phase_msg(name, phase):
 def _fug_phase_comp(b, p, j):
     pobj = b.params.get_phase(p)
     if pobj.is_vapor_phase():
-        return b.pressure
+        return b.mole_frac_phase_comp[p, j] * b.pressure
     elif pobj.is_liquid_phase():
-        return get_method(b, "pressure_sat_comp", j)(
-                   b, cobj(b, j), b.temperature)
+        return (b.mole_frac_phase_comp[p, j] *
+                get_method(b, "pressure_sat_comp", j)(
+                    b, cobj(b, j), b.temperature))
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))

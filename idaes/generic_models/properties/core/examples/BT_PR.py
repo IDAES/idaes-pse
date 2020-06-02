@@ -30,7 +30,7 @@ from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 
 import idaes.generic_models.properties.core.pure.RPP as RPP
 
@@ -54,7 +54,7 @@ configuration = {
                     "enth_mol_ig_comp": RPP,
                     "entr_mol_ig_comp": RPP,
                     "pressure_sat_comp": RPP,
-                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
                         "mw": 78.1136E-3,  # [1]
                         "pressure_crit": 48.9e5,  # [1]
@@ -74,7 +74,7 @@ configuration = {
                     "enth_mol_ig_comp": RPP,
                     "entr_mol_ig_comp": RPP,
                     "pressure_sat_comp": RPP,
-                    "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
+                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
                         "mw": 92.1405E-3,  # [1]
                         "pressure_crit": 41e5,  # [1]

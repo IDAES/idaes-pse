@@ -490,6 +490,7 @@ def test_fug_phase_comp(m):
         for j in m.params.component_list:
             assert str(Cubic.fug_phase_comp(
                             m.props[1], p, j)) == str(
+                m.props[1].mole_frac_phase_comp[p, j] *
                 m.props[1].pressure *
                 m.props[1].fug_coeff_phase_comp[p, j])
 
@@ -504,6 +505,7 @@ def test_fug_phase_comp_eq(m):
         for j in m.params.component_list:
             assert str(Cubic.fug_phase_comp_eq(
                             m.props[1], p, j, ("Vap", "Liq"))) == str(
+                m.props[1].mole_frac_phase_comp[p, j] *
                 m.props[1].pressure *
                 Cubic.fug_coeff_phase_comp_eq(
                     m.props[1], p, j, ("Vap", "Liq")))

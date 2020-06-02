@@ -211,14 +211,15 @@ def test_fug_phase_comp_liq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
 
-        assert str(Ideal.fug_phase_comp(
-                        m.props[1], "Liq", j)) == str(42)
+        assert (str(Ideal.fug_phase_comp(m.props[1], "Liq", j)) ==
+                str(m.props[1].mole_frac_phase_comp["Liq", j] * 42))
 
 
 def test_fug_phase_comp_vap(m):
     for j in m.params.component_list:
-        assert str(Ideal.fug_phase_comp(
-                        m.props[1], "Vap", j)) == str(m.props[1].pressure)
+        assert (str(Ideal.fug_phase_comp(m.props[1], "Vap", j)) ==
+                str(m.props[1].mole_frac_phase_comp["Vap", j] *
+                    m.props[1].pressure))
 
 
 def test_fug_phase_comp_invalid_phase(m_sol):
@@ -230,15 +231,17 @@ def test_fug_phase_comp_liq_eq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
 
-        assert str(Ideal.fug_phase_comp_eq(
-                        m.props[1], "Liq", j, ("Vap", "Liq"))) == str(42)
+        assert (str(Ideal.fug_phase_comp_eq(
+                        m.props[1], "Liq", j, ("Vap", "Liq"))) ==
+                str(m.props[1].mole_frac_phase_comp["Liq", j] * 42))
 
 
 def test_fug_phase_comp_vap_eq(m):
     for j in m.params.component_list:
-        assert str(Ideal.fug_phase_comp_eq(
-                        m.props[1], "Vap", j, ("Vap", "Liq"))) == str(
-            m.props[1].pressure)
+        assert (str(Ideal.fug_phase_comp_eq(
+                        m.props[1], "Vap", j, ("Vap", "Liq"))) ==
+                str(m.props[1].mole_frac_phase_comp["Vap", j] *
+                    m.props[1].pressure))
 
 
 def test_fug_phase_comp_invalid_phase_Eq(m_sol):
