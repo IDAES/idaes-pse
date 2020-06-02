@@ -49,44 +49,45 @@ The IDAES BFBR model has construction arguments specific to the whole unit and t
 * transformation_method - sets the discretization method to use by the Pyomo TransformationFactory 
   to transform the spatial domain (default = dae.finite_difference):
   
-  - 'dae.finite_difference' - finite difference method.
-  - 'dae.collocation' - orthogonal collocation method.
+  - dae.finite_difference - finite difference method.
+  - dae.collocation - orthogonal collocation method.
   
 * transformation_scheme - sets the scheme to use when transforming a domain. 
   Selected schemes should be compatible with the transformation_method chosen (default = None):
   
   - None - defaults to "BACKWARD" for finite difference transformation method and to "LAGRANGE-RADAU" for collocation transformation method
-  - 'BACKWARD' - use a finite difference transformation method.
-  - 'FORWARD' - use a finite difference transformation method.
-  - 'LAGRANGE-RADAU' - use a collocation transformation method.   
+  - BACKWARD - use a finite difference transformation method.
+  - FORWARD - use a finite difference transformation method.
+  - LAGRANGE-RADAU - use a collocation transformation method.   
   
 * collocation_points - sets the number of collocation points to use when discretizing the spatial domains (default = 3, collocation methods only).
 * flow_type - indicates the flow arrangement within the unit to be modeled. Options are:
 
   - 'co-current' - (default) gas and solid streams both flow in the same direction (from x=0 to x=1)
   - 'counter-current' - gas and solid streams flow in opposite directions (gas from x=0 to x=1 and solid from x=1 to x=0).
-  
+
+* material_balance_type - indicates what type of energy balance should be constructed (default = MaterialBalanceType.componentTotal).
+
+  - MaterialBalanceType.componentTotal - use total component balances.
+  - MaterialBalanceType.total - use total material balance.
+    
 * energy_balance_type - indicates what type of energy balance should be constructed (default = EnergyBalanceType.enthalpyTotal).
 
-  - 'EnergyBalanceType.none' - excludes energy balances.
-  - 'EnergyBalanceType.enthalpyTotal' - single enthalpy balance for material.
-
-**Arguments that are applicable to the bubble region:**
-
-* momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.none).
-* has_pressure_change - indicates whether terms for pressure change should be constructed (default = False).
-* property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
-  This is provided as a Physical Parameter Block by the Flowsheet when creating the model. If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* property_package_args - set of arguments to be passed to the bubble region Property Blocks when they are created (default = 'use_parent_value').
-* reaction_package - reaction package to use when constructing bubble region Reaction Blocks (default = None). 
-  This is provided as a Reaction Parameter Block by the Flowsheet when creating the model. If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
-* reaction_package_args - set of arguments to be passed to the bubble region Reaction Blocks when they are created (default = None).
-* has_equilibrium_reactions - sets flag to indicate if terms of equilibrium controlled reactions should be constructed (default = False).
-
-**Arguments that are applicable to the gas emulsion region:**
+  - EnergyBalanceType.none - excludes energy balances.
+  - EnergyBalanceType.enthalpyTotal - single enthalpy balance for material.
 
 * momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.pressureTotal).
-* has_pressure_change - indicates whether terms for pressure change should be constructed (default = False).
+
+  - MomentumBalanceType.none - exclude momentum balances.
+  - MomentumBalanceType.pressureTotal - single pressure balance for material.
+
+* has_pressure_change - indicates whether terms for pressure change should be constructed (default = True).
+
+  - True - include pressure change terms.
+  - False - exclude pressure change terms.
+
+**Arguments that are applicable to the gas phase:**
+
 * property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
   This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
   If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
@@ -97,10 +98,8 @@ The IDAES BFBR model has construction arguments specific to the whole unit and t
 * reaction_package_args - set of arguments to be passed to the bubble region Reaction Blocks when they are created (default = None).
 * has_equilibrium_reactions - sets flag to indicate if terms of equilibrium controlled reactions should be constructed (default = False).
 
-**Arguments that are applicable to the solid emulsion region:**
+**Arguments that are applicable to the solid phase:**
 
-* momentum_balance_type - indicates what type of momentum balance should be constructed (default = MomentumBalanceType.none).
-* has_pressure_change - indicates whether terms for pressure change should be constructed (default = False).
 * property_package - property package to use when constructing bubble region Property Blocks (default = 'use_parent_value'). 
   This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
   If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
@@ -119,8 +118,6 @@ Argument                  Default Value
 ========================= ==========================
 dynamic                   useDefault
 has_holdup                useDefault
-area_definition           DistributedVars.variant
-material_balance_type     componentTotal
 ========================= ==========================
 
 Constraints
@@ -220,8 +217,14 @@ Bubble to emulsion gas mass transfer coefficient:
 
 Bulk gas mass transfer:
 
-.. math:: K_{gbulkc,t,x,j} = 6 K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} y_{ge,t,x,j}
+    if :math:`C_{ge,total,t,x}` > :math:`C_{b,total,t,x}`:
 
+    .. math:: K_{gbulkc,t,x,j} = 6 K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} y_{ge,t,x,j}
+
+    else:
+
+    .. math:: K_{gbulkc,t,x,j} = 6 K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} y_{b,t,x,j}
+    
 **Heat Transfer Constraints**
 
 Bubble to emulsion gas heat transfer coefficient:
@@ -238,7 +241,13 @@ Emulsion region gas-solids convective heat transfer:
 
 Bulk gas heat transfer:
 
-.. math:: H_{gbulk,t,x} =  K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} h_{vap,e,t,x}
+    if :math:`C_{ge,total,t,x}` > :math:`C_{b,total,t,x}`:
+
+    .. math:: H_{gbulk,t,x} =  K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} H_{ge,t,x}
+
+    else:
+
+    .. math:: H_{gbulk,t,x} =  K_{d} \delta_{t,x} A_{bed} {\left(C_{ge,total,t,x} - C_{b,total,t,x} \right)} d_{b,t,x} H_{b,t,x}
 
 **Mass and heat transfer terms in control volumes**
 
@@ -413,11 +422,11 @@ Variable                    Name                                                
 :math:`A_{b,t,x}`           bubble_region.area                          
 :math:`A_{ge,t,x}`          gas_emulsion_region.area                          
 :math:`A_{se,t,x}`          solid_emulsion_region.area                          
-:math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                           pressure drop across gas emulsion region
-:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol       solid mass density         
-:math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp        gas component diffusion in gas emulsion region       
-:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                gas mole density in the bubble region 
-:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap          gas mole density in the emulsion region       
+:math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                            pressure drop across gas emulsion region
+:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol        solid mass density         
+:math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
+:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                 gas mole density in the bubble region 
+:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap           gas mole density in the emulsion region       
 :math:`M_{tr,b,t,x,p,j}`    bubble_region.mass_transfer_term              
 :math:`M_{tr,ge,t,x,p,j}`   gas_emulsion_region.mass_transfer_term             
 :math:`M_{tr,se,t,x,p,j}`   solid_emulsion_region.mass_transfer_term            

@@ -70,7 +70,6 @@ def main():
                     "flow_type": "co_current",
                     "finite_elements": 5,
                     "transformation_method": "dae.collocation",
-                    "has_pressure_change": True,
                     "gas_phase_config":
                     {"property_package": m.fs.gas_properties},
                     "solid_phase_config":

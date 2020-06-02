@@ -162,7 +162,7 @@ discretizing length domain (default=3)"""))
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
+        default=True,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
@@ -222,10 +222,10 @@ see reaction package for documentation.}"""))
 
     # Create individual config blocks for the gas and solid phases
     CONFIG.declare("gas_phase_config",
-                   _PhaseTemplate(doc="gas emulsion region config arguments"
+                   _PhaseTemplate(doc="gas phase config arguments"
                                   ))
     CONFIG.declare("solid_phase_config",
-                   _PhaseTemplate(doc="solid emulsion region config arguments"
+                   _PhaseTemplate(doc="solid phase config arguments"
                                   ))
 
     # =========================================================================
@@ -1399,6 +1399,7 @@ see reaction package for documentation.}"""))
                     return (b.solid_outlet_block[t].
                             get_enthalpy_flow_terms(p) ==
                             b.solid_emulsion._enthalpy_flow[t, 0, p])
+
     # =========================================================================
     # Model initialization routine
 
