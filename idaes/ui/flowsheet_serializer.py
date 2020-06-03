@@ -155,20 +155,27 @@ class FlowsheetSerializer:
             "connector": {"name": "normal", 
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
-            "labels": [{
-                "attrs": {
-                    "rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", 'stroke-width': 1},
+            "labels": [
+                # This label MUST be first or the individual label show/hide will fail
+                {"attrs": {
+                    "rect": {"fill": '#d7dce0', "stroke": 'white', 'stroke-width': 0, "fill-opacity": "1"},
                     "text": {
                         "text": label,
                         "fill": 'black',
                         'text-anchor': 'left',
+                        "display": "block"
                     },
                 },
                 "position": {
                     "distance": 0.66,
                     "offset": -40
-                },
-            }],
+                }},
+                {"attrs": {
+                    "text": {
+                        "text": name
+                    }
+                }}
+            ],
             "z": 2
         }
         out_json["cells"].append(entry)
