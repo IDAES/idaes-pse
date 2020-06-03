@@ -69,18 +69,13 @@ class PumpData(BalanceBlockData):
     CONFIG.has_pressure_change = True
     CONFIG.get("has_pressure_change")._default = True
     CONFIG.get("has_pressure_change")._domain = In([True])
-    CONFIG.declare("has_work_transfer", ConfigValue(
-            default=True,
-            domain=In([True]),
-            description="Pump has work transfer term.",
-        )
-    )
-    CONFIG.declare("has_heat_transfer", ConfigValue(
-            default=False,
-            domain=In([False]),
-            description="Pump does not have heat transfer term.",
-        )
-    )
+    CONFIG.has_work_transfer = True
+    CONFIG.get("has_work_transfer")._default = True
+    CONFIG.get("has_work_transfer")._domain = In([True])
+    CONFIG.has_heat_transfer = False
+    CONFIG.get("has_heat_transfer")._default = False
+    CONFIG.get("has_heat_transfer")._domain = In([False])
+
 
     def build(self):
         """

@@ -161,6 +161,18 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
+    config.declare("has_work_transfer", ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            description="True if model a has work transfer term.",
+        )
+    )
+    config.declare("has_heat_transfer", ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            description="True if model has a heat transfer term.",
+        )
+    )
 
 
 @declare_process_block_class("BalanceBlock", doc="Mass/energy balance block.")
