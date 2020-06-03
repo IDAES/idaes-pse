@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -97,7 +97,7 @@ def test_config():
         HeatExchangerFlowPattern.countercurrent
 
     # Check shell config
-    assert len(m.fs.unit.config.shell) == 9
+    assert len(m.fs.unit.config.shell) == 7
     assert m.fs.unit.config.shell.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.shell.energy_balance_type == \
@@ -109,7 +109,7 @@ def test_config():
     assert m.fs.unit.config.shell.property_package is m.fs.properties
 
     # Check tube config
-    assert len(m.fs.unit.config.tube) == 9
+    assert len(m.fs.unit.config.tube) == 7
     assert m.fs.unit.config.tube.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.tube.energy_balance_type == \

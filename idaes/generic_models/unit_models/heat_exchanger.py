@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -52,10 +52,9 @@ from idaes.core import (
 import idaes.logger as idaeslog
 from idaes.core.util.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.generic_models.unit_models.heater import _make_heater_config_block
-from idaes.generic_models.unit_models.balance import (
-    make_balance_config_block,
-    make_balance_control_volume,
+from idaes.generic_models.unit_models.heater import (
+    _make_heater_config_block,
+    _make_heater_control_volume,
 )
 
 import idaes.core.util.unit_costing as costing
@@ -108,8 +107,6 @@ This config can be given by the hot side name instead of hot_side_config.""",
 This config can be given by the cold side name instead of cold_side_config.""",
         ),
     )
-    make_balance_config_block(config.hot_side_config)
-    make_balance_config_block(config.cold_side_config)
     _make_heater_config_block(config.hot_side_config)
     _make_heater_config_block(config.cold_side_config)
     config.declare(
@@ -288,14 +285,14 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         # Add control volumes                                                  #
         ########################################################################
-        make_balance_control_volume(
+        _make_heater_control_volume(
             self,
             "side_1",
             config.hot_side_config,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
-        make_balance_control_volume(
+        _make_heater_control_volume(
             self,
             "side_2",
             config.cold_side_config,
@@ -321,7 +318,7 @@ class HeatExchangerData(UnitModelBlockData):
         self.add_outlet_port(name="outlet_2", block=self.side_2, doc="Cold side outlet")
 
         # Using Andrew's function for now, I think Pyomo's refrence has trouble
-        # with scalar Pyomo components.
+        # with scalar (pyomo) components.
         add_object_reference(self, config.hot_side_name + "_inlet", self.inlet_1)
         add_object_reference(self, config.cold_side_name + "_inlet", self.inlet_2)
         add_object_reference(self, config.hot_side_name + "_outlet", self.outlet_1)
