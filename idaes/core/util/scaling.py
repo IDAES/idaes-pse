@@ -28,6 +28,7 @@ variables to calculate additional scaling factors.
 import enum
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
+from pyomo.core.base.constraint import _ConstraintData
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -359,7 +360,7 @@ def scale_single_constraint(c):
     Returns:
         None
     """
-    if not isinstance(c, pyo.Constraint):
+    if not isinstance(c, _ConstraintData):
         raise TypeError(
             "{} is not a constraint and cannot be the input to "
             "scale_single_constraint".format(c.name))
@@ -465,6 +466,8 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
         c.parent_block().scaling_factor[c] = s0 * max_grad / maxg
         if c.parent_block().scaling_factor[c] < min_scale:
             c.parent_block().scaling_factor[c] = min_scale
+    else:
+        c.parent_block().scaling_factor[c] = s0
 
 
 def set_scaling_factor(c, v):
