@@ -51,14 +51,10 @@ def create_model_dynamic(
     """ Create a test dynamic heater model and solver.  For dynamic testing
     a valve is added to the heater outlet to set up pressure driven flow.
 
-                  +--------+
-    -->--|><|-->--| Heater |-->--|><|--->---
-         pipe     +--------+     valve
-
     Args:
         time_set (list): The begining and end point of the time domain
         nfe (int): Number of finite elements argument for the DAE transformation
-    Returns
+    Returns:
         (tuple): (ConcreteModel, Solver)
     """
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
