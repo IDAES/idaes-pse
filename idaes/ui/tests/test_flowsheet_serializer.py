@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -91,9 +91,41 @@ def test_create_image_jointjs_json():
   component_id = "M101"
   component_type = "mixer"
   image = icon_mapping(component_type)
+  port_group = {"groups": {
+                    "in":{
+                        "position":{
+                            "name":"left",
+                            "args":{
+                               "x":2,
+                               "y":25,
+                               "dx":1,
+                               "dy":1
+                            }
+                        },
+                        "attrs": {
+                            "rect": {
+                                "stroke": '#000000',
+                                'stroke-width': 0,
+                                "width": 0,
+                                "height": 0
+                            }
+                        },
+                        "markup": '<g><rect/></g>'
+                    }
+                },
+                "items":[
+                   {
+                      "group":"in",
+                      "id":"in"
+                   },
+                   {
+                      "group":"out",
+                      "id":"out"
+                   }
+                ]}
 
   fss = FlowsheetSerializer()
-  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type)
+  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
   assert out_json == {'cells': 
                         [{
                             'type': 'standard.Image', 
@@ -104,7 +136,41 @@ def test_create_image_jointjs_json():
                                 'image': {'xlinkHref': '/images/icons/mixer.svg'}, 
                                 'label': {'text': 'M101'}, 
                                 'root': {'title': 'mixer'}
-                          }
+                            },
+                            'ports': {
+                                "groups": {
+                                "in":{
+                                    "position":{
+                                        "name":"left",
+                                        "args":{
+                                           "x":2,
+                                           "y":25,
+                                           "dx":1,
+                                           "dy":1
+                                        }
+                                    },
+                                    "attrs": {
+                                        "rect": {
+                                            "stroke": '#000000',
+                                            'stroke-width': 0,
+                                            "width": 0,
+                                            "height": 0
+                                        }
+                                    },
+                                    "markup": '<g><rect/></g>'
+                                }
+                              },
+                              "items":[
+                                 {
+                                    "group":"in",
+                                    "id":"in"
+                                 },
+                                 {
+                                    "group":"out",
+                                    "id":"out"
+                                 }
+                              ]
+                            }
                         }],
                        "model": {}
                       }
@@ -113,35 +179,23 @@ def test_create_image_jointjs_json():
 def test_create_link_jointjs_json():
     out_json = {"model": {}}
     out_json["cells"] = []
-    source_anchor = link_position_mapping["heater"]["outlet_anchors"]
-    dest_anchor = link_position_mapping["mixer"]["inlet_anchors"]
+    source_port = "out"
+    dest_port = "in"
     source_id = "M101"
     dest_id = "F101"
     link_id = "s03"
     label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_jointjs_json(out_json, source_anchor, dest_anchor, source_id, dest_id, link_id, label)
+    fss.create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
     assert out_json == {'cells': [{
                             'type': 'standard.Link', 
                             'source': {
-                              'anchor': {
-                                'name': 'right', 
-                                'args': {
-                                  'rotate': 'false', 
-                                  'padding': 0
-                                }
-                              }, 
+                              'port': 'out',
                               'id': 'M101'
                             },
                             'target': {
-                              'anchor': {
-                                'name': 'left', 
-                                'args': {
-                                  'rotate': 'false', 
-                                  'padding': 0
-                                }
-                              }, 
+                              'port': 'in',
                               'id': 'F101'
                             }, 
                             'router': {

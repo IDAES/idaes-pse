@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -376,14 +376,27 @@ class Cubic(EoSBase):
     def fug_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.pressure * b.fug_coeff_phase_comp[p, j]
+            return (b.mole_frac_phase_comp[p, j] *
+                    b.pressure *
+                    b.fug_coeff_phase_comp[p, j])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     def fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.pressure * _fug_coeff_phase_comp_eq(b, p, j, pp)
+            return (b.mole_frac_phase_comp[p, j] *
+                    b.pressure *
+                    exp(_log_fug_coeff_phase_comp_eq(b, p, j, pp)))
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    def log_fug_phase_comp_eq(b, p, j, pp):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return (log(b.mole_frac_phase_comp[p, j]) +
+                    log(b.pressure) +
+                    _log_fug_coeff_phase_comp_eq(b, p, j, pp))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -402,12 +415,12 @@ class Cubic(EoSBase):
         delta = getattr(blk, cname+"_delta")[p, j]
         Z = blk.compress_fact_phase[p]
 
-        return _fug_coeff_method(A, b, bm, B, delta, Z, ctype)
+        return exp(_log_fug_coeff_method(A, b, bm, B, delta, Z, ctype))
 
     def fug_coeff_phase_comp_eq(blk, p, j, pp):
-        return _fug_coeff_phase_comp_eq(blk, p, j, pp)
+        return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
 
-    def fug_phase_comp_Tbub(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Tbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -455,9 +468,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Tdew(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Tdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -505,9 +518,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Pbub(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Pbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -548,9 +561,9 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
-    def fug_phase_comp_Pdew(blk, p, j, pp):
+    def log_fug_coeff_phase_comp_Pdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -591,11 +604,11 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
     def gibbs_mol_phase(b, p):
         return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
-                    for j in b.components_in_phase(p))
+                   for j in b.components_in_phase(p))
 
     def gibbs_mol_phase_comp(b, p, j):
         return (b.enth_mol_phase_comp[p, j] -
@@ -609,7 +622,7 @@ def _invalid_phase_msg(name, phase):
             .format(name, phase))
 
 
-def _fug_coeff_phase_comp_eq(blk, p, j, pp):
+def _log_fug_coeff_phase_comp_eq(blk, p, j, pp):
     pobj = blk.params.get_phase(p)
     if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
         raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
@@ -630,15 +643,15 @@ def _fug_coeff_phase_comp_eq(blk, p, j, pp):
     def Zeq(p):
         return proc(f, Aeq[pp, p], Beq[pp, p])
 
-    return _fug_coeff_method(Aeq[pp, p], b[j], bm[p], Beq[pp, p],
-                             delta_eq[pp, p, j], Zeq(p), pobj._cubic_type)
+    return _log_fug_coeff_method(Aeq[pp, p], b[j], bm[p], Beq[pp, p],
+                                 delta_eq[pp, p, j], Zeq(p), pobj._cubic_type)
 
 
-def _fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
+def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
     u = EoS_param[cubic_type]['u']
     w = EoS_param[cubic_type]['w']
     p = sqrt(u**2 - 4*w)
 
-    return exp((b/bm*(Z-1)*(B*p) - log(Z-B)*(B*p) +
-                A*(b/bm - delta)*log((2*Z + B*(u + p))/(2*Z + B*(u - p)))) /
-               (B*p))
+    return ((b/bm*(Z-1)*(B*p) - log(Z-B)*(B*p) +
+             A*(b/bm - delta)*log((2*Z + B*(u + p))/(2*Z + B*(u - p)))) /
+            (B*p))

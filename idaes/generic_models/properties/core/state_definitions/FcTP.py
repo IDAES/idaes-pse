@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -254,22 +254,119 @@ def define_state(b):
 def state_initialization(b):
     if len(b.params.phase_list) == 1:
         for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                value(b.flow_mol)
+            b.flow_mol_phase[p].value = value(b.flow_mol)
 
             for j in b.components_in_phase(p):
                 b.mole_frac_phase_comp[p, j].value = \
-                    value(b.mole_frac_comp[j])
+                    b.mole_frac_comp[j].value
 
     else:
-        # TODO : Try to find some better guesses than this
         for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                value(b.flow_mol) / len(b.params.phase_list)
+            # Check phase type
+            pobj = b.params.get_phase(p)
 
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    value(b.mole_frac_comp[j])
+            if pobj.is_liquid_phase():
+                # Look for a VLE pair with this phase - should only be 1
+                tbub = None
+                tdew = None
+                for pp in b.params._pe_pairs:
+                    if ((pp[0] == p and
+                         b.params.get_phase(pp[1]).is_vapor_phase()) or
+                        (pp[1] == p and
+                         b.params.get_phase(pp[0]).is_vapor_phase())):
+                        tbub = b.temperature_bubble[pp].value
+                        tdew = b.temperature_dew[pp].value
+                        break
+
+                if tbub is None:
+                    # No VLE pair found
+                    b.flow_mol_phase[p].value = value(
+                        b.flow_mol / len(b.params.phase_list))
+
+                    for j in b.components_in_phase(p):
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+                else:
+                    if b.temperature.value > tdew:
+                        # Pure vapour
+                        b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b._mole_frac_tdew[pp, j].value
+                    elif b.temperature.value < tbub:
+                        # Pure liquid
+                        b.flow_mol_phase[p].value = value(b.flow_mol)
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b.mole_frac_comp[j].value
+                    else:
+                        # Two-phase
+                        # TODO : Try to find some better guesses than this
+                        b.flow_mol_phase[p].value = value(
+                            b.flow_mol / len(b.params.phase_list))
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b.mole_frac_comp[j].value
+
+            elif pobj.is_vapor_phase():
+                # Look for a VLE pair with this phase - will go with 1st found
+                tbub = None
+                tdew = None
+                for pp in b.params._pe_pairs:
+                    if ((pp[0] == p and
+                         b.params.get_phase(pp[1]).is_liquid_phase()) or
+                        (pp[1] == p and
+                         b.params.get_phase(pp[0]).is_liquid_phase())):
+                        tbub = b.temperature_bubble[pp].value
+                        tdew = b.temperature_dew[pp].value
+                        break
+
+                if tbub is None:
+                    # No VLE pair found
+                    b.flow_mol_phase[p].value = value(
+                        b.flow_mol / len(b.params.phase_list))
+
+                    for j in b.components_in_phase(p):
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+                else:
+                    if b.temperature.value > tdew:
+                        # Pure vapour
+                        b.flow_mol_phase[p].value = value(b.flow_mol)
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b.mole_frac_comp[j].value
+                    elif b.temperature.value < tbub:
+                        # Pure liquid
+                        b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b._mole_frac_tbub[pp, j].value
+                    else:
+                        # Two-phase
+                        # TODO : Try to find some better guesses than this
+                        b.flow_mol_phase[p].value = value(
+                            b.flow_mol / len(b.params.phase_list))
+
+                        for j in b.params.component_list:
+                            b.mole_frac_phase_comp[p, j].value = \
+                                b.mole_frac_comp[j].value
+
+            else:
+                # Some other type of phase
+                # TODO : Try to find some better guesses than this
+                for p in b.params.phase_list:
+                    b.flow_mol_phase[p].value = value(
+                        b.flow_mol / len(b.params.phase_list))
+
+                    for j in b.components_in_phase(p):
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
 
 
 do_not_initialize = []

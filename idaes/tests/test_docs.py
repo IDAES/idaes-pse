@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -109,11 +109,10 @@ def _have_sphinx():
     return have_sphinx
 
 
-
 def test_doctests(docs_path):
     if _have_sphinx():
         build_path = os.path.join(docs_path, "build")
         command = ["sphinx-build", "-M", "doctest", docs_path, build_path]
         proc = Popen(command)
-        proc.wait(600)  # 10 (!) minute ceiling
+        proc.wait(600)
         assert proc.returncode == 0

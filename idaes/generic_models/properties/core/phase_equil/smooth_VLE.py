@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -54,7 +54,7 @@ def phase_equil(b, phase_pair):
                                           mutable=True,
                                           doc='Smoothing parameter for Teq'))
     eps_1 = getattr(b, "eps_1"+suffix)
-    eps_2 = getattr(b, "eps_1"+suffix)
+    eps_2 = getattr(b, "eps_2"+suffix)
 
     # PSE paper Eqn 13
     def rule_t1(b):
