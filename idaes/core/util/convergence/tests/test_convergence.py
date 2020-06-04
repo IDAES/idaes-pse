@@ -142,14 +142,23 @@ def test_convergence_evaluation_fixedvar_mutableparam():
     # compare results
     assert global_results[0]['name'] == 'Sample-1'
     assert global_results[0]['solved']
+    # This should take 14 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
     assert global_results[0]['iters'] == pytest.approx(14, abs=2)
 
     assert global_results[1]['name'] == 'Sample-2'
     assert global_results[1]['solved']
+    # This should take 15 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
     assert global_results[1]['iters'] == pytest.approx(15, abs=2)
 
     assert global_results[2]['name'] == 'Sample-3'
     assert global_results[2]['solved']
+    # This should take 12 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
     assert global_results[2]['iters'] == pytest.approx(12, abs=2)
 
     if os.path.exists(fname):
