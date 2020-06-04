@@ -186,7 +186,7 @@ class LogBubbleDew():
                 l_phase, l_eos, v_phase, v_eos = _identify_phases(b, p1, p2)
 
                 # If one or both of v_phase and l_phase is None, this is not
-                # a vapor-liquid pair, so sjip constraint
+                # a vapor-liquid pair, so skip constraint
                 if v_eos is None and l_eos is None:
                     return Constraint.Skip
 
@@ -221,7 +221,7 @@ class LogBubbleDew():
                 l_phase, l_eos, v_phase, v_eos = _identify_phases(b, p1, p2)
 
                 # If one or both of v_phase and l_phase is None, this is not
-                # a vapor-liquid pair, so sjip constraint
+                # a vapor-liquid pair, so skip constraint
                 if v_eos is None and l_eos is None:
                     return Constraint.Skip
 
@@ -261,7 +261,7 @@ class LogBubbleDew():
                 l_phase, l_eos, v_phase, v_eos = _identify_phases(b, p1, p2)
 
                 # If one or both of v_phase and l_phase is None, this is not
-                # a vapor-liquid pair, so sjip constraint
+                # a vapor-liquid pair, so skip constraint
                 if v_eos is None and l_eos is None:
                     return Constraint.Skip
 
@@ -301,7 +301,7 @@ class LogBubbleDew():
                 l_phase, l_eos, v_phase, v_eos = _identify_phases(b, p1, p2)
 
                 # If one or both of v_phase and l_phase is None, this is not
-                # a vapor-liquid pair, so sjip constraint
+                # a vapor-liquid pair, so skip constraint
                 if v_eos is None and l_eos is None:
                     return Constraint.Skip
 

@@ -377,6 +377,23 @@ class GenericParameterData(PhysicalParameterBlock):
                             "argument to ensure values are provided."
                             .format(self.name, a, c))
 
+            # Validate and construct Henry parameters (indexed by phase)
+            if cobj.config.henry_component is not None:
+                for p, meth in cobj.config.henry_component.items():
+                    # First validate that p is a phase
+                    if p not in self.phase_list:
+                        raise ConfigurationError(
+                            "{} component {} was marked as a Henry's Law "
+                            "component in phase {}, but this is not a valid "
+                            "phase name.".format(self.name, c, p))
+                    elif not self.get_phase(p).is_liquid_phase():
+                        raise ConfigurationError(
+                            "{} component {} was marked as a Henry's Law "
+                            "component in phase {}, but this is not a Liquid "
+                            "phase.".format(self.name, c, p))
+                    else:
+                        meth.build_parameters(cobj, p)
+
         for p in self.phase_list:
             pobj = self.get_phase(p)
             pobj.config.equation_of_state.build_parameters(pobj)
@@ -618,7 +635,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tbub0))
 
-            # DEw temperature initialization
+            # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
                 for pp in blk[k].params._pe_pairs:
                     valid_comps = _valid_VL_component_list(blk[k], pp)
@@ -888,6 +905,9 @@ class GenericStateBlockData(StateBlockData):
                 pe_form_config[pp].phase_equil(self, pp)
 
             def rule_equilibrium(b, phase1, phase2, j):
+                if ((phase1, j) not in b.params._phase_component_set or
+                        (phase2, j) not in b.params._phase_component_set):
+                    return Constraint.Skip
                 config = b.params.get_component(j).config
                 try:
                     e_mthd = config.phase_equilibrium_form[(phase1, phase2)]
@@ -1260,14 +1280,9 @@ def _valid_VL_component_list(blk, pp):
         (pparams.get_phase(pp[0]).is_vapor_phase() and
          pparams.get_phase(pp[1]).is_liquid_phase())):
 
-        # Next, only consider components valid in both these phases
         for j in blk.params.component_list:
-            p_comp_0 = pparams.get_phase(pp[0]).config.component_list
-            p_comp_1 = pparams.get_phase(pp[1]).config.component_list
-
-            if p_comp_0 is None and p_comp_1 is None:
-                valid_comps.append(j)
-            elif j in p_comp_0 and j in p_comp_1:
+            if ((pp[0], j) in pparams._phase_component_set and
+                    (pp[1], j) in pparams._phase_component_set):
                 valid_comps.append(j)
 
     return valid_comps

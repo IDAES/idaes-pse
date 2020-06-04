@@ -40,6 +40,7 @@ class TestComponent():
         assert m.comp.config.valid_phase_types is None
         assert m.comp.config.elemental_composition is None
         assert not m.comp.config._component_list_exists
+        assert m.config.henry_components is None
 
     def test_populate_component_list(self, m):
         assert isinstance(m.component_list, Set)
