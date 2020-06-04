@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel, Constraint, Expression,
                            Set, units, Var)
+from pyomo.util.units_checking import assert_units_consistent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.constraint import _GeneralConstraintData
@@ -922,7 +923,7 @@ def test_add_material_balances_default():
             assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
                 _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -955,7 +956,7 @@ def test_add_phase_component_balances_default():
             assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
                 _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_default_FFD():
@@ -986,7 +987,7 @@ def test_add_phase_component_balances_default_FFD():
             assert type(m.fs.cv.material_balances[0, 0, p, j]) is \
                 _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_distrubuted_area():
@@ -1012,7 +1013,7 @@ def test_add_phase_component_balances_distrubuted_area():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_dynamic():
@@ -1041,7 +1042,7 @@ def test_add_phase_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_rate_rxns():
@@ -1070,7 +1071,7 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
@@ -1140,7 +1141,7 @@ def test_add_phase_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_eq_rxns_not_active():
@@ -1228,7 +1229,7 @@ def test_add_phase_component_balances_phase_eq():
     assert len(mb) == 4
     assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_phase_eq_not_active():
@@ -1297,7 +1298,7 @@ def test_add_phase_component_balances_mass_transfer():
     assert len(mb) == 4
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_molar_term():
@@ -1329,7 +1330,7 @@ def test_add_phase_component_balances_custom_molar_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_molar_term_no_mw():
@@ -1397,7 +1398,7 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_molar_term_undefined_basis():
@@ -1459,7 +1460,7 @@ def test_add_phase_component_balances_custom_mass_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_mass_term_no_mw():
@@ -1527,7 +1528,7 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_phase_component_balances_custom_mass_term_undefined_basis():
@@ -1589,7 +1590,7 @@ def test_add_total_component_balances_default():
         assert type(m.fs.cv.material_balances[0, 1, j]) is \
             _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_default_FFD():
@@ -1620,7 +1621,7 @@ def test_add_total_component_balances_default_FFD():
         assert type(m.fs.cv.material_balances[0, 0, j]) is \
             _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_distrubuted_area():
@@ -1646,7 +1647,7 @@ def test_add_total_component_balances_distrubuted_area():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_dynamic():
@@ -1675,7 +1676,7 @@ def test_add_total_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_rate_rxns():
@@ -1704,7 +1705,7 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
@@ -1774,7 +1775,7 @@ def test_add_total_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_eq_rxns_not_active():
@@ -1883,7 +1884,7 @@ def test_add_total_component_balances_mass_transfer():
     assert len(mb) == 2
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_molar_term():
@@ -1914,7 +1915,7 @@ def test_add_total_component_balances_custom_molar_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_molar_term_no_mw():
@@ -1980,7 +1981,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_molar_term_undefined_basis():
@@ -2040,7 +2041,7 @@ def test_add_total_component_balances_custom_mass_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_mass_term_no_mw():
@@ -2106,7 +2107,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_component_balances_custom_mass_term_undefined_basis():
@@ -2167,7 +2168,7 @@ def test_add_total_element_balances_default():
         assert type(m.fs.cv.element_balances[0, 1, j]) is \
             _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_element_balances_default_FFD():
@@ -2198,7 +2199,7 @@ def test_add_total_element_balances_default_FFD():
         assert type(m.fs.cv.element_balances[0, 0, j]) is \
             _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_element_balances_distrubuted_area():
@@ -2224,7 +2225,7 @@ def test_add_total_element_balances_distrubuted_area():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_element_balances_properties_not_supported():
@@ -2275,7 +2276,7 @@ def test_add_total_element_balances_dynamic():
     assert isinstance(m.fs.cv.element_holdup, Var)
     assert isinstance(m.fs.cv.element_accumulation, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_element_balances_rate_rxns():
@@ -2364,7 +2365,7 @@ def test_add_total_element_balances_mass_transfer():
     assert len(mb) == 3
     assert isinstance(m.fs.cv.elemental_mass_transfer_term, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_element_balances_custom_term():
@@ -2396,7 +2397,7 @@ def test_add_total_element_balances_custom_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -2478,7 +2479,7 @@ def test_add_energy_balances_default():
     assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
         _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -2513,7 +2514,7 @@ def test_add_total_enthalpy_balances_default():
     assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
         _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_default_FFD():
@@ -2546,7 +2547,7 @@ def test_add_total_enthalpy_balances_default_FFD():
     assert type(m.fs.cv.enthalpy_balances[0, 0]) is \
         _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_distributed_area():
@@ -2575,7 +2576,7 @@ def test_add_total_enthalpy_balances_distributed_area():
     assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_dynamic():
@@ -2604,7 +2605,7 @@ def test_add_total_enthalpy_balances_dynamic():
     assert isinstance(m.fs.cv.energy_holdup, Var)
     assert isinstance(m.fs.cv.energy_accumulation, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_heat_transfer():
@@ -2630,7 +2631,7 @@ def test_add_total_enthalpy_balances_heat_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.heat, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_work_transfer():
@@ -2656,7 +2657,7 @@ def test_add_total_enthalpy_balances_work_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.work, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_enthalpy_transfer():
@@ -2682,7 +2683,7 @@ def test_add_total_enthalpy_balances_enthalpy_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.enthalpy_transfer, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_custom_term():
@@ -2712,7 +2713,7 @@ def test_add_total_enthalpy_balances_custom_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_dh_rxn_no_extents():
@@ -2757,7 +2758,7 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
@@ -2781,7 +2782,7 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
@@ -2884,7 +2885,7 @@ def test_add_total_pressure_balances_default():
     assert type(m.fs.cv.pressure_balance[0, 1]) is \
         _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_pressure_balances_default_FFD():
@@ -2917,7 +2918,7 @@ def test_add_total_pressure_balances_default_FFD():
     assert type(m.fs.cv.pressure_balance[0, 0]) is \
         _GeneralConstraintData
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_pressure_balances_deltaP():
@@ -2943,7 +2944,7 @@ def test_add_total_pressure_balances_deltaP():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.deltaP, Var)
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 def test_add_total_pressure_balances_custom_term():
@@ -2973,7 +2974,7 @@ def test_add_total_pressure_balances_custom_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
 
-    units.assert_units_consistent(m)
+    assert_units_consistent(m)
 
 
 # -----------------------------------------------------------------------------
