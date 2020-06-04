@@ -18,6 +18,10 @@ var paper = new joint.dia.Paper({
   interactive: true
 });
 
+// /images/icons rotate 90 degrees on right click. Replaces browser context menu
+paper.on("element:contextmenu", function(cellView, evt) {
+  cellView.model.rotate(90)
+});
 
 // Adds link tools (adding vertices, moving segments) to links when your mouse over
 paper.on("link:mouseover", function(cellView, evt) {
@@ -41,31 +45,6 @@ paper.on("link:mouseover", function(cellView, evt) {
 // Removes the link tools when you leave the link
 paper.on("link:mouseout", function(cellView, evt) {
   cellView.hideTools()
-});
-
-// /images/icons rotate 90 degrees on right click. Replaces browser context menu
-paper.on("element:contextmenu", function(cellView, evt) {
-  cellView.model.rotate(90)
-});
-
-// Link labels will appear and disapper on right click. Replaces browser context menu
-paper.on("link:contextmenu", function(linkView, evt) {
-  if (linkView.model.attr('text/display') == 'none') {
-    linkView.model.attr({
-      'text': {
-        display: "block",
-      },
-      'rect': { fill: 'white', stroke: 'black', 'stroke-width': 1, "fill-opacity": "1" }
-    });
-  }
-  else {
-    linkView.model.attr({
-      'text': {
-        display: "none",
-      },
-      'rect': { fill: 'white', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
-    });
-  }
 });
 
 // Constrain the elements to the paper on the top and left side as the elements can be lost
@@ -127,34 +106,59 @@ help_button.onclick = () => {
   window.alert("Not implemented yet")
 }
 
+// Link labels will appear and disapper on right click. Replaces browser context menu
+paper.on("link:contextmenu", function(linkView, evt) {
+  if (linkView.model.attr('text/display') == 'none') {
+    linkView.model.attr({
+      'text': {
+        display: "block",
+      },
+      'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
+    });
+  }
+  else {
+    linkView.model.attr({
+      'text': {
+        display: "none",
+      },
+      'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+    });
+  }
+});
+
+var show_hide_all = "shown"
+
 // Set up the toggle arc label button
 var show_hide_button = $("#show_hide_all_button");
-// show_hide_button.innerText = "Show/Hide Arc Labels";
 show_hide_button.on('click', function() {
-  paper.model.getLinks().forEach(function (link) {
-    if (link.attr('text/display') == 'none') {
-      link.attr({
-        'text': {
-          display: "block",
-        },
-        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
-      });
+    if (show_hide_all == 'hidden') {
+        paper.model.getLinks().forEach(function (link) {
+              link.attr({
+                'text': {
+                  display: "block",
+                },
+                'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
+              });
+        });
+        show_hide_all = 'shown'
     }
     else {
-      link.attr({
-        'text': {
-          display: "none",
-        },
-        'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
-      });
+        paper.model.getLinks().forEach(function (link) {
+            link.attr({
+            'text': {
+              display: "none",
+            },
+            'rect': { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+            });
+        });
+        show_hide_all = 'hidden'
     }
-  });
 });
 
 // When the save button is clicked send a post request to the server with the layout
 // We still need to differentiate between the saving the layout in the server and the
 // save button save
-// I assume that we'll need to modify this to send a signal or something to the server to
+// I (Makayla) assume that we'll need to modify this to send a signal or something to the server to
 // save the json to a file.
 $(document).ready( function() {
     $('#save_button').click(function() {

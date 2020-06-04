@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -38,6 +38,7 @@ class TestComponent():
 
     def test_config(self, m):
         assert m.comp.config.valid_phase_types is None
+        assert m.comp.config.elemental_composition is None
         assert not m.comp.config._component_list_exists
 
     def test_populate_component_list(self, m):
