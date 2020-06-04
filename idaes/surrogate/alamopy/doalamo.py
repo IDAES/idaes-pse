@@ -18,10 +18,8 @@ import collections
 import numpy as np
 import os
 
-#
 from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import almerror
-from idaes.surrogate.alamopy.writethis import writethis
 from idaes.surrogate.alamopy.multos import deletefile, has_alamo
 
 
@@ -85,10 +83,11 @@ def alamo(xdata, zdata, **kwargs):
           -  'R2val'    : R2 on testing set if provided
 
     """
+    alamopy.initialize()
     data, debug = alamopy.data, alamopy.debug
 
     # patched together validation data check
-    if "xval" in kwargs.keys():
+    if kwargs.get("xval", None) is not None and kwargs.get("zval",None) is not None:
         vargs = (kwargs["xval"], kwargs["zval"])
     else:
         vargs = ()
@@ -105,10 +104,9 @@ def alamo(xdata, zdata, **kwargs):
     # Cross Validation
     if debug["loo"]:
         q2 = []
-        if debug["outkeys"] and debug["expandoutput"]:
+        if debug["outkeys"] or debug["expandoutput"]:
             q2 = {}
 
-        # size = len(xdata) - 1
         data["opts"]["ndata"] = data["opts"]["ndata"] - 1
         kwargValidation = debug["validation"]
         kwargSaveTrace = debug["savetrace"]
@@ -137,7 +135,7 @@ def alamo(xdata, zdata, **kwargs):
             data["results"] = {}
             readTraceFile([xdata[i][:], zdata[i][:]], data, debug)
 
-            if debug["outkeys"] and debug["expandoutput"]:
+            if debug["outkeys"] or debug["expandoutput"]:
                 for k in data["results"]["R2"].keys():
                     if k not in q2.keys():
                         q2[k] = [float(data["results"]["R2val"][k])]
@@ -149,7 +147,7 @@ def alamo(xdata, zdata, **kwargs):
                 q2.append(float(data["results"]["R2val"]))
             cleanFiles(data, debug)
 
-        if debug["outkeys"] and debug["expandoutput"]:
+        if debug["outkeys"] or debug["expandoutput"]:
             data["results"]["Q2"] = {}
             for k in q2.keys():
                 Q2 = np.mean(q2[k])
@@ -168,7 +166,7 @@ def alamo(xdata, zdata, **kwargs):
         data["opts"]["ndata"] = data["opts"]["ndata"] + 1
     elif debug["lmo"] > 0:
         q2 = []
-        if debug["outkeys"] and debug["expandoutput"]:
+        if debug["outkeys"] or debug["expandoutput"]:
             q2 = {}
 
         kwargNdata = data["opts"]["ndata"]
@@ -180,14 +178,13 @@ def alamo(xdata, zdata, **kwargs):
         debug["validation"] = True
         debug["savetrace"] = False
         numOfFolds = debug["lmo"]
-        print(xdata)
+
         if numOfFolds > len(xdata):
             raise Exception(
                 "Number of Cross validation \
-                            folds exceeds the number of data points"
+                            folds exceeds the number of data points %i" % debug["lmo"]
             )
 
-        # size = len(xdata)
         sizeOfFolds = int(len(xdata) / numOfFolds)
         r = len(xdata) % numOfFolds
         remS = 0
@@ -236,7 +233,7 @@ def alamo(xdata, zdata, **kwargs):
             expandOutput(xdata, zdata, [cvvalxdata, cvvalzdata], data, debug)
             readTraceFile([cvvalxdata, cvvalzdata], data, debug)
 
-            if debug["outkeys"] and debug["expandoutput"]:
+            if debug["outkeys"] or debug["expandoutput"]:
                 for k in data["results"]["R2"].keys():
                     if k not in q2.keys():
                         q2[k] = [float(data["results"]["R2val"][k])]
@@ -248,7 +245,7 @@ def alamo(xdata, zdata, **kwargs):
                 q2.append(float(data["results"]["R2val"]))
             cleanFiles(data, debug)
 
-        if debug["outkeys"] and debug["expandoutput"]:
+        if debug["outkeys"] or debug["expandoutput"]:
             data["results"]["Q2"] = {}
             for k in q2.keys():
                 Q2 = np.mean(q2[k])
@@ -277,7 +274,6 @@ def alamo(xdata, zdata, **kwargs):
         if debug["showalm"]:
             os.system(debug["almloc"] + " " + str(data["stropts"]["almname"]))
         else:
-            writethis("Calling ALAMO now:\n")
             os.system(
                 debug["almloc"]
                 + " "
@@ -286,7 +282,7 @@ def alamo(xdata, zdata, **kwargs):
             )
 
     # Check to see if additional data was sampled and add it
-    if "sampler" in kwargs.keys():
+    if kwargs.get("simulator", None) is not None:
         xdata, zdata = checkForSampledData(data, debug)
 
     # calculate additional statistics
@@ -296,7 +292,7 @@ def alamo(xdata, zdata, **kwargs):
     readTraceFile(vargs, data, debug)
 
     # write python file of regressed model
-    alamopy.almpywriter(data)
+    alamopy.almpywriter(data, debug)
     if debug["cvfun"]:
         alamopy.almcvwriter(data)
 
@@ -305,7 +301,7 @@ def alamo(xdata, zdata, **kwargs):
 
     if debug["loo"] or debug["lmo"] > 0:
         Q2, R2, diff = 0, 0, 0
-        if debug["outkeys"]:
+        if debug["outkeys"] or debug["expandoutputs"]:
             for k in data["results"]["R2"].keys():
                 R2 = data["results"]["R2"][k]
                 if k in data["results"]["Q2"].keys():
@@ -421,7 +417,7 @@ def checkinput(data, debug, xdata, zdata, vargs, kwargs):
         ]:
             raise almerror.AlamoInputError(
                 "The following argument given to"
-                "doalamo() is not understood: {}".format(arg)
+                "alamo() is not understood: {}".format(arg)
             )
 
     # read keys for debug
@@ -429,7 +425,7 @@ def checkinput(data, debug, xdata, zdata, vargs, kwargs):
         if key in kk:
             debug[key] = kwargs[key]
 
-    if "almname" in kk:
+    if kwargs.get("almname", None) is not None:
         data["stropts"]["almname"] += ".alm"
 
 
@@ -490,12 +486,14 @@ def getValidationData(vargs, data, debug):
         if len(np.shape(zvaldata)) == 1:
             zvaldata = np.reshape(zvaldata, (data["opts"]["nvaldata"], 1))
         if temp[1] != data["opts"]["ninputs"]:
-            writethis("Number of input variables inconsistent between x and xval")
-            almerror("p2")
+            raise almerror.AlamoInputError(
+                "Number of input variables inconsistent between x and xval"
+            )
         temp = np.shape(zvaldata)
         if temp[0] != data["opts"]["nvaldata"] or temp[1] != data["opts"]["noutputs"]:
-            writethis("Problem with zval")
-            almerror("p2")
+            raise almerror.AlamoInputError(
+                "Problem with zval"
+            )
         return xvaldata, zvaldata
 
 
@@ -512,11 +510,12 @@ def getlabels(data, debug, kwargs):
         debug: Additional options may be specified and will be applied
                 to the .alm
         vargs: validation data valxdata, valzdata
+        kwargs: keyword arguments
     """
 
     # This function generates labels if they are not provided
     # Check to see if labels have been specified before we generate them
-    if "xlabels" in kwargs.keys():
+    if kwargs.get("xlabels", None) is not None:
         data["labs"]["savexlabels"] = kwargs["xlabels"]
     else:
         # Make savexlabels
@@ -525,7 +524,7 @@ def getlabels(data, debug, kwargs):
             temp.append("x" + str(i + 1))
         data["labs"]["savexlabels"] = temp
 
-    if "zlabels" in kwargs.keys():
+    if kwargs.get("zlabels", None) is not None:
         data["labs"]["savezlabels"] = kwargs["zlabels"]
     else:
         # Make savezlabels
@@ -695,7 +694,7 @@ def writeCustomALAMOOptions(kwargs):
         group_list, basis_constraint_list
     name = "almopt.txt"
 
-    if "almopt" in kwargs.keys():
+    if kwargs.get('almopt', None)  is not None:
         name = kwargs["almopt"]
 
     with open(name, "w") as r:
@@ -752,24 +751,22 @@ def manageArguments(xdata, zdata, data, debug, kwargs):
         debug: Additional options may be specified and will be applied
                 to the .alm
     """
+
     parseKwargs(data, debug, kwargs)
 
     # Check to see if a simwrapper should be built
-    if debug["simwrap"] or "simulator" in kwargs.keys():
+    if debug.get("simwrap", None) or kwargs.get("simulator", None) is not None:
         buildSimWrapper(data, debug)
 
     # Specific check to see if the labels of the response variables
     # should be used in the output dictionary
     # This is important for systematic testing vs. single model input
-    if debug["outkeys"]:
-        # outkeys are specified to be used
-        if data["opts"]["noutputs"] > 1:
-            # 'Must use outkeys for multiple outputs'
-            writethis("outkeys set to TRUE for multiple outputs")
-            debug["outkeys"] = True
+    if data["opts"]["noutputs"] > 1:
+        # 'Must use outkeys for multiple outputs'
+        debug["outkeys"] = True
 
     # Construct xmin and xmax vector based on training data if not provided
-    if "xmin" not in kwargs.keys():
+    if kwargs.get('xmin', None) is None:
         constructXBounds(xdata, zdata, data, debug)
 
 
@@ -785,22 +782,23 @@ def parseKwargs(data, debug, kwargs):
     """
 
     for arg in kwargs.keys():
-        if arg in data["pargs"]["opts"]:
-            data["opts"][arg] = kwargs[arg]
-        elif arg in data["pargs"]["lstopts"]:
-            data["lstopts"][arg] = list()
-            for term in list([kwargs[arg]]):
-                data["lstopts"][arg].append(term)
-        elif arg in data["pargs"]["stropts"]:
-            data["stropts"][arg] = kwargs[arg]
-        elif arg in data["pargs"]["set4"]:
-            data["set4"][arg] = kwargs[arg]
-        elif arg in debug["pargs"]:
-            debug[arg] = kwargs[arg]
-        else:
-            if arg not in (["xlabels", "zlabels", "xval", "zval"]):
-                sys.stdout.write("Problem with option : " + arg)
-                almerror("p3")
+        if kwargs[arg] is not None:
+            if arg in data["pargs"]["opts"]:
+                data["opts"][arg] = kwargs[arg]
+            elif arg in data["pargs"]["lstopts"]:
+                data["lstopts"][arg] = list()
+                for term in list([kwargs[arg]]):
+                    data["lstopts"][arg].append(term)
+            elif arg in data["pargs"]["stropts"]:
+                data["stropts"][arg] = kwargs[arg]
+            elif arg in data["pargs"]["set4"]:
+                data["set4"][arg] = kwargs[arg]
+            elif arg in debug["pargs"]:
+                debug[arg] = kwargs[arg]
+            else:
+                if arg not in (["xlabels", "zlabels", "xval", "zval"]):
+                    sys.stdout.write("Problem with option : " + arg)
+                    almerror("p3")
 
 
 def buildSimWrapper(data, debug):
@@ -839,10 +837,6 @@ def constructXBounds(xdata, zdata, data, debug):
                 to the .alm
     """
 
-    writethis(
-        "min and max values of inputs are not provided, \
-              they will be calculated from the training data\n"
-    )
     xmin = ""
     xmax = ""
     if data["opts"]["ninputs"] > 1:
@@ -864,7 +858,7 @@ def constructXBounds(xdata, zdata, data, debug):
                 tn = xdata[j]
             if float(xdata[j]) > float(tx):
                 tx = xdata[j]
-        xmin = xmin + str(tn) + " "
+        xmin = "%s %f "%(xmin, tn)
         xmax = xmax + str(tx) + " "
     data["set4"]["xmax"] = xmax
     data["set4"]["xmin"] = xmin
@@ -933,12 +927,6 @@ def expandOutput(xdata, zdata, vargs, data, debug):
         data["results"]["zdata"] = zdata
         data["results"]["xlabels"] = data["labs"]["savexlabels"]
         data["results"]["zlabels"] = data["labs"]["savezlabels"]
-    # try:
-    #     # import sympy
-    #     from sympy.parsing.sympy_parser import parse_expr
-    #     from sympy import symbols, lambdify
-    # except Exception:
-    #     writethis('Cannot import sympy')
 
     if debug["expandoutput"]:
         data["results"]["model"] = {}
@@ -990,7 +978,6 @@ def readTraceFile(vargs, data, debug):
     """
 
     trace_file = data["stropts"]["tracefname"]
-    # currentDirectory = os.getcwd()
     trace_str = trace_file  # currentDirectory + "/" + trace_file
     try:
         lf = open(trace_str).read()
@@ -1001,30 +988,15 @@ def readTraceFile(vargs, data, debug):
         else:
             error_message = _diagnose_alamo_failure(trace_str, err)
             raise almerror.AlamoError(error_message)
-            # b_alamo = has_alamo()
-            # lf_logscratch = open("logscratch").read()
-            # if not b_alamo:
-            #     raise almerror.AlamoError(
-            #         'Alamo cannot be found. Please check Alamo is installed.'
-            #     )
-            # elif "termination code" in lf_logscratch:
-            #     raise almerror.AlamoError(
-            #         '{}'.format(lf_logscratch)
-            #     )
-            # else:
-            #     raise almerror.AlamoError(
-            #         'Cannot read from trace file "{}": {}'.format(trace_str, err)
-            #     )
 
     try:
-        # import sympy
         from sympy.parsing.sympy_parser import parse_expr
         from sympy import symbols, lambdify
     except Exception:
         writethis("Cannot import sympy")
 
     lf2 = lf.split("\n")
-    lf2_ind = 0  # ENGLE Allows for multiple writings to trace.trc file 5/30/19
+    lf2_ind = 0  # Allows for multiple writings to trace.trc file
 
     dict_out_str = (
         "#filename, NINPUTS, NOUTPUTS, INITIALPOINTS, OUTPUT, SET, "
@@ -1115,14 +1087,15 @@ def readTraceFile(vargs, data, debug):
         for i in range(data["opts"]["noutputs"]):
             label = data["labs"]["zlinks"][i][0]
             model = model.replace(str(label), str(data["labs"]["zlinks"][i][1]))
+
         # determine which output label to write
         # if debug['outkeys'] == True use olab as a key if not dont
-
-        if debug["outkeys"]:
+        if debug["expandoutput"] or debug["outkeys"]:
             olab = model.split("=")[0]
             olab = olab.replace(" ", "")
-            # print data['results'].keys
+
             data["results"]["model"][olab] = model
+
             # Record tokenized model for each output
             data["results"]["f(model)"][olab] = lambdify(
                 [symbols(data["labs"]["savexlabels"])],
@@ -1205,7 +1178,7 @@ def cleanFiles(data, debug, pywrite=False, **kwargs):
         surface_constraint_list = []
         extrapxmax = None
         extrapxmin = None
-        if "almopt" in kwargs.keys():
+        if kwargs.get('almopt', None) is not None:
             deletefile(kwargs["almopt"])
 
     if debug["simwrap"]:
