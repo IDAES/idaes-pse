@@ -198,7 +198,7 @@ class BalanceBlockData(UnitModelBlockData):
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
-        # Add a convienient references to control volume quantities deltaP.
+        # Add convienient references to control volume quantities deltaP.
         if (self.config.has_pressure_change is True and
             self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.control_volume.deltaP)
