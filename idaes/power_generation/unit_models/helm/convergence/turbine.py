@@ -1,6 +1,6 @@
 import pyomo.environ as pyo
 import idaes.core as idaes_core
-from idaes.power_generation.unit_models.helm import IsentropicTurbine
+from idaes.power_generation.unit_models.helm import HelmIsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.generic_models.properties import iapws95
 
@@ -8,7 +8,7 @@ def create_isentropic_turbine(f=1000, T_in=500, p_in=1e6, ratioP=0.7):
     m = pyo.ConcreteModel()
     m.fs = idaes_core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = IsentropicTurbine(default={"property_package": m.fs.properties})
+    m.fs.unit = HelmIsentropicTurbine(default={"property_package": m.fs.properties})
     hin = iapws95.htpx(T_in, p_in) # J/mol
     m.fs.unit.inlet.flow_mol[0].fix(f)
     m.fs.unit.inlet.enth_mol[0].fix(hin)
@@ -18,7 +18,7 @@ def create_isentropic_turbine(f=1000, T_in=500, p_in=1e6, ratioP=0.7):
     m.fs.unit.initialize()
     return m
 
-class IsentropicTurbineConvergenceEvaluation(cb.ConvergenceEvaluation):
+class HelmIsentropicTurbineConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """
         Returns the convergence evaluation specification for the

@@ -32,13 +32,13 @@ def _assert_properties(pb):
             hltz.PhaseType.MIX, hltz.PhaseType.L, hltz.PhaseType.G}
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
-        _log.error("helm.Pump requires a Helmholtz EOS with "
+        _log.error("helm.HelmPump requires a Helmholtz EOS with "
                    "a single or mixed phase and pressure-enthalpy state vars.")
         raise
 
 
-@declare_process_block_class("Pump")
-class PumpData(BalanceBlockData):
+@declare_process_block_class("HelmPump")
+class HelmPumpData(BalanceBlockData):
     """
     Basic isentropic 0D turbine model.  This inherits the heater block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and

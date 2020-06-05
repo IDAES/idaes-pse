@@ -32,13 +32,13 @@ def _assert_properties(pb):
             hltz.PhaseType.MIX, hltz.PhaseType.L, hltz.PhaseType.G}
         assert pb.config.state_vars == hltz.StateVars.PH
     except AssertionError:
-        _log.error("helm.IsentropicTurbine requires a Helmholtz EOS with "
+        _log.error("helm.HelmIsentropicTurbine requires a Helmholtz EOS with "
                    "a single or mixed phase and pressure-enthalpy state vars.")
         raise
 
 
-@declare_process_block_class("IsentropicTurbine")
-class IsentropicTurbineData(BalanceBlockData):
+@declare_process_block_class("HelmIsentropicTurbine")
+class HelmIsentropicTurbineData(BalanceBlockData):
     """
     Basic isentropic 0D turbine model.  This inherits the heater block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and
@@ -111,6 +111,10 @@ class IsentropicTurbineData(BalanceBlockData):
             return te.h(s=prp_i[t].entr_mol, p=prp_o[t].pressure)
 
         @self.Expression(self.flowsheet().config.time)
+        def delta_enth_isentropic(b, t):
+            return self.h_is[t] - prp_i[t].enth_mol
+
+        @self.Expression(self.flowsheet().config.time)
         def work_isentropic(b, t):
             return (prp_i[t].enth_mol - self.h_is[t])*prp_i[t].flow_mol
 
@@ -126,6 +130,12 @@ class IsentropicTurbineData(BalanceBlockData):
         def eq_pressure_ratio(b, t):
             return pratio[t]*prp_i[t].pressure == prp_o[t].pressure
 
+    def _get_performance_contents(self, time_point=0):
+        """This returns a dictionary of quntities to be used in IDAES unit model
+        report generation routines.
+        """
+        pc = super()._get_performance_contents(time_point=time_point)
+        return pc
 
     def initialize(
         self,
@@ -170,6 +180,7 @@ class IsentropicTurbineData(BalanceBlockData):
                 self.inlet.pressure[t]*self.ratioP[t])
             self.deltaP[t] = pyo.value(
                 self.outlet.pressure[t] - self.inlet.pressure[t])
+
             self.outlet.enth_mol[t] = pyo.value(self.h_o[t])
             self.control_volume.work[t] = pyo.value(
                 self.inlet.flow_mol[t]*self.inlet.enth_mol[t] -

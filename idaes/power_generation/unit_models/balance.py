@@ -198,7 +198,11 @@ class BalanceBlockData(UnitModelBlockData):
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
-        # Add a convienient reference to heat duty.
+        # Add a convienient references to control volume quantities deltaP.
         if (self.config.has_pressure_change is True and
             self.config.momentum_balance_type != MomentumBalanceType.none):
             self.deltaP = Reference(self.control_volume.deltaP)
+        if self.config.has_heat_transfer is True:
+            self.heat_duty = Reference(self.control_volume.heat)
+        if self.config.has_work_transfer is True:
+            self.work = Reference(self.control_volume.work)

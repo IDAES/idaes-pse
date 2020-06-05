@@ -31,7 +31,7 @@ def test_pump():
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit1 = cmodels.Pump(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.Pump(default={"property_package": m.fs.properties})
+    m.fs.unit2 = hmodels.HelmPump(default={"property_package": m.fs.properties})
     # set inputs
 
     Fin = 1e4 # mol/s
@@ -66,7 +66,8 @@ def test_turbine():
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit1 = cmodels.Turbine(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.IsentropicTurbine(default={"property_package": m.fs.properties})
+    m.fs.unit2 = hmodels.HelmIsentropicTurbine(
+        default={"property_package": m.fs.properties})
 
     # set inputs
     Fin = 1000 # mol/s
@@ -102,7 +103,7 @@ def test_compressor():
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit1 = cmodels.Compressor(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.IsentropicCompressor(default={"property_package": m.fs.properties})
+    m.fs.unit2 = hmodels.HelmIsentropicCompressor(default={"property_package": m.fs.properties})
 
     # set inputs
     Fin = 1000 # mol/s
@@ -137,8 +138,9 @@ def test_compressor_pump_compare():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit1 = hmodels.Pump(default={"property_package": m.fs.properties})
-    m.fs.unit2 = hmodels.IsentropicCompressor(default={"property_package": m.fs.properties})
+    m.fs.unit1 = hmodels.HelmPump(default={"property_package": m.fs.properties})
+    m.fs.unit2 = hmodels.HelmIsentropicCompressor(
+        default={"property_package": m.fs.properties})
 
     Fin = 1e4 # mol/s
     hin = 4000 # J/mol
@@ -160,8 +162,9 @@ def test_compressor_pump_compare():
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
 
-    # The pump calculations are a bit more appropriate assuming incompressible
-    # fluid, so the results here should be close, but not exactly the same.
+    # The pump calculations are a bit more approximate assuming incompressible
+    # fluid entropy is independent of pressure, so the results here should be
+    # close, but not exactly the same.
     assert pyo.value(m.fs.unit1.control_volume.properties_out[0].temperature) == \
         pytest.approx(
             pyo.value(m.fs.unit2.control_volume.properties_out[0].temperature),
