@@ -8,3 +8,4 @@ framework and libraries.
     :maxdepth: 1
 
     matopt
+    caprese/index
