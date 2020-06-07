@@ -108,22 +108,6 @@ idaes.surrogate.alamopy.shared module
    :ignore-module-all:
    :noindex:
 
-idaes.surrogate.alamopy.simwrapper module
------------------------------------------
-
-.. automodule:: idaes.surrogate.alamopy.simwrapper
-   :members:
-   :ignore-module-all:
-   :noindex:
-
-idaes.surrogate.alamopy.writethis module
-----------------------------------------
-
-.. automodule:: idaes.surrogate.alamopy.writethis
-   :members:
-   :ignore-module-all:
-   :noindex:
-
 
 Module contents
 ---------------

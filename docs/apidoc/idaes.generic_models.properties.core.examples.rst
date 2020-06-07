@@ -1,8 +1,23 @@
 idaes.generic\_models.properties.core.examples package
 ======================================================
 
+Subpackages
+-----------
+
+.. toctree::
+
+   idaes.generic_models.properties.core.examples.reactions
+
 Submodules
 ----------
+
+idaes.generic\_models.properties.core.examples.BT\_PR module
+------------------------------------------------------------
+
+.. automodule:: idaes.generic_models.properties.core.examples.BT_PR
+   :members:
+   :ignore-module-all:
+   :noindex:
 
 idaes.generic\_models.properties.core.examples.BT\_ideal module
 ---------------------------------------------------------------

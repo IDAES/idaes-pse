@@ -14,7 +14,6 @@ Subpackages
    idaes.surrogate
    idaes.ui
    idaes.util
-   idaes.vis
 
 Submodules
 ----------

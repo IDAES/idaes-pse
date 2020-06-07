@@ -11,6 +11,7 @@ Subpackages
    idaes.generic_models.properties.core.generic
    idaes.generic_models.properties.core.phase_equil
    idaes.generic_models.properties.core.pure
+   idaes.generic_models.properties.core.reactions
    idaes.generic_models.properties.core.state_definitions
 
 Module contents

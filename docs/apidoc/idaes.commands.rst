@@ -12,6 +12,14 @@ idaes.commands.base module
    :ignore-module-all:
    :noindex:
 
+idaes.commands.convergence module
+---------------------------------
+
+.. automodule:: idaes.commands.convergence
+   :members:
+   :ignore-module-all:
+   :noindex:
+
 idaes.commands.data\_directory module
 -------------------------------------
 
