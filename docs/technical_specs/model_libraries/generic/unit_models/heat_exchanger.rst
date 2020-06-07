@@ -70,7 +70,7 @@ side.  Aside from the sign convention there is no requirement that the hot side 
 than the cold side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
-:ref:`Heater model <model_libraries/core_library/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
+:ref:`Heater model <technical_specs/model_libraries/generic/unit_models/heater:Heater>`. The ``HeatExchanger`` model contains additional
 constraints that calculate the amount of heat transferred from the hot side to the cold side.
 
 The ``HeatExchanger`` has two inlet ports and two outlet ports. By default these are
@@ -95,7 +95,7 @@ than the specified hot side this value will be negative.
 Constraints
 -----------
 
-The default constants can be overridden by providing :ref:`alternative rules <model_libraries/core_library/unit_models/heat_exchanger:Callbacks>` for
+The default constants can be overridden by providing :ref:`alternative rules <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Callbacks>` for
 the heat transfer equation, temperature difference, and heat transfer coefficient. The section
 describes the default constraints.
 
@@ -117,7 +117,7 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <model_libraries/core_library/unit_models/heat_exchanger:Example>`.
+  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <technical_specs/model_libraries/generic/unit_models/heat_exchanger:Example>`.
 
 .. autoclass:: HeatExchanger
    :members:

@@ -25,7 +25,7 @@ Theses modules can be imported as:
 
   from idaes.generic_models.properties import iapws95
 
-The Heater unit model :ref:`example <model_libraries/core_library/unit_models/heater:Example>`, provides a simple
+The Heater unit model :ref:`example <technical_specs/model_libraries/generic/unit_models/heater:Example>`, provides a simple
 example for using water properties.
 
 .. testcode::
@@ -67,8 +67,8 @@ viscosity of both phases, the lines below could be added.
   mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
 
 For more information about how StateBlocks and PropertyParameterBlocks work see
-the :ref:`StateBlock documentation <core/state_block:Physical Property Package
-Classes>`.
+the :ref:`StateBlock documentation <technical_specs/core/physical_property_class:Physical Property 
+Package Classes>`.
 
 Units
 -----
@@ -108,7 +108,7 @@ developed that can solve the equations required to change state variables and
 guarantee the correct roots.
 
 The external property functions are written in C++ and complied such that they
-can be called by AMPL solvers.  See the :ref:`idaes_installation` page for
+can be called by AMPL solvers.  See the `idaes_installation` page for
 information about compiling these functions. The external functions provide
 both first and second derivatives for all property function calls, however at
 phase transitions some of these functions may be non-smooth.
@@ -134,7 +134,7 @@ variables is better.
 
 Although not generally used, the wrapper provides direct access to the
 ExternalFunctions, including intermediate functions. For more information see
-section :ref:`ExternalFunctions <model_libraries/core_library/property_models/water:ExternalFunctions>`.
+section :ref:`ExternalFunctions <technical_specs/model_libraries/generic/property_models/water:ExternalFunctions>`.
 These are mostly available for testing purposes.
 
 Phase Presentation
@@ -142,7 +142,7 @@ Phase Presentation
 
 The property package wrapper can present fluid phase information to the
 IDAES framework in different ways.  See the
-:ref:`class reference <model_libraries/core_library/property_models/water:Iapws95ParameterBlock Class>` for details
+:ref:`class reference <technical_specs/model_libraries/generic/property_models/water:Iapws95ParameterBlock Class>` for details
 on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
 looks like one phase called "Mix" to the IDAES framework. The property
 package will calculate a phase fraction. This will bypass any two phase

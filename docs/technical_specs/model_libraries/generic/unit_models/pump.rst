@@ -2,10 +2,10 @@ Pump
 ====
 
 The Pump model is a
-:ref:`PressureChanger <model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>`,
+:ref:`PressureChanger <technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`,
 where the configuration is set so that the "compressor" option can only be True,
 and the default "thermodynamic_assumption" is "pump."  See the
-:ref:`PressureChanger documentation <model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>`
+:ref:`PressureChanger documentation <technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`
 for details.
 
 

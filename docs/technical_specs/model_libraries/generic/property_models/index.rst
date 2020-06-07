@@ -7,7 +7,5 @@ Property Model Library
     ceos
     activity_coefficient
     water
-    general/index
-    general_reactions/index
     interrogator
     
