@@ -4,5 +4,12 @@
 .. toctree::
     :maxdepth: 1
     
-    stats
+    dyn_utils
+    homotopy
+    initialization
+    model_serializer
+    model_statistics
     scaling
+    tables    
+    unit_costing
+    var_like_expression    

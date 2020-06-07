@@ -100,7 +100,7 @@ to_json
 
 Despite the name of the ``to_json`` function it is capable of creating Python
 dictionaries, json files, gzipped json files, and json strings. The function
-documentation is below.  A :ref:`StoreSpec <core/util/model_serializer:StoreSpec>`
+documentation is below.  A :ref:`StoreSpec <technical_specs/core/util/model_serializer:StoreSpec>`
 object provides the function with details on what to store and how to handle
 special cases of Pyomo component attributes.
 
@@ -111,7 +111,7 @@ from_json
 
 The ``from_json`` function puts data from Python dictionaries, json files,
 gzipped json files, and json strings back into a Pyomo model. The function
-documentation is below.  A :ref:`StoreSpec <core/util/model_serializer:StoreSpec>`
+documentation is below.  A :ref:`StoreSpec <technical_specs/core/util/model_serializer:StoreSpec>`
 object provides the function with details on what to read and how to handle
 special cases of Pyomo component attributes.
 
@@ -199,8 +199,9 @@ value of the suffix for the corresponding component.
     }
 
 As a more concrete example, here is the json generated for example model 2 in
-:ref:`Examples <core/util/model_serializer:Examples>`.
-This code can be appended to the :ref:`example boilerplate above <core/util/model_serializer:Examples>`.
+:ref:`Examples <technical_specs/core/util/model_serializer:Examples>`.
+This code can be appended to the 
+:ref:`example boilerplate above <technical_specs/core/util/model_serializer:Examples>`.
 To generate the example json shown.
 
 .. testcode::
