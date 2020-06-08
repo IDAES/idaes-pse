@@ -1,10 +1,7 @@
 ﻿Model-specific Examples
 =======================
 
-.. toctree::
-    :maxdepth: 1
-
-    heater
+.. warning:: This section is currently being developed
 
 
     

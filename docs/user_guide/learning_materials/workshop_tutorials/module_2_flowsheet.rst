@@ -10,9 +10,10 @@ This module demonstrates:
 Jupyter Notebook Tutorial
 -------------------------
 
-Click to view or download the tutorial (links will be active after documentation reorganization).
+Click to download the :download:`tutorial <Module_2_Flowsheet.ipynb>`.
 
 Jupyter Notebook Solution
 -------------------------
 
-Click to view or download the tutorial (links will be active after documentation reorganization).
+
+Click to download the :download:`tutorial solution <Module_2_Flowsheet_Solution.ipynb>`.

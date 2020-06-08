@@ -12,11 +12,12 @@ This module will cover:
 Jupyter Notebook Tutorial
 -------------------------
 
-Click to view or download the tutorial.
+Click to download the :download:`tutorial <Module_1_Flash_Unit.ipynb>`.
 
 Jupyter Notebook Solution
 -------------------------
 
-Click to view or download the tutorial solution.
+Click to download the :download:`tutorial solution <Module_1_Flash_Unit_Solution.ipynb>`.
+
 
 

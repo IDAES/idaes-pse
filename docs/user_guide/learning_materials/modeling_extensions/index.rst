@@ -4,4 +4,5 @@
 .. toctree::
     :maxdepth: 1
 
-    matopt
+    matopt/index
+    surrogate/index
