@@ -682,6 +682,7 @@ class DMF(workspace.Workspace, HasTraits):
         # update or insert new values
         try:
             self._db.update(rsrc.id, rsrc.v)
+            did_update = True
         except KeyError:
             if upsert:
                 self._db.put(rsrc)
