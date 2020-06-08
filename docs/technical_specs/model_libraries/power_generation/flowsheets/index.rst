@@ -1,5 +1,5 @@
-Power Generation Flowsheets
-===========================
+Flowsheet Models
+================
 
 .. toctree::
     :maxdepth: 1

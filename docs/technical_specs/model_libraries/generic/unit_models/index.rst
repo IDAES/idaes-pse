@@ -1,5 +1,5 @@
-Unit Model Library
-==================
+Unit Models
+===========
 
 .. toctree::
     :maxdepth: 1

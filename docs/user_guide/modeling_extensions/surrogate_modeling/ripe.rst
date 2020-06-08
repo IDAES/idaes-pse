@@ -1,8 +1,0 @@
-﻿Ripe
-====
-
-(user guide)
-
-
-
-    

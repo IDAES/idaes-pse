@@ -7,7 +7,7 @@ splash page)
 .. toctree::
     :maxdepth: 2
 
-    surrogate_modeling/index
+    surrogate/index
     matopt
 
     

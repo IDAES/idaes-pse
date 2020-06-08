@@ -1,5 +1,5 @@
-Control Model Library
-======================
+Control Models
+==============
 
 This section contains documentation for core IDAES control models.
 

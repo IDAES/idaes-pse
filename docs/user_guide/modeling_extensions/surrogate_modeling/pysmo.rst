@@ -1,8 +1,0 @@
-﻿Pysmo
-=====
-
-(user guide)
-
-
-
-    

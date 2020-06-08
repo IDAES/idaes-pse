@@ -1,5 +1,5 @@
-Property Model Library
-======================
+Property Models
+===============
 
 .. toctree::
     :maxdepth: 1

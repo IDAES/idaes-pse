@@ -1,5 +1,5 @@
-Power Generation Properties
-===========================
+Property Models
+===============
 
 .. toctree::
     :maxdepth: 1
