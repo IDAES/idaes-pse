@@ -11,7 +11,7 @@
     commands/index
     model_libraries/index
     utility_methods
-    debugging
+    debugging/index
     modeling_extensions/index
     user_interface/index
     learning_materials/index
