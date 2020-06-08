@@ -17,7 +17,7 @@ This module contains utility functions for dynamic IDAES models.
 
 from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.set_utils import (is_explicitly_indexed_by, 
+from pyomo.dae.set_utils import (is_explicitly_indexed_by,
         is_in_block_indexed_by, get_index_set_except)
 from pyomo.kernel import ComponentSet
 

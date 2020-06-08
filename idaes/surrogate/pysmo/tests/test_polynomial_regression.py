@@ -1208,7 +1208,7 @@ class TestPolynomialRegression:
         expected_value_1 = 4.5
         expected_value_2 = 28.5
         expected_value_3 = 0.972884259
-        expected_value_4 = 0.931219147
+        expected_value_4 = 0.9651369
         data_feed = PolynomialRegression(original_data_input, input_array, maximum_polynomial_order=5)
         _, output_1, output_2, output_3, output_4 = data_feed.surrogate_performance(phi_best, order_best)
         assert output_1 == expected_value_1
@@ -1539,6 +1539,51 @@ class TestPolynomialRegression:
         PolyClass.get_feature_vector()
         results = PolyClass.poly_training()
         PolyClass.parity_residual_plots(results)
+
+    @pytest.mark.unit
+    def test_confint_regression_01(self):
+        # Create x vector for ax2 + bx + c: x data supplied in x_vector
+        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        expected_stderror = np.array([ 4.541936, 0.850783 ])
+        data_feed = PolynomialRegression(input_array, input_array, maximum_polynomial_order=1, overwrite=True)
+        p = data_feed.get_feature_vector()
+        res = data_feed.poly_training()
+        opt_wts = res.optimal_weights_array.reshape(expected_stderror.shape)
+        output = data_feed.confint_regression(res, confidence=0.99)
+        tval = 3.2498355440153697
+        np.testing.assert_allclose(output['Std. error'].values, expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. lower'].values, opt_wts - tval * expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. upper'].values, opt_wts + tval * expected_stderror, atol=1e-3)
+    
+    @pytest.mark.unit
+    def test_confint_regression_02(self):
+        # Create x vector for ax2 + bx + c: x data supplied in x_vector
+        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        expected_stderror = np.array([ 4.541936, 0.850783 ])
+        data_feed = PolynomialRegression(input_array, input_array, maximum_polynomial_order=1, overwrite=True)
+        p = data_feed.get_feature_vector()
+        res = data_feed.poly_training()
+        opt_wts = res.optimal_weights_array.reshape(expected_stderror.shape)
+        output = data_feed.confint_regression(res, confidence=0.9)
+        tval = 1.8331129326536335
+        np.testing.assert_allclose(output['Std. error'].values, expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. lower'].values, opt_wts - tval * expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. upper'].values, opt_wts + tval * expected_stderror, atol=1e-3)
+    
+    @pytest.mark.unit
+    def test_confint_regression_03(self):
+        # Create x vector for ax2 + bx + c: x data supplied in x_vector
+        input_array = np.array([[0, 1], [1, 4], [2, 9], [3, 16], [4, 25], [5, 36], [6, 49], [7, 64], [8, 81], [9, 100]])
+        expected_stderror = np.array([0, 0, 0])
+        data_feed = PolynomialRegression(input_array, input_array, maximum_polynomial_order=2, overwrite=True)
+        p = data_feed.get_feature_vector()
+        res = data_feed.poly_training()
+        opt_wts = res.optimal_weights_array.reshape(expected_stderror.shape)
+        output = data_feed.confint_regression(res, confidence=0.99)
+        tval = 3.2498355440153697
+        np.testing.assert_allclose(output['Std. error'].values, expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. lower'].values, opt_wts - tval * expected_stderror, atol=1e-3)
+        np.testing.assert_allclose(output['Conf. int. upper'].values, opt_wts + tval * expected_stderror, atol=1e-3)
 
 
 if __name__ == '__main__':
