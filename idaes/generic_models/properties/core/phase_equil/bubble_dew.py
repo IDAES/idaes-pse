@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -192,9 +192,11 @@ class LogBubbleDew():
 
                 return (
                     log(b.mole_frac_comp[j]) +
-                    log(l_eos.fug_phase_comp_Tbub(b, l_phase, j, (p1, p2))) ==
+                    l_eos.log_fug_coeff_phase_comp_Tbub(
+                        b, l_phase, j, (p1, p2)) ==
                     log(b._mole_frac_tbub[p1, p2, j]) +
-                    log(v_eos.fug_phase_comp_Tbub(b, v_phase, j, (p1, p2))))
+                    v_eos.log_fug_coeff_phase_comp_Tbub(
+                        b, v_phase, j, (p1, p2)))
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
                                                  b.params.component_list,
                                                  rule=rule_bubble_temp)
@@ -225,9 +227,11 @@ class LogBubbleDew():
 
                 return (
                     log(b._mole_frac_tdew[p1, p2, j]) +
-                    log(l_eos.fug_phase_comp_Tdew(b, l_phase, j, (p1, p2))) ==
+                    l_eos.log_fug_coeff_phase_comp_Tdew(
+                        b, l_phase, j, (p1, p2)) ==
                     log(b.mole_frac_comp[j]) +
-                    log(v_eos.fug_phase_comp_Tdew(b, v_phase, j, (p1, p2))))
+                    v_eos.log_fug_coeff_phase_comp_Tdew(
+                        b, v_phase, j, (p1, p2)))
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
                                               b.params.component_list,
                                               rule=rule_dew_temp)
@@ -263,9 +267,11 @@ class LogBubbleDew():
 
                 return (
                     log(b.mole_frac_comp[j]) +
-                    log(l_eos.fug_phase_comp_Pbub(b, l_phase, j, (p1, p2))) ==
+                    l_eos.log_fug_coeff_phase_comp_Pbub(
+                        b, l_phase, j, (p1, p2)) ==
                     log(b._mole_frac_pbub[p1, p2, j]) +
-                    log(v_eos.fug_phase_comp_Pbub(b, v_phase, j, (p1, p2))))
+                    v_eos.log_fug_coeff_phase_comp_Pbub(
+                        b, v_phase, j, (p1, p2)))
             b.eq_pressure_bubble = Constraint(b.params._pe_pairs,
                                               b.params.component_list,
                                               rule=rule_bubble_press)
@@ -301,9 +307,11 @@ class LogBubbleDew():
 
                 return (
                     log(b._mole_frac_p_dew[p1, p2, j]) +
-                    log(l_eos.fug_phase_comp_Pdew(b, l_phase, j, (p1, p2))) ==
+                    l_eos.log_fug_coeff_phase_comp_Pdew(
+                        b, l_phase, j, (p1, p2)) ==
                     log(b.mole_frac_comp[j]) +
-                    log(v_eos.fug_phase_comp_Pdew(b, v_phase, j, (p1, p2))))
+                    v_eos.log_fug_coeff_phase_comp_Pdew(
+                        b, v_phase, j, (p1, p2)))
             b.eq_pressure_dew = Constraint(b.params._pe_pairs,
                                            b.params.component_list,
                                            rule=rule_dew_press)
