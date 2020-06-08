@@ -51,8 +51,10 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP as RPP
 
+import idaes.logger as idaeslog
+
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 solver = get_default_solver()
 
 
@@ -251,8 +253,9 @@ class TestStateBlock(object):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(optarg={'tol': 1e-6})
+        model.props.initialize(optarg={'tol': 1e-6}, outlvl=idaeslog.DEBUG)
 
+        model.props.display()
         assert False
 
         assert degrees_of_freedom(model) == 0

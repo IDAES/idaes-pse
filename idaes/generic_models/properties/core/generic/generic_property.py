@@ -615,9 +615,10 @@ class _GenericStateBlock(StateBlock):
                                for j in valid_comps))
 
                         # Limit temperature step to avoid excessive overshoot
-                        # Only limit positive steps due to non-linearity
                         if f/df < -50:
                             Tbub1 = Tbub0 + 50
+                        elif f/df > 50:
+                            Tdew1 = Tdew0 - 50
                         else:
                             Tbub1 = Tbub0 - f/df
 
@@ -652,7 +653,8 @@ class _GenericStateBlock(StateBlock):
                         # as starting point
                         # Subtract 1 to avoid potential singularities at Tcrit
                         Tdew0 = min(
-                            blk[k].params.get_component(j).temperature_crit
+                            blk[k].params.get_component(j).
+                            temperature_crit.value
                             for j in valid_comps) - 1
 
                     err = 1
@@ -687,6 +689,8 @@ class _GenericStateBlock(StateBlock):
                         # Limit temperature step to avoid excessive overshoot
                         if f/df < -50:
                             Tdew1 = Tdew0 + 50
+                        elif f/df > 50:
+                            Tdew1 = Tdew0 - 50
                         else:
                             Tdew1 = Tdew0 - f/df
 
@@ -932,13 +936,8 @@ class GenericStateBlockData(StateBlockData):
         Yields:
             components present in phase.
         """
-        if self.params.get_phase(phase).config.component_list is None:
-            # All components in all phases
-            for j in self.params.component_list:
-                yield j
-        else:
-            # Return only components for indicated phase
-            for j in self.params.get_phase(phase).config.component_list:
+        for j in self.params.component_list:
+            if (phase, j) in self.params._phase_component_set:
                 yield j
 
     # -------------------------------------------------------------------------
