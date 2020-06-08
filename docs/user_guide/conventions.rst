@@ -1,8 +1,8 @@
 ﻿Conventions
 ===========
 
-.. contents:: Contents 
-    :depth: 3
+.. contents:: :local:
+    :depth: 2
 
 Units of Measurement and Reference States
 -----------------------------------------

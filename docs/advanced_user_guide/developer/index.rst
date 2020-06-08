@@ -14,6 +14,7 @@ Developer Contents
     devintro
     repos
     devsw
+    standards
     testing
     codereview
     docker 

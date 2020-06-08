@@ -1,10 +1,6 @@
 ﻿Modeling Extensions
 ===================
 
-.. toctree::
-    :maxdepth: 1
-
-    surrogate_modeling/index
-    matopt
+.. warning:: This section is currently being developed
 
     

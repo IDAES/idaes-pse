@@ -1,7 +1,7 @@
 Defining Phases
 ===============
 
-The second step in defining a property package using the Generic Property Package Framework is to define the phases of interest in the system. Due to the equation-oriented nature of the IDAES modeling framework, it is necessary to define any phases the user believes may be important *a priori* as it is not possible to determine what phases should be included on-the-fly. Phases are defined using :ref:`IDAES Phase objects<core/phase:Phase Objects>`, and are automatically constructed using the `phases` configuration argument from the `GenericParameterBlock`.
+The second step in defining a property package using the Generic Property Package Framework is to define the phases of interest in the system. Due to the equation-oriented nature of the IDAES modeling framework, it is necessary to define any phases the user believes may be important *a priori* as it is not possible to determine what phases should be included on-the-fly. Phases are defined using `IDAES Phase objects<core/phase:Phase Objects>`, and are automatically constructed using the `phases` configuration argument from the `GenericParameterBlock`.
 
 The `phases` Argument
 ---------------------

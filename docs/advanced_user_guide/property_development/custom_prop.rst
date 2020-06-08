@@ -1,12 +1,10 @@
-﻿Property Model Development
-==========================
+﻿Custom Property Model
+=====================
 
 .. contents:: :local:
 
 Concepts
 --------
-(more content is needed for the framework of property packages, i.e. relationship between property 
-packages and state blocks)
 
 Components
 ----------

@@ -43,5 +43,5 @@ The remaining configuration arguments are used to define how different propertie
 * functions are used for self-contained correlations with hard-coded parameters,
 * classes are used for more generic correlations which require associated parameters.
 
-A list of the libraries of methods available in the IDAES Framework can be found :ref:`here<model_libraries/core_library/property_models/general_reactions/method_libraries:Reaction Module Libraries>`.
+A list of the libraries of methods available in the IDAES Framework can be found :ref:`here<advanced_user_guide/property_development/general_reactions/method_libraries:Reaction Module Libraries>`.
 

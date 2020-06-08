@@ -6,7 +6,7 @@ This library also forms the foundation for many of the specialized application l
 off these models.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     
     property_models/index
     unit_models/index

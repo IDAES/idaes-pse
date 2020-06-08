@@ -1,7 +1,7 @@
 Defining Components
 ===================
 
-The first step in defining a generic property package is to describe each of the chemical species of interest within the system, including methods for calculating the necessary thermophysical properties of the pure component. Components are defined using :ref:`IDAES Component objects<core/comp:Component Objects>`, and are automatically constructed using the `components` configuration argument from the `GenericParameterBlock`.
+The first step in defining a generic property package is to describe each of the chemical species of interest within the system, including methods for calculating the necessary thermophysical properties of the pure component. Components are defined using `IDAES Component objects<core/comp:Component Objects>`, and are automatically constructed using the `components` configuration argument from the `GenericParameterBlock`.
 
 The `components` Argument
 -------------------------
@@ -17,7 +17,7 @@ Each `GenericParameterBlock` has a configuration argument named `components` whi
 Configuration Arguments
 -----------------------
 
-The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found :ref:`here<core/comp:Component Class>`.
+The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found `here<core/comp:Component Class>`.
 
 Type Argument
 ^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ Within the IDAES Generic Property Package Framework, pure component property cor
 * functions are used for self-contained correlations with hard-coded parameters,
 * classes are used for more generic correlations which require associated parameters.
 
-When providing a method via the `components` configuration argument, users can either provide a pointer to the desired class/method directly, or to a Python module containing a class or method with the same name as the property to be calculated. More details on the uses of these and how to construct your own can be found in the :ref:`developer documentation<model_libraries/core_library/property_models/general/developers:Developing New Property Libraries>`.
+When providing a method via the `components` configuration argument, users can either provide a pointer to the desired class/method directly, or to a Python module containing a class or method with the same name as the property to be calculated. More details on the uses of these and how to construct your own can be found in the :ref:`developer documentation<advanced_user_guide/property_development/general/developers:Developing New Property Libraries>`.
 
 Pure Component Libraries
 """"""""""""""""""""""""
@@ -83,7 +83,7 @@ As a given system may incorporate multiple phase equilibria, the `phase_equilibr
 
     "phase_equilibrium_form": {("Vap", "Liq"): fugacity}
 
-The IDAES Generic Property Package Framework contains a library of common forms for the equilibrium condition, which is described :ref:`here<model_libraries/core_library/property_models/general/pe/pe_forms:Library of Common Equilibrium Forms>`.
+The IDAES Generic Property Package Framework contains a library of common forms for the equilibrium condition, which is described :ref:`here<advanced_user_guide/property_development/general/pe/pe_forms:Library of Common Equilibrium Forms>`.
 
 Parameter Data
 ^^^^^^^^^^^^^^
