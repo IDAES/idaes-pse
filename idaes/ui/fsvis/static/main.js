@@ -39,7 +39,7 @@ var paper = new joint.dia.Paper({
 //     paper.$el.css('background-image', 'url("' + gridBackgroundImage + '")');
 // }
 
-// setGrid(paper, 15, '#FF0000');
+// setGrid(paper, 10, '#FF0000');
 
 // /images/icons rotate 90 degrees on right click. Replaces browser context menu
 paper.on("element:contextmenu", function(cellView, evt) {
@@ -157,7 +157,7 @@ paper.on("link:contextmenu", function(linkView, evt) {
     }
 });
 
-var show_hide_all = "shown"
+var show_hide_all = "hidden"
 
 // Set up the toggle arc label button
 var show_hide_button = $("#show_hide_all_button");

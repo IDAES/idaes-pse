@@ -64,7 +64,7 @@ class FlowsheetSerializer:
                     "s03": {
                         "source": "M101", 
                         "dest": "H101", 
-                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                        "label": "molar flow ("Vap", "hydrogen") 0.5"
                     }
                 }
             },
@@ -156,14 +156,15 @@ class FlowsheetSerializer:
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
             "labels": [
-                # This label MUST be first or the individual label show/hide will fail
+                # This label MUST be first or the show/hide will fail
                 {"attrs": {
-                    "rect": {"fill": '#d7dce0', "stroke": 'white', 'stroke-width': 0, "fill-opacity": "1"},
+                    # Start with the labels off
+                    "rect": {"fill": "#d7dce0", "stroke": "white", "stroke-width": 0, "fill-opacity": 0},
                     "text": {
                         "text": label,
-                        "fill": 'black',
-                        'text-anchor': 'left',
-                        "display": "block"
+                        "fill": "black",
+                        "text-anchor": "left",
+                        "display": "none"
                     },
                 },
                 "position": {
