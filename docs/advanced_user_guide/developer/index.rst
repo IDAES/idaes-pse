@@ -10,10 +10,11 @@ Developer Contents
 .. toctree::
     :maxdepth: 1
 
+    howto    
     devintro
     repos
     devsw
     testing
     codereview
-    docker
-    howto
+    docker 
+    glossary

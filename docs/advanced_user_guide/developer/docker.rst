@@ -1,4 +1,4 @@
-Docker container
+Docker Container
 ----------------
 This page documents information needed by developers for working with the IDAES
 docker container.

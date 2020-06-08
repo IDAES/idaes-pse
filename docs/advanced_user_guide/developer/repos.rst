@@ -1,4 +1,4 @@
-Github repository overview
+﻿Github Repository Overview
 ==========================
 This section describes the layout of the
 `Github repositories <https://help.github.com/articles/about-repositories/>`_.

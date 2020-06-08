@@ -1,7 +1,7 @@
 
 .. _idaes-contrib-guide:
 
-IDAES contributor guide
+IDAES Contributor Guide
 ========================
 
 About

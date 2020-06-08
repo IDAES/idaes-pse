@@ -5,10 +5,9 @@
     :maxdepth: 1
     
     advanced_install
-    development_standards
+    developer/index
     property_development
     unit_development
     tool_development
-    contributing
     learning_materials/index
     faq
