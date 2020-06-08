@@ -3,11 +3,7 @@
 
 .. contents:: :local:
 
-Concepts
---------
-
-Components
-----------
+.. warning:: This section is currently being developed
 
 Tutorials
 ---------

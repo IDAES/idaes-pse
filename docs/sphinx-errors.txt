@@ -1,2 +1,0 @@
-[31;01mC:\Users\barthotv\idaes\idaes-dev\docs\advanced_user_guide\developer\index.rst:10: WARNING: toctree contains reference to nonexisting document 'advanced_user_guide/developer/standards'[39;49;00m
-[31;01mC:\Users\barthotv\idaes\idaes-dev\docs\advanced_user_guide\developer\developer_standards.rst: WARNING: document isn't included in any toctree[39;49;00m

@@ -48,4 +48,11 @@ Contents
     license
     copyright
 
+Indices and tables
+==================
 
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. |CO2| replace:: CO\ :sub:`2`
