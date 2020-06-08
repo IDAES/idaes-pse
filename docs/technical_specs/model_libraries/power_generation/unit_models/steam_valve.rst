@@ -9,9 +9,9 @@ Steam/Water Valve
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
 This model inherits the :ref:`PressureChanger model
-<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>` with the adiabatic options. Beyond
-the base pressure changer model this provides a pressure flow relation as a
-function of the valve opening fraction.
+<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` 
+with the adiabatic options. Beyond the base pressure changer model this provides a pressure 
+flow relation as a function of the valve opening fraction.
 
 Example
 -------
@@ -81,7 +81,7 @@ Constraints
 -----------
 
 The pressure flow relation is added to the inherited constraints from the :ref:`PressureChanger model
-<model_libraries/core_library/unit_models/pressure_changer:Pressure Changer>`.
+<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`.
 
 If the ``phase`` option is set to ``"Liq"`` the following equation describes the pressure-flow relation.
 

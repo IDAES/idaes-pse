@@ -5,6 +5,4 @@
     :maxdepth: 2
     
     generic/index
-    power
-    loop
-    nawi
+    power_generation/index

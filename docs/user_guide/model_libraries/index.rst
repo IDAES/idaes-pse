@@ -7,6 +7,6 @@ The documentation for the models are found in the technical specifications linke
     :maxdepth: 2
 
     ../../technical_specs/model_libraries/generic/index
-    ../../technical_specs/model_libraries/power
+    ../../technical_specs/model_libraries/power_generation/index
 
     

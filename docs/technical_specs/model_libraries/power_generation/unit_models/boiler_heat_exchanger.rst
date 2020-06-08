@@ -145,8 +145,9 @@ The sign convention is that duty is positive for heat flowing from the hot side 
 side.
 
 The control volumes are configured the same as the ``ControlVolume0DBlock`` in the
-:ref:`Heater model <model_libraries/core_library/unit_models/heater:Heater>`. The ``BoilerHeatExchanger`` model contains additional
-constraints that calculate the amount of heat transferred from the hot side to the cold side.
+:ref:`Heater model <technical_specs/model_libraries/generic/unit_models/heater:Heater>`. 
+The ``BoilerHeatExchanger`` model contains additional constraints that calculate the amount 
+of heat transferred from the hot side to the cold side.
 
 The ``BoilerHeatExchanger`` has two inlet ports and two outlet ports. By default these are
 ``shell_inlet``, ``tube_inlet``, ``shell_outlet``, and ``tube_outlet``. If the user
@@ -170,9 +171,10 @@ than the specified hot side this value will be negative.
 Constraints
 -----------
 
-The default constraints can be overridden by providing :ref:`alternative rules <model_libraries/core_library/unit_models/heat_exchanger:Callbacks>` for
-the heat transfer equation, temperature difference, heat transfer coefficient, shell and tube pressure drop. This section
-describes the default constraints.
+The default constraints can be overridden by providing :ref:`alternative rules 
+<technical_specs/model_libraries/generic/unit_models/heat_exchanger:Callbacks>` for
+the heat transfer equation, temperature difference, heat transfer coefficient, shell 
+and tube pressure drop. This section describes the default constraints.
 
 Heat transfer from shell to tube:
 
@@ -293,7 +295,8 @@ Class Documentation
 
 .. Note::
   The ``hot_side_config`` and ``cold_side_config`` can also be supplied using the name of
-  the hot and cold sides (``shell`` and ``tube`` by default) as in :ref:`the example <model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
+  the hot and cold sides (``shell`` and ``tube`` by default) as in 
+  :ref:`the example <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger:Example>`.
 
 .. autoclass:: BoilerHeatExchanger
    :members:
