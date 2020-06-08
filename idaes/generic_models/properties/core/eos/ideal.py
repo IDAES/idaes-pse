@@ -78,11 +78,15 @@ class Ideal(EoSBase):
     def entr_mol_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
-            return get_method(b, "entr_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return (get_method(b, "entr_mol_ig_comp", j)(
+                b, cobj(b, j), b.temperature) -
+                const.gas_constant*log(
+                    b.mole_frac_phase_comp[p, j]*b.pressure /
+                    b.params.pressure_ref))
         elif pobj.is_liquid_phase():
-            return get_method(b, "entr_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            # Assume no pressure/volume dependecy of entropy for ideal liquids
+            return (get_method(b, "entr_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
