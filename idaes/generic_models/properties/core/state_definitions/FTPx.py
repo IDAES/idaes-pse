@@ -262,6 +262,9 @@ def state_initialization(b):
         # Try to refine guesses - Check phase type
         pobj = b.params.get_phase(p)
 
+        if not hasattr(b.params, "_pe_pairs"):
+            return
+
         if pobj.is_liquid_phase():
             tbub = None
             tdew = None
