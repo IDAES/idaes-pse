@@ -13,12 +13,14 @@
 import re
 
 
-def almpywriter(data):
-    # This funciton writes the file
-    # - <almname>alm.py
-    #    y=<fname>.f(X)
-    # handle the multiple output
-    if data['opts']['noutputs'] > 1:
+def almpywriter(data, debug):
+    """
+    This function writes the file
+    - <almname>alm.py
+    y=<fname>.f(X)
+    handle the multiple output
+    """
+    if data['opts']['noutputs'] > 1 or debug['expandoutput']:
         for output_name, mod_res in data['results']['model'].items():
             almpywriter_help(data, mod_res, output_name)
     else:
@@ -26,10 +28,12 @@ def almpywriter(data):
 
 
 def almpywriter_help(data, mod_res, output_name):
-    # This funciton writes the file
-    # - <almname>alm.py
-    #    y=<fname>.f(X)
-    # preliminary formating to get the model ready to write
+    """
+    This function writes the file
+    - <almname>alm.py
+    y=<fname>.f(X)
+    preliminary formatting to get the model ready to write
+    """
     model = mod_res.split('=')[1]
     model = model + ' '
     tlist = ('sin', 'cos', 'log', 'exp')
@@ -48,10 +52,12 @@ def almpywriter_help(data, mod_res, output_name):
 
 
 def almcvwriter(data):
-    # This funciton writes the file
-    # - <almname>alm.py
-    #    y=<fname>.f(X)
-    # handle the multiple output
+    """
+    This function writes the file
+    - <almname>alm.py
+    y=<fname>.f(X)
+    handle the multiple output
+    """
     if data['opts']['noutputs'] > 1:
         for output_name, mod_res in data['results']['model'].items():
             almcvwriter_help(data, mod_res, output_name)
@@ -60,10 +66,11 @@ def almcvwriter(data):
 
 
 def almcvwriter_help(data, mod_res, output_name):
-    # This funciton writes the file
-    # - <almname>cv.py
-    #    y=<fname>.f(X,params)
-    # print data['results']['model']
+    """
+    This function writes the file
+    - <almname>cv.py
+    y=<fname>.f(X,params)
+    """
     model = mod_res.split('=')[1]
     model = model + ' '
     tlist = ('sin', 'cos', 'log', 'exp')
@@ -94,10 +101,13 @@ def almcvwriter_help(data, mod_res, output_name):
 
 
 def wrapwriter(sim):
+    """
+    This subroutine writes a temporary python file that is used
+    to wrap python-based function that lack ALAMO's input/output.txt I/O
+    """
     import os
     import inspect
-    # This subroutine writes a temporary python file that is used
-    # to wrap python-based function that lack ALAMO's input/output.txt I/O
+
     name = 'simwrapper'
     name = name + '.py'
     with open(name, 'w') as r:
