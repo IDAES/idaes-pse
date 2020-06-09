@@ -33,12 +33,20 @@ Linking to a Thermophysical Property Package
 
 As state information is defined by thermophysical property packages in IDAES, each reaction package must be linked to an appropriate thermophysical property package. This linkage is used by the reaction package to find the state information required to calculate the reaction properties, and thus the thermophysical property package must support all the properties required by the reaction package.
 
+Setting Reaction Basis
+^^^^^^^^^^^^^^^^^^^^^^
+
+Many reaction properties (e.g. reaction rates) can be defined on different bases, such as a mass or molar basis. All properties within a package must use the same basis, which can be set using the "reaction_basis" configuration argument (see below). This must be done using the MaterialFlowBasis `Enum`, which can be imported from `idaes.core`.
+
 Configuration Example
 ^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
+    from from idaes.core import MaterialFlowBasis
+
     config_dict = {
+        "reaction_basis": MaterialFlowBasis.molar,
         "rate_reactions": {
             "r1": {"stoichiometry": {("phase_1", "component_1"): -1,
                                      ("phase_1", "component_2"): 2},
