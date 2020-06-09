@@ -9,5 +9,5 @@
     property_development/index
     unit_development
     tool_development
-    learning_materials/index
+    learning_materials
     faq
