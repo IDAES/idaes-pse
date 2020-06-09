@@ -291,13 +291,16 @@ def state_initialization(b):
             elif tdew is not None and b.temperature.value > tdew:
                 # Pure vapour
                 b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
 
                 for j in b.params.component_list:
-                    b.mole_frac_phase_comp[p, j].value = \
-                        b._mole_frac_tdew[pp, j].value
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b._mole_frac_tdew[pp, j].value
             elif tbub is not None and b.temperature.value < tbub:
                 # Pure liquid
                 b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
 
                 for j in b.params.component_list:
                     if (p, j) in b.params._phase_component_set:
@@ -337,6 +340,7 @@ def state_initialization(b):
             elif tdew is not None and b.temperature.value > tdew:
                 # Pure vapour
                 b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
 
                 for j in b.params.component_list:
                     if (p, j) in b.params._phase_component_set:
@@ -345,6 +349,7 @@ def state_initialization(b):
             elif tbub is not None and b.temperature.value < tbub:
                 # Pure liquid
                 b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
 
                 for j in b.params.component_list:
                     if (p, j) in b.params._phase_component_set:

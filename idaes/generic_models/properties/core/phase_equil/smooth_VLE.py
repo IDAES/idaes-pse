@@ -21,6 +21,8 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
+    _valid_VL_component_list)
 
 
 def phase_equil(b, phase_pair):
@@ -105,35 +107,3 @@ def calculate_teq(b, phase_pair):
                                        b.temperature_dew[phase_pair].value)
     except AttributeError:
         b._teq[phase_pair].value = _t1.value
-
-
-def _valid_VL_component_list(blk, pp):
-    vl_comps = []
-    l_only_comps = []
-    v_only_comps = []
-
-    pparams = blk.params
-    l_phase = None
-    v_phase = None
-    if pparams.get_phase(pp[0]).is_liquid_phase():
-        l_phase = pp[0]
-    elif pparams.get_phase(pp[0]).is_vapor_phase():
-        v_phase = pp[0]
-
-    if pparams.get_phase(pp[1]).is_liquid_phase():
-        l_phase = pp[1]
-    elif pparams.get_phase(pp[1]).is_vapor_phase():
-        v_phase = pp[1]
-
-    # Only need to do this for V-L pairs, so check
-    if l_phase is not None and v_phase is not None:
-        for j in blk.params.component_list:
-            if ((l_phase, j) in pparams._phase_component_set and
-                    (v_phase, j) in pparams._phase_component_set):
-                vl_comps.append(j)
-            elif (l_phase, j) in pparams._phase_component_set:
-                l_only_comps.append(j)
-            elif (v_phase, j) in pparams._phase_component_set:
-                v_only_comps.append(j)
-
-    return l_phase, v_phase, vl_comps, l_only_comps, v_only_comps

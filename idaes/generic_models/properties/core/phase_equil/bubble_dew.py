@@ -59,13 +59,23 @@ class IdealBubbleDew():
     def temperature_bubble(b):
         try:
             def rule_bubble_temp(b, p1, p2):
-                if not _vle_check(b, p1, p2):
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, (p1, p2))
+
+                if l_phase is None or v_phase is None:
+                    # Not a VLE pair
+                    return Constraint.Skip
+                elif v_only_comps != []:
+                    # Non-condensables present, no bubble point
                     return Constraint.Skip
 
                 return (sum(b.mole_frac_comp[j] *
                             get_method(b, "pressure_sat_comp", j)(
                                 b, cobj(b, j), b.temperature_bubble[p1, p2])
-                            for j in b.params.component_list) -
+                            for j in vl_comps) -
                         b.pressure) == 0
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
                                                  rule=rule_bubble_temp)
@@ -75,12 +85,26 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_bubble_temp(b, p1, p2, j):
-            if not _vle_check(b, p1, p2):
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, (p1, p2))
+
+            if l_phase is None or v_phase is None:
+                # Not a VLE pair
                 return Constraint.Skip
-            return b._mole_frac_tbub[p1, p2, j]*b.pressure == (
-                b.mole_frac_comp[j] *
-                get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), b.temperature_bubble[p1, p2]))
+            elif v_only_comps != []:
+                # Non-condensables present, no bubble point
+                return Constraint.Skip
+
+            if j in vl_comps:
+                return b._mole_frac_tbub[p1, p2, j]*b.pressure == (
+                    b.mole_frac_comp[j] *
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), b.temperature_bubble[p1, p2]))
+            else:
+                return b._mole_frac_tbub[p1, p2, j] == 0
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
                                          b.params.component_list,
                                          rule=rule_mole_frac_bubble_temp)
@@ -90,13 +114,24 @@ class IdealBubbleDew():
     def temperature_dew(b):
         try:
             def rule_dew_temp(b, p1, p2):
-                if not _vle_check(b, p1, p2):
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, (p1, p2))
+
+                if l_phase is None or v_phase is None:
+                    # Not a VLE pair
                     return Constraint.Skip
+                elif l_only_comps != []:
+                    # Non-vaporisables present, no dew point
+                    return Constraint.Skip
+
                 return (b.pressure*sum(
                             b.mole_frac_comp[j] /
                             get_method(b, "pressure_sat_comp", j)(
                                 b, cobj(b, j), b.temperature_dew[p1, p2])
-                            for j in b.params.component_list) - 1 ==
+                            for j in vl_comps) - 1 ==
                         0)
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
                                               rule=rule_dew_temp)
@@ -106,12 +141,27 @@ class IdealBubbleDew():
 
         # Don't need a try/except here, will pass if first constraint did
         def rule_mole_frac_dew_temp(b, p1, p2, j):
-            if not _vle_check(b, p1, p2):
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, (p1, p2))
+
+            if l_phase is None or v_phase is None:
+                # Not a VLE pair
                 return Constraint.Skip
-            return (b._mole_frac_tdew[p1, p2, j] *
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature_dew[p1, p2]) ==
-                    b.mole_frac_comp[j]*b.pressure)
+            elif l_only_comps != []:
+                # Non-vaporisables present, no dew point
+                return Constraint.Skip
+
+            if j in vl_comps:
+                return (b._mole_frac_tdew[p1, p2, j] *
+                        get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature_dew[p1, p2]) ==
+                        b.mole_frac_comp[j]*b.pressure)
+            else:
+                return b._mole_frac_tdew[p1, p2, j] == 0
+
         b.eq_mole_frac_tdew = Constraint(b.params._pe_pairs,
                                          b.params.component_list,
                                          rule=rule_mole_frac_dew_temp)
@@ -332,3 +382,35 @@ class LogBubbleDew():
                                   for j in b.params.component_list)
         b.eq_mole_frac_pdew = Constraint(b.params._pe_pairs,
                                          rule=rule_mole_frac_dew_press)
+
+
+def _valid_VL_component_list(blk, pp):
+    vl_comps = []
+    l_only_comps = []
+    v_only_comps = []
+
+    pparams = blk.params
+    l_phase = None
+    v_phase = None
+    if pparams.get_phase(pp[0]).is_liquid_phase():
+        l_phase = pp[0]
+    elif pparams.get_phase(pp[0]).is_vapor_phase():
+        v_phase = pp[0]
+
+    if pparams.get_phase(pp[1]).is_liquid_phase():
+        l_phase = pp[1]
+    elif pparams.get_phase(pp[1]).is_vapor_phase():
+        v_phase = pp[1]
+
+    # Only need to do this for V-L pairs, so check
+    if l_phase is not None and v_phase is not None:
+        for j in blk.params.component_list:
+            if ((l_phase, j) in pparams._phase_component_set and
+                    (v_phase, j) in pparams._phase_component_set):
+                vl_comps.append(j)
+            elif (l_phase, j) in pparams._phase_component_set:
+                l_only_comps.append(j)
+            elif (v_phase, j) in pparams._phase_component_set:
+                v_only_comps.append(j)
+
+    return l_phase, v_phase, vl_comps, l_only_comps, v_only_comps

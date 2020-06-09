@@ -618,7 +618,7 @@ class _GenericStateBlock(StateBlock):
                         if f/df < -50:
                             Tbub1 = Tbub0 + 50
                         elif f/df > 50:
-                            Tdew1 = Tdew0 - 50
+                            Tbub1 = Tbub0 - 50
                         else:
                             Tbub1 = Tbub0 - f/df
 

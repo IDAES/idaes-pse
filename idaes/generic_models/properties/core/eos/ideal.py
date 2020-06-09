@@ -87,10 +87,10 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     def fug_phase_comp(b, p, j):
-        return _fug_phase_comp(b, p, j)
+        return _fug_phase_comp(b, p, j, b.temperature)
 
     def fug_phase_comp_eq(b, p, j, pp):
-        return _fug_phase_comp(b, p, j)
+        return _fug_phase_comp(b, p, j, b._teq[pp])
 
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
@@ -155,13 +155,13 @@ def _invalid_phase_msg(name, phase):
             .format(name, phase))
 
 
-def _fug_phase_comp(b, p, j):
+def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
     if pobj.is_vapor_phase():
         return b.mole_frac_phase_comp[p, j] * b.pressure
     elif pobj.is_liquid_phase():
         return (b.mole_frac_phase_comp[p, j] *
                 get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), b.temperature))
+                    b, cobj(b, j), T))
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
