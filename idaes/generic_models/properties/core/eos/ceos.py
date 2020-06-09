@@ -362,16 +362,37 @@ class Cubic(EoSBase):
                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
                           (2*Z + B*(EoS_u - EoS_p)))) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
-                                 blk.entr_mol_phase_comp[p, j]
+                                 get_method(blk, "entr_mol_ig_comp", j)(
+                                     blk, cobj(blk, j), blk.temperature)
                                  for j in blk.params.component_list))
 
-    def entr_mol_phase_comp(b, p, j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return get_method(b, "entr_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature)
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    def entr_mol_phase_comp(blk, p, j):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        # cname = pobj._cubic_type.name
+        # bm = getattr(blk, cname+"_bm")[p]
+        # B = getattr(blk, cname+"_B")[p]
+        # dadT = getattr(blk, cname+"_dadT")[p]
+        # Z = blk.compress_fact_phase[p]
+
+        # EoS_u = EoS_param[pobj._cubic_type]['u']
+        # EoS_w = EoS_param[pobj._cubic_type]['w']
+        # EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # # See pg. 102 in Properties of Gases and Liquids
+        # return (blk.mole_frac_phase_comp[p, j] *
+        #         ((const.gas_constant*log((Z-B)/Z)*bm*EoS_p +
+        #          const.gas_constant *
+        #          log(Z*blk.params.pressure_ref/blk.pressure)*bm*EoS_p +
+        #          dadT*log((2*Z + B*(EoS_u + EoS_p)) /
+        #                   (2*Z + B*(EoS_u - EoS_p)))) /
+        #         (bm*EoS_p)) + get_method(blk, "entr_mol_ig_comp", j)(
+        #                              blk, cobj(blk, j), blk.temperature))
+
+        return get_method(blk, "entr_mol_ig_comp", j)(
+                blk, cobj(blk, j), blk.temperature)
 
     def fug_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
