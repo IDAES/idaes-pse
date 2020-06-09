@@ -756,7 +756,7 @@ class TurbineData(PressureChangerData):
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
 
-@declare_process_block_class("Compressor", doc="Isentropic turbine model")
+@declare_process_block_class("Compressor", doc="Isentropic compressor model")
 class CompressorData(PressureChangerData):
     # Pressure changer with isentropic turbine options
     CONFIG = PressureChangerData.CONFIG()
@@ -766,7 +766,7 @@ class CompressorData(PressureChangerData):
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
 
-@declare_process_block_class("Pump", doc="Isentropic turbine model")
+@declare_process_block_class("Pump", doc="Pump model")
 class PumpData(PressureChangerData):
     # Pressure changer with isentropic turbine options
     CONFIG = PressureChangerData.CONFIG()
