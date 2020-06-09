@@ -39,6 +39,12 @@ class ComponentData(ProcessBlockData):
             doc="Dict containing elemental composition in the form element "
                 ": stoichiometry"))
 
+    CONFIG.declare("henry_component", ConfigValue(
+            domain=dict,
+            description="Phases in which component follows Henry's Law",
+            doc="Dict indicating phases in which component follows Herny's "
+                "Law (keys) with values indicating form of law."))
+
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
