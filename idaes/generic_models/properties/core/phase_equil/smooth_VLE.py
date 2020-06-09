@@ -95,15 +95,15 @@ def phase_equil_initialization(b, phase_pair):
 def calculate_teq(b, phase_pair):
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
 
-    try:
+    if hasattr(b, "eq_temperature_bubble"):
         _t1 = getattr(b, "_t1"+suffix)
         _t1.value = max(value(b.temperature),
                         b.temperature_bubble[phase_pair].value)
-    except AttributeError:
+    else:
         _t1 = b.temperature
 
-    try:
+    if hasattr(b, "eq_temperature_dew"):
         b._teq[phase_pair].value = min(_t1.value,
                                        b.temperature_dew[phase_pair].value)
-    except AttributeError:
+    else:
         b._teq[phase_pair].value = _t1.value

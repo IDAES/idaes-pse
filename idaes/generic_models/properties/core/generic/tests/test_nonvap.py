@@ -17,16 +17,13 @@ Author: Andrew Lee
 """
 # Import Python libraries
 import pytest
-import logging
 
 # Import Pyomo components
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
-                           value,
-                           Var)
+                           value)
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -43,7 +40,6 @@ from idaes.core.util.testing import get_default_solver
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.generic_models.properties.core.phase_equil.henry import Hxp_constant
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
@@ -123,19 +119,20 @@ configuration = {
                                                     'B': 1.38091,
                                                     'C': -2.83433,
                                                     'D': -2.79168}}},
-        'N2': {"type": Component,
-               "elemental_composition": {"N": 2},
-               "valid_phase_types": PT.vaporPhase,
-               "enth_mol_ig_comp": RPP,
-               "parameter_data": {
-                   "mw": 92.1405E-3,
-                   "pressure_crit": 41e5,
-                   "temperature_crit": 591.8,
-                   "cp_mol_ig_comp_coeff": {'A': -2.435E1,
-                                            'B': 5.125E-1,
-                                            'C': -2.765E-4,
-                                            'D': 4.911E-8},
-                   "enth_mol_form_vap_comp_ref": 50.1e3}}},
+        'l_only': {"type": Component,
+                   "elemental_composition": {"N": 2},
+                   "valid_phase_types": PT.liquidPhase,
+                   "enth_mol_liq_comp": Perrys,
+                   "parameter_data": {
+                       "mw": 92.1405E-3,
+                       "pressure_crit": 41e5,
+                       "temperature_crit": 591.8,
+                       "cp_mol_liq_comp_coeff": {'1': 1.40E2,
+                                                 '2': -1.52E-1,
+                                                 '3': 6.95E-4,
+                                                 '4': 0,
+                                                 '5': 0},
+                       "enth_mol_form_liq_comp_ref": 12.0e3}}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": LiquidPhase,
@@ -172,7 +169,7 @@ class TestParamBlock(object):
         assert isinstance(model.params.component_list, Set)
         assert len(model.params.component_list) == 3
         for i in model.params.component_list:
-            assert i in ['benzene', 'toluene', 'N2']
+            assert i in ['benzene', 'toluene', 'l_only']
             assert isinstance(model.params.get_component(i), Component)
 
         assert isinstance(model.params._phase_component_set, Set)
@@ -180,7 +177,7 @@ class TestParamBlock(object):
         for i in model.params._phase_component_set:
             assert i in [("Liq", "benzene"), ("Liq", "toluene"),
                          ("Vap", "benzene"), ("Vap", "toluene"),
-                         ("Vap", "N2")]
+                         ("Liq", "l_only")]
 
         assert model.params.config.state_definition == FTPx
 
@@ -205,115 +202,7 @@ class TestParamBlock(object):
         assert model.params.temperature_ref.value == 300
 
 
-class TestNonCondensable_Liquid(object):
-    @pytest.fixture(scope="class")
-    def model(self):
-        model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
-
-        model.props = model.params.build_state_block(
-                [1],
-                default={"defined_state": True})
-
-        return model
-
-    def test_dof(self, model):
-        # Fix state
-        model.props[1].flow_mol.fix(1)
-        model.props[1].temperature.fix(360)
-        model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["benzene"].fix(0.4)
-        model.props[1].mole_frac_comp["toluene"].fix(0.4)
-        model.props[1].mole_frac_comp["N2"].fix(0.2)
-
-        assert degrees_of_freedom(model.props[1]) == 0
-
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_initialize(self, model):
-        orig_fixed_vars = fixed_variables_set(model)
-        orig_act_consts = activated_constraints_set(model)
-
-        model.props.initialize(optarg={'tol': 1e-6}, outlvl=idaeslog.DEBUG)
-
-        assert degrees_of_freedom(model) == 0
-
-        fin_fixed_vars = fixed_variables_set(model)
-        fin_act_consts = activated_constraints_set(model)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
-
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_solve(self, model):
-        results = solver.solve(model)
-
-        # Check for optimal solution
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_solution(self, model):
-        # Check phase equilibrium results
-        assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
-            pytest.approx(0.3424, abs=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Liq", "toluene"].value == \
-            pytest.approx(0.6576, abs=1e-4)
-
-        assert pytest.approx(1, abs=1e-4) == (
-            model.props[1].mole_frac_phase_comp["Liq", "benzene"].value +
-            model.props[1].mole_frac_phase_comp["Liq", "toluene"].value)
-
-        assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
-            pytest.approx(0.4187, abs=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Vap", "toluene"].value == \
-            pytest.approx(0.3166, abs=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Vap", "N2"].value == \
-            pytest.approx(0.2648, abs=1e-4)
-
-        assert pytest.approx(1, abs=1e-4) == value(
-            model.props[1].mole_frac_phase_comp["Vap", "benzene"] +
-            model.props[1].mole_frac_phase_comp["Vap", "toluene"] +
-            model.props[1].mole_frac_phase_comp["Vap", "N2"])
-
-        assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.7553, abs=1e-4)
-        assert model.props[1].phase_frac["Liq"].value == \
-            pytest.approx(0.2447, abs=1e-4)
-
-        assert pytest.approx(
-            model.props[1].mole_frac_comp["benzene"].value, abs=1e-4) == value(
-                model.props[1].mole_frac_phase_comp["Vap", "benzene"] *
-                model.props[1].phase_frac["Vap"] +
-                model.props[1].mole_frac_phase_comp["Liq", "benzene"] *
-                model.props[1].phase_frac["Liq"])
-        assert pytest.approx(
-            model.props[1].mole_frac_comp["toluene"].value, abs=1e-4) == value(
-                model.props[1].mole_frac_phase_comp["Vap", "toluene"] *
-                model.props[1].phase_frac["Vap"] +
-                model.props[1].mole_frac_phase_comp["Liq", "toluene"] *
-                model.props[1].phase_frac["Liq"])
-        assert pytest.approx(
-            model.props[1].mole_frac_comp["N2"].value, abs=1e-4) == value(
-                model.props[1].mole_frac_phase_comp["Vap", "N2"] *
-                model.props[1].phase_frac["Vap"])
-
-    @pytest.mark.ui
-    def test_report(self, model):
-        model.props[1].report()
-
-
-class TestNonCondensable_Vapour(object):
+class TestNonVapourisable_Vapour(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
@@ -332,7 +221,7 @@ class TestNonCondensable_Vapour(object):
         model.props[1].pressure.fix(101325)
         model.props[1].mole_frac_comp["benzene"].fix(0.4)
         model.props[1].mole_frac_comp["toluene"].fix(0.4)
-        model.props[1].mole_frac_comp["N2"].fix(0.2)
+        model.props[1].mole_frac_comp["l_only"].fix(0.2)
 
         assert degrees_of_freedom(model.props[1]) == 0
 
@@ -374,30 +263,30 @@ class TestNonCondensable_Vapour(object):
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
-            pytest.approx(0.2858, abs=1e-4)
+            pytest.approx(0.2964, abs=1e-4)
         assert model.props[1].mole_frac_phase_comp["Liq", "toluene"].value == \
-            pytest.approx(0.7142, abs=1e-4)
+            pytest.approx(0.4136, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Liq", "l_only"].value == \
+            pytest.approx(0.29, abs=1e-4)
 
         assert pytest.approx(1, abs=1e-4) == (
             model.props[1].mole_frac_phase_comp["Liq", "benzene"].value +
-            model.props[1].mole_frac_phase_comp["Liq", "toluene"].value)
+            model.props[1].mole_frac_phase_comp["Liq", "toluene"].value +
+            model.props[1].mole_frac_phase_comp["Liq", "l_only"].value)
 
         assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
-            pytest.approx(0.4, abs=1e-4)
+            pytest.approx(0.6301, abs=1e-4)
         assert model.props[1].mole_frac_phase_comp["Vap", "toluene"].value == \
-            pytest.approx(0.4, abs=1e-4)
-        assert model.props[1].mole_frac_phase_comp["Vap", "N2"].value == \
-            pytest.approx(0.2, abs=1e-4)
+            pytest.approx(0.3699, abs=1e-4)
 
         assert pytest.approx(1, abs=1e-4) == value(
             model.props[1].mole_frac_phase_comp["Vap", "benzene"] +
-            model.props[1].mole_frac_phase_comp["Vap", "toluene"] +
-            model.props[1].mole_frac_phase_comp["Vap", "N2"])
+            model.props[1].mole_frac_phase_comp["Vap", "toluene"])
 
         assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(1, abs=1e-4)
+            pytest.approx(0.3104, abs=1e-4)
         assert model.props[1].phase_frac["Liq"].value == \
-            pytest.approx(0, abs=1e-4)
+            pytest.approx(0.6896, abs=1e-4)
 
         assert pytest.approx(
             model.props[1].mole_frac_comp["benzene"].value, abs=1e-4) == value(
@@ -412,9 +301,117 @@ class TestNonCondensable_Vapour(object):
                 model.props[1].mole_frac_phase_comp["Liq", "toluene"] *
                 model.props[1].phase_frac["Liq"])
         assert pytest.approx(
-            model.props[1].mole_frac_comp["N2"].value, abs=1e-4) == value(
-                model.props[1].mole_frac_phase_comp["Vap", "N2"] *
-                model.props[1].phase_frac["Vap"])
+            model.props[1].mole_frac_comp["l_only"].value, abs=1e-4) == value(
+                model.props[1].mole_frac_phase_comp["Liq", "l_only"] *
+                model.props[1].phase_frac["Liq"])
+
+    @pytest.mark.ui
+    def test_report(self, model):
+        model.props[1].report()
+
+
+class TestNonVapourisable_Liquid(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = GenericParameterBlock(default=configuration)
+
+        model.props = model.params.build_state_block(
+                [1],
+                default={"defined_state": True})
+
+        return model
+
+    def test_dof(self, model):
+        # Fix state
+        model.props[1].flow_mol.fix(1)
+        model.props[1].temperature.fix(360)
+        model.props[1].pressure.fix(101325)
+        model.props[1].mole_frac_comp["benzene"].fix(0.4)
+        model.props[1].mole_frac_comp["toluene"].fix(0.4)
+        model.props[1].mole_frac_comp["l_only"].fix(0.2)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, model):
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.props.initialize(optarg={'tol': 1e-6}, outlvl=idaeslog.DEBUG)
+
+        assert degrees_of_freedom(model) == 0
+
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, model):
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, model):
+        # Check phase equilibrium results
+        assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
+            pytest.approx(0.4, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Liq", "toluene"].value == \
+            pytest.approx(0.4, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Liq", "l_only"].value == \
+            pytest.approx(0.2, abs=1e-4)
+
+        assert pytest.approx(1, abs=1e-4) == (
+            model.props[1].mole_frac_phase_comp["Liq", "benzene"].value +
+            model.props[1].mole_frac_phase_comp["Liq", "toluene"].value +
+            model.props[1].mole_frac_phase_comp["Liq", "l_only"].value)
+
+        assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
+            pytest.approx(0.7084, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Vap", "toluene"].value == \
+            pytest.approx(0.2916, abs=1e-4)
+
+        assert pytest.approx(1, abs=1e-4) == value(
+            model.props[1].mole_frac_phase_comp["Vap", "benzene"] +
+            model.props[1].mole_frac_phase_comp["Vap", "toluene"])
+
+        assert model.props[1].phase_frac["Vap"].value == \
+            pytest.approx(0, abs=1e-4)
+        assert model.props[1].phase_frac["Liq"].value == \
+            pytest.approx(1, abs=1e-4)
+
+        assert pytest.approx(
+            model.props[1].mole_frac_comp["benzene"].value, abs=1e-4) == value(
+                model.props[1].mole_frac_phase_comp["Vap", "benzene"] *
+                model.props[1].phase_frac["Vap"] +
+                model.props[1].mole_frac_phase_comp["Liq", "benzene"] *
+                model.props[1].phase_frac["Liq"])
+        assert pytest.approx(
+            model.props[1].mole_frac_comp["toluene"].value, abs=1e-4) == value(
+                model.props[1].mole_frac_phase_comp["Vap", "toluene"] *
+                model.props[1].phase_frac["Vap"] +
+                model.props[1].mole_frac_phase_comp["Liq", "toluene"] *
+                model.props[1].phase_frac["Liq"])
+        assert pytest.approx(
+            model.props[1].mole_frac_comp["l_only"].value, abs=1e-4) == value(
+                model.props[1].mole_frac_phase_comp["Liq", "l_only"] *
+                model.props[1].phase_frac["Liq"])
 
     @pytest.mark.ui
     def test_report(self, model):
