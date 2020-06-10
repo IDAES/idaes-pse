@@ -199,8 +199,8 @@ class StateTestBlockData(StateBlockData):
         self.div0 = Expression(expr=4.0/self.x)
         self.flow_mol = Var(["CO2", "H2O"])
 
-
-def test_generate_table():
+@pytest.fixture
+def gtmodel():
     m = ConcreteModel()
     m.state_a = TestStateBlock()
     m.state_b = TestStateBlock([1,2,3])
@@ -224,6 +224,11 @@ def test_generate_table():
     m.state_b[3].enth_mol = 3000
     m.state_b[3].flow_mol["CO2"] = 300
     m.state_b[3].flow_mol["H2O"] = 301
+
+    return m
+
+def test_generate_table(gtmodel):
+    m = gtmodel
 
     sd = {"a": m.state_a, "b1": m.state_b[1]}
     # This tests what happens if one of the requested attributes gives a division
@@ -249,3 +254,18 @@ def test_generate_table():
     assert st.loc["b1"]["T"] == pytest.approx(1000*2)
     assert isna(st.loc["b1"]["ERR"])
     assert isna(st.loc["b1"]["Miss"])
+
+def test_generate_table_errors(gtmodel):
+    m = gtmodel
+
+    sd = {"a": m.state_a, "b1": m.state_b[1]}
+    heading=["F"]
+
+    with pytest.raises(AssertionError):
+        st = generate_table(sd, attributes=[("flow_mol",)], heading=heading)
+
+    with pytest.raises(KeyError):
+        st = generate_table(sd, attributes=[("flow_mol", "coffee")], heading=heading)
+
+    with pytest.raises(TypeError):
+        st = generate_table(sd, attributes=["flow_mol"], heading=heading)
