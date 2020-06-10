@@ -26,6 +26,8 @@ An example of declaring  new model (named NewModel) is shown below:
 
 The first part of the declaration is the `declare_process_block_class` decorator, which automates all the code required to create a new type of Pyomo `Block`. This decorator needs to be provided with a name for the new model (NewModel). Understanding the details of class decoration within Python and the function of the `declare_process_block_class` decorator are not necessary for developing new models, however users who wish to read more can see the :ref:`technical specifications<technical_specs/core/process_block:ProcessBlock Class>`.
 
+The second part of the declaration creates a `NewModelData` class which inherits from an existing `BaseClass`. The `NewModelData` class contains the instructions necessary for building the new model and is populated by the user. However, there are many common methods each type of model (unit operation, thermophysical properties, etc.) has a set of common methods associated with them. Rather than force the user to rewrite each of these methods for their model, IDAES provides a set of base class which can be used as a foundation for the new model using what is referred to as “inheritance”. These base classes contain the common instructions and by inheriting from these when creating a new class, the new class automatically gains all of these common instructions.
+
 Inheriting from Existing Models
 -------------------------------
 
@@ -36,8 +38,41 @@ A useful concept when modifying existing models through inheritance is “overlo
 Config Blocks
 -------------
 
+Whilst the model class constrains the instructions necessary to build a model object, it is often necessary to provide additional information when creating an instance of a model. One example of this is informing a unit model of which property package to use for a given instance. When creating a new model class, it is necessary to define the information that a user may pass to the class when creating an instance of the new model, which is done using configuration blocks (config blocks for short) – this is where the information in the “default” keyword is sent when an instance of a model is created.
+
+Configuration blocks are defined by declaring a `CONFIG` object for each new model data class, as shown in the example below. The `CONFIG` object should be an instance of a Pyomo `ConfigBlock`.
+
+.. code-block:: python
+
+    @declare_process_block_class("NewModel")
+    class NewModelData(BaseClass):
+
+    CONFIG = BaseClass.CONFIG()
+
+Each type of model has a set of expected inputs (or arguments) which are determine by the type of model, which can be inherited from the appropriate base class as shown above. Users may also add custom configuration arguments to their models as needed by declaring new entries to the `CONFIG` block as shown below:
+
+.. code-block:: python
+
+    from pyomo.common.config import ConfigValue
+
+    @declare_process_block_class("NewModel")
+    class NewModelData(BaseClass):
+        CONFIG = BaseClass.CONFIG()
+        CONFIG.declare("new_argument", ConfigValue(
+            default =  # default value for argument,
+            domain =  # condition input must satisfy,
+            description = "short description of argument",
+            doc = "longer description of argument"))
+
+.. note::
+
+    Configuration arguments are set when an instance of a model is created and are generally only used at build-time. That is, once a model has been constructed changing a configuration argument has no effect on the model structure.
+
 The `build` Method
 ------------------
+
+Types of Models
+---------------
 
 .. toctree::
     :maxdepth: 1
