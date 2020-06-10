@@ -194,13 +194,13 @@ def generate_table(blocks, attributes, heading=None):
         heading = attributes
     st = DataFrame(columns=heading)
     row = [None] * len(attributes)  # not a big deal but save time on realloc
-    j = None
-    if isinstance(a, (list, tuple)): # if a is list or tuple, assume index supplied
-        assert len(a) == 2
-        j = a[1]
-        a = a[0]
     for key, s in blocks.items():
         for i, a in enumerate(attributes):
+            j = None
+            if isinstance(a, (list, tuple)):
+                # if a is list or tuple, assume index supplied
+                j = a[1:]
+                a = a[0]
             try:
                 v = getattr(s, a, None)
                 if j is not None:

@@ -232,16 +232,20 @@ def test_generate_table():
     st = generate_table(
         sd,
         attributes=["pressure", "temperature", "div0",
-                    ("flow_mol", "CO2"), ("flow_mol", "H2O")
+                    ("flow_mol", "CO2"), ("flow_mol", "H2O"),
                     "not_there"],
         heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss"])
 
-    assert(st.loc["a"]["P"] == 11000)
-    assert(abs(st.loc["a"]["T"] - 1100*2) < 0.001)
-    assert(isna(st.loc["a"]["ERR"]))
-    assert(isna(st.loc["a"]["Miss"]))
+    assert st.loc["a"]["P"] == 11000
+    assert st.loc["a"]["F_CO2"] == 110
+    assert st.loc["a"]["F_H2O"] == 111
+    assert st.loc["a"]["T"] == pytest.approx(1100*2)
+    assert isna(st.loc["a"]["ERR"])
+    assert isna(st.loc["a"]["Miss"])
 
-    assert(st.loc["b1"]["P"] == 10000)
-    assert(abs(st.loc["b1"]["T"] - 1000*2) < 0.001)
-    assert(isna(st.loc["b1"]["ERR"]))
-    assert(isna(st.loc["b1"]["Miss"]))
+    assert st.loc["b1"]["P"] == 10000
+    assert st.loc["b1"]["F_CO2"] == 100
+    assert st.loc["b1"]["F_H2O"] == 101
+    assert st.loc["b1"]["T"] == pytest.approx(1000*2)
+    assert isna(st.loc["b1"]["ERR"])
+    assert isna(st.loc["b1"]["Miss"])
