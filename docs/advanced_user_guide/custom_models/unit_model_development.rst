@@ -5,6 +5,16 @@
 
 .. warning:: This section is currently being developed
 
+Unit Models
+    • Imports
+    • Decorator and class
+        ◦ UnitModelBlockData
+    • config
+    • build
+        ◦ use of control volumes
+    • initialize
+    • get_performance_contents
+
 Tutorials
 ---------
 Tutorials demonstrating how to create custom unit models are found
