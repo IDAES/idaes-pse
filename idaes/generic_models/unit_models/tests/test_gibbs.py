@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           Constraint,
                            TerminationCondition,
                            SolverStatus,
                            value)
@@ -35,6 +36,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # -----------------------------------------------------------------------------
@@ -52,7 +54,7 @@ def test_config():
     m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -63,10 +65,46 @@ def test_config():
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
+    assert m.fs.unit.config.inert_species == []
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 4
+
+    assert not hasattr(m.fs.unit, "inert_species_balance")
+
+
+def test_inerts():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+def test_invalid_inert():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.unit invalid component in inert_species "
+                       "argument. foo is not in the property package "
+                       "component list."):
+        m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                          "inert_species": ["foo"]})
 
 
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestMethane(object):
     @pytest.fixture(scope="class")
     def methane(self):
         m = ConcreteModel()
