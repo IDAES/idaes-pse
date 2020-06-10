@@ -5,7 +5,7 @@
     :maxdepth: 1
     
     why_idaes
-    components
+    components/index
     workflow
     conventions
     commands/index
