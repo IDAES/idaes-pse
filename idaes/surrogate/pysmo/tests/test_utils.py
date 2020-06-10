@@ -20,8 +20,8 @@
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
 
-import pyutilib.th as unittest
-
+import pyutilib.th
+import pytest
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
 from pyomo.environ import ConcreteModel, Param, Var, value, sin, atan, atanh
 from pyomo.core import ComponentMap
@@ -32,11 +32,13 @@ try:
 except ImportError:
     _numpy_available = False
 
-@unittest.skipIf(not _numpy_available, "Test requires numpy")
-class TestNumpyEvaluator(unittest.TestCase):
+@pyutilib.th.skipIf(not _numpy_available, "Test requires numpy")
+class TestNumpyEvaluator:
+
+    @pytest.mark.unit
     def test_eval_numpy(self):
         m = ConcreteModel()
-        m.p = Param([1,2], mutable=True)
+        m.p = Param([1,2], mutable=True)   
         m.x = Var()
 
         data = np.array([[0,-1,2],
@@ -69,6 +71,7 @@ class TestNumpyEvaluator(unittest.TestCase):
         assert result[1] == atanh(.2)
         assert result[2] == atanh(.3)
 
+    @pytest.mark.unit
     def test_eval_constant(self):
         m = ConcreteModel()
         m.p = Param([1,2], mutable=True)
@@ -86,3 +89,6 @@ class TestNumpyEvaluator(unittest.TestCase):
         m.p[1] = 2
         m.p[2] = 4
         assert value(expr) == 6.75
+
+if __name__ == "__main__":
+    pytest.main()
