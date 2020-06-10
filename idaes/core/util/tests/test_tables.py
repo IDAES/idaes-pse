@@ -197,43 +197,75 @@ class StateTestBlockData(StateBlockData):
         self.enth_mol = Var()
         self.temperature = Expression(expr=self.enth_mol*2.0)
         self.div0 = Expression(expr=4.0/self.x)
-        self.flow_mol = Var()
+        self.flow_mol = Var(["CO2", "H2O"])
 
-
-def test_generate_table():
+@pytest.fixture
+def gtmodel():
     m = ConcreteModel()
     m.state_a = TestStateBlock()
     m.state_b = TestStateBlock([1,2,3])
 
     m.state_a.pressure = 11000
     m.state_a.enth_mol = 1100
-    m.state_a.flow_mol = 110
+    m.state_a.flow_mol["CO2"] = 110
+    m.state_a.flow_mol["H2O"] = 111
 
     m.state_b[1].pressure = 10000
     m.state_b[1].enth_mol = 1000
-    m.state_b[1].flow_mol = 100
+    m.state_b[1].flow_mol["CO2"] = 100
+    m.state_b[1].flow_mol["H2O"] = 101
 
     m.state_b[2].pressure = 20000
     m.state_b[2].enth_mol = 2000
-    m.state_b[2].flow_mol = 200
+    m.state_b[2].flow_mol["CO2"] = 200
+    m.state_b[2].flow_mol["H2O"] = 201
 
     m.state_b[3].pressure = 30000
     m.state_b[3].enth_mol = 3000
-    m.state_b[3].flow_mol = 300
+    m.state_b[3].flow_mol["CO2"] = 300
+    m.state_b[3].flow_mol["H2O"] = 301
+
+    return m
+
+def test_generate_table(gtmodel):
+    m = gtmodel
 
     sd = {"a": m.state_a, "b1": m.state_b[1]}
+    # This tests what happens if one of the requested attributes gives a division
+    # by zero error and if one of the attributes doesn't exist.  With flow it
+    # tests indexed attributes.
     st = generate_table(
         sd,
         attributes=["pressure", "temperature", "div0",
-                    "flow_mol", "not_there"],
-        heading=["P", "T", "ERR", "F", "Miss"])
+                    ("flow_mol", "CO2"), ("flow_mol", "H2O"),
+                    "not_there"],
+        heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss"])
 
-    assert(st.loc["a"]["P"] == 11000)
-    assert(abs(st.loc["a"]["T"] - 1100*2) < 0.001)
-    assert(isna(st.loc["a"]["ERR"]))
-    assert(isna(st.loc["a"]["Miss"]))
+    assert st.loc["a"]["P"] == 11000
+    assert st.loc["a"]["F_CO2"] == 110
+    assert st.loc["a"]["F_H2O"] == 111
+    assert st.loc["a"]["T"] == pytest.approx(1100*2)
+    assert isna(st.loc["a"]["ERR"])
+    assert isna(st.loc["a"]["Miss"])
 
-    assert(st.loc["b1"]["P"] == 10000)
-    assert(abs(st.loc["b1"]["T"] - 1000*2) < 0.001)
-    assert(isna(st.loc["b1"]["ERR"]))
-    assert(isna(st.loc["b1"]["Miss"]))
+    assert st.loc["b1"]["P"] == 10000
+    assert st.loc["b1"]["F_CO2"] == 100
+    assert st.loc["b1"]["F_H2O"] == 101
+    assert st.loc["b1"]["T"] == pytest.approx(1000*2)
+    assert isna(st.loc["b1"]["ERR"])
+    assert isna(st.loc["b1"]["Miss"])
+
+def test_generate_table_errors(gtmodel):
+    m = gtmodel
+
+    sd = {"a": m.state_a, "b1": m.state_b[1]}
+    heading=["F"]
+
+    with pytest.raises(AssertionError):
+        st = generate_table(sd, attributes=[("flow_mol",)], heading=heading)
+
+    with pytest.raises(KeyError):
+        st = generate_table(sd, attributes=[("flow_mol", "coffee")], heading=heading)
+
+    with pytest.raises(TypeError):
+        st = generate_table(sd, attributes=["flow_mol"], heading=heading)
