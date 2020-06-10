@@ -38,7 +38,7 @@ A useful concept when modifying existing models through inheritance is “overlo
 Config Blocks
 -------------
 
-Whilst the model class constrains the instructions necessary to build a model object, it is often necessary to provide additional information when creating an instance of a model. One example of this is informing a unit model of which property package to use for a given instance. When creating a new model class, it is necessary to define the information that a user may pass to the class when creating an instance of the new model, which is done using configuration blocks (config blocks for short) – this is where the information in the “default” keyword is sent when an instance of a model is created.
+Whilst the model class contains the instructions necessary to build a model object, it is often necessary to provide additional information when creating an instance of a model. One example of this is informing a unit model of which property package to use for a given instance. When creating a new model class, it is necessary to define the information that a user may pass to the class when creating an instance of the new model, which is done using configuration blocks (config blocks for short) – this is where the information in the “default” keyword is sent when an instance of a model is created.
 
 Configuration blocks are defined by declaring a `CONFIG` object for each new model data class, as shown in the example below. The `CONFIG` object should be an instance of a Pyomo `ConfigBlock`.
 
@@ -70,6 +70,8 @@ Each type of model has a set of expected inputs (or arguments) which are determi
 
 The `build` Method
 ------------------
+
+Finally, the core of any IDAES model class is the `build` method, which contains the set of instructions to be executed when a model is created. The `build` method acts as the rule for constructing the resulting Pyomo `Block`, and needs to contain the instructions necessary for constructing the variable, expressions and constraints which describe the model. The `build` method is written in Python code and should construct the necessary Pyomo components, and may make use of sub-methods to modularize the model construction.
 
 Types of Models
 ---------------
