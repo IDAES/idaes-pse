@@ -32,7 +32,7 @@ import yaml
 
 # local
 from . import errors
-from . import resource
+from .resource import Resource
 from . import resourcedb
 from . import workspace
 from .util import mkdir_p, yaml_load
@@ -343,35 +343,50 @@ class DMF(workspace.Workspace, HasTraits):
         file_kw: dict = None,
         resource=None,
         type_: str = None,
+        values: dict = None,
         **kwargs,
-    ) -> str:
-        """Add a new resource to the DMF. There are a number of ways to specify how to
+    ) -> Resource:
+        """Creates a resource and adds it to the DMF. There are a number of ways to specify how to
         create this resource, detailed below.
 
         Args:
             file (optional): File from which to construct the resource
-            file_kw (optional): Additional keywords for `resource.Resource.from_file`
+            file_kw (optional): Additional keywords for `Resource.from_file`
             resource (optional): Existing resource to copy/add into this DMF instance
-            type_ (optional): When constructing from kwargs, this specifies the type of
+            type_ (optional): When constructing from kwargs, or value, this specifies the type of
                 resource to create, just like the same-named argument to the Resource constructor.
-            kwargs: Construct resource from key/value pairs
+            values (optional): An alternative to kwargs, useful for keys that are not valid
+                Python identifiers.
+            kwargs: Construct resource from key/value pairs, or add these pairs to a resource
+                 constructed with other arguments.
 
         Returns:
-             Resource ID
+             The resource object
+
         Raises:
             DMFError, DuplicateResourceError: Trouble building resource
             ValueError: invalid argument combination
         """
+        constructed_from_kwargs = False
         if file is not None:
-            rsrc = resource.Resource.from_file(str(file), **file_kw)
+            if file_kw is None:
+                file_kw = {}
+            rsrc = Resource.from_file(str(file), **file_kw)
         elif resource is not None:
             rsrc = resource
+        elif values is not None:
+            rsrc = Resource(value=values, type_=type_)
         elif kwargs is not None:
-            rsrc = resource.Resource(value=kwargs, type_=type_)
+            rsrc = Resource(value=kwargs, type_=type_)
+            constructed_from_kwargs = True
         else:
             raise ValueError("No arguments given to constructor")
+        # add kwargs, optionally
+        if (not constructed_from_kwargs) and kwargs:
+            rsrc.set_values(kwargs)
         # add to DMF
-        return self.add(rsrc)
+        rsrc_id = self.add(rsrc)
+        return rsrc
 
     def add(self, rsrc):
         """Add a resource and associated files.
@@ -391,7 +406,7 @@ class DMF(workspace.Workspace, HasTraits):
         so that `update()` with no arguments applies to all of them.
 
         Args:
-            rsrc (resource.Resource): The resource
+            rsrc (Resource): The resource
         Returns:
             (str) Resource ID
         Raises:
@@ -410,6 +425,18 @@ class DMF(workspace.Workspace, HasTraits):
         # if that worked, remember in session store
         self._resources[rsrc.id] = rsrc
         return rsrc.id
+
+    def attach(self, rsrc):
+        """Associate this resource with this instance of the DMF, so that e.g. `update()`
+        with no 
+        Args:
+            rsrc:
+
+        Returns:
+
+        """
+        self._resources[rsrc.id] = rsrc
+        return rsrc
 
     def _copy_files(self, rsrc):
         if rsrc.v.get("datafiles_dir", None):
@@ -493,9 +520,9 @@ class DMF(workspace.Workspace, HasTraits):
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
         Returns:
-            (resource.Resource) The found resource, or None if no match
+            (Resource) The found resource, or None if no match
         """
-        item = self._db.find_one({resource.Resource.ID_FIELD: rid}, id_only=id_only)
+        item = self._db.find_one({Resource.ID_FIELD: rid}, id_only=id_only)
         if item is None:
             return None
         elif id_only:
@@ -585,15 +612,15 @@ class DMF(workspace.Workspace, HasTraits):
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
         """Find resources by their identifier or identifier prefix.
         """
-        if len(identifier) == resource.Resource.ID_LENGTH:
+        if len(identifier) == Resource.ID_LENGTH:
             for rsrc in self._db.find(
-                {resource.Resource.ID_FIELD: identifier}, id_only=id_only
+                {Resource.ID_FIELD: identifier}, id_only=id_only
             ):
                 yield rsrc
         else:
             regex, flags = f"{identifier}[a-z]*", re.IGNORECASE
             for rsrc in self._db.find(
-                {resource.Resource.ID_FIELD: "~" + regex}, flags=flags, id_only=id_only
+                {Resource.ID_FIELD: "~" + regex}, flags=flags, id_only=id_only
             ):
                 yield rsrc
 
@@ -603,7 +630,7 @@ class DMF(workspace.Workspace, HasTraits):
         """Find related resources.
 
         Args:
-            rsrc (resource.Resource): Resource starting point
+            rsrc (Resource): Resource starting point
             filter_dict (dict): See parameter of same name in :meth:`find`.
             maxdepth (int): Maximum depth of search (starts at 1)
             meta (List[str]): Metadata fields to extract for meta part
@@ -623,14 +650,14 @@ class DMF(workspace.Workspace, HasTraits):
         """
         if meta is None:
             meta = [
-                resource.Resource.ID_FIELD,
-                resource.Resource.TYPE_FIELD,
+                Resource.ID_FIELD,
+                Resource.TYPE_FIELD,
                 "desc",
                 "version_info",
             ]
         else:
-            if resource.Resource.ID_FIELD not in meta:
-                meta.insert(0, resource.Resource.ID_FIELD)
+            if Resource.ID_FIELD not in meta:
+                meta.insert(0, Resource.ID_FIELD)
         try:
             return self._db.find_related(
                 rsrc.id,
@@ -704,7 +731,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     def update(
         self,
-        rsrc: resource.Resource = None,
+        rsrc: Resource = None,
         sync_relations: bool = False,
         upsert: bool = False,
     ):
@@ -724,13 +751,13 @@ class DMF(workspace.Workspace, HasTraits):
             errors.DMFError: If the input resource was invalid.
         """
         did_update = False
-        # with no specific resource, remove all resources added to this instance
+        # with no specific resource, update all resources added to this instance
         if rsrc is None:
             for rsrc in self._resources.values():
                 # TODO: add logic to check if resource has changed, before updating it
                 self.update(rsrc=rsrc, sync_relations=sync_relations, upsert=upsert)
         # sanity-check input
-        if not isinstance(rsrc, resource.Resource):
+        if not isinstance(rsrc, Resource):
             raise TypeError("Resource type expected, got: {}".format(type(rsrc)))
         # synchronize relations
         if sync_relations:

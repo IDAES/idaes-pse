@@ -444,6 +444,26 @@ class Resource(object):
     def set_id(self, value=None):
         self.v[self.ID_FIELD] = identifier_str(value)
 
+    def set_field(self, key: str, value):
+        """Set field/value pairs with some special shortcuts.
+
+        Args:
+            key: Field name. Special values:
+                * "name": Set as first in the list of aliases
+            value: Field value.
+
+        Returns:
+            None
+        """
+        if key == "name":
+            self.v["aliases"].insert(0, value)
+        else:
+            self.v[key] = value
+
+    def set_values(self, values):
+        for k, v in values.items():
+            self.set_field(k, v)
+
     @property
     def name(self):
         """Get resource name (first alias).
