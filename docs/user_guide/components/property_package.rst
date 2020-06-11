@@ -3,41 +3,68 @@
 
 .. contents:: :local:
 
-Property packages represent the core of any process model, and having a suitable property 
-package is key to successfully modeling any process system. However, developing property 
-packages is a significant challenge even for experienced modelers as they involve large 
-numbers of tightly coupled constraints and parameters. The goal of the IDAES Generic Property 
-Package Framework is to provide a flexible platform on which users can build property packages 
-for common types of systems by calling upon libraries of modular sub-models to build up complex 
-property calculations with the least effort possible.
+Overview
+--------
 
-The central part of any property package are the equations of state or equivalent models which 
-describe how the mixture behaves under the conditions of interest. For systems with multiple 
-phases and phase equilibrium, each phase must have its own equation of state (or equivalent), 
-which must provide information on phase equilibrium which is compatible with the other phases 
-in the system.
-
-Information on how to develop new components for the IDAES Generic Property Package Framework 
-are given in the following sections.
-
-In order to create and use a property package using the IDAES Generic Property Package 
-Framework, users must provide a definition for the material they wish to model. The framework 
-supports two approaches for defining the property package, which are described below, both of 
-which are equivalent in practice.
-
-
-IDAES Property Packages
------------------------
-
-The IDAES process modeling framework divides property calculations into two parts;
+Property packages provide the relationships and parameters necessary to determine the 
+properties of process streams. Property packages may be general in purpose, such as ideal gas 
+equations, or specific to a certain application. The IDAES modeling framework divides property 
+packages into two parts:
 
 * physical and transport properties
 * chemical reaction properties
 
-Defining the calculations to be used when calculating properties is done via "property 
-packages", which contain a set of related calculations for a number of properties of interest. 
-Property packages may be general in purpose, such as ideal gas equations, or specific to a 
-certain application.
+While the IDAES modeling framework provides several standard property packages, many process
+modeling applications will require specific property packages. Information on developing custom
+property packages is provided in the 
+:ref:`advanced user guide<advanced_user_guide/property_development:Property Model Development>`.
+Since the effort to develop a custom property package is substantial, the IDAES modeling
+framework provides a 
+:ref:`Generic Property Package Framework<user_guide/components/property_model/general/index:Generic Property Package Framework>` 
+and :ref:`Generic Property Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
+to make it easier to create a package for common property and reaction models.
+
+Physical properties
+-------------------
+
+Almost all process models depend on physical properties to some extent, such as 
+calculation of specific enthalpy or internal energy for energy balances. These properties 
+only depend on the material being considered and are independent of the unit operations in 
+which they are used. As such, physical property calculations can be separated from the 
+unit model calculations and treated as a separate submodel which is called by the unit model. 
+Each unit model can then create instances of these submodels as required to calculate those 
+properties required by each unit.
+
+Within IDAES, this is handled by StateBlock objects – these are self-contained submodels 
+containing the calculations for all necessary thermophysical properties for a given material 
+at a given point in space and time. IDAES Unit models create instances of these StateBlocks 
+wherever they need to calculate physical properties and link to variables within the 
+StateBlock within the unit model constraints.
+
+However, physical property calculations depend on a set of parameters which are specific 
+to a given material or mixture. Thus, each instance of a StateBlock for a material use the same 
+set of parameters. To avoid duplicating these parameters in every instance of a StateBlock for 
+a given material, these parameters are instead grouped in a PhysicalParameterBlock for that 
+material which the StateBlocks link to. In this way, there is a single common location for all 
+parameters.
+
+In summary, physical property packages consist of two parts:
+
+* PhysicalParameterBlocks, which contain a set of parameters associated with the specific material(s) being modeled
+* StateBlocks, which contain the actual calculations of the state variables and functions
+
+Reaction properties
+-------------------
+
+Reaction property packages represent a collection of calculations necessary to determine the 
+reaction behavior of a mixture at a given state. Reaction properties depend upon the state and 
+physical properties of the material, and thus must be linked to a StateBlock which provides the 
+necessary state and physical property information.
+
+Reaction property packages consist of two parts:
+
+* ReactionParameterBlocks, which contain a set of parameters associated with the specific reaction(s) being modeled, and
+* ReactionBlocks, which contain the actual calculations of the reaction behavior.
 
 As Needed Properties
 --------------------
@@ -60,5 +87,17 @@ framework that when this property is called for, the associated method should be
 The add_properties metadata can also indicate that a property should always be present 
 (i.e. constructed in the BlockData's build method) by setting the method to None, or that it is 
 not supported by setting the method to False.
+
+Generic Property Package Framework
+----------------------------------
+Property packages represent the core of any process model, and having a suitable property 
+package is key to successfully modeling any process system. However, developing property 
+packages is a significant challenge even for experienced modelers as they involve large numbers 
+of tightly coupled constraints and parameters. The IDAES modeling framework provides 
+a Generic Property Package Framework to provide a flexible platform on which users can build 
+property packages for common types of systems by calling upon libraries of modular sub-models 
+to build up complex property calculations with the least effort possible.
+
+
 
 
