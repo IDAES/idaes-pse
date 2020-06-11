@@ -5,6 +5,7 @@
     :glob:
     :hidden:
     
+    *
     */index
 
 .. contents:: :local:
