@@ -1,16 +1,16 @@
 ﻿Developing Custom Models
 ========================
 
-.. contents:: :local:
-
 It is difficult to build a single model library that will suit all modeling needs, and thus users will inevitably encounter situations where they need to create new models to represent their processes. The IDAES Process Modeling Framework has been developed with this in mind, and all components of the framework have been designed to be fully accessible and modifiable. This section of the documentation will explain how users can develop new models, or modify existing models, for use within the IDAES modeling environment.
+
+.. contents:: :local:
 
 Creating New Modeling Components
 --------------------------------
 
 All models within the IDAES Process Modeling Framework, be they models of unit operations of thermodynamic properties, are constructed in the same way and user defined models follow the same structure. Each model component is a set of instructions on how to assemble a Pyomo ‘Block’ containing the necessary variables, expressions and constraints to describe the desired process. These instructions are contained within Python `classes` which can be written and modified by the user.
 
-Details on what is required when constructing custom models of different types will be provided in subsequent sections of this documentation, whoever there are some steps common to all types of models which will be discussed here.
+Details on what is required when constructing custom models of different types will be provided in subsequent sections of this documentation, however there are some steps common to all types of models which will be discussed here.
 
 Defining New Model Classes
 --------------------------
@@ -72,6 +72,12 @@ The `build` Method
 ------------------
 
 Finally, the core of any IDAES model class is the `build` method, which contains the set of instructions to be executed when a model is created. The `build` method acts as the rule for constructing the resulting Pyomo `Block`, and needs to contain the instructions necessary for constructing the variable, expressions and constraints which describe the model. The `build` method is written in Python code and should construct the necessary Pyomo components, and may make use of sub-methods to modularize the model construction.
+
+In almost all cases, the first instruction in a `build` method should be to call the `build` method of the inherited (base) class. This is necessary to execute the instructions in the base class, and can be done with the following line of code:
+
+.. code-block:: python
+
+    super().build()
 
 Types of Models
 ---------------
