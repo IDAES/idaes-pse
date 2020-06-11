@@ -10,7 +10,7 @@ a link in their description.
     :hidden:
     
     *
-    dmf/index
+    */index
 
 .. contents:: :local:
 
@@ -31,7 +31,7 @@ represent individual pieces of equipment and their processes on the IDAES platfo
 
 Property Packages
 ^^^^^^^^^^^^^^^^^
-:ref:`Property packages<user_guide/components/property_package:Property Package>`  
+:ref:`Property packages<user_guide/components/property_model/index:Property Package>`  
 represent the physical, thermodynamic, and reactive properties of the process streams on the 
 IDAES platform.
 

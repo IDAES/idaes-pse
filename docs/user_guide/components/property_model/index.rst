@@ -1,6 +1,12 @@
 ﻿Property Package
 ================
 
+.. toctree::
+    :glob:
+    :hidden:
+    
+    */index
+
 .. contents:: :local:
 
 Overview
@@ -21,7 +27,7 @@ property packages is provided in the
 Since the effort to develop a custom property package is substantial, the IDAES modeling
 framework provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_model/general/index:Generic Property Package Framework>` 
-and :ref:`Generic Property Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
+and :ref:`Generic Reaction Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
 
 Physical properties
@@ -94,10 +100,17 @@ Property packages represent the core of any process model, and having a suitable
 package is key to successfully modeling any process system. However, developing property 
 packages is a significant challenge even for experienced modelers as they involve large numbers 
 of tightly coupled constraints and parameters. The IDAES modeling framework provides 
-a Generic Property Package Framework to provide a flexible platform on which users can build 
-property packages for common types of systems by calling upon libraries of modular sub-models 
-to build up complex property calculations with the least effort possible.
+a 
+:ref:`Generic Property Package Framework<user_guide/components/property_model/general/index:Generic Property Package Framework>` 
+to provide a flexible platform on which users can build property packages for common types of 
+systems by calling upon libraries of modular sub-models to build up complex property 
+calculations with the least effort possible.
 
 
-
+Generic Reaction Package Framework
+----------------------------------
+The IDAES modeling framework provides a 
+:ref:`Generic Reaction Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
+to help the user create reaction property packages for common systems, similar to the Generic 
+Property Package Framework.
 
