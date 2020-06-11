@@ -269,8 +269,7 @@ class Resource(object):
     def __init__(self, value: dict = None, type_: str = None):
         self._set_defaults()
         if value:
-            _log.debug(f"update resource with values: {value}")
-            self.v.update(value)
+            self.set_values(value)
         if type_ is not None:
             self.v[self.TYPE_FIELD] = type_
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)

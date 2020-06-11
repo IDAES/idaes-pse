@@ -426,17 +426,18 @@ class DMF(workspace.Workspace, HasTraits):
         self._resources[rsrc.id] = rsrc
         return rsrc.id
 
-    def attach(self, rsrc):
+    def attach(self, resource: Resource) -> Resource:
         """Associate this resource with this instance of the DMF, so that e.g. `update()`
-        with no 
+        with no arguments will save updated values.
+
         Args:
-            rsrc:
+            resource: The resource to attach
 
         Returns:
-
+            input value (for chaining)
         """
-        self._resources[rsrc.id] = rsrc
-        return rsrc
+        self._resources[resource.id] = resource
+        return resource
 
     def _copy_files(self, rsrc):
         if rsrc.v.get("datafiles_dir", None):
@@ -600,14 +601,31 @@ class DMF(workspace.Workspace, HasTraits):
             )
         )
 
-    def find_one(self, *args, **kwargs):
+    def find_one(self, *args, **kwargs) -> Resource:
+        """Find and return one matching resource.
+
+        This is a wrapper around `find()` that does two things:
+        1. Only returns the first result (if any)
+        2. By default, calls `attach()` on the result to add it to the DMF.
+           You can change this by passing `attach=False` as a keyword.
+
+        Returns:
+            Resource, or None or an empty list.
+        """
+        attach_to_dmf = True
+        if 'attach' in kwargs:
+            attach_to_dmf = kwargs['attach']
+            del kwargs['attach']
         results = self.find(*args, **kwargs)
         if results is None:
-            return results
+            return None
         result_list = list(results)
         if len(result_list) == 0:
             return []
-        return result_list[0]
+        result = result_list[0]
+        if attach_to_dmf:
+            self.attach(result)
+        return result
 
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
         """Find resources by their identifier or identifier prefix.
@@ -753,9 +771,7 @@ class DMF(workspace.Workspace, HasTraits):
         did_update = False
         # with no specific resource, update all resources added to this instance
         if rsrc is None:
-            for rsrc in self._resources.values():
-                # TODO: add logic to check if resource has changed, before updating it
-                self.update(rsrc=rsrc, sync_relations=sync_relations, upsert=upsert)
+            return self._update_resources(sync_relations)
         # sanity-check input
         if not isinstance(rsrc, Resource):
             raise TypeError("Resource type expected, got: {}".format(type(rsrc)))
@@ -778,6 +794,22 @@ class DMF(workspace.Workspace, HasTraits):
         except ValueError as err:
             raise errors.DMFError("Bad value for new resource: {}".format(err))
         return did_update
+
+    def _update_resources(self, sync_relations) -> int:
+        valid_resources = {}
+        for key, rsrc in self._resources.items():
+            try:
+                self.update(rsrc=rsrc, sync_relations=sync_relations, upsert=False)
+            except errors.NoSuchResourceError as err:
+                _log.warning(f"During update, resource not found: {err}")
+            except Exception as err:
+                _log.warning(f"During update, unknown error: {err}")
+            else:
+                # if it was OK, add to valid resources dict
+                valid_resources[key] = rsrc
+        # keep only valid resources
+        self._resources = valid_resources
+        return len(valid_resources)
 
     def _postproc_resource(self, r):
         """Perform any additional changes to resources retrieved

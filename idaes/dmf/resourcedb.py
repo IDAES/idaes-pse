@@ -396,7 +396,7 @@ class ResourceDB(object):
         id_cond = {Resource.ID_FIELD: id_}
         old = self.find_one(id_cond)
         if old is None:
-            raise KeyError('Cannot find resource id={}'.format(id_))
+            raise errors.NoSuchResourceError(id_=id_)
         T = Resource.TYPE_FIELD
         if old.v[T] != new_dict[T]:
             raise ValueError(
