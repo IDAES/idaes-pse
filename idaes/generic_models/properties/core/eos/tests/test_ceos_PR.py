@@ -436,14 +436,18 @@ def test_dens_mol_phase_invalid_phase(m_sol):
 
 
 def test_enth_mol_phase(m):
+    for j in m.params.component_list:
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+
     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list,
                                          initialize=1)
 
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == -820.31
+        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == -779.31
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -253.211
+        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -212.211
 
 
 def test_enth_mol_phase_comp(m):
@@ -451,8 +455,10 @@ def test_enth_mol_phase_comp(m):
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
         m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
 
-        assert str(Cubic.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Cubic.enth_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
+        assert pytest.approx(-212.211, rel=1e-5) == value(
+            Cubic.enth_mol_phase_comp(m.props[1], "Liq", j))
+        assert pytest.approx(-779.305, rel=1e-5) == value(
+            Cubic.enth_mol_phase_comp(m.props[1], "Vap", j))
 
 
 def test_enth_mol_phase_invalid_phase(m_sol):
@@ -476,12 +482,20 @@ def test_entr_mol_phase(m):
 
 
 def test_entr_mol_phase_comp(m):
+    entr = {("Liq", "a"): 45.4093,
+            ("Vap", "a"): 59.0666,
+            ("Liq", "b"): 51.1725,
+            ("Vap", "b"): 53.3035,
+            ("Liq", "c"): 60.3069,
+            ("Vap", "c"): 42.8875}
     for j in m.params.component_list:
         m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
-        assert str(Cubic.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Cubic.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
+        assert pytest.approx(entr[("Liq", j)], rel=1e-5) == value(
+            Cubic.entr_mol_phase_comp(m.props[1], "Liq", j))
+        assert pytest.approx(entr[("Vap", j)], rel=1e-5) == value(
+            Cubic.entr_mol_phase_comp(m.props[1], "Vap", j))
 
 
 def test_entr_mol_phase_invalid_phase(m_sol):
@@ -568,14 +582,13 @@ def test_fug_coeff_phase_comp_eq_invalid_phase(m_sol):
 
 
 def test_gibbs_mol_phase(m):
-    m.props[1].gibbs_mol_phase_comp = Var(m.params.phase_list,
-                                          m.params.component_list)
+    m.props[1].enth_mol_phase = Var(m.params.phase_list)
+    m.props[1].entr_mol_phase = Var(m.params.phase_list)
 
     for p in m.params.phase_list:
         assert str(Cubic.gibbs_mol_phase(m.props[1], p)) == str(
-            sum(m.props[1].mole_frac_phase_comp[p, j] *
-                m.props[1].gibbs_mol_phase_comp[p, j]
-                for j in m.params.component_list))
+            m.props[1].enth_mol_phase[p] -
+            m.props[1].entr_mol_phase[p]*m.props[1].temperature)
 
 
 def test_gibbs_mol_phase_comp(m):
