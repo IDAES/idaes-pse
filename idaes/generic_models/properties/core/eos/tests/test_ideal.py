@@ -105,6 +105,7 @@ def m_sol():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
+    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
                                           initialize=0.5)
@@ -248,7 +249,7 @@ def test_fug_phase_comp_vap_eq(m):
                     m.props[1].pressure))
 
 
-def test_fug_phase_comp_invalid_phase_Eq(m_sol):
+def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 

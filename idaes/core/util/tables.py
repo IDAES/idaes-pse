@@ -17,6 +17,9 @@ from pyomo.environ import value
 from pyomo.network import Arc, Port
 
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 __author__ = "John Eslick, Andrew Lee"
 
@@ -196,9 +199,31 @@ def generate_table(blocks, attributes, heading=None):
     row = [None] * len(attributes)  # not a big deal but save time on realloc
     for key, s in blocks.items():
         for i, a in enumerate(attributes):
+            j = None
+            if isinstance(a, (list, tuple)):
+                # if a is list or tuple, assume index supplied
+                try:
+                    assert len(a) > 1
+                except AssertionError:
+                    _log.error(f"An index must be supplided for attribute {a[0]}")
+                    raise AssertionError(
+                        f"An index must be supplided for attribute {a[0]}")
+                j = a[1:]
+                a = a[0]
+            v = getattr(s, a, None)
+            if j is not None:
+                try:
+                    v = v[j]
+                except KeyError:
+                    _log.error(f"{j} is not a valid index of {a}")
+                    raise KeyError(f"{j} is not a valid index of {a}")
             try:
-                v = getattr(s, a, None)
                 v = value(v, exception=False)
+            except TypeError:
+                _log.error(
+                    f"Cannot calculate value of {a} (may be subscriptable)")
+                raise TypeError(
+                    f"Cannot calculate value of {a} (may be subscriptable)")
             except ZeroDivisionError:
                 v = None
             row[i] = v
