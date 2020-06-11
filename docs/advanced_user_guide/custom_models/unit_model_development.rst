@@ -55,8 +55,30 @@ Model developers may also declare additional configuration arguments to give use
 Unit Model `build` Method
 -------------------------
 
-Use of Control Volumes
-^^^^^^^^^^^^^^^^^^^^^^
+The `build` method for a unit model must include all the instructions necessary for constructing the representation of the unit operation. This generally involves the following steps:
+
+1. Calling `super().build()` to trigger the behind-the-scenes code.
+2. Adding any variables and constraints required to describe the system geometry.
+3. Adding `State Blocks` to the model to represent each of the material states in the system.
+4. Adding the necessary material balances and associated variable to describe the flow of material between each state.
+5. Adding the necessary energy balances and associated variable to describe the flow of energy between each state.
+6. Adding the necessary momentum balances and associated variable to describe the flow of momentum between each state.
+7. Adding any additional performance equations and associated variable that govern the behavior of the unit operation.
+8. Adding the required inlet and outlet Ports to allow the unit model to be included in a flowsheet.
+
+For some applications, not all of these steps will be required (e.g. a process in which pressure drop is negligible may be able to skip adding momentum balances).
+
+The above steps represent a significant amount of work, and in many cases require a detailed understanding of how the IDAES framework is structured. To reduce the effort and knowledge required to create new models, the framework provides a number of tools to automate these steps for common cases. Users are encouraged to familiarize themselves with the methods available in :ref:`UnitModelBlockData<technical_specs/core/unit_model_block:Unit Model Class>` and the use of control volumes.
+
+Control Volumes
+^^^^^^^^^^^^^^^
+
+The IDAES Process Modeling Framework includes tools to assist users with creating new models in the form of the Control Volume libraries. These libraries contain methods for performing the common task associated with building unit models ,such as creating material, energy and momentum balances. Users are free to choose whether or not to use these libraries, but are encouraged to understand what is available in these as they can greatly reduce the amount of effort required by the user.
+
+The IDAES Process Modeling Framework currently includes two types of Control Volumes:
+
+1. :ref:`ControlVolume0D<technical_specs/core/control_volume_0d:0D Control Volume Class>` for inlet-outlet type models where spatial variation are not significant.
+2. :ref:`ControlVolume1D<technical_specs/core/control_volume_1d:1D Control Volume Class>` for models where spatial variation in one-dimension are required.
 
 Unit Model Initialization
 -------------------------
@@ -81,16 +103,20 @@ The example below shows the general form used when declaring a new initializatio
 Unit Model Report
 -----------------
 
+Users are likely already aware of the `report` method which is available in all IDAES models which prints a summary of the current state of a given model. This functionality is also part of `UnitModelBlockData` and is thus included in all custom unit model, however model developers need to define what information should be included in the output.
+
+The `report` method will automatically search for and identify all `Ports` in the model to be included in the summary stream table, however modeler developers must identify any performance variables they wish to include in the summary. This is done by declaring a `_get_performance_contents` method as shown in the example below:
+
 .. code-block:: python
 
     def _get_performance_contents(self, time_point=0):
-        var_dict = {"Volume": self.volume[time_point]}
-        if hasattr(self, "heat_duty"):
-            var_dict["Heat Duty"] = self.heat_duty[time_point]
-        if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP[time_point]
+        var_dict = {"display name": self.var[time_point]}
+        expr_dict = {"display name": self.expr[time_point]}
+        param_dict = {"display name": self.param[time_point]}
 
-        return {"vars": var_dict}
+        return {"vars": var_dict, "exprs": expr_dict, "params": param_dict}
+
+The `_get_performance_contents` method should take two arguments, the first being the model object and the second being a time point at which to report the model state. The method should return a dictionary-of-dictionaries with one to three keys; "vars", "exprs" and "params". The entries from these will be included in the model summary under the headings of Variables, Expressions and Parameters respectively.
 
 Tutorials
 ---------
