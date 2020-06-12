@@ -13,3 +13,9 @@
     caprese/index
 
     
+MatOpt
+------
+The MatOpt module provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to design crystalline nanostructured materials, including but not limited to particles, wires, surfaces, and periodic bulk structures.
+
+.. image:: ../../_images/matopt_logo_full.png
+    :width: 895

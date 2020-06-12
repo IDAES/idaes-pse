@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Var
+from pyomo.environ import ConcreteModel, log, Var
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -26,6 +26,7 @@ from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.constants import Constants as const
 
 
 # Dummy method for property method calls
@@ -104,6 +105,7 @@ def m_sol():
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)
+    m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
                                           initialize=0.5)
@@ -199,7 +201,10 @@ def test_entr_mol_phase_comp(m):
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
+        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(
+            42 - const.gas_constant*log(
+                m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure /
+                m.props[1].params.pressure_ref))
 
 
 def test_entr_mol_phase_invalid_phase(m_sol):
@@ -244,7 +249,7 @@ def test_fug_phase_comp_vap_eq(m):
                     m.props[1].pressure))
 
 
-def test_fug_phase_comp_invalid_phase_Eq(m_sol):
+def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 

@@ -1,6 +1,6 @@
-===============================
-MatOpt : Materials Optimization
-===============================
+==================================
+MatOpt: Nanomaterials Optimization
+==================================
 
 The MatOpt module provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to design crystalline nanostructured materials, including but not limited to particles, wires, surfaces, and periodic bulk structures.
 
