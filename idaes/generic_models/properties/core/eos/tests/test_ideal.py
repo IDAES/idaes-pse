@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Var
+from pyomo.environ import ConcreteModel, log, Var
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -26,6 +26,7 @@ from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.constants import Constants as const
 
 
 # Dummy method for property method calls
@@ -200,7 +201,10 @@ def test_entr_mol_phase_comp(m):
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
+        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(
+            42 - const.gas_constant*log(
+                m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure /
+                m.props[1].params.pressure_ref))
 
 
 def test_entr_mol_phase_invalid_phase(m_sol):
