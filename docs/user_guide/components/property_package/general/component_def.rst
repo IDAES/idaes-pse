@@ -53,7 +53,7 @@ Within the IDAES Generic Property Package Framework, pure component property cor
 * functions are used for self-contained correlations with hard-coded parameters,
 * classes are used for more generic correlations which require associated parameters.
 
-When providing a method via the `components` configuration argument, users can either provide a pointer to the desired class/method directly, or to a Python module containing a class or method with the same name as the property to be calculated. More details on the uses of these and how to construct your own can be found in the :ref:`developer documentation<user_guide/components/property_model/general/developers:Developing New Property Libraries>`.
+When providing a method via the `components` configuration argument, users can either provide a pointer to the desired class/method directly, or to a Python module containing a class or method with the same name as the property to be calculated. More details on the uses of these and how to construct your own can be found in the :ref:`developer documentation<user_guide/components/property_package/general/developers:Developing New Property Libraries>`.
 
 Pure Component Libraries
 """"""""""""""""""""""""
@@ -83,7 +83,7 @@ As a given system may incorporate multiple phase equilibria, the `phase_equilibr
 
     "phase_equilibrium_form": {("Vap", "Liq"): fugacity}
 
-The IDAES Generic Property Package Framework contains a library of common forms for the equilibrium condition, which is described :ref:`here<user_guide/components/property_model/general/pe/pe_forms:Library of Common Equilibrium Forms>`.
+The IDAES Generic Property Package Framework contains a library of common forms for the equilibrium condition, which is described :ref:`here<user_guide/components/property_package/general/pe/pe_forms:Library of Common Equilibrium Forms>`.
 
 Parameter Data
 ^^^^^^^^^^^^^^

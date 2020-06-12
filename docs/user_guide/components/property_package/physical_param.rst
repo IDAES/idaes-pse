@@ -6,7 +6,7 @@ contain all the parameters and indexing sets used by a given property package.
 
 The role of the :ref:`PhysicalParameterBlock Class<technical_specs/core/physical_property_class:PhysicalParameterBlock Class>` 
 is to set up the references required by the rest of the IDAES framework for constructing 
-instances of :ref:`StateBlocks<user_guide/components/property_model/state_block:State Block>` 
+instances of :ref:`StateBlocks<user_guide/components/property_package/state_block:State Block>` 
 and attaching these to the PhysicalParameterBlock for ease of use. This allows other models to 
 be pointed to the PhysicalParameterBlock in order to collect the necessary information and to 
 construct the necessary StateBlocks without the need for the user to do this manually.

@@ -1,13 +1,6 @@
 ﻿Property Package
 ================
 
-.. toctree::
-    :glob:
-    :hidden:
-    
-    *
-    */index
-
 .. contents:: :local:
 
 Overview
@@ -24,11 +17,11 @@ packages into two parts:
 While the IDAES modeling framework provides several standard property packages, many process
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
-:ref:`advanced user guide<advanced_user_guide/property_development:Property Model Development>`.
+:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Property Model>`.
 Since the effort to develop a custom property package is substantial, the IDAES modeling
 framework provides a 
-:ref:`Generic Property Package Framework<user_guide/components/property_model/general/index:Generic Property Package Framework>` 
-and :ref:`Generic Reaction Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
+:ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
+and :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
 
 Physical properties
@@ -57,8 +50,8 @@ parameters.
 
 In summary, physical property packages consist of two parts:
 
-* PhysicalParameterBlocks, which contain a set of parameters associated with the specific material(s) being modeled
-* StateBlocks, which contain the actual calculations of the state variables and functions
+* :ref:`Physical Parameter Blocks<user_guide/components/property_package/physical_param:Physical Parameter Block>`, which contain a set of parameters associated with the specific material(s) being modeled
+* :ref:`State Blocks<user_guide/components/property_package/state_block:State Block>`, which contain the actual calculations of the state variables and functions
 
 Reaction properties
 -------------------
@@ -70,8 +63,23 @@ necessary state and physical property information.
 
 Reaction property packages consist of two parts:
 
-* ReactionParameterBlocks, which contain a set of parameters associated with the specific reaction(s) being modeled, and
-* ReactionBlocks, which contain the actual calculations of the reaction behavior.
+* :ref:`Reaction Parameter Blocks<user_guide/components/property_package/reaction_param:Reaction Parameter Block>`, which contain a set of parameters associated with the specific reaction(s) being modeled, and
+* :ref:`Reaction Blocks<user_guide/components/property_package/reaction_block:Reaction Block>`, which contain the actual calculations of the reaction behavior.
+
+Component and Phase Objects
+---------------------------
+
+Property packages also rely on component and phase objects.
+
+:ref:`Component Objects<user_guide/components/property_package/comp:Component Object>` 
+are used in the IDAES Process Modeling Framework to identify the chemical species of interest 
+in a property package and to contain information describing the behavior of that component 
+(such as properties of that component).
+
+:ref:`Phase Objects<user_guide/components/property_package/phase:Phase Object>`
+are used in the IDAES Process Modeling Framework to identify the thermodynamic phases of 
+interest in a property package and to contain information describing the behavior of that phase 
+(for example the equation of state which describes that phase).
 
 As Needed Properties
 --------------------
@@ -97,12 +105,13 @@ not supported by setting the method to False.
 
 Generic Property Package Framework
 ----------------------------------
+
 Property packages represent the core of any process model, and having a suitable property 
 package is key to successfully modeling any process system. However, developing property 
 packages is a significant challenge even for experienced modelers as they involve large numbers 
 of tightly coupled constraints and parameters. The IDAES modeling framework provides 
 a 
-:ref:`Generic Property Package Framework<user_guide/components/property_model/general/index:Generic Property Package Framework>` 
+:ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
 to provide a flexible platform on which users can build property packages for common types of 
 systems by calling upon libraries of modular sub-models to build up complex property 
 calculations with the least effort possible.
@@ -110,8 +119,16 @@ calculations with the least effort possible.
 
 Generic Reaction Package Framework
 ----------------------------------
+
 The IDAES modeling framework provides a 
-:ref:`Generic Reaction Package Framework<user_guide/components/property_model/general_reactions/index:Generic Reaction Package Framework>`
+:ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to help the user create reaction property packages for common systems, similar to the Generic 
 Property Package Framework.
+
+.. toctree::
+    :glob:
+    :hidden:
+    
+    *
+    */index
 

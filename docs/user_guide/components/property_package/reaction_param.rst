@@ -6,7 +6,7 @@ contain all the parameters and indexing sets used by a given property package.
 
 The role of the :ref:`ReactionParameterBlock Class<technical_specs/core/reaction_property_class:ReactionParameterBlock Class>` 
 is to set up the references required by the rest of the IDAES framework for constructing 
-instances of :ref:`ReactionBlocks<user_guide/components/property_model/reaction_block:Reaction Block>` 
+instances of :ref:`ReactionBlocks<user_guide/components/property_package/reaction_block:Reaction Block>` 
 and attaching these to the ReactionParameterBlock for ease of use. This allows other models to 
 be pointed to the ReactionParameterBlock in order to collect the necessary information and to 
 construct the necessary ReactionBlocks without the need for the user to do this manually.

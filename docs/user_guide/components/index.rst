@@ -6,6 +6,7 @@ level components of the IDAES modeling framework. Each component is described in
 with a link in their description.
 
 .. toctree::
+    :maxdepth: 1
     
     flowsheet/index
     property_package/index
@@ -15,20 +16,20 @@ with a link in their description.
 
 Flowsheet
 ---------
-:ref:`Flowsheet models<user_guide/components/flowsheet:Flowsheet>`
+:ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>`
 are the top level of the IDAES modeling framework. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 
 Property Package
 ----------------
-:ref:`Property packages<user_guide/components/property_model/index:Property Package>` are a 
+:ref:`Property packages<user_guide/components/property_package/index:Property Package>` are a 
 collection of related models that represent the physical, thermodynamic, and reactive 
 properties of the process streams on the IDAES platform.
 
 Unit Model
 ----------
-:ref:`Unit models<user_guide/components/unit_model:Unit Model>` 
+:ref:`Unit models<user_guide/components/unit_model/index:Unit Model>` 
 represent individual pieces of equipment and their processes on the IDAES platform.
 
 Data Management Framework

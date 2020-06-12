@@ -13,8 +13,8 @@ flowsheet is implemented with a
 which provides a container for other components. Flowsheet models generally contain 
 three types of components:
 
-1. :ref:`Unit models<user_guide/components/unit_model:Unit Model>`, representing unit operations
-2. :ref:`Property packages<user_guide/components/property_model/index:Property Package>`, representing the parameters and relationships for property calculations
+1. :ref:`Unit models<user_guide/components/unit_model/index:Unit Model>`, representing unit operations
+2. :ref:`Property packages<user_guide/components/property_package/index:Property Package>`, representing the parameters and relationships for property calculations
 3. Arcs, representing connections between unit models
 
 The FlowsheetBlock is also where the
