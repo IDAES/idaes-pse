@@ -1,5 +1,5 @@
-﻿Learning Materials
-==================
+﻿Tutorials and Examples
+======================
 
 Tutorials and examples for IDAES are located at the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/>`_. 
 
