@@ -10,7 +10,7 @@ The starting point for all unit models within the IDAES Process Modeling Framewo
 
 * checking and validating the “dynamic” and “has_holdup” configuration arguments to ensure consistency,
 * adding `Port` objects to the model,
-* create simple material balances between states (equal flow of each component in each phase), and,
+* creating simple material balances between states (equal flow of each component in each phase), and,
 * a method for initializing simple unit models.
 
 More details on the `UnitModelBlockData` class can be found in the :ref:`technical specifications<technical_specs/core/unit_model_block:Unit Model Class>`.
@@ -18,7 +18,7 @@ More details on the `UnitModelBlockData` class can be found in the :ref:`technic
 Unit Model Configuration
 ------------------------
 
-Configuration arguments in unit models are used to allow users of the model to configure the model to suit the needs of the flowsheet they are simulating. The most common aspects that need to be configured are:
+Configuration arguments in unit models allow model developers to provide the end-user with the ability to configure the model to suit the needs of the flowsheet they are simulating. The most common aspects that need to be configured are:
 
 * whether the model should be dynamic or steady-state, and
 * what property package to use when calculating thermophysical properties.
@@ -28,8 +28,7 @@ The `UnitModelBlockData` class contains a simple configuration block which inclu
 * unit operations involving equilibrium where the outlet condition can be calculated directly from the inlet condition.
 * unit operations with negligible holdup where (total) flow out of the unit is always equal to the (total) flow in.
 
-In general, a unit model is not written with a specific flowsheet or set of thermophysical property calculations in mind, thus it is necessary to provide a configuration argument (or arguments in cases where multiple streams interact) to allow the end-user to specify a property package to use with the model.  The example below shows a typical example of declaring a configuration argument for a single property package, along with a second argument that allows users to pass configuration arguments to the instances of the property packages when they are created.
-
+In general, a unit model is not written with a specific flowsheet or set of thermophysical property calculations in mind, thus it is necessary to provide a configuration argument (or arguments in cases where multiple streams interact) to allow the end-user to specify a property package to use with the model. The example below shows how to declare a configuration argument for a single property package, along with a second argument that allows users to pass configuration arguments to the instances of the property packages when they are created.
 
 .. code-block:: python
 
@@ -48,9 +47,9 @@ class NewUnitDataData(UnitModelBlockData):
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s) and used when constructing these."""))
 
-For unit models involving multiple property packages, or those that include reaction packages, additional pairs of configuration arguments are required for each of these. Model developers must provide unique names for each configuration argument, and are encourage to use meaningful names ot assist users in understanding what package should be linked to each argument.
+For unit models involving multiple property packages, or those that include reaction packages, additional pairs of configuration arguments are required for each of these. Model developers must provide unique names for each configuration argument, and are encourage to use meaningful names to assist end-users in understanding what package should be linked to each argument.
 
-Model developers may also declare additional configuration arguments to give users of their model the ability to change the behavior of different parts of the model. For example, the core iDAES Unit Model Library makes use of these to  provide flexibility in the form of the balance equations. Use of additional configuration arguments is entirely optional.
+Model developers may also declare additional configuration arguments to give end-users the ability to change the behavior of different parts of the model. For example, the core IDAES Unit Model Library makes use of these to  provide flexibility in the form of the balance equations. Use of additional configuration arguments is entirely optional.
 
 Unit Model `build` Method
 -------------------------
@@ -73,7 +72,7 @@ The above steps represent a significant amount of work, and in many cases requir
 Control Volumes
 ^^^^^^^^^^^^^^^
 
-The IDAES Process Modeling Framework includes tools to assist users with creating new models in the form of the Control Volume libraries. These libraries contain methods for performing the common task associated with building unit models ,such as creating material, energy and momentum balances. Users are free to choose whether or not to use these libraries, but are encouraged to understand what is available in these as they can greatly reduce the amount of effort required by the user.
+The IDAES Process Modeling Framework includes tools to assist users with creating new models in the form of the Control Volume libraries. These libraries contain methods for performing the common task associated with building unit models, such as creating material, energy and momentum balances. Users are free to choose whether or not to use these libraries, but are encouraged to understand what is available in these as they can greatly reduce the amount of effort required by the user.
 
 The IDAES Process Modeling Framework currently includes two types of Control Volumes:
 
@@ -85,7 +84,7 @@ Unit Model Initialization
 
 Whilst the `UnitModelBlockData` class contains a pre-built `initialize` method, this method is relatively simple and is unlikely to work for more complex models. For these situations, model developers will need to write their own `initialize` methods as part of their new unit model.
 
-To create a custom initialization routine, model developers must create an `initialize` method as part of their model, and provide a sequence of steps intended to build up a feasible solutions. Developing initialization routines is one of the hardest aspects of model development, and generally involves starting with a simplified form of the model and progressively adding complexity. Initialization routines generally make use of Pyomo’s tools for activating and deactivating constraints and often involve solving multiple sub-problems whilst building up an initial state.
+To create a custom initialization routine, model developers must create an `initialize` method as part of their model, and provide a sequence of steps intended to build up a feasible solution. Developing initialization routines is one of the hardest aspects of model development, and generally involves starting with a simplified form of the model and progressively adding complexity. Initialization routines generally make use of Pyomo’s tools for activating and deactivating constraints and often involve solving multiple sub-problems whilst building up an initial state.
 
 The example below shows the general form used when declaring a new initialization method:
 
@@ -103,9 +102,9 @@ The example below shows the general form used when declaring a new initializatio
 Unit Model Report
 -----------------
 
-Users are likely already aware of the `report` method which is available in all IDAES models which prints a summary of the current state of a given model. This functionality is also part of `UnitModelBlockData` and is thus included in all custom unit model, however model developers need to define what information should be included in the output.
+Users are likely already aware of the `report` method which is available in all IDAES models and prints a summary of the current state of a given model. This functionality is also part of `UnitModelBlockData` and is thus included in all custom unit models, however model developers need to define what information should be included in the output.
 
-The `report` method will automatically search for and identify all `Ports` in the model to be included in the summary stream table, however modeler developers must identify any performance variables they wish to include in the summary. This is done by declaring a `_get_performance_contents` method as shown in the example below:
+The `report` method will automatically search for and identify all `Ports` in the model to be included in the summary stream table, however model developers must identify any performance variables they wish to include in the summary. This is done by declaring a `_get_performance_contents` method as shown in the example below:
 
 .. code-block:: python
 
