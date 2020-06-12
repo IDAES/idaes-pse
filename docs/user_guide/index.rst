@@ -13,5 +13,4 @@
     utility_methods
     debugging/index
     modeling_extensions/index
-    learning_materials/index
     faq
