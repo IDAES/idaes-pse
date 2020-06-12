@@ -3,7 +3,9 @@ Component Object
 
 Component objects are used in the IDAES Process Modeling Framework to identify the chemical 
 species of interest in a property package and to contain information describing the behavior 
-of that component (such as properties of that component).
+of that component (such as properties of that component). Additional information on the 
+:ref:`Component Class<technical_specs/core/comp:Component Class>` is provided in the technical
+specifications.
 
 The IDAES Process Modeling Framework currently supports the following types of components.
 

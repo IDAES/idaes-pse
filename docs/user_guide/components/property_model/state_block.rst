@@ -14,4 +14,7 @@ the `build_state_block()` method on the Physical Parameter Block. The `parameter
 argument will be automatically set, and any other arguments (including indexing sets) may be 
 provided to the `build_state_block` method as ususal.
 
+Additional details on :ref:`State Blocks<technical_specs/core/physical_property_class:State Blocks>`
+are located in the technical specifications.
+
 

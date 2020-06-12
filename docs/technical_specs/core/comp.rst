@@ -33,8 +33,7 @@ Additionally, `Ion` objects have a `charge` configuration argument for recording
 the ion (must be an integer) and do not have a `valid_phase_types` argument (as it is assumed 
 they can only exist in `LiquidPhases`).
 
-.. note:: Users are encouraged to use the `Anion` and `Cation` classes instead of the generic 
-`Ion` class, as these validate that sign of the `charge` configuration argument.
+.. note:: Users are encouraged to use the `Anion` and `Cation` classes instead of the generic `Ion` class, as these validate that sign of the `charge` configuration argument.
 
 Anion Class
 ^^^^^^^^^^^

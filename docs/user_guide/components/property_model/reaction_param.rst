@@ -4,11 +4,12 @@
 Reaction Parameter Blocks serve as a central location for linking to a property package, and 
 contain all the parameters and indexing sets used by a given property package.
 
-The role of the ReactionParameterBlock class is to set up the references required by the rest of 
-the IDAES framework for constructing instances of ReactionBlocks and attaching these to the 
-ReactionParameter block for ease of use. This allows other models to be pointed to the 
-ReactionParameter block in order to collect the necessary information and to construct the 
-necessary ReactionBlocks without the need for the user to do this manually.
+The role of the :ref:`ReactionParameterBlock Class<technical_specs/core/reaction_property_class:ReactionParameterBlock Class>` 
+is to set up the references required by the rest of the IDAES framework for constructing 
+instances of :ref:`ReactionBlocks<user_guide/components/property_model/reaction_block:Reaction Block>` 
+and attaching these to the ReactionParameterBlock for ease of use. This allows other models to 
+be pointed to the ReactionParameterBlock in order to collect the necessary information and to 
+construct the necessary ReactionBlocks without the need for the user to do this manually.
 
 Reaction property packages are used by all of the other modeling components to inform them of 
 what needs to be constructed when dealing with chemical reactions. In order to do this, the 

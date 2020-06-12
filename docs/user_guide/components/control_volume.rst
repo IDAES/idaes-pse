@@ -20,8 +20,8 @@ unit model unique.
 
 The IDAES process modeling framework currently supports two types of Control Volumes:
 
-* ControlVolume0DBlock represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.
-* ControlVolume1DBlock represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.
+* :ref:`ControlVolume0DBlock<technical_specs/core/control_volume_0d:0D Control Volume Class>` represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.
+* :ref:`ControlVolume1DBlock<technical_specs/core/control_volume_1d:1D Control Volume Class>` represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.
 
 Common Control Volume Tasks
 ---------------------------

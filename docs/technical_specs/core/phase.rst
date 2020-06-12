@@ -1,9 +1,6 @@
 Phase Class
 ===========
 
-Phase Class
------------
-
 .. module:: idaes.core.phases
 
 .. autoclass:: Phase

@@ -15,3 +15,6 @@ Reaction Blocks can be constructed directly from the associated Reaction Paramet
 calling the `build_reaction_block()` method on the Reaction Parameter Block. The `parameters` 
 construction argument will be automatically set, and any other arguments (including indexing 
 sets) may be provided to the `build_reaction_block` method as usual.
+
+Additional details on :ref:`Reaction Block<technical_specs/core/reaction_property_class:Reaction Blocks>`
+are located in the technical specifications.

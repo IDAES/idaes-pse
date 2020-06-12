@@ -10,8 +10,8 @@ constraints and associated variables, such as:
 
 Unit models are composed of the following components:
 
-    1. Control Volume Blocks, which represent volume of material over which we wish to perform material, energy and/or momentum balances
-    2. StateBlocks and ReactionBlocks, which represent the thermophysical, transport and reaction properties of the material at a specific point in space and time
+    1. :ref:`Control Volume Blocks<user_guide/components/control_volume:Control Volume>`, which represent volume of material over which we wish to perform material, energy and/or momentum balances
+    2. :ref:`State Blocks<user_guide/components/property_model/state_block:State Block>` and :ref:`Reaction Blocks<user_guide/components/property_model/reaction_block:Reaction Block>`, which represent the thermophysical, transport and reaction properties of the material at a specific point in space and time
     3. Inlets and Outlets, which allow Unit models to connect to other Unit models
 
 
