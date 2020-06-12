@@ -133,7 +133,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
@@ -195,7 +195,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
@@ -257,7 +257,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
@@ -319,7 +319,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
@@ -381,7 +381,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
@@ -419,8 +419,8 @@ class TestBTExample(object):
                 value(m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]),
                 1e-5) == 0.3858262
 
+        m.fs.state[1].mole_frac_phase_comp.display()
         m.fs.state[1].enth_mol_phase_comp.display()
-        m.fs.state[1].entr_mol_phase_comp.display()
 
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Liq"]), 1e-5) == 38235.1
@@ -446,7 +446,7 @@ class TestBTExample(object):
 
         solver = SolverFactory('ipopt')
         results = solver.solve(m)
-        
+
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
