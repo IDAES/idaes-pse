@@ -94,7 +94,7 @@ in a property package and to contain information describing the behavior of that
 
 Phase objects
 ^^^^^^^^^^^^^
-:ref:`Component Objects<user_guide/components/phase:Phase Object>`
+:ref:`Phase Objects<user_guide/components/phase:Phase Object>`
 are used in the IDAES Process Modeling Framework to identify the thermodynamic phases of 
 interest in a property package and to contain information describing the behavior of that phase 
 (for example the equation of state which describes that phase).
