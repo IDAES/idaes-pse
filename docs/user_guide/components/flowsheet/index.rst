@@ -1,6 +1,12 @@
 ﻿Flowsheet
 =========
 
+.. toctree::
+    :glob:
+    :hidden:
+    
+    *
+
 Flowsheet models are the top level of the IDAES modeling hierarchy. The 
 flowsheet is implemented with a 
 :ref:`FlowsheetBlock <technical_specs/core/flowsheet_block:Flowsheet Block>`,
@@ -11,8 +17,10 @@ three types of components:
 2. :ref:`Property packages<user_guide/components/property_model/index:Property Package>`, representing the parameters and relationships for property calculations
 3. Arcs, representing connections between unit models
 
-Flowsheet models are also an integral part of the time domain as described 
-:ref:`here<user_guide/components/time_domain:Time Domain>`.
+The FlowsheetBlock is also where the
+:ref:`time domain<user_guide/components/flowsheet/time_domain:Time Domain>`
+is implemented. While a time domain is important to support dynamic modeling,
+this time domain exists even for steady state models (single point in time).
 
 Flowsheet models may also contain additional constraints relating to how different Unit models 
 behave and interact, such as control and operational constraints. Generally speaking, if a 
