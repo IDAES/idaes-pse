@@ -333,16 +333,32 @@ class Cubic(EoSBase):
                  log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
                  const.gas_constant*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
-                                 blk.enth_mol_phase_comp[p, j]
+                                 get_method(blk, "enth_mol_ig_comp", j)(
+                                            blk, cobj(blk, j), blk.temperature)
                                  for j in blk.params.component_list))
 
-    def enth_mol_phase_comp(b, p, j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return get_method(b, "enth_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature)
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    def enth_mol_phase_comp(blk, p, j):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        return (((blk.temperature*dadT - am) *
+                 log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
+                 const.gas_constant*blk.temperature*(Z-1)*bm*EoS_p) /
+                (bm*EoS_p) + get_method(blk, "enth_mol_ig_comp", j)(
+                                        blk, cobj(blk, j), blk.temperature))
 
     def entr_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
@@ -367,16 +383,34 @@ class Cubic(EoSBase):
                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
                           (2*Z + B*(EoS_u - EoS_p)))) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
-                                 blk.entr_mol_phase_comp[p, j]
+                                 get_method(blk, "entr_mol_ig_comp", j)(
+                                     blk, cobj(blk, j), blk.temperature)
                                  for j in blk.params.component_list))
 
-    def entr_mol_phase_comp(b, p, j):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return get_method(b, "entr_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature)
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    def entr_mol_phase_comp(blk, p, j):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # See pg. 102 in Properties of Gases and Liquids
+        return (((const.gas_constant*log((Z-B)/Z)*bm*EoS_p +
+                  const.gas_constant *
+                  log(Z*blk.params.pressure_ref /
+                      (blk.mole_frac_phase_comp[p, j]*blk.pressure))*bm*EoS_p +
+                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
+                           (2*Z + B*(EoS_u - EoS_p)))) /
+                (bm*EoS_p)) + get_method(blk, "entr_mol_ig_comp", j)(
+                                      blk, cobj(blk, j), blk.temperature))
 
     def fug_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
@@ -612,8 +646,7 @@ class Cubic(EoSBase):
         return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
     def gibbs_mol_phase(b, p):
-        return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
-                   for j in b.components_in_phase(p))
+        return (b.enth_mol_phase[p] - b.entr_mol_phase[p]*b.temperature)
 
     def gibbs_mol_phase_comp(b, p, j):
         return (b.enth_mol_phase_comp[p, j] -
