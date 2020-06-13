@@ -310,13 +310,14 @@ class DMF(workspace.Workspace, HasTraits):
 
     def _validate_conf(self, c):
         if self.CONF_HELP_PATH not in c:
-            _log.warning(
-                "Path to built HTML documentation is not set. "
-                'The DMF "help" command will not work. To set '
-                'this path, set "{}" in the DMF configuration file.'.format(
-                    self.CONF_HELP_PATH
-                )
-            )
+            # _log.info(
+            #     "Path to built HTML documentation is not set. "
+            #     'The DMF "help" command will not work. To set '
+            #     'this path, set "{}" in the DMF configuration file.'.format(
+            #         self.CONF_HELP_PATH
+            #     )
+            #)
+            pass
 
     @default(CONF_DB_FILE)
     def _default_db_file(self):
