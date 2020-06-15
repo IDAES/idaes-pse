@@ -518,6 +518,7 @@ objects linked the mixed state and all outlet states,
             None
         """
         self.outlet_idx = Set(initialize=outlet_list)
+        pc_set = self.config.property_package.get_phase_component_set()
 
         if self.config.split_basis == SplittingType.totalFlow:
             sf_idx = [self.flowsheet().config.time, self.outlet_idx]
@@ -546,13 +547,11 @@ objects linked the mixed state and all outlet states,
             sf_idx = [
                 self.flowsheet().config.time,
                 self.outlet_idx,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
             ]
             sf_sum_idx = [
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
             ]
         else:
             raise BurntToast(
@@ -575,6 +574,7 @@ objects linked the mixed state and all outlet states,
         """
         Creates constraints for splitting the material flows
         """
+        pc_set = self.config.property_package.get_phase_component_set()
 
         def sf(t, o, p, j):
             if self.config.split_basis == SplittingType.totalFlow:
@@ -646,8 +646,7 @@ objects linked the mixed state and all outlet states,
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.outlet_idx,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 doc="Material splitting equations",
             )
             def material_splitting_eqn(b, t, o, p, j):
@@ -671,9 +670,11 @@ objects linked the mixed state and all outlet states,
                     sf(t, o, p, j) *
                     mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 ) == sum(
                     o_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 )
 
         elif mb_type == MaterialBalanceType.total:
@@ -690,12 +691,14 @@ objects linked the mixed state and all outlet states,
                         sf(t, o, p, j) *
                         mixed_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 ) == sum(
                     sum(
                         o_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 )
@@ -892,6 +895,9 @@ objects linked the mixed state and all outlet states,
         # Get list of port members
         s_vars = mb[self.flowsheet().config.time.first()].define_port_members()
 
+        # Get phase component list(s)
+        pc_set = self.config.property_package.get_phase_component_set()
+
         # Add empty Port objects
         for o in outlet_list:
             p_obj = Port(noruleinit=True, doc="Outlet Port")
@@ -912,23 +918,25 @@ objects linked the mixed state and all outlet states,
                     if "_phase" in l_name:
 
                         def e_rule(b, t, p, j):
-                            if self.config.split_basis == \
-                                    SplittingType.phaseFlow:
-                                return s_vars[s][p, j]
-                            elif self.config.split_basis == \
-                                    SplittingType.componentFlow:
-                                if split_map[j] == o:
-                                    return 1
-                                else:
-                                    return self.eps
-                            elif (
-                                self.config.split_basis
-                                == SplittingType.phaseComponentFlow
-                            ):
-                                for ps in self.config.property_package.phase_list:
-                                    if split_map[ps, j] == o:
+                            if (p, j) in pc_set:
+                                if self.config.split_basis == \
+                                        SplittingType.phaseFlow:
+                                    return s_vars[s][p, j]
+                                elif self.config.split_basis == \
+                                        SplittingType.componentFlow:
+                                    if split_map[j] == o:
                                         return 1
-                                return self.eps
+                                    else:
+                                        return self.eps
+                                elif (
+                                    self.config.split_basis
+                                    == SplittingType.phaseComponentFlow
+                                ):
+                                    for ps in self.config.property_package.phase_list:
+                                        if split_map[ps, j] == o:
+                                            return 1
+                                    else:
+                                        return self.eps
                             else:
                                 raise BurntToast(
                                     "{} This should not happen. Please "
@@ -938,8 +946,7 @@ objects linked the mixed state and all outlet states,
 
                         e_obj = VarLikeExpression(
                             self.flowsheet().config.time,
-                            self.config.property_package.phase_list,
-                            self.config.property_package.component_list,
+                            pc_set,
                             rule=e_rule,
                         )
 
@@ -998,7 +1005,7 @@ objects linked the mixed state and all outlet states,
                                             "developers.".format(self.name)
                                         )
 
-                                    if s_check == o:
+                                    if s_check == o and (p, j) in pc_set:
                                         return mfp[p, j]
                                 # else:
                                 return self.eps
@@ -1036,8 +1043,7 @@ objects linked the mixed state and all outlet states,
 
                     e_obj = VarLikeExpression(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
+                        pc_set,
                         rule=e_rule,
                     )
 
@@ -1121,23 +1127,24 @@ objects linked the mixed state and all outlet states,
                                 )
 
                             for p in self.config.property_package.phase_list:
-                                if self.config.split_basis == \
-                                        SplittingType.phaseFlow:
-                                    s_check = split_map[p]
-                                elif (
-                                    self.config.split_basis
-                                    == SplittingType.phaseComponentFlow
-                                ):
-                                    s_check = split_map[p, j]
-                                else:
-                                    raise BurntToast(
-                                        "{} This should not happen. Please"
-                                        " report this bug to the IDAES "
-                                        "developers.".format(self.name)
-                                    )
+                                if (p, j) in pc_set:
+                                    if self.config.split_basis == \
+                                            SplittingType.phaseFlow:
+                                        s_check = split_map[p]
+                                    elif (
+                                        self.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        s_check = split_map[p, j]
+                                    else:
+                                        raise BurntToast(
+                                            "{} This should not happen. Please"
+                                            " report this bug to the IDAES "
+                                            "developers.".format(self.name)
+                                        )
 
-                                if s_check == o:
-                                    return mfp[p, j]
+                                    if s_check == o:
+                                        return mfp[p, j]
                             # else:
                             return self.eps
 
@@ -1171,6 +1178,7 @@ objects linked the mixed state and all outlet states,
                                                 return sum(
                                                     ivar[p, j]
                                                     for j in self.config.property_package.component_list
+                                                    if (p, j) in pc_set
                                                 )
                                             else:
                                                 continue
@@ -1201,6 +1209,7 @@ objects linked the mixed state and all outlet states,
                                                 return sum(
                                                     ivar[p, j]
                                                     for p in self.config.property_package.phase_list
+                                                    if (p, j) in pc_set
                                                 )
                                             else:
                                                 continue
@@ -1218,7 +1227,7 @@ objects linked the mixed state and all outlet states,
                                         ) in (
                                             self.config.property_package.component_list
                                         ):
-                                            if split_map[p, j] == o:
+                                            if split_map[p, j] == o and (p, j) in pc_set:
                                                 return ivar[p, j]
                                             else:
                                                 continue
