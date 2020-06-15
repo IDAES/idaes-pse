@@ -28,7 +28,7 @@ Resources can be connected to each other with ``relations`` such as
 
 Below is an illustration of these components.
 
-.. image:: ../_images/dmf-workspace-resource.png
+.. image:: ../../../_images/dmf-workspace-resource.png
     :width: 600px
 
 
