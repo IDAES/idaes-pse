@@ -44,6 +44,7 @@ Contents
     getting_started
     user_guide/index
     advanced_user_guide/index
+    tutorials_examples
     technical_specs/index
     license
     copyright
