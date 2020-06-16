@@ -59,9 +59,7 @@ def test_serialize_flowsheet():
     m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
                                        'property_package': m.fs.properties,
                                        'has_pressure_change': True})
-    m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
-                                       'property_package': m.fs.properties,
-                                       'has_pressure_change': True})
+
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
     m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
@@ -98,7 +96,16 @@ def test_serialize_flowsheet():
 
     unit_models_names_type_truth = [{'name': 'M01', 'type': 'mixer'}, 
                                     {'name': 'H02', 'type': 'heater'}, 
-                                    {'name': 'F03', 'type': 'flash'}]
+                                    {'name': 'F03', 'type': 'flash'}, 
+                                    {'name': 'main_compressor', 'type': 'pressure_changer'}, 
+                                    {'name': 'bypass_compressor', 'type': 'pressure_changer'}, 
+                                    {'name': 'turbine', 'type': 'pressure_changer'}, 
+                                    {'name': 'boiler', 'type': 'heater'}, 
+                                    {'name': 'FG_cooler', 'type': 'heater'}, 
+                                    {'name': 'pre_boiler', 'type': 'heater'}, 
+                                    {'name': 'HTR_pseudo_tube', 'type': 'heater'}, 
+                                    {'name': 'LTR_pseudo_tube', 'type': 'heater'}, 
+                                    {'name': 'split', 'type': 'separator'}]
   
     set_result = set(tuple(sorted(d.items())) for d in unit_model_names_types)
     set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
