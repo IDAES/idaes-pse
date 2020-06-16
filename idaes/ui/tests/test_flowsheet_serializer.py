@@ -56,6 +56,9 @@ def test_serialize_flowsheet():
     m.fs.pre_boiler = Heater(default={'dynamic': False,
                                       'property_package': m.fs.properties,
                                       'has_pressure_change': False})
+    m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
     m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
@@ -98,7 +101,7 @@ def test_serialize_flowsheet():
     set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
     difference = list(set_truth.symmetric_difference(set_result))
 
-    print(difference)
+    print(difference, unit_model_names_types)
     assert len(difference) == 0
   
     # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
