@@ -1,17 +1,24 @@
 ﻿Components
 ==========
 
-The purpose of this section of the documentation is to provide a general introduction to the top
-level components of the IDAES modeling framework. Each component is described in greater detail 
-with a link in their description.
-
 .. toctree::
     :maxdepth: 1
+    :hidden:
     
     flowsheet/index
     property_package/index
     unit_model/index
     dmf/index
+
+The purpose of this section of the documentation is to provide a general introduction to the top
+level components of the IDAES Computational Platform. Each component is described in greater 
+detail with a link in their description.
+
+.. note::
+    IDAES is based on python-based algebraic modeling language, Pyomo. The documentation for 
+    its components (i.e. Sets, Parameters, Varirables, Objectives, Constraints, Expressions, and 
+    Suffixes) are provided in the 
+    `Pyomo documentation <https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/index.html>`_.
 
 
 Flowsheet
