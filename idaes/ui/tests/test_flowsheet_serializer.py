@@ -53,6 +53,9 @@ def test_serialize_flowsheet():
     m.fs.FG_cooler = Heater(default={'dynamic': False,
                                      'property_package': m.fs.properties,
                                      'has_pressure_change': True})
+    m.fs.pre_boiler = Heater(default={'dynamic': False,
+                                      'property_package': m.fs.properties,
+                                      'has_pressure_change': False})
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
     m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
