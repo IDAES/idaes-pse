@@ -827,7 +827,7 @@ objects linked the mixed state and all outlet states,
             raise ConfigurationError(
                 "{} cannot do an ideal separation based "
                 "on total flow. Either use ideal_separation = False or a "
-                "differnt separation basis.".format(self.name)
+                "different separation basis.".format(self.name)
             )
         if self.config.ideal_split_map is None:
             raise ConfigurationError(
