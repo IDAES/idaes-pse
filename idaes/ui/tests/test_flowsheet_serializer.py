@@ -18,7 +18,7 @@ from idaes.generic_models.flowsheets.demo_flowsheet import (
 from idaes.generic_models.unit_models.pressure_changer import \
     ThermodynamicAssumption
 from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
-from idaes.generic_models.unit_models import PressureChanger
+from idaes.generic_models.unit_models import Heater, PressureChanger
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 from idaes.ui.icon_mapping import icon_mapping
 from idaes.ui.link_position_mapping import link_position_mapping
@@ -47,6 +47,12 @@ def test_serialize_flowsheet():
                'property_package': m.fs.properties,
                'compressor': False,
                'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+    m.fs.boiler = Heater(default={'dynamic': False,
+                                  'property_package': m.fs.properties,
+                                  'has_pressure_change': True})
+    m.fs.FG_cooler = Heater(default={'dynamic': False,
+                                     'property_package': m.fs.properties,
+                                     'has_pressure_change': True})
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
     m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
