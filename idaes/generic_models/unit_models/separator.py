@@ -826,7 +826,8 @@ objects linked the mixed state and all outlet states,
         if self.config.split_basis == SplittingType.totalFlow:
             raise ConfigurationError(
                 "{} cannot do an ideal separation based "
-                "on total flow.".format(self.name)
+                "on total flow. Either use ideal_separation = False or a "
+                "differnt separation basis.".format(self.name)
             )
         if self.config.ideal_split_map is None:
             raise ConfigurationError(
@@ -985,10 +986,11 @@ objects linked the mixed state and all outlet states,
                                     raise AttributeError(
                                         "{} Cannot use ideal splitting with "
                                         "this property package. Package uses "
-                                        "indexed port member {} which does not"
-                                        " have the correct indexing sets, and "
-                                        "an equivalent variable with correct "
-                                        "indexing sets is not available."
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
                                         .format(self.name, s)
                                     )
 
@@ -1063,12 +1065,14 @@ objects linked the mixed state and all outlet states,
 
                             if mfp is None:
                                 raise AttributeError(
-                                    "{} Cannot use ideal splitting with this "
-                                    "property package. Package uses indexed "
-                                    "port member {} which does not have the "
-                                    "correct indexing sets, and an equivalent "
-                                    "variable with correct indexing sets is "
-                                    "not available.".format(self.name, s)
+                                    "{} Cannot use ideal splitting with "
+                                        "this property package. Package uses "
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
+                                        .format(self.name, s)
                                 )
 
                             for j in self.config.property_package.component_list:
@@ -1118,12 +1122,14 @@ objects linked the mixed state and all outlet states,
 
                             if mfp is None:
                                 raise AttributeError(
-                                    "{} Cannot use ideal splitting with this "
-                                    "property package. Package uses indexed "
-                                    "port member {} which does not have the "
-                                    "correct indexing sets, and an equivalent "
-                                    "variable with correct indexing sets is "
-                                    "not available.".format(self.name, s)
+                                    "{} Cannot use ideal splitting with "
+                                        "this property package. Package uses "
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
+                                        .format(self.name, s)
                                 )
 
                             for p in self.config.property_package.phase_list:
@@ -1237,7 +1243,7 @@ objects linked the mixed state and all outlet states,
                                 # Unrecognised split tupe
                                 raise BurntToast(
                                     "{} received unrecognised value for "
-                                    "split_basis argumnet. This should never "
+                                    "split_basis argument. This should never "
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(self.name)
@@ -1253,7 +1259,7 @@ objects linked the mixed state and all outlet states,
                             )
 
                     e_obj = VarLikeExpression(self.flowsheet().config.time,
-                                       rule=e_rule)
+                                              rule=e_rule)
 
                 # Add Reference/Expression object to Separator model object
                 setattr(self, "_" + o + "_" + l_name + "_ref", e_obj)
