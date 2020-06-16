@@ -59,6 +59,9 @@ def test_serialize_flowsheet():
     m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
                                        'property_package': m.fs.properties,
                                        'has_pressure_change': True})
+    m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
 
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
