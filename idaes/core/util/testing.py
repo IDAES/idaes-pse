@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -31,8 +31,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
-                        Phase,
-                        Component)
+                        Component,
+                        Phase)
+
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -136,14 +137,12 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
-        # self.phase_list = Set(initialize=["p1", "p2"])
         self.p1 = Phase()
         self.p2 = Phase()
 
         self.c1 = Component()
         self.c2 = Component()
 
-        # self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
         self.element_list = Set(initialize=["H", "He", "Li"])
         self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
@@ -203,6 +202,10 @@ class StateTestBlockData(StateBlockData):
                                         initialize=50,
                                         units=units.J/units.mol)
         self.entr_mol = Var(initialize=1000, units=units.J/units.mol/units.K)
+
+        self.mole_frac_phase_comp = Var(self.params.phase_list,
+                                        self.params.component_list,
+                                        initialize=0.5)
 
     def get_material_flow_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:

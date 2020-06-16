@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -28,26 +28,12 @@ import pytest
 # package
 from idaes.commands import examples
 from idaes.util.system import TemporaryDirectory
-
+from . import random_tempdir
 
 @pytest.fixture(scope="module")
 def runner():
     return CliRunner()
 
-
-@pytest.fixture
-def random_tempdir():
-    """Make a completely cross-platform random temporary directory in
-    the current working directory, and yield it. As cleanup, recursively
-    remove all contents of this temporary directory.
-    """
-    origdir = os.getcwd()
-    random_name = str(uuid.uuid4())
-    os.mkdir(random_name)
-    tempdir = Path(random_name)
-    yield tempdir
-    os.chdir(origdir)
-    shutil.rmtree(tempdir)
 
 
 ################
