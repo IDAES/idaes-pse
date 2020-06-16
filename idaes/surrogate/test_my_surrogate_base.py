@@ -152,6 +152,9 @@ def test_general_interface(branin_dataset):
 
     modeler.save_results('results.pickle', overwrite=True)
 
+    os.remove('results.pickle')
+    os.remove('solution.pickle')
+
     check_metrics(modeler.get_results())
 
 

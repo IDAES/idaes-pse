@@ -769,6 +769,7 @@ def test_solve_indexed_block_error():
         solve_indexed_blocks(solver=None, blocks=[1, 2, 3])
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
     horizon = 6

@@ -1193,6 +1193,8 @@ class _IdealParameterBlock(PhysicalParameterBlock):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"],
                                   ordered=True)
+        self._phase_component_set = Set(initialize=[
+            ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
 
         self.state_block_class = IdealStateBlock
 

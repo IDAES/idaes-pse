@@ -7,8 +7,8 @@ To install the IDAES PSE framework, follow the set of instructions below that ar
 appropriate for your needs and operating system. If you get stuck, please contact
 `idaes-support@idaes.org <idaes-support@idaes.org>`_.
 
-After installing and testing IDAES, it is strongly recommended to do the  
-:ref:`tutorials<user_guide/learning_materials/index:Learning Materials>`.
+After installing and testing IDAES, it is strongly recommended to do the IDAES tutorials
+located on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/tutorials/index.html>`_.
 
 If you expect to develop custom models, we recommend following the
 :ref:`advanced user installation<advanced_user_guide/advanced_install:Advanced User Installation>`.

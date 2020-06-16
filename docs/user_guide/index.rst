@@ -5,7 +5,7 @@
     :maxdepth: 1
     
     why_idaes
-    components
+    components/index
     workflow
     conventions
     commands/index
@@ -13,5 +13,4 @@
     utility_methods
     debugging/index
     modeling_extensions/index
-    learning_materials/index
     faq
