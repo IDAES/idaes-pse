@@ -1538,8 +1538,10 @@ class TestPolynomialRegression:
                                         maximum_polynomial_order=3)
         PolyClass.get_feature_vector()
         results = PolyClass.poly_training()
+      
         PolyClass.parity_residual_plots(results)
 
+    @pytest.fixture(scope='module')
     @pytest.mark.unit
     def test_confint_regression_01(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -1555,6 +1557,7 @@ class TestPolynomialRegression:
         np.testing.assert_allclose(output['Conf. int. lower'].values, opt_wts - tval * expected_stderror, atol=1e-3)
         np.testing.assert_allclose(output['Conf. int. upper'].values, opt_wts + tval * expected_stderror, atol=1e-3)
     
+    @pytest.fixture(scope='module')
     @pytest.mark.unit
     def test_confint_regression_02(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector
@@ -1570,6 +1573,8 @@ class TestPolynomialRegression:
         np.testing.assert_allclose(output['Conf. int. lower'].values, opt_wts - tval * expected_stderror, atol=1e-3)
         np.testing.assert_allclose(output['Conf. int. upper'].values, opt_wts + tval * expected_stderror, atol=1e-3)
     
+   
+    @pytest.fixture(scope='module')
     @pytest.mark.unit
     def test_confint_regression_03(self):
         # Create x vector for ax2 + bx + c: x data supplied in x_vector

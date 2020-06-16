@@ -40,7 +40,7 @@ class GeneralSurrogate(Surrogate):
     CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
     CONFIG.declare('metric', ConfigValue(default=Metrics.SSE, domain=str))
     CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
-    CONFIG.declare('overwrite', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
     CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
@@ -375,7 +375,7 @@ class Pysmo_rbf(Surrogate):
     CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
     CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
     CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-    CONFIG.declare('overwrite', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
     CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
@@ -422,7 +422,7 @@ class Pysmo_kriging(Surrogate):
     CONFIG.declare('numerical_gradients', ConfigValue(default=None, domain=bool))
     CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
     CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-    CONFIG.declare('overwrite', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
     CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
@@ -477,7 +477,7 @@ class Pysmo_polyregression(Surrogate):
     CONFIG.declare('multinomials', ConfigValue(default=None, domain=bool))
     CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
     CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
-    CONFIG.declare('overwrite', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
     CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
