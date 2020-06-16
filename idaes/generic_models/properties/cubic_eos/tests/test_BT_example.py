@@ -104,6 +104,7 @@ class TestBTExample(object):
                 TerminationCondition.optimal
             assert m.fs.state.flow_mol_phase["Liq"].value <= 1e-5
 
+    @pytest.mark.slow
     def test_P_sweep(self):
         m = ConcreteModel()
 
