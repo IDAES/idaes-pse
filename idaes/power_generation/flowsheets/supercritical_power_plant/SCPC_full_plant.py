@@ -107,7 +107,7 @@ def import_steam_cycle():
     m, solver = steam_cycle.main()
     return m, solver
 
-if __name__ == "__main__":
+def main():
     # import steam cycle and build concrete model
     m, solver = import_steam_cycle()
     print(degrees_of_freedom(m))
@@ -205,3 +205,7 @@ if __name__ == "__main__":
     strip_bounds.apply_to(m, reversible=True)
     # this is the final solve with both flowsheets connected
     results = solver.solve(m, tee=True)
+    return m, solver
+
+if __name__ == "__main__":
+    m, solver = main()
