@@ -19,9 +19,11 @@ from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
 
-from pyomo.environ import Block
-from pyomo.network.port import SimplePort
+from pyomo.environ import Block, value
+from pyomo.network.port import Port
 from pyomo.network import Arc
+from pyomo.core.base.var import Var
+from pyomo.core.base.expression import SimpleExpression
 
 
 class FileBaseNameExistsError(Exception):
@@ -89,40 +91,60 @@ class FlowsheetSerializer:
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
-        for component in flowsheet.component_objects(Block, descend_into=False):
+        for component in flowsheet.component_objects(Arc, descend_into=False):
+            self.arcs[component.getname()] = component
+            
+        for component in flowsheet.component_objects(Block, descend_into=True):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
                 self.unit_models[component] = {
                     "name": component.getname(), 
                     "type": component._orig_module.split(".")[-1]
                 }
-
-                for subcomponent in component.component_objects(descend_into=True):
-                    if isinstance(subcomponent, SimplePort):
+                for subcomponent in component.component_objects(Port, descend_into=True):
+                    if isinstance(subcomponent, Port):
                         self.ports[subcomponent] = component
+            else:
+                component_object_op = getattr(component, "component_object", None)
+                if not callable(component_object_op):
+                    for item in component.parent_component().values():
+                        if isinstance(item, UnitModelBlockData):
+                            if any((item == arc.source.parent_block() or item == arc.dest.parent_block()) for arc in self.arcs.values()):
+                                self.unit_models[item] = {
+                                    "name": item.getname(), 
+                                    "type": item._orig_module.split(".")[-1]
+                                }
+                                for subcomponent in item.component_objects(Port, descend_into=True):
+                                    if isinstance(subcomponent, Port):
+                                        self.ports[subcomponent] = item
   
-        for component in flowsheet.component_objects(Arc, descend_into=False):
-            self.arcs[component.getname()] = component
-
         for stream_name, value in stream_states_dict(self.arcs).items():
             label = ""
 
             for var, var_value in value.define_display_vars().items():
-                for stream_type, stream_value in var_value.get_values().items():
-                    if stream_type:
-                        if var == "flow_mol_phase_comp":
-                            var = "Molar Flow"
-                        label += f"{var} {stream_type} {stream_value}\n"
-                    else:
-                        var = var.capitalize()
-                        label += f"{var} {stream_value}\n"
+                if isinstance(var_value, SimpleExpression):
+                    label = f"{var} {var_value()}\n"
+                elif isinstance(var_value, Var):
+                    for stream_type, stream_value in var_value.get_values().items():
+                        if stream_type:
+                            if var == "flow_mol_phase_comp":
+                                var = "Molar Flow"
+                            label += f"{var} {stream_type} {stream_value}\n"
+                        else:
+                            var = var.capitalize()
+                            label += f"{var} {stream_value}\n"
+                else:
+                    f"Unknown variable type. Variable: {var}, variable type: {type(var_value)}"
 
             self.labels[stream_name] = label[:-2]
 
         self.edges = {}
         for name, arc in self.arcs.items():
-            self.edges[name] = {"source": self.ports[arc.source], 
-                                "dest": self.ports[arc.dest]}
+            try:
+                self.edges[name] = {"source": self.ports[arc.source], 
+                                    "dest": self.ports[arc.dest]}
+            except KeyError as error:
+                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
 
     def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
@@ -205,8 +227,8 @@ class FlowsheetSerializer:
 
     def _construct_jointjs_json(self):
         self.out_json["cells"] = []
-        x_pos = 100
-        y_pos = 100
+        x_pos = 10
+        y_pos = 10
 
         for component, unit_attrs in self.unit_models.items():
             try:
@@ -220,15 +242,19 @@ class FlowsheetSerializer:
                     link_position_mapping[unit_attrs["type"]]
                 )
             except KeyError:
+                print(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
                                                y_pos, 
                                                unit_attrs["name"], 
-                                               "default", unit_attrs["type"],
-                                               link_position_mapping[unit_attrs["type"]])
-
-            x_pos += 100
-            y_pos += 100
+                                               icon_mapping("default"), 
+                                               unit_attrs["type"],
+                                               link_position_mapping["default"])
+            if x_pos >= 800:
+                x_pos = 10
+                y_pos += 100
+            else:
+                x_pos += 100
 
         id_counter = 0
         for name, ports_dict in self.edges.items():

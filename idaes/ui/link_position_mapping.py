@@ -47,6 +47,60 @@ have to figure out the name of the port to point to/from when serializing
 the model
 """
 link_position_mapping = {
+    "default": {
+        "groups": {
+            "in":{
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":15,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "out": {
+                "position":{
+                    "name":"left",
+                    "args":{
+                       "x":48,
+                       "y":45,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+        },
+        "items":[
+           {
+              "group":"in",
+              "id":"in"
+           },
+           {
+              "group":"out",
+              "id":"out"
+           }
+        ]
+    },
     "cstr": {
         "groups": {
             "in":{
