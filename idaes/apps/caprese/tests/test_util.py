@@ -187,6 +187,7 @@ def test_find_slices_in_model():
         assert _slice in dae_var_set_1
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_element_in_range():
     mod = make_model(horizon=2, ntfe=20)
