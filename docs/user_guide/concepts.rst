@@ -60,12 +60,3 @@ The IDEAS tools set also provides users with access to a number of cutting edge 
 directly related to process modeling. These tools are collected under the heading of Modeling 
 Extensions, and information on them can be found 
 :ref:`here<user_guide/modeling_extensions/index:Modeling Extensions>`.
-
-
-
-
-
-
-
-
-    
