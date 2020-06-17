@@ -229,6 +229,7 @@ class FlowsheetSerializer:
         self.out_json["cells"] = []
         x_pos = 10
         y_pos = 10
+        y_starting_pos = 10
 
         for component, unit_attrs in self.unit_models.items():
             try:
@@ -250,11 +251,13 @@ class FlowsheetSerializer:
                                                icon_mapping("default"), 
                                                unit_attrs["type"],
                                                link_position_mapping["default"])
-            if x_pos >= 800:
-                x_pos = 10
-                y_pos += 100
+            if x_pos >= 700:
+                x_pos = 100
+                y_pos = y_starting_pos
+                y_starting_pos += 100
             else:
                 x_pos += 100
+                y_pos += 100
 
         id_counter = 0
         for name, ports_dict in self.edges.items():
