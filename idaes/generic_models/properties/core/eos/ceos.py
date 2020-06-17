@@ -76,8 +76,6 @@ class Cubic(EoSBase):
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
 
-        pc_set = b.params._phase_component_set
-
         if hasattr(b, cname+"_fw"):
             # Common components already constructed by previous phase
             return
@@ -130,15 +128,15 @@ class Cubic(EoSBase):
             return sum(sum(
                 m.mole_frac_phase_comp[p, i]*m.mole_frac_phase_comp[p, j] *
                 sqrt(a[i]*a[j])*(1-k[i, j])
-                for j in m.params.component_list if (p, j) in pc_set)
-                for i in m.params.component_list if (p, i) in pc_set)
+                for j in m.components_in_phase(p))
+                for i in m.components_in_phase(p))
         b.add_component(cname+'_am',
                         Expression(b.params.phase_list, rule=rule_am))
 
         def rule_bm(m, p):
             b = getattr(m, cname+"_b")
             return sum(m.mole_frac_phase_comp[p, i]*b[i]
-                       for i in m.params.component_list if (p, i) in pc_set)
+                       for i in m.components_in_phase(p))
         b.add_component(cname+'_bm',
                         Expression(b.params.phase_list, rule=rule_bm))
 
@@ -164,7 +162,7 @@ class Cubic(EoSBase):
             return (2*sqrt(a[i])/am[p] *
                     sum(m.mole_frac_phase_comp[p, j]*sqrt(a[j]) *
                         (1-kappa[i, j])
-                        for j in m.params.component_list if (p, j) in pc_set))
+                        for j in b.components_in_phase(p)))
         b.add_component(cname+"_delta",
                         Expression(b.params.phase_list,
                                    b.params.component_list,
@@ -185,10 +183,8 @@ class Cubic(EoSBase):
                               fw[i]*sqrt(a[j] *
                               m.params.get_component(i).temperature_crit /
                               m.params.get_component(i).pressure_crit))
-                             for j in m.params.component_list
-                             if (p, j) in pc_set)
-                         for i in m.params.component_list
-                         if (p, i) in pc_set) /
+                             for j in m.components_in_phase(p))
+                         for i in m.components_in_phase(p)) /
                      sqrt(m.temperature))
         b.add_component(cname+"_dadT",
                         Expression(b.params.phase_list,
@@ -218,8 +214,8 @@ class Cubic(EoSBase):
                     m.mole_frac_phase_comp[p3, i] *
                     m.mole_frac_phase_comp[p3, j] *
                     sqrt(a[p1, p2, i]*a[p1, p2, j])*(1-k[i, j])
-                    for j in m.params.component_list if (p3, j) in pc_set)
-                    for i in m.params.component_list if (p3, i) in pc_set)
+                    for j in m.components_in_phase(p3))
+                    for i in m.components_in_phase(p3))
             b.add_component('_'+cname+'_am_eq',
                             Expression(b.params._pe_pairs,
                                        b.params.phase_list,
@@ -251,8 +247,7 @@ class Cubic(EoSBase):
                 return (2*sqrt(a[p1, p2, i])/am[p1, p2, p3] *
                         sum(m.mole_frac_phase_comp[p3, j]*sqrt(a[p1, p2, j]) *
                             (1-kappa[i, j])
-                            for j in m.params.component_list
-                            if (p3, j) in pc_set))
+                            for j in m.components_in_phase(p3)))
             b.add_component("_"+cname+"_delta_eq",
                             Expression(b.params._pe_pairs,
                                        b.params.phase_list,
@@ -335,7 +330,7 @@ class Cubic(EoSBase):
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "enth_mol_ig_comp", j)(
                                             blk, cobj(blk, j), blk.temperature)
-                                 for j in blk.params.component_list))
+                                 for j in blk.components_in_phase(p)))
 
     def enth_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
@@ -385,7 +380,7 @@ class Cubic(EoSBase):
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "entr_mol_ig_comp", j)(
                                      blk, cobj(blk, j), blk.temperature)
-                                 for j in blk.params.component_list))
+                                 for j in blk.components_in_phase(p)))
 
     def entr_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
