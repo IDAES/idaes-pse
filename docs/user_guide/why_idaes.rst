@@ -1,23 +1,23 @@
 ﻿Why IDAES
 =========
-​
+
 The National Energy Technology Laboratory's Institute for the Design of Advanced Energy Systems 
 (IDAES) is a powerful and versatile computational platform offering next-generation engineering 
 capabilities for optimizing the design, operation, and management of innovative chemical process 
 and energy systems beyond current constraints on complexity, uncertainty, and scales ranging 
 from materials to process to market.
-​
+
 The IDAES Computational Platform was conceived in 2016 to specifically address the gaps between 
 state-of-the-art simulation packages, such as Aspen Plus®, gPROMS, ProSim, PRO/II®, and general 
 algebraic modeling languages (AMLs), such as GAMS, AMPL, and AIMMS.
- 
+
 Major strengths of commercial simulation packages are their libraries of unit models and 
 thermophysical properties. However, such simulation packages often have difficulty optimizing 
 flowsheets and have limited support for incorporating models of non-standard, dynamic units, 
 such as solids handling, and uncertainty quantification. On the other hand, AMLs are eminently 
 flexible and readily support large-scale optimization, but considerable work is required to 
-construct process models, which are often only useful for a one-time application. 
-​
+construct process models, which are often only useful for a one-time application.
+
 The IDAES Computational Platform represents an innovative approach for the design and 
 optimization of chemical and energy processes by integrating an extensible, equation-oriented 
 process model library with Pyomo (a Python-based AML). Built  specifically to enable rigorous 
@@ -32,8 +32,9 @@ Key Features
 Open Source
 ^^^^^^^^^^^
 
-All IDAES Code is completely free and redistributable. Users are free to modify and 
-redistribute code, and community development is encouraged.
+All IDAES Code is completely free and redistributable, the license is avaliable
+:ref:`here<license:License>`. Users are free to modify and redistribute code, and community 
+development is encouraged.
 
 Equation Oriented
 ^^^^^^^^^^^^^^^^^
