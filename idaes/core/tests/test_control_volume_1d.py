@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel, Constraint, Expression,
                            Set, units, Var)
-from pyomo.util.units_checking import assert_units_consistent
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.constraint import _GeneralConstraintData
