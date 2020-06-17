@@ -7,9 +7,8 @@ capabilities for optimizing the design and operation of innovative chemical proc
 and energy systems beyond current constraints on complexity, uncertainty, and scales ranging 
 from materials to process to market.
 
-The IDAES Computational Platform was conceived in 2016 to specifically address the gaps between 
-state-of-the-art simulation packages, such as Aspen Plus®, gPROMS, ProSim, PRO/II®, and general 
-algebraic modeling languages (AMLs), such as GAMS, AMPL, and AIMMS.
+The IDAES Process Systems Energineering (PSE) framework was conceived in 2016 to specifically 
+address the gaps between state-of-the-art simulation packages and algebraic modeling languages.
 
 Major strengths of commercial simulation packages are their libraries of unit models and 
 thermophysical properties. However, such simulation packages often have difficulty optimizing 
@@ -18,7 +17,7 @@ such as solids handling, and uncertainty quantification. On the other hand, AMLs
 flexible and readily support large-scale optimization, but considerable work is required to 
 construct process models, which are often only useful for a one-time application.
 
-The IDAES Computational Platform represents an innovative approach for the design and 
+The IDAES PSE framework represents an innovative approach for the design and 
 optimization of chemical and energy processes by integrating an extensible, equation-oriented 
 process model library with Pyomo (a Python-based AML). Built  specifically to enable rigorous 
 large-scale mathematical optimization, the framework includes capabilities for conceptual 
@@ -60,7 +59,7 @@ models to suit their needs.
 Flexible Form
 ^^^^^^^^^^^^^
 
-No single model form is best suited to all applications, thus the IDAES modeling framework
+No single model form is best suited to all applications, thus the IDAES PSE framework
 is built to provide users with access to a range of different model forms. This allows 
 users to easily pick-and-choose from the available model forms to find the one best suited to 
 their particular application.
@@ -69,6 +68,6 @@ Access to Advanced Capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 IDAES aims to provide an integrated platform for development of not just process models but also 
-tools for solving and analyzing these problems. The IDAES modeling framework supports conceptual 
+tools for solving and analyzing these problems. The IDAES PSE framework supports conceptual 
 design, parameter estimation, model predictive control, uncertainty quantification, and 
 surrogate modeling.
