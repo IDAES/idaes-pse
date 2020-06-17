@@ -1,15 +1,6 @@
 ﻿Components
 ==========
 
-.. toctree::
-    :maxdepth: 1
-    :hidden:
-    
-    flowsheet/index
-    property_package/index
-    unit_model/index
-    dmf/index
-
 The purpose of this section of the documentation is to provide a general introduction to the top
 level components of the IDAES Computational Platform. Each component is described in greater 
 detail with a link in their description.
@@ -45,3 +36,10 @@ The :ref:`Data Management Framework <user_guide/components/dmf/index:Data Manage
 is used to manage all the data needed by the IDAES framework, including flowsheets, models, 
 and results. It stores metadata and data in persistent storage.
 
+.. toctree::
+    :hidden:
+    
+    flowsheet/index
+    property_package/index
+    unit_model/index
+    dmf/index
