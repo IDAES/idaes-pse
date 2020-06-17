@@ -1,21 +1,43 @@
 ﻿Modeling Extensions
 ===================
 
-.. toctree::
-    :maxdepth: 2
+.. contents:: :local:
 
-    surrogate/index
+Surrogate Modeling
+------------------
 
-.. toctree::
-    :maxdepth: 1
+ALAMOPY: ALAMO Python
+^^^^^^^^^^^^^^^^^^^^^
 
-    matopt
-    caprese/index
+RIPE : Reaction Identification and Parameter Estimation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+HELMET : HELMholtz Energy Thermodynamics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PySMO: Python-based Surrogate Modelling Objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
-MatOpt
-------
-The MatOpt module provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to design crystalline nanostructured materials, including but not limited to particles, wires, surfaces, and periodic bulk structures.
+MatOpt: Nanomaterials Optimization
+----------------------------------
+:ref:`MatOpt<user_guide/modeling_extensions/matopt/index:MatOpt: Nanomaterials Optimization>`
+provides tools for nanomaterials design using Mathematical Optimization. MatOpt can be used to 
+design crystalline nanostructured materials, including but not limited to particles, wires, 
+surfaces, and periodic bulk structures.
 
 .. image:: ../../_images/matopt_logo_full.png
     :width: 895
+
+Caprese
+-------
+:ref:`Caprese<user_guide/modeling_extensions/caprese/index:Caprese>`
+is a module for the simulation of IDAES flowsheets with nonlinear program (NLP)-based control 
+and estimation strategies, namely Nonlinear Model Predictive Control (NMPC) and Moving Horizon 
+Estimation (MHE).
+
+
+.. toctree::
+    :glob:
+    :hidden:
+    
+    */index
