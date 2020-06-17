@@ -18,12 +18,65 @@ import warnings
 import pytest
 import numpy as np
 import pyomo.environ as pyo
+import pandas as pd
 
 from pyomo.common.fileutils import this_file_dir
 
 import idaes.dmf.model_data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
+
+
+def test_bin_data():
+    def make_data_frame():
+        return pd.DataFrame(data={
+            "power": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, None],
+            "x1": [2, 3, 4, 6, 7, 9, 3, 1, 3, 3, 2, 3, 4],
+            "x2": [4, 5, 6, 3, 5, 8, 4, 1, 4, 5, 2, 6, 5],
+        })
+
+    df = make_data_frame()
+    hist = da.bin_data(
+        df,
+        bin_by="power",
+        bin_no="pb no.",
+        bin_nom="pb power",
+        bin_size=4,
+        min_value=2,
+        max_value=10,
+    )
+    assert hist[0]==2
+    assert hist[1]==4
+    assert hist[2]==3
+    assert 3 not in hist
+    assert "pb no." in df
+    assert "pb power" in df
+
+    df = make_data_frame()
+    hist = da.bin_data(
+        df, bin_by="power",
+        bin_no="pb no.",
+        bin_nom="pb power",
+        bin_size=4
+    )
+    assert hist[0] == 3
+    assert hist[1] == 4
+    assert hist[2] == 4
+    assert hist[3] == 1
+    assert "pb no." in df
+    assert "pb power" in df
+
+    r = da.bin_stdev(df, bin_no="pb no.")
+
+    assert 0 in r
+    assert 1 in r
+    assert 2 in r
+    assert 3 in r
+
+    assert r[0]["x1"] == pytest.approx(1.0)
+    assert np.isnan(r[3]["x1"]) # only one point in bin 3, so can't calculate
+
+    da.data_book(df, bin_nom="pb power", xlabel="power")
 
 
 def test_map_data():
