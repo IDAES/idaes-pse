@@ -105,12 +105,13 @@ commands:
           name: Install idaes-pse
           command: |
             source activate idaes
-            python -m pip install idaes-pse
+            python -m pip install --progress-bar=off idaes-pse
       - run:
           name: Install idaes extensions
           command: |
             source activate idaes
-            idaes get-extensions
+            idaes get-extensions --platform ubuntu1804 --verbose
+            ipopt -v
       - run:
           name: Run tests
           command: |
@@ -206,21 +207,20 @@ workflows:
             python: "3.7"
             pip_target: ".[dev]"
             devmode: true
-        - examples_dev:
-            name: "examples3.6"
-            python: "3.6"
-        - examples_dev:
-            name: "examples3.7"
-            python: "3.7"
+#        - examples_dev:
+#            name: "examples3.6"
+#            python: "3.6"
+#        - examples_dev:
+#            name: "examples3.7"
+#            python: "3.7"
   nightly:
     triggers:
       - schedule:
-          cron: "0 6 * * *"
+          cron: "0 0,6,12,18 * * *"
           filters:
             branches:
               only:
                 - master
-                - nightlies
     jobs:
       - idaes_pse:
           python: "3.6"
