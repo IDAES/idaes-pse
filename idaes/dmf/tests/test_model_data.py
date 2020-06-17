@@ -76,8 +76,6 @@ def test_bin_data():
     assert r[0]["x1"] == pytest.approx(1.0)
     assert np.isnan(r[3]["x1"]) # only one point in bin 3, so can't calculate
 
-    da.data_book(df, bin_nom="pb power", xlabel="power")
-
 
 def test_map_data():
     data1 = os.path.join(_data_dir, "data1.csv")
