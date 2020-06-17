@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -769,6 +769,7 @@ def test_solve_indexed_block_error():
         solve_indexed_blocks(solver=None, blocks=[1, 2, 3])
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
     horizon = 6

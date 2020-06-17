@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -283,7 +283,8 @@ class TestHelm(object):
             binary_derivative_test(f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
 
 
-    def test_thero_expression_writter(self, model):
+    @pytest.mark.slow
+    def test_thermo_expression_writter(self, model):
         te = model.te
         mw = self.mw
         Tc = self.Tc

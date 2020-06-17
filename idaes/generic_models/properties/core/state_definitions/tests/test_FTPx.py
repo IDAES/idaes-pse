@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -55,6 +55,8 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -172,6 +174,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -290,6 +294,10 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3)],
+            ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -421,6 +429,10 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3)],
+            ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -553,6 +565,11 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b", "c"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3),
+                        ("c", 1), ("c", 2), ("c", 3)],
+            ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -676,6 +693,11 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b", "c"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3),
+                        ("c", 1), ("c", 2), ("c", 3)],
+            ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -799,6 +821,9 @@ class TestCommon(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -35,6 +35,11 @@ from idaes.core.util.exceptions import (ConfigurationError)
 # Dummy method to avoid errors when setting metadata dict
 def set_metadata(b):
     pass
+
+
+# Dummy build_parameter methods for tests
+def build_parameters(cobj, p):
+    cobj.add_component("test_param_"+p, Var(initialize=42))
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -467,6 +472,68 @@ class TestGenericParameterBlock(object):
             "a": {"e1": 1, "e2": 2, "e3": 0, "e4": 0},
             "b": {"e1": 0, "e2": 0, "e3": 3, "e4": 4},
             "c": {"e1": 5, "e2": 0, "e3": 6, "e4": 0}}
+
+    def test_henry(self):
+        m = ConcreteModel()
+
+        m.params = DummyParameterBlock(default={
+                "components": {
+                    "a": {"henry_component": {"p1": modules[__name__]}},
+                    "b": {},
+                    "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
+        assert isinstance(m.params.a.test_param_p1, Var)
+        assert m.params.a.test_param_p1.value == 42
+
+    def test_henry_invalid_phase_name(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params component a was marked as a Henry's "
+                           "Law component in phase p3, but this is not a "
+                           "valid phase name."):
+            m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"henry_component": {"p3": modules[__name__]}},
+                        "b": {},
+                        "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": dummy_eos},
+                        "p2": {"equation_of_state": dummy_eos}},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300})
+
+    def test_henry_invalid_phase_type(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params component a was marked as a Henry's "
+                           "Law component in phase p2, but this is not a "
+                           "Liquid phase."):
+            m.params = DummyParameterBlock(default={
+                    "components": {
+                        "a": {"henry_component": {"p2": modules[__name__]}},
+                        "b": {},
+                        "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": dummy_eos},
+                        "p2": {"equation_of_state": dummy_eos}},
+                    "state_definition": modules[__name__],
+                    "pressure_ref": 1e5,
+                    "temperature_ref": 300})
 
 
 # -----------------------------------------------------------------------------
