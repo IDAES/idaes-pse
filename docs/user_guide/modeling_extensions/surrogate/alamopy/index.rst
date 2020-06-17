@@ -7,7 +7,7 @@
     pair: alamo;alamopy
 
 
-ALAMOPY : ALAMO Python
+ALAMOPY: ALAMO Python
 ======================
 
 .. toctree::
