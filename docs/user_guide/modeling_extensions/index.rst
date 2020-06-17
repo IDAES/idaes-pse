@@ -1,10 +1,13 @@
 ﻿Modeling Extensions
 ===================
+The IDAES platform includes several modeling extensions that provide additional capabilities 
+including surrogate modeling, material design, and control.
 
 .. contents:: :local:
 
 Surrogate Modeling
 ------------------
+The surrogate modeling tools included on the IDAES platform are detailed below.
 
 ALAMOPY: ALAMO Python
 ^^^^^^^^^^^^^^^^^^^^^
