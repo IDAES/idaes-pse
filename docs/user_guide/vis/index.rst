@@ -19,7 +19,7 @@ The icons are fully movable as are the links and link labels.
 Installation instructions
 -------------------------
 
-1. :ref:`Ensure that the latest IDAES is installed. <idaes_installation>` 
+1. :ref:`Ensure that the latest IDAES is installed. <getting_started:Installation>` 
 
 .. _usage:
 
@@ -32,20 +32,20 @@ Usage
 2. Call visualize from the flowsheet with a model name as a string. 
    `m.fs.visualize('model_name')`
 
-.. image:: ../_images/modelvis/fs_visualize_jupyter_notebook.png
+.. image:: ../../_images/modelvis/fs_visualize_jupyter_notebook.png
 
 3. A webpage should display. 
 
-.. image:: ../_images/modelvis/initial_layout.png
+.. image:: ../../_images/modelvis/initial_layout.png
 
 If a webpage does not display then copy and
 paste the URL that outputs from the visualize command.
 
-.. image:: ../_images/modelvis/circled_url.png
+.. image:: ../../_images/modelvis/circled_url.png
 
 4. Modify the layout of the model
 
-.. image:: ../_images/modelvis/modified_layout.png
+.. image:: ../../_images/modelvis/modified_layout.png
 
 5. Modify the model if needed
 
@@ -57,7 +57,7 @@ paste the URL that outputs from the visualize command.
    If there is a new unit model then the existing model is partially 
    preserved and the new unit model and arcs will appear in a diagonal line.
 
-.. image:: ../_images/modelvis/new_unit_model_layout.png
+.. image:: ../../_images/modelvis/new_unit_model_layout.png
 
 8. Modify the model layout for any new unit models if needed
 
