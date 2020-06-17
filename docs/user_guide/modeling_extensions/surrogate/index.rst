@@ -5,9 +5,9 @@ Surrogate modeling
 .. toctree::
     :maxdepth: 1
 
-    alamopy
-    ripe
-    helmet
+    alamopy/index
+    ripe/index
+    helmet/index
     pysmo/index
 
 .. image:: ../../../_images/ddm-software.png

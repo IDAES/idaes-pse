@@ -1,5 +1,4 @@
-
-RIPE : Reaction Identification and Parameter Estimation
+RIPE: Reaction Identification and Parameter Estimation
 =======================================================
 
 
