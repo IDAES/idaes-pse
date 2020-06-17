@@ -40,6 +40,9 @@ import random
 __author__ = "Robert Parker"
 
 
+# Mark module as slow
+pytestmark = pytest.mark.slow
+
 # See if ipopt is available and set up solver
 solver_available = SolverFactory('ipopt').available()
 if solver_available:

@@ -195,7 +195,8 @@ class TestHelm(object):
         model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
-    def test_thero_expression_writter(self, model):
+    @pytest.mark.slow
+    def test_thermo_expression_writter(self, model):
         te = model.te
         mw = self.mw
         Tc = self.Tc
@@ -322,6 +323,7 @@ class TestHelm(object):
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
+    @pytest.mark.slow
     def test_functions_of_delta_and_tau(self, model):
         """
         These are the bisic direct from density and temperature propery

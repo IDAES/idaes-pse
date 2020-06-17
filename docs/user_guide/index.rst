@@ -9,6 +9,7 @@
     workflow
     conventions
     commands/index
+    vis/index
     model_libraries/index
     utility_methods
     debugging/index
