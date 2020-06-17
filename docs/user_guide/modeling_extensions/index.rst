@@ -34,7 +34,7 @@ PySMO: Python-based Surrogate Modelling Objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 :ref:`PySMO<user_guide/modeling_extensions/surrogate/pysmo/index:PySMO: Python-based Surrogate Modelling Objects>`
 provides tools for generating different types of reduced order models. It provides IDAES users 
-witha set of surrogate modeling tools which supports flowsheeting and direct integration into 
+with a set of surrogate modeling tools which supports flowsheeting and direct integration into 
 an equation-oriented modeling framework. It allows users to directly integrate reduced order 
 models with algebraic high-fidelity process models within an single IDAES flowsheet.
 
