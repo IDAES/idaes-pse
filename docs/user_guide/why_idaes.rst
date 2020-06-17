@@ -3,7 +3,7 @@
 
 The National Energy Technology Laboratory's Institute for the Design of Advanced Energy Systems 
 (IDAES) is a powerful and versatile computational platform offering next-generation engineering 
-capabilities for optimizing the design, operation, and management of innovative chemical process 
+capabilities for optimizing the design and operation of innovative chemical process 
 and energy systems beyond current constraints on complexity, uncertainty, and scales ranging 
 from materials to process to market.
 
@@ -60,7 +60,7 @@ models to suit their needs.
 Flexible Form
 ^^^^^^^^^^^^^
 
-No single model form is best suited to all applications, thus the IDAES Computational Platform 
+No single model form is best suited to all applications, thus the IDAES modeling framework
 is built to provide users with access to a range of different model forms. This allows 
 users to easily pick-and-choose from the available model forms to find the one best suited to 
 their particular application.
@@ -69,6 +69,6 @@ Access to Advanced Capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 IDAES aims to provide an integrated platform for development of not just process models but also 
-tools for solving these problems. This provides users with access to an integrated ecosystem for 
-both building and solving advanced models for advanced process optimization which will 
-accelerate putting cutting edge tools in the hands of users.
+tools for solving and analyzing these problems. The IDAES modeling framework supports conceptual 
+design, parameter estimation, model predictive control, uncertainty quantification, and 
+surrogate modeling.
