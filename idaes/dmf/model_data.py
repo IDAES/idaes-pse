@@ -45,6 +45,7 @@ def _strip(tag):
     """
     return tag.strip()
 
+
 # Some common unit string conversions, these are ones we've come across that
 # are not handled by pint. We can organize and refine known unit strings
 # more in the future.
@@ -393,13 +394,14 @@ def _bin_number(x, bin_size):
 
 
 def bin_data(
-    df,
-    bin_by,
-    bin_no,
-    bin_nom,
-    bin_size,
-    min_value=None,
-    max_value=None):
+        df,
+        bin_by,
+        bin_no,
+        bin_nom,
+        bin_size,
+        min_value=None,
+        max_value=None,
+    ):
     """
     Sort data into bins by a column value.  If the min or max are given and
     the value in bin_by for a row is out of the range [min, max], the row is
