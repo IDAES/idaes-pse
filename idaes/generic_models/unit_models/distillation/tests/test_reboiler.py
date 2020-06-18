@@ -57,7 +57,7 @@ def test_config():
     assert hasattr(m.fs.unit, "heat_duty")
 
 
-class TestBTXIdeal(object):
+class TestBTXIdeal():
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()
