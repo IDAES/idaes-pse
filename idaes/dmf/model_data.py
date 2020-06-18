@@ -460,6 +460,96 @@ def bin_stdev(df, bin_no):
     return res
 
 
+def data_rec_plot_book(
+        df_data,
+        df_rec,
+        bin_nom,
+        file="data_rec_plot_book.pdf",
+        tmp_dir="tmp_plots",
+        xlabel=None,
+        metadata=None,
+        cols=None,
+        skip_cols=[]
+    ):
+    """
+    Make box and whisker plots from process data compared to data rec results
+    based on bins from the bin_data() function.  The df_data and df_rec data
+    frames should have the same index set and the df_data data frame contains
+    the bin data.  This will plot the intersection of columns containg numerical
+    data.
+
+    Args:
+        df_data: data frame with original data
+        df_rec: data frame with reconciled data
+        bin_nom: bin mid-point value column
+        file: path for generated pdf
+        tmp_dir: a directory to store temporary plots in
+        xlabel: Label for x axis
+        metadata: tag meta data dictionary
+        cols: List of columns to plot, if None plot all
+        skip_cols: List of columns not to plot, this overrides cols
+
+    Return:
+        None
+
+    """
+    if sns is None:
+        _log.error(
+            "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
+            "Install the required packages before using the data_book() function."
+        )
+
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir)
+
+    pdfs = []
+    flierprops = dict(markerfacecolor='0.5', markersize=2, marker="o", linestyle='none')
+    f = plt.figure(figsize=(16, 9))
+    if cols is None:
+        cols = df_data.columns
+
+    cols = sorted(set(cols).intersection(df_rec.columns))
+
+    f = plt.figure(figsize=(16, 9))
+    ax = sns.countplot(x=bin_nom, data=df_data)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    fname = os.path.join(tmp_dir, "plot_hist.pdf")
+    f.savefig(fname, bbox_inches='tight')
+    pdfs.append(fname)
+    plt.close(f)
+
+    for i, col in enumerate(cols):
+        if col in skip_cols:
+            continue
+        f = plt.figure(i, figsize=(16, 9))
+
+        x = pd.concat([df_data[bin_nom], df_data[bin_nom]], ignore_index=True)
+        y = pd.concat([df_data[col], df_rec[col]], ignore_index=True)
+        h = ["Data"]*len(df_data.index) + ["Reconciled"]*len(df_data.index)
+        ax = sns.boxplot(x=x, y=y, hue=h, flierprops=flierprops)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        if metadata is not None:
+            md = metadata.get(col, {})
+            yl = "{} {} [{}]".format(
+                col,
+                md.get("description", ""),
+                md.get("units", "none")
+            )
+        else:
+            yl = col
+        fname = os.path.join(tmp_dir, f"plot_{i}.pdf")
+        ax.set(xlabel=xlabel, ylabel=yl)
+        f.savefig(fname, bbox_inches='tight')
+        pdfs.append(fname)
+        plt.close(f)
+
+    # Combine pdfs into one multi-page document
+    writer = PdfFileMerger()
+    for pdf in pdfs:
+        writer.append(pdf)
+    writer.write(file)
+
+
 def data_plot_book(
         df,
         bin_nom,
