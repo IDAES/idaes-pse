@@ -85,7 +85,9 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         super().build() # Basic unit model build/read config
         config = self.config # shorter config pointer
 
-        # Thermo dynamic expression writer
+        # The thermodynamic expression writer object, te, writes expressions
+        # including external function calls to calculate thermodynamic quantities
+        # from a set of state variables.
         _assert_properties(config.property_package)
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
@@ -104,28 +106,40 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         pratio.fix()
 
         # Some shorter refernces to property blocks
-        prp_i = self.control_volume.properties_in
-        prp_o = self.control_volume.properties_out
+        properties_in = self.control_volume.properties_in
+        properties_out = self.control_volume.properties_out
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="isentropic outlet enthalpy expression"
+        )
         def h_is(b, t):
-            return te.h(s=prp_i[t].entr_mol, p=prp_o[t].pressure)
+            return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="isentropic work expression"
+        )
         def work_isentropic(b, t):
-            return (prp_i[t].enth_mol - self.h_is[t])*prp_i[t].flow_mol
+            return properties_in[t].flow_mol*(
+                properties_in[t].enth_mol - self.h_is[t])
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="outlet enthalpy expression"
+        )
         def h_o(b, t): # Early access to the outlet enthalpy and work
-            return prp_i[t].enth_mol + (self.h_is[t] - prp_i[t].enth_mol)/eff[t]
+            return properties_in[t].enth_mol + (self.h_is[t] -
+                properties_in[t].enth_mol)/eff[t]
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_work(b, t): # Work from energy balance
-            return prp_o[t].enth_mol == self.h_o[t]
+            return properties_out[t].enth_mol == self.h_o[t]
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_pressure_ratio(b, t):
-            return pratio[t]*prp_i[t].pressure == prp_o[t].pressure
+            return (pratio[t]*properties_in[t].pressure ==
+                properties_out[t].pressure)
 
 
     def initialize(
