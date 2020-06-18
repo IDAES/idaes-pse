@@ -243,6 +243,17 @@ class FlowsheetSerializer:
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
 
+            if hasattr(ports_dict["source"], "vap_outlet"):
+                # TODO Figure out how to denote different outlet types. Need to
+                #  deal with multiple input/output offsets
+                for arc in list(self.arcs.values()):
+                    if (self.ports[arc.dest] == dest and arc.source == ports_dict["source"].vap_outlet):
+                        source_anchor = "top"
+                    else:
+                        source_anchor = "bottom"
+            else:
+                source_anchor = "out"
+
             self.create_link_jointjs_json(
                 self.out_json, 
                 "out", 

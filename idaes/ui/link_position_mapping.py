@@ -339,8 +339,27 @@ link_position_mapping = {
                 },
                 "markup": '<g><rect/></g>'
             },
-
-            "out": {
+            "top": {
+                "position":{
+                    "name":"top",
+                    "args":{
+                       "x":25,
+                       "y":0,
+                       "dx":1,
+                       "dy":1
+                    }
+                },
+                "attrs": {
+                    "rect": {
+                        "stroke": '#000000',
+                        'stroke-width': 0,
+                        "width": 0,
+                        "height": 0
+                    }
+                },
+                "markup": '<g><rect/></g>'
+            },
+            "bottom": {
                 "position":{
                     "name":"bottom",
                     "args":{
@@ -367,8 +386,12 @@ link_position_mapping = {
               "id":"in"
            },
            {
-              "group":"out",
-              "id":"out"
+              "group":"top",
+              "id":"top"
+           },
+           {
+              "group":"bottom",
+              "id":"bottom"
            }
         ]
     },
