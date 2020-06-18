@@ -7,6 +7,3 @@
     advanced_install
     developer/index
     custom_models/general_model_development
-    tool_development
-    learning_materials/index
-    faq
