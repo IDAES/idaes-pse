@@ -7,7 +7,7 @@
     pair: alamo;alamopy
 
 
-ALAMOPY : ALAMO Python
+ALAMOPY: ALAMO Python
 ======================
 
 .. toctree::
@@ -101,7 +101,7 @@ This adds **conf_inv** (confidence intervals) and **covariance** (covariance mat
   result = alamopy.almconfidence(result)
   alamopy.almplot(result)
 
-.. image:: ../../../_images/almconf.png
+.. image:: ../../../../_images/almconf.png
     :width: 600px
 
 
