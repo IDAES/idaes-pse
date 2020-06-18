@@ -222,7 +222,7 @@ workflows:
               only:
                 - master
     jobs:
-      - idaes_pse:
+      - idaes_dev:
           python: "3.6"
-      - idaes_pse:
+      - idaes_dev:
           python: "3.7"
