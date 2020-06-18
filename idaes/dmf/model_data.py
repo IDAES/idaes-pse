@@ -400,8 +400,7 @@ def bin_data(
         bin_nom,
         bin_size,
         min_value=None,
-        max_value=None,
-    ):
+        max_value=None):
     """
     Sort data into bins by a column value.  If the min or max are given and
     the value in bin_by for a row is out of the range [min, max], the row is
@@ -433,9 +432,9 @@ def bin_data(
     # Want the bins to line up so 0 is between bins and want min_value in bin 0.
     bin_offset = _bin_number(min_value, bin_size)
     df[bin_no] = _bin_number(df[bin_by], bin_size) - bin_offset
-    df[bin_nom] = bin_size*(df[bin_no] + bin_offset + 0.5)
+    df[bin_nom] = bin_size * (df[bin_no] + bin_offset + 0.5)
     a, b = np.unique(df[bin_no], return_counts=True)
-    hist = dict(zip(a,b))
+    hist = dict(zip(a, b))
     return hist
 
 
@@ -469,8 +468,7 @@ def data_rec_plot_book(
         xlabel=None,
         metadata=None,
         cols=None,
-        skip_cols=[]
-    ):
+        skip_cols=[]):
     """
     Make box and whisker plots from process data compared to data rec results
     based on bins from the bin_data() function.  The df_data and df_rec data
@@ -525,7 +523,7 @@ def data_rec_plot_book(
 
         x = pd.concat([df_data[bin_nom], df_data[bin_nom]], ignore_index=True)
         y = pd.concat([df_data[col], df_rec[col]], ignore_index=True)
-        h = ["Data"]*len(df_data.index) + ["Reconciled"]*len(df_data.index)
+        h = ["Data"] * len(df_data.index) + ["Reconciled"] * len(df_data.index)
         ax = sns.boxplot(x=x, y=y, hue=h, flierprops=flierprops)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         if metadata is not None:
@@ -558,8 +556,7 @@ def data_plot_book(
         xlabel=None,
         metadata=None,
         cols=None,
-        skip_cols=[]
-    ):
+        skip_cols=[]):
     """
     Make box and whisker plots from process data based on bins from the
     bin_data() function.
