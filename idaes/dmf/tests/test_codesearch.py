@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,7 +19,6 @@ import os
 import random
 import shutil
 import sys
-import tempfile
 
 # third-party
 import pytest
@@ -28,6 +27,7 @@ import pytest
 import idaes
 from idaes.dmf import codesearch
 from idaes.core import property_meta
+from idaes.util.system import mkdtemp
 from .util import init_logging
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
@@ -172,7 +172,7 @@ def dummy_package():
     random.seed()
     saved_sys_path = sys.path[:]
     # build a bad module in a temporary package
-    d = tempfile.mkdtemp()
+    d = mkdtemp()
     sys.path.append(d)
     foo = os.path.join(d, "foo{}".format(random.randint(1e6, 1e7 - 1)))
     os.mkdir(foo)
@@ -261,7 +261,7 @@ def test_print_metadata_visitor():
 
 @pytest.fixture()
 def tmpd():
-    d = tempfile.mkdtemp(suffix="codesearch_get_modules")
+    d = mkdtemp(suffix="codesearch_get_modules")
     yield d
     shutil.rmtree(d)
 

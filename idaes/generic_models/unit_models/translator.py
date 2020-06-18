@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -160,23 +160,21 @@ see property package for documentation.}""",
             )
 
         # Add State Blocks
-        self.properties_in = self.config.inlet_property_package.state_block_class(
+        self.properties_in = self.config.inlet_property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties in incoming stream",
             default={
                 "defined_state": True,
-                "parameters": self.config.inlet_property_package,
                 "has_phase_equilibrium": False,
                 **self.config.inlet_property_package_args,
             },
         )
 
-        self.properties_out = self.config.outlet_property_package.state_block_class(
+        self.properties_out = self.config.outlet_property_package.build_state_block(
             self.flowsheet().config.time,
             doc="Material properties in outgoing stream",
             default={
                 "defined_state": self.config.outlet_state_defined,
-                "parameters": self.config.outlet_property_package,
                 "has_phase_equilibrium": self.config.has_phase_equilibrium,
                 **self.config.outlet_property_package_args,
             },

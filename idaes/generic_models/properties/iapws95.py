@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -68,6 +68,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     _htpx,
     HelmholtzParameterBlockData,
     HelmholtzStateBlockData,
+    HelmholtzThermoExpressions,
     PhaseType,
     StateVars,
     _StateBlock,
@@ -75,7 +76,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 
 # Logger
 _log = idaeslog.getLogger(__name__)
-_so = os.path.join(idaes.lib_directory, "iapws95_external.so")
+_so = os.path.join(idaes.bin_directory, "iapws95_external.so")
 
 
 def iapws95_available():
@@ -113,6 +114,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="iapws95",
             state_block_class=Iapws95StateBlock,
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),

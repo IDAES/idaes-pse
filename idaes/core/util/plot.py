@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -61,11 +61,13 @@ def plot_dynamic(time, y, ylabel, xlabel="time (s)", title=None, legend=None):
     Returns:
         None
     """
+    y2 = [None]*len(y)
     for i, z in enumerate(y):
         if isinstance(z, (list, tuple)):
-            continue # don't need to convert this, because already a list
-        y[i] = [pyo.value(z[t]) for t in time]
-    for q in y:
+            y2[i] = y[i]
+        else:
+            y2[i] = [pyo.value(z[t]) for t in time]
+    for q in y2:
         plt.plot(time, q)
     if legend is not None:
         plt.legend(legend)

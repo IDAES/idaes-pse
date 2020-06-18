@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -55,7 +55,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
-                                     TestStateBlock)
+                                     TestStateBlock,
+                                     initialization_tester)
 
 
 # -----------------------------------------------------------------------------
@@ -750,23 +751,7 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, sapon):
-        orig_fixed_vars = fixed_variables_set(sapon)
-        orig_act_consts = activated_constraints_set(sapon)
-
-        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
-
-        assert degrees_of_freedom(sapon) == 0
-
-        fin_fixed_vars = fixed_variables_set(sapon)
-        fin_act_consts = activated_constraints_set(sapon)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1208,6 +1193,8 @@ class _IdealParameterBlock(PhysicalParameterBlock):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"],
                                   ordered=True)
+        self._phase_component_set = Set(initialize=[
+            ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
 
         self.state_block_class = IdealStateBlock
 

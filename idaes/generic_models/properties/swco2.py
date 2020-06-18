@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -59,6 +59,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     _htpx,
     HelmholtzParameterBlockData,
     HelmholtzStateBlockData,
+    HelmholtzThermoExpressions,
     PhaseType,
     StateVars,
     _StateBlock,
@@ -66,7 +67,7 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 
 # Logger
 _log = idaeslog.getLogger(__name__)
-_so = os.path.join(idaes.lib_directory, "swco2_external.so")
+_so = os.path.join(idaes.bin_directory, "swco2_external.so")
 
 
 def swco2_available():
@@ -104,6 +105,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
     def build(self):
         self._set_parameters(
             library=_so,
+            eos_tag="swco2",
             state_block_class=SWCO2StateBlock,
             component_list=Set(initialize=["CO2"]),
             phase_equilibrium_idx=Set(initialize=[1]),
@@ -121,7 +123,7 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             ),
             pressure_bounds=(0.1, 1e9),
             temperature_bounds=(210, 2500),
-            enthalpy_bounds=(-1e4, 1e5),
+            enthalpy_bounds=(-2e4, 1e5),
         )
 
         super().build()

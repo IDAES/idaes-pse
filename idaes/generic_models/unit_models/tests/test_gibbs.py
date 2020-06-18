@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           Constraint,
                            TerminationCondition,
                            SolverStatus,
                            value)
@@ -33,7 +34,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+                                     PhysicalParameterTestBlock,
+                                     initialization_tester)
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # -----------------------------------------------------------------------------
@@ -51,7 +54,7 @@ def test_config():
     m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -62,10 +65,46 @@ def test_config():
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
+    assert m.fs.unit.config.inert_species == []
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 4
+
+    assert not hasattr(m.fs.unit, "inert_species_balance")
+
+
+def test_inerts():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+def test_invalid_inert():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.unit invalid component in inert_species "
+                       "argument. foo is not in the property package "
+                       "component list."):
+        m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                          "inert_species": ["foo"]})
 
 
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestMethane(object):
     @pytest.fixture(scope="class")
     def methane(self):
         m = ConcreteModel()
@@ -126,35 +165,19 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize_temperature(self, methane):
-        orig_fixed_vars = fixed_variables_set(methane)
-        orig_act_consts = activated_constraints_set(methane)
-
-        methane.fs.unit.initialize(
-                          optarg={'tol': 1e-6},
-                          state_args={'temperature': 2844.38,
-                                      'pressure': 101325.0,
-                                      'flow_mol': 251.05,
-                                      'mole_frac_comp': {'CH4': 1e-5,
-                                                         'CO': 0.0916,
-                                                         'CO2': 0.0281,
-                                                         'H2': 0.1155,
-                                                         'H2O': 0.1633,
-                                                         'N2': 0.5975,
-                                                         'NH3': 1e-5,
-                                                         'O2': 0.0067}})
-
-        assert degrees_of_freedom(methane) == 0
-
-        fin_fixed_vars = fixed_variables_set(methane)
-        fin_act_consts = activated_constraints_set(methane)
-
-        assert len(fin_act_consts) == len(orig_act_consts)
-        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-
-        for c in fin_act_consts:
-            assert c in orig_act_consts
-        for v in fin_fixed_vars:
-            assert v in orig_fixed_vars
+        initialization_tester(methane,
+                              optarg={'tol': 1e-6},
+                              state_args={'temperature': 2844.38,
+                                          'pressure': 101325.0,
+                                          'flow_mol': 251.05,
+                                          'mole_frac_comp': {'CH4': 1e-5,
+                                                             'CO': 0.0916,
+                                                             'CO2': 0.0281,
+                                                             'H2': 0.1155,
+                                                             'H2O': 0.1633,
+                                                             'N2': 0.5975,
+                                                             'NH3': 1e-5,
+                                                             'O2': 0.0067}})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

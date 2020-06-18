@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 """
 Tests for Property Interrogator Tool
 
@@ -34,9 +46,7 @@ def test_interrogator_state_block_methods():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].get_material_flow_terms("Liq", "A") is \
@@ -62,9 +72,7 @@ def test_interrogator_state_block_unindexed_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_unindexed is \
@@ -85,9 +93,7 @@ def test_interrogator_state_block_phase_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_phase["Liq"] is \
@@ -106,9 +112,7 @@ def test_interrogator_state_block_comp_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_comp["A"] is \
@@ -127,9 +131,7 @@ def test_interrogator_state_block_phase_comp_call():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     # Check get_term methods return an unindexed dummy var
     assert m.fs.props[0].prop_phase_comp["Liq", "A"] is \
@@ -149,9 +151,7 @@ def test_interrogator_report_method():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     with pytest.raises(TypeError,
                        match="Models constructed using the Property "
@@ -167,9 +167,7 @@ def test_interrogator_initialize_method():
 
     m.fs.params = PropertyInterrogatorBlock()
 
-    m.fs.props = m.fs.params.state_block_class(
-            [0],
-            default={"parameters": m.fs.params})
+    m.fs.props = m.fs.params.build_state_block([0])
 
     with pytest.raises(TypeError,
                        match="Models constructed using the Property "

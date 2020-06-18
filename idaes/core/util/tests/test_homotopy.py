@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -341,9 +341,8 @@ def model2():
                  "activity_coeff_model": "Ideal",
                  "state_vars": "FTPz"})
     m.fs.state_block =\
-        m.fs.properties_ideal_vl_FTPz.state_block_class(
-                default={"parameters": m.fs.properties_ideal_vl_FTPz,
-                         "defined_state": True})
+        m.fs.properties_ideal_vl_FTPz.build_state_block(
+                default={"defined_state": True})
 
     m.fs.state_block.flow_mol.fix(1)
     m.fs.state_block.temperature.fix(360)

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -42,15 +42,3 @@ def bin_directory(exists, create):
         click.echo(os.path.exists(idaes.bin_directory))
     else:
         click.echo(idaes.bin_directory)
-
-@cb.command(name="lib-directory", help="Show IDAES library file directory")
-@click.option("--exists", is_flag=True, help="Show if the directory exists")
-@click.option("--create", is_flag=True, help="Create the directory")
-def lib_directory(exists, create):
-    if create:
-        click.echo("Creating {}".format(idaes.lib_directory))
-        idaes._create_lib_dir()
-    elif exists:
-        click.echo(os.path.exists(idaes.lib_directory))
-    else:
-        click.echo(idaes.lib_directory)

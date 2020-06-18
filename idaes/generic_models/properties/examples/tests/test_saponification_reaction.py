@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -52,18 +52,6 @@ class TestParamBlock(object):
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ReactionBlock
 
-        assert len(model.rparams.phase_list) == 1
-        for i in model.rparams.phase_list:
-            assert i == "Liq"
-
-        assert len(model.rparams.component_list) == 5
-        for i in model.rparams.component_list:
-            assert i in ['H2O',
-                         'NaOH',
-                         'EthylAcetate',
-                         'SodiumAcetate',
-                         'Ethanol']
-
         assert len(model.rparams.rate_reaction_idx) == 1
         for i in model.rparams.rate_reaction_idx:
             assert i == "R1"
@@ -96,14 +84,10 @@ class TestReactionBlock(object):
         model.rparams = SaponificationReactionParameterBlock(
                 default={"property_package": model.pparams})
 
-        model.props = model.pparams.state_block_class(
-                [1],
-                default={"parameters": model.pparams})
+        model.props = model.pparams.build_state_block([1])
 
-        model.rxns = model.rparams.reaction_block_class(
-                [1],
-                default={"parameters": model.rparams,
-                         "state_block": model.props})
+        model.rxns = model.rparams.build_reaction_block(
+                [1], default={"state_block": model.props})
 
         return model
 

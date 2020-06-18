@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -24,12 +24,12 @@ from pyomo.environ import (ConcreteModel,
                            value)
 from pyomo.core.base.external import AMPLExternalFunction
 
-from idaes import lib_directory
+from idaes import bin_directory
 
 __author__ = "Andrew Lee"
 
 # Set path to root finder .so file
-_so = os.path.join(lib_directory, "cubic_roots.so")
+_so = os.path.join(bin_directory, "cubic_roots.so")
 
 # Set module level pyest marker
 pytestmark = pytest.mark.cubic_root

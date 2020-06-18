@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,7 +19,6 @@ import logging
 import re
 
 # third party
-import pendulum
 from tinydb import TinyDB, Query
 
 # local
@@ -78,7 +77,6 @@ class ResourceDB(object):
         Returns:
             generator of int|Resource, depending on the value of `id_only`
         """
-
         def as_resource(_r):
             _log.debug(f"as_resource: id_={_r['id_']}")
             rsrc = Resource(value=_r)
@@ -89,7 +87,7 @@ class ResourceDB(object):
         if not filter_dict:
             for r in self._db.all():
                 if id_only:
-                    yield r.eid
+                    yield r.doc_id
                 else:
                     yield as_resource(r)
             return
@@ -100,7 +98,7 @@ class ResourceDB(object):
         results = self._db.search(filter_expr)
         for r in results:
             if id_only:
-                yield r.eid
+                yield r.doc_id
             else:
                 _log.debug(f"got resource: {r}")
                 yield as_resource(r)
@@ -192,21 +190,8 @@ class ResourceDB(object):
     @staticmethod
     def _value_transform(v):
         # transform dates into timestamps
-        if isinstance(v, datetime) or isinstance(v, pendulum.Pendulum):
-            if isinstance(v, datetime):
-                pv = pendulum.create(
-                    v.year,
-                    v.month,
-                    v.day,
-                    v.hour,
-                    v.minute,
-                    v.second,
-                    v.microsecond,
-                    v.tzname(),
-                )
-            else:
-                pv = v
-            return pv.timestamp()
+        if isinstance(v, datetime):
+            return v.timestamp()
         # support for special string '@' values
         elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
             if v == '@true':

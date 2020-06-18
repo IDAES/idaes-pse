@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -81,9 +81,7 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = SaponificationParameterBlock()
 
-        model.props = model.params.state_block_class(
-                [1],
-                default={"parameters": model.params})
+        model.props = model.params.build_state_block([1])
 
         return model
 
@@ -109,10 +107,9 @@ class TestStateBlock(object):
         model = ConcreteModel()
         model.params = SaponificationParameterBlock()
 
-        model.props = model.params.state_block_class(
+        model.props = model.params.build_state_block(
                 [1],
-                default={"parameters": model.params,
-                         "defined_state": True})
+                default={"defined_state": True})
 
         assert isinstance(model.props[1].flow_vol, Var)
         assert value(model.props[1].flow_vol) == 1

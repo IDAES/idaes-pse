@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -23,11 +23,13 @@ from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
+from idaes.core.phases import PhaseType
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
@@ -129,6 +131,28 @@ def list_of_strings(arg):
         # arg is not iterable
         lst = [str(arg)]
     return lst
+
+
+def list_of_phase_types(arg):
+    '''Domain validator for lists of PhaseTypes
+
+    Args:
+        arg : argument to be cast to list of PhaseTypes and validated
+
+    Returns:
+        List of PhaseTypes
+    '''
+    if isinstance(arg, PhaseType):
+        # Cast to list and return
+        return [arg]
+    else:
+        # Assume arg is iterable
+        for i in arg:
+            if not isinstance(i, PhaseType):
+                raise ConfigurationError(
+                    "valid_phase_types configuration argument must be a list "
+                    "of PhaseTypes.")
+    return arg
 
 
 def is_port(arg):

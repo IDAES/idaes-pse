@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -39,7 +39,6 @@ from pyomo.environ import (Constraint,
                            ExternalFunction,
                            log,
                            NonNegativeReals,
-                           Set,
                            SolverFactory,
                            sqrt,
                            Param,
@@ -55,14 +54,16 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        LiquidPhase,
+                        VaporPhase)
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             fix_state_vars,
                                             revert_state_vars)
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
-from idaes import lib_directory
+from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 
@@ -72,7 +73,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Set path to root finder .so file
-_so = os.path.join(lib_directory, "cubic_roots.so")
+_so = os.path.join(bin_directory, "cubic_roots.so")
 
 
 def cubic_roots_available():
@@ -120,17 +121,18 @@ conditions, and thus corresponding constraints  should be included,
         '''
         super(CubicParameterData, self).build()
 
-        self.state_block_class = CubicStateBlock
+        self._state_block_class = CubicStateBlock
 
-        # List of valid phases in property package
+        # Create Phase objects
         if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Liq':
+            self.Liq = LiquidPhase()
+
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq') or \
+                self.config.valid_phase == 'Vap':
+            self.Vap = VaporPhase()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -447,7 +449,7 @@ class _CubicStateBlock(StateBlock):
                 if blk[k].temperature.value > blk[k].temperature_dew.value:
                     # Pure vapour
                     blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         1e-5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -460,7 +462,7 @@ class _CubicStateBlock(StateBlock):
                     # Pure liquid
                     blk[k].flow_mol_phase["Vap"].value = \
                         1e-5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Liq"].value = blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
@@ -472,7 +474,7 @@ class _CubicStateBlock(StateBlock):
                     # TODO : Try to find some better guesses than this
                     blk[k].flow_mol_phase["Vap"].value = \
                         0.5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         0.5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -493,8 +495,9 @@ class _CubicStateBlock(StateBlock):
                                     "_t1_constraint",
                                     "_teq_constraint"):
                     c.activate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Phase equilibrium init: {}.".format(
             idaeslog.condition(results))
         )
@@ -508,7 +511,7 @@ class _CubicStateBlock(StateBlock):
                     c.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = solve_indexed_blocks(opt,[blk],tee=slc.tee)
+            results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Property init: {}.".format(
             idaeslog.condition(results))
         )
@@ -1244,7 +1247,7 @@ class CubicStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
 # All of these equations drawn from Properties of Gases and Liquids
-# Quantities appended with _eq represent calcuations at equilibrium temperature
+# Quantities appended with _eq represent calculations at equilibrium temperature
     def common_cubic(blk):
         if hasattr(blk, "omegaA"):
             return

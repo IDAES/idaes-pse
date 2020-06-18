@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -50,22 +50,14 @@ class ReactionParameterData(ReactionParameterBlock):
     superheated steam.
 
     """
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         super(ReactionParameterData, self).build()
 
-        self.reaction_block_class = ReactionBlock
-
-        # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq'])
-
-        # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2O', 'NaOH',
-                                              'EthylAcetate',
-                                              'SodiumAcetate',
-                                              'Ethanol'])
+        self._reaction_block_class = ReactionBlock
 
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
@@ -111,7 +103,7 @@ class _ReactionBlock(ReactionBlockBase):
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
-    def initialize(blk, outlvl=0, **kwargs):
+    def initialize(blk, outlvl=idaeslog.NOTSET, **kwargs):
         '''
         Initialization routine for reaction package.
 

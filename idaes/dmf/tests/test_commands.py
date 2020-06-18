@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -17,13 +17,13 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
 
 #
 import pytest
 
 #
 from idaes.dmf import dmfbase, commands, errors, workspace, util
+from idaes.util.system import mkdtemp
 from .util import init_logging
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
@@ -37,7 +37,7 @@ _log = logging.getLogger(__name__)
 
 @pytest.fixture(scope="function")
 def wspath():
-    dirname = tempfile.mkdtemp()
+    dirname = mkdtemp()
     yield dirname
     # teardown
     shutil.rmtree(dirname)

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -42,6 +42,21 @@ def level_from_verbosity(vb):
     elif vb <= -2:
         level = logging.FATAL + 1
     return level
+
+
+def how_to_report_an_error(embed=False):
+    msg = ["You can report this error by visiting the Github",
+           "software page at:",
+           "    https://github.com/idaes/idaes-pse/issues",
+           "and clicking on 'New issue', or by sending email",
+           "to 'idaes-support@idaes.org'. Please include the",
+           "command or actions you took, and the resulting",
+           "message, in the report."]
+    if not embed:
+        bar = '-' * 50
+        msg.insert(0, bar)
+        msg.append(bar)
+    return "\n".join(msg)
 
 
 @click.group()

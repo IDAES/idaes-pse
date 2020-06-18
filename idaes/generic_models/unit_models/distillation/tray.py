@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -152,11 +152,10 @@ see property package for documentation.}"""))
         # Create a dict to set up the inlet state blocks
         state_block_args = dict(**self.config.property_package_args)
         state_block_args["has_phase_equilibrium"] = False
-        state_block_args["parameters"] = self.config.property_package
         state_block_args["defined_state"] = True
 
         for i in inlet_list:
-            state_obj = self.config.property_package.state_block_class(
+            state_obj = self.config.property_package.build_state_block(
                 self.flowsheet().config.time,
                 doc="State block for " + i + "_inlet to tray",
                 default=state_block_args)
@@ -166,11 +165,10 @@ see property package for documentation.}"""))
         # Create a dict to set up the mixed outlet state blocks
         mixed_block_args = dict(**self.config.property_package_args)
         mixed_block_args["has_phase_equilibrium"] = True
-        mixed_block_args["parameters"] = self.config.property_package
         mixed_block_args["defined_state"] = False
 
         self.properties_out = self.config.property_package.\
-            state_block_class(self.flowsheet().config.time,
+            build_state_block(self.flowsheet().config.time,
                               doc="State block for mixed outlet from tray",
                               default=mixed_block_args)
 
@@ -510,6 +508,11 @@ see property package for documentation.}"""))
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
 
+        #TODO:
+        # 1. Check initialization for dynamic mode. Currently not supported.
+        # 2. Handle unfixed side split fraction vars
+        # 3. Better logic to handle and fix state vars.
+
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
@@ -544,32 +547,31 @@ see property package for documentation.}"""))
                                           solver=solver,
                                           outlvl=outlvl)
 
-        # Deactivate energy balance
-        self.enthalpy_mixing_equations.deactivate()
-
         # state args to initialize the mixed outlet state block
+        state_args_mixed = {}
+
         if self.config.is_feed_tray and state_args_feed is not None:
+
             # if initial guess provided for the feed stream, initialize the
             # mixed state block at the same condition.
-            self.properties_out.initialize(state_args=state_args_feed,
-                                           solver=solver,
-                                           outlvl=outlvl)
+            state_args_mixed = state_args_feed
         else:
-            state_args_mixed = {}
             state_dict = \
                 self.properties_out[self.flowsheet().config.time.first()].\
-                define_port_members()
+                define_state_vars()
             if self.config.is_feed_tray:
                 for k in state_dict.keys():
                     if state_dict[k].is_indexed():
                         state_args_mixed[k] = {}
                         for m in state_dict[k].keys():
                             state_args_mixed[k][m] = \
-                                self.properties_in_feed[0].\
+                                self.properties_in_feed[self.flowsheet().
+                                                        config.time.first()].\
                                 component(state_dict[k].local_name)[m].value
                     else:
                         state_args_mixed[k] = \
-                            self.properties_in_feed[0].\
+                            self.properties_in_feed[self.flowsheet().
+                                                    config.time.first()].\
                             component(state_dict[k].local_name).value
 
             else:
@@ -577,7 +579,7 @@ see property package for documentation.}"""))
                 # vap/liq inlets except pressure. While this is crude, it
                 # will work for most combination of state vars.
                 for k in state_dict.keys():
-                    if "pressure" in k:
+                    if k == "pressure":
                         # Take the lowest pressure and this is the liq inlet
                         state_args_mixed[k] = self.properties_in_liq[0].\
                             component(state_dict[k].local_name).value
@@ -597,12 +599,37 @@ see property package for documentation.}"""))
                                    self.properties_in_vap[0].
                                    component(state_dict[k].local_name).value)
 
-        # Deactivate pressure balance
-        self.pressure_drop_equation.deactivate()
-
+        # Initialize the mixed outlet state block
         self.properties_out.initialize(state_args=state_args_mixed,
                                        solver=solver,
                                        outlvl=outlvl)
+        # Deactivate energy balance
+        self.enthalpy_mixing_equations.deactivate()
+
+        # Try fixing the outlet temperature if else pass
+        # NOTE: if passed then there would probably be a degree of freedom
+        try:
+            self.properties_out[:].temperature.\
+                fix(state_args_mixed["temperature"])
+        except AttributeError:
+            init_log.warning("Trying to fix outlet temperature "
+                             "during initialization but temperature attribute "
+                             "unavailable in the state block. Initialization "
+                             "proceeding with a potential degree of freedom.")
+
+        # Deactivate pressure balance
+        self.pressure_drop_equation.deactivate()
+
+        # Try fixing the outlet temperature if else pass
+        # NOTE: if passed then there would probably be a degree of freedom
+        try:
+            self.properties_out[:].pressure.\
+                fix(state_args_mixed["pressure"])
+        except AttributeError:
+            init_log.warning("Trying to fix outlet pressure "
+                             "during initialization but pressure attribute "
+                             "unavailable in the state block. Initialization "
+                             "proceeding with a potential degree of freedom.")
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
@@ -612,6 +639,10 @@ see property package for documentation.}"""))
 
         # Activate energy balance
         self.enthalpy_mixing_equations.activate()
+        try:
+            self.properties_out[:].temperature.unfix()
+        except AttributeError:
+            pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
@@ -621,6 +652,11 @@ see property package for documentation.}"""))
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
+
+        try:
+            self.properties_out[:].pressure.unfix()
+        except AttributeError:
+            pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
