@@ -212,23 +212,28 @@ def test_create_link_jointjs_json():
                             }, 
                             'id': 's03', 
                             'labels': [{
-                              'attrs': {
-                                'rect': {
-                                  "fill": "#d7dce0", 
-                                  "stroke": "#FFFFFF", 
-                                  'stroke-width': 1
-                                }, 
-                                'text': {
-                                  'text': 'foo', 
-                                  'fill': 'black', 
-                                  'text-anchor': 'left'
-                                }
-                              }, 
-                              'position': {
-                                'distance': 0.66, 
-                                'offset': -40
-                              }
-                            }], 
+                              "attrs": {
+                                  "rect": {
+                                    "fill": '#d7dce0', 
+                                    "stroke": 'white', 
+                                    'stroke-width': 0, 
+                                    "fill-opacity": 0},
+                                  "text": {
+                                      "text": label,
+                                      "fill": 'black',
+                                      'text-anchor': 'left',
+                                      "display": "none"
+                                  },
+                              },
+                              "position": {
+                                  "distance": 0.66,
+                                  "offset": -40
+                              }},
+                              {"attrs": {
+                                  "text": {
+                                      "text": link_id
+                                  }
+                              }}], 
                             'z': 2
                           }],
                           "model": {}

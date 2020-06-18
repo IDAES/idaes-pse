@@ -64,7 +64,7 @@ class FlowsheetSerializer:
                     "s03": {
                         "source": "M101", 
                         "dest": "H101", 
-                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                        "label": "molar flow ("Vap", "hydrogen") 0.5"
                     }
                 }
             },
@@ -155,20 +155,28 @@ class FlowsheetSerializer:
             "connector": {"name": "normal", 
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
-            "labels": [{
-                "attrs": {
-                    "rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", 'stroke-width': 1},
+            "labels": [
+                # This label MUST be first or the show/hide will fail
+                {"attrs": {
+                    # Start with the labels off
+                    "rect": {"fill": "#d7dce0", "stroke": "white", "stroke-width": 0, "fill-opacity": 0},
                     "text": {
                         "text": label,
-                        "fill": 'black',
-                        'text-anchor': 'left',
+                        "fill": "black",
+                        "text-anchor": "left",
+                        "display": "none"
                     },
                 },
                 "position": {
                     "distance": 0.66,
                     "offset": -40
-                },
-            }],
+                }},
+                {"attrs": {
+                    "text": {
+                        "text": name
+                    }
+                }}
+            ],
             "z": 2
         }
         out_json["cells"].append(entry)
@@ -234,6 +242,17 @@ class FlowsheetSerializer:
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
+
+            if hasattr(ports_dict["source"], "vap_outlet"):
+                # TODO Figure out how to denote different outlet types. Need to
+                #  deal with multiple input/output offsets
+                for arc in list(self.arcs.values()):
+                    if (self.ports[arc.dest] == dest and arc.source == ports_dict["source"].vap_outlet):
+                        source_anchor = "top"
+                    else:
+                        source_anchor = "bottom"
+            else:
+                source_anchor = "out"
 
             self.create_link_jointjs_json(
                 self.out_json, 
