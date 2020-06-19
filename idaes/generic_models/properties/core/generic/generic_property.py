@@ -551,13 +551,17 @@ class _GenericStateBlock(StateBlock):
             flag_dict = fix_state_vars(blk, state_args)
             # Confirm DoF for sanity
             for k in blk.keys():
-                dof = degrees_of_freedom(blk[k])
-                # if dof != 0:
-                #     raise BurntToast("Degrees of freedom were not zero [{}] "
-                #                      "after trying to fix state variables. "
-                #                      "Something broke in the generic property "
-                #                      "package code - please inform the IDAES "
-                #                      "developers.".format(dof))
+                if blk[k].always_flash:
+                    # If not always flash, DoF is probably less than zero
+                    # We will handle this elsewhere
+                    dof = degrees_of_freedom(blk[k])
+                    if dof != 0:
+                        raise BurntToast(
+                            "Degrees of freedom were not zero [{}] "
+                            "after trying to fix state variables. "
+                            "Something broke in the generic property "
+                            "package code - please inform the IDAES "
+                            "developers.".format(dof))
         else:
             # When state vars are fixed, check that DoF is 0
             for k in blk.keys():
@@ -811,27 +815,37 @@ class _GenericStateBlock(StateBlock):
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k].params.config.phase_equilibrium_state is not None and
-                (not blk[k].config.defined_state or blk[k].always_flash)):
-            for c in blk[k].component_objects(Constraint):
-                # Activate common constraints
-                if c.local_name in ("total_flow_balance",
-                                    "component_flow_balances",
-                                    "sum_mole_frac",
-                                    "equilibrium_constraint"):
-                    c.activate()
-            for pp in blk[k].params._pe_pairs:
-                # Activate formulation specific constraints
-                blk[k].params.config.phase_equilibrium_state[pp] \
-                    .phase_equil_initialization(blk[k], pp)
+        n_cons = 0
+        skip = False
+        for k in blk.keys():
+            if (blk[k].params.config.phase_equilibrium_state is not None and
+                    (not blk[k].config.defined_state or blk[k].always_flash)):
+                for c in blk[k].component_objects(Constraint):
+                    # Activate common constraints
+                    if c.local_name in ("total_flow_balance",
+                                        "component_flow_balances",
+                                        "sum_mole_frac",
+                                        "equilibrium_constraint"):
+                        c.activate()
+                for pp in blk[k].params._pe_pairs:
+                    # Activate formulation specific constraints
+                    blk[k].params.config.phase_equilibrium_state[pp] \
+                        .phase_equil_initialization(blk[k], pp)
 
-            # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            #     res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            # init_log.info(
-            #     "Phase equilibrium initialization: {}.".format(
-            #         idaeslog.condition(res)
-            #     )
-            # )
+            n_cons += number_activated_constraints(blk[k])
+            if degrees_of_freedom(blk[k]) < 0:
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+                skip = True
+
+        if n_cons > 0 and not skip:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            init_log.info(
+                "Phase equilibrium initialization: {}.".format(
+                    idaeslog.condition(res)
+                )
+            )
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -843,15 +857,20 @@ class _GenericStateBlock(StateBlock):
                         .state_definition.do_not_initialize):
                     c.activate()
 
-        # n_cons = 0
-        # for k in blk:
-        #     n_cons += number_activated_constraints(blk[k])
-        # if n_cons > 0:
-        #     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #         res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        #     init_log.info("Property initialization: {}.".format(
-        #         idaeslog.condition(res))
-        #     )
+        n_cons = 0
+        skip = False
+        for k in blk:
+            if degrees_of_freedom(blk[k]) < 0:
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+                skip = True
+            n_cons += number_activated_constraints(blk[k])
+        if n_cons > 0 and not skip:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            init_log.info("Property initialization: {}.".format(
+                idaeslog.condition(res))
+            )
 
         # ---------------------------------------------------------------------
         # Return constraints to initial state
@@ -1137,8 +1156,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
             self.enth_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_enth_mol_phase_comp)
         except AttributeError:
             self.del_component(self.enth_mol_phase_comp)
@@ -1172,8 +1190,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
             self.entr_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_entr_mol_phase_comp)
         except AttributeError:
             self.del_component(self.entr_mol_phase_comp)
@@ -1184,8 +1201,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_fug_phase_comp(b, p, j):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.fug_phase_comp(b, p, j)
-            self.fug_phase_comp = Expression(self.params.phase_list,
-                                             self.params.component_list,
+            self.fug_phase_comp = Expression(self.params._phase_component_set,
                                              rule=rule_fug_phase_comp)
         except AttributeError:
             self.del_component(self.fug_phase_comp)
@@ -1197,8 +1213,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.fug_coeff_phase_comp(b, p, j)
             self.fug_coeff_phase_comp = Expression(
-                    self.params.phase_list,
-                    self.params.component_list,
+                    self.params._phase_component_set,
                     rule=rule_fug_coeff_phase_comp)
         except AttributeError:
             self.del_component(self.fug_coeff_phase_comp)
@@ -1232,8 +1247,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.gibbs_mol_phase_comp(b, p, j)
             self.gibbs_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_gibbs_mol_phase_comp)
         except AttributeError:
             self.del_component(self.gibbs_mol_phase_comp)
