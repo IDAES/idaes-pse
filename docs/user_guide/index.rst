@@ -10,8 +10,7 @@
     conventions
     workflow
     commands/index
+    vis/index
     model_libraries/index
-    utility_methods
-    debugging/index
+    logging
     modeling_extensions/index
-    faq
