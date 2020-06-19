@@ -11,5 +11,5 @@
     commands/index
     vis/index
     model_libraries/index
-    debugging/index
+    logging
     modeling_extensions/index
