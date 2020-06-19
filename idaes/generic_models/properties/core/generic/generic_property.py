@@ -37,7 +37,8 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_activated_constraints)
+                                              number_activated_constraints,
+                                              number_unfixed_variables)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 import idaes.logger as idaeslog
@@ -450,6 +451,8 @@ class GenericParameterData(PhysicalParameterBlock):
         obj.add_properties(
             {'flow_mol': {'method': None},
              'flow_mol_phase': {'method': None},
+             'flow_mol_phase_comp': {'method': None},
+             'flow_mol_comp': {'method': None},
              'mole_frac_comp': {'method': None},
              'mole_frac_phase_comp': {'method': None},
              'phase_frac': {'method': None},
@@ -548,12 +551,13 @@ class _GenericStateBlock(StateBlock):
             flag_dict = fix_state_vars(blk, state_args)
             # Confirm DoF for sanity
             for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
-                    raise BurntToast("Degrees of freedom were not zero "
-                                     "after trying to fix state variables. "
-                                     "Something broke in the generic property "
-                                     "package code - please inform the IDAES "
-                                     "developers.")
+                dof = degrees_of_freedom(blk[k])
+                # if dof != 0:
+                #     raise BurntToast("Degrees of freedom were not zero [{}] "
+                #                      "after trying to fix state variables. "
+                #                      "Something broke in the generic property "
+                #                      "package code - please inform the IDAES "
+                #                      "developers.".format(dof))
         else:
             # When state vars are fixed, check that DoF is 0
             for k in blk.keys():
@@ -780,7 +784,8 @@ class _GenericStateBlock(StateBlock):
             )
         # ---------------------------------------------------------------------
         # Calculate _teq if required
-        if blk[k].params.config.phases_in_equilibrium is not None:
+        if (blk[k].params.config.phases_in_equilibrium is not None and
+                (not blk[k].config.defined_state or blk[k].always_flash)):
             for k in blk.keys():
                 for pp in blk[k].params._pe_pairs:
                     blk[k].params.config.phase_equilibrium_state[pp] \
@@ -820,13 +825,13 @@ class _GenericStateBlock(StateBlock):
                 blk[k].params.config.phase_equilibrium_state[pp] \
                     .phase_equil_initialization(blk[k], pp)
 
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            init_log.info(
-                "Phase equilibrium initialization: {}.".format(
-                    idaeslog.condition(res)
-                )
-            )
+            # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            #     res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            # init_log.info(
+            #     "Phase equilibrium initialization: {}.".format(
+            #         idaeslog.condition(res)
+            #     )
+            # )
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -837,11 +842,16 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.info("Property initialization: {}.".format(
-            idaeslog.condition(res))
-        )
+
+        # n_cons = 0
+        # for k in blk:
+        #     n_cons += number_activated_constraints(blk[k])
+        # if n_cons > 0:
+        #     with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #         res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+        #     init_log.info("Property initialization: {}.".format(
+        #         idaeslog.condition(res))
+        #     )
 
         # ---------------------------------------------------------------------
         # Return constraints to initial state

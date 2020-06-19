@@ -252,7 +252,7 @@ def define_state(b):
 
 def state_initialization(b):
     for p in b.params.phase_list:
-        # Start with phase mole fractions equal to toal mole fractions
+        # Start with phase mole fractions equal to total mole fractions
         for j in b.components_in_phase(p):
             b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
 
