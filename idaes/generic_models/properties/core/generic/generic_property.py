@@ -37,8 +37,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_activated_constraints,
-                                              number_unfixed_variables)
+                                              number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 import idaes.logger as idaeslog
