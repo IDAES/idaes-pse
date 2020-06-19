@@ -177,7 +177,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name):
+    def visualize(self, model_name, browser=True):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -185,11 +185,13 @@ within this flowsheet if not otherwise specified,
         Args:
             model_name : The name of the model that flask will use as an argument
                          for the webpage
+            browser : If True a browser window/tab will be opened with the 
+                      visualization. Defaults to True
 
         Returns:
             None
         """
-        visualize(self, model_name)
+        visualize(self, model_name, browser)
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()

@@ -26,6 +26,7 @@ from idaes.ui.link_position_mapping import link_position_mapping
 from pyomo.environ import Expression
 
 
+@pytest.mark.unit
 def test_serialize_flowsheet():
     # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
     m = build_flowsheet()
@@ -158,6 +159,7 @@ def test_serialize_flowsheet():
     assert named_edges_results == named_edges_truth
 
 
+@pytest.mark.unit
 def test_create_image_jointjs_json():
   out_json = {"model": {}}
   out_json["cells"] = []
@@ -251,6 +253,7 @@ def test_create_image_jointjs_json():
                       }
 
 
+@pytest.mark.unit
 def test_create_link_jointjs_json():
     out_json = {"model": {}}
     out_json["cells"] = []
