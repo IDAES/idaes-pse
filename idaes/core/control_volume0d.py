@@ -258,6 +258,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         else:
             units['flow'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
@@ -793,6 +794,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         else:
             units['flow'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
@@ -824,7 +826,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     units=acc_units)
 
         # Method to convert mass flow basis to mole flow basis
-        def cf(b, t, j):
+        def conv_factor(b, t, j):
             flow_basis = b.properties_out[t].get_material_flow_basis()
             if flow_basis == MaterialFlowBasis.molar:
                 return 1
@@ -841,7 +843,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          self.config.property_package.element_list,
                          doc="Inlet elemental flow terms")
         def elemental_flow_in(b, t, p, e):
-            return sum(cf(b, t, j) *
+            return sum(conv_factor(b, t, j) *
                        b.properties_in[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
@@ -851,7 +853,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          self.config.property_package.element_list,
                          doc="Outlet elemental flow terms")
         def elemental_flow_out(b, t, p, e):
-            return sum(cf(b, t, j) *
+            return sum(conv_factor(b, t, j) *
                        b.properties_out[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
@@ -908,7 +910,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def elemental_holdup_calculation(b, t, e):
                 return b.element_holdup[t, e] == (
                     b.volume[t] *
-                    sum(cf(b, t, j)*b.phase_fraction[t, p] *
+                    sum(conv_factor(b, t, j)*b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
                         .params.element_comp[j][e]
@@ -986,6 +988,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             units['energy'] = None
             units['energy_flow'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):

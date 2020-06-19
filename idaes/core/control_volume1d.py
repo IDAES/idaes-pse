@@ -388,6 +388,7 @@ argument)."""))
             units['flow'] = None
             units['flow_l'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
@@ -966,6 +967,7 @@ argument)."""))
             units['flow'] = None
             units['flow_l'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
@@ -1006,7 +1008,7 @@ argument)."""))
                                        units=units['flow'])
 
         # Method to convert mass flow basis to mole flow basis
-        def cf(b, t, x, j):
+        def conv_factor(b, t, x, j):
             flow_basis = b.properties[t, x].get_material_flow_basis()
             if flow_basis == MaterialFlowBasis.molar:
                 return 1
@@ -1024,7 +1026,7 @@ argument)."""))
                          doc="Elemental flow constraints")
         def elemental_flow_constraint(b, t, x, e):
             return b.elemental_flow_term[t, x, e] == (
-                sum(sum(cf(b, t, x, j) *
+                sum(sum(conv_factor(b, t, x, j) *
                         b.properties[t, x].get_material_flow_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
                         for j in b.config.property_package.component_list)
@@ -1099,7 +1101,7 @@ argument)."""))
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
                     b._area_func(t, x) *
-                    sum(cf(b, t, x, j)*b.phase_fraction[t, x, p] *
+                    sum(conv_factor(b, t, x, j)*b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
                         for p in b.config.property_package.phase_list
@@ -1174,6 +1176,7 @@ argument)."""))
             units['energy_flow'] = None
             units['energy_flow_l'] = None
 
+        # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().time_units
             if (f_time_units is None) ^ (units['time'] is None):
