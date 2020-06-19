@@ -23,7 +23,7 @@ from pyomo.environ import Block, value
 from pyomo.network.port import Port
 from pyomo.network import Arc
 from pyomo.core.base.var import Var
-from pyomo.core.base.expression import SimpleExpression
+from pyomo.core.base.expression import Expression
 
 
 class FileBaseNameExistsError(Exception):
@@ -122,7 +122,7 @@ class FlowsheetSerializer:
             label = ""
 
             for var, var_value in value.define_display_vars().items():
-                if isinstance(var_value, SimpleExpression):
+                if isinstance(var_value, Expression):
                     label = f"{var} {var_value()}\n"
                 elif isinstance(var_value, Var):
                     for stream_type, stream_value in var_value.get_values().items():
