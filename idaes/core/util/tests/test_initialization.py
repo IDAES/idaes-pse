@@ -186,7 +186,9 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
         obj.add_default_units({'time': 'min',
                                'length': 'm',
                                'amount': 'kmol',
-                               'energy': 'kcal'})
+                               'temperature': 'K',
+                               'energy': 'kcal',
+                               'holdup': 'kmol'})
 
 class _EnzymeReactionBlock(ReactionBlockBase):
     def initialize(blk):
