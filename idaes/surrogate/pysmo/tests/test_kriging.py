@@ -244,7 +244,6 @@ class TestKrigingModel:
         KrigingClass = KrigingModel(input_array[0:3])
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
-        # assert len(opt_results) == 9
         assert len(opt_results.x) == 3
         assert opt_results.success == True
     
@@ -255,7 +254,6 @@ class TestKrigingModel:
         KrigingClass = KrigingModel(input_array[0:3],numerical_gradients=False)
         p= 2
         opt_results = KrigingClass.parameter_optimization(p)
-        # assert len(opt_results) == 7
         assert len(opt_results.x) == 3
         assert opt_results.minimization_failures == False
 
