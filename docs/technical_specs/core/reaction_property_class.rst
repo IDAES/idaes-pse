@@ -11,6 +11,11 @@ Reaction property packages consist of two parts:
 * ReactionParameterBlocks, which contain a set of parameters associated with the specific reaction(s) being modeled, and
 * ReactionBlocks, which contain the actual calculations of the reaction behavior.
 
+Consistency with Thermophysical Properties
+------------------------------------------
+
+Within the IDAES modeling framework, all reaction packages are coupled with a thermophysical property package. The thermophysical property package contains the state variables required for calculating reaction properties, and in some cases may also provide thermophysical properties required by reaction calculations. Due to this, reaction packages must be consistent with the thermophysical property package they are linked to and the modeling framework performs some checks to ensure this. Notably, the default units of measurement defined for the reaction package and the thermophysical property package must match.
+
 Reaction Parameter Blocks
 -------------------------
 
