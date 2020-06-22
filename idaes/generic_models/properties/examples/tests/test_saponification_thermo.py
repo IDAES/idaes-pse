@@ -278,3 +278,6 @@ class TestStateBlock(object):
         assert not model.props[1].pressure.fixed
         for i in model.props[1].conc_mol_comp:
             assert not model.props[1].conc_mol_comp[i].fixed
+
+    def check_units(self, model):
+        units.assert_units_consistent(model)

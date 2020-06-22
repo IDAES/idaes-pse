@@ -19,7 +19,9 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
+                           units,
                            value)
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -32,8 +34,6 @@ from idaes.generic_models.properties.examples.saponification_reactions import (
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -121,6 +121,8 @@ class TestSaponification(object):
         assert number_variables(sapon) == 27
         assert number_total_constraints(sapon) == 16
         assert number_unused_variables(sapon) == 0
+
+        assert_units_consistent(sapon.fs.unit)
 
     def test_dof(self, sapon):
         sapon.fs.unit.inlet.flow_vol.fix(1.0e-03)

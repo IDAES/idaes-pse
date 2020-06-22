@@ -16,9 +16,14 @@ Tests for generic reaction package core code
 Author: Andrew Lee
 """
 import pytest
+from sys import modules
 
 from pyomo.environ import (
     Block, ConcreteModel, Constraint, Expression, exp, Set, Var, value)
+
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
+from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
         GenericReactionParameterBlock)
@@ -39,13 +44,38 @@ from idaes.core.util.constants import Constants as constants
 from idaes.core.util.exceptions import ConfigurationError
 
 
+# -----------------------------------------------------------------------------
+# Dummy methods to avoid errors
+def set_metadata(b):
+    pass
+
+
+def define_state(b):
+    b.temperature = Var(initialize=100)
+    b.mole_frac_phase_comp = Var(b.params.phase_list,
+                                 b.params.component_list,
+                                 initialize=0.5)
+
+
+# -----------------------------------------------------------------------------
 class TestGenericReactionParameterBlock(object):
-    def test_rate_build(self):
+    @pytest.fixture
+    def m(self):
         m = ConcreteModel()
 
         # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
+        m.params = GenericParameterBlock(default={
+                "components": {"c1": {}, "c2": {}},
+                "phases": {
+                    "p1": {"equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
 
+        return m
+
+    def test_rate_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
             "rate_reactions": {
@@ -77,12 +107,7 @@ class TestGenericReactionParameterBlock(object):
 
         assert isinstance(m.rxn_params.reaction_r1, Block)
 
-    def test_rate_build_no_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_rate_build_no_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params rate reaction r1 was not "
                            "provided with a stoichiometry configuration "
@@ -93,12 +118,7 @@ class TestGenericReactionParameterBlock(object):
                     "r1": {"heat_of_reaction": "foo",
                            "rate_form": "foo"}}})
 
-    def test_rate_build_invalid_phase_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_rate_build_invalid_phase_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params stoichiometry for rate reaction "
                            "r1 included unrecognised phase p7."):
@@ -110,12 +130,7 @@ class TestGenericReactionParameterBlock(object):
                            "heat_of_reaction": "foo",
                            "rate_form": "foo"}}})
 
-    def test_rate_build_invalid_component_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_rate_build_invalid_component_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params stoichiometry for rate reaction "
                            "r1 included unrecognised component c7."):
@@ -127,12 +142,7 @@ class TestGenericReactionParameterBlock(object):
                            "heat_of_reaction": "foo",
                            "rate_form": "foo"}}})
 
-    def test_rate_build_no_form(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_rate_build_no_form(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params rate reaction r1 was not "
                            "provided with a rate_form configuration "
@@ -144,12 +154,7 @@ class TestGenericReactionParameterBlock(object):
                                              ("p1", "c2"): 2},
                            "heat_of_reaction": "foo"}}})
 
-    def test_equil_build(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
             "equilibrium_reactions": {
@@ -183,12 +188,7 @@ class TestGenericReactionParameterBlock(object):
 
         assert isinstance(m.rxn_params.reaction_e1, Block)
 
-    def test_equil_build_no_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_equil_build_no_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params equilibrium reaction e1 was not "
                            "provided with a stoichiometry configuration "
@@ -199,12 +199,7 @@ class TestGenericReactionParameterBlock(object):
                     "e1": {"heat_of_reaction": "foo",
                            "equilibrium_form": "foo"}}})
 
-    def test_equil_build_invalid_phase_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_equil_build_invalid_phase_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params stoichiometry for equilibrium "
                            "reaction e1 included unrecognised phase p7."):
@@ -216,12 +211,7 @@ class TestGenericReactionParameterBlock(object):
                            "heat_of_reaction": "foo",
                            "equilibrium_form": "foo"}}})
 
-    def test_equil_build_invalid_component_stoichiometry(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_equil_build_invalid_component_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params stoichiometry for equilibrium "
                            "reaction e1 included unrecognised component c7."):
@@ -233,12 +223,7 @@ class TestGenericReactionParameterBlock(object):
                            "heat_of_reaction": "foo",
                            "equilibrium_form": "foo"}}})
 
-    def test_equil_build_no_form(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_equil_build_no_form(self, m):
         with pytest.raises(ConfigurationError,
                            match="rxn_params equilibrium reaction e1 was not "
                            "provided with a equilibrium_form configuration "
@@ -250,12 +235,7 @@ class TestGenericReactionParameterBlock(object):
                                              ("p2", "c2"): 4},
                            "heat_of_reaction": "foo"}}})
 
-    def test_rate_and_equil_build(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_rate_and_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
             "rate_reactions": {
@@ -315,12 +295,7 @@ class TestGenericReactionParameterBlock(object):
         assert isinstance(m.rxn_params.reaction_r1, Block)
         assert isinstance(m.rxn_params.reaction_e1, Block)
 
-    def test_build_parameters(self):
-        m = ConcreteModel()
-
-        # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
-
+    def test_build_parameters(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
             "rate_reactions": {
@@ -354,7 +329,15 @@ class TestGenericReactionBlock(object):
         m = ConcreteModel()
 
         # Add a dummy thermo package for validation
-        m.params = PhysicalParameterTestBlock()
+        m.params = GenericParameterBlock(default={
+                "components": {"c1": {}, "c2": {}},
+                "phases": {
+                    "p1": {"equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300})
+
         m.sblock = m.params.build_state_block([1])
 
         m.rxn_params = GenericReactionParameterBlock(default={
