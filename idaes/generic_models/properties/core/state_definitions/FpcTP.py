@@ -110,7 +110,7 @@ def define_state(b):
 
     def flow_mol_phase(b, p):
         return sum(b.flow_mol_phase_comp[p, j]
-                   for j in b._params.component_list
+                   for j in b.params.component_list
                    if (p, j) in b.params._phase_component_set)
     b.flow_mol_phase = Expression(b.params.phase_list,
                                   rule=flow_mol_phase,

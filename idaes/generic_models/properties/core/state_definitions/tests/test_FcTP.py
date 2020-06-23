@@ -11,14 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for methods from Reid, Prausnitz and Poling
-
-All methods and parameters from:
-
-The Properties of Gases & Liquids, 4th Edition
-Reid, Prausnitz and Polling, 1987, McGraw-Hill
-
-All parameter indicies based on conventions used by the source
+Tests for FcTP state formulation
 
 Authors: Andrew Lee
 """

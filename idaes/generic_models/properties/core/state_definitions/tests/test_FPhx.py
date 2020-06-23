@@ -11,8 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for FTP state formulation
-
+Tests for FPhx state formulation.
 Authors: Andrew Lee
 """
 
@@ -21,16 +20,25 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Block, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
-from idaes.generic_models.properties.core.state_definitions.FTPx import \
-    define_state, state_initialization, set_metadata
+from idaes.generic_models.properties.core.state_definitions.FPhx import \
+    define_state, set_metadata
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.testing import PhysicalParameterTestBlock
 
 
 def test_set_metadata():
-    assert set_metadata(None) is None
+    m = ConcreteModel()
+    m.props = PhysicalParameterTestBlock()
+
+    # Set metadata to make sure it is overwritten
+    m.props.get_metadata().properties["enth_mol"] = {'method': "test"}
+
+    set_metadata(m.props)
+
+    assert m.props.get_metadata().properties["enth_mol"] == {'method': None}
 
 
 class Test1PhaseDefinedStateFalseNoBounds(object):
@@ -85,6 +93,9 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
+
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 0
 
         assert isinstance(frame.props[1].flow_mol_phase, Var)
         assert len(frame.props[1].flow_mol_phase) == 1
@@ -149,7 +160,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         m.params.config.declare("state_bounds", ConfigValue(default={
                 "flow_mol": (0, 200),
                 "temperature": (290, 400),
-                "pressure": (1e5, 5e5)}))
+                "pressure": (1e5, 5e5),
+                "enth_mol": (0, 1000)}))
 
         m.params.phase_list = Set(initialize=["a"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
@@ -191,6 +203,11 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].pressure.value == 3e5
         assert frame.props[1].pressure.lb == 1e5
         assert frame.props[1].pressure.ub == 5e5
+
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 500
+        assert frame.props[1].enth_mol.lb == 0
+        assert frame.props[1].enth_mol.ub == 1000
 
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 345
@@ -296,6 +313,9 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 101325
 
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 0
+
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
 
@@ -376,7 +396,8 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         m.params.config.declare("state_bounds", ConfigValue(default={
                 "flow_mol": (0, 200),
                 "temperature": (290, 400),
-                "pressure": (1e5, 5e5)}))
+                "pressure": (1e5, 5e5),
+                "enth_mol": (0, 1000)}))
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
@@ -420,6 +441,11 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].pressure.value == 3e5
         assert frame.props[1].pressure.lb == 1e5
         assert frame.props[1].pressure.ub == 5e5
+
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 500
+        assert frame.props[1].enth_mol.lb == 0
+        assert frame.props[1].enth_mol.ub == 1000
 
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 345
@@ -540,6 +566,9 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 101325
 
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 0
+
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
 
@@ -612,7 +641,8 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         m.params.config.declare("state_bounds", ConfigValue(default={
                 "flow_mol": (0, 200),
                 "temperature": (290, 400),
-                "pressure": (1e5, 5e5)}))
+                "pressure": (1e5, 5e5),
+                "enth_mol": (0, 1000)}))
 
         m.params.phase_list = Set(initialize=["a", "b", "c"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
@@ -657,6 +687,11 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].pressure.value == 3e5
         assert frame.props[1].pressure.lb == 1e5
         assert frame.props[1].pressure.ub == 5e5
+
+        assert isinstance(frame.props[1].enth_mol, Var)
+        assert frame.props[1].enth_mol.value == 500
+        assert frame.props[1].enth_mol.lb == 0
+        assert frame.props[1].enth_mol.ub == 1000
 
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 345
@@ -791,19 +826,19 @@ class TestCommon(object):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,
              "mole_frac_comp": frame.props[1].mole_frac_comp,
-             "temperature": frame.props[1].temperature,
+             "enth_mol": frame.props[1].enth_mol,
              "pressure": frame.props[1].pressure}
 
     def test_define_port_members(self, frame):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,
              "mole_frac_comp": frame.props[1].mole_frac_comp,
-             "temperature": frame.props[1].temperature,
+             "enth_mol": frame.props[1].enth_mol,
              "pressure": frame.props[1].pressure}
 
     def test_define_display_vars(self, frame):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,
              "mole_frac_comp": frame.props[1].mole_frac_comp,
-             "temperature": frame.props[1].temperature,
+             "enth_mol": frame.props[1].enth_mol,
              "pressure": frame.props[1].pressure}

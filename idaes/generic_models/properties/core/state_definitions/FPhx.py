@@ -221,14 +221,14 @@ def define_state(b):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b.params.phase_list
-                if (p, i) in b.params.phase_component_set)
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
             return 1e3*sum(b.mole_frac_phase_comp[p, i]
                            for i in b.params.component_list
-                           if (p, i) in b.params.phase_component_set) == 1e3
+                           if (p, i) in b.params._phase_component_set) == 1e3
         b.sum_mole_frac = Constraint(b.params.phase_list,
                                      rule=rule_mole_frac)
 
