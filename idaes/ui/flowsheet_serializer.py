@@ -102,8 +102,7 @@ class FlowsheetSerializer:
                     "type": component._orig_module.split(".")[-1]
                 }
                 for subcomponent in component.component_objects(Port, descend_into=True):
-                    if isinstance(subcomponent, Port):
-                        self.ports[subcomponent] = component
+                    self.ports[subcomponent] = component
             else:
                 component_object_op = getattr(component, "component_object", None)
                 if not callable(component_object_op):
@@ -115,8 +114,7 @@ class FlowsheetSerializer:
                                     "type": item._orig_module.split(".")[-1]
                                 }
                                 for subcomponent in item.component_objects(Port, descend_into=True):
-                                    if isinstance(subcomponent, Port):
-                                        self.ports[subcomponent] = item
+                                    self.ports[subcomponent] = item
   
         for stream_name, value in stream_states_dict(self.arcs).items():
             label = ""

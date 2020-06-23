@@ -115,7 +115,6 @@ def test_serialize_flowsheet():
     set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
     difference = list(set_truth.symmetric_difference(set_result))
 
-    print(difference, unit_model_names_types)
     assert len(difference) == 0
   
     # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
