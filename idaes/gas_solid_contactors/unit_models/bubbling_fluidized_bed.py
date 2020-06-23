@@ -1548,12 +1548,10 @@ see reaction package for documentation.}"""))
         for t in blk.flowsheet().config.time:
             for x in blk.length_domain:
                 blk.velocity_superficial_gas[t, x].fix(
-                        value(blk.gas_inlet.flow_mol[t] /
-                              (blk.gas_inlet_block[t].dens_mol_vap *
-                               (blk.pi/4) *
-                               blk.bed_diameter**2)))
-                blk.velocity_emulsion_gas[t, x] = (
-                        blk.solid_inlet_block[t]._params.velocity_mf.value)
+                        value(3 *
+                              blk.solid_inlet_block[t]._params.velocity_mf))
+                blk.velocity_emulsion_gas[t, x] = value(
+                        blk.solid_inlet_block[t]._params.velocity_mf)
                 blk.bubble_diameter[t, x] = value(
                         1.38 * (blk.gc**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -

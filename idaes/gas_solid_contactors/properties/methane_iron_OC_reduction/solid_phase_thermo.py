@@ -199,7 +199,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'flow_mass': {'method': None, 'units': 'kg/s'},
                 'temperature': {'method': None, 'units': 'K'},
                 'mass_frac': {'method': None, 'units': None},
-                'pressure': {'method': None, 'units': 'bar'},
                 'dens_mass_sol': {'method': '_dens_mass_sol',
                                   'units': 'kg/m3'},
                 'cp_mol_comp': {'method': '_cp_mol_comp',
@@ -236,7 +235,7 @@ class _SolidPhaseThermoStateBlock(StateBlock):
                          control volume passes the inlet values as initial
                          guess.
                          Keys for the state_args dictionary are:
-                         flow_mol, temperature, pressure and mole_frac_comp
+                         flow_mass, temperature, and mass_frac_comp
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
@@ -387,9 +386,6 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         self.temperature = Var(initialize=298.15,
                                domain=Reals,
                                doc='State temperature [K]')
-        self.pressure = Var(initialize=1.01325,
-                            domain=Reals,
-                            doc='State pressure [Pa]')
 
         # Create standard constraints
         # Sum mass fractions if not inlet block
@@ -527,8 +523,7 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
     def define_state_vars(b):
         return {"flow_mass": b.flow_mass,
                 "temperature": b.temperature,
-                "mass_frac": b.mass_frac,
-                "pressure": b.pressure}
+                "mass_frac": b.mass_frac}
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.mass

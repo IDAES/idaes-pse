@@ -715,7 +715,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                                                    rule=pure_comp_enthalpy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.enth_mol_comp)
+            self.del_component(self.enth_mol_vap_comp)
             self.del_component(self.enthalpy_shomate_eqn)
             raise
 
