@@ -5,9 +5,10 @@
     :maxdepth: 1
     
     why_idaes
+    concepts
     components/index
-    workflow
     conventions
+    workflow
     commands/index
     vis/index
     model_libraries/index

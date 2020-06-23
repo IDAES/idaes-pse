@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            TerminationCondition,
                            SolverStatus,
+                           units,
                            value,
                            Var)
 
@@ -49,8 +50,6 @@ from idaes.generic_models.properties.examples.saponification_thermo import \
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -95,7 +94,7 @@ class TestPressureChanger(object):
 
     def test_dynamic_build(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": units.s})
 
         m.fs.properties = PhysicalParameterTestBlock()
 
