@@ -120,19 +120,19 @@ class FlowsheetSerializer:
             label = ""
 
             for var, var_value in value.define_display_vars().items():
-                if isinstance(var_value, Expression):
-                    label = f"{var} {var_value()}\n"
-                elif isinstance(var_value, Var):
-                    for stream_type, stream_value in var_value.get_values().items():
-                        if stream_type:
-                            if var == "flow_mol_phase_comp":
-                                var = "Molar Flow"
-                            label += f"{var} {stream_type} {stream_value}\n"
+                var = var.capitalize()
+
+                for k, v in var_value.items():
+                    try:
+                        if k is None:
+                            label += f"{var} {value(v)}\n"
                         else:
-                            var = var.capitalize()
-                            label += f"{var} {stream_value}\n"
-                else:
-                    f"Unknown variable type. Variable: {var}, variable type: {type(var_value)}"
+                            label += f"{var} {k} {value(v)}\n"
+                    except TypeError:
+                        if k is None:
+                            label += f"{var} {v()}\n"
+                        else:
+                            label += f"{var} {k} {v()}\n"
 
             self.labels[stream_name] = label[:-2]
 
