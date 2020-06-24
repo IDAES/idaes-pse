@@ -305,10 +305,10 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "enth_mol",
-                         "pressure",
-                         "mole_frac_comp"]
+            assert i in ["Total Molar Flowrate",
+                         "Molar Enthalpy",
+                         "Pressure",
+                         "Total Mole Fraction"]
 
     def test_dof(self, model):
         # Fix state
