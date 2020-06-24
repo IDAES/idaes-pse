@@ -123,16 +123,10 @@ class FlowsheetSerializer:
                 var = var.capitalize()
 
                 for k, v in var_value.items():
-                    try:
-                        if k is None:
-                            label += f"{var} {value(v)}\n"
-                        else:
-                            label += f"{var} {k} {value(v)}\n"
-                    except TypeError:
-                        if k is None:
-                            label += f"{var} {v()}\n"
-                        else:
-                            label += f"{var} {k} {v()}\n"
+                    if k is None:
+                        label += f"{var} {value(v)}\n"
+                    else:
+                        label += f"{var} {k} {value(v)}\n"
 
             self.labels[stream_name] = label[:-2]
 
