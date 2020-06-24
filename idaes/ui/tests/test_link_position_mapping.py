@@ -15,6 +15,7 @@ import pytest
 from idaes.ui import link_position_mapping
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "test_input,expected",
     [

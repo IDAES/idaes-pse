@@ -15,6 +15,7 @@ import pytest
 from idaes.ui.icon_mapping import icon_mapping
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "test_input,expected",
     [("cstr", "reactor_c.svg"),
