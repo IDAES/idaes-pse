@@ -116,10 +116,10 @@ class FlowsheetSerializer:
                                 for subcomponent in item.component_objects(Port, descend_into=True):
                                     self.ports[subcomponent] = item
   
-        for stream_name, value in stream_states_dict(self.arcs).items():
+        for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
 
-            for var, var_value in value.define_display_vars().items():
+            for var, var_value in stream_value.define_display_vars().items():
                 var = var.capitalize()
 
                 for k, v in var_value.items():
