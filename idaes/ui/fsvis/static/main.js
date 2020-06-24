@@ -124,7 +124,7 @@ var help_button = document.getElementById("help_button");
 
 //help_button.innerText = "Help";
 help_button.onclick = () => {
-    window.alert("Not implemented yet")
+    window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
 }
 
 // Link labels will appear and disapper on right click. Replaces browser context menu
