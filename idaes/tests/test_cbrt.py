@@ -15,6 +15,7 @@ import pyomo.environ as pyo
 import pytest
 
 @pytest.mark.skipif(not functions_available(), reason="functions.so not available")
+@pytest.mark.unit
 def test_cbrt_values():
     m = pyo.ConcreteModel()
     flib = functions_lib()
@@ -24,6 +25,7 @@ def test_cbrt_values():
     assert(abs(pyo.value(m.cbrt(27.0)) - 3.0) < 0.00001)
 
 @pytest.mark.skipif(not functions_available(), reason="functions.so not available")
+@pytest.mark.unit
 def test_cbrt_derivs():
     m = pyo.ConcreteModel()
     flib = functions_lib()
@@ -37,6 +39,7 @@ def test_cbrt_derivs():
         assert(abs(g1[0] - gfd) < tol)
 
 @pytest.mark.skipif(not functions_available(), reason="functions.so not available")
+@pytest.mark.unit
 def test_cbrt_hes():
     m = pyo.ConcreteModel()
     flib = functions_lib()

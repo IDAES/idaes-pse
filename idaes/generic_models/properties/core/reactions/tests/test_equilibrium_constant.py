@@ -59,6 +59,7 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_van_t_hoff(model):
     model.rparams.config.equilibrium_reactions.r1.parameter_data = {
         "k_eq_ref": 1,

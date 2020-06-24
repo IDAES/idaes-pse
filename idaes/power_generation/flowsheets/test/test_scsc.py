@@ -37,6 +37,7 @@ def gross_power_mw(model):
     # pyo.value(m.fs.turb.power[0]) is the power consumed in Watts
     return -pyo.value(model.fs.turb.power[0])/1e6
 
+@pytest.mark.component
 @pytest.mark.slow
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -53,6 +54,7 @@ def test_init(initialize_model):
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
+@pytest.mark.component
 def test_init_value(initialize_model):
     m, solver = initialize_model
     assert gross_power_mw(m) == pytest.approx(620.8100259113626, abs=1e-2)
@@ -62,6 +64,7 @@ def test_init_value(initialize_model):
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
+@pytest.mark.unit
 def test_valve_change(initialize_model):
     m, solver = initialize_model
     m.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25

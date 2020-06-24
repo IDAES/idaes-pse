@@ -81,43 +81,51 @@ def tmp_magics():
 # Tests
 
 
+@pytest.mark.unit
 def test_init_create(magics_impl):
     with TempDir() as d:
         magics_impl.dmf_init(d, "create")
         assert magics_impl.initialized
 
 
+@pytest.mark.unit
 def test_init_existing(tmp_dmf, magics_impl):
     magics_impl.dmf_init(tmp_dmf.root)
 
 
+@pytest.mark.unit
 def test_init_extraignored(tmp_dmf, magics_impl):
     magics_impl.dmf_init(tmp_dmf.root, "foo")  # just generate warning
     magics_impl.dmf_init(tmp_dmf.root, "foo", "bar")  # ditto
 
 
+@pytest.mark.unit
 def test_init_required(magics_impl):
     pytest.raises(DMFMagicError, magics_impl.dmf_info)
     pytest.raises(DMFMagicError, magics_impl.dmf_help, "anything")
 
 
+@pytest.mark.unit
 def test_init_badpath(magics_impl):
     nosuchpath = os.path.join(os.path.sep, *map(str, range(10)))
     pytest.raises(DMFMagicError, magics_impl.dmf_init, nosuchpath)
     pytest.raises(DMFMagicError, magics_impl.dmf_init, nosuchpath, "create")
 
 
+@pytest.mark.unit
 def test_init_goodpath(magics_impl):
     with TempDir() as goodpath:
         magics_impl.dmf_init(goodpath, "create")
 
 
+@pytest.mark.unit
 def test_dmf_cmd(magics_impl):
     pytest.raises(DMFMagicError, magics_impl.dmf, "not a command")
     pytest.raises(DMFMagicError, magics_impl.dmf, "list stuff")
     magics_impl.dmf("")  # Empty value is OK
 
 
+@pytest.mark.unit
 def test_dmf_workspaces(magics_impl):
     with TempDir() as goodpath:
         # Try with a good path, but no workspace
@@ -134,6 +142,7 @@ def test_dmf_workspaces(magics_impl):
         assert int(token) > 0
 
 
+@pytest.mark.unit
 def test_dmf_list(magics_impl):
     # Start before setting up DMF; should not work
     pytest.raises(DMFMagicError, magics_impl.dmf, "list")
@@ -146,11 +155,13 @@ def test_dmf_list(magics_impl):
         magics_impl.dmf("list")
 
 
+@pytest.mark.unit
 def test_dmf_info_initrequired(magics_impl):
     # should fail with no DMF
     pytest.raises(DMFMagicError, magics_impl.dmf_info)
 
 
+@pytest.mark.unit
 def test_dmf_info_topics(magics_impl):
     # should fail with DMF, and topics (not implemented)
     with TempDir() as wspath:
@@ -158,6 +169,7 @@ def test_dmf_info_topics(magics_impl):
         pytest.raises(DMFMagicError, magics_impl.dmf_info, "uptime")
 
 
+@pytest.mark.unit
 def test_dmf_info_notopics(magics_impl):
     # should succeed with DMF, and no topics
     with TempDir() as wspath:
@@ -165,6 +177,7 @@ def test_dmf_info_notopics(magics_impl):
         magics_impl.dmf_info()
 
 
+@pytest.mark.unit
 def test_dmf_info_extrameta(magics_impl):
     # by filling in the metadata, this will test the dmf_info code
     # that prints out list and dict data structures
@@ -195,12 +208,14 @@ logging:
         magics_impl.dmf_info()
 
 
+@pytest.mark.unit
 def test_dmf_help(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, "create")
         magics_impl.dmf_help()
 
 
+@pytest.mark.unit
 def test_dmf_help_badargs(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, "create")
@@ -210,6 +225,7 @@ def test_dmf_help_badargs(magics_impl):
         assert result is None  # None means "OK"
 
 
+@pytest.mark.unit
 def test_dmf_help_obj(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, "create")

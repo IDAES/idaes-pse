@@ -63,6 +63,7 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_constant_dh_rxn(model):
     model.rparams.config.rate_reactions.r1.parameter_data = {
         "dh_rxn_ref": 1}

@@ -17,6 +17,7 @@ import logging
 import os
 from pathlib import Path
 import subprocess
+import pytest
 
 _log = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ DIRS = [
 STYLE_CHECK_CMD = "flake8"
 
 
+@pytest.mark.unit
 def test_flake8():
     cwd = os.getcwd()
     for d in DIRS:

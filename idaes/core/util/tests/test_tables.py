@@ -60,12 +60,14 @@ def m():
     return m
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock(m):
     d = arcs_to_stream_dict(m, descend_into=True)
     assert "stream" in d
     assert d["stream"] == m.fs.stream
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_2(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out})
@@ -80,6 +82,7 @@ def test_create_stream_table_dataframe_from_StateBlock_2(m):
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_true_state(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out},
@@ -95,6 +98,7 @@ def test_create_stream_table_dataframe_from_StateBlock_true_state(m):
     assert df.loc["conc_mol_comp Ethanol"]["state"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_orient(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out},
@@ -110,6 +114,7 @@ def test_create_stream_table_dataframe_from_StateBlock_orient(m):
     assert df.loc["state"]["Molar Concentration Ethanol"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_time():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [3]})
@@ -140,6 +145,7 @@ def test_create_stream_table_dataframe_from_StateBlock_time():
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_Port(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.outlet})
@@ -154,6 +160,7 @@ def test_create_stream_table_dataframe_from_Port(m):
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_from_Arc(m):
     df = create_stream_table_dataframe({
             "state": m.fs.stream})
@@ -168,11 +175,13 @@ def test_create_stream_table_dataframe_from_Arc(m):
     assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_wrong_type(m):
     with pytest.raises(TypeError):
         create_stream_table_dataframe({"state": m.fs.tank1})
 
 
+@pytest.mark.unit
 def test_create_stream_table_dataframe_ordering(m):
     state_dict = {"state1": m.fs.stream,
                   "state3": m.fs.tank1.control_volume.properties_out,
@@ -185,6 +194,7 @@ def test_create_stream_table_dataframe_ordering(m):
     assert columns[2] == "state2"
 
 
+@pytest.mark.unit
 def test_stream_table_dataframe_to_string(m):
     df = create_stream_table_dataframe({
             "state": m.fs.tank1.control_volume.properties_out})
@@ -249,6 +259,7 @@ def gtmodel():
 
     return m
 
+@pytest.mark.unit
 def test_generate_table(gtmodel):
     m = gtmodel
 
@@ -277,6 +288,7 @@ def test_generate_table(gtmodel):
     assert isna(st.loc["b1"]["ERR"])
     assert isna(st.loc["b1"]["Miss"])
 
+@pytest.mark.unit
 def test_generate_table_errors(gtmodel):
     m = gtmodel
 
@@ -292,6 +304,7 @@ def test_generate_table_errors(gtmodel):
     with pytest.raises(TypeError):
         st = generate_table(sd, attributes=["flow_mol"], heading=heading)
 
+@pytest.mark.unit
 def test_mixed_table(gtmodel):
     m = gtmodel
 
@@ -342,6 +355,7 @@ def test_mixed_table(gtmodel):
     assert st.loc["c"]["T"] == 300
 
 
+@pytest.mark.unit
 def test_tag_states(gtmodel):
     m = gtmodel
 

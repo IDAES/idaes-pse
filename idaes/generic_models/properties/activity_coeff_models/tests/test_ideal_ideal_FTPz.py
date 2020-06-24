@@ -66,6 +66,7 @@ m.fs.state_block_ideal_v = m.fs.properties_ideal_v.build_state_block(
              "defined_state": True})
 
 
+@pytest.mark.unit
 def test_build_inlet_state_block():
     assert len(m.fs.properties_ideal_vl_FTPz.config) == 4
 
@@ -102,6 +103,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_ideal_v, "eq_mol_frac_out")
 
 
+@pytest.mark.unit
 def test_setInputs_inlet_state_block():
 
     # vapor-liquid (ideal)
@@ -133,6 +135,7 @@ def test_setInputs_inlet_state_block():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_solve():
     # vapor-liquid
     m.fs.state_block_ideal_vl_FTPz.initialize()
@@ -213,6 +216,7 @@ m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.build_state_block(
              "defined_state": False})
 
 
+@pytest.mark.unit
 def test_build_outlet_state_block():
     assert len(m.fs1.properties_ideal_vl.config) == 4
 
@@ -249,6 +253,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_ideal_v, "eq_mol_frac_out")
 
 
+@pytest.mark.unit
 def test_setInputs_outlet_state_block():
 
     # vapor-liquid (ideal)

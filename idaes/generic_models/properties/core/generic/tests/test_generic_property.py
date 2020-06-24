@@ -49,6 +49,7 @@ class DummyParameterData(GenericParameterData):
 
 
 class TestGenericParameterBlock(object):
+    @pytest.mark.unit
     def test_build(self):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
@@ -92,6 +93,7 @@ class TestGenericParameterBlock(object):
 
         assert m.params.state_block_class is GenericStateBlock
 
+    @pytest.mark.unit
     def test_no_components(self):
         m = ConcreteModel()
 
@@ -100,6 +102,7 @@ class TestGenericParameterBlock(object):
                            "argument."):
             m.params = DummyParameterBlock(default={})
 
+    @pytest.mark.unit
     def test_no_phases(self):
         m = ConcreteModel()
 
@@ -109,6 +112,7 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}}})
 
+    @pytest.mark.unit
     def test_invalid_component_in_phase_component_list(self):
         m = ConcreteModel()
 
@@ -124,6 +128,7 @@ class TestGenericParameterBlock(object):
                                "equation_of_state": "foo"},
                         "p2": {"equation_of_state": "bar"}}})
 
+    @pytest.mark.unit
     def test_invalid_component_in_phase_component_list_2(self):
         m = ConcreteModel()
 
@@ -142,6 +147,7 @@ class TestGenericParameterBlock(object):
                                "equation_of_state": "foo"},
                         "p2": {"equation_of_state": "bar"}}})
 
+    @pytest.mark.unit
     def test_phase_component_set_from_valid_phases(self):
         m = ConcreteModel()
 
@@ -165,6 +171,7 @@ class TestGenericParameterBlock(object):
             assert i in [("p1", "a"), ("p1", "c"),
                          ("p2", "b"), ("p2", "c")]
 
+    @pytest.mark.unit
     def test_no_state_definition(self):
         m = ConcreteModel()
 
@@ -179,6 +186,7 @@ class TestGenericParameterBlock(object):
                     "p1": {"equation_of_state": "foo"},
                     "p2": {"equation_of_state": "bar"}}})
 
+    @pytest.mark.unit
     def test_no_pressure_ref(self):
         m = ConcreteModel()
 
@@ -194,6 +202,7 @@ class TestGenericParameterBlock(object):
                     "p2": {}},
                 "state_definition": "baz"})
 
+    @pytest.mark.unit
     def test_temperature_ref(self):
         m = ConcreteModel()
 
@@ -210,6 +219,7 @@ class TestGenericParameterBlock(object):
                 "state_definition": "baz",
                 "pressure_ref": 1e5})
 
+    @pytest.mark.unit
     def test_no_eos(self):
         m = ConcreteModel()
 
@@ -227,6 +237,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_phases_in_equilibrium(self):
         m = ConcreteModel()
 
@@ -255,6 +266,7 @@ class TestGenericParameterBlock(object):
             "PE2": {"b": ("p1", "p2")},
             "PE3": {"c": ("p1", "p2")}}
 
+    @pytest.mark.unit
     def test_phases_in_equilibrium_no_form(self):
         m = ConcreteModel()
 
@@ -276,6 +288,7 @@ class TestGenericParameterBlock(object):
                 "phases_in_equilibrium": [("p1", "p2")],
                 "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
+    @pytest.mark.unit
     def test_phases_in_equilibrium_missing_pair_form(self):
         m = ConcreteModel()
 
@@ -300,6 +313,7 @@ class TestGenericParameterBlock(object):
                 "phases_in_equilibrium": [("p1", "p2")],
                 "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
 
+    @pytest.mark.unit
     def test_phases_in_equilibrium_no_formulation(self):
         m = ConcreteModel()
 
@@ -321,6 +335,7 @@ class TestGenericParameterBlock(object):
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")]})
 
+    @pytest.mark.unit
     def test_phases_in_equilibrium_missing_pair_formulation(self):
         m = ConcreteModel()
 
@@ -345,6 +360,7 @@ class TestGenericParameterBlock(object):
                 "phases_in_equilibrium": [("p1", "p2")],
                 "phase_equilibrium_state": {(1, 2): "whoop"}})
 
+    @pytest.mark.unit
     def test_parameter_construction_no_value(self):
         m = ConcreteModel()
 
@@ -369,6 +385,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_parameter_construction_no_data(self):
         m = ConcreteModel()
 
@@ -394,6 +411,7 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_no_elements(self):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
@@ -410,6 +428,7 @@ class TestGenericParameterBlock(object):
         assert not hasattr(m.params, "element_list")
         assert not hasattr(m.params, "element_comp")
 
+    @pytest.mark.unit
     def test_partial_elements(self):
         m = ConcreteModel()
 
@@ -430,6 +449,7 @@ class TestGenericParameterBlock(object):
                     "pressure_ref": 1e5,
                     "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_elements_not_float(self):
         m = ConcreteModel()
 
@@ -449,6 +469,7 @@ class TestGenericParameterBlock(object):
                     "pressure_ref": 1e5,
                     "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_elements(self):
         m = ConcreteModel()
 
@@ -473,6 +494,7 @@ class TestGenericParameterBlock(object):
             "b": {"e1": 0, "e2": 0, "e3": 3, "e4": 4},
             "c": {"e1": 5, "e2": 0, "e3": 6, "e4": 0}}
 
+    @pytest.mark.unit
     def test_henry(self):
         m = ConcreteModel()
 
@@ -493,6 +515,7 @@ class TestGenericParameterBlock(object):
         assert isinstance(m.params.a.test_param_p1, Var)
         assert m.params.a.test_param_p1.value == 42
 
+    @pytest.mark.unit
     def test_henry_invalid_phase_name(self):
         m = ConcreteModel()
 
@@ -514,6 +537,7 @@ class TestGenericParameterBlock(object):
                     "pressure_ref": 1e5,
                     "temperature_ref": 300})
 
+    @pytest.mark.unit
     def test_henry_invalid_phase_type(self):
         m = ConcreteModel()
 
@@ -567,6 +591,7 @@ class TestGenericStateBlock(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build(self, frame):
         assert isinstance(frame.props, Block)
         assert len(frame.props) == 1

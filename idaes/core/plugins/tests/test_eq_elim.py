@@ -60,12 +60,14 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_model(model):
     m = model
     assert degrees_of_freedom(m) == 0
     assert len([c for c in m.component_data_objects(pyo.Constraint, active=True)]) == 5
 
 
+@pytest.mark.unit
 def test_transform(model):
     m = model
     elim = pyo.TransformationFactory("simple_equality_eliminator")
@@ -77,6 +79,7 @@ def test_transform(model):
     assert m.x[2].fixed
     assert m.y.fixed
 
+@pytest.mark.unit
 def test_revert_constraint():
     # test that multiple replaced constraints are reverted right
     m = pyo.ConcreteModel()
@@ -139,6 +142,7 @@ def test_revert_constraint():
         assert c1_repn.linear_coefs[i] == orig[id(v)]
     assert len(c1_repn.linear_vars) == 3
 
+@pytest.mark.unit
 def test_revert_constraint_with_named_expr():
     # test that named Expressions get reverted right.
     m = pyo.ConcreteModel()
@@ -159,6 +163,7 @@ def test_revert_constraint_with_named_expr():
     assert pytest.approx(pyo.value(m.e1)) == 0.5 # check that expression gets reverted
     assert pytest.approx(pyo.value(m.c1.body - m.c1.lower)) == -1.25
 
+@pytest.mark.unit
 def test_reverse_var(model):
     m = model
     elim = pyo.TransformationFactory("simple_equality_eliminator")
@@ -177,6 +182,7 @@ def test_reverse_var(model):
     assert not m.x[2].fixed
     assert not m.y.fixed
 
+@pytest.mark.unit
 def test_bounds(model):
     m = model
 

@@ -84,6 +84,7 @@ class TestFeatureScaling:
         with pytest.raises(TypeError):
             FeatureScaling.data_scaling(input_array)
 
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])
     def test_data_unscaling_01(self, array_type):
@@ -170,9 +171,9 @@ class TestPolynomialRegression:
         assert PolyClass.solution_method == 'pyomo'  # Default solution_method
         assert PolyClass.multinomials == 1  # Default multinomials
 
-    @pytest.mark.unit
     @pytest.mark.parametrize("array_type1", [np.array, pd.DataFrame])
     @pytest.mark.parametrize("array_type2", [np.array, pd.DataFrame])
+    @pytest.mark.unit
     def test__init__02(self,array_type1, array_type2):       
         original_data_input= array_type1(self.test_data)
         regression_data_input = array_type2(self.sample_points)

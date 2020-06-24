@@ -45,6 +45,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -73,6 +74,7 @@ def test_config():
     assert not hasattr(m.fs.unit, "inert_species_balance")
 
 
+@pytest.mark.unit
 def test_inerts():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -89,6 +91,7 @@ def test_inerts():
     assert len(m.fs.unit.gibbs_minimization) == 2
 
 
+@pytest.mark.unit
 def test_invalid_inert():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -120,6 +123,7 @@ class TestMethane(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, methane):
         assert hasattr(methane.fs.unit, "inlet")
         assert len(methane.fs.unit.inlet.vars) == 4
@@ -143,6 +147,7 @@ class TestMethane(object):
         assert number_total_constraints(methane) == 67
         assert number_unused_variables(methane) == 0
 
+    @pytest.mark.unit
     def test_dof(self, methane):
         methane.fs.unit.inlet.flow_mol[0].fix(230.0)
         methane.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
@@ -164,6 +169,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize_temperature(self, methane):
         initialization_tester(methane,
                               optarg={'tol': 1e-6},
@@ -181,6 +187,7 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve_temperature(self, methane):
         results = solver.solve(methane)
 
@@ -192,6 +199,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution_temperature(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -219,6 +227,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation_temperature(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *
@@ -232,6 +241,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize_duty(self, methane):
         methane.fs.unit.outlet.temperature[0].unfix()
         methane.fs.unit.heat_duty.fix(-7454077)
@@ -269,6 +279,7 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve_heat_duty(self, methane):
         results = solver.solve(methane)
 
@@ -280,6 +291,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution_duty(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -307,6 +319,7 @@ class TestMethane(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation_duty(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *
@@ -318,5 +331,6 @@ class TestMethane(object):
                 methane.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, methane):
         methane.fs.unit.report()

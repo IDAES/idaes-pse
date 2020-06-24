@@ -60,6 +60,7 @@ solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
 
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -93,6 +94,7 @@ def test_config():
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_boiler_hx():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

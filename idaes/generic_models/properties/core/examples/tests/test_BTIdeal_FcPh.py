@@ -131,6 +131,7 @@ config_dict = {
 
 
 class TestParamBlock(object):
+    @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
         model.params = GenericParameterBlock(default=config_dict)
@@ -192,6 +193,7 @@ class TestStateBlock(object):
 
         return model
 
+    @pytest.mark.unit
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.props[1].flow_mol, Expression)
@@ -245,6 +247,7 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
         assert len(model.props[1].phase_fraction_constraint) == 2
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -252,12 +255,14 @@ class TestStateBlock(object):
                     model.props[1].flow_mol_phase[p] *
                     model.props[1].mole_frac_phase_comp[p, j])
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.props[1].get_enthalpy_flow_terms(p) == (
                 model.props[1].flow_mol_phase[p] *
                 model.props[1].enth_mol_phase[p])
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -265,24 +270,29 @@ class TestStateBlock(object):
                     model.props[1].dens_mol_phase[p] *
                     model.props[1].mole_frac_phase_comp[p, j])
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.props[1].get_energy_density_terms(p) == (
                 model.props[1].dens_mol_phase[p] *
                 model.props[1].enth_mol_phase[p])
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert model.props[1].default_material_balance_type() == \
             MaterialBalanceType.componentTotal
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert model.props[1].default_energy_balance_type() == \
             EnergyBalanceType.enthalpyTotal
 
+    @pytest.mark.unit
     def test_get_material_flow_basis(self, model):
         assert model.props[1].get_material_flow_basis() == \
             MaterialFlowBasis.molar
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
 
@@ -292,6 +302,7 @@ class TestStateBlock(object):
                          "enth_mol",
                          "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.props[1].define_state_vars()
 
@@ -301,6 +312,7 @@ class TestStateBlock(object):
                          "enth_mol",
                          "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         sv = model.props[1].define_display_vars()
 
@@ -310,6 +322,7 @@ class TestStateBlock(object):
                          "enth_mol",
                          "pressure"]
 
+    @pytest.mark.unit
     def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol_comp.fix(0.5)
@@ -321,6 +334,7 @@ class TestStateBlock(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -342,6 +356,7 @@ class TestStateBlock(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -353,6 +368,7 @@ class TestStateBlock(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
@@ -363,5 +379,6 @@ class TestStateBlock(object):
             pytest.approx(0.3961, abs=1e-4)
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, model):
         model.props[1].report()

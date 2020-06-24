@@ -35,12 +35,14 @@ init_logging()
 _log = logging.getLogger(__name__)
 
 
+@pytest.mark.unit
 def test_strlist():
     input = [1, 2, 3]
     output = util.strlist(input, sep="/")
     assert output == "1/2/3"
 
 
+@pytest.mark.unit
 def test_get_file():
     f1 = util.get_file(__file__)
     assert f1 is not None
@@ -49,11 +51,13 @@ def test_get_file():
     assert f2.name == f1.name
 
 
+@pytest.mark.unit
 def test_import_module():
     m = util.import_module("idaes.dmf.util")
     assert m is not None
 
 
+@pytest.mark.unit
 def test_get_module_version():
     m = util.import_module("idaes.dmf.util")
     v1 = util.get_module_version(m)
@@ -69,16 +73,19 @@ def test_get_module_version():
     util.get_module_version(m)
 
 
+@pytest.mark.unit
 def test_get_module_author():
     m = util.import_module("idaes.dmf.util")
     util.get_module_author(m)
 
 
+@pytest.mark.unit
 def test_tempdir():
     with util.TempDir() as newdir:
         pass
 
 
+@pytest.mark.unit
 def test_datetime_timestamp():
     ts = time.time()
     dt = datetime.datetime.fromtimestamp(ts)
@@ -86,6 +93,7 @@ def test_datetime_timestamp():
     assert pytest.approx(ts, ts1, 0.000001)
 
 
+@pytest.mark.unit
 def test_mkdir_p():
     random_str = hashlib.sha1().hexdigest()
     # test absolute
@@ -100,6 +108,7 @@ def test_mkdir_p():
     shutil.rmtree(random_str)
 
 
+@pytest.mark.unit
 def test_is_jupyter_notebook():
     nbtext = """
     {
@@ -125,6 +134,7 @@ def test_is_jupyter_notebook():
         assert not util.is_jupyter_notebook(f.name)
 
 
+@pytest.mark.unit
 def test_is_python():
     with TempDir() as d:
         f = open(os.path.join(d, "sample.txt"), "w")
@@ -133,6 +143,7 @@ def test_is_python():
         assert util.is_python(f.name)
 
 
+@pytest.mark.unit
 def test_is_resource_json():
     with TempDir() as d:
         f = open(os.path.join(d, "sample.txt"), "w")
