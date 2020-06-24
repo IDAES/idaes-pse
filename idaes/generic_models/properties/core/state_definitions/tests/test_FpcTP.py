@@ -23,7 +23,7 @@ from pyomo.environ import (ConcreteModel, Constraint, Block,
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.generic_models.properties.core.state_definitions.FpcTP import \
-    define_state, state_initialization, set_metadata
+    define_state, set_metadata
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
@@ -72,20 +72,11 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 3
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 1
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 1
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 101325
@@ -93,56 +84,63 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 1
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 1
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 1
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 3
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 1
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 1
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(1.0)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]] -
-            frame.props[1].flow_mol)
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 1
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 3
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
@@ -157,7 +155,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         # Add necessary parameters to parameter block
         m.params.config = ConfigBlock()
         m.params.config.declare("state_bounds", ConfigValue(default={
-                "flow_mol_comp": (0, 200),
+                "flow_mol_phase_comp": (0, 200),
                 "temperature": (290, 400),
                 "pressure": (1e5, 5e5)}))
 
@@ -187,22 +185,13 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 300
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 100
-            assert frame.props[1].flow_mol_comp[i].lb == 0
-            assert frame.props[1].flow_mol_comp[i].ub == 200
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -214,58 +203,63 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].temperature.lb == 290
         assert frame.props[1].temperature.ub == 400
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 1
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 100
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 1
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 3
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 1
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 1
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(1.0)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]] -
-            frame.props[1].flow_mol)
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 1
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 3
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class Test2PhaseDefinedStateFalseNoBounds(object):
@@ -308,20 +302,11 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 3
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 1
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 1
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 101325
@@ -329,70 +314,64 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 2
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 0.5
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 2
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 0.5
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 6
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3),
-                         ("b", 1), ("b", 2), ("b", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 2
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 2
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-                sum(frame.props[1].flow_mol_phase[p]
-                    for p in frame.props[1].params.phase_list) -
-                frame.props[1].flow_mol)
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, i]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 1
-        assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 2
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class Test2PhaseDefinedStateTrueWithBounds(object):
@@ -407,7 +386,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         # Add necessary parameters to parameter block
         m.params.config = ConfigBlock()
         m.params.config.declare("state_bounds", ConfigValue(default={
-                "flow_mol_comp": (0, 200),
+                "flow_mol_phase_comp": (0, 200),
                 "temperature": (290, 400),
                 "pressure": (1e5, 5e5)}))
 
@@ -438,22 +417,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 300
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 100
-            assert frame.props[1].flow_mol_comp[i].lb == 0
-            assert frame.props[1].flow_mol_comp[i].ub == 200
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -465,72 +435,64 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].temperature.lb == 290
         assert frame.props[1].temperature.ub == 400
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 2
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 50
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 2
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 0.5
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 6
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3),
-                         ("b", 1), ("b", 2), ("b", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 2
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 2
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-                sum(frame.props[1].flow_mol_phase[p]
-                    for p in frame.props[1].params.phase_list) -
-                frame.props[1].flow_mol)
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, i]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 1
-        assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 2
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class Test3PhaseDefinedStateFalseNoBounds(object):
@@ -574,20 +536,11 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 3
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 1
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 1
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 101325
@@ -595,62 +548,64 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].temperature, Var)
         assert frame.props[1].temperature.value == 298.15
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 3
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 1/3
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 3
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/3
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 9
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3),
-                         ("b", 1), ("b", 2), ("b", 3),
-                         ("c", 1), ("c", 2), ("c", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 3
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 3
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for j in frame.props[1].component_flow_balances:
-            assert j in frame.params.component_list
-            assert str(frame.props[1].component_flow_balances[j].body) == str(
-                frame.props[1].flow_mol_comp[j] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 3
-        for p in frame.props[1].sum_mole_frac:
-            assert p in frame.params.phase_list
-            assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 3
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 9
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class Test3PhaseDefinedStateTrueWithBounds(object):
@@ -665,7 +620,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         # Add necessary parameters to parameter block
         m.params.config = ConfigBlock()
         m.params.config.declare("state_bounds", ConfigValue(default={
-                "flow_mol_comp": (0, 200),
+                "flow_mol_phase_comp": (0, 200),
                 "temperature": (290, 400),
                 "pressure": (1e5, 5e5)}))
 
@@ -697,22 +652,13 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Expression)
-        assert value(frame.props[1].flow_mol) == 300
-
-        assert isinstance(frame.props[1].flow_mol_comp, Var)
-        assert len(frame.props[1].flow_mol_comp) == 3
-        for i in frame.props[1].flow_mol_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].flow_mol_comp[i].value == 100
-            assert frame.props[1].flow_mol_comp[i].lb == 0
-            assert frame.props[1].flow_mol_comp[i].ub == 200
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -724,64 +670,64 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert frame.props[1].temperature.lb == 290
         assert frame.props[1].temperature.ub == 400
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 3
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 100/3
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 3
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/3
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 9
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("a", 1), ("a", 2), ("a", 3),
-                         ("b", 1), ("b", 2), ("b", 3),
-                         ("c", 1), ("c", 2), ("c", 3)]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
+
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 3
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 3
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
-        assert len(frame.props[1].mole_frac_comp_eq) == 3
-        for i in frame.props[1].mole_frac_comp_eq:
-            assert str(frame.props[1].mole_frac_comp_eq[i].body) == str(
-                frame.props[1].flow_mol_comp[i] -
-                frame.props[1].mole_frac_comp[i] *
-                sum(frame.props[1].flow_mol_comp[j]
-                    for j in frame.params.component_list))
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for j in frame.props[1].component_flow_balances:
-            assert j in frame.params.component_list
-            assert str(frame.props[1].component_flow_balances[j].body) == str(
-                frame.props[1].flow_mol_comp[j] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 3
-        for p in frame.props[1].sum_mole_frac:
-            assert p in frame.params.phase_list
-            assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 3
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 9
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
 
 class TestCommon(object):
