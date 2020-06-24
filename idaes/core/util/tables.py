@@ -47,7 +47,7 @@ def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
     s = dict((c.getname(), c) for c in blk.component_objects(
         Arc, descend_into=descend_into))
     if additional is not None:
-        s.update(addtional)
+        s.update(additional)
     if sort:
         streams = OrderedDict(sorted(s.items()))
     return s
