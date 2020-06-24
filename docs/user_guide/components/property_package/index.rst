@@ -6,6 +6,13 @@
 Overview
 --------
 
+.. toctree::
+    :glob:
+    :hidden:
+    
+    *
+    */index
+
 Property packages provide the relationships and parameters necessary to determine the 
 properties of process streams. Property packages may be general in purpose, such as ideal gas 
 equations, or specific to a certain application. The IDAES modeling framework divides property 
@@ -131,11 +138,4 @@ The IDAES modeling framework provides a
 :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to help the user create reaction property packages for common systems, similar to the Generic 
 Property Package Framework.
-
-.. toctree::
-    :glob:
-    :hidden:
-    
-    *
-    */index
 
