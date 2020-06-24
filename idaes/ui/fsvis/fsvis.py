@@ -20,7 +20,7 @@ from idaes.ui.fsvis.app import App as fsvis_server
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
 # serialize flowsheet and launch the app
-def visualize(flowsheet, name):
+def visualize(flowsheet, name, browser=True):
     """Visualizes the flowsheet, assigning it to the given name. 
     
     Attempts to
@@ -55,9 +55,10 @@ def visualize(flowsheet, name):
     
     repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
                         params={'id': name})
-    success = webbrowser.open(url + f"?id={name}")
-    print(f'Opened in browser window: {success}')
-    print(f'{url}?id={name}')
+    if browser:
+        success = webbrowser.open(url + f"?id={name}")
+        print(f'Opened in browser window: {success}')
+        print(f'{url}?id={name}')
     return server
 
 # possibly should be changed to _repeat_until_connection_available()
