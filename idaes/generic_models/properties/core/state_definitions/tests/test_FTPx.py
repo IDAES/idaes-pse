@@ -794,16 +794,9 @@ class TestCommon(object):
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
-    def test_define_port_members(self, frame):
-        assert frame.props[1].define_state_vars() == \
-            {"flow_mol": frame.props[1].flow_mol,
-             "mole_frac_comp": frame.props[1].mole_frac_comp,
-             "temperature": frame.props[1].temperature,
-             "pressure": frame.props[1].pressure}
-
     def test_define_display_vars(self, frame):
-        assert frame.props[1].define_state_vars() == \
-            {"flow_mol": frame.props[1].flow_mol,
-             "mole_frac_comp": frame.props[1].mole_frac_comp,
-             "temperature": frame.props[1].temperature,
-             "pressure": frame.props[1].pressure}
+        assert frame.props[1].define_display_vars() == \
+            {"Total Molar Flowrate": frame.props[1].flow_mol,
+             "Total Mole Fraction": frame.props[1].mole_frac_comp,
+             "Temperature": frame.props[1].temperature,
+             "Pressure": frame.props[1].pressure}

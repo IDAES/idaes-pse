@@ -293,6 +293,13 @@ def define_state(b):
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FcPh
 
+    def define_display_vars_FcPh():
+        """Define display vars."""
+        return {"Molar Flowrate": b.flow_mol_comp,
+                "Molar Enthalpy": b.enth_mol,
+                "Pressure": b.pressure}
+    b.define_display_vars = define_display_vars_FcPh
+
 
 # Inherit state_initialization from FTPX form, as the process is the same
 

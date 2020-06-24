@@ -197,6 +197,13 @@ def define_state(b):
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FpcTP
 
+    def define_display_vars_FpcTP():
+        """Define display vars."""
+        return {"Molar Flowrate": b.flow_mol_phase_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
+    b.define_display_vars = define_display_vars_FpcTP
+
 
 def state_initialization(b):
     for i in b.params._phase_component_set:

@@ -249,6 +249,14 @@ def define_state(b):
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FTPx
 
+    def define_display_vars_FTPx():
+        """Define display vars."""
+        return {"Total Molar Flowrate": b.flow_mol,
+                "Total Mole Fraction": b.mole_frac_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
+    b.define_display_vars = define_display_vars_FTPx
+
 
 def state_initialization(b):
     for p in b.params.phase_list:
