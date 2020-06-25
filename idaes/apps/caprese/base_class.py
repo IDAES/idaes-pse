@@ -96,7 +96,7 @@ class DynamicBase(object):
         # Validate discretization scheme and get ncp:
         namespace.ncp = dyn_config.get_ncp(time)
 
-        namespace.variables_vategorized = False
+        namespace.variables_categorized = False
 
     @classmethod
     def remove_namespace_from(cls, model):
