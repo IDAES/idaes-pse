@@ -368,6 +368,7 @@ class NMPCSim(DynamicBase):
         # instance some measurement noise. 
         # Remember: Need to calculate weight matrices before populating this. 
 
+        self.current_plant_time = 0
 
     def add_namespace_to(self, model, time):
         """Adds the _NMPC_NAMESPACE block a model with a given time set.
@@ -1676,6 +1677,8 @@ class NMPCSim(DynamicBase):
         msg = ('Successfully simulated plant over the sampling period '
                 'beginning at ' + str(t_start))
         init_log.info(msg)
+
+        self.current_plant_time = t_end
 
         tc1 = self.controller_time.first() + sample_time
 
