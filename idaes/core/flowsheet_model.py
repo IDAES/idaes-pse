@@ -188,7 +188,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name, browser=True):
+    def visualize(self, model_name, browser=True, overwrite=False):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -198,11 +198,13 @@ within this flowsheet if not otherwise specified,
                          for the webpage
             browser : If True a browser window/tab will be opened with the 
                       visualization. Defaults to True
+            overwrite : If True the visualization ignores any saved visualization 
+                        file
 
         Returns:
             None
         """
-        visualize(self, model_name, browser)
+        visualize(self, model_name, browser, overwrite)
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()
