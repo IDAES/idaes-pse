@@ -43,7 +43,7 @@ commands:
     parameters:
       tags:
         type: string
-        default: "not nocircleci"
+        default: "not integration"
     steps:
       - run:
           name: Run pytest
@@ -55,7 +55,7 @@ commands:
     parameters:
       tags:
         type: string
-        default: "not nocircleci"
+        default: "not integration"
     steps:
       - run:
           name: Run pytest

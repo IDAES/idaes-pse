@@ -47,9 +47,11 @@ class TestParamBlock(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert len(model.rparams.config) == 2
 
+    @pytest.mark.unit
     def test_build(self, model):
         assert model.rparams.reaction_block_class is ReactionBlock
 
@@ -92,26 +94,32 @@ class TestReactionBlock(object):
 
         return model
 
+    @pytest.mark.unit
     def test_build(self, model):
         assert model.rxns[1].conc_mol_comp_ref is model.props[1].conc_mol_comp
         assert model.rxns[1].temperature_ref is model.props[1].temperature
         assert model.rxns[1].dh_rxn is model.rparams.dh_rxn
 
+    @pytest.mark.unit
     def test_rate_constant(self, model):
         assert isinstance(model.rxns[1].k_rxn, Var)
         assert isinstance(model.rxns[1].arrhenius_eqn, Constraint)
 
+    @pytest.mark.unit
     def test_rxn_rate(self, model):
         assert isinstance(model.rxns[1].reaction_rate, Var)
         assert isinstance(model.rxns[1].rate_expression, Constraint)
 
+    @pytest.mark.unit
     def test_get_reaction_rate_basis(self, model):
         assert model.rxns[1].get_reaction_rate_basis() == \
             MaterialFlowBasis.molar
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.rxns[1].model_check() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert model.rxns.initialize(outlvl=1) is None
 

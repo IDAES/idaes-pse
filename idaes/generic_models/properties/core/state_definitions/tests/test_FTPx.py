@@ -36,6 +36,7 @@ from idaes.core import (MaterialFlowBasis,
 from idaes.core.util.misc import add_object_reference
 
 
+@pytest.mark.unit
 def test_set_metadata():
     assert set_metadata(None) is None
 
@@ -70,11 +71,13 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -111,6 +114,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert i in [("a", 1), ("a", 2), ("a", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
@@ -141,6 +145,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -189,11 +194,13 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -238,6 +245,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert i in [("a", 1), ("a", 2), ("a", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
@@ -264,6 +272,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -311,11 +320,13 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -353,6 +364,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
                          ("b", 1), ("b", 2), ("b", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
@@ -396,6 +408,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -446,11 +459,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -496,6 +511,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                          ("b", 1), ("b", 2), ("b", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].total_flow_balance, Constraint)
@@ -535,6 +551,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -583,11 +600,13 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -626,6 +645,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
                          ("c", 1), ("c", 2), ("c", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].component_flow_balances, Constraint)
@@ -660,6 +680,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -711,11 +732,13 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -762,6 +785,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                          ("c", 1), ("c", 2), ("c", 3)]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].component_flow_balances, Constraint)
@@ -792,6 +816,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
 
+        @pytest.mark.unit
         def test_state_initialization(self, frame):
             frame.props[1].flow_mol.value = 100
             for j in frame.params.component_list:
@@ -840,6 +865,7 @@ class TestCommon(object):
         return m
 
     # Test General Methods
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
         for p in frame.params.phase_list:
             for j in frame.params.component_list:
@@ -847,12 +873,14 @@ class TestCommon(object):
                     frame.props[1].flow_mol_phase[p] *
                     frame.props[1].mole_frac_phase_comp[p, j])
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, frame):
         for p in frame.params.phase_list:
             assert frame.props[1].get_enthalpy_flow_terms(p) == (
                 frame.props[1].flow_mol_phase[p] *
                 frame.props[1].enth_mol_phase[p])
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
         for p in frame.params.phase_list:
             for j in frame.params.component_list:
@@ -860,24 +888,29 @@ class TestCommon(object):
                     frame.props[1].dens_mol_phase[p] *
                     frame.props[1].mole_frac_phase_comp[p, j])
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, frame):
         for p in frame.params.phase_list:
             assert frame.props[1].get_energy_density_terms(p) == (
                 frame.props[1].dens_mol_phase[p] *
                 frame.props[1].enth_mol_phase[p])
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, frame):
         assert frame.props[1].default_material_balance_type() == \
             MaterialBalanceType.componentTotal
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, frame):
         assert frame.props[1].default_energy_balance_type() == \
             EnergyBalanceType.enthalpyTotal
 
+    @pytest.mark.unit
     def test_get_material_flow_basis(self, frame):
         assert frame.props[1].get_material_flow_basis() == \
             MaterialFlowBasis.molar
 
+    @pytest.mark.unit
     def test_define_state_vars(self, frame):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,
@@ -885,6 +918,7 @@ class TestCommon(object):
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
+    @pytest.mark.unit
     def test_define_port_members(self, frame):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,
@@ -892,6 +926,7 @@ class TestCommon(object):
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
+    @pytest.mark.unit
     def test_define_display_vars(self, frame):
         assert frame.props[1].define_state_vars() == \
             {"flow_mol": frame.props[1].flow_mol,

@@ -216,6 +216,7 @@ f_Zl = ExternalFunction(library=_so, function="ceos_z_liq")
 f_Zv = ExternalFunction(library=_so, function="ceos_z_vap")
 
 
+@pytest.mark.unit
 def test_common(m):
     # Test cubic components
     assert isinstance(m.props[1].PR_fw, Expression)
@@ -390,6 +391,7 @@ def test_common(m):
     assert isinstance(m.props[1]._PR_proc_Z_vap, ExternalFunction)
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_Liq(m):
     assert isinstance(Cubic.compress_fact_phase(m.props[1], "Liq"),
                       ExternalFunctionExpression)
@@ -399,6 +401,7 @@ def test_compress_fact_phase_Liq(m):
         Cubic.compress_fact_phase(m.props[1], "Liq")), rel=1e-5) == Zl
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_Vap(m):
     assert isinstance(Cubic.compress_fact_phase(m.props[1], "Vap"),
                       ExternalFunctionExpression)
@@ -408,11 +411,13 @@ def test_compress_fact_phase_Vap(m):
         Cubic.compress_fact_phase(m.props[1], "Vap")), rel=1e-5) == Zv
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.compress_fact_phase(m_sol.props[1], "Sol")
 
 
+@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
@@ -422,6 +427,7 @@ def test_dens_mass_phase(m):
                 m.props[1].dens_mol_phase[p]*m.props[1].mw_phase[p])
 
 
+@pytest.mark.unit
 def test_dens_mol_phase(m):
     for p in m.params.phase_list:
         assert str(Cubic.dens_mol_phase(m.props[1], p)) == (
@@ -430,11 +436,13 @@ def test_dens_mol_phase(m):
                     m.props[1].compress_fact_phase[p])+")")
 
 
+@pytest.mark.unit
 def test_dens_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.dens_mol_phase(m_sol.props[1], "Sol")
 
 
+@pytest.mark.unit
 def test_enth_mol_phase(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
@@ -450,6 +458,7 @@ def test_enth_mol_phase(m):
         Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -212.211
 
 
+@pytest.mark.unit
 def test_enth_mol_phase_comp(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
@@ -461,11 +470,13 @@ def test_enth_mol_phase_comp(m):
             Cubic.enth_mol_phase_comp(m.props[1], "Vap", j))
 
 
+@pytest.mark.unit
 def test_enth_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_entr_mol_phase(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
@@ -481,6 +492,7 @@ def test_entr_mol_phase(m):
         Cubic.entr_mol_phase(m.props[1], "Liq")), rel=1e-5) == 41.1621
 
 
+@pytest.mark.unit
 def test_entr_mol_phase_comp(m):
     entr = {("Liq", "a"): 45.4093,
             ("Vap", "a"): 59.0666,
@@ -498,11 +510,13 @@ def test_entr_mol_phase_comp(m):
             Cubic.entr_mol_phase_comp(m.props[1], "Vap", j))
 
 
+@pytest.mark.unit
 def test_entr_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.component
 def test_fug_phase_comp(m):
     for p in m.params.phase_list:
         for j in m.params.component_list:
@@ -513,11 +527,13 @@ def test_fug_phase_comp(m):
                 m.props[1].fug_coeff_phase_comp[p, j])
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.fug_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.component
 def test_fug_phase_comp_eq(m):
     for p in m.params.phase_list:
         for j in m.params.component_list:
@@ -529,11 +545,13 @@ def test_fug_phase_comp_eq(m):
                     m.props[1], p, j, ("Vap", "Liq")))
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_eq_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_Liq(m):
     assert pytest.approx(1.01213, rel=1e-5) == value(
         Cubic.fug_coeff_phase_comp(m.props[1], "Liq", "a"))
@@ -543,6 +561,7 @@ def test_fug_coeff_phase_comp_Liq(m):
         Cubic.fug_coeff_phase_comp(m.props[1], "Liq", "c"))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_Vap(m):
     assert pytest.approx(1.05952, rel=1e-5) == value(
             Cubic.fug_coeff_phase_comp(m.props[1], "Vap", "a"))
@@ -552,11 +571,13 @@ def test_fug_coeff_phase_comp_Vap(m):
         Cubic.fug_coeff_phase_comp(m.props[1], "Vap", "c"))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_eq_Liq(m):
     assert pytest.approx(1.22431, rel=1e-5) == value(
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Liq", "a", ("Vap", "Liq")))
@@ -566,6 +587,7 @@ def test_fug_coeff_phase_comp_eq_Liq(m):
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Liq", "c", ("Vap", "Liq")))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_eq_Vap(m):
     assert pytest.approx(86.9140, rel=1e-5) == value(
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Vap", "a", ("Vap", "Liq")))
@@ -575,12 +597,14 @@ def test_fug_coeff_phase_comp_eq_Vap(m):
         Cubic.fug_coeff_phase_comp_eq(m.props[1], "Vap", "c", ("Vap", "Liq")))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_eq_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Cubic.fug_coeff_phase_comp_eq(
             m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
+@pytest.mark.unit
 def test_gibbs_mol_phase(m):
     m.props[1].enth_mol_phase = Var(m.params.phase_list)
     m.props[1].entr_mol_phase = Var(m.params.phase_list)
@@ -591,6 +615,7 @@ def test_gibbs_mol_phase(m):
             m.props[1].entr_mol_phase[p]*m.props[1].temperature)
 
 
+@pytest.mark.unit
 def test_gibbs_mol_phase_comp(m):
     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list)

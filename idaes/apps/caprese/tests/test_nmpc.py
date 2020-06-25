@@ -14,7 +14,6 @@
 Test for Cappresse's module for NMPC.
 """
 
-import pytest
 from pytest import approx
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, Objective,
@@ -36,12 +35,13 @@ from idaes.apps.caprese.util import *
 from idaes.apps.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
 import random
+import pytest
 
 __author__ = "Robert Parker"
 
 
-# Mark module as slow
-pytestmark = pytest.mark.slow
+# Mark module as an integration test
+pytestmark = pytest.mark.integration
 
 # See if ipopt is available and set up solver
 solver_available = SolverFactory('ipopt').available()
@@ -287,6 +287,7 @@ def test_calculate_full_state_setpoint(nmpc):
         assert all([ref == var[0].value for ref, var in 
             zip(group.reference, group.varlist)])
 
+
 def test_add_setpoint_to_controller(nmpc):
     controller = nmpc.controller
     weight_override = []
@@ -343,6 +344,7 @@ def test_add_setpoint_to_controller(nmpc):
             approx(value(controller._NMPC_NAMESPACE.test_objective.expr), 1e-6))
 
     controller._NMPC_NAMESPACE.test_objective.deactivate()
+
 
 def test_construct_objective_weights(nmpc):
     
@@ -526,6 +528,7 @@ def test_initialization_from_initial_conditions(nmpc):
             if not any([locator[v].category == VariableCategory.INPUT 
                         for v in identify_variables(con.expr)]):
                 assert 'accumulation' in con.local_name
+
 
 @pytest.mark.skipif(not solver_available, reason='IPOPT unavailable')
 def test_solve_control_problem(nmpc):

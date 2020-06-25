@@ -2083,6 +2083,7 @@ class TestCVTSampling:
         )
         np.testing.assert_array_equal(expected_output, output)
 
+
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array])   
     def test_sample_points_01(self, array_type):

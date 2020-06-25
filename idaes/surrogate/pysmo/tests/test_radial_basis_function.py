@@ -933,6 +933,7 @@ class TestRadialBasisFunction:
         assert (lambda_best in reg_parameter) == True
         assert error_best == expected_errors
 
+    
     @pytest.mark.unit
     @pytest.mark.parametrize("array_type", [np.array, pd.DataFrame])
     def test_leave_one_out_crossvalidation_11(self, array_type):

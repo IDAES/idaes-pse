@@ -36,6 +36,7 @@ class MyBlockData(ProcessBlockData):
 
 
 class TestProcessBlock(object):
+    @pytest.mark.unit
     def test_scalar_noargs(self):
         m = ConcreteModel()
         m.b = MyBlock()
@@ -44,6 +45,7 @@ class TestProcessBlock(object):
         assert(value(m.b.x) == 1001)
         assert(value(m.b.y) == 1002)
 
+    @pytest.mark.unit
     def test_vec_noargs(self):
         m = ConcreteModel()
         m.b = MyBlock([1,2,3])
@@ -60,6 +62,7 @@ class TestProcessBlock(object):
         assert(value(m.b[3].x) == 1001)
         assert(value(m.b[3].y) == 1002)
 
+    @pytest.mark.unit
     def test_scalar_args1(self):
         m = ConcreteModel()
         m.b = MyBlock(default={"xinit":1, "yinit":2})
@@ -68,6 +71,7 @@ class TestProcessBlock(object):
         assert(value(m.b.x) == 1)
         assert(value(m.b.y) == 2)
 
+    @pytest.mark.unit
     def test_scalar_args2(self):
         m = ConcreteModel()
         m.b = MyBlock(initialize={None:{"xinit":1, "yinit":2}})
@@ -76,6 +80,7 @@ class TestProcessBlock(object):
         assert(value(m.b.x) == 1)
         assert(value(m.b.y) == 2)
 
+    @pytest.mark.unit
     def test_vec_args(self):
         m = ConcreteModel()
         m.b = MyBlock(
@@ -96,6 +101,7 @@ class TestProcessBlock(object):
         assert(value(m.b[3].x) == 1)
         assert(value(m.b[3].y) == 2)
 
+    @pytest.mark.unit
     def test_user_map(self):
         m = ConcreteModel()
         def new_imap(i):

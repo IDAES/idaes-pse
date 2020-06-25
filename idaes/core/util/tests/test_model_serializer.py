@@ -19,6 +19,7 @@ import os
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
+import pytest
 
 __author__ = "John Eslick"
 

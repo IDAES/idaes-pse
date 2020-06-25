@@ -966,5 +966,6 @@ from idaes.ui import link_position_mapping
         ),
     ],
 )
+@pytest.mark.unit
 def test_link_position_mapping(test_input, expected):
     assert link_position_mapping.link_position_mapping[test_input] == expected

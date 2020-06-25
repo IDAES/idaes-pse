@@ -193,6 +193,7 @@ def test_compare_models_errors():
         fc.compare_models(existing_model, new_model)
 
 
+@pytest.mark.unit
 def test_model_jointjs_conversion():
   # Test unit model addition
   original_jointjs = {"cells": [

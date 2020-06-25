@@ -154,6 +154,7 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
     return m
 
 
+@pytest.mark.component
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     '''Very rough test, just to make sure degrees of freedom are not violated.

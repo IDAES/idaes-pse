@@ -52,16 +52,19 @@ def build_valve_liquid():
                                      "phase": "Liq"})
     return m
 
+@pytest.mark.unit
 def test_vapor_steady_state_build(build_valve_vapor):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_valve_vapor
 
+@pytest.mark.unit
 def test_liquid_steady_state_build(build_valve_liquid):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_valve_liquid
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_vapor_steady_state_initialize(build_valve_vapor):
     """Initialize a turbine model"""
     m = build_valve_vapor
@@ -83,6 +86,7 @@ def test_vapor_steady_state_initialize(build_valve_vapor):
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.unit
 def test_report(build_valve_vapor):
     """Initialize a turbine model"""
     m = build_valve_vapor
