@@ -144,6 +144,27 @@ class TestBTX_cocurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.cocurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.shell_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.tube_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.unit
@@ -201,27 +222,6 @@ class TestBTX_cocurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.d_shell.fix(1.04)
-        btx.fs.unit.d_tube_outer.fix(0.01167)
-        btx.fs.unit.d_tube_inner.fix(0.01067)
-        btx.fs.unit.N_tubes.fix(10)
-        btx.fs.unit.shell_length.fix(4.85)
-        btx.fs.unit.tube_length.fix(4.85)
-        btx.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        btx.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        btx.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
-        btx.fs.unit.shell_inlet.temperature[0].fix(365)  # K
-        btx.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
-        btx.fs.unit.tube_inlet.temperature[0].fix(300)  # K
-        btx.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.component
@@ -299,6 +299,27 @@ class TestBTX_countercurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.countercurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.shell_inlet.temperature[0].fix(365)  # K
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.tube_inlet.temperature[0].fix(300)  # K
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.unit
@@ -356,27 +377,6 @@ class TestBTX_countercurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.d_shell.fix(1.04)
-        btx.fs.unit.d_tube_outer.fix(0.01167)
-        btx.fs.unit.d_tube_inner.fix(0.01067)
-        btx.fs.unit.N_tubes.fix(10)
-        btx.fs.unit.shell_length.fix(4.85)
-        btx.fs.unit.tube_length.fix(4.85)
-        btx.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        btx.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        btx.fs.unit.shell_inlet.flow_mol[0].fix(5)  # mol/s
-        btx.fs.unit.shell_inlet.temperature[0].fix(365)  # K
-        btx.fs.unit.shell_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.shell_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
-        btx.fs.unit.tube_inlet.temperature[0].fix(300)  # K
-        btx.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.solver
@@ -465,6 +465,23 @@ class TestIAPWS_cocurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.cocurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_mol[0].fix(5)
+        m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)
+
+        m.fs.unit.tube_inlet.flow_mol[0].fix(5)
+        m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)
+
         return m
 
     @pytest.mark.unit
@@ -516,23 +533,6 @@ class TestIAPWS_cocurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.d_shell.fix(1.04)
-        iapws.fs.unit.d_tube_outer.fix(0.01167)
-        iapws.fs.unit.d_tube_inner.fix(0.01067)
-        iapws.fs.unit.N_tubes.fix(10)
-        iapws.fs.unit.shell_length.fix(4.85)
-        iapws.fs.unit.tube_length.fix(4.85)
-        iapws.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        iapws.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        iapws.fs.unit.shell_inlet.flow_mol[0].fix(5)
-        iapws.fs.unit.shell_inlet.enth_mol[0].fix(50000)
-        iapws.fs.unit.shell_inlet.pressure[0].fix(101325)
-
-        iapws.fs.unit.tube_inlet.flow_mol[0].fix(5)
-        iapws.fs.unit.tube_inlet.enth_mol[0].fix(7000)
-        iapws.fs.unit.tube_inlet.pressure[0].fix(101325)
-
         assert degrees_of_freedom(iapws) == 0
 
     @pytest.mark.initialization
@@ -615,6 +615,23 @@ class TestIAPWS_countercurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.countercurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_mol[0].fix(5)
+        m.fs.unit.shell_inlet.enth_mol[0].fix(50000)
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)
+
+        m.fs.unit.tube_inlet.flow_mol[0].fix(5)
+        m.fs.unit.tube_inlet.enth_mol[0].fix(7000)
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)
+
         return m
 
     @pytest.mark.unit
@@ -666,23 +683,6 @@ class TestIAPWS_countercurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.d_shell.fix(1.04)
-        iapws.fs.unit.d_tube_outer.fix(0.01167)
-        iapws.fs.unit.d_tube_inner.fix(0.01067)
-        iapws.fs.unit.N_tubes.fix(10)
-        iapws.fs.unit.shell_length.fix(4.85)
-        iapws.fs.unit.tube_length.fix(4.85)
-        iapws.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        iapws.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        iapws.fs.unit.shell_inlet.flow_mol[0].fix(5)
-        iapws.fs.unit.shell_inlet.enth_mol[0].fix(50000)
-        iapws.fs.unit.shell_inlet.pressure[0].fix(101325)
-
-        iapws.fs.unit.tube_inlet.flow_mol[0].fix(5)
-        iapws.fs.unit.tube_inlet.enth_mol[0].fix(7000)
-        iapws.fs.unit.tube_inlet.pressure[0].fix(101325)
-
         assert degrees_of_freedom(iapws) == 0
 
     @pytest.mark.initialization
@@ -761,6 +761,33 @@ class TestSaponification_cocurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.cocurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.shell_inlet.temperature[0].fix(320)
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.tube_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.tube_inlet.temperature[0].fix(300)
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
         return m
 
     @pytest.mark.build
@@ -814,33 +841,6 @@ class TestSaponification_cocurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.d_shell.fix(1.04)
-        sapon.fs.unit.d_tube_outer.fix(0.01167)
-        sapon.fs.unit.d_tube_inner.fix(0.01067)
-        sapon.fs.unit.N_tubes.fix(10)
-        sapon.fs.unit.shell_length.fix(4.85)
-        sapon.fs.unit.tube_length.fix(4.85)
-        sapon.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        sapon.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        sapon.fs.unit.shell_inlet.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.shell_inlet.temperature[0].fix(320)
-        sapon.fs.unit.shell_inlet.pressure[0].fix(101325)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.tube_inlet.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.tube_inlet.temperature[0].fix(300)
-        sapon.fs.unit.tube_inlet.pressure[0].fix(101325)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
         assert degrees_of_freedom(sapon) == 0
 
     @pytest.mark.initialization
@@ -938,6 +938,33 @@ class TestSaponification_countercurrent(object):
                 "tube_side": {"property_package": m.fs.properties},
                 "flow_type": HeatExchangerFlowPattern.countercurrent})
 
+        m.fs.unit.d_shell.fix(1.04)
+        m.fs.unit.d_tube_outer.fix(0.01167)
+        m.fs.unit.d_tube_inner.fix(0.01067)
+        m.fs.unit.N_tubes.fix(10)
+        m.fs.unit.shell_length.fix(4.85)
+        m.fs.unit.tube_length.fix(4.85)
+        m.fs.unit.shell_heat_transfer_coefficient.fix(2000)
+        m.fs.unit.tube_heat_transfer_coefficient.fix(51000)
+
+        m.fs.unit.shell_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.shell_inlet.temperature[0].fix(320)
+        m.fs.unit.shell_inlet.pressure[0].fix(101325)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.shell_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.tube_inlet.flow_vol[0].fix(1e-3)
+        m.fs.unit.tube_inlet.temperature[0].fix(300)
+        m.fs.unit.tube_inlet.pressure[0].fix(101325)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.tube_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
         return m
 
     @pytest.mark.build
@@ -991,33 +1018,6 @@ class TestSaponification_countercurrent(object):
 
     @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.d_shell.fix(1.04)
-        sapon.fs.unit.d_tube_outer.fix(0.01167)
-        sapon.fs.unit.d_tube_inner.fix(0.01067)
-        sapon.fs.unit.N_tubes.fix(10)
-        sapon.fs.unit.shell_length.fix(4.85)
-        sapon.fs.unit.tube_length.fix(4.85)
-        sapon.fs.unit.shell_heat_transfer_coefficient.fix(2000)
-        sapon.fs.unit.tube_heat_transfer_coefficient.fix(51000)
-
-        sapon.fs.unit.shell_inlet.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.shell_inlet.temperature[0].fix(320)
-        sapon.fs.unit.shell_inlet.pressure[0].fix(101325)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.shell_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.tube_inlet.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.tube_inlet.temperature[0].fix(300)
-        sapon.fs.unit.tube_inlet.pressure[0].fix(101325)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.tube_inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
         assert degrees_of_freedom(sapon) == 0
 
     @pytest.mark.solver
