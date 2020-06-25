@@ -289,7 +289,6 @@ class DynamicBase(object):
                 namespace.scalar_vars.n_vars
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
-        diff_set = ComponentSet()
 
         # Iterate over initial vardata, popping from dae map when an input,
         # derivative, or differential var is found.
