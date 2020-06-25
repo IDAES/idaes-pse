@@ -25,6 +25,7 @@ from pyomo.environ import (Constraint,
                            value,
                            Var)
 from pyomo.common.config import ConfigValue
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -124,12 +125,47 @@ class GenericParameterData(PhysicalParameterBlock):
         domain=dict,
         description="Dict containing initialization data for parameters"))
 
+    # Base units of measurement
+    CONFIG.declare("base_units", ConfigValue(
+        default={},
+        domain=dict,
+        description="Base units for property package",
+        doc="Dict containing definition of base units of measurement to use "
+        "with property package."))
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         # Call super.build() to initialize Block
         super(GenericParameterData, self).build()
+
+        # Validate and set base units of measurement
+        units_meta = self.get_metadata().default_units
+
+        for key, unit in self.config.base_units.items():
+            if key in ['time', 'length', 'mass', 'amount', 'temperature',
+                       "current", "luminous intensity"]:
+                if not isinstance(unit, _PyomoUnit):
+                    raise ConfigurationError(
+                        "{} recieved unexpected units for quantity {}: {}. "
+                        "Units must be instances of a Pyomo unit object."
+                        .format(self.name, key, unit))
+                units_meta[key] = unit
+            else:
+                raise ConfigurationError(
+                    "{} defined units for an unexpected quantity {}. "
+                    "Generic property packages only support units for the 7 "
+                    "base SI quantities.".format(self.name, key))
+
+        # Check that main 5 base units are assigned
+        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
+            if not isinstance(units_meta[k], _PyomoUnit):
+                raise ConfigurationError(
+                    "{} units for quantity {} were not assigned. "
+                    "Please make sure to provide units for all base units "
+                    "when configuring the property package."
+                    .format(self.name, k))
 
         # Call configure method to set construction arguments
         self.configure()
@@ -479,13 +515,11 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'}})
 
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': None,
+                               'length': None,
+                               'mass': None,
+                               'amount': None,
+                               'temperature': None})
 
 
 class _GenericStateBlock(StateBlock):

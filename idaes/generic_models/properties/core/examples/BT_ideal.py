@@ -22,6 +22,9 @@ libraries.
 # Import Python libraries
 import logging
 
+# Import Pyomo units
+from pyomo.environ import units as pyunits
+
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
 
@@ -119,6 +122,13 @@ configuration = {
                         "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": Ideal}},
+
+    # Set base units of measurement
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
 
     # Specifying state definition
     "state_definition": FTPx,

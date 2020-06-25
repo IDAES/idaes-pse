@@ -20,7 +20,8 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
@@ -117,6 +118,11 @@ config_dict = {
                         "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": Ideal}},
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
     "state_definition": FPhx,
     "state_bounds": {"flow_mol": (0, 1000),
                      "temperature": (273.15, 450),

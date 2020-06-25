@@ -25,7 +25,8 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            sqrt,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 
 from idaes.core import (declare_process_block_class,
@@ -116,6 +117,11 @@ def m():
                             "equation_of_state": Cubic,
                             "equation_of_state_options": {
                                 "type": CubicType.PR}}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -173,6 +179,11 @@ def m_sol():
                             "equation_of_state": Cubic,
                             "equation_of_state_options": {
                                 "type": CubicType.PR}}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,

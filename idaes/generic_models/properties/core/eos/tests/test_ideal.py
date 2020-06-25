@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, log, Var
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -64,6 +64,11 @@ def m():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -95,6 +100,11 @@ def m_sol():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
