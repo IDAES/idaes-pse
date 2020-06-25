@@ -1,8 +1,7 @@
-Workflow
-========
+General Workflow
+================
 
-The section describes the recommended workflow for constructing and working with models in the 
-IDAES framework. Whilst IDAES offers significant freedom in how users write their models, they 
+While IDAES offers significant freedom in how users write their models, they 
 are encouraged to follow this general workflow in order to make it easier for others to follow 
 their code.
 
