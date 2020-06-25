@@ -13,8 +13,8 @@
 """
 Example for Caprese's module for NMPC.
 """
-from idaes.apps.caprese import nmpc
-from idaes.apps.caprese.nmpc import *
+from idaes.apps.caprese import NMPCSim, ControlInitOption
+from pyomo.environ import SolverFactory
 import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
