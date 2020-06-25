@@ -8,7 +8,7 @@
     concepts
     components/index
     conventions
-    workflow
+    workflow/index
     commands/index
     vis/index
     model_libraries/index
