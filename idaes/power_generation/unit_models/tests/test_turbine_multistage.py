@@ -66,7 +66,6 @@ def build_turbine_for_run_test():
 
 
 @pytest.mark.component
-@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():

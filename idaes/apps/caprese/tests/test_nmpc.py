@@ -40,8 +40,8 @@ import pytest
 __author__ = "Robert Parker"
 
 
-# Mark module as slow
-pytestmark = pytest.mark.slow
+# Mark module as an integration test
+pytestmark = pytest.mark.integration
 
 # See if ipopt is available and set up solver
 solver_available = SolverFactory('ipopt').available()
@@ -220,7 +220,6 @@ def nmpc():
     return nmpc
 
 
-@pytest.mark.component
 def test_calculate_full_state_setpoint(nmpc):
     controller = nmpc.controller
 
@@ -288,7 +287,7 @@ def test_calculate_full_state_setpoint(nmpc):
         assert all([ref == var[0].value for ref, var in 
             zip(group.reference, group.varlist)])
 
-@pytest.mark.unit
+
 def test_add_setpoint_to_controller(nmpc):
     controller = nmpc.controller
     weight_override = []
@@ -346,7 +345,7 @@ def test_add_setpoint_to_controller(nmpc):
 
     controller._NMPC_NAMESPACE.test_objective.deactivate()
 
-@pytest.mark.unit
+
 def test_construct_objective_weights(nmpc):
     
     controller = nmpc.controller
@@ -374,7 +373,6 @@ def test_construct_objective_weights(nmpc):
                 assert (group.weights[i] == 1/diff)
 
 
-@pytest.mark.unit
 def test_add_objective_function(nmpc):
 
     controller = nmpc.controller
@@ -413,7 +411,6 @@ def test_add_objective_function(nmpc):
     # objective function may not be meaningful
 
 
-@pytest.mark.unit
 def test_constrain_control_inputs_piecewise_constant(nmpc):
     sample_time = 0.5
     nmpc.constrain_control_inputs_piecewise_constant(sample_time=sample_time)
@@ -463,7 +460,6 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
 
 
 @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
-@pytest.mark.unit
 def test_initialization_by_time_element(nmpc):
 
     nmpc.initialize_control_problem(
@@ -499,7 +495,6 @@ def test_initialization_by_time_element(nmpc):
             assert value(con.body) == approx(value(con.upper), abs=1e-6)
 
 
-@pytest.mark.unit
 def test_initialization_from_initial_conditions(nmpc):
 
     dof_before = degrees_of_freedom(nmpc.controller)
@@ -534,8 +529,8 @@ def test_initialization_from_initial_conditions(nmpc):
                         for v in identify_variables(con.expr)]):
                 assert 'accumulation' in con.local_name
 
+
 @pytest.mark.skipif(not solver_available, reason='IPOPT unavailable')
-@pytest.mark.unit
 def test_solve_control_problem(nmpc):
     controller = nmpc.controller
 
@@ -556,7 +551,6 @@ def test_solve_control_problem(nmpc):
             assert var.value - var.ub < 1e-6
 
 
-@pytest.mark.unit
 def test_inject_control_inputs(nmpc):
 
     controller = nmpc.controller
@@ -583,7 +577,6 @@ def test_inject_control_inputs(nmpc):
                 controller._NMPC_NAMESPACE.input_vars.varlist[i][sample_time].value
 
 
-@pytest.mark.unit
 def test_initialize_by_element_in_range(nmpc):
 
     plant = nmpc.plant
@@ -638,7 +631,6 @@ def test_initialize_by_element_in_range(nmpc):
             assert pvar[t].value == approx(cvar[t].value, abs=1e-5)
 
 
-@pytest.mark.unit
 def test_calculate_error_between_states(nmpc):
     controller = nmpc.controller
     plant = nmpc.plant
@@ -650,7 +642,6 @@ def test_calculate_error_between_states(nmpc):
     assert error1 == approx(0., abs=1e-5)
 
 
-@pytest.mark.unit
 def test_initialize_from_previous(nmpc):
     controller = nmpc.controller
     time = controller.time
@@ -679,7 +670,6 @@ def test_initialize_from_previous(nmpc):
             assert cvar[t].value == prev_values[i][t_next]
 
 
-@pytest.mark.unit
 def test_transfer_current_plant_state_to_controller(nmpc):
     controller = nmpc.controller
     random.seed(12345)
