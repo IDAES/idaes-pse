@@ -1527,7 +1527,6 @@ class NMPCSim(DynamicBase):
             for t in time:
                 _slice[t].unfix()
 
-        # TODO: Check that no bounds are violated after square solves
         strip_controller_bounds.revert(self.controller)
 
         timelist = list(time)
