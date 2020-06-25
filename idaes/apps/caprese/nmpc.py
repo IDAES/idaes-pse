@@ -272,7 +272,7 @@ class NMPCSim(DynamicBase):
                      conditions, will also be used as the default solver if
                      another is not provided for initializing or solving the 
                      optimal control problem.
-            outlvl : IDAES logger output level. Default is idaes.logger.NOTSET.
+            outlvl : IDAES logger output level. Default is idaes.logger.INFO.
                      To see solver output, use idaes.logger.DEBUG.
             sample_time : Length of time each control input will be held for.
                           This must be an integer multiple of the (finite
@@ -1674,11 +1674,12 @@ class NMPCSim(DynamicBase):
                 dae_vars=self.plant._NMPC_NAMESPACE.dae_vars, 
                 time_linking_vars=self.plant._NMPC_NAMESPACE.diff_vars,
                 outlvl=outlvl)
-        msg = ('Successfully simulated plant over the sampling period '
-                'beginning at ' + str(t_start))
-        init_log.info(msg)
 
         self.current_plant_time = t_end
+
+        msg = ('Successfully simulated plant over the sampling period '
+                'through' + str(self.current_plant_time))
+        init_log.info(msg)
 
         tc1 = self.controller_time.first() + sample_time
 
