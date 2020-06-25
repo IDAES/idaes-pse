@@ -84,7 +84,6 @@ def root_finder():
 
 
 @pytest.mark.integration
-@pytest.mark.slow
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_liq(root_finder):
@@ -238,7 +237,6 @@ def test_roots_Z_liq(root_finder):
 
 
 @pytest.mark.integration
-@pytest.mark.slow
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_vap(root_finder):
@@ -392,7 +390,6 @@ def test_roots_Z_vap(root_finder):
 
 
 @pytest.mark.integration
-@pytest.mark.slow
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_liq_ext(root_finder):
@@ -601,7 +598,6 @@ def test_roots_Z_liq_ext(root_finder):
 
 
 @pytest.mark.integration
-@pytest.mark.slow
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_vap_ext(root_finder):

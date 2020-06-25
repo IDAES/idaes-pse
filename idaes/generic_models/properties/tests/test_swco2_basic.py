@@ -25,6 +25,11 @@ import csv
 import os
 import idaes
 
+
+# Mark module as an integration test
+pytestmark = pytest.mark.integration
+
+
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6}
@@ -246,7 +251,6 @@ class TestHelm(object):
             #assert sum(map(abs, f)) < 1e-5
         assert False
 
-    @pytest.mark.unit
     def test_external_memo(self, model):
         """ This tests the memoization in the external functions.  There is a
         special set of functions that return the memoized value of a function.
@@ -283,8 +287,6 @@ class TestHelm(object):
                 pytest.approx(Tc/T, rel=0.10))
             binary_derivative_test(f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
 
-    @pytest.mark.integration
-    @pytest.mark.slow
     def test_thermo_expression_writter(self, model):
         te = model.te
         mw = self.mw
@@ -331,8 +333,6 @@ class TestHelm(object):
             binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
 
-
-    @pytest.mark.unit
     def test_solve_vapor_density(self, model):
         """ The density calculations should be tested by the thermo expression
         tests, but they are pretty fundimental to everything else, so test them
@@ -345,7 +345,6 @@ class TestHelm(object):
                 rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
-    @pytest.mark.unit
     def test_solve_liquid_density(self, model):
         """ The density calculations should be tested by the thermo expression
         tests, but they are pretty fundimental to everything else, so test them
@@ -358,7 +357,6 @@ class TestHelm(object):
                 rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
-    @pytest.mark.component
     def test_solve_sat_density(self, model):
         """ The density calculations should be tested by the thermo expression
         tests, but they are pretty fundimental to everything else, so test them
@@ -395,7 +393,6 @@ class TestHelm(object):
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
-    @pytest.mark.component
     def test_functions_of_delta_and_tau(self, model):
         """
         These are the bisic direct from density and temperature propery
