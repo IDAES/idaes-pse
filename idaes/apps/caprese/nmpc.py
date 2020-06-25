@@ -1035,7 +1035,12 @@ class NMPCSim(DynamicBase):
                 var[t0].fix(0.0)
 
         # Solve single-time point optimization problem
-        assert degrees_of_freedom(controller) == controller._NMPC_NAMESPACE.n_input_vars
+        dof = degrees_of_freedom(controller)
+        c_namespace = controller._NMPC_NAMESPACE 
+        if require_steady:
+            assert dof == c_namespace.n_input_vars
+        else:
+            assert dof == c_namespace.n_input_vars + c_namespace.n_diff_vars
         init_log.info('Solving for full-state setpoint values')
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(controller, tee=slc.tee)
