@@ -94,7 +94,7 @@ def test_config():
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_boiler_hx():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

@@ -35,6 +35,8 @@ if pyo.SolverFactory('ipopt').available():
 else:
     solver = None
 
+
+@pytest.mark.unit
 def build_turbine_for_run_test():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
