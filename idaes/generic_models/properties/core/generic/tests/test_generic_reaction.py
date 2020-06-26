@@ -75,6 +75,7 @@ class TestGenericReactionParameterBlock(object):
 
         return m
 
+    @pytest.mark.unit
     def test_rate_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
