@@ -227,7 +227,6 @@ class TestBTX_cocurrent(object):
     @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
     def test_initialize(self, btx):
         initialization_tester(btx)
 
