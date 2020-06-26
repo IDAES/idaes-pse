@@ -57,6 +57,7 @@ def model():
 
 # -----------------------------------------------------------------------------
 # Test argument validation
+@pytest.mark.unit
 def test_invalid_model(model):
     o = object()
 
@@ -64,6 +65,7 @@ def test_invalid_model(model):
         homotopy(o, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_not_var(model):
     model.p = Param()
 
@@ -71,6 +73,7 @@ def test_not_var(model):
         homotopy(model, [model.p], [20])
 
 
+@pytest.mark.unit
 def test_var_not_in_model(model):
     m2 = ConcreteModel()
 
@@ -78,6 +81,7 @@ def test_var_not_in_model(model):
         homotopy(m2, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_var_not_fixed(model):
     model.x.unfix()
 
@@ -85,6 +89,7 @@ def test_var_not_fixed(model):
         homotopy(model, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_current_value_ub(model):
     model.x.setub(5)
 
@@ -92,6 +97,7 @@ def test_current_value_ub(model):
         homotopy(model, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_target_value_ub(model):
     model.x.setub(12)
 
@@ -99,6 +105,7 @@ def test_target_value_ub(model):
         homotopy(model, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_current_value_lb(model):
     model.x.setlb(12)
 
@@ -106,6 +113,7 @@ def test_current_value_lb(model):
         homotopy(model, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_target_value_lb(model):
     model.x.fix(50)
     model.x.setlb(30)
@@ -114,6 +122,7 @@ def test_target_value_lb(model):
         homotopy(model, [model.x], [20])
 
 
+@pytest.mark.unit
 def test_step_init(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], step_init=0.01)
@@ -122,6 +131,7 @@ def test_step_init(model):
         homotopy(model, [model.x], [20], step_init=0.9)
 
 
+@pytest.mark.unit
 def test_step_cut(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], step_cut=0.09)
@@ -130,11 +140,13 @@ def test_step_cut(model):
         homotopy(model, [model.x], [20], step_cut=0.91)
 
 
+@pytest.mark.unit
 def test_step_accel(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], step_accel=-1)
 
 
+@pytest.mark.unit
 def test_iter_target(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], iter_target=0)
@@ -143,6 +155,7 @@ def test_iter_target(model):
         homotopy(model, [model.x], [20], iter_target=1.7)
 
 
+@pytest.mark.unit
 def test_max_step(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], max_step=0.04)
@@ -151,6 +164,7 @@ def test_max_step(model):
         homotopy(model, [model.x], [20], max_step=1.1)
 
 
+@pytest.mark.unit
 def test_min_step(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], min_step=0.009)
@@ -159,11 +173,13 @@ def test_min_step(model):
         homotopy(model, [model.x], [20], min_step=0.11)
 
 
+@pytest.mark.unit
 def test_min_max_step(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], min_step=0.1, max_step=0.05)
 
 
+@pytest.mark.unit
 def test_init_step_min_max(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], step_init=0.2, max_step=0.1)
@@ -172,6 +188,7 @@ def test_init_step_min_max(model):
         homotopy(model, [model.x], [20], step_init=0.05, min_step=0.1)
 
 
+@pytest.mark.unit
 def test_max_eval(model):
     with pytest.raises(ConfigurationError):
         homotopy(model, [model.x], [20], max_eval=0)
@@ -183,6 +200,7 @@ def test_max_eval(model):
 # -----------------------------------------------------------------------------
 # Test termination conditions
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic(model):
     tc, prog, ni = homotopy(model, [model.x], [20])
 
@@ -194,6 +212,7 @@ def test_basic(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_overshoot(model):
     # Use a big step such that overshoot will occur if not caught
     tc, prog, ni = homotopy(model, [model.x], [20], step_init=0.6)
@@ -206,6 +225,7 @@ def test_basic_overshoot(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_constraint_violation(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 300)
@@ -221,6 +241,7 @@ def test_basic_constraint_violation(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_max_iter(model):
     tc, prog, ni = homotopy(model, [model.x], [20], max_eval=2)
 
@@ -232,6 +253,7 @@ def test_basic_max_iter(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_infeasible_init(model):
     model.c2 = Constraint(expr=model.y <= 50)
 
@@ -246,6 +268,7 @@ def test_basic_infeasible_init(model):
 # -----------------------------------------------------------------------------
 # Test that parameters have correct effect
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_step_accel(model):
     # With zero acceleration, should take 10 steps
     tc, prog, ni = homotopy(model, [model.x], [20], step_accel=0)
@@ -258,6 +281,7 @@ def test_basic_step_accel(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_step_init(model):
     # With zero acceleration and initial step of 0.05, should take 20 steps
     tc, prog, ni = homotopy(model, [model.x], [20],
@@ -271,6 +295,7 @@ def test_basic_step_init(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_step_cut(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 196)
@@ -288,6 +313,7 @@ def test_basic_step_cut(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_step_cut_2(model):
     # Add a constraint to limit y
     model.c2 = Constraint(expr=model.y <= 196)
@@ -305,6 +331,7 @@ def test_basic_step_cut_2(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_iter_target(model):
     # Should take 5 steps
     tc, prog, ni = homotopy(model, [model.x], [20], iter_target=2)
@@ -317,6 +344,7 @@ def test_basic_iter_target(model):
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_basic_max_step(model):
     # With max_step = step_init = 0.1, should take 10 steps
     tc, prog, ni = homotopy(model, [model.x], [20], max_step=0.1)
@@ -358,6 +386,7 @@ def model2():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_ideal_prop(model2):
     tc, prog, ni = homotopy(
             model2, [model2.fs.state_block.temperature], [390])
@@ -379,6 +408,7 @@ def test_ideal_prop(model2):
 
 # Test max_iter here, as a more complicated model is needed
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_ideal_prop_max_iter(model2):
     tc, prog, ni = homotopy(
             model2, [model2.fs.state_block.temperature], [390],

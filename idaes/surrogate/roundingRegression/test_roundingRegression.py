@@ -19,7 +19,9 @@ Additional hyper-parameters and features will be added over time
 
 from idaes.surrogate.roundingRegression.RoundingRegression import RoundingRegression
 import numpy as np
+import pytest
 
+@pytest.mark.unit
 def test_simple_regression():
     """ Tests the identification of a simple sparse regression"""
 

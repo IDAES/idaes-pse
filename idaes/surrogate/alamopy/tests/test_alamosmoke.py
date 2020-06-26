@@ -15,11 +15,12 @@ Smoke tests, to make sure things are working at all.
 """
 import pytest
 
+@pytest.mark.unit
 def test_doalamo_import():
     from idaes.surrogate.alamopy import alamo
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_hasalamo():
     from idaes.surrogate import alamopy
     has_alamo_flag = alamopy.multos.has_alamo()

@@ -18,6 +18,7 @@ from idaes.ui import flowsheet_comparer as fc
 from idaes.ui.flowsheet_comparer import Action
 
 
+@pytest.mark.unit
 def test_compare_models():
     model1 = {'model': {
                   'id': 0, 
@@ -77,6 +78,7 @@ def test_compare_models():
     assert diff_model == diff_model_truth
 
 
+@pytest.mark.unit
 def test_compare_models_edge_cases():
     # Both empty models
     existing_model = {"model": {
@@ -147,6 +149,7 @@ def test_compare_models_edge_cases():
     assert diff_model == {}
 
 
+@pytest.mark.unit
 def test_compare_models_errors():
     # Both empty
     existing_model = {}
@@ -190,6 +193,7 @@ def test_compare_models_errors():
         fc.compare_models(existing_model, new_model)
 
 
+@pytest.mark.unit
 def test_model_jointjs_conversion():
   # Test unit model addition
   original_jointjs = {"cells": [

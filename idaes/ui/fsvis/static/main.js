@@ -209,6 +209,9 @@ $(document).ready( function() {
             data: JSON.stringify(graph.toJSON()),
             dataType: 'json',
             url: url,
+            beforeSend: function(request) {
+                request.setRequestHeader("Source", "save_button");
+            },
             success: function (e) {
             },
             error: function(error) {

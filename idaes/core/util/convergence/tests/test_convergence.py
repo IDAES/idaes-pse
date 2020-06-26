@@ -38,6 +38,7 @@ ceval_unfixedvar_mutableparam_str = (
 currdir = this_file_dir()
 
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -59,6 +60,7 @@ def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     if os.path.exists(fname):
         os.remove(fname)
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_unfixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -87,6 +89,7 @@ def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
         os.remove(fname)
 
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_immutableparam_str)
     ceval = ceval_class()
@@ -117,6 +120,7 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
 
 @pytest.mark.skipif(not ipopt_available,
                     reason="Ipopt solver not available")
+@pytest.mark.unit
 def test_convergence_evaluation_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
     ceval = ceval_class()

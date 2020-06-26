@@ -26,7 +26,7 @@ import idaes.dmf.model_data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 
-
+@pytest.mark.unit
 def test_bin_data():
     def make_data_frame():
         return pd.DataFrame(data={
@@ -76,7 +76,8 @@ def test_bin_data():
     assert r[0]["x1"] == pytest.approx(1.0)
     assert np.isnan(r[3]["x1"]) # only one point in bin 3, so can't calculate
 
-
+    
+@pytest.mark.component
 def test_map_data():
     data1 = os.path.join(_data_dir, "data1.csv")
     data1_meta = os.path.join(_data_dir, "data1_meta.csv")
@@ -119,6 +120,7 @@ def test_map_data():
     assert pyo.value(df_meta["V"]["reference"][1]) == pytest.approx(10, rel=1e-4)
 
 
+@pytest.mark.component
 def test_map_data_use_ambient_pressure():
     data1 = os.path.join(_data_dir, "data1.csv")
     data1_meta = os.path.join(_data_dir, "data1_meta.csv")
@@ -145,6 +147,7 @@ def test_map_data_use_ambient_pressure():
     assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
 
 
+@pytest.mark.component
 def test_unit_coversion():
     # spot test some unit conversions and features
     # da.unit_convert(x, frm, to=None, system=None, unit_string_map={},

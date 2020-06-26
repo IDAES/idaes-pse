@@ -42,6 +42,7 @@ class TestSWCO2(object):
         )
         return model
 
+    @pytest.mark.unit
     def test_transport(self, model2):
         """Transport property tests
         """

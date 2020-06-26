@@ -51,6 +51,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -100,6 +101,7 @@ class TestSaponification(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
 
         assert hasattr(sapon.fs.unit, "inlet")
@@ -122,6 +124,7 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 13
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
         sapon.fs.unit.inlet.flow_vol.fix(1)
         sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -142,11 +145,13 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -158,6 +163,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.pressure[0]))
@@ -169,6 +175,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, sapon):
         assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
                          sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
@@ -196,5 +203,6 @@ class TestSaponification(object):
                 sapon.fs.unit.control_volume.heat_of_reaction[0])) <= 1e-3
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()

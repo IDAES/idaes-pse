@@ -15,15 +15,81 @@ from operator import itemgetter
 
 from idaes.generic_models.flowsheets.demo_flowsheet import (
     build_flowsheet, set_dof, initialize_flowsheet, solve_flowsheet)
+from idaes.generic_models.unit_models.pressure_changer import \
+    ThermodynamicAssumption
+from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
+from idaes.generic_models.unit_models import Heater, PressureChanger
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 from idaes.ui.icon_mapping import icon_mapping
 from idaes.ui.link_position_mapping import link_position_mapping
 
+from pyomo.environ import Expression
 
+
+@pytest.mark.unit
 def test_serialize_flowsheet():
     # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
     m = build_flowsheet()
-  
+    m.fs.properties = SWCO2ParameterBlock()
+    m.fs.main_compressor = PressureChanger(
+      default={'dynamic': False,
+               'property_package': m.fs.properties,
+               'compressor': True,
+               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+
+    m.fs.bypass_compressor = PressureChanger(
+        default={'dynamic': False,
+                 'property_package': m.fs.properties,
+                 'compressor': True,
+                 'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+
+    m.fs.turbine = PressureChanger(
+      default={'dynamic': False,
+               'property_package': m.fs.properties,
+               'compressor': False,
+               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+    m.fs.boiler = Heater(default={'dynamic': False,
+                                  'property_package': m.fs.properties,
+                                  'has_pressure_change': True})
+    m.fs.FG_cooler = Heater(default={'dynamic': False,
+                                     'property_package': m.fs.properties,
+                                     'has_pressure_change': True})
+    m.fs.pre_boiler = Heater(default={'dynamic': False,
+                                      'property_package': m.fs.properties,
+                                      'has_pressure_change': False})
+    m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
+    m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
+
+    m.fs.turbine.ratioP.fix(1/3.68)
+    m.fs.turbine.efficiency_isentropic.fix(0.927)
+    m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
+    m.fs.turbine.control_volume.scaling_factor_pressure.value = 1e-6
+    m.fs.turbine.initialize()
+
+    m.gross_cycle_power_output = \
+        Expression(expr=(-m.fs.turbine.work_mechanical[0] -
+                   m.fs.main_compressor.work_mechanical[0] -
+                   m.fs.bypass_compressor.work_mechanical[0]))
+
+    # account for generator loss = 1.5% of gross power output
+    m.net_cycle_power_output = Expression(expr=0.985*m.gross_cycle_power_output)
+
+    m.total_cycle_power_input = Expression(
+        expr=(m.fs.boiler.heat_duty[0] + m.fs.pre_boiler.heat_duty[0] +
+              m.fs.FG_cooler.heat_duty[0]))
+
+    m.cycle_efficiency = Expression(
+        expr=m.net_cycle_power_output/m.total_cycle_power_input*100)
+
+    # Expression to compute recovered duty in recuperators
+    m.recuperator_duty = Expression(
+        expr=(m.fs.HTR_pseudo_tube.heat_duty[0] +
+              m.fs.LTR_pseudo_tube.heat_duty[0]))
+
     fss = FlowsheetSerializer()
     fss.serialize_flowsheet(m.fs)
 
@@ -34,7 +100,16 @@ def test_serialize_flowsheet():
 
     unit_models_names_type_truth = [{'name': 'M01', 'type': 'mixer'}, 
                                     {'name': 'H02', 'type': 'heater'}, 
-                                    {'name': 'F03', 'type': 'flash'}]
+                                    {'name': 'F03', 'type': 'flash'}, 
+                                    {'name': 'main_compressor', 'type': 'pressure_changer'}, 
+                                    {'name': 'bypass_compressor', 'type': 'pressure_changer'}, 
+                                    {'name': 'turbine', 'type': 'pressure_changer'}, 
+                                    {'name': 'boiler', 'type': 'heater'}, 
+                                    {'name': 'FG_cooler', 'type': 'heater'}, 
+                                    {'name': 'pre_boiler', 'type': 'heater'}, 
+                                    {'name': 'HTR_pseudo_tube', 'type': 'heater'}, 
+                                    {'name': 'LTR_pseudo_tube', 'type': 'heater'}, 
+                                    {'name': 'split', 'type': 'separator'}]
   
     set_result = set(tuple(sorted(d.items())) for d in unit_model_names_types)
     set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
@@ -83,6 +158,7 @@ def test_serialize_flowsheet():
     assert named_edges_results == named_edges_truth
 
 
+@pytest.mark.unit
 def test_create_image_jointjs_json():
   out_json = {"model": {}}
   out_json["cells"] = []
@@ -176,6 +252,7 @@ def test_create_image_jointjs_json():
                       }
 
 
+@pytest.mark.unit
 def test_create_link_jointjs_json():
     out_json = {"model": {}}
     out_json["cells"] = []
