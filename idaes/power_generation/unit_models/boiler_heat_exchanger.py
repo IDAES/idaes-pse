@@ -599,29 +599,29 @@ constructed,
 
                 return b.gas_emissivity[t] == \
                     (- 0.116916606892E-003 * X1
-                    - 0.29111124038936179309056E-001 * X2
-                    + 0.50509651230704191577346E-006 * X3
-                    + 1.1844222822155641150488 * X4
-                    - 0.64720757767102773949652E-001 * X5
-                    - 0.35853593221454795048064E-001 * X6
-                    + 0.12227919099126832724878 * log(X1)
-                    + 0.45102118316418124410738E-001 * log(X2)
-                    + 0.33111863480179408447679E-001 * log(X3)
-                    + 0.17674928397780117345084E-001 * log(X5)
-                    - 0.12541139396423576016226E-001 * exp(X2)
-                    - 0.90251708836308952577099 * exp(X4)
-                    + 0.32447078857791738538963E-002 * X2**2
-                    - 0.31332075610864829615706E-004 * X1*X2
-                    - 0.54639645449809960433102E-009 * X1*X3
-                    - 0.19721467902854980460033E-003 * X1*X5
-                    + 0.45275517692290622763507E-004 * X1*X6
-                    + 0.75458754990630776904396E-006 * X2*X3
-                    + 0.39691751689931338564765E-001 * X2*X4
-                    + 0.73169514231974708273754 * X2*X5
-                    - 0.35852614507684822664491E-001 * X2*X6
-                    + 0.39743672195685803976177E-005 * X3*X5
-                    + 0.58802879141883679897383E-008 * (X1*X2)**2
-                    - 1.2994610452829884472692 * (X2*X5)**2)
+                     - 0.29111124038936179309056E-001 * X2
+                     + 0.50509651230704191577346E-006 * X3
+                     + 1.1844222822155641150488 * X4
+                     - 0.64720757767102773949652E-001 * X5
+                     - 0.35853593221454795048064E-001 * X6
+                     + 0.12227919099126832724878 * log(X1)
+                     + 0.45102118316418124410738E-001 * log(X2)
+                     + 0.33111863480179408447679E-001 * log(X3)
+                     + 0.17674928397780117345084E-001 * log(X5)
+                     - 0.12541139396423576016226E-001 * exp(X2)
+                     - 0.90251708836308952577099 * exp(X4)
+                     + 0.32447078857791738538963E-002 * X2**2
+                     - 0.31332075610864829615706E-004 * X1*X2
+                     - 0.54639645449809960433102E-009 * X1*X3
+                     - 0.19721467902854980460033E-003 * X1*X5
+                     + 0.45275517692290622763507E-004 * X1*X6
+                     + 0.75458754990630776904396E-006 * X2*X3
+                     + 0.39691751689931338564765E-001 * X2*X4
+                     + 0.73169514231974708273754 * X2*X5
+                     - 0.35852614507684822664491E-001 * X2*X6
+                     + 0.39743672195685803976177E-005 * X3*X5
+                     + 0.58802879141883679897383E-008 * (X1*X2)**2
+                     - 1.2994610452829884472692 * (X2*X5)**2)
 
             # Constraints for gas emissivity at mbl/sqrt(2)
             @self.Constraint(self.flowsheet().time,
@@ -932,8 +932,9 @@ constructed,
                 b.do_tube * b.v_shell[t] \
                 * b.side_2.properties_in[t].dens_mol_phase["Vap"] / 1000.0 *\
                    sum(b.side_2.properties_in[t].params.mw[c]
-                   *b.side_2.properties_in[t].mole_frac[c]
-                   for c in b.side_2.properties_in[t].params.component_list)
+                       * b.side_2.properties_in[t].mole_frac[c]
+                       for c in b.side_2.properties_in[t].
+                       params.component_list)
 
         if self.config.has_pressure_change is True:
             # Friction factor on shell side
@@ -968,7 +969,8 @@ constructed,
                     * b.side_2.properties_in[t].dens_mol_phase["Vap"] \
                     / 1000.0 * sum(b.side_2.properties_in[t].params.mw[c]
                                    * b.side_2.properties_in[t].mole_frac[c]
-                                   for c in b.side_2.properties_in[t].params.component_list) \
+                                   for c in b.side_2.properties_in[t].
+                                   params.component_list) \
                     * b.v_shell[t]**2
 
         # Prandtl number
@@ -977,8 +979,9 @@ constructed,
         def N_Pr_shell_eqn(b, t):
             return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond_mix \
                 * sum(b.side_2.properties_in[t].params.mw[c]
-                      *b.side_2.properties_in[t].mole_frac[c]
-                      for c in b.side_2.properties_in[t].params.component_list) == \
+                      * b.side_2.properties_in[t].mole_frac[c]
+                      for c in b.side_2.properties_in[t].
+                      params.component_list) == \
                 b.side_2.properties_in[t].heat_cap * 1000 * \
                 b.side_2.properties_in[t].visc_d_mix
 
@@ -995,11 +998,12 @@ constructed,
                          "on shell side due to convection")
         def hconv_shell_conv_eqn(b, t):
             return b.hconv_shell_conv[t] * b.do_tube / 1000 == \
-            b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond_mix / 1000
+                b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond_mix\
+                / 1000
 
         # Total convective heat transfer coefficient on shell side
         @self.Constraint(self.flowsheet().time,
-                         doc = "Total convective heat transfer "
+                         doc="Total convective heat transfer "
                          "coefficient equation on shell side")
         def hconv_shell_total_eqn(b, t):
             if self.config.has_radiation is True:
@@ -1092,7 +1096,7 @@ constructed,
 
     def initialize(blk, state_args_1={}, state_args_2={},
                    outlvl=0, solver='ipopt', optarg={'tol': 1e-6,
-                                                     'max_iter':100}):
+                                                     'max_iter': 100}):
         '''
         General Heat Exchanger initialisation routine.
 
