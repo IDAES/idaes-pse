@@ -15,8 +15,6 @@ This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
 
-import logging
-
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
@@ -33,6 +31,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.fsvis.fsvis import visualize
 
 from idaes.core.util import unit_costing as costing
+import idaes.logger as idaeslog
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -41,7 +40,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['FlowsheetBlock', 'FlowsheetBlockData']
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("FlowsheetBlock", doc="""
@@ -247,13 +246,14 @@ within this flowsheet if not otherwise specified,
                         .format(self.name))
 
         # Validate units for time domain
-        if self.config.time_units is None:
+        if self.config.time_units is None and self.config.dynamic:
             _log.warning("DEPRECATED: No units were specified for the time "
-                         "domain. Users should provide unit via the "
-                         "time_units. This will not affect steady-state "
-                         "flowsheets, but for dynamic cases unitless time "
-                         "domains will only work with unitless property "
-                         "packages, and vice versa.")
+                         "domain. Users should provide units via the "
+                         "time_units configuration argument.")
+        elif self.config.time_units is None and not self.config.dynamic:
+            _log.info_high("DEPRECATED: No units were specified for the time "
+                            "domain. Users should provide units via the "
+                            "time_units configuration argument.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "
