@@ -13,7 +13,7 @@ command-line program.
 idaes command
 -------------
 The base `idaes` command does not do anything by itself, besides set some
-shared configuration values. All the real work is done by one of the sub-commands,
+shared configuration values. All the real work is done by one of the subcommands,
 each of which is described on a separate page below.
 
 
@@ -30,6 +30,10 @@ each of which is described on a separate page below.
 
 shared configuration
 ^^^^^^^^^^^^^^^^^^^^
+
+.. option:: --help
+
+See a list of subcommands and options, or get help for a specific subcommand.
 
 .. option:: -v
 .. option:: --verbose
