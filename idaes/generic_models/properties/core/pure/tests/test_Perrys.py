@@ -69,6 +69,7 @@ def frame():
     return m
 
 
+@pytest.mark.unit
 def test_cp_mol_liq_comp(frame):
     cp_mol_liq_comp.build_parameters(frame.params)
 
@@ -80,6 +81,7 @@ def test_cp_mol_liq_comp(frame):
     assert value(expr) == pytest.approx(89.390, rel=1e-3)
 
 
+@pytest.mark.unit
 def test_enth_mol_liq_comp(frame):
     enth_mol_liq_comp.build_parameters(frame.params)
 
@@ -92,6 +94,7 @@ def test_enth_mol_liq_comp(frame):
     assert value(expr) == pytest.approx(-265423, rel=1e-3)
 
 
+@pytest.mark.unit
 def test_entr_mol_liq_comp(frame):
     entr_mol_liq_comp.build_parameters(frame.params)
 
@@ -103,6 +106,7 @@ def test_entr_mol_liq_comp(frame):
     assert value(expr) == pytest.approx(1322, rel=1e-3)
 
 
+@pytest.mark.unit
 def test_dens_mol_liq_comp(frame):
     dens_mol_liq_comp.build_parameters(frame.params)
 

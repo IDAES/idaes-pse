@@ -21,7 +21,8 @@ from pyomo.environ import (Block,
                            ConcreteModel,
                            Param,
                            Set,
-                           TransformationFactory)
+                           TransformationFactory,
+                           units)
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 
@@ -50,13 +51,16 @@ class TestConfig(object):
 
         return m
 
+    @pytest.mark.unit
     def test_config(self, model):
-        assert len(model.fs.config) == 4
+        assert len(model.fs.config) == 5
         assert model.fs.config.dynamic is useDefault
         assert model.fs.config.time is None
         assert model.fs.config.time_set == [0]
         assert model.fs.config.default_property_package is None
+        assert model.fs.config.time_units is None
 
+    @pytest.mark.unit
     def test_config_validation_dynamic(self, model):
         # Test validation of dynamic argument
         model.fs.config.dynamic = False
@@ -76,6 +80,7 @@ class TestConfig(object):
         with pytest.raises(ValueError):
             model.fs.config.dynamic = {"foo": 1}
 
+    @pytest.mark.unit
     def test_config_validation_time(self, model):
         # Test validation of time argument
         model.test_set = Set(initialize=[0, 1, 2])
@@ -98,6 +103,7 @@ class TestConfig(object):
         with pytest.raises(ValueError):
             model.fs.config.time = {"foo": 1}
 
+    @pytest.mark.unit
     def test_config_validation_time_set(self, model):
         # Test validation of time_set argument
         model.fs.config.time_set = [1, 2, 3]
@@ -112,6 +118,7 @@ class TestConfig(object):
         with pytest.raises(ValueError):
             model.fs.config.time_set = {'a': 2.0}  # invalid dict
 
+    @pytest.mark.unit
     def test_config_validation_default_property_package(self, model):
         # Test default_property_package attribute
         model.fs.p = PhysicalParameterTestBlock()
@@ -133,6 +140,7 @@ class TestConfig(object):
 
 class TestBuild(object):
     # Test that build method works for all combinations of config arguments
+    @pytest.mark.unit
     def test_is_flowsheet(self):
         # Test that flowsheet has is_flowsheet method and that it returns True
         m = ConcreteModel()
@@ -141,6 +149,7 @@ class TestBuild(object):
         assert hasattr(m.fs, "is_flowsheet")
         assert m.fs.is_flowsheet()
 
+    @pytest.mark.unit
     def test_flowsheet(self):
         # Should return None
         m = ConcreteModel()
@@ -148,6 +157,7 @@ class TestBuild(object):
 
         assert m.fs.flowsheet() is None
 
+    @pytest.mark.unit
     def test_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock()
@@ -156,7 +166,9 @@ class TestBuild(object):
         assert isinstance(m.fs.time, Set)
         assert m.fs.time == [0]
         assert m.fs.config.time is m.fs.time
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_ss_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -165,7 +177,9 @@ class TestBuild(object):
         assert isinstance(m.fs.time, Set)
         assert m.fs.time == [0]
         assert m.fs.config.time is m.fs.time
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_ss_time_set(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={
@@ -178,7 +192,9 @@ class TestBuild(object):
             assert t in [1, 2, 3]
         assert len(m.fs.time) == 3
         assert m.fs.config.time is m.fs.time
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True})
@@ -188,7 +204,9 @@ class TestBuild(object):
         for t in m.fs.time:
             assert t in [0, 1]
         assert m.fs.config.time is m.fs.time
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_time_set(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={
@@ -200,7 +218,9 @@ class TestBuild(object):
         for t in m.fs.time:
             assert t in [1, 2]
         assert m.fs.config.time is m.fs.time
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_time_set_invalid(self):
         m = ConcreteModel()
 
@@ -209,6 +229,7 @@ class TestBuild(object):
                     "dynamic": True,
                     "time_set": 1})
 
+    @pytest.mark.unit
     def test_ss_external_time(self):
         m = ConcreteModel()
         m.s = Set(initialize=[4, 5])
@@ -219,7 +240,9 @@ class TestBuild(object):
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
         assert not hasattr(m.fs, "time")
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_external_time_continuous(self):
         m = ConcreteModel()
         m.s = ContinuousSet(initialize=[4, 5])
@@ -230,7 +253,9 @@ class TestBuild(object):
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
         assert not hasattr(m.fs, "time")
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_external_time(self):
         m = ConcreteModel()
         m.s = ContinuousSet(initialize=[4, 5])
@@ -241,7 +266,9 @@ class TestBuild(object):
         assert m.fs.config.dynamic is True
         assert m.fs.config.time is m.s
         assert not hasattr(m.fs, "time")
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_external_time_invalid(self):
         m = ConcreteModel()
         m.s = Set(initialize=[4, 5])
@@ -251,6 +278,7 @@ class TestBuild(object):
                     "dynamic": True,
                     "time": m.s})
 
+    @pytest.mark.unit
     def test_ss_external_time_and_time_set(self):
         # Should ignore time set
         m = ConcreteModel()
@@ -263,7 +291,9 @@ class TestBuild(object):
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
         assert not hasattr(m.fs, "time")
+        assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_external_time_and_time_set(self):
         # Should ignore time set
         m = ConcreteModel()
@@ -276,10 +306,39 @@ class TestBuild(object):
         assert m.fs.config.dynamic is True
         assert m.fs.config.time is m.s
         assert not hasattr(m.fs, "time")
+        assert m.fs.time_units is None
+
+    def testtime_units_ss(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={
+                "dynamic": False,
+                "time_units": units.s})
+
+        assert m.fs.time_units is units.s
+
+    def testtime_units_dynamic(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={
+                "dynamic": True,
+                "time_units": units.s})
+
+        assert m.fs.time_units is units.s
+
+    def testtime_units_external(self):
+        # Should ignore time set
+        m = ConcreteModel()
+        m.s = ContinuousSet(initialize=[4, 5])
+        m.fs = FlowsheetBlock(default={
+                "dynamic": True,
+                "time": m.s,
+                "time_units": units.s})
+
+        assert m.fs.time_units is units.s
 
 
 class TestSubFlowsheetBuild(object):
     # Test that build method works with nested flowsheets
+    @pytest.mark.unit
     def test_flowsheet(self):
         # With nested flowsheet, flowsheet should return parent
         m = ConcreteModel()
@@ -288,6 +347,7 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.flowsheet() is m.fs
 
+    @pytest.mark.unit
     def test_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock()
@@ -295,7 +355,9 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is False
         assert m.fs.sub.config.time is m.fs.config.time
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test_parent_dynamic_inherit(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True})
@@ -303,7 +365,9 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is True
         assert m.fs.sub.config.time is m.fs.config.time
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test_both_dynamic(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True})
@@ -311,7 +375,9 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is True
         assert m.fs.sub.config.time is m.fs.config.time
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test_ss_in_dynamic(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True})
@@ -319,13 +385,16 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is False
         assert m.fs.sub.config.time is m.fs.config.time
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_in_ss(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         with pytest.raises(DynamicError):
             m.fs.sub = FlowsheetBlock(default={"dynamic": True})
 
+    @pytest.mark.unit
     def test_ss_external_time(self):
         m = ConcreteModel()
         m.s = Set(initialize=[4, 5])
@@ -334,7 +403,9 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is False
         assert m.fs.sub.config.time is m.s
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test__dynamic_external_time(self):
         m = ConcreteModel()
         m.s = ContinuousSet(initialize=[4, 5])
@@ -343,7 +414,9 @@ class TestSubFlowsheetBuild(object):
 
         assert m.fs.sub.config.dynamic is True
         assert m.fs.sub.config.time is m.s
+        assert m.fs.sub.time_units is None
 
+    @pytest.mark.unit
     def test_dynamic_external_time_invalid(self):
         m = ConcreteModel()
         m.s = Set(initialize=[4, 5])
@@ -351,8 +424,18 @@ class TestSubFlowsheetBuild(object):
         with pytest.raises(DynamicError):
             m.fs.sub = FlowsheetBlock(default={"dynamic": True, "time": m.s})
 
+    def testtime_units_inherit(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": units.s})
+        # Set differnt time units here to make sure they are ignored
+        m.fs.sub = FlowsheetBlock(default={"time_units": units.min})
+
+        # Time should come from parent, not local settings
+        assert m.fs.sub.time_units is units.s
+
 
 class TestOther(object):
+    @pytest.mark.unit
     def test_costing(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -362,6 +445,7 @@ class TestOther(object):
         assert isinstance(m.fs.costing.CE_index, Param)
         assert m.fs.costing.CE_index.value == 671.1
 
+    @pytest.mark.unit
     def test_model_checks(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -375,11 +459,13 @@ class TestOther(object):
 
 
 class TestVisualisation(object):
+    @pytest.mark.unit
     def test_report_empty(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.report()
 
+    @pytest.mark.unit
     def test_get_stream_table_contents(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})

@@ -20,10 +20,12 @@ from idaes.surrogate import alamopy
 import math
 import examples
 import numpy as np
+import pytest
 
 
 
 
+@pytest.mark.unit
 def test_multiple_input():
 
     if not alamopy.has_alamo():
@@ -53,6 +55,7 @@ def test_multiple_input():
 
     res = alamopy.doalamo(x, z)
 
+@pytest.mark.unit
 def test_single_input_CV():
 
     if not alamopy.has_alamo():

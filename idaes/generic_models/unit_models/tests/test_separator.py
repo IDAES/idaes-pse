@@ -86,6 +86,7 @@ class TestBaseConstruction(object):
 
         return m
 
+    @pytest.mark.unit
     def test_separator_config(self, build):
         assert len(build.fs.sep.config) == 14
         assert build.fs.sep.config.dynamic is False
@@ -105,6 +106,7 @@ class TestBaseConstruction(object):
             MaterialBalanceType.useDefault
         assert build.fs.sep.config.has_phase_equilibrium is False
 
+    @pytest.mark.unit
     def test_validate_config_arguments(self, build):
         build.fs.sep.config.has_phase_equilibrium = True
         build.fs.sep.config.ideal_separation = True
@@ -112,6 +114,7 @@ class TestBaseConstruction(object):
         with pytest.raises(ConfigurationError):
             build.fs.sep._validate_config_arguments()
 
+    @pytest.mark.unit
     def test_create_outlet_list_default(self, build):
         build.fs.sep._get_property_package()
         build.fs.sep._get_indexing_sets()
@@ -121,6 +124,7 @@ class TestBaseConstruction(object):
         for o in outlet_list:
             assert o in ["outlet_1", "outlet_2"]
 
+    @pytest.mark.unit
     def test_create_outlet_list_outlet_list(self, build):
         build.fs.sep.config.outlet_list = ["foo", "bar"]
 
@@ -132,6 +136,7 @@ class TestBaseConstruction(object):
         for o in outlet_list:
             assert o in ["foo", "bar"]
 
+    @pytest.mark.unit
     def test_create_outlet_list_num_outlets(self, build):
         build.fs.sep.config.num_outlets = 3
 
@@ -143,6 +148,7 @@ class TestBaseConstruction(object):
         for o in outlet_list:
             assert o in ["outlet_1", "outlet_2", "outlet_3"]
 
+    @pytest.mark.unit
     def test_create_outlet_list_both_args_consistent(self, build):
         build.fs.sep.config.outlet_list = ["foo", "bar"]
         build.fs.sep.config.num_outlets = 2
@@ -155,6 +161,7 @@ class TestBaseConstruction(object):
         for o in outlet_list:
             assert o in ["foo", "bar"]
 
+    @pytest.mark.unit
     def test_create_outlet_list_both_args_inconsistent(self, build):
         build.fs.sep.config.outlet_list = ["foo", "bar"]
         build.fs.sep.config.num_outlets = 3
@@ -165,6 +172,7 @@ class TestBaseConstruction(object):
         with pytest.raises(ConfigurationError):
             build.fs.sep.create_outlet_list()
 
+    @pytest.mark.unit
     def test_add_outlet_state_blocks(self, build):
         build.fs.sep.config.outlet_list = ["foo", "bar"]
 
@@ -185,6 +193,7 @@ class TestBaseConstruction(object):
             assert o[0].config.defined_state is False
             assert len(o[0].config) == 3
 
+    @pytest.mark.unit
     def test_add_outlet_state_blocks_prop_pack_args(self, build):
         build.fs.sep.config.property_package_args = {"test": 1}
         build.fs.sep.config.outlet_list = ["foo", "bar"]
@@ -207,6 +216,7 @@ class TestBaseConstruction(object):
             assert len(o[0].config) == 4
             assert o[0].config.test == 1
 
+    @pytest.mark.unit
     def test_add_mixed_state_block(self, build):
         build.fs.sep._get_property_package()
         build.fs.sep._get_indexing_sets()
@@ -219,6 +229,7 @@ class TestBaseConstruction(object):
         assert build.fs.sep.mixed_state[0].config.defined_state
         assert len(build.fs.sep.mixed_state[0].config) == 3
 
+    @pytest.mark.unit
     def test_add_mixed_state_block_prop_pack_args(self, build):
         build.fs.sep.config.property_package_args = {"test": 1}
 
@@ -234,6 +245,7 @@ class TestBaseConstruction(object):
         assert len(build.fs.sep.mixed_state[0].config) == 4
         assert build.fs.sep.mixed_state[0].config.test == 1
 
+    @pytest.mark.unit
     def test_get_mixed_state_block(self, build):
         build.fs.sb = TestStateBlock(build.fs.time,
                                      default={"parameters": build.fs.pp})
@@ -247,6 +259,7 @@ class TestBaseConstruction(object):
 
         assert mixed_block == build.fs.sb
 
+    @pytest.mark.unit
     def test_get_mixed_state_block_none(self, build):
         build.fs.sep._get_property_package()
         build.fs.sep._get_indexing_sets()
@@ -254,6 +267,7 @@ class TestBaseConstruction(object):
         with pytest.raises(BurntToast):
             build.fs.sep.get_mixed_state_block()
 
+    @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, build):
         build.fs.sb = TestStateBlock(build.fs.time,
                                      default={"parameters": build.fs.pp})
@@ -291,6 +305,7 @@ class TestSplitConstruction(object):
 
         return m
 
+    @pytest.mark.unit
     def test_add_split_fractions_total(self, build):
         build.fs.sep.add_split_fractions(build.outlet_list)
 
@@ -301,6 +316,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 1
 
+    @pytest.mark.unit
     def test_add_split_fractions_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
@@ -319,6 +335,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
 
+    @pytest.mark.unit
     def test_add_split_fractions_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
@@ -337,6 +354,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
 
+    @pytest.mark.unit
     def test_add_split_fractions_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
 
@@ -356,6 +374,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_no_equil(self, build):
         build.fs.sep.add_split_fractions(build.outlet_list)
 
@@ -366,6 +385,7 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_no_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
@@ -378,6 +398,7 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_component_no_equil(self,
                                                                       build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
@@ -391,6 +412,7 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_component_no_equil(
             self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
@@ -404,6 +426,7 @@ class TestSplitConstruction(object):
         assert len(build.fs.sep.material_splitting_eqn) == 8
         assert not hasattr(build.fs.sep, "phase_equilibrium_generation")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_equil(self, build):
         build.fs.sep.config.has_phase_equilibrium = True
 
@@ -417,6 +440,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.has_phase_equilibrium = True
@@ -431,6 +455,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_component_equil(self,
                                                                    build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
@@ -446,6 +471,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_phase_component_equil(
             self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
@@ -461,6 +487,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.phase_equilibrium_generation, Var)
         assert len(build.fs.sep.phase_equilibrium_generation) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_total(self, build):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.componentTotal
@@ -473,6 +500,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = \
@@ -486,6 +514,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = \
@@ -499,6 +528,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_tc_phase_component(self,
                                                                    build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
@@ -513,6 +543,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 4
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
@@ -524,6 +555,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
@@ -536,6 +568,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
@@ -548,6 +581,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_t_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
@@ -560,6 +594,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.material_splitting_eqn, Constraint)
         assert len(build.fs.sep.material_splitting_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_te_total(self, build):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.elementTotal
@@ -570,6 +605,7 @@ class TestSplitConstruction(object):
             build.fs.sep.add_material_splitting_constraints(
                     build.fs.sep.mixed_state)
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
@@ -580,6 +616,7 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
@@ -591,6 +628,7 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
@@ -602,6 +640,7 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
+    @pytest.mark.unit
     def test_add_material_splitting_constraints_none_phase_component(self,
                                                                      build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
@@ -614,6 +653,7 @@ class TestSplitConstruction(object):
 
         assert not hasattr(build.fs.sep, "material_splitting_eqn")
 
+    @pytest.mark.unit
     def test_add_energy_splitting_constraints(self, build):
         assert(build.fs.sep.config.energy_split_basis ==
                EnergySplittingType.equal_temperature)
@@ -625,6 +665,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.temperature_equality_eqn, Constraint)
         assert len(build.fs.sep.temperature_equality_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_energy_splitting_constraints_enthalpy(self, build):
         build.fs.sep.config.energy_split_basis = \
             EnergySplittingType.equal_molar_enthalpy
@@ -638,6 +679,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.molar_enthalpy_equality_eqn, Constraint)
         assert len(build.fs.sep.molar_enthalpy_equality_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
         build.fs.sep.add_split_fractions(build.outlet_list)
         build.fs.sep.add_momentum_splitting_constraints(
@@ -646,11 +688,13 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.pressure_equality_eqn, Constraint)
         assert len(build.fs.sep.pressure_equality_eqn) == 2
 
+    @pytest.mark.unit
     def test_add_inlet_port_objects(self, build):
         build.fs.sep.add_inlet_port_objects(build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.inlet, Port)
 
+    @pytest.mark.unit
     def test_add_inlet_port_objects_construct_ports_False(self, build):
         build.fs.sep.config.construct_ports = False
 
@@ -658,6 +702,7 @@ class TestSplitConstruction(object):
 
         assert hasattr(build.fs.sep, "inlet") is False
 
+    @pytest.mark.unit
     def test_add_outlet_port_objects(self, build):
         build.fs.sep.add_outlet_port_objects(build.outlet_list,
                                              build.outlet_blocks)
@@ -665,6 +710,7 @@ class TestSplitConstruction(object):
         assert isinstance(build.fs.sep.outlet_1, Port)
         assert isinstance(build.fs.sep.outlet_2, Port)
 
+    @pytest.mark.unit
     def test_add_outlet_port_objects_construct_ports_False(self, build):
         build.fs.sep.config.construct_ports = False
 
@@ -695,6 +741,7 @@ class TestSaponification(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
 
         assert hasattr(sapon.fs.unit, "inlet")
@@ -731,6 +778,7 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 25
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
         sapon.fs.unit.inlet.flow_vol.fix(1)
         sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -750,11 +798,13 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -766,6 +816,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, sapon):
         assert (pytest.approx(0.3, abs=1e-5) ==
                 value(sapon.fs.unit.a.flow_vol[0]))
@@ -821,6 +872,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, sapon):
         assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
                          sapon.fs.unit.a.flow_vol[0] -
@@ -864,6 +916,7 @@ class TestSaponification(object):
                   sapon.fs.properties.temperature_ref)))) <= 1e-3
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
@@ -890,6 +943,7 @@ class TestBTXIdeal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
@@ -918,6 +972,7 @@ class TestBTXIdeal(object):
         assert number_total_constraints(btx) == 52
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(368)  # K
@@ -932,6 +987,7 @@ class TestBTXIdeal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialiszation(self, btx):
         # Default initialization will fail as it cannot handle total
         # flow with a phase split.
@@ -983,6 +1039,7 @@ class TestBTXIdeal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -994,6 +1051,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(0.438, abs=1e-3) ==
                 value(btx.fs.unit.outlet_1.flow_mol[0]))
@@ -1020,6 +1078,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet_1.flow_mol[0] -
@@ -1056,6 +1115,7 @@ class TestBTXIdeal(object):
             btx.fs.unit.outlet_2_state[0].enth_mol_phase["Liq"])) <= 1e-1
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -1083,6 +1143,7 @@ class TestIAPWS(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet.vars) == 3
         assert hasattr(iapws.fs.unit.inlet, "flow_mol")
@@ -1113,6 +1174,7 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
         iapws.fs.unit.inlet.flow_mol[0].fix(100)
         iapws.fs.unit.inlet.enth_mol[0].fix(4000)
@@ -1127,6 +1189,7 @@ class TestIAPWS(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -1138,6 +1201,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, iapws):
         assert pytest.approx(40, abs=1e-3) == \
             value(iapws.fs.unit.outlet_1.flow_mol[0])
@@ -1163,6 +1227,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, iapws):
         assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
                          iapws.fs.unit.outlet_1.flow_mol[0] -
@@ -1179,6 +1244,7 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet_3.enth_mol[0])) <= 1e-2
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()
 
@@ -1298,6 +1364,7 @@ class IdealTestBlockData(StateBlockData):
 # Tests of Separator unit model ideal construction methods
 @pytest.mark.build
 class TestIdealConstruction(object):
+    @pytest.mark.unit
     def test_phase_component(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1355,6 +1422,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.temperature[0]) == 300
         assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
 
+    @pytest.mark.unit
     def test_phase(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1394,6 +1462,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
+    @pytest.mark.unit
     def test_component(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1433,6 +1502,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
+    @pytest.mark.unit
     def test_ideal_w_no_ports(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1457,6 +1527,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_ideal_w_total_flow(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1480,6 +1551,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_ideal_w_no_split_map(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1501,6 +1573,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_phase_component_mismatch(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1524,6 +1597,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_component_mismatch(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1549,6 +1623,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_phase_mismatch(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1574,6 +1649,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_split_map_mismatch(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1599,6 +1675,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_mole_frac_w_component_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1626,6 +1703,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 1
 
+    @pytest.mark.unit
     def test_mole_frac_w_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1653,6 +1731,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 0.5
         assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 0.3
 
+    @pytest.mark.unit
     def test_mole_frac_w_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1686,6 +1765,7 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c2"]) == 1
 
+    @pytest.mark.unit
     def test_mole_frac_w_phase_split_no_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1713,6 +1793,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_mole_frac_phase_w_component_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1755,6 +1836,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
+    @pytest.mark.unit
     def test_mole_frac_phase_w_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1796,6 +1878,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
 
+    @pytest.mark.unit
     def test_mole_frac_phase_w_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1857,6 +1940,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
+    @pytest.mark.unit
     def test_flow_phase_comp_w_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1919,6 +2003,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_phase_comp_w_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -1961,6 +2046,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_phase_comp_w_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2003,6 +2089,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_phase_comp[0, "p2", "c2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2049,6 +2136,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.flow_mol_phase[0, "p2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_phase_w_phase_comp_split_no_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2078,6 +2166,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_flow_phase_w_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2112,6 +2201,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 6
 
+    @pytest.mark.unit
     def test_flow_phase_w_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2146,6 +2236,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_phase[0, "p2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_phase_w_comp_split_no_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2173,6 +2264,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2219,6 +2311,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.flow_mol_comp[0, "c2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_comp_w_phase_comp_split_no_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2248,6 +2341,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_flow_comp_w_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2282,6 +2376,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 4
 
+    @pytest.mark.unit
     def test_flow_comp_w_phase_split_no_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2309,6 +2404,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_flow_comp_w_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2343,6 +2439,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.flow_mol_comp[0, "c2"]) == 8
 
+    @pytest.mark.unit
     def test_t_p(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2377,6 +2474,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.pressure[0]) == 1e5
 
+    @pytest.mark.unit
     def test_general_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2407,6 +2505,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.test_var[0]) == 3000
 
+    @pytest.mark.unit
     def test_general_comp_split_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2439,6 +2538,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.test_var[0]) == 16000
 
+    @pytest.mark.unit
     def test_general_comp_split_fallback_fail(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2468,6 +2568,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_general_phase_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2498,6 +2599,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.test_var[0]) == 5000
 
+    @pytest.mark.unit
     def test_general_phase_split_fallback(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2530,6 +2632,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.test_var[0]) == 17000
 
+    @pytest.mark.unit
     def test_general_phase_split_fallback_fail(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2559,6 +2662,7 @@ class TestIdealConstruction(object):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
 
+    @pytest.mark.unit
     def test_general_phase_comp_split(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2594,6 +2698,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.test_var[0]) == 9000
 
+    @pytest.mark.unit
     def test_general_phase_comp_split_fallback_fail(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -2645,6 +2750,7 @@ class TestBTX_Ideal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
@@ -2671,6 +2777,7 @@ class TestBTX_Ideal(object):
         assert number_total_constraints(btx) == 12
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(368)  # K
@@ -2683,6 +2790,7 @@ class TestBTX_Ideal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialiszation(self, btx):
         btx.fs.unit.initialize()
 
@@ -2713,6 +2821,7 @@ class TestBTX_Ideal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -2724,6 +2833,7 @@ class TestBTX_Ideal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(0.396, abs=1e-3) ==
                 value(btx.fs.unit.outlet_1.flow_mol[0]))
@@ -2750,6 +2860,7 @@ class TestBTX_Ideal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet_1.flow_mol[0] -
@@ -2774,5 +2885,6 @@ class TestBTX_Ideal(object):
         # Assume energy conservation is covered by control volume tests
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()

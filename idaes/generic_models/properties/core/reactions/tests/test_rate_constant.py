@@ -57,6 +57,7 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_arrhenius(model):
     model.rparams.config.rate_reactions.r1.parameter_data = {
         "arrhenius_const": 1,

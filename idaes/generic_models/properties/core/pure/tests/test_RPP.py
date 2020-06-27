@@ -69,6 +69,7 @@ def frame():
     return m
 
 
+@pytest.mark.unit
 def test_cp_mol_ig_comp(frame):
     cp_mol_ig_comp.build_parameters(frame.params)
 
@@ -80,6 +81,7 @@ def test_cp_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(34.467, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
 
@@ -91,6 +93,7 @@ def test_enth_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(-237522.824, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
 
@@ -102,6 +105,7 @@ def test_entr_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(201.780, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_pressure_sat_comp(frame):
     pressure_sat_comp.build_parameters(frame.params)
 
@@ -113,6 +117,7 @@ def test_pressure_sat_comp(frame):
     assert value(expr) == pytest.approx(101378, rel=1e-4)
 
 
+@pytest.mark.unit
 def test_pressure_sat_comp_dT(frame):
     pressure_sat_comp.build_parameters(frame.params)
 

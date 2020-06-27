@@ -13,8 +13,10 @@
 from pyomo.core.expr.numeric_expr import MonomialTermExpression
 from idaes.apps.matopt.opt.pyomo_modeling import getLB, getUB
 from pyomo.environ import *
+import pytest
 
 
+@pytest.mark.unit
 def test_getLB():
     mod = ConcreteModel()
     mod.x = Var(within=NonNegativeReals, bounds=(0, 2), initialize=1)
@@ -23,6 +25,7 @@ def test_getLB():
     LB = getLB(mod.e)
 
 
+@pytest.mark.unit
 def test_getUB():
     mod = ConcreteModel()
     mod.x = Var(within=NonNegativeReals, bounds=(0, 2), initialize=1)

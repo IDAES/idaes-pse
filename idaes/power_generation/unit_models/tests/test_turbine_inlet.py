@@ -53,12 +53,14 @@ def build_turbine_dyn():
         "property_package": m.fs.properties})
     return m
 
+@pytest.mark.unit
 def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
     m = build_turbine
@@ -77,6 +79,7 @@ def test_initialize(build_turbine):
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_initialize_dyn(build_turbine_dyn):
     """Initialize a turbine model"""
     m = build_turbine_dyn
@@ -95,6 +98,7 @@ def test_initialize_dyn(build_turbine_dyn):
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.unit
 def test_report(build_turbine):
     m = build_turbine
     m.fs.turb.report()

@@ -5,8 +5,7 @@ Logging
   :noindex:
 
 IDAES provides some logging extensions to provide finer control over information
-logging and to allow solver output to be logged.
-
+logging and to allow solver output to be logged. Logging can be a useful tool for debugging.
 
 Getting Loggers
 ---------------

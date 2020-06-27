@@ -29,6 +29,7 @@ from idaes.generic_models.unit_models.separator import Separator, SplittingType
 from idaes.generic_models.properties.interrogator import PropertyInterrogatorBlock
 
 
+@pytest.mark.unit
 def test_interrogator_parameter_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -40,6 +41,7 @@ def test_interrogator_parameter_block():
     assert len(m.fs.params.required_properties) == 0
 
 
+@pytest.mark.unit
 def test_interrogator_state_block_methods():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -66,6 +68,7 @@ def test_interrogator_state_block_methods():
             "energy density terms": ["fs.props"]}
 
 
+@pytest.mark.unit
 def test_interrogator_state_block_unindexed_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -87,6 +90,7 @@ def test_interrogator_state_block_unindexed_call():
             "prop_unindexed": ["fs.props"]}
 
 
+@pytest.mark.unit
 def test_interrogator_state_block_phase_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -106,6 +110,7 @@ def test_interrogator_state_block_phase_call():
             "prop_phase": ["fs.props"]}
 
 
+@pytest.mark.unit
 def test_interrogator_state_block_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -125,6 +130,7 @@ def test_interrogator_state_block_comp_call():
             "prop_comp": ["fs.props"]}
 
 
+@pytest.mark.unit
 def test_interrogator_state_block_phase_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -144,6 +150,7 @@ def test_interrogator_state_block_phase_comp_call():
             "prop_phase_comp": ["fs.props"]}
 
 
+@pytest.mark.unit
 def test_interrogator_report_method():
     # Display method should return an TypeError
     m = ConcreteModel()
@@ -160,6 +167,7 @@ def test_interrogator_report_method():
         m.fs.props.report()
 
 
+@pytest.mark.unit
 def test_interrogator_initialize_method():
     # Initialize method should return an TypeError
     m = ConcreteModel()
@@ -197,6 +205,7 @@ def model():
     return m
 
 
+@pytest.mark.component
 def test_interrogate_flowsheet(model):
     assert model.fs.params.required_properties == {
             "material flow terms": ["fs.P01", "fs.HX02", "fs.F03"],
@@ -208,6 +217,7 @@ def test_interrogate_flowsheet(model):
             "entr_mol": ["fs.P01"]}
 
 
+@pytest.mark.component
 def test_list_required_properties(model):
     prop_list = model.fs.params.list_required_properties()
 
@@ -220,6 +230,7 @@ def test_list_required_properties(model):
                          "temperature"]
 
 
+@pytest.mark.unit
 def test_list_models_requiring_property(model):
     for k in model.fs.params.required_properties.keys():
         model_list = model.fs.params.list_models_requiring_property(k)
@@ -234,6 +245,7 @@ def test_list_models_requiring_property(model):
             assert model_list == ["fs.P01", "fs.HX02", "fs.F03"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_by_name(model):
     prop_list = model.fs.params.list_properties_required_by_model("fs.P01")
     assert prop_list == ["material density terms",
@@ -244,6 +256,7 @@ def test_list_properties_required_by_model_by_name(model):
                          "entr_mol"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_by_object(model):
     prop_list = model.fs.params.list_properties_required_by_model(
             model.fs.P01)
@@ -255,11 +268,13 @@ def test_list_properties_required_by_model_by_object(model):
                          "entr_mol"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_invalid_model(model):
     with pytest.raises(ValueError):
         model.fs.params.list_properties_required_by_model("foo")
 
 
+@pytest.mark.unit
 def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
 
@@ -283,6 +298,7 @@ reported here.
 """
 
 
+@pytest.mark.unit
 def test_print_models_requiring_property(model, capsys):
     model.fs.params.print_models_requiring_property("pressure")
 
@@ -295,6 +311,7 @@ The following models in the Flowsheet require pressure:
 """
 
 
+@pytest.mark.unit
 def test_print_properties_reqruied_by_model(model, capsys):
     model.fs.params.print_properties_required_by_model("fs.P01")
 
@@ -313,6 +330,7 @@ The following properties are required by model fs.P01:
 # =============================================================================
 # Extra checks to make sure Interrogator works with all Separator options
 # All that really matters here is that these run, but do asserts anyway
+@pytest.mark.unit
 def test_Separator_1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -334,6 +352,7 @@ def test_Separator_1():
                      "temperature"]
 
 
+@pytest.mark.unit
 def test_Separator_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -355,6 +374,7 @@ def test_Separator_2():
                      "temperature"]
 
 
+@pytest.mark.unit
 def test_Separator_3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -376,6 +396,7 @@ def test_Separator_3():
                      "temperature"]
 
 
+@pytest.mark.unit
 def test_ideal_Separator_1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -397,6 +418,7 @@ def test_ideal_Separator_1():
     assert len(m.fs.params.required_properties) == 0
 
 
+@pytest.mark.unit
 def test_ideal_Separator_2():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -416,6 +438,7 @@ def test_ideal_Separator_2():
     assert len(m.fs.params.required_properties) == 0
 
 
+@pytest.mark.unit
 def test_ideal_Separator_3():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

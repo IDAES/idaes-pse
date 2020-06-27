@@ -85,7 +85,9 @@ class HelmPumpData(BalanceBlockData):
         super().build() # Basic unit model build/read config
         config = self.config # shorter config pointer
 
-        # Thermo dynamic expression writer
+        # The thermodynamic expression writer object, te, writes expressions
+        # including external function calls to calculate thermodynamic quantities
+        # from a set of state variables.
         _assert_properties(config.property_package)
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
@@ -104,14 +106,21 @@ class HelmPumpData(BalanceBlockData):
         pratio.fix()
 
         # Some shorter refernces to property blocks
-        prp_i = self.control_volume.properties_in
-        prp_o = self.control_volume.properties_out
+        properties_in = self.control_volume.properties_in
+        properties_out = self.control_volume.properties_out
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Thermodynamic work"
+        )
         def work_fluid(b, t):
-            return prp_o[t].flow_vol*(prp_o[t].pressure - prp_i[t].pressure)
+            return properties_out[t].flow_vol*(properties_out[t].pressure -
+                properties_in[t].pressure)
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Work required to drive the pump."
+        )
         def shaft_work(b, t): # Early access to the outlet enthalpy and work
             return self.work_fluid[t]/eff[t]
 
@@ -121,7 +130,8 @@ class HelmPumpData(BalanceBlockData):
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_pressure_ratio(b, t):
-            return pratio[t]*prp_i[t].pressure == prp_o[t].pressure
+            return (pratio[t]*properties_in[t].pressure ==
+                properties_out[t].pressure)
 
 
     def initialize(

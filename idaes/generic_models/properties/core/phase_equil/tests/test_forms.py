@@ -20,6 +20,7 @@ from idaes.generic_models.properties.core.generic.generic_property import \
 from idaes.generic_models.properties.core.state_definitions import FTPx
 
 from idaes.generic_models.properties.core.phase_equil.forms import *
+import pytest
 
 
 # Dummy EoS to use for fugacity calls
@@ -37,6 +38,7 @@ class DummyEoS(object):
         return 42*b.x[p, j]
 
 
+@pytest.mark.unit
 def test_fugacity():
     m = ConcreteModel()
 
@@ -60,6 +62,7 @@ def test_fugacity():
         m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
 
 
+@pytest.mark.unit
 def test_log_fugacity():
     m = ConcreteModel()
 

@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            TerminationCondition,
                            SolverStatus,
+                           units,
                            value,
                            Var)
 
@@ -49,8 +50,6 @@ from idaes.generic_models.properties.examples.saponification_thermo import \
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -64,11 +63,13 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_ThermodynamicAssumption():
     assert len(ThermodynamicAssumption) == 4
 
 
 class TestPressureChanger(object):
+    @pytest.mark.unit
     def test_config(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -93,9 +94,10 @@ class TestPressureChanger(object):
             ThermodynamicAssumption.isothermal
         assert m.fs.unit.config.property_package is m.fs.properties
 
+    @pytest.mark.unit
     def test_dynamic_build(self):
         m = ConcreteModel()
-        m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": units.s})
 
         m.fs.properties = PhysicalParameterTestBlock()
 
@@ -104,6 +106,7 @@ class TestPressureChanger(object):
 
         assert hasattr(m.fs.unit, "volume")
 
+    @pytest.mark.unit
     def test_pump(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -116,6 +119,7 @@ class TestPressureChanger(object):
 
         assert isinstance(m.fs.unit.fluid_work_calculation, Constraint)
 
+    @pytest.mark.unit
     def test_adiabatic(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -128,6 +132,7 @@ class TestPressureChanger(object):
 
         assert isinstance(m.fs.unit.adiabatic, Constraint)
 
+    @pytest.mark.unit
     def test_isentropic_comp_phase_balances(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -142,6 +147,7 @@ class TestPressureChanger(object):
         assert isinstance(m.fs.unit.state_material_balances, Constraint)
         assert len(m.fs.unit.state_material_balances) == 4
 
+    @pytest.mark.unit
     def test_isentropic_comp_total_balances(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -156,6 +162,7 @@ class TestPressureChanger(object):
         assert isinstance(m.fs.unit.state_material_balances, Constraint)
         assert len(m.fs.unit.state_material_balances) == 2
 
+    @pytest.mark.unit
     def test_isentropic_total_balances(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -168,6 +175,7 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.total})
 
+    @pytest.mark.unit
     def test_isentropic_total_element_balances(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -180,6 +188,7 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.elementTotal})
 
+    @pytest.mark.unit
     def test_isentropic_material_balances_none(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -209,6 +218,7 @@ class TestBTX_isothermal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
@@ -233,6 +243,7 @@ class TestBTX_isothermal(object):
         assert number_total_constraints(btx) == 19
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(365)  # K
@@ -247,11 +258,13 @@ class TestBTX_isothermal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -263,6 +276,7 @@ class TestBTX_isothermal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.outlet.flow_mol[0]))
@@ -276,6 +290,7 @@ class TestBTX_isothermal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
@@ -287,6 +302,7 @@ class TestBTX_isothermal(object):
                     .enth_mol_phase['Liq'])) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -325,6 +341,7 @@ class TestIAPWS(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet.vars) == 3
         assert hasattr(iapws.fs.unit.inlet, "flow_mol")
@@ -356,6 +373,7 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 9
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
         iapws.fs.unit.inlet.flow_mol[0].fix(100)
         iapws.fs.unit.inlet.enth_mol[0].fix(4000)
@@ -369,11 +387,13 @@ class TestIAPWS(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -385,6 +405,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, iapws):
         # Check that outlet and isentropic pressure are equal
         assert pytest.approx(
@@ -421,6 +442,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, iapws):
         assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
                          iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
@@ -434,6 +456,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_verify(self, iapws_turb):
         iapws=iapws_turb
         # Verify the turbine results against 3 known test cases
@@ -492,6 +515,7 @@ class TestIAPWS(object):
 
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()
 
@@ -513,6 +537,7 @@ class TestSaponification(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
         assert len(sapon.fs.unit.inlet.vars) == 4
         assert hasattr(sapon.fs.unit.inlet, "flow_vol")
@@ -540,6 +565,7 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 11
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
         sapon.fs.unit.inlet.flow_vol[0].fix(1e-3)
         sapon.fs.unit.inlet.temperature[0].fix(320)
@@ -558,11 +584,13 @@ class TestSaponification(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -574,6 +602,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, sapon):
         assert pytest.approx(1e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet.flow_vol[0])
@@ -603,6 +632,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, sapon):
         assert abs(value(
                 sapon.fs.unit.outlet.flow_vol[0] *
@@ -612,10 +642,12 @@ class TestSaponification(object):
                 sapon.fs.unit.work_mechanical[0])) <= 1e-4
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
 class TestTurbine(object):
+    @pytest.mark.unit
     def test_config(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -643,6 +675,7 @@ class TestTurbine(object):
 
 
 class TestCompressor(object):
+    @pytest.mark.unit
     def test_config(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -670,6 +703,7 @@ class TestCompressor(object):
 
 
 class TestPump(object):
+    @pytest.mark.unit
     def test_config(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -700,6 +734,7 @@ class TestPump(object):
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 class Test_costing(object):
+    @pytest.mark.unit
     def test_pump(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -738,6 +773,7 @@ class Test_costing(object):
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(70141.395, 1e-5)
 
+    @pytest.mark.unit
     def test_compressor(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -764,6 +800,7 @@ class Test_costing(object):
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(334540.7, 1e-5)
 
+    @pytest.mark.unit
     def test_turbine(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
