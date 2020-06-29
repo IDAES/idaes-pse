@@ -24,6 +24,8 @@ from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
 from pyomo.dae.set_utils import is_explicitly_indexed_by, get_index_set_except
+from pyomo.dae.initialization import (solve_consistent_initial_conditions,
+        get_inconsistent_initial_conditions)
 from pyomo.opt.solver import SystemCallSolver
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
@@ -238,6 +240,7 @@ class NMPCSim(DynamicBase):
                 )
             )
 
+
     @classmethod
     def get_namespace_name(cls):
         return '_NMPC_NAMESPACE'
@@ -296,7 +299,7 @@ class NMPCSim(DynamicBase):
 
         init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
 
-        self.solve_initial_conditions(self.plant)
+#        self.solve_initial_conditions(self.plant)
         # TODO: move into own function
         #       possibly a DAE utility
         #       - check for consistency of initial conditions
@@ -325,27 +328,27 @@ class NMPCSim(DynamicBase):
 
         self.validate_fixedness(self.plant, self.controller)
 
-# TODO: remove. Place in solve_initial_conditions method if it exists.
-#       If desired ('strict mode') check for consistency.
-#####################
-        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
-                            self.controller_time.first(),
-                            self.plant_time.first())
-
-        # Should strip bounds before this IC solve, since the controller
-        # model should have bounds
-        self.strip_controller_bounds = TransformationFactory(
-                                       'contrib.strip_var_bounds')
-        self.strip_controller_bounds.apply_to(self.controller, reversible=True)
-
-        # Controller model has already been categorized... No need 
-        # to provide init_controller_inputs
-        self.solve_initial_conditions(self.controller)
-        self.strip_controller_bounds.revert(self.controller)
-        # TODO: Should not be solving initial conditions of the controller
-        # They will be overridden by steady state solve
-#####################
+## TODO: remove. Place in solve_initial_conditions method if it exists.
+##       If desired ('strict mode') check for consistency.
+######################
+#        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
+#                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
+#                            self.controller_time.first(),
+#                            self.plant_time.first())
+#
+#        # Should strip bounds before this IC solve, since the controller
+#        # model should have bounds
+#        self.strip_controller_bounds = TransformationFactory(
+#                                       'contrib.strip_var_bounds')
+#        self.strip_controller_bounds.apply_to(self.controller, reversible=True)
+#
+#        # Controller model has already been categorized... No need 
+#        # to provide init_controller_inputs
+#        self.solve_initial_conditions(self.controller)
+#        self.strip_controller_bounds.revert(self.controller)
+#        # TODO: Should not be solving initial conditions of the controller
+#        # They will be overridden by steady state solve
+######################
 
         self.sample_time = self.config.sample_time
         self.validate_sample_time(self.sample_time, 
@@ -754,119 +757,167 @@ class NMPCSim(DynamicBase):
                             plant_sample,
                             t_controller)
 
-
-    def solve_initial_conditions(self, model, **kwargs):
-        """Function to solve for consistent initial conditions in
-        the provided flowsheet model.
-
-        Args:
-            model : Flowsheet model whose initial conditions are solved
-
+    def has_consistent_initial_conditions(self, model, **kwargs):
         """
-        # Later include option to skip solve for consistent initial conditions
-        #
-        # Will only work as written for "True" initial conditions since 
-        # it doesn't try to deactivate discretization equations or fix
-        # derivative/differential variables.
-
+        Finds constraints at time.first() that are violated by more than
+        tolerance. Returns True if any are found.
+        """
+        # This will raise an error if any constraints at t0 cannot be
+        # evaluated, i.e. conatain a variable of value None.
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
         config = self.config(kwargs)
+        tolerance = config.tolerance
+        inconsistent = get_inconsistent_initial_conditions(
+                model, 
+                time, 
+                tol=tolerance,
+                suppress_warnings=True)
+        return not inconsistent
 
-        # TODO: activity_dict should be a ComponentMap
-        was_originally_active = get_activity_dict(model)
-        solver = config.solver
+    def solve_consistent_initial_conditions(self, model, **kwargs):
+        """
+        Uses pyomo.dae.initialization solve_consistent_initial_conditions
+        function to solve for consistent initial conditions. Inputs are
+        fixed at time.first() in attempt to eliminate degrees of freedom.
+        """
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
+        config = self.config(kwargs)
         outlvl = config.outlvl
-        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        solver = config.solver
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
-
-        toplevel = model.model()
-        time = model._NMPC_NAMESPACE.get_time()
         t0 = time.first()
 
-        non_initial_time = [t for t in time]
-        non_initial_time.remove(t0)
-        deactivated = deactivate_model_at(model, time, non_initial_time,
-                outlvl=idaeslog.ERROR)
-
-        # Proper to specify input_vars here
-        for _slice in model._NMPC_NAMESPACE.input_vars.varlist:
-            vardata = _slice[t0]
-            if vardata.model() is not toplevel:
-                raise ValueError(
-                        f"Trying to fix an input that does not belong to model"
-                        " {toplevel.name}. Are 'initial_inputs' arguments"
-                        " contained in the proper model?")
-            if vardata.value == None:
-                raise ValueError(
-                        "Trying to solve for consistent initial conditions with "
-                        "an input of value None. Inputs must have valid values "
-                        "to solve for consistent initial conditions")
-            else:
-                vardata.fix()
-
-        if degrees_of_freedom(model) != 0:
-            raise ValueError(
-                    f"Non-zero degrees of freedom in model {toplevel.name}"
-                    " when solving for consistent initial conditions. Have the "
-                    "right number of initial conditions been fixed?")
+        previously_fixed = ComponentMap()
+        for var in namespace.input_vars:
+            var0 = var[t0]
+            previously_fixed[var0] = var0.fixed
+            var0.fix()
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-            results = solver.solve(model, tee=slc.tee)
+            result = solve_consistent_initial_conditions(model, time, solver,
+                    tee=slc.tee)
 
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            init_log.info(
-                    'Successfully solved for consistent initial conditions')
-        else:
-            init_log.error('Failed to solve for consistent initial conditions')
-            raise ValueError(
-            f'Falied to solve {toplevel.name} for consistent initial conditions')
+        for var, was_fixed in previously_fixed.items():
+            if not was_fixed:
+                var.unfix()
 
-        if was_originally_active is not None:
-            for t in non_initial_time:
-                for comp in deactivated[t]:
-                    if was_originally_active[id(comp)]:
-                        comp.activate()
+        return result
 
 
-    def get_inconsistent_initial_conditions(self, model, time, tol=1e-6, 
-            **kwargs):
-        """Finds equations of a model at the first time point (or in a block
-        that is at the first time point) that are not satisfied to within
-        a tolerance.
+#    def solve_initial_conditions(self, model, **kwargs):
+#        """Function to solve for consistent initial conditions in
+#        the provided flowsheet model.
+#
+#        Args:
+#            model : Flowsheet model whose initial conditions are solved
+#
+#        """
+#        # Later include option to skip solve for consistent initial conditions
+#        #
+#        # Will only work as written for "True" initial conditions since 
+#        # it doesn't try to deactivate discretization equations or fix
+#        # derivative/differential variables.
+#
+#        config = self.config(kwargs)
+#
+#        # TODO: activity_dict should be a ComponentMap
+#        was_originally_active = get_activity_dict(model)
+#        solver = config.solver
+#        outlvl = config.outlvl
+#        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+#        solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
+#
+#        toplevel = model.model()
+#        time = model._NMPC_NAMESPACE.get_time()
+#        t0 = time.first()
+#
+#        non_initial_time = [t for t in time]
+#        non_initial_time.remove(t0)
+#        deactivated = deactivate_model_at(model, time, non_initial_time,
+#                outlvl=idaeslog.ERROR)
+#
+#        # Proper to specify input_vars here
+#        for _slice in model._NMPC_NAMESPACE.input_vars.varlist:
+#            vardata = _slice[t0]
+#            if vardata.model() is not toplevel:
+#                raise ValueError(
+#                        f"Trying to fix an input that does not belong to model"
+#                        " {toplevel.name}. Are 'initial_inputs' arguments"
+#                        " contained in the proper model?")
+#            if vardata.value == None:
+#                raise ValueError(
+#                        "Trying to solve for consistent initial conditions with "
+#                        "an input of value None. Inputs must have valid values "
+#                        "to solve for consistent initial conditions")
+#            else:
+#                vardata.fix()
+#
+#        if degrees_of_freedom(model) != 0:
+#            raise ValueError(
+#                    f"Non-zero degrees of freedom in model {toplevel.name}"
+#                    " when solving for consistent initial conditions. Have the "
+#                    "right number of initial conditions been fixed?")
+#
+#        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
+#            results = solver.solve(model, tee=slc.tee)
+#
+#        if results.solver.termination_condition == TerminationCondition.optimal:
+#            init_log.info(
+#                    'Successfully solved for consistent initial conditions')
+#        else:
+#            init_log.error('Failed to solve for consistent initial conditions')
+#            raise ValueError(
+#            f'Falied to solve {toplevel.name} for consistent initial conditions')
+#
+#        if was_originally_active is not None:
+#            for t in non_initial_time:
+#                for comp in deactivated[t]:
+#                    if was_originally_active[id(comp)]:
+#                        comp.activate()
 
-        Args:
-            model : Pyomo model (or Block) to check for inconsistency
-            time : Set to treat as time
-            tol : Tolerance within which a constraint will be considered
-                  consistent
 
-        Returns:
-            List of constraint data objects found to be inconsistent
-
-        """
-        config = self.config(kwargs)
-        outlvl = config.outlvl
-        t0 = time.first()
-        inconsistent = []
-        init_log = idaeslog.getInitLogger('nmpc', outlvl)
-        for con in model.component_objects(Constraint, active=True):
-            if not is_explicitly_indexed_by(con, time):
-                continue
-            info = get_index_set_except(con, time)
-            non_time_set = info['set_except']
-            index_getter = info['index_getter']
-            for non_time_index in non_time_set:
-                index = index_getter(non_time_index, t0)
-                try:
-                    condata = con[index]
-                except KeyError:
-                    # To allow Constraint/Block.Skip
-                    msg = '%s has no index %s' % (con.name, str(index))
-                    init_log.warning(msg)
-                    continue
-                if (value(condata.body) - value(condata.upper) > tol or
-                    value(condata.lower) - value(condata.body) > tol):
-                    inconsistent.append(con[index])
-        return inconsistent
+#    def get_inconsistent_initial_conditions(self, model, time, tol=1e-6, 
+#            **kwargs):
+#        """Finds equations of a model at the first time point (or in a block
+#        that is at the first time point) that are not satisfied to within
+#        a tolerance.
+#
+#        Args:
+#            model : Pyomo model (or Block) to check for inconsistency
+#            time : Set to treat as time
+#            tol : Tolerance within which a constraint will be considered
+#                  consistent
+#
+#        Returns:
+#            List of constraint data objects found to be inconsistent
+#
+#        """
+#        config = self.config(kwargs)
+#        outlvl = config.outlvl
+#        t0 = time.first()
+#        inconsistent = []
+#        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+#        for con in model.component_objects(Constraint, active=True):
+#            if not is_explicitly_indexed_by(con, time):
+#                continue
+#            info = get_index_set_except(con, time)
+#            non_time_set = info['set_except']
+#            index_getter = info['index_getter']
+#            for non_time_index in non_time_set:
+#                index = index_getter(non_time_index, t0)
+#                try:
+#                    condata = con[index]
+#                except KeyError:
+#                    # To allow Constraint/Block.Skip
+#                    msg = '%s has no index %s' % (con.name, str(index))
+#                    init_log.warning(msg)
+#                    continue
+#                if (value(condata.body) - value(condata.upper) > tol or
+#                    value(condata.lower) - value(condata.body) > tol):
+#                    inconsistent.append(con[index])
+#        return inconsistent
 
 
     def calculate_full_state_setpoint(self, setpoint, require_steady=True, 
@@ -908,6 +959,7 @@ class NMPCSim(DynamicBase):
         config = self.config(kwargs)
         solver = config.solver
         outlvl = config.outlvl
+        tolerance = config.tolerance
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
         solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
         user_objective_name = config.user_objective_name
@@ -944,8 +996,13 @@ class NMPCSim(DynamicBase):
         non_initial_time = [t for t in time if t != time.first()]
         deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
 
-        inconsistent = self.get_inconsistent_initial_conditions(controller, time,
-                outlvl=idaeslog.ERROR)
+#        inconsistent = self.get_inconsistent_initial_conditions(controller, time,
+#                outlvl=idaeslog.ERROR)
+        inconsistent = get_inconsistent_initial_conditions(
+                controller, 
+                time,
+                tol=tolerance,
+                suppress_warnings=True)
         if inconsistent:
             dof = degrees_of_freedom(controller)
             if dof > 0:
@@ -1682,7 +1739,7 @@ class NMPCSim(DynamicBase):
         self.current_plant_time = t_end
 
         msg = ('Successfully simulated plant over the sampling period '
-                'through' + str(self.current_plant_time))
+                'through ' + str(self.current_plant_time))
         init_log.info(msg)
 
         tc1 = self.controller_time.first() + sample_time
