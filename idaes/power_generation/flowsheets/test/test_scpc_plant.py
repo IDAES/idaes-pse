@@ -18,9 +18,6 @@ __author__ = "Miguel Zamarripa"
 
 import pytest
 import pyomo.environ as pyo
-from pyomo.network import Arc
-import idaes.power_generation.flowsheets.\
-    supercritical_steam_cycle as steam_cycle
 import idaes.power_generation.flowsheets.\
     supercritical_power_plant.boiler_subflowsheet_build as blr
 import idaes.power_generation.flowsheets.\
@@ -32,7 +29,7 @@ solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
