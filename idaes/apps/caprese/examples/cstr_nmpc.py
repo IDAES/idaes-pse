@@ -66,7 +66,6 @@ def main(plot_switch=False):
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
-    m_steady = make_model(steady=True)
     sample_time = 0.5
     time_plant = m_plant.fs.time
 
