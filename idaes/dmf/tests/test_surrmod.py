@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -45,6 +45,7 @@ def model_data():
 
 
 @pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
+@pytest.mark.unit
 def test_init(tmp_dmf):
     _test_init(tmp_dmf)
 
@@ -54,6 +55,7 @@ def _test_init(tmp_dmf):
 
 
 @pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
+@pytest.mark.unit
 def test_run(tmp_dmf, model_data):
     _test_run(tmp_dmf, model_data)
 
@@ -93,6 +95,7 @@ class AlamoMock(object):
 
 
 @pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
+@pytest.mark.unit
 def test_init_mock(tmp_dmf):
     with AlamoMock() as mock:
         _test_init(tmp_dmf)
@@ -100,6 +103,7 @@ def test_init_mock(tmp_dmf):
 
 
 @pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
+@pytest.mark.unit
 def test_run_mock(tmp_dmf, model_data):
     with AlamoMock() as mock:
         _test_run(tmp_dmf, model_data)
@@ -109,6 +113,7 @@ def test_run_mock(tmp_dmf, model_data):
 
 
 @pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
+@pytest.mark.unit
 def test_bad_columns_mock(tmp_dmf, model_data):
     with AlamoMock() as mock:
         m = surrmod.SurrogateModel(Experiment(tmp_dmf))

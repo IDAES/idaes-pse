@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,6 +19,9 @@ from pyomo.environ import Constraint, NonNegativeReals, Var
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
+
+from idaes.generic_models.properties.core.state_definitions.FTPx import (
+    state_initialization)
 
 
 # TODO : Need a way to get a guess for T during initialization
@@ -277,28 +280,7 @@ def define_state(b):
     b.define_state_vars = define_state_vars_FPhx
 
 
-def state_initialization(b):
-    # TODO: Getting an initial guess for T would probably be a good idea
-    # However, I cannot see an easy way to do from just P and h.
-
-    if len(b.params.phase_list) == 1:
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value
-
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
-
-    else:
-        # TODO : Try to find some better guesses than this
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b.params.phase_list)
-
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+# Inherit state_initialization from FTPX form, as the process is the same
 
 
 do_not_initialize = ["sum_mole_frac_out"]

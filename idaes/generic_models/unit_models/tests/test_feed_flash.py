@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -42,6 +42,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -78,6 +79,7 @@ class TestBTXIdeal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "flow_mol")
         assert hasattr(btx.fs.unit, "mole_frac_comp")
@@ -97,6 +99,7 @@ class TestBTXIdeal(object):
         assert number_total_constraints(btx) == 29
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.flow_mol.fix(1)
         btx.fs.unit.temperature.fix(368)
@@ -109,11 +112,13 @@ class TestBTXIdeal(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -125,6 +130,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(btx.fs.unit.outlet.pressure[0]))
@@ -137,6 +143,7 @@ class TestBTXIdeal(object):
                       properties_out[0].flow_mol_phase["Vap"]))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -160,6 +167,7 @@ class TestIAPWS(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert hasattr(iapws.fs.unit, "flow_mol")
         assert hasattr(iapws.fs.unit, "enth_mol")
@@ -177,6 +185,7 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
         iapws.fs.unit.flow_mol.fix(100)
         iapws.fs.unit.enth_mol.fix(24000)
@@ -187,11 +196,13 @@ class TestIAPWS(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -203,6 +214,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, iapws):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(iapws.fs.unit.outlet.pressure[0]))
@@ -217,5 +229,6 @@ class TestIAPWS(object):
             iapws.fs.unit.control_volume.properties_out[0].phase_frac["Liq"]))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()

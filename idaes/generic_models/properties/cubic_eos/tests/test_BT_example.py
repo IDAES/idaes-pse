@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -70,6 +70,7 @@ class TestBasicV(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 class TestBTExample(object):
+    @pytest.mark.integration
     def test_T_sweep(self):
         m = ConcreteModel()
 
@@ -104,6 +105,7 @@ class TestBTExample(object):
                 TerminationCondition.optimal
             assert m.fs.state.flow_mol_phase["Liq"].value <= 1e-5
 
+    @pytest.mark.integration
     def test_P_sweep(self):
         m = ConcreteModel()
 
@@ -138,6 +140,7 @@ class TestBTExample(object):
                     TerminationCondition.optimal
                 print(T, m.fs.state.pressure.value)
 
+    @pytest.mark.component
     def test_T350_P1_x5(self):
         m = ConcreteModel()
 
@@ -204,6 +207,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state.entr_mol_phase["Vap"]), 1e-5) == -269.0553
 
+    @pytest.mark.component
     def test_T350_P5_x5(self):
         m = ConcreteModel()
 
@@ -270,6 +274,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state.entr_mol_phase["Vap"]), 1e-5) == -287.3318
 
+    @pytest.mark.component
     def test_T450_P1_x5(self):
         m = ConcreteModel()
 
@@ -336,6 +341,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state.entr_mol_phase["Vap"]), 1e-5) == -247.385
 
+    @pytest.mark.component
     def test_T450_P5_x5(self):
         m = ConcreteModel()
 
@@ -402,6 +408,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state.entr_mol_phase["Vap"]), 1e-5) == -261.961
 
+    @pytest.mark.component
     def test_T368_P1_x5(self):
         m = ConcreteModel()
 
@@ -468,6 +475,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state.entr_mol_phase["Vap"]), 1e-5) == -267.892
 
+    @pytest.mark.component
     def test_T376_P1_x2(self):
         m = ConcreteModel()
 

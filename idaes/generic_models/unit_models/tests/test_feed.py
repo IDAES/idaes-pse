@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -42,6 +42,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -72,6 +73,7 @@ class TestSaponification(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
 
         assert hasattr(sapon.fs.unit, "flow_vol")
@@ -90,6 +92,7 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 0
         assert number_unused_variables(sapon) == 8
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
         sapon.fs.unit.flow_vol.fix(1.0e-03)
         sapon.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
@@ -106,6 +109,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
@@ -114,6 +118,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.pressure[0]))
@@ -133,6 +138,7 @@ class TestSaponification(object):
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"]))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
@@ -155,6 +161,7 @@ class TestIAPWS(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert hasattr(iapws.fs.unit, "flow_mol")
         assert hasattr(iapws.fs.unit, "enth_mol")
@@ -170,6 +177,7 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 0
         assert number_unused_variables(iapws) == 3
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
         iapws.fs.unit.flow_mol.fix(100)
         iapws.fs.unit.enth_mol.fix(24000)
@@ -180,6 +188,7 @@ class TestIAPWS(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
@@ -188,6 +197,7 @@ class TestIAPWS(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, iapws):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(iapws.fs.unit.outlet.pressure[0]))
@@ -202,5 +212,6 @@ class TestIAPWS(object):
             iapws.fs.unit.properties[0].phase_frac["Liq"]))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()

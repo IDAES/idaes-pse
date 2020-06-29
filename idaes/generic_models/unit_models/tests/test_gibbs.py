@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           Constraint,
                            TerminationCondition,
                            SolverStatus,
                            value)
@@ -35,6 +36,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # -----------------------------------------------------------------------------
@@ -43,6 +45,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -52,7 +55,7 @@ def test_config():
     m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 9
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
@@ -63,10 +66,48 @@ def test_config():
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
+    assert m.fs.unit.config.inert_species == []
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 4
+
+    assert not hasattr(m.fs.unit, "inert_species_balance")
+
+
+@pytest.mark.unit
+def test_inerts():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_invalid_inert():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.unit invalid component in inert_species "
+                       "argument. foo is not in the property package "
+                       "component list."):
+        m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                          "inert_species": ["foo"]})
 
 
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestMethane(object):
     @pytest.fixture(scope="class")
     def methane(self):
         m = ConcreteModel()
@@ -82,6 +123,7 @@ class TestSaponification(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, methane):
         assert hasattr(methane.fs.unit, "inlet")
         assert len(methane.fs.unit.inlet.vars) == 4
@@ -105,6 +147,7 @@ class TestSaponification(object):
         assert number_total_constraints(methane) == 67
         assert number_unused_variables(methane) == 0
 
+    @pytest.mark.unit
     def test_dof(self, methane):
         methane.fs.unit.inlet.flow_mol[0].fix(230.0)
         methane.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
@@ -126,6 +169,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize_temperature(self, methane):
         initialization_tester(methane,
                               optarg={'tol': 1e-6},
@@ -143,6 +187,7 @@ class TestSaponification(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve_temperature(self, methane):
         results = solver.solve(methane)
 
@@ -154,6 +199,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution_temperature(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -181,6 +227,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation_temperature(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *
@@ -194,6 +241,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize_duty(self, methane):
         methane.fs.unit.outlet.temperature[0].unfix()
         methane.fs.unit.heat_duty.fix(-7454077)
@@ -231,6 +279,7 @@ class TestSaponification(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve_heat_duty(self, methane):
         results = solver.solve(methane)
 
@@ -242,6 +291,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution_duty(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -269,6 +319,7 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation_duty(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *
@@ -280,5 +331,6 @@ class TestSaponification(object):
                 methane.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, methane):
         methane.fs.unit.report()

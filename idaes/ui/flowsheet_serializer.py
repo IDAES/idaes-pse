@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,9 +19,11 @@ from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
 
-from pyomo.environ import Block
-from pyomo.network.port import SimplePort
+from pyomo.environ import Block, value
+from pyomo.network.port import Port
 from pyomo.network import Arc
+from pyomo.core.base.var import Var
+from pyomo.core.base.expression import Expression
 
 
 class FileBaseNameExistsError(Exception):
@@ -64,7 +66,7 @@ class FlowsheetSerializer:
                     "s03": {
                         "source": "M101", 
                         "dest": "H101", 
-                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
+                        "label": "molar flow ("Vap", "hydrogen") 0.5"
                     }
                 }
             },
@@ -89,42 +91,54 @@ class FlowsheetSerializer:
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
-        for component in flowsheet.component_objects(Block, descend_into=False):
+        for component in flowsheet.component_objects(Arc, descend_into=False):
+            self.arcs[component.getname()] = component
+            
+        for component in flowsheet.component_objects(Block, descend_into=True):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
                 self.unit_models[component] = {
                     "name": component.getname(), 
                     "type": component._orig_module.split(".")[-1]
                 }
-
-                for subcomponent in component.component_objects(descend_into=True):
-                    if isinstance(subcomponent, SimplePort):
-                        self.ports[subcomponent] = component
+                for subcomponent in component.component_objects(Port, descend_into=True):
+                    self.ports[subcomponent] = component
+            else:
+                component_object_op = getattr(component, "component_object", None)
+                if not callable(component_object_op):
+                    for item in component.parent_component().values():
+                        if isinstance(item, UnitModelBlockData):
+                            if any((item == arc.source.parent_block() or item == arc.dest.parent_block()) for arc in self.arcs.values()):
+                                self.unit_models[item] = {
+                                    "name": item.getname(), 
+                                    "type": item._orig_module.split(".")[-1]
+                                }
+                                for subcomponent in item.component_objects(Port, descend_into=True):
+                                    self.ports[subcomponent] = item
   
-        for component in flowsheet.component_objects(Arc, descend_into=False):
-            self.arcs[component.getname()] = component
-
-        for stream_name, value in stream_states_dict(self.arcs).items():
+        for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
 
-            for var, var_value in value.define_display_vars().items():
-                for stream_type, stream_value in var_value.get_values().items():
-                    if stream_type:
-                        if var == "flow_mol_phase_comp":
-                            var = "Molar Flow"
-                        label += f"{var} {stream_type} {stream_value}\n"
+            for var, var_value in stream_value.define_display_vars().items():
+                var = var.capitalize()
+
+                for k, v in var_value.items():
+                    if k is None:
+                        label += f"{var} {value(v)}\n"
                     else:
-                        var = var.capitalize()
-                        label += f"{var} {stream_value}\n"
+                        label += f"{var} {k} {value(v)}\n"
 
             self.labels[stream_name] = label[:-2]
 
         self.edges = {}
         for name, arc in self.arcs.items():
-            self.edges[name] = {"source": self.ports[arc.source], 
-                                "dest": self.ports[arc.dest]}
+            try:
+                self.edges[name] = {"source": self.ports[arc.source], 
+                                    "dest": self.ports[arc.dest]}
+            except KeyError as error:
+                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
 
-    def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title):
+    def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
         entry["type"] = "standard.Image"
         # for now, just tile the positions diagonally
@@ -135,37 +149,48 @@ class FlowsheetSerializer:
         entry["angle"] = 0
         entry["id"] = name
         entry["z"] = (1,)
+        entry["ports"] = port_groups
         entry["attrs"] = {
             "image": {"xlinkHref": "/images/icons/" + image},
-            "label": {"text": name},
+            "label": {
+                "text": name
+            },
             "root": {"title": title},
         }
         out_json["cells"].append(entry)
 
-    def create_link_jointjs_json(self, out_json, source_anchor, dest_anchor, 
-                                 source_id, dest_id, name, label):
+    def create_link_jointjs_json(self, out_json, source_port, dest_port, 
+                                 source_id, dest_id, name, label):      
         entry = {
             "type": "standard.Link",
-            "source": {"anchor": source_anchor, "id": source_id},
-            "target": {"anchor": dest_anchor, "id": dest_id},
+            "source": {"id": source_id, "port": source_port},
+            "target": {"id": dest_id, "port": dest_port},
             "router": {"name": "orthogonal", "padding": 10},
             "connector": {"name": "normal", 
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
-            "labels": [{
-                "attrs": {
-                    "rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", 'stroke-width': 1},
+            "labels": [
+                # This label MUST be first or the show/hide will fail
+                {"attrs": {
+                    # Start with the labels off
+                    "rect": {"fill": "#d7dce0", "stroke": "white", "stroke-width": 0, "fill-opacity": 0},
                     "text": {
                         "text": label,
-                        "fill": 'black',
-                        'text-anchor': 'left',
+                        "fill": "black",
+                        "text-anchor": "left",
+                        "display": "none"
                     },
                 },
                 "position": {
                     "distance": 0.66,
                     "offset": -40
-                },
-            }],
+                }},
+                {"attrs": {
+                    "text": {
+                        "text": name
+                    }
+                }}
+            ],
             "z": 2
         }
         out_json["cells"].append(entry)
@@ -202,8 +227,9 @@ class FlowsheetSerializer:
 
     def _construct_jointjs_json(self):
         self.out_json["cells"] = []
-        x_pos = 100
-        y_pos = 100
+        x_pos = 10
+        y_pos = 10
+        y_starting_pos = 10
 
         for component, unit_attrs in self.unit_models.items():
             try:
@@ -214,69 +240,47 @@ class FlowsheetSerializer:
                     unit_attrs["name"],
                     icon_mapping(unit_attrs["type"]),
                     unit_attrs["type"],
+                    link_position_mapping[unit_attrs["type"]]
                 )
             except KeyError:
+                print(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
                                                y_pos, 
                                                unit_attrs["name"], 
-                                               "default", unit_attrs["type"])
-
-            x_pos += 100
-            y_pos += 100
+                                               icon_mapping("default"), 
+                                               unit_attrs["type"],
+                                               link_position_mapping["default"])
+            if x_pos >= 700:
+                x_pos = 100
+                y_pos = y_starting_pos
+                y_starting_pos += 100
+            else:
+                x_pos += 100
+                y_pos += 100
 
         id_counter = 0
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
 
-            try:
-                if hasattr(ports_dict["source"], "vap_outlet"):
-                    # TODO Figure out how to denote different outlet types. Need to
-                    #  deal with multiple input/output offsets
-                    for arc in list(self.arcs.values()):
-                        if (
-                            self.ports[arc.dest] == dest
-                            and arc.source == ports_dict["source"].vap_outlet
-                        ):
-                            source_anchor = link_position_mapping[umst][
-                                "top_outlet_anchor"
-                            ]
-                        elif (
-                            self.ports[arc.dest] == dest
-                            and arc.source == ports_dict["source"].liq_outlet
-                        ):
-                            source_anchor = link_position_mapping[umst][
-                                "bottom_outlet_anchor"
-                            ]
+            if hasattr(ports_dict["source"], "vap_outlet"):
+                # TODO Figure out how to denote different outlet types. Need to
+                #  deal with multiple input/output offsets
+                for arc in list(self.arcs.values()):
+                    if (self.ports[arc.dest] == dest and arc.source == ports_dict["source"].vap_outlet):
+                        source_anchor = "top"
+                    else:
+                        source_anchor = "bottom"
+            else:
+                source_anchor = "out"
 
-                elif "top_outlet_anchor" in link_position_mapping[umst]:
-                    source_anchor = \
-                        link_position_mapping[umst]["top_outlet_anchor"]
-                else:
-                    source_anchor = link_position_mapping[umst]["outlet_anchors"]
-                    # TODO figure out offsets when mutiple things come
-                    #  from/into the same side:
-                    # source_anchor["args"]["dy"] = str(100/(len(dest) + 1)) + "%"
-
-            except KeyError:
-                source_anchor = link_position_mapping["default"]["outlet_anchors"]
-                # TODO figure out offsets when mutiple things come from/into the 
-                # same side:
-                # source_anchor["args"]["dy"] = str(100/(len(dest) + 1)) + "%"
-            try:
-                unit_type = self.unit_models[dest]["type"]
-                dest_anchor = \
-                    link_position_mapping[unit_type]["inlet_anchors"]
-            except KeyError:
-                dest_anchor = link_position_mapping["default"]["inlet_anchors"]
             self.create_link_jointjs_json(
                 self.out_json, 
-                source_anchor, 
-                dest_anchor, 
+                "out", 
+                "in", 
                 ports_dict["source"].getname(), 
                 dest.getname(), 
                 name,
                 self.labels[name]
             )
-            id_counter += 1

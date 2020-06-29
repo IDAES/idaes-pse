@@ -63,6 +63,7 @@ kwargs = dict(
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
+        "python-slugify", # for ui/fsvis
         "sympy",
         "tinydb",
         "rbfopt",

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -37,7 +37,7 @@ def gross_power_mw(model):
     # pyo.value(m.fs.turb.power[0]) is the power consumed in Watts
     return -pyo.value(model.fs.turb.power[0])/1e6
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
@@ -49,7 +49,7 @@ def test_init(initialize_model):
         assert(abs(c.body() - c.lower) < 1e-4)
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
@@ -58,7 +58,7 @@ def test_init_value(initialize_model):
     assert gross_power_mw(m) == pytest.approx(620.8100259113626, abs=1e-2)
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")

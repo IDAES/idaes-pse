@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -28,26 +28,12 @@ import pytest
 # package
 from idaes.commands import examples
 from idaes.util.system import TemporaryDirectory
-
+from . import random_tempdir
 
 @pytest.fixture(scope="module")
 def runner():
     return CliRunner()
 
-
-@pytest.fixture
-def random_tempdir():
-    """Make a completely cross-platform random temporary directory in
-    the current working directory, and yield it. As cleanup, recursively
-    remove all contents of this temporary directory.
-    """
-    origdir = os.getcwd()
-    random_name = str(uuid.uuid4())
-    os.mkdir(random_name)
-    tempdir = Path(random_name)
-    yield tempdir
-    os.chdir(origdir)
-    shutil.rmtree(tempdir)
 
 
 ################
@@ -55,18 +41,19 @@ def random_tempdir():
 ################
 
 
+@pytest.mark.unit
 def test_examples_cli_noop(runner):
     result = runner.invoke(examples.get_examples, ["--no-install", "--no-download"])
     assert result.exit_code == 0
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_cli_list(runner):
     result = runner.invoke(examples.get_examples, ["-l"])
     assert result.exit_code == 0
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_cli_download(runner, random_tempdir):
     # failure with existing dir
     result = runner.invoke(examples.get_examples, ["-d", str(random_tempdir), "-I"])
@@ -77,14 +64,14 @@ def test_examples_cli_download(runner, random_tempdir):
     assert result.exit_code == 0
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_cli_default_version(runner, random_tempdir):
     dirname = str(random_tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname])
     assert result.exit_code == -1
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_cli_download_unstable(runner, random_tempdir):
     dirname = str(random_tempdir / "examples")
     # unstable version but no --unstable flag
@@ -92,7 +79,7 @@ def test_examples_cli_download_unstable(runner, random_tempdir):
     assert result.exit_code == -1
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_cli_copy(runner, random_tempdir):
     dirname = str(random_tempdir / "examples")
     # local path is bad
@@ -122,26 +109,26 @@ def test_examples_cli_copy(runner, random_tempdir):
 # non-CLI
 
 
-@pytest.mark.nocircleci()  # goes out to network
+@pytest.mark.integration()  # goes out to network
 def test_examples_n():
     target_dir = str(uuid.uuid4())  # pick something that won't exist
     retcode = subprocess.call(["idaes", "get-examples", "-N", "-d", target_dir])
     assert retcode == 255  # result of sys.exit(-1)
 
 
-@pytest.mark.nocircleci()  # goes out to network
+@pytest.mark.integration()  # goes out to network
 def test_examples_list_releases():
     releases = examples.get_releases(True)
     assert len(releases) > 0
     examples.print_releases(releases, True)
 
 
-@pytest.mark.nocircleci()  # goes out to network
+@pytest.mark.integration()  # goes out to network
 def test_examples_download_bad_version():
     assert pytest.raises(examples.DownloadError, examples.download, Path("."), "1.2.3")
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_find_python_directories():
     with TemporaryDirectory() as tmpd:
         root = Path(tmpd)
@@ -166,7 +153,7 @@ def test_examples_find_python_directories():
                 assert path_i / j in rel_found_dirs
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_examples_check_github_response():
     # ok result
     examples.check_github_response([{"result": "ok"}], {})
@@ -197,6 +184,7 @@ def test_examples_check_github_response():
     )
 
 
+@pytest.mark.component
 def test_examples_install_src(random_tempdir):
     # monkey patch a random install package name so as not to have
     # any weird side-effects on other tests
@@ -224,6 +212,7 @@ def test_examples_install_src(random_tempdir):
     examples.INSTALL_PKG = orig_install_pkg
 
 
+@pytest.mark.unit
 def test_examples_cleanup(random_tempdir):
     tempdir = random_tempdir
     # put some crap in the temporary dir
@@ -260,6 +249,7 @@ def test_examples_cleanup(random_tempdir):
     assert not tempsubdir.exists()
 
 
+@pytest.mark.unit
 def test_examples_cleanup_nodist(random_tempdir):
     tempdir = random_tempdir
     # put some crap in the temporary dir
@@ -288,6 +278,7 @@ def test_examples_cleanup_nodist(random_tempdir):
     assert not tempsubdir.exists()
 
 
+@pytest.mark.unit
 def test_examples_cleanup_nodist_noegg(random_tempdir):
     tempdir = random_tempdir
     # put some crap in the temporary dir
@@ -309,6 +300,7 @@ def test_examples_cleanup_nodist_noegg(random_tempdir):
     assert not tempsubdir.exists()
 
 
+@pytest.mark.unit
 def test_examples_cleanup_nothing(random_tempdir):
     tempdir = random_tempdir
     # nothing to remove, should still be ok
@@ -337,6 +329,7 @@ def test_examples_cleanup_nothing(random_tempdir):
     subdir.chmod(0o700)
 
 
+@pytest.mark.unit
 def test_examples_local(random_tempdir):
     d = random_tempdir
     tgt = d / "examples"
@@ -358,7 +351,7 @@ def test_examples_local(random_tempdir):
     # done
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_illegal_dirs():
     with TemporaryDirectory() as tmpd:
         root = Path(tmpd)
@@ -372,7 +365,7 @@ def test_illegal_dirs():
             (root / ".git").rmdir()
 
 
-@pytest.mark.nocircleci()
+@pytest.mark.integration()
 def test_get_examples_version():
     assert examples.get_examples_version("1.5.0") == "1.5.1"
     assert examples.get_examples_version("foo") == None
@@ -471,6 +464,7 @@ def _remove(tmp_path, notebooks):
             removed.add(nb.parent)
 
 
+@pytest.mark.unit
 def test_find_notebook_files(remove_cells_notebooks):
     root = remove_cells_notebooks[0].parent
     nbfiles = examples.find_notebook_files(root)
@@ -479,6 +473,7 @@ def test_find_notebook_files(remove_cells_notebooks):
         assert nbfile in remove_cells_notebooks
 
 
+@pytest.mark.unit
 def test_strip_test_cells(remove_cells_notebooks):
     root = remove_cells_notebooks[0].parent
     examples.strip_test_cells(root)
@@ -502,6 +497,7 @@ def test_strip_test_cells(remove_cells_notebooks):
                 assert n > 0  # tag still there
 
 
+@pytest.mark.unit
 def test_strip_test_cells_nosuffix(remove_cells_notebooks_nosuffix):
     root = remove_cells_notebooks_nosuffix[0].parent
     examples.strip_test_cells(root)

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -32,6 +32,18 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("valid_phase_types", ConfigValue(
             domain=list_of_phase_types,
             doc="List of valid PhaseTypes (Enums) for this Component."))
+
+    CONFIG.declare("elemental_composition", ConfigValue(
+            domain=dict,
+            description="Elemental composition of component",
+            doc="Dict containing elemental composition in the form element "
+                ": stoichiometry"))
+
+    CONFIG.declare("henry_component", ConfigValue(
+            domain=dict,
+            description="Phases in which component follows Henry's Law",
+            doc="Dict indicating phases in which component follows Herny's "
+                "Law (keys) with values indicating form of law."))
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))

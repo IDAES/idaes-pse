@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -65,6 +65,7 @@ def _visit(walker):
 # Walker and ModuleClassWalker
 
 
+@pytest.mark.unit
 def test_walker():
     w = codesearch.Walker()
     w.walk(ListVisitorProperty())
@@ -106,22 +107,26 @@ def package_walker():
 # Test different kinds of walkers
 
 
+@pytest.mark.component
 def test_from_pkg_withexpr():
     walker = codesearch.ModuleClassWalker(from_pkg=idaes, **walker_args)
     _visit(walker)
 
 
+@pytest.mark.component
 def test_from_pkg_noexpr():
     walker = codesearch.ModuleClassWalker(from_pkg=idaes, **walker_args_noex)
     _visit(walker)
 
 
+@pytest.mark.unit
 def test_from_path_only():
     idpath = idaes.__path__[0]
     walker = codesearch.ModuleClassWalker(from_path=idpath, **walker_args)
     _visit(walker)
 
 
+@pytest.mark.unit
 def test_from_path_and_from_pkg():
     idpath = idaes.__path__[0]
     walker = codesearch.ModuleClassWalker(
@@ -130,6 +135,7 @@ def test_from_path_and_from_pkg():
     _visit(walker)
 
 
+@pytest.mark.unit
 def test_from_pkg_no_path():
     import os
 
@@ -141,10 +147,12 @@ def test_from_pkg_no_path():
         assert False
 
 
+@pytest.mark.unit
 def test_missing_args():
     pytest.raises(ValueError, codesearch.ModuleClassWalker, class_expr="_TestClass")
 
 
+@pytest.mark.unit
 def test_bad_path():
     try:
         codesearch.ModuleClassWalker(
@@ -156,6 +164,7 @@ def test_bad_path():
         assert False
 
 
+@pytest.mark.unit
 def test_warnings():
     walker = codesearch.ModuleClassWalker(
         from_pkg=idaes,
@@ -190,18 +199,21 @@ def dummy_package():
     sys.path = saved_sys_path
 
 
+@pytest.mark.unit
 def test_cannot_import(dummy_package):
     w = codesearch.ModuleClassWalker(from_path=dummy_package, suppress_warnings=False)
     w.walk(DummyVisitor())
     assert len(w.get_indexed_classes()) == 1
 
 
+@pytest.mark.unit
 def test_cannot_import_nowarn(dummy_package):
     w = codesearch.ModuleClassWalker(from_path=dummy_package, suppress_warnings=True)
     w.walk(DummyVisitor())
     assert len(w.get_indexed_classes()) == 1
 
 
+@pytest.mark.unit
 def test_get_metadata_unimplemented(dummy_package):
     print("@@ GMU sys.path={}".format(sys.path))
     f = open(os.path.join(dummy_package, "unimpl.py"), "w")
@@ -217,12 +229,14 @@ def test_get_metadata_unimplemented(dummy_package):
     w.walk(visitor)
 
 
+@pytest.mark.unit
 def test_noexclude(dummy_package):
     walker_args_noexclude.update(dict(from_path=dummy_package))
     w = codesearch.ModuleClassWalker(**walker_args_noexclude)
     w.walk(DummyVisitor())
 
 
+@pytest.mark.unit
 def test_get_indexed_classes(package_walker):
     visitor = ListVisitorProperty()
     package_walker.walk(visitor)
@@ -233,6 +247,7 @@ def test_get_indexed_classes(package_walker):
 # Visitor-related tests
 
 
+@pytest.mark.unit
 def test_visitor():
     v = codesearch.Visitor()
     v.visit("foo")
@@ -244,11 +259,13 @@ class MetadataHaver(property_meta.HasPropertyClassMetadata):
         return
 
 
+@pytest.mark.unit
 def test_metadata_visitor():
     mv = codesearch.PropertyMetadataVisitor()
     mv.visit(MetadataHaver())
 
 
+@pytest.mark.unit
 def test_print_metadata_visitor():
     pmv = codesearch.PrintPropertyMetadataVisitor()
     pcm = property_meta.PropertyClassMetadata()
@@ -266,6 +283,7 @@ def tmpd():
     shutil.rmtree(d)
 
 
+@pytest.mark.unit
 def test__get_modules(tmpd):
     # make a temporary directory with some files and subdirs
     dirs = [("a",), ("b",), ("c",), ("a", "1"), ("a", "2"), ("a", "2", "i")]

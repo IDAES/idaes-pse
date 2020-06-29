@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -57,6 +57,7 @@ m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.build_state_block(
              "defined_state": True})
 
 
+@pytest.mark.unit
 def test_build_inlet_state_block():
     assert len(m.fs.properties_NRTL_vl.config) == 4
 
@@ -93,6 +94,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_NRTL_v, "eq_mol_frac_out")
 
 
+@pytest.mark.unit
 def test_setInputs_inlet_state_block():
 
     # vapor-liquid (NRTL)
@@ -159,6 +161,7 @@ m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.build_state_block(
              "defined_state": False})
 
 
+@pytest.mark.unit
 def test_build_outlet_state_block():
     assert len(m.fs.properties_NRTL_vl.config) == 4
 
@@ -195,6 +198,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_NRTL_v, "eq_mol_frac_out")
 
 
+@pytest.mark.unit
 def test_setInputs_outlet_state_block():
 
     # vapor-liquid (NRTL)

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,14 +19,16 @@ from pyomo.environ import ConcreteModel, Set
 
 from idaes.core.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
                                PhaseType)
+import pytest
 
-
+@pytest.mark.unit
 def test_PhaseType():
     assert len(PhaseType) == 4
     for i in PhaseType.__members__:
         assert i in ["undefined", "liquidPhase", "vaporPhase", "solidPhase"]
 
 
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
 
@@ -42,6 +44,7 @@ def test_config():
             assert v is None
 
 
+@pytest.mark.unit
 def test_populate_phase_list():
     m = ConcreteModel()
 
@@ -54,6 +57,7 @@ def test_populate_phase_list():
         assert p in ["phase", "phase2"]
 
 
+@pytest.mark.unit
 def test_is_phase_generic():
     m = ConcreteModel()
 
@@ -64,6 +68,7 @@ def test_is_phase_generic():
     assert not m.phase.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_is_phase_old_style_liquid():
     m = ConcreteModel()
 
@@ -74,6 +79,7 @@ def test_is_phase_old_style_liquid():
     assert not m.Liq.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_is_phase_old_style_solid():
     m = ConcreteModel()
 
@@ -84,6 +90,7 @@ def test_is_phase_old_style_solid():
     assert not m.Sol.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_is_phase_old_style_vapor():
     m = ConcreteModel()
 
@@ -94,6 +101,7 @@ def test_is_phase_old_style_vapor():
     assert m.Vap.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_phase_list_exists():
     m = ConcreteModel()
 
@@ -103,6 +111,7 @@ def test_phase_list_exists():
     assert not hasattr(m, "phase_list")
 
 
+@pytest.mark.unit
 def test_LiquidPhase():
     m = ConcreteModel()
 
@@ -113,6 +122,7 @@ def test_LiquidPhase():
     assert not m.phase.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_SolidPhase():
     m = ConcreteModel()
 
@@ -123,6 +133,7 @@ def test_SolidPhase():
     assert not m.phase.is_vapor_phase()
 
 
+@pytest.mark.unit
 def test_VaporPhase():
     m = ConcreteModel()
 

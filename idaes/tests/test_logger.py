@@ -1,3 +1,15 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 import pytest
 import idaes.logger as idaeslog
 import logging
@@ -5,6 +17,7 @@ import pyomo.environ as pyo
 
 __author__ = "John Eslick"
 
+@pytest.mark.unit
 def test_get_idaes_logger(caplog):
     caplog.set_level(logging.DEBUG)
     log = idaeslog.getLogger("My Test Logger 1")
@@ -20,6 +33,7 @@ def test_get_idaes_logger(caplog):
     log = idaeslog.getLogger("idaes.My Test Logger 2")
     assert log.name == "idaes.My Test Logger 2"
 
+@pytest.mark.unit
 def test_get_model_logger(caplog):
     log = idaeslog.getModelLogger("My Model 1")
     assert isinstance(log, logging.LoggerAdapter)
@@ -33,15 +47,18 @@ def test_get_model_logger(caplog):
     log = idaeslog.getModelLogger("idaes.My Model 2")
     assert log.name == "idaes.model.My Model 2"
 
+@pytest.mark.unit
 def test_get_init_logger():
     log = idaeslog.getInitLogger("My Init 1")
     assert log.name == "idaes.init.My Init 1"
 
+@pytest.mark.unit
 def test_solver_condition():
     # test the results that can be tested without a solver
     assert idaeslog.condition(None) == "Error, no result"
     assert idaeslog.condition("something else") == "something else"
 
+@pytest.mark.unit
 def test_tags(caplog):
     idaeslog.remove_log_tag("model")
     def a(tag):
@@ -61,6 +78,7 @@ def test_tags(caplog):
     for m in idaeslog.valid_log_tags():
         a(m)
 
+@pytest.mark.unit
 def test_add_remove_tags():
     assert "framework" in idaeslog.valid_log_tags()
     assert "framework" in idaeslog.log_tags()
@@ -75,6 +93,7 @@ def test_add_remove_tags():
 
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.unit
 def test_solver_condition2():
     solver = pyo.SolverFactory('ipopt')
     model = pyo.ConcreteModel("Solver Result Test Model")
@@ -90,6 +109,7 @@ def test_solver_condition2():
     assert idaeslog.condition(res).startswith("other") # too few degrees of freedom
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.unit
 def test_solver_log(caplog):
     solver = pyo.SolverFactory('ipopt')
     model = pyo.ConcreteModel("Solver Result Test Model")

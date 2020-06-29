@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -14,16 +14,25 @@
 Plot doalamo output including confidence intervals if they are calculated.
 """
 
+from idaes.surrogate.alamopy import almerror
 
 def almplot(res, show=True):
     try:
         import matplotlib.pyplot as plt
         import numpy as np
-        from alamopy.writethis import writethis
     except Exception:
-        writethis("Cannot plot, possibly missing matplotlib package")
+        raise almerror.AlamoInputError(
+            "Cannot plot, possibly missing matplotlib package"
+        )
 
-    model = res['model'].replace(' - ', ' + -') 
+    model = res['model']
+
+    if type(model) is dict:
+        firstKey = list(res['model'].keys())[0]
+        model = res['model'][firstKey].replace(' - ', ' + -')
+    else:
+        model = res['model'].replace(' - ', ' + -')
+
     model = model.split('=')[1]
     model = model.split(' + ')
     if model[0] == ' ':  # if there are more than one terms, the first split is ' '
@@ -38,8 +47,13 @@ def almplot(res, show=True):
     for i in range(len(model)):
         coeff[i] = float(model[i].split(' * ')[0])
         if 'conf_inv' in res.keys():
-            clo[i] = coeff[i] - float(res['conf_inv'][i].split('+/-')[1])
-            chi[i] = coeff[i] + float(res['conf_inv'][i].split('+/-')[1])
+            if type(res['conf_inv']) is dict:
+                firstKey = list(res['conf_inv'].keys())[0]
+                clo[i] = coeff[i] - float(res['conf_inv'][firstKey][i].split('+/-')[1])
+                chi[i] = coeff[i] + float(res['conf_inv'][firstKey][i].split('+/-')[1])
+            else:
+                clo[i] = coeff[i] - float(res['conf_inv'][i].split('+/-')[1])
+                chi[i] = coeff[i] + float(res['conf_inv'][i].split('+/-')[1])
         
     for i in range(ndp):
         out[0, i] = float(coeff[0]) * t[i]**1.2 \

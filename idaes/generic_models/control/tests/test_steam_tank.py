@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -275,7 +275,8 @@ def tpid(form):
         assert t == stitch_time[i]
         assert m_dynamic2.fs.valve_1.valve_opening[t] == stitch_valve[i]
 
-@pytest.mark.slow
+
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
@@ -283,7 +284,8 @@ def test_pid_velocity():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.velocity)
 
-@pytest.mark.slow
+
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")

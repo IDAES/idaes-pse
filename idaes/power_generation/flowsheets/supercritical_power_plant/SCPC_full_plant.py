@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -107,7 +107,7 @@ def import_steam_cycle():
     m, solver = steam_cycle.main()
     return m, solver
 
-if __name__ == "__main__":
+def main():
     # import steam cycle and build concrete model
     m, solver = import_steam_cycle()
     print(degrees_of_freedom(m))
@@ -205,3 +205,7 @@ if __name__ == "__main__":
     strip_bounds.apply_to(m, reversible=True)
     # this is the final solve with both flowsheets connected
     results = solver.solve(m, tee=True)
+    return m, solver
+
+if __name__ == "__main__":
+    m, solver = main()

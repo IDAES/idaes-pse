@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -210,6 +210,57 @@ class GenericParameterData(PhysicalParameterBlock):
                     pc_set.append((p, j))
         self._phase_component_set = Set(initialize=pc_set, ordered=True)
 
+        # Validate and construct elemental composition objects as appropriate
+        element_comp = {}
+        for c in self.component_list:
+            cobj = self.get_component(c)
+            e_comp = cobj.config.elemental_composition
+
+            if e_comp is None:
+                # Do nothing
+                continue
+            else:
+                for k, v in e_comp.items():
+                    if not isinstance(v, int):
+                        raise ConfigurationError(
+                            "{} values in elemental_composition must be "
+                            "integers (not floats): {}: {}."
+                            .format(self.name, k, str(v)))
+                element_comp[c] = e_comp
+
+        if len(element_comp) == 0:
+            # No elemental compositions defined, don't define components
+            pass
+        elif len(element_comp) != len(self.component_list):
+            # Not all components defined elemental compositions
+            raise ConfigurationError(
+                "{} not all Components declared an elemental_composition "
+                "argument. Either all Components must declare this, or none."
+                .format(self.name))
+        else:
+            # Add elemental composition components
+            self.element_list = Set(ordered=True)
+
+            # Iterate through all componets and collectcomposing elements
+            # Add these to element_list
+            for ec in element_comp.values():
+                for e in ec.keys():
+                    if e not in self.element_list:
+                        self.element_list.add(e)
+
+            self.element_comp = {}
+            for c in self.component_list:
+                cobj = self.get_component(c)
+
+                self.element_comp[c] = {}
+                for e in self.element_list:
+
+                    if e not in cobj.config.elemental_composition:
+                        self.element_comp[c][e] = 0
+                    else:
+                        self.element_comp[c][e] = \
+                            cobj.config.elemental_composition[e]
+
         # Validate state definition
         if self.config.state_definition is None:
             raise ConfigurationError(
@@ -326,6 +377,23 @@ class GenericParameterData(PhysicalParameterBlock):
                             "argument to ensure values are provided."
                             .format(self.name, a, c))
 
+            # Validate and construct Henry parameters (indexed by phase)
+            if cobj.config.henry_component is not None:
+                for p, meth in cobj.config.henry_component.items():
+                    # First validate that p is a phase
+                    if p not in self.phase_list:
+                        raise ConfigurationError(
+                            "{} component {} was marked as a Henry's Law "
+                            "component in phase {}, but this is not a valid "
+                            "phase name.".format(self.name, c, p))
+                    elif not self.get_phase(p).is_liquid_phase():
+                        raise ConfigurationError(
+                            "{} component {} was marked as a Henry's Law "
+                            "component in phase {}, but this is not a Liquid "
+                            "phase.".format(self.name, c, p))
+                    else:
+                        meth.build_parameters(cobj, p)
+
         for p in self.phase_list:
             pobj = self.get_phase(p)
             pobj.config.equation_of_state.build_parameters(pobj)
@@ -338,9 +406,9 @@ class GenericParameterData(PhysicalParameterBlock):
             for i in v:
                 if v[i].value is None:
                     raise ConfigurationError(
-                        "{} parameter {} for component {} was not assigned"
+                        "{} parameter {} was not assigned"
                         " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name, c))
+                        "arguments.".format(self.name, v.local_name))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
@@ -364,7 +432,7 @@ class GenericParameterData(PhysicalParameterBlock):
         """
         Placeholder method to allow users to specify parameters via a
         class. The user class should inherit from this one and implement a
-        parameters() method which creates the reqruied components.
+        parameters() method which creates the required components.
 
         Args:
             None
@@ -509,6 +577,11 @@ class _GenericStateBlock(StateBlock):
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     # Use lowest component temperature_crit as starting point
                     # Starting high and moving down generally works better,
                     # as it under-predicts next step due to exponential form of
@@ -516,7 +589,7 @@ class _GenericStateBlock(StateBlock):
                     # Subtract 1 to avoid potential singularities at Tcrit
                     Tbub0 = min(blk[k].params.get_component(j)
                                 .temperature_crit.value
-                                for j in blk[k].params.component_list) - 1
+                                for j in valid_comps) - 1
 
                     err = 1
                     counter = 0
@@ -531,7 +604,7 @@ class _GenericStateBlock(StateBlock):
                                     blk[k].params.get_component(j),
                                     Tbub0) *
                             blk[k].mole_frac_comp[j]
-                            for j in blk[k].params.component_list) -
+                            for j in valid_comps) -
                             blk[k].pressure)
                         df = value(sum(
                                get_method(blk[k], "pressure_sat_comp", j)(
@@ -539,12 +612,13 @@ class _GenericStateBlock(StateBlock):
                                           blk[k].params.get_component(j),
                                           Tbub0,
                                           dT=True)
-                               for j in blk[k].params.component_list))
+                               for j in valid_comps))
 
                         # Limit temperature step to avoid excessive overshoot
-                        # Only limit positive steps due to non-linearity
                         if f/df < -50:
                             Tbub1 = Tbub0 + 50
+                        elif f/df > 50:
+                            Tbub1 = Tbub0 - 50
                         else:
                             Tbub1 = Tbub0 - f/df
 
@@ -554,7 +628,7 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_bubble[pp].value = Tbub0
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_tbub[pp, j].value = value(
                                 blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
@@ -562,9 +636,14 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tbub0))
 
-            # DEw temperature initialization
+            # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     if hasattr(blk[k], "_mole_frac_tbub"):
                         # If Tbub has been calculated above, use this as the
                         # starting point
@@ -574,8 +653,9 @@ class _GenericStateBlock(StateBlock):
                         # as starting point
                         # Subtract 1 to avoid potential singularities at Tcrit
                         Tdew0 = min(
-                            blk[k].params.get_component(j).temperature_crit
-                            for j in blk[k].params.component_list) - 1
+                            blk[k].params.get_component(j).
+                            temperature_crit.value
+                            for j in valid_comps) - 1
 
                     err = 1
                     counter = 0
@@ -591,7 +671,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k],
                                            blk[k].params.get_component(j),
                                            Tdew0)
-                                for j in blk[k].params.component_list) - 1)
+                                for j in valid_comps) - 1)
                         df = -value(
                                 blk[k].pressure *
                                 sum(blk[k].mole_frac_comp[j] /
@@ -604,11 +684,13 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tdew0,
                                            dT=True)
-                                    for j in blk[k].params.component_list))
+                                    for j in valid_comps))
 
                         # Limit temperature step to avoid excessive overshoot
                         if f/df < -50:
                             Tdew1 = Tdew0 + 50
+                        elif f/df > 50:
+                            Tdew1 = Tdew0 - 50
                         else:
                             Tdew1 = Tdew0 - f/df
 
@@ -618,7 +700,7 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_dew[pp].value = Tdew0
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_tdew[pp, j].value = value(
                                 blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
@@ -629,14 +711,19 @@ class _GenericStateBlock(StateBlock):
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     blk[k].pressure_bubble[pp].value = value(
                             sum(blk[k].mole_frac_comp[j] *
                                 blk[k].params.config.pressure_sat_comp
                                       .pressure_sat_comp(
                                               blk[k], j, blk[k].temperature)
-                                for j in blk[k].params.component_list))
+                                for j in valid_comps))
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_pbub[pp, j].value = value(
                             blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
@@ -647,14 +734,19 @@ class _GenericStateBlock(StateBlock):
             # Dew pressure initialization
             if hasattr(blk[k], "_mole_frac_pdew"):
                 for pp in blk[k].params._pe_pairs:
+                    valid_comps = _valid_VL_component_list(blk[k], pp)
+
+                    if valid_comps == []:
+                        continue
+
                     blk[k].pressure_dew[pp].value = value(
                             sum(1/(blk[k].mole_frac_comp[j] /
                                    blk[k].params.config.pressure_sat_comp
                                    .pressure_sat_comp(
                                            blk[k], j, blk[k].temperature))
-                                for j in blk[k].params.component_list))
+                                for j in valid_comps))
 
-                    for j in blk[k].params.component_list:
+                    for j in valid_comps:
                         blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
@@ -668,10 +760,10 @@ class _GenericStateBlock(StateBlock):
                                         "eq_pressure_bubble",
                                         "eq_temperature_dew",
                                         "eq_temperature_bubble",
-                                        "_sum_mole_frac_tbub",
-                                        "_sum_mole_frac_tdew",
-                                        "_sum_mole_frac_pbub",
-                                        "_sum_mole_frac_pdew"):
+                                        "eq_mole_frac_tbub",
+                                        "eq_mole_frac_tdew",
+                                        "eq_mole_frac_pbub",
+                                        "eq_mole_frac_pdew"):
                     c.deactivate()
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
@@ -817,6 +909,9 @@ class GenericStateBlockData(StateBlockData):
                 pe_form_config[pp].phase_equil(self, pp)
 
             def rule_equilibrium(b, phase1, phase2, j):
+                if ((phase1, j) not in b.params._phase_component_set or
+                        (phase2, j) not in b.params._phase_component_set):
+                    return Constraint.Skip
                 config = b.params.get_component(j).config
                 try:
                     e_mthd = config.phase_equilibrium_form[(phase1, phase2)]
@@ -841,13 +936,8 @@ class GenericStateBlockData(StateBlockData):
         Yields:
             components present in phase.
         """
-        if self.params.get_phase(phase).config.component_list is None:
-            # All components in all phases
-            for j in self.params.component_list:
-                yield j
-        else:
-            # Return only components for indicated phase
-            for j in self.params.get_phase(phase).config.component_list:
+        for j in self.params.component_list:
+            if (phase, j) in self.params._phase_component_set:
                 yield j
 
     # -------------------------------------------------------------------------
@@ -1178,3 +1268,20 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
             raise
+
+
+def _valid_VL_component_list(blk, pp):
+    valid_comps = []
+    # Only need to do this for V-L pairs, so check
+    pparams = blk.params
+    if ((pparams.get_phase(pp[0]).is_liquid_phase() and
+         pparams.get_phase(pp[1]).is_vapor_phase()) or
+        (pparams.get_phase(pp[0]).is_vapor_phase() and
+         pparams.get_phase(pp[1]).is_liquid_phase())):
+
+        for j in blk.params.component_list:
+            if ((pp[0], j) in pparams._phase_component_set and
+                    (pp[1], j) in pparams._phase_component_set):
+                valid_comps.append(j)
+
+    return valid_comps

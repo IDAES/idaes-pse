@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -24,6 +24,11 @@ from idaes.core import FlowsheetBlock
 import csv
 import os
 import idaes
+
+
+# Mark module as an integration test
+pytestmark = pytest.mark.integration
+
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
@@ -195,7 +200,7 @@ class TestHelm(object):
         model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
         return model
 
-    def test_thero_expression_writter(self, model):
+    def test_thermo_expression_writter(self, model):
         te = model.te
         mw = self.mw
         Tc = self.Tc
@@ -244,7 +249,6 @@ class TestHelm(object):
             #binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
             #binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
 
-
     def test_solve_vapor_density(self, model):
         """ The density calculations should be tested by the thermo expression
         tests, but they are pretty fundimental to everything else, so test them
@@ -256,7 +260,6 @@ class TestHelm(object):
             if data["phase"][i] == "vapor":
                 rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
-
 
     def test_solve_liquid_density(self, model):
         """ The density calculations should be tested by the thermo expression
@@ -270,7 +273,6 @@ class TestHelm(object):
                 rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
                 print("T {}, P {}, rho dat {}, rho {}".format(T, data["P"][i], data["rho"][i], rho))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-1)
-
 
     def test_solve_supercritical_density(self, model):
         """ The density calculations should be tested by the thermo expression

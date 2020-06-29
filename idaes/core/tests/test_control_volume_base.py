@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -33,6 +33,7 @@ from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
 
 # -----------------------------------------------------------------------------
 # Test Enumerators for balance type options
+@pytest.mark.unit
 def test_material_balance_type():
     assert len(MaterialBalanceType) == 6
 
@@ -41,6 +42,7 @@ def test_material_balance_type():
         MaterialBalanceType.foo
 
 
+@pytest.mark.unit
 def test_energy_balance_type():
     assert len(EnergyBalanceType) == 6
 
@@ -49,6 +51,7 @@ def test_energy_balance_type():
         EnergyBalanceType.foo
 
 
+@pytest.mark.unit
 def test_momentum_balance_type():
     assert len(MomentumBalanceType) == 5
 
@@ -67,6 +70,7 @@ def testflow_direction():
 
 # -----------------------------------------------------------------------------
 # Test CONFIG_Template
+@pytest.mark.unit
 def test_CONFIG_Template():
     c = CONFIG_Template()
 
@@ -92,6 +96,7 @@ def test_CONFIG_Template():
             assert c[i] is False
 
 
+@pytest.mark.unit
 def test_CONFIG_Template_validation_general():
     # No config argument takes a string, float/int or list
     c = CONFIG_Template()
@@ -105,6 +110,7 @@ def test_CONFIG_Template_validation_general():
             c[i] = [1, 2]
 
 
+@pytest.mark.unit
 def test_CONFIG_Template_true_false():
     # Check arguments that accept True/False as values
     c = CONFIG_Template()
@@ -118,6 +124,7 @@ def test_CONFIG_Template_true_false():
             c[i] = False
 
 
+@pytest.mark.unit
 def test_CONFIG_Template_material_balance_type():
     c = CONFIG_Template()
 
@@ -125,6 +132,7 @@ def test_CONFIG_Template_material_balance_type():
         c["material_balance_type"] = i
 
 
+@pytest.mark.unit
 def test_CONFIG_Template_energy_balance_type():
     c = CONFIG_Template()
 
@@ -132,6 +140,7 @@ def test_CONFIG_Template_energy_balance_type():
         c["energy_balance_type"] = i
 
 
+@pytest.mark.unit
 def test_CONFIG_Template_momentum_balance_type():
     c = CONFIG_Template()
 
@@ -167,6 +176,7 @@ class CVFrameData(ControlVolumeBlockData):
         super(ControlVolumeBlockData, self).build()
 
 
+@pytest.mark.unit
 def test_config_block():
     cv = CVFrame(concrete=True)
 
@@ -184,6 +194,7 @@ def test_config_block():
 
 # -----------------------------------------------------------------------------
 # Test _setup_dynamics
+@pytest.mark.unit
 def test_setup_dynamics_use_parent_value():
     # Test that dynamic = None works correctly
     m = ConcreteModel()
@@ -197,6 +208,7 @@ def test_setup_dynamics_use_parent_value():
     assert m.fs.u.cv.config.has_holdup is False
 
 
+@pytest.mark.unit
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     # Test that default falls back to flowsheet
     fs = Flowsheet(default={"dynamic": False}, concrete=True)
@@ -209,6 +221,7 @@ def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     assert fs.b.cv.config.dynamic is False
 
 
+@pytest.mark.unit
 def test_setup_dynamics_dynamic_in_ss():
     # Test that dynamic = None works correctly
     fs = Flowsheet(default={"dynamic": False}, concrete=True)
@@ -225,6 +238,7 @@ def test_setup_dynamics_dynamic_in_ss():
         fs.b.cv._setup_dynamics()
 
 
+@pytest.mark.unit
 def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
     fs = Flowsheet(default={"dynamic": True}, concrete=True)
@@ -255,6 +269,7 @@ class _PropertyParameterBlock(PhysicalParameterBlock):
         self.component_list = Set(initialize=["c1", "c2"])
 
 
+@pytest.mark.unit
 def test_get_property_package_set():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
@@ -262,6 +277,7 @@ def test_get_property_package_set():
     m.cv._get_property_package()
 
 
+@pytest.mark.unit
 def test_get_property_package_default_args():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock(
@@ -272,6 +288,7 @@ def test_get_property_package_default_args():
     assert m.cv.config.property_package_args["test"] == "foo"
 
 
+@pytest.mark.unit
 def test_get_reaction_package_module_combine_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
@@ -290,6 +307,7 @@ def test_get_reaction_package_module_combine_args():
 
 # -----------------------------------------------------------------------------
 # Test _get_default_prop_pack
+@pytest.mark.unit
 def test_get_default_prop_pack_works():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -301,6 +319,7 @@ def test_get_default_prop_pack_works():
 
 
 # TODO : should test more failure modes
+@pytest.mark.unit
 def test_get_default_prop_pack_no_default():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -310,6 +329,7 @@ def test_get_default_prop_pack_no_default():
         m.fs.cv._get_default_prop_pack()
 
 
+@pytest.mark.unit
 def test_get_property_package_call_to_get_default_prop_pack():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -323,6 +343,7 @@ def test_get_property_package_call_to_get_default_prop_pack():
 
 # -----------------------------------------------------------------------------
 # Test _get_indexing_sets
+@pytest.mark.unit
 def test_get_indexing_sets_missing_phase_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
@@ -334,6 +355,7 @@ def test_get_indexing_sets_missing_phase_list():
         m.cv._get_indexing_sets()
 
 
+@pytest.mark.unit
 def test_get_indexing_sets_missing_component_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
@@ -347,6 +369,7 @@ def test_get_indexing_sets_missing_component_list():
 
 # -----------------------------------------------------------------------------
 # Test _get_reaction_package
+@pytest.mark.unit
 def test_get_reaction_package_none():
     m = ConcreteModel()
     m.r = CVFrame()
@@ -365,6 +388,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         self._package_module = inspect.getmodule(frm[0])
 
 
+@pytest.mark.unit
 def test_get_reaction_package_module():
     m = ConcreteModel()
     m.rp = ReactionParameterTestBlock(
@@ -377,6 +401,7 @@ def test_get_reaction_package_module():
     assert m.cv.config.reaction_package_args["test"] == "foo"
 
 
+@pytest.mark.unit
 def test_get_reaction_package_module_default_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
@@ -396,6 +421,7 @@ def test_get_reaction_package_module_default_args():
 
 # -----------------------------------------------------------------------------
 # Test build and auto_construct methods
+@pytest.mark.unit
 def test_build():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -405,6 +431,7 @@ def test_build():
     super(CVFrameData, m.fs.cv).build()
 
 
+@pytest.mark.unit
 def test_add_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -414,6 +441,7 @@ def test_add_geometry():
         m.fs.cv.add_geometry()
 
 
+@pytest.mark.unit
 def test_auto_construct():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -427,6 +455,7 @@ def test_auto_construct():
 
 # -----------------------------------------------------------------------------
 # Test NotImplementedErrors for all property and balance type methods
+@pytest.mark.unit
 def test_add_state_blocks():
     m = ConcreteModel()
     m.cv = CVFrame()
@@ -435,6 +464,7 @@ def test_add_state_blocks():
         m.cv.add_state_blocks()
 
 
+@pytest.mark.unit
 def test_add_reaction_blocks():
     m = ConcreteModel()
     m.cv = CVFrame()
@@ -443,6 +473,7 @@ def test_add_reaction_blocks():
         m.cv.add_reaction_blocks()
 
 
+@pytest.mark.unit
 def test_add_material_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
@@ -458,6 +489,7 @@ def test_add_material_balances():
                 m.cv.add_material_balances(t)
 
 
+@pytest.mark.unit
 def test_add_energy_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
@@ -473,6 +505,7 @@ def test_add_energy_balances():
                 m.cv.add_energy_balances(t)
 
 
+@pytest.mark.unit
 def test_add_momentum_balances():
     m = ConcreteModel()
     m.cv = CVFrame()

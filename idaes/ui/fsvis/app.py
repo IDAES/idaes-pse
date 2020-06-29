@@ -1,3 +1,15 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 """
 Flask app for flowsheet viewer server.
 
@@ -19,6 +31,7 @@ URL but provide JSON content. See the tests for programmatic examples using the
 # standard library
 from multiprocessing import Process
 import json
+import os
 import socket
 # third party
 from flask import Flask, request, render_template#, send_static_file
@@ -131,11 +144,23 @@ class App:
         return getattr(self.instance, name)
 
 
+def save(data, id_):
+    path = os.path.expandvars(os.path.join(os.path.expanduser("~"), ".idaes", "viz"))
+    if not os.path.exists(path):
+        os.makedirs(path)
+    file_path = os.path.join(path, f"{id_}.viz")
+    with open(file_path, "w") as viz_file:
+        json.dump(data, viz_file)
+
+
 def update(request, id_):
     data = request.get_json()
     if data is None:
         raise NoDataError()
     db.update(id_, data)
+    save_header = request.headers.get("Source", None)
+    if save_header == "save_button":
+        save(data, id_)
     return db.fetch(id_)
 
 

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -58,6 +58,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_bad_option():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -65,6 +66,7 @@ def test_bad_option():
         m.fs.unit = HeatExchanger(default={"I'm a bad option": "hot"})
 
 
+@pytest.mark.unit
 def test_same_name():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -72,6 +74,7 @@ def test_same_name():
         m.fs.unit = HeatExchanger(default={"cold_side_name": "shell"})
 
 
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -123,6 +126,7 @@ def test_config():
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_costing():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -163,6 +167,7 @@ def test_costing():
                                             pytest.approx(529738.6793, 1e-5)
 
 
+@pytest.mark.unit
 def test_costing_book():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -221,6 +226,7 @@ class TestBTX_cocurrent(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet_1")
         assert len(btx.fs.unit.inlet_1.vars) == 4
@@ -264,6 +270,7 @@ class TestBTX_cocurrent(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet_1.temperature[0].fix(365)  # K
@@ -285,11 +292,13 @@ class TestBTX_cocurrent(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -301,6 +310,7 @@ class TestBTX_cocurrent(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.outlet_1.flow_mol[0]))
@@ -319,6 +329,7 @@ class TestBTX_cocurrent(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet_1.flow_mol[0] -
                          btx.fs.unit.outlet_1.flow_mol[0])) <= 1e-6
@@ -336,6 +347,7 @@ class TestBTX_cocurrent(object):
         assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -358,6 +370,7 @@ class TestBTX_cocurrent_alt_name(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "hot_inlet")
         assert len(btx.fs.unit.hot_inlet.vars) == 4
@@ -401,6 +414,7 @@ class TestBTX_cocurrent_alt_name(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
         btx.fs.unit.hot_inlet.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.hot_inlet.temperature[0].fix(365)  # K
@@ -422,11 +436,13 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -438,6 +454,7 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.hot_outlet.flow_mol[0]))
@@ -456,6 +473,7 @@ class TestBTX_cocurrent_alt_name(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.hot_inlet.flow_mol[0] -
                          btx.fs.unit.hot_outlet.flow_mol[0])) <= 1e-6
@@ -473,6 +491,7 @@ class TestBTX_cocurrent_alt_name(object):
         assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -497,6 +516,7 @@ class TestIAPWS_countercurrent(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet_1.vars) == 3
         assert hasattr(iapws.fs.unit.inlet_1, "flow_mol")
@@ -534,6 +554,7 @@ class TestIAPWS_countercurrent(object):
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
         iapws.fs.unit.inlet_1.flow_mol[0].fix(100)
         iapws.fs.unit.inlet_1.enth_mol[0].fix(4000)
@@ -548,6 +569,7 @@ class TestIAPWS_countercurrent(object):
 
         assert degrees_of_freedom(iapws) == 0
 
+    @pytest.mark.unit
     def test_dof_alt_name1(self, iapws):
         iapws.fs.unit.shell_inlet.flow_mol[0].fix(100)
         iapws.fs.unit.shell_inlet.enth_mol[0].fix(4000)
@@ -565,11 +587,13 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -581,6 +605,7 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, iapws):
         assert pytest.approx(100, abs=1e-5) == \
             value(iapws.fs.unit.outlet_1.flow_mol[0])
@@ -600,6 +625,7 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, iapws):
         assert abs(value(iapws.fs.unit.inlet_1.flow_mol[0] -
                          iapws.fs.unit.outlet_1.flow_mol[0])) <= 1e-6
@@ -617,6 +643,7 @@ class TestIAPWS_countercurrent(object):
         assert abs(shell_side + tube_side) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()
 
@@ -639,6 +666,7 @@ class TestSaponification_crossflow(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
         assert len(sapon.fs.unit.inlet_1.vars) == 4
         assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
@@ -678,6 +706,7 @@ class TestSaponification_crossflow(object):
         assert number_total_constraints(sapon) == 20
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
         sapon.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
         sapon.fs.unit.inlet_1.temperature[0].fix(320)
@@ -706,11 +735,13 @@ class TestSaponification_crossflow(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -722,6 +753,7 @@ class TestSaponification_crossflow(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, sapon):
         assert pytest.approx(1e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet_1.flow_vol[0])
@@ -763,6 +795,7 @@ class TestSaponification_crossflow(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, sapon):
         shell_side = value(
                 sapon.fs.unit.outlet_1.flow_vol[0] *
@@ -777,5 +810,6 @@ class TestSaponification_crossflow(object):
         assert abs(shell_side + tube_side) <= 1e0
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()

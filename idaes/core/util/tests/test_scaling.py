@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -58,6 +58,7 @@ class TestCalculateScalingFactors():
         m.scaling_expression[m.c3] = 1 / m.e1
         return m
 
+    @pytest.mark.unit
     def test_value_basis(self, model):
         # Test value based scaling factor calculations
         calculate_scaling_factors(model, basis=ScalingBasis.Value)
@@ -68,6 +69,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(1 / 6)
         assert model.scaling_factor[model.c3] == pytest.approx(1 / 6)
 
+    @pytest.mark.unit
     def test_inverse_basis(self, model):
         # Test inverse based scaling factor calculations
         calculate_scaling_factors(model, basis=ScalingBasis.InverseVarScale)
@@ -77,6 +79,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(1 / 110)
         assert model.scaling_factor[model.c3] == pytest.approx(1 / 200)
 
+    @pytest.mark.unit
     def test_var_basis(self, model):
         # Test scaling factor based calculation
         calculate_scaling_factors(model, basis=ScalingBasis.VarScale)
@@ -86,6 +89,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(110)
         assert model.scaling_factor[model.c3] == pytest.approx(200)
 
+    @pytest.mark.unit
     def test_lower_basis(self, model):
         # Test scaling factor based on lower bound, falling back on 1 where no
         # lower bound exists
@@ -96,6 +100,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(1 / 1)
         assert model.scaling_factor[model.c3] == pytest.approx(1)
 
+    @pytest.mark.unit
     def test_upper_basis(self, model):
         # Test scaling factor based on upper bound, falling back on 1 where no
         # upper bound exists
@@ -106,6 +111,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(1 / 7)
         assert model.scaling_factor[model.c3] == pytest.approx(1)
 
+    @pytest.mark.unit
     def test_mixed_basis(self, model):
         # Test scaling factor based on midpoint of bounds and falling back on
         # scale factor
@@ -117,6 +123,7 @@ class TestCalculateScalingFactors():
         assert model.b1.scaling_factor[model.b1.c2] == pytest.approx(1 / 44)
         assert model.scaling_factor[model.c3] == pytest.approx(1 / 200)
 
+    @pytest.mark.unit
     def test_expressions(self, model):
         # Check that the scaling factor calculations didn't change the scaling
         # factor expressions
@@ -131,6 +138,7 @@ class TestCalculateScalingFactors():
         assert model.scaling_factor[model.c3] == pytest.approx(1 / 200)
 
 
+@pytest.mark.unit
 def test_find_badly_scaled_vars():
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=1e6)
@@ -159,6 +167,7 @@ def test_find_badly_scaled_vars():
     assert id(m.z) not in a
 
 
+@pytest.mark.unit
 def test_grad_fd():
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=1e6)
@@ -256,6 +265,7 @@ class TestScaleSingleConstraint():
         m.scaling_factor[m.c3] = 1 / 1e3
         return m
 
+    @pytest.mark.unit
     def test_unscaled_constraints(self, model):
         assert model.c1.lower is None
         assert model.c1.body is model.x
@@ -267,28 +277,33 @@ class TestScaleSingleConstraint():
         assert model.c3.body is model.x
         assert model.c3.upper is None
 
+    @pytest.mark.unit
     def test_not_constraint(self, model):
         with pytest.raises(TypeError):
             scale_single_constraint(model.x)
 
+    @pytest.mark.unit
     def test_less_than_constraint(self, model):
         scale_single_constraint(model.c1)
         assert model.c1.lower is None
         assert model.c1.body() == pytest.approx(model.x.value / 1e3)
         assert model.c1.upper.value == pytest.approx(1)
 
+    @pytest.mark.unit
     def test_equality_constraint(self, model):
         scale_single_constraint(model.c2)
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
 
+    @pytest.mark.unit
     def test_greater_than_constraint(self, model):
         scale_single_constraint(model.c3)
         assert model.c3.lower.value == pytest.approx(1)
         assert model.c3.body() == pytest.approx(model.x.value / 1e3)
         assert model.c3.upper is None
 
+    @pytest.mark.unit
     def test_scaling_factor_and_expression_replacement(self, model):
         model.c4 = pyo.Constraint(expr=model.x <= 1e6)
         model.scaling_factor[model.c4] = 1e-6
@@ -306,10 +321,12 @@ class TestScaleSingleConstraint():
         m.c = pyo.Constraint(expr=m.y <= 1e3)
         return m
 
+    @pytest.mark.unit
     def test_no_scaling_factor_suffix(self, model2):
         with pytest.raises(ConfigurationError):
             scale_single_constraint(model2.c)
 
+    @pytest.mark.unit
     def test_no_scaling_factor(self, model2):
         model2.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         scale_single_constraint(model2.c)
@@ -340,6 +357,7 @@ class TestScaleConstraints():
 
         return m
 
+    @pytest.mark.unit
     def test_scale_one_block(self, model):
         scale_constraints(model, descend_into=False)
         # scaled
@@ -353,6 +371,7 @@ class TestScaleConstraints():
         assert model.b1.c1.upper.value == pytest.approx(1e9)
         assert model.b1.b2.c1.upper.value == pytest.approx(1e12)
 
+    @pytest.mark.unit
     def test_scale_model(self, model):
         scale_constraints(model)
         assert model.c1.upper.value == pytest.approx(1)

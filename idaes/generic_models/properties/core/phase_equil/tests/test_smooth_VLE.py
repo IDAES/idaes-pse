@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -76,6 +76,7 @@ def frame():
     return m
 
 
+@pytest.mark.unit
 def test_build(frame):
     assert isinstance(frame.props[1].eps_1_Liq_Vap, Param)
     assert value(frame.props[1].eps_1_Liq_Vap) == 0.01
@@ -89,6 +90,7 @@ def test_build(frame):
     assert isinstance(frame.props[1]._teq_constraint_Liq_Vap, Constraint)
 
 
+@pytest.mark.unit
 def test_t1(frame):
     # Test that T1 is the max(T, T_bubble)
     # Can't check directly, but see that residual of constraint is correct
@@ -101,6 +103,7 @@ def test_t1(frame):
                 pytest.approx(0, abs=5e-3)
 
 
+@pytest.mark.unit
 def test_t_eq(frame):
     # Test that Teq is the min(T1, T_dew)
     # Can't check directly, but see that residual of constraint is correct
@@ -113,6 +116,7 @@ def test_t_eq(frame):
                 pytest.approx(0, abs=5e-3)
 
 
+@pytest.mark.unit
 def test_non_VLE_pair():
     m = ConcreteModel()
 
