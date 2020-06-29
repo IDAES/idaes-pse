@@ -90,9 +90,12 @@ def main(plot_switch=False):
                    inputs_at_t0=initial_plant_inputs,
                    solver=solver, outlvl=idaeslog.DEBUG,
                    sample_time=sample_time)
-    
+
     plant = nmpc.plant
     controller = nmpc.controller
+
+    nmpc.solve_consistent_initial_conditions(plant)
+    nmpc.solve_consistent_initial_conditions(controller)
     
     set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
                  (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
