@@ -220,6 +220,9 @@ def nmpc():
 def test_calculate_full_state_setpoint(nmpc):
     controller = nmpc.controller
 
+    nmpc.solve_consistent_initial_conditions(controller)
+    assert nmpc.has_consistent_initial_conditions(controller, tolerance=1e-6)
+
     # Deactivate tracking objective from previous tests
     #controller._NMPC_NAMESPACE.tracking_objective.deactivate()
     
@@ -578,10 +581,8 @@ def test_initialize_by_element_in_range(nmpc):
     time = plant.time
     sample_time = nmpc.sample_time
 
-#    was_violated = {id(con):
-#            abs(value(con.body)-value(con.upper))>=1e-6 
-#            for con in activated_equalities_generator(plant)}
-    # ^ Can't calculate value because many variables are not initialized
+    nmpc.solve_consistent_initial_conditions(plant)
+    assert nmpc.has_consistent_initial_conditions(plant, tolerance=1e-6)
 
     assert degrees_of_freedom(plant) == 0
     initialize_by_element_in_range(plant, time, 0, 3,
@@ -600,11 +601,6 @@ def test_initialize_by_element_in_range(nmpc):
             if t_index <= 3:
                 # Equalities in simulated range should not be violated
                 assert abs(value(con.body)-value(con.upper)) < 1e-6
-#            else:
-#                # Equalities outside simulated range should be violated
-#                # if they were violated before
-#                if was_violated[id(con)]:
-#                    assert abs(value(con.body)-value(con.upper)) >= 1e-6
 
     nmpc.simulate_plant(0)
 
