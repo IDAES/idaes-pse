@@ -198,8 +198,8 @@ def main():
     strip_bounds.apply_to(m, reversible=True)
     # this is the final solve with both flowsheets connected
     results = solver.solve(m, tee=True)
-    return m, solver
+    return m, results
 
 
 if __name__ == "__main__":
-    m, solver = main()
+    m, results = main()

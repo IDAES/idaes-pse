@@ -211,9 +211,9 @@ def initialize(m):
     m.fs.ECON.side_1_inlet.flow_mol[0].fix(24194.177)  # mol/s
     m.fs.ECON.side_1_inlet.enth_mol[0].fix(14990.97)
     m.fs.ECON.side_1_inlet.pressure[0].fix(26922222.222)  # Pa
-    FG_frac = 0.75
+
     # FLUE GAS Inlet from Primary Superheater
-    FGrate = 28.3876e3*FG_frac  # mol/s equivalent of ~1930.08 klb/hr
+    FGrate = 21290.6999  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.ECON.side_2_inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
     m.fs.ECON.side_2_inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
@@ -261,7 +261,7 @@ def initialize(m):
     m.fs.PrSH.side_1_inlet.pressure[0].fix(2.5449e7)   # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
-    FGrate = 28.3876e3*0.18*FG_frac  # mol/s equivalent of ~1930.08 klb/hr
+    FGrate = 21290.6999*0.18  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.PrSH.side_2_inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
     m.fs.PrSH.side_2_inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
@@ -303,7 +303,7 @@ def initialize(m):
     m.fs.FSH.side_1_inlet.pressure[0].fix(24790249.01)  # Pascals
 
     # FLUE GAS Inlet from Primary Superheater
-    FGrate = 28.3876e3*FG_frac  # mol/s equivalent of ~1930.08 klb/hr
+    FGrate = 21290.6999  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.FSH.side_2_inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
     m.fs.FSH.side_2_inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
@@ -344,7 +344,7 @@ def initialize(m):
     m.fs.RH.side_1_inlet.pressure[0].fix(3677172.33638)    # Pascals
 
     # FLUE GAS Inlet from Finishing Superheater
-    FGrate = 28.3876e3*0.85*FG_frac  # mol/s equivalent of ~1930.08 klb/hr
+    FGrate = 21290.6999*0.85  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.RH.side_2_inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
     m.fs.RH.side_2_inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
@@ -395,7 +395,7 @@ def initialize(m):
     #   splitter flue gas from Finishing SH to Reheater and Primary SH
     m.fs.Spl1.split_fraction[0, 'outlet_1'].fix(0.75)  # 0.85)
     # FLUE GAS Inlet from Primary Superheater
-    FGrate = 28.3876e3*FG_frac  # mol/s equivalent of ~1930.08 klb/hr
+    FGrate = 21290.6999  # mol/s
     # Use FG molar composition to set component flow rates (baseline report)
     m.fs.Spl1.inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
     m.fs.Spl1.inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
