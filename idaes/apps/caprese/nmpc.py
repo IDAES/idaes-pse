@@ -366,11 +366,11 @@ class NMPCSim(DynamicBase):
 
     def validate_sample_time(self, sample_time, *models, **kwargs):
         """Makes sure sample points, or integer multiple of sample time-offsets
-        from time.first() lie on finite element boundaries, and that horizon of
-        each model is an integer multiple of sample time. Assembles a list of
-        sample points and a dictionary mapping sample points to the number of 
-        finite elements in the preceding sampling period, and adds them as
-        attributes to _NMPC_NAMESPACE.
+        from time.first(), lie on finite element boundaries, and that the 
+        horizon of each model is an integer multiple of sample time. Assembles 
+        a list of sample points and a dictionary mapping sample points to the 
+        number of finite elements in the preceding sampling period, and adds 
+        them as attributes to _NMPC_NAMESPACE.
 
         Args:
             sample_time: Sample time to check
