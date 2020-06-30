@@ -63,6 +63,10 @@ class VariableCategory(ConfigEnum):
     FIXED = 55
     SCALAR = 56
 
+class PlantHorizonType(ConfigEnum):
+    FULL = 61
+    ROLLING = 62
+
 # This function is used as the domain for the user-provided
 # list of inputs at time.first().
 def validate_list_of_vardata(varlist):

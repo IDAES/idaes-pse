@@ -21,7 +21,8 @@ from pyomo.dae.flatten import flatten_dae_variables
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.core.kernel.component_map import ComponentMap
 from idaes.apps.caprese.common import config as dyn_config
-from idaes.apps.caprese.common.config import (VariableCategory)
+from idaes.apps.caprese.common.config import (VariableCategory,
+        PlantHorizonType)
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
@@ -67,6 +68,14 @@ class DynamicBase(object):
                 default=1e-8,
                 domain=float,
                 doc='Tolerance for checking constraint violation',
+                )
+            )
+    CONFIG.declare(
+            'plant_horizon_type',
+            ConfigValue(
+                default=PlantHorizonType.FULL,
+                domain=PlantHorizonType.from_enum_or_string,
+                doc='What type of plant time horizon to check for',
                 )
             )
 

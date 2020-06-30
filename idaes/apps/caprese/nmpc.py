@@ -43,6 +43,8 @@ from idaes.apps.caprese.util import (initialize_by_element_in_range,
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
         get_violated_bounds_at_time)
+from idaes.apps.caprese.common.config import(
+        PlantHorizonType)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
@@ -323,8 +325,17 @@ class NMPCSim(DynamicBase):
         self.validate_fixedness(self.plant, self.controller)
 
         self.sample_time = self.config.sample_time
-        self.validate_sample_time(self.sample_time, 
-                self.controller, self.plant)
+
+        plant_type = self.config.plant_horizon_type
+        if plant_type == PlantHorizonType.FULL:
+            self.validate_sample_time(self.sample_time, 
+                    self.controller, self.plant)
+        elif plant_type == PlantHorizonType.ROLLING:
+            self.validate_sample_time(self.sample_time, self.controller)
+            self.validate_rolling_horizon_plant()
+        else:
+            raise ValueError(
+                'Plant horizon type %s not recognized' % plant_type)
 
         # Flag for whether controller has been initialized
         # by a previous solve
@@ -434,6 +445,24 @@ class NMPCSim(DynamicBase):
             # Here sample_points excludes time.first()
             model._NMPC_NAMESPACE.fe_per_sample = fe_per_sample_dict
             model._NMPC_NAMESPACE.sample_points = sample_points
+
+
+    def validate_rolling_horizon_plant(self, **kwargs):
+        config = self.config(kwargs)
+        continuous_set_tolerance = config.continuous_set_tolerance
+        plant = self.plant
+        plant_time = self.plant_time
+        namespace = getattr(plant, self.get_namespace_name())
+        sample_time = self.sample_time
+        t0 = plant_time.first()
+        ts = t0 + sample_time
+        ts_plant = find_point_in_continuousset(ts, plant_time,
+                tolerance=continuous_set_tolerance)
+        if ts_plant is None:
+            raise RuntimeError(
+                'Could not find sample point %s in the plant' % ts)
+        sample_points = [t0, ts_plant]
+        namespace.sample_points = sample_points
 
 
     def validate_slices(self, tgt_model, src_model, src_time, src_slices):
@@ -649,7 +678,7 @@ class NMPCSim(DynamicBase):
                               **noise_args)
 
 
-    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
+    def inject_control_inputs_into_plant(self, t_plant=None, **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time, adding noise if desired.
@@ -663,6 +692,14 @@ class NMPCSim(DynamicBase):
         config = self.config(kwargs)
         tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
+        plant_type = config.plant_horizon_type
+
+        if t_plant is None and plant_type == PlantHorizonType.FULL:
+            raise ValueError(
+                    'Plant time point must be specifed if a full-horizon '
+                    'plant model is used.')
+        if plant_type == PlantHorizonType.ROLLING:
+            t_plant = self.plant_time.first()
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
