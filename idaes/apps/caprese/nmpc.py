@@ -863,8 +863,6 @@ class NMPCSim(DynamicBase):
         non_initial_time = [t for t in time if t != time.first()]
         deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
 
-#        inconsistent = self.get_inconsistent_initial_conditions(controller, time,
-#                outlvl=idaeslog.ERROR)
         inconsistent = get_inconsistent_initial_conditions(
                 controller, 
                 time,
