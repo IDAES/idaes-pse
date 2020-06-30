@@ -26,6 +26,7 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData
+from pyomo.core.base.component import ComponentUID
 from pyomo.opt.solver import SystemCallSolver
 
 from idaes.core import FlowsheetBlock
@@ -38,6 +39,7 @@ from idaes.apps.caprese.common.config import VariableCategory, NoiseBoundOption
 import idaes.logger as idaeslog
 
 from collections import OrderedDict, namedtuple
+import os
 import random
 import time as timemodule
 import enum
@@ -1009,3 +1011,16 @@ def histories_from_json(filename):
         histories.append(history)
     return histories
 
+
+def cuid_from_timeslice(_slice, time):
+    t1 = time[1]
+    t2 = time[2]
+    str1 = _slice[t1].name
+    str2 = _slice[t2].name
+    prefix = os.path.commonprefix(str1, str2)
+    str1 = str1[::-1]
+    str2 = str2[::-1]
+    suffix = os.path.commonprefix(str1, str2)
+    wildcard = '*'.join([prefix, suffix])
+    return ComponentUID(wildcard)    
+    
