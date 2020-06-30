@@ -297,8 +297,6 @@ class NMPCSim(DynamicBase):
         # Maybe include a kwarg for require_steady - if False, set-point is not
         # forced to be a steady state
 
-        # TODO: validate_time_set function
-
         init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
 
         # Only need to manipulate bounds of controller model. Assume the 
