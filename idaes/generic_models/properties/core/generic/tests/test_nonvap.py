@@ -155,6 +155,7 @@ configuration = {
 
 
 class TestParamBlock(object):
+    @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
         model.params = GenericParameterBlock(default=configuration)
@@ -212,9 +213,6 @@ class TestNonVapourisable_Vapour(object):
                 [1],
                 default={"defined_state": True})
 
-        return model
-
-    def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(380)
@@ -223,9 +221,13 @@ class TestNonVapourisable_Vapour(object):
         model.props[1].mole_frac_comp["toluene"].fix(0.4)
         model.props[1].mole_frac_comp["l_only"].fix(0.2)
 
+        return model
+
+    @pytest.mark.unit
+    def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, model):
@@ -247,6 +249,7 @@ class TestNonVapourisable_Vapour(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solve(self, model):
@@ -257,7 +260,7 @@ class TestNonVapourisable_Vapour(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, model):
@@ -305,6 +308,7 @@ class TestNonVapourisable_Vapour(object):
                 model.props[1].mole_frac_phase_comp["Liq", "l_only"] *
                 model.props[1].phase_frac["Liq"])
 
+    @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):
         model.props[1].report()
@@ -320,9 +324,6 @@ class TestNonVapourisable_Liquid(object):
                 [1],
                 default={"defined_state": True})
 
-        return model
-
-    def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(360)
@@ -331,9 +332,13 @@ class TestNonVapourisable_Liquid(object):
         model.props[1].mole_frac_comp["toluene"].fix(0.4)
         model.props[1].mole_frac_comp["l_only"].fix(0.2)
 
+        return model
+
+    @pytest.mark.unit
+    def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, model):
@@ -355,6 +360,7 @@ class TestNonVapourisable_Liquid(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solve(self, model):
@@ -365,7 +371,7 @@ class TestNonVapourisable_Liquid(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, model):
@@ -413,6 +419,7 @@ class TestNonVapourisable_Liquid(object):
                 model.props[1].mole_frac_phase_comp["Liq", "l_only"] *
                 model.props[1].phase_frac["Liq"])
 
+    @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):
         model.props[1].report()
