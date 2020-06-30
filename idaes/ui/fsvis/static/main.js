@@ -1,4 +1,6 @@
-// We need to create the graph and paper in the constructor
+joint.setTheme('modern');
+
+// We need to create the graph and paper in the beginning
 // If you try to create them in renderModel (which is called for every get request) 
 // then you get /images/icons that do not drop
 // when the mouseup event is emitted
@@ -7,9 +9,7 @@ var width = 800;
 var height = 800;
 var gridSize = 1;
 var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
-var holder = $("#idaes-canvas")[0];
 var paper = new joint.dia.Paper({
-    el: holder,
     model: graph,
     cellViewNamespace: { standard },
     width: width,
@@ -18,6 +18,64 @@ var paper = new joint.dia.Paper({
     drawGrid: true,
     interactive: true
 });
+
+var paperScroller = new joint.ui.PaperScroller({
+    paper: paper,
+    autoResizePaper: true,
+    scrollWhileDragging: true,
+    cursor: 'grab'
+});
+
+$("#idaes-canvas")[0].append(paperScroller.el);
+paperScroller.render().center();
+
+var toolbar = new joint.ui.Toolbar({
+    autoToggle: true,
+    references: {
+        paperScroller: paperScroller,
+    },
+    tools: [
+        { type: 'toggle', name: 'labels', label: 'Labels' },
+        { type: 'separator' },
+    ]
+});
+
+toolbar.on('labels:change', function(value, event) {
+    if (value == true) {
+        paper.model.getLinks().forEach(function (link) {
+            link.label(0, {
+                attrs: {
+                    text: {
+                        text: link.label(0)["attrs"]["text"]["text"],
+                        fill: link.label(0)["attrs"]["text"]["fill"],
+                        "text-anchor": link.label(0)["attrs"]["text"]["text-anchor"],
+                        display: "block",
+                    },
+                    rect: { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
+                }  
+            });
+        });
+    }
+    else {
+        paper.model.getLinks().forEach(function (link) {
+            link.label(0, {
+                attrs: {
+                    text: {
+                        text: link.label(0)["attrs"]["text"]["text"],
+                        fill: link.label(0)["attrs"]["text"]["fill"],
+                        "text-anchor": link.label(0)["attrs"]["text"]["text-anchor"],
+                        display: "none",
+                    },
+                    rect: { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
+                }
+            });
+        });
+    }
+});
+
+$('#toolbar-container').append(toolbar.render().el);
+
+// stencil_obj.render().load();
 
 // If we decide to do this, add a button to the side panel that enables/disables 
 // it (just change the grid color to white)
@@ -70,23 +128,6 @@ paper.on("link:mouseout", function(cellView, evt) {
     cellView.hideTools()
 });
 
-// Constrain the elements to the paper on the top and left side as the elements can be lost
-// if they go off the paper in those directions. Elements can be recovered from the right 
-// and bottom if the user resizes the paper
-paper.on('cell:pointermove', function (cellView, evt, x, y) {
-    var bbox = cellView.getBBox();
-    var constrained = false;
-
-    var constrainedX = x;
-    if (bbox.x <= 0) { constrainedX = x + gridSize; constrained = true }
-
-    var constrainedY = y;
-    if (bbox.y <= 0) {  constrainedY = y + gridSize; constrained = true }
-
-    //if you fire the event all the time you get a stack overflow
-    if (constrained) { cellView.pointermove(evt, constrainedX, constrainedY) }
-});
-
 // Get the model from the div tag (see the html file for an explanation)
 var data_model = $("#model").data("model");
 var model_id = data_model.model.id;
@@ -118,14 +159,14 @@ function renderModel(model) {
 }
 
 
-// Set up the help button
-// Not implemented yet
-var help_button = document.getElementById("help_button");
+// // Set up the help button
+// // Not implemented yet
+// var help_button = document.getElementById("help_button");
 
-//help_button.innerText = "Help";
-help_button.onclick = () => {
-    window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
-}
+// //help_button.innerText = "Help";
+// help_button.onclick = () => {
+//     window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
+// }
 
 // Link labels will appear and disapper on right click. Replaces browser context menu
 paper.on("link:contextmenu", function(linkView, evt) {
@@ -157,45 +198,6 @@ paper.on("link:contextmenu", function(linkView, evt) {
     }
 });
 
-var show_hide_all = "hidden"
-
-// Set up the toggle arc label button
-var show_hide_button = $("#show_hide_all_button");
-show_hide_button.on('click', function() {
-    if (show_hide_all == 'hidden') {
-        paper.model.getLinks().forEach(function (link) {
-            link.label(0, {
-                attrs: {
-                    text: {
-                        text: link.label(0)["attrs"]["text"]["text"],
-                        fill: link.label(0)["attrs"]["text"]["fill"],
-                        "text-anchor": link.label(0)["attrs"]["text"]["text-anchor"],
-                        display: "block",
-                    },
-                    rect: { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "1" }
-                }  
-            });
-        });
-        show_hide_all = 'shown'
-    }
-    else {
-        paper.model.getLinks().forEach(function (link) {
-            link.label(0, {
-                attrs: {
-                    text: {
-                        text: link.label(0)["attrs"]["text"]["text"],
-                        fill: link.label(0)["attrs"]["text"]["fill"],
-                        "text-anchor": link.label(0)["attrs"]["text"]["text-anchor"],
-                        display: "none",
-                    },
-                    rect: { fill: '#d7dce0', stroke: 'white', 'stroke-width': 0, "fill-opacity": "0" }
-                }
-            });
-        });
-        show_hide_all = 'hidden'
-    }
-});
-
 // When the save button is clicked send a post request to the server with the layout
 // We still need to differentiate between the saving the layout in the server and the
 // save button save
@@ -218,12 +220,6 @@ $(document).ready( function() {
                 console.log(error);
             }
         });
-    });
-
-    $(window).resize(function() {
-        var canvas = $("#idaes-canvas")[0].getBoundingClientRect();
-        paper.setDimensions(canvas.width, canvas.height);
-
     });
 
 });
