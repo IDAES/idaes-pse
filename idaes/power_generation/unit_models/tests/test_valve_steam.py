@@ -35,6 +35,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 @pytest.fixture()
 def build_valve_vapor():
     m = ConcreteModel()
@@ -42,6 +43,7 @@ def build_valve_vapor():
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.valve = SteamValve(default={"property_package": m.fs.properties})
     return m
+
 
 @pytest.fixture()
 def build_valve_liquid():
@@ -52,19 +54,22 @@ def build_valve_liquid():
                                      "phase": "Liq"})
     return m
 
+
 @pytest.mark.unit
 def test_vapor_steady_state_build(build_valve_vapor):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_valve_vapor
+
 
 @pytest.mark.unit
 def test_liquid_steady_state_build(build_valve_liquid):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_valve_liquid
 
+
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_vapor_steady_state_initialize(build_valve_vapor):
     """Initialize a turbine model"""
     m = build_valve_vapor

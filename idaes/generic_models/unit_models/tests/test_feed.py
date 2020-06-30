@@ -70,6 +70,16 @@ class TestSaponification(object):
 
         m.fs.unit = Feed(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_vol.fix(1.0e-03)
+        m.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.temperature.fix(303.15)
+        m.fs.unit.pressure.fix(101325.0)
+
         return m
 
     @pytest.mark.build
@@ -94,31 +104,19 @@ class TestSaponification(object):
 
     @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.flow_vol.fix(1.0e-03)
-        sapon.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.temperature.fix(303.15)
-        sapon.fs.unit.pressure.fix(101325.0)
-
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     # No solve, as nothing to solve for
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.pressure[0]))
@@ -158,6 +156,10 @@ class TestIAPWS(object):
 
         m.fs.unit = Feed(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_mol.fix(100)
+        m.fs.unit.enth_mol.fix(24000)
+        m.fs.unit.pressure.fix(101325)
+
         return m
 
     @pytest.mark.build
@@ -179,25 +181,19 @@ class TestIAPWS(object):
 
     @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.flow_mol.fix(100)
-        iapws.fs.unit.enth_mol.fix(24000)
-        iapws.fs.unit.pressure.fix(101325)
-
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     # No solve test, as nothing to solve for
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, iapws):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(iapws.fs.unit.outlet.pressure[0]))

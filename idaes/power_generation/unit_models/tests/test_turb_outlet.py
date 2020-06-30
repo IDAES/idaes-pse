@@ -35,6 +35,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 @pytest.fixture()
 def build_turbine():
     m = ConcreteModel()
@@ -42,6 +43,7 @@ def build_turbine():
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineOutletStage(default={"property_package": m.fs.properties})
     return m
+
 
 @pytest.fixture()
 def build_turbine_dyn():
@@ -53,10 +55,12 @@ def build_turbine_dyn():
         "property_package": m.fs.properties})
     return m
 
+
 @pytest.mark.unit
 def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
+
 
 @pytest.mark.component
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
