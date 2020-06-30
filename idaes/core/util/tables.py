@@ -35,7 +35,8 @@ def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
         blk (pyomo.environ._BlockData): Pyomo model to search for Arcs
         additional (dict): Additional states to add to the stream dictionary,
             which aren't represented by arcs in blk, for example feed or
-            product streams without Arcs.
+            product streams without Arcs attached or states internal to a unit
+            model.
         descend_into (bool): If True, search subblocks for Arcs as well. The
             default is True.
         sort (bool): If True sort keys and return an OrderedDict
