@@ -677,6 +677,17 @@ class NMPCSim(DynamicBase):
                               sigma_0=noise_sig_0,
                               **noise_args)
 
+    def validate_plant_start_time(self, t_plant, **kwargs):
+        config = self.config(kwargs)
+        plant_type = config.plant_horizon_type
+        if t_plant is None and plant_type == PlantHorizonType.FULL:
+            raise ValueError(
+                    'Plant time point must be specified if a full-horizon '
+                    'plant model is used.')
+        if plant_type == PlantHorizonType.ROLLING:
+            t_plant = self.plant_time.first()
+        return t_plant
+
 
     def inject_control_inputs_into_plant(self, t_plant=None, **kwargs):
         """Injects input variables from the first sampling time in the 
@@ -693,13 +704,8 @@ class NMPCSim(DynamicBase):
         tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
         plant_type = config.plant_horizon_type
-
-        if t_plant is None and plant_type == PlantHorizonType.FULL:
-            raise ValueError(
-                    'Plant time point must be specifed if a full-horizon '
-                    'plant model is used.')
-        if plant_type == PlantHorizonType.ROLLING:
-            t_plant = self.plant_time.first()
+        t_plant = self.validate_plant_start_time(t_plant, 
+                plant_horizon_type=plant_type)
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
@@ -1609,7 +1615,7 @@ class NMPCSim(DynamicBase):
             raise ValueError
 
 
-    def simulate_plant(self, t_start, **kwargs):
+    def simulate_plant(self, t_start=None, **kwargs):
         """Function for simulating plant model for one sampling period after
         inputs have been assigned from solve of controller model.
 
@@ -1618,6 +1624,9 @@ class NMPCSim(DynamicBase):
 
         """
         config = self.config(kwargs)
+        plant_type = config.plant_horizon_type
+        t_start = self.validate_plant_start_time(t_start, 
+                plant_horizon_type=plant_type)
 
         sample_time = self.config.sample_time
         # ^ Use self.config here, as I don't want user to override sample_time
@@ -1647,8 +1656,43 @@ class NMPCSim(DynamicBase):
         tc1 = self.controller_time.first() + sample_time
 
         if self.controller_solved and calculate_error:
+            # This only works if plant and controller share differential 
+            # variables
+            # TODO: better way to calculate error when this is not the case
             self.state_error[t_end] = self.calculate_error_between_states(
                     self.controller, self.plant, tc1, t_end)
+
+        # For each variable of interest to the user, save the value of the 
+        # variable just simulated
+        # Separate function append_history_from_plant?
+
+
+    def append_history_from_plant(self, history=None, t_start=None, t_end=None,
+            **kwargs):
+        config = self.config(kwargs)
+        plant_type = config.plant_horizon_type
+        continuous_set_tolerance = config.continuous_set_tolerance
+        t_start = self.validate_plant_start_time(t_start,
+                plant_horizon_type=plant_type)
+        plant_time = self.plant_time
+        sample_time = self.sample_time
+        if t_end is None:
+            t_end = t_start + sample_time
+            t_end = find_point_in_continuousset(plant_time, t_end,
+                    tolerance=continuous_set_tolerance)
+        # For compUID in PlantHistory,
+        # find that component in plant model
+        # For each plant time in (t_start, t_end],
+        #     - Use [t_start, t_end] 
+        # append component[t].value to the PlantHistory
+
+        return history
+
+
+    def create_history_from_plant(self, t_start=None, t_end=None, **kwargs):
+        history = self.append_history_from_plant(self, history=None, 
+                t_start=None, t_end=None, **kwargs)
+        return history
 
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, 
