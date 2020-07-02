@@ -497,8 +497,10 @@ def data_rec_plot_book(
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
-            "Install the required packages before using the data_book() function."
+            "Install the required packages before using the data_book() function. "
+            "Plot terminated."
         )
+        return
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
@@ -549,6 +551,7 @@ def data_rec_plot_book(
     for pdf in pdfs:
         writer.append(pdf)
     writer.write(file)
+    _log.info(f"Plot written to {file}.")
 
 
 def data_plot_book(
@@ -579,8 +582,10 @@ def data_plot_book(
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
-            "Install the required packages before using the data_book() function."
+            "Install the required packages before using the data_book() function. "
+            "Plot terminated."
         )
+        return
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
@@ -627,3 +632,4 @@ def data_plot_book(
     for pdf in pdfs:
         writer.append(pdf)
     writer.write(file)
+    _log.info(f"Plot written to {file}.")
