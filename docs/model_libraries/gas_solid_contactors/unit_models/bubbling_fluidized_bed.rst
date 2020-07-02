@@ -209,6 +209,10 @@ Gas emulsion pressure drop:
 
     .. math:: \Delta P_{ge,t,x} = - g {\left(1 - \varepsilon_{e,t,x} \right)} \rho_{mass,se,t,x}
 
+    elif 'has_pressure_change' is 'False':
+    
+    .. math:: P_{ge,t,x} = P_{g,t,inlet}
+
 **Mass Transfer Constraints**
 
 Bubble to emulsion gas mass transfer coefficient:
@@ -307,9 +311,11 @@ Emulsion gas flowrate:
 
 **Inlet boundary conditions**
 
-Gas emulsion pressure at inlet:
+*if 'has_pressure_change' is 'True':*
 
-.. math:: P_{ge,t,0} = P_{g,t,inlet} - \Delta P_{or}
+    Gas emulsion pressure at inlet:
+
+    .. math:: P_{ge,t,0} = P_{g,t,inlet} - \Delta P_{or}
 
 Total gas balance at inlet:
 
@@ -347,7 +353,21 @@ Solid emulsion mass fraction at inlet:
 
     Gas emulsion temperature at inlet:
 
-    .. math:: T_{ge,t,0} = T_{g,t,inlet} 
+    .. math:: T_{ge,t,0} = T_{g,t,inlet}
+
+*elif 'energy_balance_type' is 'EnergyBalanceType.none':*
+
+    Isothermal bubble region: 
+
+    .. math:: T_{b,t,x} = T_{g,t,inlet}
+    
+    Isothermal gas emulsion region:    
+    
+    .. math:: T_{ge,t,x} = T_{g,t,inlet}
+
+    Isothermal solid emulsion region:      
+    
+    .. math:: T_{se,t,x} = T_{s,t,inlet}         
 
 *if 'flow_type' is 'co_current' x = 0 else if 'flow_type' is 'counter_current' x = 1:*
 
@@ -382,7 +402,19 @@ Solid outlet material balance:
         *if 'flow_type' is 'co_current' x = 1 else if 'flow_type' is 'counter_current' x = 0:*
 
         .. math:: H_{s,t,outlet} = H_{se,t,x}
+        
+*elif 'energy_balance_type' is 'EnergyBalanceType.none':*
 
+    Gas outlet energy balance:
+
+    .. math:: T_{g,t,outlet} = T_{ge,t,1}    
+
+    Solid outlet energy balance:
+
+        *if 'flow_type' is 'co_current' x = 1 else if 'flow_type' is 'counter_current' x = 0:*
+
+        .. math:: T_{s,t,outlet} = T_{se,t,x}
+        
 Variables
 ---------
 

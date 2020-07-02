@@ -947,6 +947,15 @@ see reaction package for documentation.}"""))
                         b.solid_emulsion.properties[t, x].dens_mass_sol)
                         )
 
+        elif self.config.has_pressure_change is False:
+            # If pressure change is false set pressure drop to zero
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             doc="Isobaric Gas emulsion")
+            def isobaric_gas_emulsion(b, t, x):
+                return (1e2*b.gas_emulsion.properties[t, x].pressure ==
+                        1e2*b.gas_inlet.pressure[0])
+
         # ---------------------------------------------------------------------
         # Mass transfer constraints
         @self.Constraint(
@@ -1227,7 +1236,7 @@ see reaction package for documentation.}"""))
         # Emulsion gas flowrate - this eqn indirectly calcs bubble voidage
         # (delta) in conjuction with the mass conservation eqns in the
         # gas_emulsion CV1D.
-        # This eqn arises because emulsion region gas is assumed to be at
+        # This eqn arises because the emulsion region gas is assumed to be at
         # minimum fluidization conditions (delta varies to account for this)
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
@@ -1241,11 +1250,12 @@ see reaction package for documentation.}"""))
         # Inlet boundary Conditions
 
         # Gas_emulsion pressure at inlet
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Gas Emulsion Pressure at Inlet")
-        def gas_emulsion_pressure_in(b, t):
-            return (1e2*b.gas_emulsion.properties[t, 0].pressure ==
-                    1e2*b.gas_inlet_block[t].pressure - b.deltaP_orifice)
+        if self.config.has_pressure_change:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Gas Emulsion Pressure at Inlet")
+            def gas_emulsion_pressure_in(b, t):
+                return (1e2*b.gas_emulsion.properties[t, 0].pressure ==
+                        1e2*b.gas_inlet_block[t].pressure - b.deltaP_orifice)
 
         # Total gas balance at inlet
         @self.Constraint(self.flowsheet().config.time,
@@ -1336,6 +1346,36 @@ see reaction package for documentation.}"""))
                     return (b.solid_inlet_block[t].
                             get_enthalpy_flow_terms('Sol') ==
                             b.solid_emulsion._enthalpy_flow[t, 1, 'Sol'])
+
+        elif self.config.energy_balance_type == EnergyBalanceType.none:
+            # If energy balance is none fix gas and solid temperatures to inlet
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Isothermal solid emulsion constraint")
+            def isothermal_solid_emulsion(b, t, x):
+                return (
+                        b.solid_emulsion.properties[t, x].temperature ==
+                        b.solid_inlet.temperature[t])
+
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Isothermal gas emulsion constraint")
+            def isothermal_gas_emulsion(b, t, x):
+                return (
+                        b.gas_emulsion.properties[t, x].temperature ==
+                        b.gas_inlet.temperature[t])
+
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    doc="Isothermal gas emulsion constraint")
+            def isothermal_bubble(b, t, x):
+                return (
+                        b.bubble.properties[t, x].temperature ==
+                        b.gas_inlet.temperature[t])
+
         # ---------------------------------------------------------------------
         # Outlet boundary Conditions
         # Gas outlet pressure
@@ -1388,25 +1428,36 @@ see reaction package for documentation.}"""))
                     doc="Solid Outlet Energy Balance")
             def solid_energy_balance_out(b, t):
                 if (self.config.flow_type == "co_current"):
-                    return (b.solid_outlet_block[t].
-                            get_enthalpy_flow_terms('Sol') ==
-                            b.solid_emulsion._enthalpy_flow[t, 1, 'Sol'])
+                    return (
+                        b.solid_outlet_block[t].get_enthalpy_flow_terms('Sol')
+                        ==
+                        b.solid_emulsion._enthalpy_flow[t, 1, 'Sol'])
                 elif (self.config.flow_type == "counter_current"):
-                    return (b.solid_outlet_block[t].
-                            get_enthalpy_flow_terms('Sol') ==
-                            b.solid_emulsion._enthalpy_flow[t, 0, 'Sol'])
+                    return (
+                        b.solid_outlet_block[t].get_enthalpy_flow_terms('Sol')
+                        ==
+                        b.solid_emulsion._enthalpy_flow[t, 0, 'Sol'])
 
-        # If energy balance is none, fix gas and solid temperatures to inlet
-        if self.config.energy_balance_type == EnergyBalanceType.none:
-            blk = self
-            for t in blk.flowsheet().config.time:
-                for x in blk.length_domain:
-                    blk.bubble.properties[t, x].temperature.fix(
-                            value(blk.gas_inlet.temperature[t]))
-                    blk.gas_emulsion.properties[t, x].temperature.fix(
-                            value(blk.gas_inlet.temperature[t]))
-                    blk.solid_emulsion.properties[t, x].temperature.fix(
-                            value(blk.solid_inlet.temperature[t]))
+        elif self.config.energy_balance_type == EnergyBalanceType.none:
+            # Gas outlet energy balance
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    doc="Gas Outlet Energy Balance")
+            def gas_energy_balance_out(b, t):
+                return (b.gas_outlet_block[t].temperature ==
+                        b.gas_emulsion.properties[t, 1].temperature)
+
+            # Solid outlet energy balance
+            @self.Constraint(
+                    self.flowsheet().config.time,
+                    doc="Solid Outlet Energy Balance")
+            def solid_energy_balance_out(b, t):
+                if (self.config.flow_type == "co_current"):
+                    return (b.solid_outlet_block[t].temperature ==
+                            b.solid_emulsion.properties[t, 1].temperature)
+                elif (self.config.flow_type == "counter_current"):
+                    return (b.solid_outlet_block[t].temperature ==
+                            b.solid_emulsion.properties[t, 0].temperature)
 
     # =========================================================================
     # Model initialization routine
@@ -1547,6 +1598,7 @@ see reaction package for documentation.}"""))
         # vel_superficial_gas, delta are fixed during this stage
         for t in blk.flowsheet().config.time:
             for x in blk.length_domain:
+                # Superficial velocity initialized at 3 * min fluidization vel.
                 blk.velocity_superficial_gas[t, x].fix(
                         value(3 *
                               blk.solid_inlet_block[t]._params.velocity_mf))
@@ -1717,6 +1769,13 @@ see reaction package for documentation.}"""))
                     calculate_variable_from_constraint(
                         blk.gas_emulsion.deltaP[t, x],
                         blk.gas_emulsion_pressure_drop[t, x])
+
+        elif blk.config.has_pressure_change is False:
+            blk.isobaric_gas_emulsion.activate()
+
+            for t in blk.flowsheet().config.time:
+                for x in blk.length_domain:
+                    blk.gas_emulsion.properties[t, x].pressure.unfix()
 
         init_log.info('Initialize Mass Balances')
         init_log.info_high('initialize mass balances with no reactions')
@@ -1915,6 +1974,31 @@ see reaction package for documentation.}"""))
             else:
                 init_log.warning('{} Initialisation Step 5 Failed.'
                                  .format(blk.name))
+
+        # Initialize energy balance
+        if blk.config.energy_balance_type == EnergyBalanceType.none:
+            for t in blk.flowsheet().config.time:
+                for x in blk.length_domain:
+                    blk.bubble.properties[t, x].temperature.unfix()
+                    blk.gas_emulsion.properties[t, x].temperature.unfix()
+                    blk.solid_emulsion.properties[t, x].temperature.unfix()
+
+            blk.isothermal_gas_emulsion.activate()
+            blk.isothermal_bubble.activate()
+            blk.isothermal_solid_emulsion.activate()
+
+            init_log.info('Initialize Energy Balances')
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                results = opt.solve(blk, tee=slc.tee)
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                init_log.info_high(
+                    "Initialization Step 5 {}.".format(
+                            idaeslog.condition(results))
+                            )
+            else:
+                init_log.warning('{} Initialisation Step 5 Failed.'
+                                 .format(blk.name))
         # ---------------------------------------------------------------------
         # Initialize outlet conditions
         # Initialize gas_outlet block
@@ -1926,9 +2010,8 @@ see reaction package for documentation.}"""))
         blk.gas_material_balance_out.activate()
         blk.solid_material_balance_out.activate()
 
-        if blk.config.energy_balance_type != EnergyBalanceType.none:
-            blk.gas_energy_balance_out.activate()
-            blk.solid_energy_balance_out.activate()
+        blk.gas_energy_balance_out.activate()
+        blk.solid_energy_balance_out.activate()
 
         blk.gas_outlet_block.initialize(
             state_args=gas_phase_state_args,
