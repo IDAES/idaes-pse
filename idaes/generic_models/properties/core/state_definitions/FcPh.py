@@ -14,11 +14,14 @@
 Methods for setting up FcPh as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, Expression, NonNegativeReals, value, Var
+from pyomo.environ import Constraint, Expression, NonNegativeReals, Var
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
+
+from idaes.generic_models.properties.core.state_definitions.FTPx import (
+    state_initialization)
 
 
 # TODO : Need a way to get a guess for T during initialization
@@ -285,28 +288,7 @@ def define_state(b):
     b.define_state_vars = define_state_vars_FcPh
 
 
-def state_initialization(b):
-    # TODO: Getting an initial guess for T would probably be a good idea
-    # However, I cannot see an easy way to do from just P and h.
-
-    if len(b.params.phase_list) == 1:
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                value(b.flow_mol)
-
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    value(b.mole_frac_comp[j])
-
-    else:
-        # TODO : Try to find some better guesses than this
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                value(b.flow_mol) / len(b.params.phase_list)
-
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    value(b.mole_frac_comp[j])
+# Inherit state_initialization from FTPX form, as the process is the same
 
 
 do_not_initialize = []

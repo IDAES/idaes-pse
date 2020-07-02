@@ -1,4 +1,4 @@
-.. index::
+﻿.. index::
     pair: idaes;Home
 
 Institute for the Design of Advanced Energy Systems (IDAES)
@@ -40,28 +40,14 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-
-    install/index
-    ex
-    standards
-    configuration
-    logging
-    commands/index
-    core/index
-    transformations/index
-    model_libraries/index
-    vis/index
-    dmf/index
-    surrogate/index
-    apps/index
-    version
-    developer/index
-    Modules <apidoc/modules>
-    glossary
+    
+    getting_started
+    user_guide/index
+    advanced_user_guide/index
+    tutorials_examples
+    technical_specs/index
     license
     copyright
-
-.. tutorials
 
 Indices and tables
 ==================

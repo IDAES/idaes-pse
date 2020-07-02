@@ -15,6 +15,7 @@ import pytest
 from idaes.ui import link_position_mapping
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "test_input,expected",
     [
@@ -327,8 +328,27 @@ from idaes.ui import link_position_mapping
                         },
                         "markup": '<g><rect/></g>'
                     },
-
-                    "out": {
+                    "top": {
+                      "position":{
+                          "name":"top",
+                          "args":{
+                             "x":25,
+                             "y":0,
+                             "dx":1,
+                             "dy":1
+                          }
+                      },
+                      "attrs": {
+                          "rect": {
+                              "stroke": '#000000',
+                              'stroke-width': 0,
+                              "width": 0,
+                              "height": 0
+                          }
+                      },
+                      "markup": '<g><rect/></g>'
+                    },
+                    "bottom": {
                         "position":{
                             "name":"bottom",
                             "args":{
@@ -355,8 +375,12 @@ from idaes.ui import link_position_mapping
                       "id":"in"
                    },
                    {
-                      "group":"out",
-                      "id":"out"
+                      "group":"top",
+                      "id":"top"
+                   },
+                   {
+                      "group":"bottom",
+                      "id":"bottom"
                    }
                 ]
             },
@@ -942,5 +966,6 @@ from idaes.ui import link_position_mapping
         ),
     ],
 )
+@pytest.mark.unit
 def test_link_position_mapping(test_input, expected):
     assert link_position_mapping.link_position_mapping[test_input] == expected

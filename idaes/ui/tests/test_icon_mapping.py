@@ -15,6 +15,7 @@ import pytest
 from idaes.ui.icon_mapping import icon_mapping
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "test_input,expected",
     [("cstr", "reactor_c.svg"),
@@ -37,5 +38,6 @@ from idaes.ui.icon_mapping import icon_mapping
     ("packed_column", "packed_column_1.svg"),
     ("tray_column", "tray_column_1.svg")]
 )
+@pytest.mark.unit
 def test_icon_mapping(test_input, expected):
     assert icon_mapping(test_input) == expected

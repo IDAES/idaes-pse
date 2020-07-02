@@ -25,7 +25,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from pyomo.environ import (ConcreteModel,
+                           Objective,
                            SolverFactory,
+                           SolverStatus,
+                           TerminationCondition,
                            value)
 
 from idaes.core.util.testing import get_default_solver
@@ -45,7 +48,6 @@ solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
-# TODO :ADD T and P sweeps - these did not work when first tried
 @pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.skipif(not prop_available,
@@ -65,6 +67,58 @@ class TestBTExample(object):
 
         return m
 
+    @pytest.mark.integration
+    def test_T_sweep(self, m):
+        m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510)**2)
+
+        for logP in range(8, 13, 1):
+            m.fs.obj.deactivate()
+
+            m.fs.state[1].flow_mol.fix(100)
+            m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
+            m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
+            m.fs.state[1].temperature.fix(300)
+            m.fs.state[1].pressure.fix(10**(0.5*logP))
+
+            m.fs.state.initialize(outlvl=0)
+
+            m.fs.state[1].temperature.unfix()
+            m.fs.obj.activate()
+
+            solver = SolverFactory('ipopt')
+            results = solver.solve(m, tee=True)
+
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
+
+    @pytest.mark.integration
+    def test_P_sweep(self, m):
+        for T in range(370, 500, 25):
+            m.fs.state[1].flow_mol.fix(100)
+            m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
+            m.fs.state[1].mole_frac_comp["toluene"].fix(0.5)
+            m.fs.state[1].temperature.fix(T)
+            m.fs.state[1].pressure.fix(1e5)
+
+            m.fs.state.initialize(outlvl=0)
+
+            solver = SolverFactory('ipopt')
+            results = solver.solve(m)
+
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+
+            while m.fs.state[1].pressure.value <= 1e6:
+                m.fs.state[1].pressure.value = (
+                    m.fs.state[1].pressure.value + 1e5)
+                solver = SolverFactory('ipopt')
+                results = solver.solve(m)
+                assert results.solver.termination_condition == \
+                    TerminationCondition.optimal
+                print(T, m.fs.state[1].pressure.value)
+
+    @pytest.mark.component
     def test_T350_P1_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
@@ -79,7 +133,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), abs=1e-1) == 365
@@ -122,6 +181,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -269.0553
 
+    @pytest.mark.component
     def test_T350_P5_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
@@ -136,7 +196,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 431.47
@@ -179,6 +244,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -287.3318
 
+    @pytest.mark.component
     def test_T450_P1_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
@@ -193,7 +259,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 371.4
@@ -236,6 +307,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -247.385
 
+    @pytest.mark.component
     def test_T450_P5_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
@@ -250,7 +322,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 436.93
@@ -293,6 +370,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -261.961
 
+    @pytest.mark.component
     def test_T368_P1_x5(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.5)
@@ -307,7 +385,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 368
@@ -341,8 +424,8 @@ class TestBTExample(object):
                 value(m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]),
                 1e-5) == 0.3858262
 
+        m.fs.state[1].mole_frac_phase_comp.display()
         m.fs.state[1].enth_mol_phase_comp.display()
-        m.fs.state[1].entr_mol_phase_comp.display()
 
         assert pytest.approx(
                 value(m.fs.state[1].enth_mol_phase["Liq"]), 1e-5) == 38235.1
@@ -353,6 +436,7 @@ class TestBTExample(object):
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -267.892
 
+    @pytest.mark.component
     def test_T376_P1_x2(self, m):
         m.fs.state[1].flow_mol.fix(100)
         m.fs.state[1].mole_frac_comp["benzene"].fix(0.2)
@@ -367,7 +451,12 @@ class TestBTExample(object):
         m.fs.state.initialize(outlvl=SOUT)
 
         solver = SolverFactory('ipopt')
-        solver.solve(m)
+        results = solver.solve(m)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert pytest.approx(value(
             m.fs.state[1]._teq[("Vap", "Liq")]), 1e-5) == 376

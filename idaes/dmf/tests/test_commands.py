@@ -43,6 +43,7 @@ def wspath():
     shutil.rmtree(dirname)
 
 
+@pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
     try:
@@ -52,6 +53,7 @@ def test_workspace_init(wspath):
         pass
 
 
+@pytest.mark.unit
 def test_workspace_info(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
     commands.workspace_info(wspath)
@@ -68,6 +70,7 @@ def test_workspace_info(wspath):
         pass
 
 
+@pytest.mark.unit
 def test_find_html_docs(wspath):
     filedir = os.path.dirname(__file__)
     docpath = os.path.join(filedir, "..", "docs", "build", "html")

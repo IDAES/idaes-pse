@@ -22,10 +22,20 @@ import logging
 import csv
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import pint
+import os
 
 import pyomo.environ as pyo
 import warnings
+
+try:
+    import seaborn as sns
+    from PyPDF2 import PdfFileMerger
+except ImportError:
+    sns = None
+
+_log = logging.getLogger(__file__)
 
 
 def _strip(tag):
@@ -35,8 +45,6 @@ def _strip(tag):
     """
     return tag.strip()
 
-
-_log = logging.getLogger(__file__)
 
 # Some common unit string conversions, these are ones we've come across that
 # are not handled by pint. We can organize and refine known unit strings
@@ -260,6 +268,31 @@ def unit_convert(
     return (y.magnitude, str(y.units))
 
 
+def upadate_metadata_model_references(model, metadata):
+    """
+    Create model references from refernce strings in the metadata. This updates
+    the 'reference' field in the metadata.
+
+    Args:
+        model (pyomo.environ.Block): Pyomo model
+        metadata (dict): Tag metadata dictionary
+
+    Returns:
+        None
+    """
+    for tag, md in metadata.items():
+        if md["reference_string"]:
+            try:
+                md["reference"] = pyo.Reference(
+                    eval(md["reference_string"], {"m": model})
+                )
+            except KeyError:
+                warnings.warn(
+                    "Tag reference {} not found".format(md["reference_string"]),
+                    UserWarning,
+                )
+
+
 def read_data(
     csv_file,
     csv_file_metadata,
@@ -282,23 +315,26 @@ def read_data(
     measure should be something that is recognized by pint, or in the aliases
     defined in this file. Any tags not listed in the metadata will be dropped.
 
+    The function returns two items a pandas.DataFrame containing process data,
+    and a dictionary with tag metadata.  The metadata dictionary keys are tag name,
+    and the values are dictionaries with the keys: "reference_string", "description",
+    "units", and "reference".
+
+
     Args:
         csv_file (str): Path of file to read
         csv_file_metadata (str): Path of csv file to read column metadata from
-        model (ConcreteModel): Optional model to map tags to
-        rename_mapper (function): Optional function to rename tags
+        model (pyomo.environ.ConcreteModel): Optional model to map tags to
+        rename_mapper (Callable): Optional function to rename tags
         unit_system (str): Optional system of units to atempt convert to
         ambient_pressure (float, numpy.array, pandas.series, str): Optional
-            pressure to use to convert gauge pressure to absolute if a string is
-            supplied the corresponding data tag is assumed to be ambient pressure
+            pressure to use to convert gauge pressure to absolute. If a string is
+            supplied, the corresponding data tag is assumed to be ambient pressure.
         ambient_pressure_unit (str): Optional ambient pressure unit, should be a
             unit recognized by pint.
 
     Returns:
-        (DataFrame): A Pandas data frame with tags in columns and rows indexed
-            by time.
-        (dict): Column metadata, units of measure, description, and model
-            mapping information.
+        (pandas.DataFrame, dict)
     """
     # read file
     df = pd.read_csv(csv_file, parse_dates=True, index_col=0)
@@ -324,17 +360,7 @@ def read_data(
                 }
     # If a model was provided, map the tags with a reference string to the model
     if model:
-        for tag, md in metadata.items():
-            if md["reference_string"]:
-                try:
-                    md["reference"] = pyo.Reference(
-                        eval(md["reference_string"], {"m": model})
-                    )
-                except KeyError:
-                    warnings.warn(
-                        "Tag reference {} not found".format(md["reference_string"]),
-                        UserWarning,
-                    )
+        upadate_metadata_model_references(model, metadata)
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
         if tag not in metadata:
@@ -364,3 +390,240 @@ def read_data(
             )
 
     return df, metadata
+
+
+def _bin_number(x, bin_size):
+    return np.array(x / bin_size, dtype=int)
+
+
+def bin_data(
+        df,
+        bin_by,
+        bin_no,
+        bin_nom,
+        bin_size,
+        min_value=None,
+        max_value=None):
+    """
+    Sort data into bins by a column value.  If the min or max are given and
+    the value in bin_by for a row is out of the range [min, max], the row is
+    dropped from the data frame.
+
+    Args:
+        df (pandas.DataFrame): Data frame to add bin information to
+        bin_by (str): A column for values to bin by
+        bin_no (str): A new column for bin number
+        bin_nom (str): A new column for the mid-point value of bin_by
+        bin_size (float): size of a bin
+        min_value (in {float, None}): Smallest value to keep or None for no lower
+        max_value (in (float, None}): Largest value to keep or None for no upper
+
+    Returns:
+        (dict): returns the data frame, and a dictionary with the number of rows
+            in each bin.
+    """
+
+    # Drop rows outside [min, max]
+    df.drop(index=df.index[np.isnan(df[bin_by])], inplace=True)
+    if min_value is not None:
+        df.drop(index=df.index[df[bin_by] < min_value], inplace=True)
+    else:
+        min_value = min(df[bin_by])
+    if max_value is not None:
+        df.drop(index=df.index[df[bin_by] > max_value], inplace=True)
+
+    # Want the bins to line up so 0 is between bins and want min_value in bin 0.
+    bin_offset = _bin_number(min_value, bin_size)
+    df[bin_no] = _bin_number(df[bin_by], bin_size) - bin_offset
+    df[bin_nom] = bin_size * (df[bin_no] + bin_offset + 0.5)
+    a, b = np.unique(df[bin_no], return_counts=True)
+    hist = dict(zip(a, b))
+    return hist
+
+
+def bin_stdev(df, bin_no):
+    """
+    Calculate the standard deviation for each column in each bin.
+
+    Args:
+        df (pandas.DataFrame): pandas data frame that is a bin number column
+        bin_no (str): Column to group by, usually contains bin number
+
+    Returns:
+        dict: key is the bin number and the value is a pandas.Serries with column
+            standard deviations
+    """
+    nos = np.unique(df[bin_no])
+    res = {}
+    for i in nos:
+        idx = df.index[df[bin_no] == i]
+        df2 = df.iloc[idx]
+        res[i] = df2.std(axis=0)
+    return res
+
+
+def data_rec_plot_book(
+        df_data,
+        df_rec,
+        bin_nom,
+        file="data_rec_plot_book.pdf",
+        tmp_dir="tmp_plots",
+        xlabel=None,
+        metadata=None,
+        cols=None,
+        skip_cols=[]):
+    """
+    Make box and whisker plots from process data compared to data rec results
+    based on bins from the bin_data() function.  The df_data and df_rec data
+    frames should have the same index set and the df_data data frame contains
+    the bin data.  This will plot the intersection of columns containg numerical
+    data.
+
+    Args:
+        df_data: data frame with original data
+        df_rec: data frame with reconciled data
+        bin_nom: bin mid-point value column
+        file: path for generated pdf
+        tmp_dir: a directory to store temporary plots in
+        xlabel: Label for x axis
+        metadata: tag meta data dictionary
+        cols: List of columns to plot, if None plot all
+        skip_cols: List of columns not to plot, this overrides cols
+
+    Return:
+        None
+
+    """
+    if sns is None:
+        _log.error(
+            "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
+            "Install the required packages before using the data_book() function."
+        )
+
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir)
+
+    pdfs = []
+    flierprops = dict(markerfacecolor='0.5', markersize=2, marker="o", linestyle='none')
+    f = plt.figure(figsize=(16, 9))
+    if cols is None:
+        cols = df_data.columns
+
+    cols = sorted(set(cols).intersection(df_rec.columns))
+
+    f = plt.figure(figsize=(16, 9))
+    ax = sns.countplot(x=bin_nom, data=df_data)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    fname = os.path.join(tmp_dir, "plot_hist.pdf")
+    f.savefig(fname, bbox_inches='tight')
+    pdfs.append(fname)
+    plt.close(f)
+
+    for i, col in enumerate(cols):
+        if col in skip_cols:
+            continue
+        f = plt.figure(i, figsize=(16, 9))
+
+        x = pd.concat([df_data[bin_nom], df_data[bin_nom]], ignore_index=True)
+        y = pd.concat([df_data[col], df_rec[col]], ignore_index=True)
+        h = ["Data"] * len(df_data.index) + ["Reconciled"] * len(df_data.index)
+        ax = sns.boxplot(x=x, y=y, hue=h, flierprops=flierprops)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        if metadata is not None:
+            md = metadata.get(col, {})
+            yl = "{} {} [{}]".format(
+                col,
+                md.get("description", ""),
+                md.get("units", "none")
+            )
+        else:
+            yl = col
+        fname = os.path.join(tmp_dir, f"plot_{i}.pdf")
+        ax.set(xlabel=xlabel, ylabel=yl)
+        f.savefig(fname, bbox_inches='tight')
+        pdfs.append(fname)
+        plt.close(f)
+
+    # Combine pdfs into one multi-page document
+    writer = PdfFileMerger()
+    for pdf in pdfs:
+        writer.append(pdf)
+    writer.write(file)
+
+
+def data_plot_book(
+        df,
+        bin_nom,
+        file="data_plot_book.pdf",
+        tmp_dir="tmp_plots",
+        xlabel=None,
+        metadata=None,
+        cols=None,
+        skip_cols=[]):
+    """
+    Make box and whisker plots from process data based on bins from the
+    bin_data() function.
+
+    Args:
+        df: data frame
+        bin_nom: bin mid-point value column
+        file: path for generated pdf
+        tmp_dir: a directory to store temporary plots in
+        xlabel: Label for x axis
+        metadata: tag meta data dictionary
+
+    Return:
+        None
+
+    """
+    if sns is None:
+        _log.error(
+            "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
+            "Install the required packages before using the data_book() function."
+        )
+
+    if not os.path.isdir(tmp_dir):
+        os.mkdir(tmp_dir)
+
+    pdfs = []
+    flierprops = dict(markerfacecolor='0.5', markersize=2, marker="o", linestyle='none')
+    f = plt.figure(figsize=(16, 9))
+    if cols is None:
+        cols = sorted(df.columns)
+    else:
+        cols = sorted(cols)
+
+    f = plt.figure(figsize=(16, 9))
+    ax = sns.countplot(x=bin_nom, data=df)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    fname = os.path.join(tmp_dir, "plot_hist.pdf")
+    f.savefig(fname, bbox_inches='tight')
+    pdfs.append(fname)
+    plt.close(f)
+
+    for i, col in enumerate(cols):
+        if col in skip_cols:
+            continue
+        f = plt.figure(i, figsize=(16, 9))
+        ax = sns.boxplot(x=df[bin_nom], y=df[col], flierprops=flierprops)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        if metadata is not None:
+            md = metadata.get(col, {})
+            yl = "{} {} [{}]".format(
+                col,
+                md.get("description", ""),
+                md.get("units", "none")
+            )
+        else:
+            yl = col
+        fname = os.path.join(tmp_dir, f"plot_{i}.pdf")
+        ax.set(xlabel=xlabel, ylabel=yl)
+        f.savefig(fname, bbox_inches='tight')
+        pdfs.append(fname)
+        plt.close(f)
+
+    # Combine pdfs into one multi-page document
+    writer = PdfFileMerger()
+    for pdf in pdfs:
+        writer.append(pdf)
+    writer.write(file)

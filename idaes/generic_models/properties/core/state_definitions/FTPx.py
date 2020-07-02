@@ -14,7 +14,7 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var
+from pyomo.environ import Constraint, NonNegativeReals, Var, value
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -114,8 +114,7 @@ def define_state(b):
                            doc='Phase molar flow rates')
 
     b.mole_frac_phase_comp = Var(
-        b.params.phase_list,
-        b.params.component_list,
+        b.params._phase_component_set,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
         doc='Phase mole fractions')
@@ -159,15 +158,20 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
             return sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
-                       for i in b.params.component_list) -\
+                       for i in b.params.component_list
+                       if (b.params.phase_list[1], i)
+                       in b.params._phase_component_set) -\
                 sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
-                    for i in b.params.component_list) == 0
+                    for i in b.params.component_list
+                    if (b.params.phase_list[2], i)
+                    in b.params._phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
@@ -180,13 +184,15 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
             return sum(b.mole_frac_phase_comp[p, i]
-                       for i in b.params.component_list) == 1
+                       for i in b.params.component_list
+                       if (p, i) in b.params._phase_component_set) == 1
         b.sum_mole_frac = Constraint(b.params.phase_list,
                                      rule=rule_mole_frac)
 
@@ -245,24 +251,117 @@ def define_state(b):
 
 
 def state_initialization(b):
-    if len(b.params.phase_list) == 1:
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value
+    for p in b.params.phase_list:
+        # Start with phase mole fractions equal to toal mole fractions
+        for j in b.components_in_phase(p):
+            b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
 
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+        b.flow_mol_phase[p].value = value(
+                        b.flow_mol / len(b.params.phase_list))
 
-    else:
-        # TODO : Try to find some better guesses than this
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b.params.phase_list)
+        # Try to refine guesses - Check phase type
+        pobj = b.params.get_phase(p)
 
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+        if not hasattr(b.params, "_pe_pairs"):
+            return
+
+        if pobj.is_liquid_phase():
+            tbub = None
+            tdew = None
+            for pp in b.params._pe_pairs:
+                # Look for a VLE pair with this phase - should only be 1
+                if ((pp[0] == p and
+                     b.params.get_phase(pp[1]).is_vapor_phase()) or
+                    (pp[1] == p and
+                     b.params.get_phase(pp[0]).is_vapor_phase())):
+                    # Get bubble and dew points
+                    if hasattr(b, "eq_temperature_bubble"):
+                        try:
+                            tbub = b.temperature_bubble[pp].value
+                        except KeyError:
+                            pass
+                    if hasattr(b, "eq_temperature_dew"):
+                        try:
+                            tdew = b.temperature_dew[pp].value
+                        except KeyError:
+                            pass
+                    break
+
+            if tbub is None and tdew is None:
+                # No VLE pair found, or no bubble and dew point
+                # Do nothing
+                pass
+            elif tdew is not None and b.temperature.value > tdew:
+                # Pure vapour
+                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b._mole_frac_tdew[pp, j].value
+            elif tbub is not None and b.temperature.value < tbub:
+                # Pure liquid
+                b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+            else:
+                # Two-phase
+                # TODO : Try to find some better guesses than default
+                pass
+
+        elif pobj.is_vapor_phase():
+            # Look for a VLE pair with this phase - will go with 1st found
+            tbub = None
+            tdew = None
+            for pp in b.params._pe_pairs:
+                if ((pp[0] == p and
+                     b.params.get_phase(pp[1]).is_liquid_phase()) or
+                    (pp[1] == p and
+                     b.params.get_phase(pp[0]).is_liquid_phase())):
+                    # Get bubble and dew points
+                    if hasattr(b, "eq_temperature_bubble"):
+                        try:
+                            tbub = b.temperature_bubble[pp].value
+                        except KeyError:
+                            pass
+                    if hasattr(b, "eq_temperature_dew"):
+                        try:
+                            tdew = b.temperature_dew[pp].value
+                        except KeyError:
+                            pass
+                    break
+
+            if tbub is None and tdew is None:
+                # No VLE pair found, or no bubble and dew point
+                # Do nothing
+                pass
+            elif tdew is not None and b.temperature.value > tdew:
+                # Pure vapour
+                b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+            elif tbub is not None and b.temperature.value < tbub:
+                # Pure liquid
+                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b._mole_frac_tbub[pp, j].value
+            else:
+                # Two-phase
+                # TODO : Try to find some better guesses than default
+                pass
 
 
 do_not_initialize = ["sum_mole_frac_out"]

@@ -89,104 +89,128 @@ def m():
 
 # -------------------------------------------------------------------------
 # Block methods
+@pytest.mark.unit
 def test_total_blocks_set(m):
     assert len(total_blocks_set(m)) == 5
 
 
+@pytest.mark.unit
 def test_number_total_blocks(m):
     assert number_total_blocks(m) == 5
 
 
+@pytest.mark.unit
 def test_activated_blocks_set(m):
     assert len(activated_blocks_set(m)) == 3
 
 
+@pytest.mark.unit
 def test_number_activated_blocks(m):
     assert number_activated_blocks(m) == 3
 
 
+@pytest.mark.unit
 def test_deactivated_blocks_set(m):
     assert len(deactivated_blocks_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_deactivated_blocks(m):
     assert number_deactivated_blocks(m) == 2
 
 
 # -------------------------------------------------------------------------
 # Basic Constraint methods
+@pytest.mark.unit
 def test_total_constraints_set(m):
     assert len(total_constraints_set(m)) == 14
 
 
+@pytest.mark.unit
 def test_number_total_constraints(m):
     assert number_total_constraints(m) == 14
 
 
+@pytest.mark.unit
 def test_activated_constraints_set(m):
     assert len(activated_constraints_set(m)) == 12
 
 
+@pytest.mark.unit
 def test_number_activated_constraints(m):
     assert number_activated_constraints(m) == 12
 
 
+@pytest.mark.unit
 def test_deactivated_constraints_set(m):
     assert len(deactivated_constraints_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_deactivated_constraints(m):
     assert number_deactivated_constraints(m) == 2
 
 
 # -------------------------------------------------------------------------
 # Equality Constraints
+@pytest.mark.unit
 def test_total_equalities_set(m):
     assert len(total_equalities_set(m)) == 12
 
 
+@pytest.mark.unit
 def test_number_total_equalities(m):
     assert number_total_equalities(m) == 12
 
 
+@pytest.mark.unit
 def test_activated_equalities_set(m):
     assert len(activated_equalities_set(m)) == 11
 
 
+@pytest.mark.unit
 def test_number_activated_equalities(m):
     assert number_activated_equalities(m) == 11
 
 
+@pytest.mark.unit
 def test_deactivated_equalities_set(m):
     assert len(deactivated_equalities_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_deactivated_equalities(m):
     assert number_deactivated_equalities(m) == 1
 
 
 # -------------------------------------------------------------------------
 # Inequality Constraints
+@pytest.mark.unit
 def test_total_inequalities_set(m):
     assert len(total_inequalities_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_total_inequalities(m):
     assert number_total_inequalities(m) == 2
 
 
+@pytest.mark.unit
 def test_activated_inequalities_set(m):
     assert len(activated_inequalities_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_activated_inequalities(m):
     assert number_activated_inequalities(m) == 1
 
 
+@pytest.mark.unit
 def test_deactivated_inequalities_set(m):
     assert len(deactivated_inequalities_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_deactivated_inequalities(m):
     assert number_deactivated_inequalities(m) == 1
 
@@ -195,30 +219,37 @@ def test_number_deactivated_inequalities(m):
 # Basic Variable Methods
 # Always use ComponentSets for Vars to avoid duplication of References
 # i.e. number methods should alwys use the ComponentSet, not a generator
+@pytest.mark.unit
 def test_variables_set(m):
     assert len(variables_set(m)) == 28
 
 
+@pytest.mark.unit
 def test_number_variables(m):
     assert number_variables(m) == 28
 
 
+@pytest.mark.unit
 def test_fixed_variables_set(m):
     assert len(fixed_variables_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_fixed_variables(m):
     assert number_fixed_variables(m) == 2
 
 
+@pytest.mark.unit
 def test_unfixed_variables_set(m):
     assert len(unfixed_variables_set(m)) == 26
 
 
+@pytest.mark.unit
 def test_number_unfixed_variables(m):
     assert number_unfixed_variables(m) == 26
 
 
+@pytest.mark.unit
 def test_variables_near_bounds_set(m):
     tset = variables_near_bounds_set(m)
     assert len(tset) == 6
@@ -260,42 +291,51 @@ def test_variables_near_bounds_set(m):
         assert i in [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["b"]]
 
 
+@pytest.mark.unit
 def test_number_variables_near_bounds(m):
     assert number_variables_near_bounds(m) == 6
 
 
 # -------------------------------------------------------------------------
 # Variables in Constraints
+@pytest.mark.unit
 def test_variables_in_activated_constraints_set(m):
     assert len(variables_in_activated_constraints_set(m)) == 22
 
 
+@pytest.mark.unit
 def test_number_variables_in_activated_constraints(m):
     assert number_variables_in_activated_constraints(m) == 22
 
 
+@pytest.mark.unit
 def test_variables_in_activated_equalities_set(m):
     assert len(variables_in_activated_equalities_set(m)) == 22
 
 
+@pytest.mark.unit
 def test_number_variables_in_activated_equalities(m):
     assert number_variables_in_activated_equalities(m) == 22
 
 
+@pytest.mark.unit
 def test_variables_in_activated_inequalities_set(m):
     assert len(variables_in_activated_inequalities_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_variables_in_activated_inequalities(m):
     assert number_variables_in_activated_inequalities(m) == 1
 
 
+@pytest.mark.unit
 def test_variables_only_in_inequalities(m):
     m.v3 = Var(initialize=1)
     m.c3 = Constraint(expr=m.v3 >= 1)
     assert len(variables_only_in_inequalities(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_variables_only_in_inequalities(m):
     m.v3 = Var(initialize=1)
     m.c3 = Constraint(expr=m.v3 >= 1)
@@ -304,14 +344,17 @@ def test_number_variables_only_in_inequalities(m):
 
 # -------------------------------------------------------------------------
 # Fixed Variables in Constraints
+@pytest.mark.unit
 def test_fixed_variables_in_activated_equalities_set(m):
     assert len(fixed_variables_in_activated_equalities_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_fixed_variables_in_activated_equalities(m):
     assert number_fixed_variables_in_activated_equalities(m) == 1
 
 
+@pytest.mark.unit
 def test_fixed_variables_only_in_inequalities(m):
     m.v3 = Var(initialize=1)
     m.v3.fix(1)
@@ -319,6 +362,7 @@ def test_fixed_variables_only_in_inequalities(m):
     assert len(fixed_variables_only_in_inequalities(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_fixed_variables_only_in_inequalities(m):
     m.v3 = Var(initialize=1)
     m.v3.fix(1)
@@ -328,22 +372,27 @@ def test_number_fixed_variables_only_in_inequalities(m):
 
 # -------------------------------------------------------------------------
 # Unused and un-Transformed Variables
+@pytest.mark.unit
 def test_unused_variables_set(m):
     assert len(unused_variables_set(m)) == 6
 
 
+@pytest.mark.unit
 def test_number_unused_variables(m):
     assert number_unused_variables(m) == 6
 
 
+@pytest.mark.unit
 def test_fixed_unused_variables_set(m):
     assert len(fixed_unused_variables_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_fixed_unused_variables(m):
     assert number_fixed_unused_variables(m) == 1
 
 
+@pytest.mark.unit
 def test_derivative_variables_set():
     m = ConcreteModel()
 
@@ -363,6 +412,7 @@ def test_derivative_variables_set():
     assert len(derivative_variables_set(m)) == 0
 
 
+@pytest.mark.unit
 def test_number_derivative_variables():
     m = ConcreteModel()
 
@@ -384,46 +434,56 @@ def test_number_derivative_variables():
 
 # -------------------------------------------------------------------------
 # Objective methods
+@pytest.mark.unit
 def test_total_objectives_set(m):
     assert len(total_objectives_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_total_objectives(m):
     assert number_total_objectives(m) == 2
 
 
+@pytest.mark.unit
 def test_activated_objectives_set(m):
     assert len(activated_objectives_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_activated_objectives(m):
     assert number_activated_objectives(m) == 1
 
 
+@pytest.mark.unit
 def test_deactivated_objectives_set(m):
     assert len(deactivated_objectives_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_deactivated_objectives(m):
     assert number_deactivated_objectives(m) == 1
 
 
 # -------------------------------------------------------------------------
 # Expression methods
+@pytest.mark.unit
 def test_expressions_set(m):
     assert len(expressions_set(m)) == 3
 
 
+@pytest.mark.unit
 def test_number_expressions(m):
     assert number_expressions(m) == 3
 
 
 # -------------------------------------------------------------------------
 # Other model statistics
+@pytest.mark.unit
 def test_degrees_of_freedom(m):
     assert degrees_of_freedom(m) == 10
 
 
+@pytest.mark.unit
 def test_large_residuals_set(m):
     # Initialize derivative var values so no errors occur
     for v in m.dv.keys():
@@ -431,6 +491,7 @@ def test_large_residuals_set(m):
     assert len(large_residuals_set(m)) == 2
 
 
+@pytest.mark.unit
 def test_number_large_residuals(m):
     # Initialize derivative var values so no errors occur
     for v in m.dv.keys():
@@ -438,6 +499,7 @@ def test_number_large_residuals(m):
     assert number_large_residuals(m) == 2
 
 
+@pytest.mark.unit
 def test_active_variables_in_deactivated_blocks_set(m):
     assert len(active_variables_in_deactivated_blocks_set(m)) == 0
 
@@ -446,6 +508,7 @@ def test_active_variables_in_deactivated_blocks_set(m):
     assert len(active_variables_in_deactivated_blocks_set(m)) == 1
 
 
+@pytest.mark.unit
 def test_number_active_variables_in_deactivated_blocks(m):
     assert number_active_variables_in_deactivated_blocks(m) == 0
 
@@ -456,5 +519,6 @@ def test_number_active_variables_in_deactivated_blocks(m):
 
 # -------------------------------------------------------------------------
 # Reporting methods
+@pytest.mark.unit
 def test_report_statistics(m):
     report_statistics(m)

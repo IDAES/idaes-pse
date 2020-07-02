@@ -186,7 +186,9 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
         obj.add_default_units({'time': 'min',
                                'length': 'm',
                                'amount': 'kmol',
-                               'energy': 'kcal'})
+                               'temperature': 'K',
+                               'energy': 'kcal',
+                               'holdup': 'kmol'})
 
 class _EnzymeReactionBlock(ReactionBlockBase):
     def initialize(blk):
@@ -260,6 +262,7 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_fix_state_vars_basic(model):
     flags = fix_state_vars(model.fs.sb)
 
@@ -279,6 +282,7 @@ def test_fix_state_vars_basic(model):
     assert not flags[None, "temperature", None]
 
 
+@pytest.mark.unit
 def test_fix_state_vars_None_value(model):
     model.fs.sb.pressure.value = None
 
@@ -286,6 +290,7 @@ def test_fix_state_vars_None_value(model):
         fix_state_vars(model.fs.sb)
 
 
+@pytest.mark.unit
 def test_fix_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -320,6 +325,7 @@ def test_fix_state_vars_guesses(model):
     assert not flags[None, "temperature", None]
 
 
+@pytest.mark.unit
 def test_fix_state_vars_partial_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -352,6 +358,7 @@ def test_fix_state_vars_partial_guesses(model):
     assert not flags[None, "temperature", None]
 
 
+@pytest.mark.unit
 def test_fix_state_vars_guesses_mismatch_index(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -365,6 +372,7 @@ def test_fix_state_vars_guesses_mismatch_index(model):
         fix_state_vars(model.fs.sb, state_args)
 
 
+@pytest.mark.unit
 def test_fix_state_vars_fixed_no_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -396,6 +404,7 @@ def test_fix_state_vars_fixed_no_guesses(model):
     assert not flags[None, "temperature", None]
 
 
+@pytest.mark.unit
 def test_fix_state_vars_fixed_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -434,6 +443,7 @@ def test_fix_state_vars_fixed_guesses(model):
     assert not flags[None, "temperature", None]
 
 
+@pytest.mark.unit
 def test_revert_state_vars_basic(model):
     flags = fix_state_vars(model.fs.sb)
 
@@ -448,6 +458,7 @@ def test_revert_state_vars_basic(model):
     assert model.fs.sb.temperature.value == 300
 
 
+@pytest.mark.unit
 def test_revert_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -477,6 +488,7 @@ def test_revert_state_vars_guesses(model):
     assert model.fs.sb.temperature.value == 500
 
 
+@pytest.mark.unit
 def test_revert_state_vars_fixed_no_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -502,6 +514,7 @@ def test_revert_state_vars_fixed_no_guesses(model):
     assert model.fs.sb.temperature.value == 300
 
 
+@pytest.mark.unit
 def test_revert_state_vars_fixed_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars
@@ -534,6 +547,7 @@ def test_revert_state_vars_fixed_guesses(model):
     assert model.fs.sb.temperature.value == 500
 
 
+@pytest.mark.unit
 def test_revert_state_vars_flag_mismatch(model):
     flags = {(None, 'component_flow_phase', ('p1', 'c1')): False,
              (None, 'component_flow_phase', ('p1', 'c2')): False,
@@ -544,6 +558,7 @@ def test_revert_state_vars_flag_mismatch(model):
         revert_state_vars(model.fs.sb, flags)
 
 
+@pytest.mark.unit
 def test_propagate_state():
     m = ConcreteModel()
 
@@ -587,6 +602,7 @@ def test_propagate_state():
     assert m.b2.v2[2].fixed is False
 
 
+@pytest.mark.unit
 def test_propagate_state_reverse():
     m = ConcreteModel()
 
@@ -630,6 +646,7 @@ def test_propagate_state_reverse():
     assert m.b2.v2[2].fixed is False
 
 
+@pytest.mark.unit
 def test_propagate_state_fixed():
     m = ConcreteModel()
 
@@ -676,6 +693,7 @@ def test_propagate_state_fixed():
     assert m.b2.v2[2].fixed is False
 
 
+@pytest.mark.unit
 def test_propagate_state_Expression():
     m = ConcreteModel()
 
@@ -700,6 +718,7 @@ def test_propagate_state_Expression():
         propagate_state(m.s1)
 
 
+@pytest.mark.unit
 def test_propagate_state_invalid_stream():
     m = ConcreteModel()
 
@@ -707,6 +726,7 @@ def test_propagate_state_invalid_stream():
         propagate_state(m)
 
 
+@pytest.mark.unit
 def test_propagate_state_invalid_direction():
     m = ConcreteModel()
 
@@ -730,6 +750,7 @@ def test_propagate_state_invalid_direction():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_solve_indexed_block_list():
     # Create an indexed block and try to solve it
     m = ConcreteModel()
@@ -747,6 +768,7 @@ def test_solve_indexed_block_list():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.unit
 def test_solve_indexed_block_IndexedBlock():
     # Create an indexed block and try to solve it
     m = ConcreteModel()
@@ -763,12 +785,14 @@ def test_solve_indexed_block_IndexedBlock():
         assert value(m.b[i].v == 2.0)
 
 
+@pytest.mark.unit
 def test_solve_indexed_block_error():
     # Try solve_indexed_block on non-block object
     with pytest.raises(TypeError):
         solve_indexed_blocks(solver=None, blocks=[1, 2, 3])
 
 
+@pytest.mark.integration
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_by_time_element():
     horizon = 6

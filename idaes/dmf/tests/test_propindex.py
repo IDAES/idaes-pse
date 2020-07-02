@@ -41,6 +41,7 @@ init_logging()
 _log = logging.getLogger(__name__)
 
 
+@pytest.mark.unit
 def test_dmfvisitor():
     with pytest.raises(TypeError):
         propindex.DMFVisitor("o_O", "a")
@@ -60,6 +61,7 @@ def testdmf(tmpd):
     return dmf
 
 
+@pytest.mark.unit
 def test_index_property_metadata(testdmf):
     propindex.index_property_metadata(
         testdmf, pkg=idaes.dmf, expr=".*IndexMePlease[0-9]", exclude_testdirs=False
@@ -70,6 +72,7 @@ def test_index_property_metadata(testdmf):
         # print('@@ GOT RESOURCE:\n{}'.format(rsrc.v))
 
 
+@pytest.mark.unit
 def test_index_multiple_versions(testdmf):
     v1, v2, v3 = "1.0.0", "6.6.6", "9.9.0"
     # index initial version

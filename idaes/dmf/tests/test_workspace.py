@@ -50,16 +50,19 @@ def wsdir():
 # -----
 
 
+@pytest.mark.unit
 def test_ws_init_notfound():
     with pytest.raises(errors.WorkspaceNotFoundError):
         workspace.Workspace(BADPATH)
 
 
+@pytest.mark.unit
 def test_ws_init_noconf(wsdir):
     with pytest.raises(errors.WorkspaceConfNotFoundError):
         workspace.Workspace(wsdir)
 
 
+@pytest.mark.unit
 def test_ws_init_badconf(wsdir):
     conf = open(os.path.join(wsdir, workspace.Workspace.WORKSPACE_CONFIG), "w")
     conf.write("note: this config is wack\n")
@@ -68,6 +71,7 @@ def test_ws_init_badconf(wsdir):
         workspace.Workspace(wsdir)
 
 
+@pytest.mark.unit
 def test_ws_init_create_nodefaults(wsdir):
     ws = workspace.Workspace(wsdir, create=True)
     # if defaults were set, then HTML documentation paths
@@ -75,6 +79,7 @@ def test_ws_init_create_nodefaults(wsdir):
     assert ws.get_doc_paths() == []
 
 
+@pytest.mark.unit
 def test_ws_init_create_defaults(wsdir):
     ws = workspace.Workspace(wsdir, create=True, add_defaults=True)
     # if defaults were set, then HTML documentation paths
@@ -82,6 +87,7 @@ def test_ws_init_create_defaults(wsdir):
     assert ws.get_doc_paths() != []
 
 
+@pytest.mark.unit
 def test_ws_accessors(wsdir):
     ws = workspace.Workspace(wsdir, create=True, add_defaults=True)
     assert ws.wsid != ""

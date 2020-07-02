@@ -25,6 +25,11 @@ import csv
 import os
 import idaes
 
+
+# Mark module as an integration test
+pytestmark = pytest.mark.integration
+
+
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6}
@@ -282,8 +287,7 @@ class TestHelm(object):
                 pytest.approx(Tc/T, rel=0.10))
             binary_derivative_test(f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
 
-
-    def test_thero_expression_writter(self, model):
+    def test_thermo_expression_writter(self, model):
         te = model.te
         mw = self.mw
         Tc = self.Tc
@@ -328,7 +332,6 @@ class TestHelm(object):
             binary_derivative_test(f=model.func_vf, x0=h/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
-
 
     def test_solve_vapor_density(self, model):
         """ The density calculations should be tested by the thermo expression

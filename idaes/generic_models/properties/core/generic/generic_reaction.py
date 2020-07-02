@@ -19,13 +19,14 @@ from pyomo.environ import (Block,
                            Expression,
                            Set,
                            Var)
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         ReactionParameterBlock,
                         ReactionBlockDataBase,
-                        ReactionBlockBase)
+                        ReactionBlockBase,
+                        MaterialFlowBasis)
 from idaes.core.util.exceptions import (
     BurntToast, ConfigurationError, PropertyPackageError)
 
@@ -54,6 +55,7 @@ rxn_config.declare("stoichiometry", ConfigValue(
     domain=dict,
     description="Stoichiometry of reaction",
     doc="Dict describing stoichiometry of reaction"))
+
 rxn_config.declare("heat_of_reaction", ConfigValue(
     description="Method for calculating specific heat of reaction",
     doc="Valid Python class containing instructions on how to calculate "
@@ -90,6 +92,13 @@ class GenericReactionParameterData(ReactionParameterBlock):
     General Reaction Parameter Block Class
     """
     CONFIG = ReactionParameterBlock.CONFIG()
+
+    CONFIG.declare("reaction_basis", ConfigValue(
+        default=MaterialFlowBasis.molar,
+        domain=In(MaterialFlowBasis),
+        doc="Basis of reactions",
+        description="Argument indicating basis of reaction terms. Should be "
+        "an instance of a MaterialFlowBasis Enum"))
 
     CONFIG.declare("rate_reactions", ConfigBlock(
         implicit=True, implicit_domain=rate_rxn_config))
@@ -392,3 +401,6 @@ class GenericReactionBlockData(ReactionBlockDataBase):
             self.params.equilibrium_reaction_idx,
             doc="Equilibrium constraint",
             rule=equil_rule)
+
+    def get_reaction_rate_basis(b):
+        return b.params.config.reaction_basis

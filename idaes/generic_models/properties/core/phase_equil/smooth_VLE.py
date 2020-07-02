@@ -21,6 +21,8 @@ Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 from pyomo.environ import Constraint, Param, Var, value
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
+    _valid_VL_component_list)
 
 
 def phase_equil(b, phase_pair):
@@ -29,46 +31,54 @@ def phase_equil(b, phase_pair):
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
 
     # Smooth VLE assumes a liquid and a vapor phase, so validate this
-    phase_1 = b.params.get_phase(phase_pair[0])
-    phase_2 = b.params.get_phase(phase_pair[1])
+    (l_phase,
+     v_phase,
+     vl_comps,
+     l_only_comps,
+     v_only_comps) = _valid_VL_component_list(b, phase_pair)
 
-    liq_phase = phase_1.is_liquid_phase() or phase_2.is_liquid_phase()
-    vap_phase = phase_1.is_vapor_phase() or phase_2.is_vapor_phase()
-
-    if not (liq_phase and vap_phase):
+    if l_phase is None or v_phase is None:
         raise ConfigurationError(
             "{} Generic Property Package phase pair {}-{} was set to use "
             "Smooth VLE formulation, however this is not a vapor-liquid pair."
             .format(b.params.name, phase_pair[0], phase_pair[1]))
 
     # Definition of equilibrium temperature for smooth VLE
-    b.add_component("_t1"+suffix, Var(
-            initialize=b.temperature.value,
-            doc='Intermediate temperature for calculating Teq'))
-    _t1 = getattr(b, "_t1"+suffix)
+    if v_only_comps == []:
+        b.add_component("_t1"+suffix, Var(
+                initialize=b.temperature.value,
+                doc='Intermediate temperature for calculating Teq'))
+        _t1 = getattr(b, "_t1"+suffix)
 
-    b.add_component("eps_1"+suffix, Param(default=0.01,
-                                          mutable=True,
-                                          doc='Smoothing parameter for Teq'))
-    b.add_component("eps_2"+suffix, Param(default=0.0005,
-                                          mutable=True,
-                                          doc='Smoothing parameter for Teq'))
-    eps_1 = getattr(b, "eps_1"+suffix)
-    eps_2 = getattr(b, "eps_1"+suffix)
+        b.add_component("eps_1"+suffix, Param(
+            default=0.01, mutable=True, doc='Smoothing parameter for Teq'))
+        eps_1 = getattr(b, "eps_1"+suffix)
 
-    # PSE paper Eqn 13
-    def rule_t1(b):
-        return _t1 == smooth_max(b.temperature,
-                                 b.temperature_bubble[phase_pair],
-                                 eps_1)
-    b.add_component("_t1_constraint"+suffix, Constraint(rule=rule_t1))
+        # PSE paper Eqn 13
+        def rule_t1(b):
+            return _t1 == smooth_max(b.temperature,
+                                     b.temperature_bubble[phase_pair],
+                                     eps_1)
+        b.add_component("_t1_constraint"+suffix, Constraint(rule=rule_t1))
+    else:
+        _t1 = b.temperature
 
-    # PSE paper Eqn 14
-    # TODO : Add option for supercritical extension
-    def rule_teq(b):
-        return b._teq[phase_pair] == smooth_min(_t1,
-                                                b.temperature_dew[phase_pair],
-                                                eps_2)
+    if l_only_comps == []:
+        b.add_component("eps_2"+suffix, Param(
+            default=0.0005, mutable=True, doc='Smoothing parameter for Teq'))
+        eps_2 = getattr(b, "eps_2"+suffix)
+
+        # PSE paper Eqn 14
+        # TODO : Add option for supercritical extension
+        def rule_teq(b):
+            return b._teq[phase_pair] == smooth_min(
+                _t1, b.temperature_dew[phase_pair], eps_2)
+    elif v_only_comps == []:
+        def rule_teq(b):
+            return b._teq[phase_pair] == _t1
+    else:
+        def rule_teq(b):
+            return b._teq[phase_pair] == b.temperature
     b.add_component("_teq_constraint"+suffix, Constraint(rule=rule_teq))
 
 
@@ -84,9 +94,16 @@ def phase_equil_initialization(b, phase_pair):
 
 def calculate_teq(b, phase_pair):
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
-    _t1 = getattr(b, "_t1"+suffix)
 
-    _t1.value = max(value(b.temperature),
-                    b.temperature_bubble[phase_pair].value)
-    b._teq[phase_pair].value = min(_t1.value,
-                                   b.temperature_dew[phase_pair].value)
+    if hasattr(b, "eq_temperature_bubble"):
+        _t1 = getattr(b, "_t1"+suffix)
+        _t1.value = max(value(b.temperature),
+                        b.temperature_bubble[phase_pair].value)
+    else:
+        _t1 = b.temperature
+
+    if hasattr(b, "eq_temperature_dew"):
+        b._teq[phase_pair].value = min(_t1.value,
+                                       b.temperature_dew[phase_pair].value)
+    else:
+        b._teq[phase_pair].value = _t1.value

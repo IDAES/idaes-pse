@@ -60,16 +60,19 @@ def col():
     return tabular.Column(column_name, data_column)
 
 
+@pytest.mark.unit
 def test_column(col):
     assert col.name == column_name
 
 
+@pytest.mark.unit
 def test_column_data(col):
     d = col.data()
     for f in (F.DATA_UNITS, F.DATA_VALUES, F.DATA_ERRORS, F.DATA_ERRTYPE):
         assert d[f] == data_column[f]
 
 
+@pytest.mark.unit
 def test_column_len(col):
     assert len(col) == len(data_column[F.DATA_VALUES])
 
@@ -109,11 +112,13 @@ def csvfile():
     return fake_file
 
 
+@pytest.mark.unit
 def test_metadata(metadata):
     assert metadata.author == ex_metadata[F.AUTH]
     assert metadata.date == ex_metadata[F.DATE]
 
 
+@pytest.mark.unit
 def test_metadata_bad():
     inputs = map(StringIO, ["", "Who cares,Some junk", "source,"])
     for inpfile in inputs:
@@ -122,6 +127,7 @@ def test_metadata_bad():
             tabular.Metadata.from_csv(inpfile)
 
 
+@pytest.mark.unit
 def test_metadata_good():
     inpfile = StringIO(ex_csv)
     obj = tabular.Metadata.from_csv(inpfile)
@@ -133,12 +139,14 @@ def test_metadata_good():
     assert whole_len > sum(parts_len)
 
 
+@pytest.mark.unit
 def test_from_csv(csvfile):
     m = tabular.Metadata.from_csv(csvfile)
     assert m.author == ex_metadata[F.AUTH]
     assert m.date == ex_metadata[F.DATE]
 
 
+@pytest.mark.unit
 def test_md_properties(metadata):
     assert metadata.author is not None
     assert metadata.date is not None
@@ -220,10 +228,12 @@ def tabdata2():
     return obj
 
 
+@pytest.mark.unit
 def test_init(tabdata, tabdata2):
     pass
 
 
+@pytest.mark.unit
 def test_init_badtype():
     with pytest.raises(TypeError):
         tabular.TabularData("foo")
@@ -231,21 +241,25 @@ def test_init_badtype():
         tabular.TabularData({"foo": "bar"})
 
 
+@pytest.mark.unit
 def test_init_emptyvalue():
     with pytest.raises(ValueError):
         tabular.TabularData([])
 
 
+@pytest.mark.unit
 def test_init_badvalue():
     with pytest.raises(ValueError):
         tabular.TabularData([{"foo": "bar"}])
 
 
+@pytest.mark.unit
 def test_columns(tabdata):
     c = tabdata.columns
     assert c[0]["units"] == ex_data[0]["units"]
 
 
+@pytest.mark.unit
 def test_len(tabdata, tabdata2):
     assert len(tabdata) == 3
     assert tabdata.num_rows == len(tabdata)
@@ -253,45 +267,54 @@ def test_len(tabdata, tabdata2):
     assert tabdata2.num_rows == len(tabdata2)
 
 
+@pytest.mark.unit
 def test_names(tabdata):
     assert tabdata.names()[0] == ex_data[0]["name"]
 
 
+@pytest.mark.unit
 def test_num_columns(tabdata, tabdata2):
     assert tabdata.num_columns == 1
     assert tabdata2.num_columns == 2
 
 
+@pytest.mark.unit
 def test_get_column(tabdata):
     name = ex_data[0]["name"]
     assert tabdata.get_column(name).values == ex_data[0]["values"]
 
 
+@pytest.mark.unit
 def test_get_column_bad(tabdata):
     name = "NOPE!"
     with pytest.raises(KeyError):
         tabdata.get_column(name)
 
 
+@pytest.mark.unit
 def test_get_column_index(tabdata):
     name = ex_data[0]["name"]
     assert tabdata.get_column_index(name) == 0
 
 
+@pytest.mark.unit
 def test_get_column_index_err(tabdata):
     name = "-no-such-name-"
     with pytest.raises(KeyError):
         tabdata.get_column_index(name)
 
 
+@pytest.mark.unit
 def test_num_rows(tabdata):
     assert tabdata.num_rows == 3
 
 
+@pytest.mark.unit
 def test_as_dict(tabdata):
     assert tabdata.as_list() == ex_data
 
 
+@pytest.mark.unit
 def test_as_arr(tabdata2):
     values, errors = tabdata2.as_arr()
     assert values[0][0] == ex_data2[0][F.DATA_VALUES][0]
@@ -300,11 +323,13 @@ def test_as_arr(tabdata2):
     assert values[1][1] == ex_data2[1][F.DATA_VALUES][1]
 
 
+@pytest.mark.unit
 def test_td_badlen():
     with pytest.raises(ValueError):
         tabular.TabularData(ex_data2_badlen)
 
 
+@pytest.mark.unit
 def test_values_dataframe(tabdata2):
     df = tabdata2.values_dataframe()
     name = tabdata2.names()[0]
@@ -313,6 +338,7 @@ def test_values_dataframe(tabdata2):
         assert df[name][i] == values[i]
 
 
+@pytest.mark.unit
 def test_errors_dataframe(tabdata2):
     df = tabdata2.errors_dataframe()
     name = tabdata2.names()[0]
@@ -321,17 +347,20 @@ def test_errors_dataframe(tabdata2):
         assert df[name][i] == values[i]
 
 
+@pytest.mark.unit
 def test_td_dataframe_nopandas(tabdata):
     tabular.pd = None
     with pytest.raises(ImportError):
         df = tabdata.values_dataframe()
 
 
+@pytest.mark.unit
 def test_td_from_csv():
     strfile = StringIO("\n".join(ex_data2_csv))
     tabular.TabularData.from_csv(strfile)
 
 
+@pytest.mark.unit
 def test_td_from_csv_badheader():
     csv = ex_data2_csv[:]
     csv[0] += ",Extra"
@@ -340,6 +369,7 @@ def test_td_from_csv_badheader():
         tabular.TabularData.from_csv(strfile)
 
 
+@pytest.mark.unit
 def test_td_from_csv_badrow():
     csv = ex_data2_csv[:]
     csv[1] += ",1"
@@ -348,6 +378,7 @@ def test_td_from_csv_badrow():
         tabular.TabularData.from_csv(strfile)
 
 
+@pytest.mark.unit
 def test_td_csv_short():
     infile = StringIO("\n".join(ex_data2_csv_short))
     with pytest.raises(ValueError):
@@ -362,16 +393,19 @@ def table(tabdata, metadata):
     return tabular.Table(data=tabdata, metadata=metadata)
 
 
+@pytest.mark.unit
 def test_init_table(table):
     pass
 
 
+@pytest.mark.unit
 def test_table_init_variations():
     tabular.Table(data=ex_data2, metadata=ex_metadata)
     tabular.Table(data=ex_data2, metadata=ex_metadata)
     tabular.Table(data=ex_data2, metadata=[ex_metadata])
 
 
+@pytest.mark.unit
 def test_table_init_bad(tabdata, metadata):
     with pytest.raises(TypeError):
         tbl = tabular.Table(data=None, metadata=metadata)
@@ -381,28 +415,33 @@ def test_table_init_bad(tabdata, metadata):
         tbl = tabular.Table(data=tabdata, metadata="hello")
 
 
+@pytest.mark.unit
 def test_iter_table(table):
     for key, value in table:
         assert key in ["meta", "data"]
         assert isinstance(value, list)
 
 
+@pytest.mark.unit
 def test_table_attrs(table):
     assert table.data is not None
     assert table.metadata is not None
 
 
+@pytest.mark.unit
 def test_dump_table(table):
     fp = StringIO()
     table.dump(fp)
     assert len(fp.getvalue()) > 50
 
 
+@pytest.mark.unit
 def test_dumps_table(table):
     assert len(table.dumps()) > 50
     assert str(table) == table.dumps()
 
 
+@pytest.mark.unit
 def test_roundtrip_table(table):
     fp = StringIO()
     table.dump(fp)
@@ -419,6 +458,7 @@ def _table_reload(fp):
         _ = tabular.Table.load(fp)
 
 
+@pytest.mark.unit
 def test_load_table_missing(tabdata, metadata):
     # ValueError with high-level keys missing
     for delkey in F.DATA, F.META:
@@ -437,6 +477,7 @@ def test_load_table_missing(tabdata, metadata):
         _table_reload(fp)
 
 
+@pytest.mark.unit
 def test_load_table_nometa(tabdata):
     fp = StringIO()
     tbl = tabular.Table(data=tabdata, metadata=[])

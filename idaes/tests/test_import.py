@@ -22,6 +22,7 @@ import time
 # package
 import idaes
 from idaes.dmf.util import ColorTerm
+import pytest
 
 good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")
 
@@ -82,6 +83,7 @@ def importr(root: pathlib.Path, max_sec=10):
     return failures, total
 
 
+@pytest.mark.unit
 def test_import():
     root_dir = pathlib.Path(idaes.__file__).parent
     failures, total = importr(root_dir)
