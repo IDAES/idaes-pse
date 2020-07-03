@@ -42,7 +42,7 @@ from idaes.apps.caprese.util import (initialize_by_element_in_range,
         VariableCategory, validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
-        get_violated_bounds_at_time)
+        get_violated_bounds_at_time, PlantHistory)
 from idaes.apps.caprese.common.config import(
         PlantHorizonType)
 from idaes.apps.caprese.base_class import DynamicBase
@@ -1665,31 +1665,108 @@ class NMPCSim(DynamicBase):
         # Separate function append_history_from_plant?
 
 
-    def append_history_from_plant(self, history=None, t_start=None, t_end=None,
+    def cycle_plant(self, t_start=None, t_end=None, 
+            categories=[
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.DERIVATIVE,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.INPUT,
+                ],
+            **kwargs):
+        """
+        Sets the values of plant variables at t_start to those at t_end.
+        """
+        # By default, copy fixed variables
+        config = self.config(kwargs)
+        continuous_set_tolerance = config.continuous_set_tolerance
+        plant = self.plant
+        plant_time = self.plant_time
+        namespace = getattr(plant, self.get_namespace_name())
+        category_dict = namespace.category_dict
+        sample_set = set(namespace.sample_points)
+        sample_time = self.sample_time
+
+        if t_start is None:
+            t_start = plant_time.first()
+        if t_end is None:
+            t_end = t_start + sample_time
+            t_end = find_point_in_continuousset(t_end, plant_time,
+                    tolerance=continuous_set_tolerance)
+        for t in [t_start, t_end]:
+            if t not in sample_set:
+                raise ValueError(
+                    'Can only cycle plant between sample points')
+
+        for categ in categories:
+            varlist = category_dict[categ].varlist
+            copy_values_at_time(varlist, varlist, t_start, t_end)
+            
+
+    def extend_history_from_plant(self, history=None, t_start=None, t_end=None,
             **kwargs):
         config = self.config(kwargs)
         plant_type = config.plant_horizon_type
         continuous_set_tolerance = config.continuous_set_tolerance
         t_start = self.validate_plant_start_time(t_start,
                 plant_horizon_type=plant_type)
+        plant = self.plant
         plant_time = self.plant_time
+        namespace = getattr(plant, self.get_namespace_name())
+        var_locator = namespace.var_locator
         sample_time = self.sample_time
+
+        if t_start is None:
+            t_start = plant_time.first()
         if t_end is None:
             t_end = t_start + sample_time
-            t_end = find_point_in_continuousset(plant_time, t_end,
+            t_end = find_point_in_continuousset(t_end, plant_time,
                     tolerance=continuous_set_tolerance)
-        # For compUID in PlantHistory,
-        # find that component in plant model
-        # For each plant time in (t_start, t_end],
-        #     - Use [t_start, t_end] 
-        # append component[t].value to the PlantHistory
+        time_list = [t for t in plant_time if t_start <= t and t <= t_end]
+
+        data_list = []
+        for cuid in history:
+            for comp in cuid.list_components(plant.model()):
+                break
+            info = var_locator[comp]
+            group = info.group
+            location = info.location
+            _slice = group.varlist[location]
+            data_list.append(_slice)
+
+        history.extend(time_list, data_list, require_consistency=True)
+        # Is consistency getting violated because of noise?
+        # -> Take this opportunity to make sure noise isn't applied to plant model
 
         return history
 
 
-    def create_history_from_plant(self, t_start=None, t_end=None, **kwargs):
-        history = self.append_history_from_plant(self, history=None, 
-                t_start=None, t_end=None, **kwargs)
+    def initialize_history_from_plant(self, t_start=None, t_end=None, 
+            variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
+            **kwargs):
+        config = self.config(kwargs)
+        tolerance = config.tolerance
+        time = self.plant_time
+        namespace = getattr(self.plant, self.get_namespace_name())
+        var_locator = namespace.var_locator
+        category_dict = namespace.category_dict
+
+        slices = []
+        for var in variables:
+            if var in VariableCategory:
+                category = var
+                slices.extend(category_dict[category].varlist)
+                continue
+            info = var_locator[var]
+            group = info.group
+            location = info.location
+            slices.append(group.varlist[location])
+        # Should I pass in the plant here so I can construct CUIDs with
+        # context=plant?
+        # Or, probably better, create CUIDs here then pass to history
+        # Then history could be created with any names for each variable,
+        # which could be a good and bad thing.
+        history = PlantHistory(time, slices, t_start=t_start, t_end=t_end,
+                tolerance=tolerance)
         return history
 
 
