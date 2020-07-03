@@ -362,6 +362,134 @@ def test_get_violated_bounds_at_time():
     assert m.v[2,'b'] in violated_set
 
 
+@pytest.mark.unit
+def test_cuid_from_timeslice():
+    m = ConcreteModel()
+    m.time = Set(initialize=[1,2,3])
+    m.space = Set(initialize=[4,5,6])
+    m.comp = Set(initialize=['a','b'])
+    m.v = Var(m.time, m.space, m.comp)
+    
+    @m.Block()
+    def b1(b):
+        @b.Block(m.time, m.space)
+        def b2(b, t, x):
+            @b.Block(m.comp)
+            def b3(b, c):
+                b.v = Var()
+            b.v = Var(m.comp)
+        b.v = Var(m.time, m.space)
+
+    ref1 = Reference(m.v[1,:,'a'])
+    uid1 = cuid_from_timeslice(ref1, m.space)
+    slices1 = ComponentSet(m.v[1,:,'a'])
+    comps1 = list(uid1.list_components(m))
+    assert str(uid1) == 'v[1,*,a]'
+    assert len(slices1) == len(comps1)
+    for comp in comps1:
+        assert comp in slices1
+
+    ref2 = Reference(m.b1.v[1,:])
+    uid2 = cuid_from_timeslice(ref2, m.space)
+    slices2 = ComponentSet(m.b1.v[1,:])
+    comps2 = list(uid2.list_components(m))
+    assert str(uid2) == 'b1.v[1,*]'
+    assert len(slices2) == len(comps2)
+    for comp in comps2:
+        assert comp in slices2
+
+    ref3 = Reference(m.b1.b2[:,4].v['b'])
+    uid3 = cuid_from_timeslice(ref3, m.time)
+    slices3 = ComponentSet(m.b1.b2[:,4].v['b'])
+    comps3 = list(uid3.list_components(m))
+    assert str(uid3) == 'b1.b2[*,4].v[b]'
+    assert len(slices3) == len(comps3)
+    for comp in comps3:
+        assert comp in slices3
+
+    ref4 = Reference(m.b1.b2[:,4].b3['b'].v)
+    uid4 = cuid_from_timeslice(ref4, m.time)
+    slices4 = ComponentSet(m.b1.b2[:,4].b3['b'].v)
+    comps4 = list(uid4.list_components(m))
+    assert str(uid4) == 'b1.b2[*,4].b3[b].v'
+    assert len(slices4) == len(comps4)
+    for comp in comps4:
+        assert comp in slices4
+
+
+def test_PlantHistory():
+    m = ConcreteModel()
+    m.time = Set(initialize=[1,2,3])
+    m.space = Set(initialize=[4,5,6])
+
+    m.u = Var(m.time, m.space, initialize=lambda m, t, x: t*x)
+    m.v = Var(m.time, m.space, initialize=lambda m, t, x: t+x)
+    
+    @m.Block(m.time)
+    def b(b, t):
+        b.x = Var(initialize=1)
+        b.y = Var(initialize=2)
+        b.z = Var(initialize=3)
+
+    u_ref = {x: Reference(m.u[:,x]) for x in m.space}
+    x_ref = Reference(m.b[:].x)
+
+    ref_list = list(u_ref.values())
+    ref_list.append(x_ref)
+
+    ph = PlantHistory(m.time, ref_list)
+
+    timeset = set(ph.time)
+    assert len(timeset) == len(m.time)
+    for t in m.time:
+        assert t in timeset
+
+    u_cuid = {x: cuid_from_timeslice(u_ref[x], m.time)
+            for x in m.space}
+    x_cuid = cuid_from_timeslice(x_ref, m.time)
+
+    for x, cuid in u_cuid.items():
+        assert cuid in ph
+        for i, t in enumerate(m.time):
+            assert ph[cuid][i] == u_ref[x][t].value
+
+    assert x_cuid in ph
+    for i, t in enumerate(m.time):
+        assert ph[x_cuid][i] == x_ref[t]
+
+    for t, x in m.time*m.space:
+        if t == m.time[1]:
+            m.u[t,x].set_value(m.u[m.time.last(),x].value)
+            continue
+        m.u[t,x].set_value(t*x+5)
+    
+    for t in m.time:
+        if t == m.time[1]:
+            continue
+        m.b[t].x.set_value(10)
+
+    time_list = list(m.time)
+    ph.extend(time_list, ref_list)
+    new_time = [1,2,3,4,5]
+    timeset = set(ph.time)
+    assert len(new_time) == len(timeset)
+    for t in new_time:
+        assert t in timeset
+
+    for x, cuid in u_cuid.items():
+        assert len(ph[cuid]) == len(new_time)
+        for i, t in enumerate(m.time):
+            assert ph[cuid][i] == x*t
+        for i, t in enumerate([4,5]):
+            assert ph[cuid][i+3] == x*(t-2)+5
+    assert len(ph[x_cuid]) == len(new_time)
+    for i, t in enumerate(new_time):
+        if t <= 3:
+            assert ph[x_cuid][i] == 1
+        else:
+            assert ph[x_cuid][i] == 10
+
+
 if __name__ == '__main__':
     test_find_comp_in_block()
     test_NMPCVarLocator()
@@ -369,4 +497,6 @@ if __name__ == '__main__':
     test_find_slices_in_model()
     test_initialize_by_element_in_range()
     test_add_noise_at_time()
+    test_cuid_from_timeslice()
+    test_PlantHistory()
 
