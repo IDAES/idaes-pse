@@ -63,9 +63,16 @@ class VariableCategory(ConfigEnum):
     FIXED = 55
     SCALAR = 56
 
+
+class NoiseBoundOption(ConfigEnum):
+    FAIL = 60
+    DISCARD = 61
+    PUSH = 62
+
+
 class PlantHorizonType(ConfigEnum):
-    FULL = 61
-    ROLLING = 62
+    FULL = 71
+    ROLLING = 72
 
 # This function is used as the domain for the user-provided
 # list of inputs at time.first().
