@@ -208,51 +208,6 @@ class NMPCVarGroup(object):
         self.weights[i] = val
 
 
-# Probably make this abstract
-class NMPCEnum(enum.Enum):
-    @classmethod
-    def from_enum_or_string(cls, arg):
-        if type(arg) is str:
-            return cls[arg]
-        else:
-            # Handles enum or integer inputs
-            return cls(arg)
-
-
-class ControlInitOption(NMPCEnum):
-    FROM_PREVIOUS = 11
-    BY_TIME_ELEMENT = 12
-    FROM_INITIAL_CONDITIONS = 13
-
-
-class ElementInitializationInputOption(NMPCEnum):
-    SET_POINT = 21
-    INITIAL = 22
-    CURRENT_VALUES = 23
-
-
-class TimeResolutionOption(NMPCEnum):
-    COLLOCATION_POINTS = 31
-    FINITE_ELEMENTS = 32
-    SAMPLE_POINTS = 33
-    INITIAL_POINT = 34
-
-
-class ControlPenaltyType(NMPCEnum):
-    ERROR = 41
-    ACTION = 42
-    NONE = 43
-
-
-#class VariableCategory(NMPCEnum):
-#    DIFFERENTIAL = 51
-#    ALGEBRAIC = 52
-#    DERIVATIVE = 53
-#    INPUT = 54
-#    FIXED = 55
-#    SCALAR = 56
-
-
 # This function is used as the domain for the user-provided
 # list of inputs at time.first().
 def validate_list_of_vardata(varlist):

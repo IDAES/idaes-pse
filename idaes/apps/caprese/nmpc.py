@@ -37,14 +37,13 @@ from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.apps.caprese.util import (initialize_by_element_in_range,
         find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
-        add_noise_at_time, ElementInitializationInputOption, 
-        TimeResolutionOption, ControlInitOption, ControlPenaltyType,
-        VariableCategory, validate_list_of_vardata, 
+        add_noise_at_time, validate_list_of_vardata,
         validate_list_of_vardata_value_tuples, validate_solver,
         NMPCVarGroup, find_point_in_continuousset,
         get_violated_bounds_at_time, PlantHistory)
-from idaes.apps.caprese.common.config import(
-        PlantHorizonType)
+from idaes.apps.caprese.common.config import (TimeResolutionOption, ControlInitOption,
+        ElementInitializationInputOption, ControlPenaltyType,
+        VariableCategory, NoiseBoundOption, PlantHorizonType)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
