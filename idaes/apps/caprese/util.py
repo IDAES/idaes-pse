@@ -27,6 +27,7 @@ from pyomo.core.base.constraint import _ConstraintData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.component import ComponentUID
+from pyomo.core.base.set import SortedSimpleSet, OrderedSimpleSet
 from pyomo.opt.solver import SystemCallSolver
 
 from idaes.core import FlowsheetBlock
@@ -397,9 +398,7 @@ def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
         t_tgt = [t_tgt]
 
     # TODO? This could be made more compact with vargroups...
-    for i, tgt_slice in enumerate(varlist_tgt):
-        src_slice = varlist_src[i]
-
+    for src_slice, tgt_slice in zip(varlist_src, varlist_tgt):
         try:
             src_value = src_slice[t_src].value
         except KeyError:
@@ -1013,14 +1012,75 @@ def histories_from_json(filename):
 
 
 def cuid_from_timeslice(_slice, time):
-    t1 = time[1]
-    t2 = time[2]
-    str1 = _slice[t1].name
-    str2 = _slice[t2].name
-    prefix = os.path.commonprefix(str1, str2)
-    str1 = str1[::-1]
-    str2 = str2[::-1]
-    suffix = os.path.commonprefix(str1, str2)
-    wildcard = '*'.join([prefix, suffix])
-    return ComponentUID(wildcard)    
+    """
+    Args:
+        _slice: A Reference to time-only slice whose CUID, with a wildcard
+                in the time index's location, will be generated.
+        time: Set that indexes _slice
+
+    Returns:
+        The ComponentUID constructed from the string described above
+    """
+    t0 = time.first()
+    compdata = _slice[t0]
+    return ComponentUID(compdata, wildcard_set=time)
     
+
+class PlantHistory(OrderedDict):
+    def __init__(self, time_set, slices, t_start=None, t_end=None,
+            tolerance=1e-8):
+        # Initialize from a list of time-only slices from a model
+        #
+        # I like storing the time set only once as an attribute of this object,
+        # but this only makes sense if all data exists at same time points.
+        # Relaxing this may be necessary at some point, and I haven't thought
+        # too much about how to do it. The easy answer would be to use values
+        # of None when the data doesn't exist. This would require some slight
+        # changes in this class. For now I am content to throw an error.
+        #
+        if t_start is None:
+            t_start = time_set.first()
+        if t_end is None:
+            t_end = time_set.last()
+        self.time = [t for t in time_set if t_start <= t and t <= t_end]
+        self.dim = len(slices)
+        self.tolerance = tolerance
+        init_list = [(cuid_from_timeslice(_slice, time_set),
+                      [_slice[t].value for t in self.time]) 
+                      for _slice in slices]
+        super().__init__(init_list)
+
+    def extend(self, time_list, data_list,
+            require_consistency=True):
+        """
+        Args:
+            time_list: List of time points at which data will be accessed
+                       to add to this history
+            data_list: List of containers (references-to-slices or dicts)
+                       that can be subscripted with each value in time_list,
+                       whose values will be added to the history
+        """
+        # Extend from a list of time-only slices
+        # TODO: extend from another PlantHistory instance
+
+        t_last = self.time[-1]
+        t0 = time_list[0]
+        new_time = [t_last + (t-t0) for t in time_list][1:]
+        
+        new_data = [[container[t].value for t in time_list]
+                for container in data_list]
+
+        if require_consistency:
+            # Check that first new data point is same as last existing data point
+            for series, new_series in zip(self.values(), new_data): 
+                if abs(series[-1] - new_series[0]) > self.tolerance:
+                    raise ValueError(
+                        'Data appended to PlantHistory must have an initial '
+                        'value consistent with data already reported. Use '
+                        'require_consistency=False to skip this check.')
+        new_data = [series[1:] for series in new_data]
+
+        self.time.extend(new_time)
+        for data_series, new_series in zip(self.values(), new_data):
+            data_series.extend(new_series)
+
