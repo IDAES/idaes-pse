@@ -23,7 +23,8 @@ from pyomo.core.base.range import remainder
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.dae.set_utils import is_explicitly_indexed_by, get_index_set_except
+from pyomo.dae.set_utils import (is_explicitly_indexed_by, get_index_set_except,
+        deactivate_model_at)
 from pyomo.dae.initialization import (solve_consistent_initial_conditions,
         get_inconsistent_initial_conditions)
 from pyomo.opt.solver import SystemCallSolver
@@ -32,8 +33,8 @@ from pyutilib.misc.config import ConfigDict, ConfigValue
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom, 
         activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
+from idaes.core.util.dyn_utils import (get_activity_dict, path_from_block, 
+        find_comp_in_block, find_comp_in_block_at_time)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.apps.caprese.util import (initialize_by_element_in_range,
         find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
@@ -891,17 +892,18 @@ class NMPCSim(DynamicBase):
                 group.set_setpoint(i, None)
                 
         # Populate appropriate setpoint values from argument
-        for vardata, value in setpoint:
+        for vardata, val in setpoint:
             info = locator[vardata]
             categ = info.category
             loc = info.location
             group = category_dict[categ]
-            group.set_setpoint(loc, value)
+            group.set_setpoint(loc, val)
 
         was_originally_active = ComponentMap([(comp, comp.active) for comp in 
                 controller.component_data_objects((Constraint, Block))])
         non_initial_time = [t for t in time if t != time.first()]
-        deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
+        deactivated = deactivate_model_at(controller, time, non_initial_time, 
+                suppress_warnings=True)
 
         inconsistent = get_inconsistent_initial_conditions(
                 controller, 
