@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -37,6 +37,7 @@ init_logging()
 _log = logging.getLogger(__name__)
 
 
+@pytest.mark.unit
 def test_create_relation_in_resource():
     a = resource.Resource()
     b = resource.Resource()
@@ -48,6 +49,7 @@ def test_create_relation_in_resource():
         resource.create_relation("foo", "contains", b)
 
 
+@pytest.mark.unit
 def test_relation_in_experiment(tmp_dmf):
     e1 = experiment.Experiment(tmp_dmf, name="1")
     a = resource.Resource(value={"name": "foo"})
@@ -56,6 +58,7 @@ def test_relation_in_experiment(tmp_dmf):
     assert len(e1.v["relations"]) == 1
 
 
+@pytest.mark.unit
 def test_relation_with_remove(tmp_dmf):
     e1 = experiment.Experiment(tmp_dmf, name="1")
     n, added = 10, []
@@ -73,6 +76,7 @@ def test_relation_with_remove(tmp_dmf):
         assert (len(e1.v["relations"])) == n
 
 
+@pytest.mark.unit
 def test_find_related(tmp_dmf):
     #
     #  r0
@@ -113,6 +117,7 @@ def test_find_related(tmp_dmf):
     assert names == ["r0", "r1", "r2"]
 
 
+@pytest.mark.unit
 def test_circular(tmp_dmf):
     #
     # r0 -> derived -> r1 -> derived >- r2 -+

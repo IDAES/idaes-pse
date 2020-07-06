@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -31,6 +31,7 @@ class _Flowsheet(FlowsheetBlockData):
         super(FlowsheetBlockData, self).build()
 
 
+@pytest.mark.unit
 def test_flowsheet():
     # Test flowsheet method
     m = ConcreteModel()
@@ -60,18 +61,21 @@ def test_flowsheet():
     assert m.a.i[1].j.flowsheet() is m.a
 
 
+@pytest.mark.unit
 def test_get_performance_contents():
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
     assert m.b._get_performance_contents(time_point=0) is None
 
 
+@pytest.mark.unit
 def test_get_stream_table_contents():
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
     assert m.b._get_stream_table_contents(time_point=0) is None
 
 
+@pytest.mark.unit
 def test_report():
     # Test that no exceptions occur
     m = ConcreteModel()

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -196,6 +196,15 @@ CONFIG_Template.declare("has_work_transfer", ConfigValue(
 **Valid values** {
 **True** - include work transfer terms,
 **False** - exclude work transfer terms.}"""))
+CONFIG_Template.declare("has_enthalpy_transfer", ConfigValue(
+    default=False,
+    domain=In([True, False]),
+    description="Entahlpy transfer term construction flag",
+    doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
+should be constructed, **default** - False.
+**Valid values** {
+**True** - include enthalpy transfer terms,
+**False** - exclude enthalpy transfer terms.}"""))
 CONFIG_Template.declare("has_pressure_change", ConfigValue(
     default=False,
     domain=In([True, False]),
@@ -552,7 +561,8 @@ have a config block which derives from CONFIG_Base,
             energy_balance_type=parent.config.energy_balance_type,
             has_heat_of_reaction=parent.config.has_heat_of_reaction,
             has_heat_transfer=parent.config.has_heat_transfer,
-            has_work_transfer=parent.config.has_work_transfer)
+            has_work_transfer=parent.config.has_work_transfer,
+            has_enthalpy_transfer=parent.config.has_enthalpy_transfer)
 
         self.add_momentum_balances(
             has_pressure_change=parent.config.has_pressure_change)

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -26,7 +26,7 @@ from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
-
+import os.path, pickle
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
@@ -242,7 +242,7 @@ class PolynomialRegression:
     """
 
     def __init__(self, original_data_input, regression_data_input, maximum_polynomial_order, number_of_crossvalidations=None,
-                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None):
+                 no_adaptive_samples=None, training_split=None, max_fraction_training_samples=None, max_iter=None, solution_method=None, multinomials=None, fname=None, overwrite=False):
         """
         Initialization of PolynomialRegression class.
 
@@ -293,6 +293,25 @@ class PolynomialRegression:
         """
 
         print('\n===========================Polynomial Regression===============================================\n')
+        # Checks if fname is provided or exists in the path
+        if not isinstance(overwrite, bool):
+            raise Exception('overwrite must be boolean.')
+        self.overwrite = overwrite
+        if fname is None:
+            fname = 'solution.pickle'
+            self.filename = 'solution.pickle'
+        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
+            raise Exception('fname must be a string with extension ".pickle". Please correct.')
+        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
+            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            self.filename = fname
+        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
+            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
+            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+            # self.filename = 'solution.pickle'
+        elif os.path.exists(fname) is False:
+            self.filename = fname
+
 
         if isinstance(original_data_input, pd.DataFrame):
             original_data = original_data_input.values
@@ -439,8 +458,8 @@ class PolynomialRegression:
         elif num_training == self.number_of_samples:
             raise Exception('The inputted of fraction_training is too high.')
         for i in range(1, self.number_of_crossvalidations + 1):
+            np.random.seed(i)
             if additional_features is None:
-                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1]))
                 A[:, :] = self.regression_data
                 np.random.shuffle(A)  # Shuffles the rows of the regression data randomly
@@ -800,7 +819,7 @@ class PolynomialRegression:
         no_nonzero_terms = np.count_nonzero(phi_best[1:, 0])
         # Evaluate R2_adjusted only if R2>0: Fit is better than mean value. When fit is worse than hor. line, return 0
         if r_square > 0:
-            r2_adjusted = 1 - ((1 - r_square ** 2) * ((samp_size - 1) / (samp_size - no_nonzero_terms - 1)))
+            r2_adjusted = 1 - ((1 - r_square) * ((samp_size - 1) / (samp_size - no_nonzero_terms - 1)))
         else:
             r2_adjusted = 0
 
@@ -1059,6 +1078,8 @@ class PolynomialRegression:
                 self.regression_data, dataframe_coeffs, [],
                 extra_terms_feature_vector,
                 self.additional_term_expressions)
+
+            self.pickle_save({'set-up':self, 'result':results})
             return results
 
         else:
@@ -1106,6 +1127,8 @@ class PolynomialRegression:
                 r_square, [], [], [], additional_features_array,
                 self.regression_data, dataframe_coeffs, extra_terms_coeffs,
                 extra_terms_feature_vector, self.additional_term_expressions)
+
+            self.pickle_save({'set-up':self, 'result':results})
             return results
 
     def get_feature_vector(self):
@@ -1213,3 +1236,129 @@ class PolynomialRegression:
             y_eq[j, 0] = aml.value(m.o2([m.xx[i] for i in x_list]))
         return y_eq
 
+    def pickle_save(self, solutions):
+        """
+        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        """
+        try:
+            filehandler = open(self.filename, 'wb')
+            pickle.dump(solutions, filehandler)
+            print('\nResults saved in ', str(self.filename))
+        except:
+            raise IOError('File could not be saved.')
+
+    @staticmethod
+    def pickle_load(solution_file):
+        """
+        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+
+        Input arguments:
+                solution_file            : Pickle object file containing previous solution to be loaded.
+
+        """
+        try:
+            filehandler = open(solution_file, 'rb')
+            return pickle.load(filehandler)
+        except:
+            raise Exception('File could not be loaded.')
+
+    def parity_residual_plots(self, results_vector):
+        """
+
+        inputs:
+            results_vector: Result object created by run.
+
+        Returns:
+
+        """
+        y_predicted = self.poly_predict_output(results_vector, results_vector.final_training_data[:, :-1])
+        fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
+        ax = fig1.add_subplot(121)
+        ax.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1], '-')
+        ax.plot(results_vector.final_training_data[:, -1], y_predicted, 'o')
+        ax.set_xlabel(r'True data', fontsize=12)
+        ax.set_ylabel(r'Surrogate values', fontsize=12)
+        ax.set_title(r'Parity plot', fontsize=12)
+
+        ax2 = fig1.add_subplot(122)
+        ax2.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1] - y_predicted[:, ].reshape(y_predicted.shape[0], ), 's', mfc='w', mec='m', ms=6)
+        ax2.axhline(y=0, xmin=0, xmax=1)
+        ax2.set_xlabel(r'True data', fontsize=12)
+        ax2.set_ylabel(r'Residuals', fontsize=12)
+        ax2.set_title(r'Residual plot', fontsize=12)
+
+        plt.show()
+
+        return
+
+    def _report(self, results_vector):
+        ## Will only work with Python > 3.5
+        variable_headers = self.get_feature_vector()
+        var_list = []
+        for i in variable_headers:
+            var_list.append(variable_headers[i])
+        eqn = results_vector.generate_expression(var_list)
+
+        double_line = "=" * 120
+        s = (f"\n{double_line}"
+             f"\nResults of polynomial regression run:\n"
+             f"\nPolynomial order                   : {results_vector.polynomial_order}\n"
+             f"Number of terms in polynomial model: {results_vector.optimal_weights_array.size}\n"
+             f"\nPolynomial Expression:\n"
+             f"--------------------------\n"
+             f"\n{eqn}\n"
+             f"--------------------------\n"
+             f"\nModel training errors:"
+             f"\n-----------------------\n"
+             f"Mean Squared Error (MSE)         : {results_vector.errors['MSE']}\n"
+             f"Root Mean Squared Error (RMSE)   : {np.sqrt(results_vector.errors['MSE'])}\n"
+             f"Mean Absolute error (MSE)        : {results_vector.errors['MAE']}\n"
+             f"Goodness of fit (R2)             : {results_vector.errors['R2']}\n"             
+             f"\n{double_line}"
+             )
+        return s
+
+    def print_report(self, results_vector):
+        s = self._report(results_vector)
+        print(s)
+
+    def _repr_pretty_(self, results_vector):
+        import pprint
+        s = self._report(results_vector)
+        j = pprint.PrettyPrinter(width=80)
+        j.pprint(s)
+
+    def confint_regression(self, results_vector, confidence=0.95):
+        """
+        The ``confint_regression`` method prints the confidence intervals for the regression patamaters.
+
+        Args:
+            results_vector  : Python object containing results of polynomial fit generated by calling the poly_training function.
+            confidence      : Required confidence interval level, default = 0.95 (95%)
+
+        """
+        from scipy.stats import t
+        data = results_vector.final_training_data
+        y_pred = self.poly_predict_output(results_vector, data[:, :-1])
+        dof = data.shape[0] - len(results_vector.optimal_weights_array) + 1  # be careful when there are additional features
+        ssr = np.sum((data[:, -1] - y_pred[:, 0]) ** 2)
+        sig_sq = ssr / dof
+        if (results_vector.additional_features_data is None) or (len(results_vector.additional_features_data) == 0):
+            x_exp = self.polygeneration(results_vector.polynomial_order, results_vector.multinomials, data[:, :-1])  # will not account for additional features
+        else:
+            x_exp = self.polygeneration(results_vector.polynomial_order, results_vector.multinomials, data[:, :-1],additional_x_training_data = results_vector.additional_features_data)
+
+        covar = sig_sq * np.linalg.pinv(x_exp.transpose() @ x_exp)
+        ss_reg_params = np.sqrt(np.diag(covar))  # standard error for each regression parameter
+        t_dist = t.ppf((1 + confidence) / 2, dof)  # alternatively, t_dist_data = st.t.interval(0.99, 8)
+        # Evaluate confidence intervals, Tabulate and print results
+        c_data = np.zeros((results_vector.optimal_weights_array.shape[0], 4))
+        c_data[:, 0] = results_vector.optimal_weights_array[:, 0]
+        c_data[:, 1] = ss_reg_params[:, ]
+        c_data[:, 2] = results_vector.optimal_weights_array[:, 0] - t_dist * ss_reg_params[:, ]
+        c_data[:, 3] = results_vector.optimal_weights_array[:, 0] + t_dist * ss_reg_params[:, ]
+
+        headers = ['Regression coeff.', 'Std. error', 'Conf. int. lower', 'Conf. int. upper']
+        c_data_df = pd.DataFrame(data=c_data, columns=headers)
+        print(c_data_df)
+        return c_data_df

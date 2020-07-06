@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -16,7 +16,9 @@ Tests for ControlVolumeBlockData.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
+from pyomo.environ import (ConcreteModel, Constraint, Expression,
+                           Set, units, Var)
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.config import ConfigBlock
 from idaes.core import (ControlVolume0DBlock,
                         ControlVolumeBlockData,
@@ -24,8 +26,7 @@ from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         FlowDirection,
                         MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                        EnergyBalanceType)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -49,6 +50,7 @@ class CVFrameData(ControlVolume0DBlock):
 
 # -----------------------------------------------------------------------------
 # Basic tests
+@pytest.mark.unit
 def test_base_build():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -71,6 +73,7 @@ def test_base_build():
 
 # -----------------------------------------------------------------------------
 # Test add_geometry
+@pytest.mark.unit
 def test_add_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -87,6 +90,7 @@ def test_add_geometry():
 
 # -----------------------------------------------------------------------------
 # Test add_state_blocks
+@pytest.mark.unit
 def test_add_state_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -109,6 +113,7 @@ def test_add_state_blocks():
     assert m.fs.cv.properties_out[0].config.parameters == m.fs.pp
 
 
+@pytest.mark.unit
 def test_add_state_block_forward_flow():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -123,6 +128,7 @@ def test_add_state_block_forward_flow():
     assert m.fs.cv.properties_out[0].config.defined_state is False
 
 
+@pytest.mark.unit
 def test_add_state_block_backward_flow():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -137,6 +143,7 @@ def test_add_state_block_backward_flow():
     assert m.fs.cv.properties_out[0].config.defined_state is True
 
 
+@pytest.mark.unit
 def test_add_state_blocks_has_phase_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -150,6 +157,7 @@ def test_add_state_blocks_has_phase_equilibrium():
     assert m.fs.cv.properties_out[0].config.has_phase_equilibrium is True
 
 
+@pytest.mark.unit
 def test_add_state_blocks_no_has_phase_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -161,6 +169,7 @@ def test_add_state_blocks_no_has_phase_equilibrium():
         m.fs.cv.add_state_blocks()
 
 
+@pytest.mark.unit
 def test_add_state_blocks_custom_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -181,6 +190,7 @@ def test_add_state_blocks_custom_args():
 
 # -----------------------------------------------------------------------------
 # Test add_reaction_blocks
+@pytest.mark.unit
 def test_add_reaction_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -201,6 +211,7 @@ def test_add_reaction_blocks():
     assert m.fs.cv.reactions[0].config.parameters == m.fs.rp
 
 
+@pytest.mark.unit
 def test_add_reaction_blocks_has_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -216,6 +227,7 @@ def test_add_reaction_blocks_has_equilibrium():
     assert m.fs.cv.reactions[0].config.has_equilibrium is True
 
 
+@pytest.mark.unit
 def test_add_reaction_blocks_no_has_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -231,6 +243,7 @@ def test_add_reaction_blocks_no_has_equilibrium():
         m.fs.cv.add_reaction_blocks()
 
 
+@pytest.mark.unit
 def test_add_reaction_blocks_custom_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -250,6 +263,7 @@ def test_add_reaction_blocks_custom_args():
 
 # -----------------------------------------------------------------------------
 # Test _add_phase_fractions
+@pytest.mark.unit
 def test_add_phase_fractions():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -266,6 +280,7 @@ def test_add_phase_fractions():
     assert hasattr(m.fs.cv, "sum_of_phase_fractions")
 
 
+@pytest.mark.unit
 def test_add_phase_fractions_single_phase():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -287,6 +302,7 @@ def test_add_phase_fractions_single_phase():
 
 # -----------------------------------------------------------------------------
 # Test reaction rate conversion method
+@pytest.mark.unit
 def test_rxn_rate_conv_no_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -306,6 +322,7 @@ def test_rxn_rate_conv_no_rxns():
             assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=False) == 1
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_property_basis_other():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -326,6 +343,7 @@ def test_rxn_rate_conv_property_basis_other():
                 m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_reaction_basis_other():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -346,6 +364,7 @@ def test_rxn_rate_conv_reaction_basis_other():
                 m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_both_molar():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -364,6 +383,7 @@ def test_rxn_rate_conv_both_molar():
             assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_both_mass():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -384,6 +404,7 @@ def test_rxn_rate_conv_both_mass():
             assert m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) == 1
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_mole_mass_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -405,6 +426,7 @@ def test_rxn_rate_conv_mole_mass_no_mw():
                 m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_mass_mole_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -426,6 +448,7 @@ def test_rxn_rate_conv_mass_mole_no_mw():
                 m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_mole_mass():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -448,6 +471,7 @@ def test_rxn_rate_conv_mole_mass():
                     1/m.fs.cv.properties_out[t].mw[j])
 
 
+@pytest.mark.unit
 def test_rxn_rate_conv_mass_mole():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -472,6 +496,7 @@ def test_rxn_rate_conv_mass_mole():
 
 # -----------------------------------------------------------------------------
 # Test add_material_balances default
+@pytest.mark.unit
 def test_add_material_balances_default_fail():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -490,6 +515,7 @@ def test_add_material_balances_default_fail():
         m.fs.cv.add_material_balances(MaterialBalanceType.useDefault)
 
 
+@pytest.mark.unit
 def test_add_material_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -507,8 +533,11 @@ def test_add_material_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
+
 # -----------------------------------------------------------------------------
 # Test add_phase_component_balances
+@pytest.mark.unit
 def test_add_phase_component_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -526,10 +555,13 @@ def test_add_phase_component_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -549,7 +581,10 @@ def test_add_phase_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
@@ -568,6 +603,7 @@ def test_add_phase_component_balances_dynamic_no_geometry():
         m.fs.cv.add_phase_component_balances()
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -590,7 +626,10 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -605,6 +644,7 @@ def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
         m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -623,6 +663,7 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
         m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -645,7 +686,10 @@ def test_add_phase_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -663,6 +707,7 @@ def test_add_phase_component_balances_eq_rxns_not_active():
         m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -681,6 +726,7 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
         m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -695,6 +741,7 @@ def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
         m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_phase_eq():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -716,7 +763,10 @@ def test_add_phase_component_balances_phase_eq():
     assert isinstance(m.fs.cv.config.property_package.phase_equilibrium_idx,
                       Set)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -734,6 +784,7 @@ def test_add_phase_component_balances_phase_eq_not_active():
         m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_phase_eq_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -752,6 +803,7 @@ def test_add_phase_component_balances_phase_eq_no_idx():
         m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -771,7 +823,10 @@ def test_add_phase_component_balances_mass_transfer():
     assert len(mb) == 4
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -790,14 +845,17 @@ def test_add_phase_component_balances_custom_molar_term():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.mol/units.s
 
     mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -823,6 +881,7 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
         m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -842,18 +901,22 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.mol/units.s
 
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw = Var(
-                m.fs.cv.properties_out[t].config.parameters.component_list)
+                m.fs.cv.properties_out[t].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -879,6 +942,7 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
         m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -898,14 +962,17 @@ def test_add_phase_component_balances_custom_mass_term():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.kg/units.s
 
     mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -931,6 +998,7 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
         m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -950,18 +1018,22 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
-        return m.fs.cv.test_var[t, p, j]
+        return m.fs.cv.test_var[t, p, j]*units.kg/units.s
 
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw = Var(
-                m.fs.cv.properties_out[t].config.parameters.component_list)
+                m.fs.cv.properties_out[t].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -989,6 +1061,7 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
 
 # -----------------------------------------------------------------------------
 # Test add_total_component_balances
+@pytest.mark.unit
 def test_add_total_component_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1006,10 +1079,13 @@ def test_add_total_component_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1029,7 +1105,10 @@ def test_add_total_component_balances_dynamic():
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
@@ -1048,6 +1127,7 @@ def test_add_total_component_balances_dynamic_no_geometry():
         m.fs.cv.add_total_component_balances()
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1070,7 +1150,9 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
 
+    assert_units_consistent(m)
 
+@pytest.mark.unit
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1085,6 +1167,7 @@ def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
         m.fs.cv.add_total_component_balances(has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1103,6 +1186,7 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
         m.fs.cv.add_total_component_balances(has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1125,7 +1209,10 @@ def test_add_total_component_balances_eq_rxns():
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1143,6 +1230,7 @@ def test_add_total_component_balances_eq_rxns_not_active():
         m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1161,6 +1249,7 @@ def test_add_total_component_balances_eq_rxns_no_idx():
         m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1175,6 +1264,7 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
         m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1192,6 +1282,7 @@ def test_add_total_component_balances_phase_eq_not_active():
         m.fs.cv.add_total_component_balances(has_phase_equilibrium=True)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1211,7 +1302,10 @@ def test_add_total_component_balances_mass_transfer():
     assert len(mb) == 2
     assert isinstance(m.fs.cv.mass_transfer_term, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1229,14 +1323,17 @@ def test_add_total_component_balances_custom_molar_term():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.mol/units.s
 
     mb = m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1261,6 +1358,7 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
         m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1279,18 +1377,22 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.mol/units.s
 
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw = Var(
-                m.fs.cv.properties_out[t].config.parameters.component_list)
+                m.fs.cv.properties_out[t].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1315,6 +1417,7 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
         m.fs.cv.add_total_component_balances(custom_molar_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1333,14 +1436,17 @@ def test_add_total_component_balances_custom_mass_term():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.kg/units.s
 
     mb = m.fs.cv.add_total_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1365,6 +1471,7 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
         m.fs.cv.add_total_component_balances(custom_mass_term=custom_method)
 
 
+@pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1383,18 +1490,22 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
-        return m.fs.cv.test_var[t, j]
+        return m.fs.cv.test_var[t, j]*units.kg/units.s
 
     for t in m.fs.time:
         m.fs.cv.properties_out[t].mw = Var(
-                m.fs.cv.properties_out[t].config.parameters.component_list)
+                m.fs.cv.properties_out[t].config.parameters.component_list,
+                units=units.kg/units.mol)
 
     mb = m.fs.cv.add_total_component_balances(custom_mass_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1421,6 +1532,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
 
 # -----------------------------------------------------------------------------
 # Test add_total_element_balances
+@pytest.mark.unit
 def test_add_total_element_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1438,7 +1550,10 @@ def test_add_total_element_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_element_balances_properties_not_supported():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1456,9 +1571,10 @@ def test_add_total_element_balances_properties_not_supported():
         m.fs.cv.add_total_element_balances()
 
 
+@pytest.mark.unit
 def test_add_total_element_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1478,7 +1594,10 @@ def test_add_total_element_balances_dynamic():
     assert isinstance(m.fs.cv.element_holdup, Var)
     assert isinstance(m.fs.cv.element_accumulation, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_element_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
@@ -1497,6 +1616,7 @@ def test_add_total_element_balances_dynamic_no_geometry():
         m.fs.cv.add_total_element_balances()
 
 
+@pytest.mark.unit
 def test_add_total_element_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1514,6 +1634,7 @@ def test_add_total_element_balances_rate_rxns():
         m.fs.cv.add_total_element_balances(has_rate_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_element_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1531,6 +1652,7 @@ def test_add_total_element_balances_eq_rxns():
         mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
 
 
+@pytest.mark.unit
 def test_add_total_element_balances_phase_eq():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1548,6 +1670,7 @@ def test_add_total_element_balances_phase_eq():
         m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
 
 
+@pytest.mark.unit
 def test_add_total_element_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1567,7 +1690,10 @@ def test_add_total_element_balances_mass_transfer():
     assert len(mb) == 3
     assert isinstance(m.fs.cv.elemental_mass_transfer_term, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_element_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1585,7 +1711,7 @@ def test_add_total_element_balances_custom_term():
                            m.fs.pp.element_list)
 
     def custom_method(t, e):
-        return m.fs.cv.test_var[t, e]
+        return m.fs.cv.test_var[t, e]*units.mol/units.s
 
     mb = m.fs.cv.add_total_element_balances(
             custom_elemental_term=custom_method)
@@ -1593,9 +1719,12 @@ def test_add_total_element_balances_custom_term():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
+    assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test unsupported material balance types
+@pytest.mark.unit
 def test_add_total_material_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1616,6 +1745,7 @@ def test_add_total_material_balances():
 
 # -----------------------------------------------------------------------------
 # Test add_energy_balances default
+@pytest.mark.unit
 def test_add_energy_balances_default_fail():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1634,6 +1764,7 @@ def test_add_energy_balances_default_fail():
         m.fs.cv.add_energy_balances(EnergyBalanceType.useDefault)
 
 
+@pytest.mark.unit
 def test_add_energy_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1651,9 +1782,12 @@ def test_add_energy_balances_default():
     assert isinstance(eb, Constraint)
     assert len(eb) == 1
 
+    assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test phase enthalpy balances
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1671,10 +1805,13 @@ def test_add_total_enthalpy_balances_default():
     assert isinstance(eb, Constraint)
     assert len(eb) == 1
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_dynamic():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1694,7 +1831,10 @@ def test_add_total_enthalpy_balances_dynamic():
     assert isinstance(m.fs.cv.energy_holdup, Var)
     assert isinstance(m.fs.cv.energy_accumulation, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
@@ -1713,6 +1853,7 @@ def test_add_total_enthalpy_balances_dynamic_no_geometry():
         m.fs.cv.add_total_enthalpy_balances()
 
 
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_heat_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1732,7 +1873,10 @@ def test_add_total_enthalpy_balances_heat_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.heat, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_work_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1752,7 +1896,33 @@ def test_add_total_enthalpy_balances_work_transfer():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.work, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
+def test_add_total_enthalpy_balances_enthalpy_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_enthalpy_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.enthalpy_transfer, Var)
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1769,14 +1939,17 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t):
-        return m.fs.cv.test_var[t]
+        return m.fs.cv.test_var[t]*units.J/units.s
 
     mb = m.fs.cv.add_total_enthalpy_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_no_extents():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1794,6 +1967,7 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
         m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
 
 
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1811,7 +1985,10 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1829,9 +2006,12 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
+    assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test unsupported energy balance types
+@pytest.mark.unit
 def test_add_phase_enthalpy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1850,6 +2030,7 @@ def test_add_phase_enthalpy_balances():
         m.fs.cv.add_phase_enthalpy_balances()
 
 
+@pytest.mark.unit
 def test_add_phase_energy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1868,6 +2049,7 @@ def test_add_phase_energy_balances():
         m.fs.cv.add_phase_energy_balances()
 
 
+@pytest.mark.unit
 def test_add_total_energy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1888,6 +2070,7 @@ def test_add_total_energy_balances():
 
 # -----------------------------------------------------------------------------
 # Test add total pressure balances
+@pytest.mark.unit
 def test_add_total_pressure_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1905,7 +2088,10 @@ def test_add_total_pressure_balances_default():
     assert isinstance(eb, Constraint)
     assert len(eb) == 1
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_pressure_balances_deltaP():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1925,7 +2111,10 @@ def test_add_total_pressure_balances_deltaP():
     assert len(mb) == 1
     assert isinstance(m.fs.cv.deltaP, Var)
 
+    assert_units_consistent(m)
 
+
+@pytest.mark.unit
 def test_add_total_pressure_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1942,16 +2131,19 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t):
-        return m.fs.cv.test_var[t]
+        return m.fs.cv.test_var[t]*units.Pa
 
     mb = m.fs.cv.add_total_pressure_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
 
+    assert_units_consistent(m)
+
 
 # -----------------------------------------------------------------------------
 # Test unsupported momentum balance types
+@pytest.mark.unit
 def test_add_phase_pressure_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1970,6 +2162,7 @@ def test_add_phase_pressure_balances():
         m.fs.cv.add_phase_pressure_balances()
 
 
+@pytest.mark.unit
 def test_add_phase_momentum_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1988,6 +2181,7 @@ def test_add_phase_momentum_balances():
         m.fs.cv.add_phase_momentum_balances()
 
 
+@pytest.mark.unit
 def test_add_total_momentum_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -2008,6 +2202,7 @@ def test_add_total_momentum_balances():
 
 # -----------------------------------------------------------------------------
 # Test model checks, initialize and release_state
+@pytest.mark.unit
 def test_model_checks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -2030,6 +2225,7 @@ def test_model_checks():
         assert m.fs.cv.reactions[t].check is True
 
 
+@pytest.mark.unit
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -2060,6 +2256,7 @@ def test_initialize():
         assert m.fs.cv.properties_out[t].hold_state is False
 
 
+@pytest.mark.unit
 def test_get_stream_table_contents():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -2089,9 +2286,10 @@ def test_get_stream_table_contents():
     assert df.loc["temperature"]["Out"] == 300
 
 
+@pytest.mark.unit
 def test_get_performance_contents():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -2155,9 +2353,10 @@ def test_get_performance_contents():
         assert k in ["Pressure Scaling", "Energy Scaling"]
 
 
+@pytest.mark.unit
 def test_get_performance_contents_elemental():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -2218,6 +2417,7 @@ def test_get_performance_contents_elemental():
         assert k in ["Pressure Scaling", "Energy Scaling"]
 
 
+@pytest.mark.unit
 def test_reports():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -22,6 +22,8 @@ import scipy.optimize as opt
 import warnings
 import itertools
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
+from matplotlib import pyplot as plt
+import os.path, pickle
 
 
 """
@@ -37,7 +39,7 @@ class ResultReport:
         A class for creating an object containing information about the RBF solution to be returned to the user.
 
         Returns:
-        self function containing ten attributes -
+            self function containing ten attributes -
 
             self.weights(NumPy Array)              : array containing optimal radial weights (coefficients) for the RBF
             self.sigma(float)                     : best shape parameter found for selected parametric basis function. Will return zero for fixed basis functions.
@@ -145,8 +147,7 @@ class FeatureScaling:
                 - **data_maximum** : A 2-D row vector containing the column-wise maximums of the input data.
 
         Raises:
-            TypeError:
-                Raised when the input data is not a numpy array or dataframe
+            TypeError: Raised when the input data is not a numpy array or dataframe
 
         """
         # Confirm that data type is an array or DataFrame
@@ -258,7 +259,7 @@ class RadialBasisFunctions:
 
     """
 
-    def __init__(self, XY_data, basis_function=None, solution_method=None, regularization=None):
+    def __init__(self, XY_data, basis_function=None, solution_method=None, regularization=None, fname=None, overwrite=False):
         """
 
         Initialization of **RadialBasisFunctions** class.
@@ -312,6 +313,23 @@ class RadialBasisFunctions:
             >>> d = RadialBasisFunctions(XY_data, basis_function='gaussian')
 
         """
+        if not isinstance(overwrite, bool):
+            raise Exception('overwrite must be boolean.')
+        self.overwrite = overwrite
+        if fname is None:
+            fname = 'solution.pickle'
+            self.filename = 'solution.pickle'
+        elif not isinstance(fname, str) or os.path.splitext(fname)[-1].lower() != '.pickle':
+            raise Exception('fname must be a string with extension ".pickle". Please correct.')
+        if os.path.exists(fname) and overwrite is True: # Explicit overwrite done by user
+            print('Warning:', fname, 'already exists; previous file will be overwritten.\n')
+            self.filename = fname
+        elif os.path.exists(fname) and overwrite is False: # User is not overwriting
+            self.filename = os.path.splitext(fname)[0]+'_v_'+ pd.Timestamp.today().strftime("%m-%d-%y_%H%M%S") +'.pickle'
+            print('Warning:', fname, 'already exists; results will be saved to "', self.filename,'".\n')
+            # self.filename = 'solution.pickle'
+        elif os.path.exists(fname) is False:
+            self.filename = fname
 
 
         # Check data types and shapes
@@ -381,17 +399,18 @@ class RadialBasisFunctions:
     def gaussian_basis_transformation(x, shape_parameter):
         """
         The function gaussian_basis_transformation returns the element-by-element Gaussian transformation of the input data x.
-            Args:
-                x(NumPy Array): Input data to be transformed
-                shape parameter(float): Shape parameter of the Gaussian function
 
-            Returns:
-                x_mod(NumPy Array): Gaussian transformation of the input data x
+        Args:
+            x(NumPy Array): Input data to be transformed
+            shape parameter(float): Shape parameter of the Gaussian function
+
+        Returns:
+            x_mod(NumPy Array): Gaussian transformation of the input data x
 
         Examples:
-        Gaussian of numbers from 0 to 2 for a shape parameter of 2:
-            [In]>>  rbf.RadialBasisFunctions.gaussian_basis_transformation(np.arange(3), 2)
-            [Out]>> array([1.00000000e+00, 1.83156389e-02, 1.12535175e-07])
+            Gaussian of numbers from 0 to 2 for a shape parameter of 2:
+                [In]>>  rbf.RadialBasisFunctions.gaussian_basis_transformation(np.arange(3), 2)
+                [Out]>> array([1.00000000e+00, 1.83156389e-02, 1.12535175e-07])
 
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
@@ -404,16 +423,17 @@ class RadialBasisFunctions:
     def linear_transformation(x):
         """
         The function linear_transformation returns the element-by-element linear transformation of the input data x.
-            Args:
-                x(NumPy Array): Input data to be transformed
 
-            Returns:
-                x_mod(NumPy Array): Linear transformation of the input data x, x_mod = x
+        Args:
+            x(NumPy Array): Input data to be transformed
+
+        Returns:
+            x_mod(NumPy Array): Linear transformation of the input data x, x_mod = x
 
         Examples:
-        Linear transformation of 0, 1 and 2:
-            [In]>>  rbf.RadialBasisFunctions.linear_transformation(np.arange(3))
-            [Out]>> array([0, 1, 2], dtype=int32)
+            Linear transformation of 0, 1 and 2:
+                [In]>>  rbf.RadialBasisFunctions.linear_transformation(np.arange(3))
+                [Out]>> array([0, 1, 2], dtype=int32)
 
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
@@ -426,16 +446,17 @@ class RadialBasisFunctions:
     def cubic_transformation(x):
         """
         The function cubic_transformation returns the element-by-element cubic transformation of the input data x.
-            Args:
-                x(NumPy Array): Input data to be transformed
 
-            Returns:
-                x_mod(NumPy Array): Cubic transformation of the input data x, x_mod = (x ** 3)
+        Args:
+            x(NumPy Array): Input data to be transformed
+
+        Returns:
+            x_mod(NumPy Array): Cubic transformation of the input data x, x_mod = (x ** 3)
 
         Examples:
-        Cubic transformation of 0, 1 and 2:
-            [In]>>  rbf.RadialBasisFunctions.cubic_transformation(np.arange(3))
-            [Out]>> array([0, 1, 8], dtype=int32)
+            Cubic transformation of 0, 1 and 2:
+                [In]>>  rbf.RadialBasisFunctions.cubic_transformation(np.arange(3))
+                [Out]>> array([0, 1, 8], dtype=int32)
 
         For more information, see Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
         https://www.tandfonline.com/doi/full/10.1080/03052150500422294
@@ -447,17 +468,18 @@ class RadialBasisFunctions:
     def multiquadric_basis_transformation(x, shape_parameter):
         """
         The function multiquadric_basis_transformation returns the element-by-element Multi-quadric transformation of the input data x.
-            Args:
-                x(NumPy Array): Input data to be transformed
-                shape parameter(float): Shape parameter of the Multiquadric function
 
-            Returns:
-                x_mod(NumPy Array): Multiquadric transformation of the input data x; x_mod = sqrt[(1 + (c.x)**2)] where c = shape parameter
+        Args:
+            x(NumPy Array): Input data to be transformed
+            shape parameter(float): Shape parameter of the Multiquadric function
+
+        Returns:
+            x_mod(NumPy Array): Multiquadric transformation of the input data x; x_mod = sqrt[(1 + (c.x)**2)] where c = shape parameter
 
         Examples:
-        Multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
-            [In]>>  rbf.RadialBasisFunctions.multiquadric_basis_transformation(np.arange(3), 2)
-            [Out]>> array([1.        , 2.23606798, 4.12310563])
+            Multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
+                [In]>>  rbf.RadialBasisFunctions.multiquadric_basis_transformation(np.arange(3), 2)
+                [Out]>> array([1.        , 2.23606798, 4.12310563])
 
         For more information, see
         (1) Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
@@ -477,17 +499,18 @@ class RadialBasisFunctions:
         """
         The function inverse_multiquadric_basis_transformation returns the element-by-element  inverse multiquadric transformation of the input data x.
         Direct inverse of the multiquadric basis transformation
-            Args:
-                x(NumPy Array): Input data to be transformed
-                shape_parameter(float): Shape parameter of the inverse multiquadric function
 
-            Returns:
-                x_mod(NumPy Array): Inverse multiquadric transformation of the input data x; x_mod =  1 / sqrt[(1 + (c.x)**2)] where c = shape parameter
+        Args:
+            x(NumPy Array): Input data to be transformed
+            shape_parameter(float): Shape parameter of the inverse multiquadric function
+
+        Returns:
+            x_mod(NumPy Array): Inverse multiquadric transformation of the input data x; x_mod =  1 / sqrt[(1 + (c.x)**2)] where c = shape parameter
 
         Examples:
-        Inverse multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
-            [In]>>  rbf.RadialBasisFunctions.inverse_multiquadric_basis_transformation(np.arange(3), 2)
-            [Out]>>array([1.        , 0.4472136 , 0.24253563])
+            Inverse multiquadric transformation of numbers from 0 to 2 for a shape parameter of 2:
+                [In]>>  rbf.RadialBasisFunctions.inverse_multiquadric_basis_transformation(np.arange(3), 2)
+                [Out]>>array([1.        , 0.4472136 , 0.24253563])
 
         For more information, see
         (1) Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
@@ -507,19 +530,20 @@ class RadialBasisFunctions:
         """
         The function thin_plate_spline_transformation returns the element-by-element spline transformation of the input data x.
         Direct inverse of the multiquadric basis transformation
-            Args:
-                x(NumPy Array): Input data to be transformed
 
-            Returns:
-                x_mod(NumPy Array): Spline transformation of the input data x; x_mod =  (x**2).ln(x)
+        Args:
+            x(NumPy Array): Input data to be transformed
 
-            Except:
-                RuntimeWarning: thrown up when ln(x)=0
+        Returns:
+            x_mod(NumPy Array): Spline transformation of the input data x; x_mod =  (x**2).ln(x)
+
+        Except:
+            RuntimeWarning: thrown up when ln(x)=0
 
         Examples:
-        Inverse multiquadric transformation of numbers from 1 and 2:
-            [In]>>  rbf.RadialBasisFunctions.thin_plate_spline_transformation(np.arange(1,3))
-            [Out]>> array([0.        , 2.77258872])
+            Inverse multiquadric transformation of numbers from 1 and 2:
+                [In]>>  rbf.RadialBasisFunctions.thin_plate_spline_transformation(np.arange(1,3))
+                [Out]>> array([0, 2.77258872])
 
         For more information, see
         (1) Hongbing Fang & Mark F. Horstemeyer (2006): Global response approximation with radial basis functions
@@ -543,15 +567,16 @@ class RadialBasisFunctions:
         """
         The function basis_generation converts the input data to the requisite basis specified by the user.
         This is done in two steps:
+
         1. The Euclidean distance from each of the points to each of the RBF centres is calculated by calling the r2_distance function.
         2. The distances evaluated in step 1 are transformed to the relevant basis selected by the user.
 
-            Args:
-                self(NumPy Array): contains, among other things, the input data
-                r(float)        : The shape parameter required for the Gaussian, Multiquadric and Inverse multiquadric transformations.
+        Args:
+            self(NumPy Array): contains, among other things, the input data
+            r(float)        : The shape parameter required for the Gaussian, Multiquadric and Inverse multiquadric transformations.
 
-            Returns:
-                x_transformed(NumPy Array): Array of transformed data based on user-defined transformation function
+        Returns:
+            x_transformed(NumPy Array): Array of transformed data based on user-defined transformation function
 
         """
 
@@ -644,9 +669,6 @@ class RadialBasisFunctions:
             phi: The optimal linear regression weights found
 
         """
-        """
-        Parameter (theta) optimization using BFGS algorithm
-        """
         init_phi = np.zeros((x.shape[1], 1))
         other_args = (x, y)
         phi = opt.fmin_bfgs(self.cost_function, init_phi, fprime=self.gradient_function, args=other_args, disp=False, gtol=1e-20)
@@ -656,13 +678,16 @@ class RadialBasisFunctions:
     def explicit_linear_algebra_solution(x, y):
         """
         The function finds the explicit linear algebra solution to the reqularized problem (X+yI).A = B
-            If
-                (x + yI).A = B,
-            then
-                A = inv(X + yI) * B
-            where y is the regularization parameter and I is the identity matrix.
 
-         Numpy's inverse and pseudoinverse functions have been used to calculate the inverse here.
+        If:
+            (x + yI).A = B,
+
+        Then:
+            A = inv(X + yI) * B
+
+        where y is the regularization parameter and I is the identity matrix.
+
+        Numpy's inverse and pseudoinverse functions have been used to calculate the inverse here.
 
         Args:
             x            : regularized array of features (x + yI), (m x n) in size
@@ -671,7 +696,7 @@ class RadialBasisFunctions:
         Returns:
             phi          : optimal linear regression weights A
 
-         For more details, see to Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
+        For more details, see to Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801
 
         """
         # Find matrix inverse. Use pseudo-inverse if inverse is not available
@@ -797,31 +822,29 @@ class RadialBasisFunctions:
         The function loo_error_estimation_with_rippa_method implements the leave-one-out cross-validation (LOOCV) error for square systems
 
         The LOOCV error is calculated analytically using Rippa's equation:
-
-        Error[k] = alpha[k] / inv(A[kk]),
+            Error[k] = alpha[k] / inv(A[kk]),
 
         where:
             Error[k] = error on leaving out a particular sample k
             alpha[k] = kth radial weight based on data (kth coefficient of full data interpolation)
             A[kk] = kth diagonal element of data matrix.
 
-            Args:
-                self:                           : contains, among other things, the input data
-                sigma(float)                  : shape parameter for the parametric bases (Gaussian, Multiquadric, Inverse multiquadric)
-                lambda_reg(float)             : regularization parameter
+        Args:
+            self                          : contains, among other things, the input data
+            sigma(float)                  : shape parameter for the parametric bases (Gaussian, Multiquadric, Inverse multiquadric)
+            lambda_reg(float)             : regularization parameter
 
-            Returns:
-                condition_number_pure           : condition number of transformed matrix generated from the input data before regularization
-                condition_number_regularized    : condition number of transformed matrix generated from the input data after regularization
-                loo_error_estimate              : norm of the leave-one-out cross-validation error matrix
-
+        Returns:
+            condition_number_pure           : condition number of transformed matrix generated from the input data before regularization
+            condition_number_regularized    : condition number of transformed matrix generated from the input data after regularization
+            loo_error_estimate              : norm of the leave-one-out cross-validation error matrix
 
         For more information, see
         (1) Rippa, S. (1999) Advances in Computational Mathematics
-            https://doi.org/10.1023/A:1018975909870
+        https://doi.org/10.1023/A:1018975909870
 
         (2) Mongillo M.A. (2011) Choosing Basis Functions and Shape Parameters for Radial Basis Function Methods
-            https://doi.org/10.1137/11S010840
+        https://doi.org/10.1137/11S010840
 
         """
         x_transformed = self.basis_generation(sigma)
@@ -854,19 +877,16 @@ class RadialBasisFunctions:
         The LOOCV error for each (shape_parameter, regulkarization parameter) pair is evaluated by calling the function loo_error_estimation_with_rippa_method
         The pre-defined shape parameter set considers 24 irregularly spaced values ranging between 0.001 - 1000, while the regularization parameter set considers 21 values ranging between 0.00001 - 1.
 
-            Args:
-                self:                           : contains, among other things, the input data
+        Args:
+            self:                           : contains, among other things, the input data
 
-            Returns:
-                r_best(float)                 : best found shape parameter
-                lambda_best(float)            : best found regularization parameter
-                error_best                      : LOOCV error corresponding to be best found hynperparameters
+        Returns:
+            r_best(float)                 : best found shape parameter
+            lambda_best(float)            : best found regularization parameter
+            error_best                      : LOOCV error corresponding to be best found hynperparameters
 
         Note: The optimal shape parameter r_best is only evaluated for parametriuc bases (such as the Gaussian basis). For fixed basis (e.g. linear), the value is returned as zero.
 
-        """
-        """
-            Function that determines the best shape parameter (Gaussian, IMQ, MQ bases) using leave-one-out cross-validation
         """
         # Define sigma and lambda ranges
         if (self.basis_function == 'gaussian') or (self.basis_function == 'mq') or (self.basis_function.lower() == 'imq'):
@@ -945,6 +965,7 @@ class RadialBasisFunctions:
         r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
         y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
         results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square, self.basis_function, self.data_min, self.data_max)
+        self.pickle_save({'set-up':self, 'result':results})
         return results
 
     def rbf_predict_output(self, results_vector, x_data):
@@ -1026,3 +1047,97 @@ class RadialBasisFunctions:
         p.construct()
         self.feature_list = p
         return p
+
+    def pickle_save(self, solutions):
+        """
+        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        """
+        try:
+            filehandler = open(self.filename, 'wb')
+            pickle.dump(solutions, filehandler)
+            print('\nResults saved in ', str(self.filename))
+        except:
+            raise IOError('File could not be saved.')
+
+
+    @staticmethod
+    def pickle_load(solution_file):
+        """
+        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+
+        Input arguments:
+                solution_file            : Pickle object file containing previous solution to be loaded.
+
+        """
+        try:
+            filehandler = open(solution_file, 'rb')
+            return pickle.load(filehandler)
+        except:
+            raise Exception('File could not be loaded.')
+
+    def parity_residual_plots(self, results_vector):
+        """
+
+        inputs:
+            results_vector: Result object created by run.
+
+        Returns:
+
+        """
+
+        fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
+        ax = fig1.add_subplot(121)
+        ax.plot(self.y_data_unscaled, self.y_data_unscaled, '-')
+        ax.plot(self.y_data_unscaled, results_vector.output_predictions, 'o')
+        ax.set_xlabel(r'True data', fontsize=12)
+        ax.set_ylabel(r'Surrogate values', fontsize=12)
+        ax.set_title(r'Parity plot', fontsize=12)
+
+        ax2 = fig1.add_subplot(122)
+        ax2.plot(self.y_data_unscaled, self.y_data_unscaled - results_vector.output_predictions, 's', mfc='w', mec='m', ms=6)
+        ax2.axhline(y=0, xmin=0, xmax=1)
+        ax2.set_xlabel(r'True data', fontsize=12)
+        ax2.set_ylabel(r'Residuals', fontsize=12)
+        ax2.set_title(r'Residual plot', fontsize=12)
+
+        plt.show()
+
+        return
+
+    def _report(self, results_vector):
+        ## Will only work with Python > 3.5
+        variable_headers = self.get_feature_vector()
+        var_list = []
+        for i in variable_headers:
+            var_list.append(variable_headers[i])
+        eqn = results_vector.rbf_generate_expression(var_list)
+
+        double_line = "=" * 120
+        s = (f"\n{double_line}"
+             f"\nResults of radial basis function run:\n"
+             f"\nBasis function type               : {results_vector.basis_function}\n"
+             f"Shape parameter                    : {results_vector.sigma}\n"
+             f"Regularization parameter           : {results_vector.regularization_parameter}\n"
+             f"Number of terms in RBF model       : {results_vector.weights.size + 1}\n"  # The additional term is y_min
+             f"\nRBF Expression:\n"
+             f"--------------------------\n"
+             f"\n{eqn}\n"
+             f"--------------------------\n"
+             f"\nModel training errors:"
+             f"\n-----------------------\n"
+             f"Mean Squared Error (MSE)         : {results_vector.rmse ** 2}\n"
+             f"Root Mean Squared Error (RMSE)   : {results_vector.rmse}\n"
+             f"Goodness of fit (R2)             : {results_vector.R2}\n"             
+             f"\n{double_line}"
+             )
+        return s
+
+    def print_report(self, results_vector):
+        s = self._report(results_vector)
+        print(s)
+
+    def _repr_pretty_(self, results_vector):
+        import pprint
+        s = self._report(results_vector)
+        j = pprint.PrettyPrinter(width=80)
+        j.pprint(s)

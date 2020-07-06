@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -15,7 +15,9 @@ from .multos import deletefile, movefile, catfile
 
 
 def almwriter(data, debug, vargs, kwargs):
-    # This function writes a .alm file for the given data
+    """
+    This function writes a .alm file for the given data
+    """
 
     xdata = vargs[0]
     zdata = vargs[1]
@@ -27,20 +29,12 @@ def almwriter(data, debug, vargs, kwargs):
         for arg in data['opts'].keys():
             if arg == 'sigma' and data['opts'][arg] < 0 : 
                 continue
-            elif (arg == 'modeler' and data['opts'][arg] == 6):
-                a.write(arg + ' ' + str(data['opts'][arg]) + '\n')
-                a.write('builder 0\n')
-                a.write('enumall 1\n')
-                a.write('enum1 1\n')          
             else: 
                 a.write(arg + ' ' + str(data['opts'][arg]) + '\n')
 
-        for arg in list(['xlabels', 'zlabels']):  # KAIWEN
+        for arg in list(['xlabels', 'zlabels']):
             a.write(arg + ' ' + str(data['labs']['save' + arg])[1:-1]
                     .replace(",", '').replace("'", '') + '\n')
-        # for arg in list(['xlabels','zlabels']):
-        # a.write(arg+' '+str(data['lstopts'][arg])[1:-1]
-        # .replace(",",'').replace("'",'')+'\n')
         
         for arg in data['lstopts'].keys():
             if arg in kwargs.keys() and arg not in list(['xlabels', 'zlabels']):
@@ -58,7 +52,7 @@ def almwriter(data, debug, vargs, kwargs):
                 a.write(arg + ' ' + str(data['stropts'][arg]) + '\n')
 
         # xmax and xmin writing in set4
-        if ('xmin' in kwargs.keys()):
+        if kwargs.get('xmin', None) is not None:
             for arg in data['set4'].keys():
                 temp = arg + ' '
                 for value in data['set4'][arg]:
@@ -71,7 +65,7 @@ def almwriter(data, debug, vargs, kwargs):
                         .replace(",", '') + '\n')
 
         # Write data and valdata
-        a.write('begin_data\n')  # ISSUE ENGLE
+        a.write('begin_data\n') 
         for i in range(data['opts']['ndata']):
             temp = ''
             if data['opts']['ninputs'] > 1:
@@ -100,10 +94,7 @@ def almwriter(data, debug, vargs, kwargs):
         if debug['savegams']:
             a.write('enum1 0\n')  
             a.write('enumall 0\n')    
-            a.write('removescratch 0\n')    
-        # make modeler=6 OLS
-        # a.write('cvxbic 1\n')
-        # a.write('convpen 0\n')
+            a.write('removescratch 0\n')
 
         # This option can be used to test the flow of alamo
         if (debug['hardset']):
@@ -114,16 +105,6 @@ def almwriter(data, debug, vargs, kwargs):
 
     # Append text file if specified
     if ('almopt' in data['stropts'].keys()):
-
-        # Kaiwen
-        # destination = open('almtemp','wb')
-        # shutil.copyfileobj(open(str(data['stropts']['almname']),'rb'), destination)
-        # shutil.copyfileobj(open(str(data['stropts']['almopt']),'rb'), destination)
-        # destination.close()
-        # os.remove(str(data['stropts']['almname']))
-        # os.remove(str(data['stropts']['almopt']))
-        # os.rename('almtemp',str(data['stropts']['almname']))
-
         catfile('almtemp', str(data['stropts']['almname']),
                 str(data['stropts']['almopt']))
         deletefile(str(data['stropts']['almname']))

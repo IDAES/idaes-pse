@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -25,11 +25,13 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         ReactionParameterBlock,
                         useDefault)
+from idaes.core.phases import PhaseType as PT
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
+                                    list_of_phase_types,
                                     is_port,
                                     is_time_domain,
                                     is_transformation_method,
@@ -43,6 +45,7 @@ class _ParameterBlock(PhysicalParameterBlock):
         pass
 
 
+@pytest.mark.unit
 def test_is_physical_parameter_block_passes():
     # Make an instance of a Parameter Block
     p = ParameterBlock()
@@ -51,10 +54,12 @@ def test_is_physical_parameter_block_passes():
     assert p == is_physical_parameter_block(p)
 
 
+@pytest.mark.unit
 def test_is_physical_parameter_block_useDefault():
     assert useDefault == is_physical_parameter_block(useDefault)
 
 
+@pytest.mark.unit
 def test_is_physical_parameter_block_fails():
     # Test that is_physical_parameter_block returns ConfigurationError with
     # wrong input
@@ -74,6 +79,7 @@ class _RParameterBlock(ReactionParameterBlock):
         pass
 
 
+@pytest.mark.unit
 def test_is_reaction_parameter_block_passes():
     # Make an instance of a Parameter Block
     r = RParameterBlock()
@@ -82,12 +88,14 @@ def test_is_reaction_parameter_block_passes():
     assert r == is_reaction_parameter_block(r)
 
 
+@pytest.mark.unit
 def test_is_reaction_parameter_block_useDefault():
     # No useDefault option for is_reaction_parameter_block
     with pytest.raises(ConfigurationError):
         is_reaction_parameter_block(useDefault)
 
 
+@pytest.mark.unit
 def test_is_reaction_parameter_block_fails():
     # Test that is_reaction_parameter_block returns ConfigurationError with
     # wrong input
@@ -107,6 +115,7 @@ class StateTestBlockData(StateBlockData):
         pass
 
 
+@pytest.mark.unit
 def test_is_state_block_passes():
     # Make an instance of a TestStateBlock
     s = TestStateBlock()
@@ -115,6 +124,7 @@ def test_is_state_block_passes():
     assert s == is_state_block(s)
 
 
+@pytest.mark.unit
 def test_is_state_block_fails():
     # Test that is_state_block returns ConfigurationError with wrong input
     m = ConcreteModel()
@@ -127,6 +137,7 @@ def test_is_state_block_fails():
         is_state_block(1)  # int
 
 
+@pytest.mark.unit
 def test_list_of_strings():
     # Test list_of_strings=returns correctly
     assert list_of_strings(1) == ['1']  # int
@@ -138,12 +149,14 @@ def test_list_of_strings():
     assert list_of_strings(["foo", "bar"]) == ["foo", "bar"]  # list of strs
 
 
+@pytest.mark.unit
 def test_list_of_strings_errors():
     # Test that list_of_strings fails correctly
     with pytest.raises(ConfigurationError):
         list_of_strings({"foo": "bar"})  # dict
 
 
+@pytest.mark.unit
 def test_list_of_floats():
     # Test list_of_floats returns correctly
     assert list_of_floats(1) == [1.0]  # int
@@ -152,6 +165,7 @@ def test_list_of_floats():
     assert list_of_floats([1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]  # list of floats
 
 
+@pytest.mark.unit
 def test_list_of_floats_errors():
     # Test that list_of_floats fails correctly
     with pytest.raises(ValueError):
@@ -162,6 +176,7 @@ def test_list_of_floats_errors():
         list_of_floats({"foo": "bar"})  # dict
 
 
+@pytest.mark.unit
 def test_is_port():
     # Test that is_port passes a valid port
     m = ConcreteModel()
@@ -169,6 +184,7 @@ def test_is_port():
     assert isinstance(is_port(m.c), Port)
 
 
+@pytest.mark.unit
 def test_is_port_errors():
     # Test that is_port returns errors when not given a Port
     with pytest.raises(ConfigurationError):
@@ -183,6 +199,7 @@ def test_is_port_errors():
         is_port(1)  # int
 
 
+@pytest.mark.unit
 def test_is_time_domain():
     # Test that is_time_domain accepts Sets and ContinuousSets
     m = ConcreteModel()
@@ -194,6 +211,7 @@ def test_is_time_domain():
     assert isinstance(is_time_domain(m.cs), ContinuousSet)
 
 
+@pytest.mark.unit
 def test_is_time_domain_errors():
     # Test that is_time_domain returns errors when not Set or ContinuousSet
 
@@ -211,6 +229,7 @@ def test_is_time_domain_errors():
         assert is_time_domain(1.0)
 
 
+@pytest.mark.unit
 def test_is_transformation_method():
     assert is_transformation_method("dae.finite_difference") == \
         "dae.finite_difference"
@@ -222,6 +241,7 @@ def test_is_transformation_method():
         is_transformation_method("dea.finite_difference")
 
 
+@pytest.mark.unit
 def test_is_transformation_scheme():
     assert is_transformation_scheme("BACKWARD") == "BACKWARD"
     assert is_transformation_scheme("FORWARD") == "FORWARD"
@@ -230,3 +250,15 @@ def test_is_transformation_scheme():
 
     with pytest.raises(ConfigurationError):
         is_transformation_scheme("foo")
+
+
+@pytest.mark.unit
+def test_list_of_phase_types():
+    assert list_of_phase_types(PT.liquidPhase) == [PT.liquidPhase]
+    assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
+    assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == \
+        [PT.liquidPhase, PT.vaporPhase]
+    with pytest.raises(ConfigurationError,
+                       match="valid_phase_types configuration argument must "
+                       "be a list of PhaseTypes."):
+        list_of_phase_types("foo")

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -29,6 +29,9 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
 from idaes.core.util.misc import add_object_reference
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -55,6 +58,10 @@ class ReactionParameterBlock(ProcessBlockData,
             description="Default arguments to use with Property Package",
             implicit=True))
 
+    def __init__(self, *args, **kwargs):
+        self.__reaction_block_class = None
+        super().__init__(*args, **kwargs)
+
     def build(self):
         """
         General build method for ReactionParameterBlocks. Inheriting models
@@ -68,9 +75,53 @@ class ReactionParameterBlock(ProcessBlockData,
         """
         super(ReactionParameterBlock, self).build()
 
+        if not hasattr(self, "_reaction_block_class"):
+            self._reaction_block_class = None
+
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
+
+    @property
+    def reaction_block_class(self):
+        if self._reaction_block_class is not None:
+            return self._reaction_block_class
+        else:
+            raise AttributeError(
+                "{} has not assigned a ReactionBlock class to be associated "
+                "with this reaction package. Please contact the developer of "
+                "the reaction package.".format(self.name))
+
+    @reaction_block_class.setter
+    def reaction_block_class(self, val):
+        _log.warning("DEPRECATED: reaction_block_class should not be set "
+                     "directly. Property package developers should set the "
+                     "_reaction_block_class attribute instead.")
+        self._reaction_block_class = val
+
+    def build_reaction_block(self, *args, **kwargs):
+        """
+        Methods to construct a ReactionBlock assoicated with this
+        ReactionParameterBlock. This will automatically set the parameters
+        construction argument for the ReactionBlock.
+
+        Returns:
+            ReactionBlock
+
+        """
+        default = kwargs.pop("default", {})
+        initialize = kwargs.pop("initialize", {})
+
+        if initialize == {}:
+            default["parameters"] = self
+        else:
+            for i in initialize.keys():
+                initialize[i]["parameters"] = self
+
+        return self.reaction_block_class(*args,
+                                         **kwargs,
+                                         default=default,
+                                         initialize=initialize)
 
     def _validate_property_parameter_units(self):
         """
@@ -81,7 +132,13 @@ class ReactionParameterBlock(ProcessBlockData,
         prop_units = self.config.property_package.get_metadata().default_units
         for u in r_units:
             try:
-                if prop_units[u] != r_units[u]:
+                # TODO: This check is for backwards compatability with
+                # pre-units property packages. It can be removed once these are
+                # fully deprecated.
+                if isinstance(prop_units[u], str) and (
+                        prop_units[u] != r_units[u]):
+                    raise KeyError()
+                elif prop_units[u] is not r_units[u]:
                     raise KeyError()
             except KeyError:
                 raise PropertyPackageError(
@@ -203,6 +260,10 @@ should be constructed in this reaction block,
 
         self._validate_state_block()
 
+    @property
+    def params(self):
+        return self._params
+
     def _validate_state_block(self):
         """
         Method to validate that the associated state block matches with the
@@ -299,6 +360,12 @@ should be constructed in this reaction block,
 
         # Check for recursive calls
         try:
+            # Check if __getattrcalls is initialized
+            self.__getattrcalls
+        except AttributeError:
+            # Initialize it
+            self.__getattrcalls = [attr]
+        else:
             # Check to see if attr already appears in call list
             if attr in self.__getattrcalls:
                 # If it does, indicates a recursive loop.
@@ -329,9 +396,6 @@ should be constructed in this reaction block,
                                     .format(self.name, attr))
             # If not, add call to list
             self.__getattrcalls.append(attr)
-        except AttributeError:
-            # A list of calls if one does not exist, so create one
-            self.__getattrcalls = [attr]
 
         # Get property information from get_supported_properties
         try:

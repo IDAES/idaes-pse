@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -17,13 +17,13 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
 
 #
 import pytest
 
 #
 from idaes.dmf import dmfbase, commands, errors, workspace, util
+from idaes.util.system import mkdtemp
 from .util import init_logging
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
@@ -37,12 +37,13 @@ _log = logging.getLogger(__name__)
 
 @pytest.fixture(scope="function")
 def wspath():
-    dirname = tempfile.mkdtemp()
+    dirname = mkdtemp()
     yield dirname
     # teardown
     shutil.rmtree(dirname)
 
 
+@pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
     try:
@@ -52,6 +53,7 @@ def test_workspace_init(wspath):
         pass
 
 
+@pytest.mark.unit
 def test_workspace_info(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
     commands.workspace_info(wspath)
@@ -68,6 +70,7 @@ def test_workspace_info(wspath):
         pass
 
 
+@pytest.mark.unit
 def test_find_html_docs(wspath):
     filedir = os.path.dirname(__file__)
     docpath = os.path.join(filedir, "..", "docs", "build", "html")

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -14,21 +14,20 @@
 Tests for idaes.dmf.resource2 module
 """
 # stdlib
-import datetime
+from datetime import datetime
 import json
 import logging
 import math
 import os
 import shutil
 import sys
-import tempfile
 
 # third-party
-import pendulum
 import pytest
 
 # local
 from idaes.dmf import resource, propdata
+from idaes.util.system import mkdtemp
 
 # for testing
 from .util import init_logging
@@ -82,6 +81,7 @@ def default_resource():
     return resource.Resource()
 
 
+@pytest.mark.unit
 def test_resource_roundtrip(example_resource):
     """Build up a resource with all attributes,
     then make sure it serializes and deserializes.
@@ -121,6 +121,7 @@ _propm = {
 }
 
 
+@pytest.mark.unit
 def test_property_data_resource():
     r = resource.Resource()
     r.data = {"data": _propd, "meta": _propm}
@@ -131,14 +132,17 @@ def test_property_data_resource():
     assert tbl.metadata[0].title == _propm["title"]
 
 
+@pytest.mark.unit
 def test_validate_default(default_resource):
     default_resource.validate()
 
 
+@pytest.mark.unit
 def test_validate_example(example_resource):
     example_resource.validate()
 
 
+@pytest.mark.unit
 def test_validate_preprocess(default_resource):
     r = default_resource
     r.validate()
@@ -153,11 +157,12 @@ def test_validate_preprocess(default_resource):
 
 @pytest.fixture
 def tmpd():
-    d = tempfile.mkdtemp(prefix="test_resource_", suffix=".idaes")
+    d = mkdtemp(prefix="test_resource_", suffix=".idaes")
     yield d
     shutil.rmtree(d)
 
 
+@pytest.mark.unit
 def test_get_datafiles_relative(default_resource, tmpd):
     r = default_resource
     r.v["datafiles_dir"] = tmpd  # paths are now relative to this
@@ -175,6 +180,7 @@ def test_get_datafiles_relative(default_resource, tmpd):
     assert len(paths) == 0  # all were returned
 
 
+@pytest.mark.unit
 def test_get_datafiles_absolute(default_resource, tmpd):
     r = default_resource
     paths = set()
@@ -192,6 +198,7 @@ def test_get_datafiles_absolute(default_resource, tmpd):
     assert len(paths) == 0  # all were returned
 
 
+@pytest.mark.unit
 def test_create_relation(default_resource, example_resource):
     r1, r2 = default_resource, example_resource
     relation = resource.Triple(r1, resource.PR_USES, r2)
@@ -213,13 +220,15 @@ def test_create_relation(default_resource, example_resource):
         resource.create_relation(relation)
 
 
+@pytest.mark.unit
 def test_repr(example_resource):
     txt = example_resource._repr_text_()
     assert len(txt) > 0
 
 
+@pytest.mark.unit
 def test_date_float():
-    now = pendulum.now()
+    now = datetime.now()
     now_float = now.timestamp()
     assert resource.date_float(now) == now_float
     # tuples
@@ -228,7 +237,7 @@ def test_date_float():
     with pytest.raises(ValueError):
         resource.date_float(tuple("garbage"))
     # datetime
-    assert resource.date_float(datetime.datetime(*now_tuple)) == now_float
+    assert resource.date_float(datetime(*now_tuple)) == now_float
     # strings
     with pytest.raises(ValueError):
         resource.date_float("garbage")
@@ -245,6 +254,7 @@ def test_date_float():
         resource.date_float(None)
 
 
+@pytest.mark.unit
 def test_version_list():
     f = resource.version_list
     # any tuple prefix is fine
@@ -263,17 +273,19 @@ def test_version_list():
     with pytest.raises(ValueError):
         f((1, 2, 3, None))
     with pytest.raises(ValueError):
-        f((1, 2, 3, datetime.datetime))
+        f((1, 2, 3, datetime))
     with pytest.raises(ValueError):
         f("1.2.3.4")  # last bit can't start with '.'
     assert f("1.2.3RC3") == [1, 2, 3, "RC3"]  # extra
     assert f("1.2.3-RC3") == [1, 2, 3, "RC3"]  # stripped "-"
 
 
+@pytest.mark.unit
 def test_format_version():
     assert resource.format_version([1, 2, 3, "RC3"]) == "1.2.3-RC3"
 
 
+@pytest.mark.unit
 def test_identifier_str():
     assert len(resource.identifier_str()) > 1
     assert resource.identifier_str("0" * 32) == "0" * 32
@@ -283,6 +295,7 @@ def test_identifier_str():
         resource.identifier_str("0" * 31 + "X")
 
 
+@pytest.mark.unit
 def test_dirty_bit():
     dd = resource.Dict({"value": 1})
     assert dd.is_dirty()
@@ -294,6 +307,7 @@ def test_dirty_bit():
     assert not dd.is_dirty()
 
 
+@pytest.mark.unit
 def test_validate_onlywhendirty(default_resource):
     r = default_resource
     assert r._validations == 0
@@ -308,6 +322,7 @@ def test_validate_onlywhendirty(default_resource):
     assert r._validations == 2
 
 
+@pytest.mark.unit
 def test_triple_from_resource_relations():
     i = "cookie monster"
     j = "cookies"

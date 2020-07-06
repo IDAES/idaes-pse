@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -14,6 +14,7 @@
 Data Management Framework
 """
 # stdlib
+from datetime import datetime
 import logging
 import os
 import pathlib
@@ -24,7 +25,6 @@ import uuid
 from typing import Generator
 
 # third-party
-import pendulum
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -223,7 +223,7 @@ class DMF(workspace.Workspace, HasTraits):
             os.mkdir(self._datafile_path, 0o750)
         # add create/modified date, and optional name/description
         _w = workspace.Workspace
-        right_now = pendulum.now().to_datetime_string()
+        right_now = datetime.isoformat(datetime.now())
         meta = {_w.CONF_CREATED: right_now, _w.CONF_MODIFIED: right_now}
         if name:
             meta[_w.CONF_NAME] = name
@@ -371,12 +371,14 @@ class DMF(workspace.Workspace, HasTraits):
         if rsrc.v.get('datafiles_dir', None):
             # If there is a datafiles_dir, use it
             ddir = rsrc.v['datafiles_dir']
+            _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
         else:
             # If no datafiles_dir, create a random subdir of the DMF
             # configured `_datafile_path`. The subdir prevents name
             # collisions across resources.
             random_subdir = uuid.uuid4().hex
             ddir = os.path.join(self._datafile_path, random_subdir)
+            _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
         try:
             mkdir_p(ddir)
         except os.error as err:
@@ -392,7 +394,7 @@ class DMF(workspace.Workspace, HasTraits):
                 # datafile-dir, say /a/dir/for/resources/, resulting in
                 # e.g. /a/dir/for/resources/file.
                 filepath = datafile['path']
-                filedir, filename = os.path.split(filepath)
+                _, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
                 _log.debug(
                     'Copying datafile "{}" to directory "{}"'.format(filepath, copydir)
@@ -472,7 +474,7 @@ class DMF(workspace.Workspace, HasTraits):
 
                 - "@true"/"@false": boolean (bare True/False will test existence)
 
-        3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+        3. date, as datetime.datetime  instance: Match
            resources that have this exact date for the given attribute.
         4. list: Match resources that have a list value for this attribute,
            and for which any of the values in the provided list are in the
@@ -711,7 +713,7 @@ def get_propertydb_table(rsrc):
 #
 #                 - "@true"/"@false": boolean (bare True/False will test existence)
 #
-#         3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+#         3. date, as datetime.datetime instance: Match
 #            resources that have this exact date for the given attribute.
 #         4. list: Match resources that have a list value for this attribute,
 #            and for which any of the values in the provided list are in the

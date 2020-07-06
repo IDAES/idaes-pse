@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -98,17 +98,20 @@ good_table_json = [
 dummy_data = [{"name": "dummy", "type": "state", "units": "none", "values": [1, 2, 3]}]
 
 
+@pytest.mark.unit
 def test_property_table_empty():
     with pytest.raises(ValueError):
         PropertyTable(data=[], metadata=[])
 
 
+@pytest.mark.unit
 def test_property_table():
     tbl = PropertyTable(data=dummy_data, metadata=[])
     assert tbl.data is not None
     assert tbl.metadata is not None
 
 
+@pytest.mark.unit
 def test_property_table_objinit():
     d = PropertyData(dummy_data)
     m = PropertyMetadata({"bar": "y"})
@@ -117,6 +120,7 @@ def test_property_table_objinit():
     assert tbl.metadata[0].as_dict()["bar"] == "y"
 
 
+@pytest.mark.unit
 def test_property_table_json():
     tbl = PropertyTable(data=dummy_data, metadata={"baz": "2"})
     s = tbl.dumps()
@@ -131,6 +135,7 @@ def test_property_table_json():
     assert parsed["data"] == tbl.data.as_list()
 
 
+@pytest.mark.unit
 def test_property_table_from_json():
     with TempDir() as d:
         filename = os.path.join(d, "prop.json")
@@ -144,6 +149,7 @@ def test_property_table_from_json():
         os.unlink(filename)
 
 
+@pytest.mark.unit
 def test_property_data_good():
     inputs = map(StringIO, good_data_csv)
     states, total = [1], [2]
@@ -152,6 +158,7 @@ def test_property_data_good():
         assert obj.num_columns == ncol
 
 
+@pytest.mark.unit
 def test_property_data_column_type():
     csv_input = good_data_csv[0]
     obj = PropertyData.from_csv(StringIO(csv_input), 1)
@@ -168,6 +175,7 @@ def test_property_data_column_type():
             assert obj.is_property_column(index)
 
 
+@pytest.mark.unit
 def test_property_data_column_nonexistent():
     csv_input = good_data_csv[0]
     obj = PropertyData.from_csv(StringIO(csv_input), 1)
@@ -178,6 +186,7 @@ def test_property_data_column_nonexistent():
         pass
 
 
+@pytest.mark.unit
 def test_property_data_bad():
     inputs = map(StringIO, bad_data_csv)
     for inpfile in inputs:

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -519,11 +519,12 @@ def d3rdRes(D, T, Y, Beta):
 def drdRes(D, T, Y, Beta):
     """
     Calculates the partial derivaties w.r.t. density
-    Inputs:
-        D - Delta
-        T - Tau
-        Y - index of basis Function (int or array)
-        Beta - weighting (float or array)
+
+    Args:
+        D: Delta
+        T: Tau
+        Y: index of basis Function (int or array)
+        Beta: weighting (float or array)
     """
     global drd_vals
     global coeffs

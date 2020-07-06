@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,11 +19,11 @@ The file install_idaes_workshop_materials.py is downloaded from pyomo.org, impor
  and the method execute() is then called to do whatever actions are necessary.
 
 Note:
-- update_workshop_materials.py is a module in the idaes/util folder that does the work
-- update_workshop_materials.ipynb is a Jupyter notebook in the examples/workshops folder
-  that calls this module
-- install_idaes_workshop_materials.py is posted on a site (for now pyomo.org, but later 
-  could be a repository on github).
+    - update_workshop_materials.py is a module in the idaes/util folder that does the work
+    - update_workshop_materials.ipynb is a Jupyter notebook in the examples/workshops folder
+      that calls this module
+    - install_idaes_workshop_materials.py is posted on a site (for now pyomo.org, but later 
+      could be a repository on github).
 
 1) JupyterHub: User executes update_workshop_materials.ipynb which calls to update_workshop_materials.py in idaes/util
 2) update_workshop_materials.py downloads another python file (install_idaes_workshop_materials.py)
@@ -42,12 +42,13 @@ from pyutilib.misc import import_file
 
 _install_idaes_workshop_materials_url = 'http://www.pyomo.org/s/install_idaes_workshop_materials.py'
 
+
 def download_install_module():
     """
     Downloads install_idaes_workshop_materials.py from pyomo.org
     """
     download_dir = futils.this_file_dir()
-    download_dir = os.path.join(download_dir, '../../examples/workshops')
+    download_dir = os.path.join(download_dir, '..', '..', 'scripts', 'workshops')
     download_dest = os.path.join(download_dir, 'install_idaes_workshop_materials.py')
     
     print("\n\n"
@@ -72,6 +73,7 @@ def download_install_module():
     print('... download complete')
     return download_dest
 
+
 def import_install_module(download_dest):
     """
     Imports the path in download_dest (install_idaes_workshop_materials.py module)
@@ -79,6 +81,7 @@ def import_install_module(download_dest):
     install_module = import_file(download_dest)
     print('... importing install module')
     return install_module
+
 
 if __name__ == '__main__':
     download_dest = download_install_module()

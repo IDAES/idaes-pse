@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -39,6 +39,7 @@ class UnitData(UnitModelBlockData):
         super(UnitModelBlockData, self).build()
 
 
+@pytest.mark.unit
 def test_config_block():
     m = ConcreteModel()
 
@@ -48,6 +49,7 @@ def test_config_block():
     assert m.u.config.dynamic == useDefault
 
 
+@pytest.mark.unit
 def test_config_args():
     m = ConcreteModel()
 
@@ -56,6 +58,7 @@ def test_config_args():
     assert m.u.config.dynamic is True
 
 
+@pytest.mark.unit
 def test_config_args_invalid():
     # Test validation of config arguments
     m = ConcreteModel()
@@ -79,6 +82,7 @@ def test_config_args_invalid():
         m.u.config.dynamic = {'a': 2.0}  # invalid dict
 
 
+@pytest.mark.unit
 def test_setup_dynamics1():
     # Test that _setup_dynamics gets argument from parent
     m = ConcreteModel()
@@ -91,6 +95,7 @@ def test_setup_dynamics1():
     assert m.fs.u.config.dynamic is False
 
 
+@pytest.mark.unit
 def test_setup_dynamics2():
     # Test that _setup_dynamics returns an DynamicError when parent has no
     # dynamic config argument
@@ -104,6 +109,7 @@ def test_setup_dynamics2():
         m.b.u._setup_dynamics()
 
 
+@pytest.mark.unit
 def test_setup_dynamics_dynamic_in_steady_state():
     # Test that a DynamicError is raised when a dynamic models is placed in a
     # steady-state parent
@@ -116,6 +122,7 @@ def test_setup_dynamics_dynamic_in_steady_state():
         m.fs.u._setup_dynamics()
 
 
+@pytest.mark.unit
 def test_setup_dynamics_get_time():
     # Test that time domain is collected correctly
     m = ConcreteModel()
@@ -126,6 +133,7 @@ def test_setup_dynamics_get_time():
     m.fs.u._setup_dynamics()
 
 
+@pytest.mark.unit
 def test_setup_dynamics_has_holdup():
     # Test that has_holdup argument is True when dynamic is True
     m = ConcreteModel()
@@ -139,6 +147,7 @@ def test_setup_dynamics_has_holdup():
         m.fs.u._setup_dynamics()
 
 
+@pytest.mark.unit
 def test_add_port():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -146,8 +155,7 @@ def test_add_port():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = m.fs.pp.state_block_class(m.fs.time,
-                             default={"parameters": m.fs.pp})
+    m.fs.u.prop = m.fs.pp.build_state_block(m.fs.time)
 
     p_obj = m.fs.u.add_port(name="test_port", block=m.fs.u.prop)
 
@@ -163,6 +171,7 @@ def test_add_port():
         m.fs.u.prop[0].temperature.value
 
 
+@pytest.mark.unit
 def test_add_port_invalid_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -170,13 +179,13 @@ def test_add_port_invalid_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = m.fs.pp.state_block_class(m.fs.time,
-                             default={"parameters": m.fs.pp})
+    m.fs.u.prop = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(ConfigurationError):
         m.fs.u.add_port(name="test_port", block=m.fs.u)
 
 
+@pytest.mark.unit
 def test_add_inlet_port_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -211,6 +220,7 @@ def test_add_inlet_port_CV0D():
         m.fs.u.control_volume.properties_in[0].temperature.value
 
 
+@pytest.mark.unit
 def test_add_inlet_port_CV0D_no_default_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -225,6 +235,7 @@ def test_add_inlet_port_CV0D_no_default_block():
         m.fs.u.add_inlet_port()
 
 
+@pytest.mark.unit
 def test_add_inlet_port_CV0D_full_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -261,6 +272,7 @@ def test_add_inlet_port_CV0D_full_args():
         m.fs.u.cv.properties_in[0].temperature.value
 
 
+@pytest.mark.unit
 def test_add_inlet_port_CV0D_part_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -280,6 +292,7 @@ def test_add_inlet_port_CV0D_part_args():
         m.fs.u.add_inlet_port(name="foo")
 
 
+@pytest.mark.unit
 def test_add_outlet_port_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -314,6 +327,7 @@ def test_add_outlet_port_CV0D():
         m.fs.u.control_volume.properties_out[0].temperature.value
 
 
+@pytest.mark.unit
 def test_add_outlet_port_CV0D_no_default_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -328,6 +342,7 @@ def test_add_outlet_port_CV0D_no_default_block():
         m.fs.u.add_outlet_port()
 
 
+@pytest.mark.unit
 def test_add_outlet_port_CV0D_full_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -364,6 +379,7 @@ def test_add_outlet_port_CV0D_full_args():
         m.fs.u.cv.properties_out[0].temperature.value
 
 
+@pytest.mark.unit
 def test_add_outlet_port_CV0D_part_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -383,6 +399,7 @@ def test_add_outlet_port_CV0D_part_args():
         m.fs.u.add_outlet_port(name="foo")
 
 
+@pytest.mark.unit
 def test_fix_unfix_initial_conditions():
     fs = Flowsheet(default={"dynamic": True, "time_set": [0, 1, 2]},
                    concrete=True)
@@ -416,6 +433,7 @@ def test_fix_unfix_initial_conditions():
             assert fs.b.energy_accumulation[t].fixed is False
 
 
+@pytest.mark.unit
 def test_get_stream_table_contents_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -448,6 +466,7 @@ def test_get_stream_table_contents_CV0D():
     assert df.loc["temperature"]["Outlet"] == 300
 
 
+@pytest.mark.unit
 def test_get_stream_table_contents_CV0D_missing_default_port():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -464,6 +483,7 @@ def test_get_stream_table_contents_CV0D_missing_default_port():
         m.fs.u._get_stream_table_contents()
 
 
+@pytest.mark.unit
 def test_report_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -482,6 +502,7 @@ def test_report_CV0D():
     m.fs.u.report()
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_invalid_state_1():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -500,14 +521,14 @@ def test_add_state_material_balances_invalid_state_1():
                 state_2=m.fs.u.sb)
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_invalid_state_2():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
     m.fs.u.sb2 = object()
 
     with pytest.raises(
@@ -520,6 +541,7 @@ def test_add_state_material_balances_invalid_state_2():
                 state_2=m.fs.u.sb2)
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_mixed_states():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -527,10 +549,8 @@ def test_add_state_material_balances_mixed_states():
     m.fs.pp2 = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp1.state_block_class(m.fs.time,
-                                            default={"parameters": m.fs.pp1})
-    m.fs.u.sb2 = m.fs.pp2.state_block_class(m.fs.time,
-                                            default={"parameters": m.fs.pp2})
+    m.fs.u.sb1 = m.fs.pp1.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp2.build_state_block(m.fs.time)
 
     with pytest.raises(
             ConfigurationError,
@@ -545,16 +565,15 @@ def test_add_state_material_balances_mixed_states():
                 state_2=m.fs.u.sb2)
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_component_phase():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentPhase,
@@ -568,16 +587,15 @@ def test_add_state_material_balances_component_phase():
                      (0.0, "p2", "c1"), (0.0, "p2", "c2")]
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_component_total():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentTotal,
@@ -590,16 +608,15 @@ def test_add_state_material_balances_component_total():
         assert k in [(0.0, "c1"), (0.0, "c2")]
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_total():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.total,
@@ -610,16 +627,15 @@ def test_add_state_material_balances_total():
     assert len(m.fs.u.state_material_balances) == 1
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_element_total():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.u.add_state_material_balances(
@@ -628,16 +644,15 @@ def test_add_state_material_balances_element_total():
                 state_2=m.fs.u.sb2)
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_none():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.u.add_state_material_balances(
@@ -646,16 +661,15 @@ def test_add_state_material_balances_none():
                 state_2=m.fs.u.sb2)
 
 
+@pytest.mark.unit
 def test_add_state_material_balances_double_call():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
 
-    m.fs.u.sb1 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
-    m.fs.u.sb2 = m.fs.pp.state_block_class(m.fs.time,
-                                           default={"parameters": m.fs.pp})
+    m.fs.u.sb1 = m.fs.pp.build_state_block(m.fs.time)
+    m.fs.u.sb2 = m.fs.pp.build_state_block(m.fs.time)
 
     m.fs.u.add_state_material_balances(
                 balance_type=MaterialBalanceType.componentPhase,

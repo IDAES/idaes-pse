@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -15,8 +15,9 @@ Base class for control volumes
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Var
+from pyomo.environ import Constraint, Param, Reals, units as pyunits, Var
 from pyomo.dae import DerivativeVar
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -27,8 +28,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         BurntToast,
                                         ConfigurationError,
-                                        PropertyNotSupportedError,
-                                        PropertyPackageError)
+                                        PropertyNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
 
 import idaes.logger as idaeslog
@@ -81,8 +81,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         l_units = self.config.property_package.get_metadata().default_units[
                                                                       "length"]
+        # TODO : This check is needed for backwards compatability with
+        # property packages not using Pyomo Units
+        if not isinstance(l_units, _PyomoUnit):
+            v_units = None
+        else:
+            v_units = l_units**3
+
         self.volume = Var(self.flowsheet().config.time, initialize=1.0,
-                          doc='Holdup Volume [{}^3]'.format(l_units))
+                          doc='Volume of material in control volume',
+                          units=v_units)
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
@@ -114,7 +122,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
+        # tmp_dict["parameters"] = self.config.property_package
 
         if information_flow == FlowDirection.forward:
             tmp_dict["defined_state"] = True
@@ -126,28 +134,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
 
-        try:
-            self.properties_in = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at inlet",
-                            default=tmp_dict))
+        self.properties_in = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at inlet",
+                        default=tmp_dict))
 
-            # Reverse defined_state
-            tmp_dict_2 = dict(**tmp_dict)
-            tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
+        # Reverse defined_state
+        tmp_dict_2 = dict(**tmp_dict)
+        tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
 
-            self.properties_out = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="Material properties at outlet",
-                            default=tmp_dict_2))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} physical property package has not implemented the "
-                    "state_block_class attribute. Please contact the "
-                    "developer of the physical property package."
-                    .format(self.name))
+        self.properties_out = (
+                self.config.property_package.build_state_block(
+                        self.flowsheet().config.time,
+                        doc="Material properties at outlet",
+                        default=tmp_dict_2))
 
     def add_reaction_blocks(self, has_equilibrium=None):
         """
@@ -175,20 +176,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
-        tmp_dict["parameters"] = self.config.reaction_package
 
-        try:
-            self.reactions = (
-                    self.config.reaction_package.reaction_block_class(
-                            self.flowsheet().config.time,
-                            doc="Reaction properties in control volume",
-                            default=tmp_dict))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} reaction property package has not implemented the "
-                    "reaction_block_class attribute. Please contact the "
-                    "developer of the reaction property package."
-                    .format(self.name))
+        self.reactions = (
+                self.config.reaction_package.build_reaction_block(
+                        self.flowsheet().config.time,
+                        doc="Reaction properties in control volume",
+                        default=tmp_dict))
 
     def _add_material_balance_common(self,
                                      balance_type,
@@ -247,12 +240,43 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units from property package
         units = {}
-        for u in ['length', 'holdup', 'amount', 'time']:
-            try:
-                units[u] = \
+        for u in ['mass', 'amount', 'time']:
+            units[u] = \
                    self.config.property_package.get_metadata().default_units[u]
-            except KeyError:
-                units[u] = '-'
+            if not isinstance(units[u], _PyomoUnit):
+                units[u] = None
+
+        if units['amount'] is not None:
+            if (self.properties_in[self.flowsheet().time.first()]
+                    .get_material_flow_basis() == MaterialFlowBasis.molar):
+                units['flow'] = units['amount']/units['time']
+            elif (self.properties_in[self.flowsheet().time.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.mass):
+                units['flow'] = units['mass']/units['time']
+            else:
+                units['flow'] = None
+        else:
+            units['flow'] = None
+
+        # Get units for accumulation term if required
+        if self.config.dynamic:
+            f_time_units = self.flowsheet().time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            elif (self.properties_in[self.flowsheet().time.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.molar):
+                acc_units = units['amount']/f_time_units
+            elif (self.properties_in[self.flowsheet().time.first()]
+                  .get_material_flow_basis() == MaterialFlowBasis.mass):
+                acc_units = units['mass']/f_time_units
+            else:
+                acc_units = None
 
         # Test for components that must exist prior to calling this method
         if has_holdup:
@@ -272,14 +296,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                        pc_set,
                                        domain=Reals,
                                        initialize=1.0,
-                                       doc="Material holdup in unit [{}]"
-                                           .format(units['holdup']))
+                                       doc="Material holdup in control volume",
+                                       units=units['amount'])
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
                     wrt=self.flowsheet().config.time,
-                    doc="Material accumulation in unit [{}/{}]"
-                        .format(units['holdup'], units['time']))
+                    doc="Material accumulation in control volume",
+                    units=acc_units)
 
         # Create material balance terms as required
         # Kinetic reaction generation
@@ -295,8 +319,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         domain=Reals,
                         initialize=0.0,
                         doc="Amount of component generated in "
-                            "unit by kinetic reactions [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                            "unit by kinetic reactions",
+                        units=units['flow'])
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
@@ -312,9 +336,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 pc_set,
                 domain=Reals,
                 initialize=0.0,
-                doc="Amount of component generated in unit "
-                    "by equilibrium reactions [{}/{}]"
-                    .format(units['holdup'], units['time']))
+                doc="Amount of component generated in control volume "
+                    "by equilibrium reactions",
+                units=units['flow'])
 
         # Phase equilibrium generation
         if has_phase_equilibrium and \
@@ -330,9 +354,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_equilibrium_idx,
                 domain=Reals,
                 initialize=0.0,
-                doc="Amount of generation in unit by phase "
-                    "equilibria [{}/{}]"
-                    .format(units['holdup'], units['time']))
+                doc="Amount of generation in control volume by phase equilibria",
+                units=units['flow'])
 
         # Material transfer term
         if has_mass_transfer:
@@ -341,13 +364,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         pc_set,
                         domain=Reals,
                         initialize=0.0,
-                        doc="Component material transfer into unit [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                        doc="Component material transfer into unit",
+                        units=units['flow'])
 
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, p, j):
-            return b.material_accumulation[t, p, j] if dynamic else 0
+            return pyunits.convert(b.material_accumulation[t, p, j],
+                                   to_units=units['flow']) if dynamic else 0
 
         def kinetic_term(b, t, p, j):
             return (b.rate_reaction_generation[t, p, j] if has_rate_reactions
@@ -408,15 +432,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
-                    doc="Extent of kinetic reactions[{}/{}]"
-                        .format(units['holdup'], units['time']))
+                    doc="Extent of kinetic reactions",
+                    units=units['flow'])
 
             @self.Constraint(self.flowsheet().config.time,
                              pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if (p, j) in pc_set:
-                    rparam = rblock[t]._params
+                    rparam = rblock[t].params
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, r]
@@ -432,8 +456,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.config.reaction_package.equilibrium_reaction_idx,
                     domain=Reals,
                     initialize=0.0,
-                    doc="Extent of equilibrium reactions[{}/{}]"
-                        .format(units['holdup'], units['time']))
+                    doc="Extent of equilibrium reactions",
+                    units=units['flow'])
 
             @self.Constraint(self.flowsheet().config.time,
                              pc_set,
@@ -441,7 +465,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if (p, j) in pc_set:
                     return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t]._params.
+                            sum(rblock[t].params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.config.reaction_package.
@@ -761,11 +785,28 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Get units from property package
         units = {}
         for u in ['amount', 'time']:
-            try:
-                units[u] = \
+            units[u] = \
                    self.config.property_package.get_metadata().default_units[u]
-            except KeyError:
-                units[u] = '-'
+            if not isinstance(units[u], _PyomoUnit):
+                units[u] = None
+        if units['amount'] is not None:
+            units['flow'] = units['amount']/units['time']
+        else:
+            units['flow'] = None
+
+        # Get units for accumulation term if required
+        if self.config.dynamic:
+            f_time_units = self.flowsheet().time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            else:
+                acc_units = units['amount']/f_time_units
 
         # Add Material Balance terms
         if has_holdup:
@@ -774,34 +815,47 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.config.property_package.element_list,
                     domain=Reals,
                     initialize=1.0,
-                    doc="Elemental holdup in unit [{}]"
-                        .format(units['amount']))
+                    doc="Elemental holdup in control volume",
+                    units=units['amount'])
 
         if dynamic:
             self.element_accumulation = DerivativeVar(
                     self.element_holdup,
                     wrt=self.flowsheet().config.time,
-                    doc="Elemental accumulation in unit [{}/{}]"
-                        .format(units['amount'], units['time']))
+                    doc="Elemental accumulation in control volume",
+                    units=acc_units)
+
+        # Method to convert mass flow basis to mole flow basis
+        def conv_factor(b, t, j):
+            flow_basis = b.properties_out[t].get_material_flow_basis()
+            if flow_basis == MaterialFlowBasis.molar:
+                return 1
+            elif flow_basis == MaterialFlowBasis.mass:
+                return 1/b.properties_out[t].mw
+            else:
+                raise BalanceTypeNotSupportedError(
+                    "{} property package MaterialFlowBasis == 'other'. Cannot "
+                    "automatically generate elemental balances."
+                    .format(self.name))
 
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.element_list,
-                         doc="Inlet elemental flow terms [{}/{}]"
-                             .format(units['amount'], units['time']))
+                         doc="Inlet elemental flow terms")
         def elemental_flow_in(b, t, p, e):
-            return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t]._params.element_comp[j][e]
+            return sum(conv_factor(b, t, j) *
+                       b.properties_in[t].get_material_flow_terms(p, j) *
+                       b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
                          self.config.property_package.element_list,
-                         doc="Outlet elemental flow terms [{}/{}]"
-                             .format(units['amount'], units['time']))
+                         doc="Outlet elemental flow terms")
         def elemental_flow_out(b, t, p, e):
-            return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t]._params.element_comp[j][e]
+            return sum(conv_factor(b, t, j) *
+                       b.properties_out[t].get_material_flow_terms(p, j) *
+                       b.properties_out[t].params.element_comp[j][e]
                        for j in b.config.property_package.component_list)
 
         # Create material balance terms as needed
@@ -811,13 +865,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             self.config.property_package.element_list,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Element material transfer into unit [{}/{}]"
-                            .format(units['amount'], units['time']))
+                            doc="Element material transfer into unit",
+                            units=units['flow'])
 
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, e):
-            return b.element_accumulation[t, e] if dynamic else 0
+            return pyunits.convert(b.element_accumulation[t, e],
+                                   to_units=units['flow'])if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, e):
@@ -855,10 +910,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def elemental_holdup_calculation(b, t, e):
                 return b.element_holdup[t, e] == (
                     b.volume[t] *
-                    sum(b.phase_fraction[t, p] *
+                    sum(conv_factor(b, t, j)*b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
-                        ._params.element_comp[j][e]
+                        .params.element_comp[j][e]
                         for p in b.config.property_package.phase_list
                         for j in b.config.property_package.component_list))
 
@@ -874,6 +929,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                     has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
+                                    has_enthalpy_transfer=False,
                                     custom_term=None):
         """
         This method constructs a set of 0D enthalpy balances indexed by time
@@ -886,6 +942,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
                     included in enthalpy balances
+            has_enthalpy_transfer - whether terms for enthalpy transfer due to
+                    mass transfer should be included in enthalpy balance. This
+                    should generally be the same as the has_mas_trasnfer
+                    argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
                     Expression must be indexed by time and phase list
@@ -916,12 +976,31 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units from property package
         units = {}
-        for u in ['energy', 'time']:
-            try:
-                units[u] = \
+        for u in ['mass', 'length', 'time']:
+            units[u] = \
                    self.config.property_package.get_metadata().default_units[u]
-            except KeyError:
-                units[u] = '-'
+            if not isinstance(units[u], _PyomoUnit):
+                units[u] = None
+        if units['mass'] is not None:
+            units['energy'] = units['mass']*units['length']**2/units['time']**2
+            units['energy_flow'] = units['energy']/units['time']
+        else:
+            units['energy'] = None
+            units['energy_flow'] = None
+
+        # Get units for accumulation term if required
+        if self.config.dynamic:
+            f_time_units = self.flowsheet().time_units
+            if (f_time_units is None) ^ (units['time'] is None):
+                raise ConfigurationError(
+                    "{} incompatible time unit specification between "
+                    "flowsheet and property package. Either both must use "
+                    "units, or neither.".format(self.name))
+
+            if f_time_units is None:
+                acc_units = None
+            else:
+                acc_units = units['energy']/f_time_units
 
         # Create variables
         if has_holdup:
@@ -930,15 +1009,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         domain=Reals,
                         initialize=1.0,
-                        doc="Energy holdup in unit [{}]"
-                        .format(units['energy']))
+                        doc="Energy holdup in control volume",
+                        units=units['energy'])
 
         if dynamic is True:
             self.energy_accumulation = DerivativeVar(
                         self.energy_holdup,
                         wrt=self.flowsheet().config.time,
-                        doc="Enthaly holdup in unit [{}/{}]"
-                        .format(units['energy'], units['time']))
+                        doc="Energy accumulation in control volume",
+                        units=acc_units)
 
         # Create scaling factor
         self.scaling_factor_energy = Param(
@@ -952,16 +1031,26 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             self.heat = Var(self.flowsheet().config.time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Heat transfered in unit [{}/{}]"
-                                .format(units['energy'], units['time']))
+                            doc="Heat transfered into congtrol volume",
+                            units=units['energy_flow'])
 
         # Work transfer
         if has_work_transfer:
             self.work = Var(self.flowsheet().config.time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Work transfered in unit [{}/{}]"
-                                .format(units['energy'], units['time']))
+                            doc="Work transfered into control volume",
+                            units=units['energy_flow'])
+
+        # Enthalpy transfer
+        if has_enthalpy_transfer:
+            self.enthalpy_transfer = Var(
+                self.flowsheet().config.time,
+                domain=Reals,
+                initialize=0.0,
+                doc="Enthalpy transfered into control volume due to "
+                    "mass transfer",
+                units=units['energy_flow'])
 
         # Heat of Reaction
         if has_heat_of_reaction:
@@ -991,13 +1080,18 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, p):
-            return b.energy_accumulation[t, p] if dynamic else 0
+            return (pyunits.convert(b.energy_accumulation[t, p],
+                                    to_units=units['energy_flow'])
+                    if dynamic else 0)
 
         def heat_term(b, t):
             return b.heat[t] if has_heat_transfer else 0
 
         def work_term(b, t):
             return b.work[t] if has_work_transfer else 0
+
+        def enthalpy_transfer_term(b, t):
+            return b.enthalpy_transfer[t] if has_enthalpy_transfer else 0
 
         def rxn_heat_term(b, t):
             return b.heat_of_reaction[t] if has_heat_of_reaction else 0
@@ -1023,6 +1117,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         b.scaling_factor_energy +
                         heat_term(b, t)*b.scaling_factor_energy +
                         work_term(b, t)*b.scaling_factor_energy +
+                        enthalpy_transfer_term(b, t)*b.scaling_factor_energy +
                         rxn_heat_term(b, t)*b.scaling_factor_energy +
                         user_term(t)*b.scaling_factor_energy)
 
@@ -1076,19 +1171,24 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             Constraint object representing pressure balances
         """
         # Get units from property package
-        try:
-            p_units = (self.config.property_package.get_metadata().
-                       default_units['pressure'])
-        except KeyError:
-            p_units = '-'
+        units = {}
+        for u in ['mass', 'length', 'time']:
+            units[u] = \
+                   self.config.property_package.get_metadata().default_units[u]
+            if not isinstance(units[u], _PyomoUnit):
+                units[u] = None
+        if units['mass'] is not None:
+            p_units = units['mass']/units['length']/units['time']**2
+        else:
+            p_units = None
 
         # Add Momentum Balance Variables as necessary
         if has_pressure_change:
             self.deltaP = Var(self.flowsheet().config.time,
                               domain=Reals,
                               initialize=0.0,
-                              doc="Pressure difference across unit [{}]"
-                                  .format(p_units))
+                              doc="Pressure difference across unit",
+                              units=p_units)
 
         # Create rules to substitute energy balance terms
         # Pressure change term
