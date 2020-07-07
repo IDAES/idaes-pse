@@ -28,12 +28,89 @@ variables to calculate additional scaling factors.
 import enum
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
+from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
+from pyomo.kernel import ComponentMap
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Tim Bartholomew"
 _log = idaeslog.getLogger(__name__)
+
+
+class CacheVars(object):
+    def __init__(self, vardata_list):
+        self.vars = vardata_list
+        self.cache = [None for var in self.vars]
+
+    def __enter__(self):
+        for i, var in enumerate(self.vars):
+            self.cache[i] = var.value
+        return self
+
+    def __exit__(self, ex_type, ex_value, ex_traceback):
+        for i, var in enumerate(self.vars):
+            var.set_value(self.cache[i])
+
+
+class FlattenedScalingAssignment(object):
+    def __init__(self, scaling_factor, varconlist=[], nominal_index=()):
+        self.scaling_factor = scaling_factor
+        self.nominal_index = nominal_index
+        self.dim = len(nominal_index)
+
+        data_getter = self.get_representative_data_object
+        var_con_data_list = [(data_getter(var), data_getter(con))
+                for var, con in varconlist]
+        con_var_data_list = [(data_getter(con), data_getter(var))
+                for var, con in varconlist]
+        self.var2con = ComponentMap(var_con_data_list)
+        self.con2var = ComponentMap(con_var_data_list)
+
+    def get_representative_data_object(self, obj):
+        nominal_index = self.nominal_index
+        return obj[nominal_index]
+    
+    def calculate_variable_scaling_factor(self, var):
+        vardata = self.get_representative_data_object(var)
+        condata = self.var2con[vardata]
+        scaling_factor = self.scaling_factor
+
+        in_constraint = list(identify_variables(condata.expr))
+        source_vars = [v for v in in_constraint if v is not vardata]
+        nominal_source = [1/scaling_factor[var] for var in source_vars]
+
+        with CacheVars(in_constraint) as cache:
+            for v, nom_val in zip(source_vars, nominal_source):
+                v.set_value(nom_val)
+            # This assumes that target var is initialized to a somewhat
+            # reasonable value
+            calculate_variable_from_constraint(vardata, condata)
+            nominal_target = vardata.value
+        target_factor = abs(1/nominal_target)
+        # This is unnecessary if var is the Var object itself as Pyomo will
+        # recognize a scaling factor on a Component as applying to every
+        # data object it contains, but var may be a reference-to-slice.
+        # What happens if I assign scaling_factor[Reference(v[:,:])]?
+        for v in var.values():
+            scaling_factor[v] = target_factor
+
+    def set_constraint_scaling_factor(self, con):
+        condata = self.get_representative_data_object(con)
+        vardata = self.con2var[condata]
+        scaling_factor = self.scaling_factor
+
+        var_factor = scaling_factor[vardata]
+        for c in con.values():
+            scaling_factor[c] = var_factor
+
+    def set_derivative_factor_from_state(self, deriv):
+        scaling_factor = self.scaling_factor
+        state_var = deriv.get_state_var()
+        for index, dv in deriv.items():
+            state_data = state_var[index]
+            scaling_factor[dv] = scaling_factor[state_data]
 
 
 class ScalingBasis(enum.Enum):
