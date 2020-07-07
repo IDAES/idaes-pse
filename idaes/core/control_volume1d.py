@@ -367,13 +367,13 @@ argument)."""))
             if not isinstance(units[u], _PyomoUnit):
                 units[u] = None
         if units['amount'] is not None:
-            if (self.properties[self.flowsheet().time.first(),
+            if (self.properties[self.flowsheet().config.time.first(),
                                 self.length_domain.first()]
                     .get_material_flow_basis() == MaterialFlowBasis.molar):
                 units['holdup_l'] = units['amount']/units["length"]
                 units['flow'] = units['amount']/units['time']
                 units['flow_l'] = units['amount']/units["length"]/units['time']
-            elif (self.properties[self.flowsheet().time.first(),
+            elif (self.properties[self.flowsheet().config.time.first(),
                                   self.length_domain.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
                 units['holdup_l'] = units['mass']/units["length"]
@@ -390,7 +390,7 @@ argument)."""))
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -399,11 +399,11 @@ argument)."""))
 
             if f_time_units is None:
                 acc_units = None
-            elif (self.properties[self.flowsheet().time.first(),
+            elif (self.properties[self.flowsheet().config.time.first(),
                                   self.length_domain.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.molar):
                 acc_units = units['amount']/units['length']/f_time_units
-            elif (self.properties[self.flowsheet().time.first(),
+            elif (self.properties[self.flowsheet().config.time.first(),
                                   self.length_domain.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
                 acc_units = units['mass']/units['length']/f_time_units
@@ -969,7 +969,7 @@ argument)."""))
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -987,7 +987,7 @@ argument)."""))
         linearly_dependent = []
 
         # Get a representative time point
-        rtime = self.flowsheet().time.first()
+        rtime = self.flowsheet().config.time.first()
         rdomain = self.length_domain.first()
 
         # For each component in the material, search for elements which are
@@ -1227,7 +1227,7 @@ argument)."""))
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "

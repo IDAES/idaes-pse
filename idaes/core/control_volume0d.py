@@ -247,10 +247,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 units[u] = None
 
         if units['amount'] is not None:
-            if (self.properties_in[self.flowsheet().time.first()]
+            if (self.properties_in[self.flowsheet().config.time.first()]
                     .get_material_flow_basis() == MaterialFlowBasis.molar):
                 units['flow'] = units['amount']/units['time']
-            elif (self.properties_in[self.flowsheet().time.first()]
+            elif (self.properties_in[self.flowsheet().config.time.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
                 units['flow'] = units['mass']/units['time']
             else:
@@ -260,7 +260,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -269,10 +269,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
             if f_time_units is None:
                 acc_units = None
-            elif (self.properties_in[self.flowsheet().time.first()]
+            elif (self.properties_in[self.flowsheet().config.time.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.molar):
                 acc_units = units['amount']/f_time_units
-            elif (self.properties_in[self.flowsheet().time.first()]
+            elif (self.properties_in[self.flowsheet().config.time.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
                 acc_units = units['mass']/f_time_units
             else:
@@ -796,7 +796,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
@@ -814,7 +814,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         linearly_dependent = []
 
         # Get a representative time point
-        rtime = self.flowsheet().time.first()
+        rtime = self.flowsheet().config.time.first()
 
         # For each component in the material, search for elements which are
         # unique to it
@@ -1037,7 +1037,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Get units for accumulation term if required
         if self.config.dynamic:
-            f_time_units = self.flowsheet().time_units
+            f_time_units = self.flowsheet().config.time_units
             if (f_time_units is None) ^ (units['time'] is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
