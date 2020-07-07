@@ -981,6 +981,55 @@ argument)."""))
             else:
                 acc_units = units['amount']/units['length']/f_time_units
 
+        # Identify linearly dependent elements
+        # It is possible for there to be linearly dependent element balances
+        # e.g. if a single species is the only source of two different elements
+        linearly_dependent = []
+
+        # Get a representative time point
+        rtime = self.flowsheet().time.first()
+        rdomain = self.length_domain.first()
+
+        # For each component in the material, search for elements which are
+        # unique to it
+        for i in self.config.property_package.component_list:
+            unique_elements = []
+            for e in self.config.property_package.element_list:
+                if self.properties[
+                        rtime, rdomain].params.element_comp[i][e] != 0:
+                    # Assume unique until shown otherwise
+                    unique = True
+
+                    for j in self.config.property_package.component_list:
+                        if j == i:
+                            continue
+
+                        # If element appears in any other component, not unique
+                        if self.properties[
+                                rtime, rdomain].params.element_comp[j][e] != 0:
+                            unique = False
+
+                    if unique:
+                        unique_elements.append(e)
+
+            # If more than 1 unique element, they are linearly dependent
+            if len(unique_elements) > 1:
+                # Add all but the first to the list of linearly dependent
+                linearly_dependent.extend(unique_elements[1:])
+
+        # Set indexing set for element balances
+        if len(linearly_dependent) == 0:
+            # No linearly depednet equations, so use full element list
+            e_index = self.config.property_package.element_list
+        else:
+            # Otherwise, use only non-dependent elements, and log a message
+            _log.info_low("{} detected linearly dependent element balance "
+                          "equations. Element balances will NOT be written "
+                          "for the following elements: {}"
+                          .format(self.name, linearly_dependent))
+            e_index = (self.config.property_package.element_list -
+                       linearly_dependent)
+
         # Add Material Balance terms
         if has_holdup:
             self.element_holdup = Var(
@@ -1044,7 +1093,7 @@ argument)."""))
             self.elemental_mass_transfer_term = Var(
                             self.flowsheet().config.time,
                             self.length_domain,
-                            self.config.property_package.element_list,
+                            e_index,
                             domain=Reals,
                             initialize=0.0,
                             doc="Element material transfer into unit per unit "
@@ -1072,7 +1121,7 @@ argument)."""))
         # Element balances
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
-                         self.config.property_package.element_list,
+                         e_index,
                          doc="Elemental material balances")
         def element_balances(b, t, x, e):
             if ((b.config.transformation_scheme != "FORWARD" and
