@@ -1380,6 +1380,12 @@ objects linked the mixed state and all outlet states,
         # Initialize outlet StateBlocks
         outlet_list = blk.create_outlet_list()
 
+        # Premises for initializing outlet states:
+        # 1. Intensive states remain unchanged - this is either a valid premise
+        # or the actual state is impossible to calcuate without solving the
+        # full separator model.
+        # 2. Extensive states are use split fractions if index matches, or
+        # average of split fractions for outlet otherwsie
         for o in outlet_list:
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o + "_state")
@@ -1394,6 +1400,10 @@ objects linked the mixed state and all outlet states,
                     for k in s_vars[v]:
                         # Record whether variable was fixed or not
                         o_flags[t, v, k] = s_vars[v][k].fixed
+
+                        avg_split = value(sum(blk.split_fraction[t, o, ...]) /
+                                          len(blk.split_fraction[t, o, ...].keys()))
+                        print(avg_split)
 
                         # If fixed, use current value
                         # otherwise calculate guess from mixed state and fix
