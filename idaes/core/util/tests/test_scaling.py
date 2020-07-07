@@ -24,7 +24,8 @@ from idaes.core.util.scaling import (
     grad_fd,
     constraint_fd_autoscale,
     scale_single_constraint,
-    scale_constraints
+    scale_constraints,
+    constraint_autoscale_large_jac,
 )
 
 __author__ = "John Eslick, Tim Bartholomew"
@@ -331,6 +332,185 @@ class TestScaleSingleConstraint():
         model2.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         scale_single_constraint(model2.c)
         assert model2.c.upper.value == pytest.approx(1e3)
+
+
+class TestScaleConstraintsPynumero():
+    def model(self):
+        m = pyo.ConcreteModel()
+        x = m.x = pyo.Var(initialize=1e3)
+        y = m.y = pyo.Var(initialize=1e6)
+        z = m.z = pyo.Var(initialize=1e4)
+        m.c1 = pyo.Constraint(expr=0 == -x * y + z)
+        m.c2 = pyo.Constraint(expr=0 == 3*x + 4*y + 2*z)
+        m.c3 = pyo.Constraint(expr=0 <= z**3)
+        return m
+
+    @pytest.mark.unit
+    def test_jacobian(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac[c1_row, x_col] == pytest.approx(-1e6)
+        assert jac[c1_row, y_col] == pytest.approx(-1e3)
+        assert jac[c1_row, z_col] == pytest.approx(1)
+
+        assert jac[c2_row, x_col] == pytest.approx(3)
+        assert jac[c2_row, y_col] == pytest.approx(4)
+        assert jac[c2_row, z_col] == pytest.approx(2)
+
+        assert jac[c3_row, z_col] == pytest.approx(3e8)
+
+        # Make sure scaling factors don't affect the result
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.c1] = 1e-6
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+        assert jac[c1_row, x_col] == pytest.approx(-1e6)
+        # Check the scaled jacobian calculation
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(0.01)
+
+    @pytest.mark.unit
+    def test_scale_no_var_scale(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(m)
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-4)
+        assert m.scaling_factor[m.c1] == pytest.approx(1e-4)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(3)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(4)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(2)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
+
+    @pytest.mark.unit
+    def test_scale_with_var_scale(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(m)
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-1000)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-2)
+        assert m.scaling_factor[m.c1] == pytest.approx(1e-6)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(0.075)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(100)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(0.5)
+        assert m.scaling_factor[m.c2] == pytest.approx(2.5e-5)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e6)
+        assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
+
+
+    @pytest.mark.unit
+    def test_scale_with_ignore_var_scale(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(
+            m, ignore_variable_scaling=True)
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-4)
+        assert m.scaling_factor[m.c1] == pytest.approx(1e-4)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(3)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(4)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(2)
+        assert m.scaling_factor[m.c2] == pytest.approx(1)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
+        assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
+
+    @pytest.mark.unit
+    def test_scale_with_ignore_var_scale_constraint_scale(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.c1] = 1e-6
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+
+        jac, jac_scaled, nlp = constraint_autoscale_large_jac(
+            m, ignore_variable_scaling=True)
+
+        c1_row = nlp._condata_to_idx[m.c1]
+        c2_row = nlp._condata_to_idx[m.c2]
+        c3_row = nlp._condata_to_idx[m.c3]
+        x_col = nlp._vardata_to_idx[m.x]
+        y_col = nlp._vardata_to_idx[m.y]
+        z_col = nlp._vardata_to_idx[m.z]
+
+        assert jac_scaled[c1_row, x_col] == pytest.approx(-1)
+        assert jac_scaled[c1_row, y_col] == pytest.approx(-1e-3)
+        assert jac_scaled[c1_row, z_col] == pytest.approx(1e-6)
+        assert m.scaling_factor[m.c1] == pytest.approx(1e-6)
+
+        assert jac_scaled[c2_row, x_col] == pytest.approx(3)
+        assert jac_scaled[c2_row, y_col] == pytest.approx(4)
+        assert jac_scaled[c2_row, z_col] == pytest.approx(2)
+        assert m.scaling_factor[m.c2] == pytest.approx(1)
+
+        assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
+        assert m.scaling_factor[m.c1] == pytest.approx(1e-6)
 
 
 class TestScaleConstraints():

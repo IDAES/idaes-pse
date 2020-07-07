@@ -29,6 +29,7 @@ import enum
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.core.base.constraint import _ConstraintData
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -161,9 +162,7 @@ def _calculate_scale_factors_from_nominal(m):
                 direction=pyo.Suffix.EXPORT)
 
         # Add scaling factor from nominal value of variables or expressions
-        c.parent_block().scaling_factor[c] = 1 / c.parent_block().nominal_value[
-            c]
-
+        c.parent_block().scaling_factor[c] = 1 / c.parent_block().nominal_value[c]
 
 def _calculate_scale_factors_from_expr(m, replacement, cls):
     """PRIVATE FUNCTION
@@ -287,6 +286,38 @@ def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
             yield v, sv
 
 
+def set_scaling_factor(c, v):
+    """Set a scaling factor for a model component.  This function creates the
+    scaling_factor suffix if needed.
+
+    Args:
+        c: component to supply scaling factor for
+        v: scaling factor
+    Returns:
+        None
+    """
+    try:
+        c.parent_block().scaling_factor[c] = v
+    except AttributeError:
+        c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        c.parent_block().scaling_factor[c] = v
+
+
+def get_scaling_factor(c):
+    try:
+        sf = c.parent_block().scaling_factor.get(c, 1)
+    except AttributeError:
+        sf = 1
+    return sf
+
+
+def has_scaling_factor(c):
+    try:
+        sf = c.parent_block().scaling_factor.get(c, False)
+    except AttributeError:
+        sf = False
+    return sf
+
 def grad_fd(c, scaled=False, h=1e-6):
     """Finite difference the gradient for a constraint, objective or named
     expression.  This is only for use in examining scaling.  For faster more
@@ -313,10 +344,7 @@ def grad_fd(c, scaled=False, h=1e-6):
     if scaled:  # If you want the scaled grad put in variable scaling transform
         orig = [pyo.value(v) for v in vars]
         for i, v in enumerate(vars):
-            try:
-                sf = v.parent_block().scaling_factor.get(v, 1)
-            except AttributeError:
-                sf = 1
+            sf = get_scaling_factor(v)
             r[id(v)] = v / sf
             v.value = orig[i] * sf
         vis = EXPR.ExpressionReplacementVisitor(
@@ -469,20 +497,69 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
     else:
         c.parent_block().scaling_factor[c] = s0
 
-
-def set_scaling_factor(c, v):
-    """Set a scaling factor for a model component.  This function creates the
-    scaling_factor suffix if needed.
+def constraint_autoscale_large_jac(
+    m,
+    ignore_constraint_scaling=False,
+    ignore_variable_scaling=False,
+    max_grad=100,
+    min_scale=1e-6,
+    no_scale = False
+):
+    """Automatically scale constraints based on the Jacobian.  This function
+    immitates Ipopt's default constraint scaling.  This scales constraints down
+    to avoid extreemly large values in the Jacobian
 
     Args:
-        c: component to supply scaling factor for
-        v: scaling factor
-    Returns:
-        None
+        m: model to scale
+        ignore_constraint_scaling: ignore existing constraint scaling
+        ignore_variable_scaling: ignore existing variable scaling
+        max_grad: maximum value in Jacobian after scaling, subject to minimum
+            scaling factor restriction.
+        min_scale: minimum scaling factor allowed, keeps constraints from being
+            scaled too much.
+        no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
+            anything
     """
-    try:
-        c.parent_block().scaling_factor[c] = v
-    except AttributeError:
-        c.parent_block().scaling_factor = pyo.Suffix(
-            direction=pyo.Suffix.EXPORT)
-        c.parent_block().scaling_factor[c] = v
+    # Pynumero requires an objective, but I don't, so let's see if we have one
+    n_obj = 0
+    for o in m.component_data_objects(pyo.Objective):
+        n_obj += n_obj
+    # Add an objective if there isn't one
+    if n_obj == 0:
+        m.carzy_dummy_objective_93245003 = pyo.Objective(expr=0)
+    # Create NLP and calculate the objective
+    nlp = PyomoNLP(m)
+    jac = nlp.evaluate_jacobian().tocsr()
+    # Get lists of varibles and constraints to translate Jacobian indexes
+    clist = nlp.get_pyomo_constraints()
+    vlist = nlp.get_pyomo_variables()
+    # Create a scaled Jacobian to account for variable scaling, for now ignore
+    # constraint scaling
+    jac_scaled = jac.copy()
+    for i in range(len(clist)):
+        for j in jac_scaled[i].indices:
+            v = vlist[j]
+            if ignore_variable_scaling:
+                sv = 1
+            else:
+                sv = get_scaling_factor(v)
+            jac_scaled[i,j] = jac_scaled[i,j]/sv
+    # calculate constraint scale factors
+    for i in range(len(clist)):
+        c = clist[i]
+        sc = get_scaling_factor(c)
+        if (ignore_constraint_scaling or not has_scaling_factor(c)) and not no_scale:
+            row = jac_scaled[i]
+            for d in row.indices:
+                row[0,d] = abs(row[0,d])
+            mg = row.max()
+            if mg > max_grad:
+                sc = max(min_scale, max_grad/mg)
+            set_scaling_factor(c, sc)
+        for j in jac_scaled[i].indices:
+            # update the scaled jacobian
+            jac_scaled[i,j] = jac_scaled[i,j]*sc
+    # delete dummy objective
+    if n_obj == 0:
+        del m.carzy_dummy_objective_93245003
+    return jac, jac_scaled, nlp
