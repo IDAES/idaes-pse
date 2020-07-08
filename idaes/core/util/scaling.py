@@ -30,7 +30,9 @@ import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.common.modeling import unique_component_name
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Tim Bartholomew"
@@ -514,12 +516,11 @@ def constraint_autoscale_large_jac(
             anything
     """
     # Pynumero requires an objective, but I don't, so let's see if we have one
-    n_obj = 0
-    for o in m.component_data_objects(pyo.Objective):
-        n_obj += n_obj
+    n_obj = number_activated_objectives(m)
     # Add an objective if there isn't one
     if n_obj == 0:
-        m.carzy_dummy_objective_93245003 = pyo.Objective(expr=0)
+        dummy_objective_name = unique_component_name(m, "objective")
+        setattr(m, dummy_objective_name, pyo.Objective(expr=0))
     # Create NLP and calculate the objective
     nlp = PyomoNLP(m)
     jac = nlp.evaluate_jacobian().tocsr()
@@ -555,5 +556,5 @@ def constraint_autoscale_large_jac(
             jac_scaled[i,j] = jac_scaled[i,j]*sc
     # delete dummy objective
     if n_obj == 0:
-        del m.carzy_dummy_objective_93245003
+        delattr(m, dummy_objective_name)
     return jac, jac_scaled, nlp

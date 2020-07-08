@@ -17,6 +17,7 @@ This module contains tests for scaling.
 import pytest
 import pyomo.environ as pyo
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import number_activated_objectives
 from idaes.core.util.scaling import (
     ScalingBasis,
     calculate_scaling_factors,
@@ -351,7 +352,9 @@ class TestScaleConstraintsPynumero():
         mostly to ensure we understand the interface and catch if things change.
         """
         m = self.model()
+        assert number_activated_objectives(m) == 0
         jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+        assert number_activated_objectives(m) == 0
 
         c1_row = nlp._condata_to_idx[m.c1]
         c2_row = nlp._condata_to_idx[m.c2]
