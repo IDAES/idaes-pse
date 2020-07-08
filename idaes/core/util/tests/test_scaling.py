@@ -138,6 +138,19 @@ class TestScaleConstraintsPynumero():
         return m
 
     @pytest.mark.unit
+    def test_set_get_unset(self):
+        """Make sure the Jacobian from Pynumero matches expectation.  This is
+        mostly to ensure we understand the interface and catch if things change.
+        """
+        m = self.model()
+        assert sc.get_scaling_factor(m.x) is None
+        assert sc.get_scaling_factor(m.x, default=1) == 1
+        sc.set_scaling_factor(m.x, 1e-4)
+        assert sc.get_scaling_factor(m.x) == 1e-4
+        sc.unset_scaling_factor(m.x)
+        assert sc.get_scaling_factor(m.x) is None
+
+    @pytest.mark.unit
     def test_jacobian(self):
         """Make sure the Jacobian from Pynumero matches expectation.  This is
         mostly to ensure we understand the interface and catch if things change.
@@ -165,11 +178,10 @@ class TestScaleConstraintsPynumero():
         assert jac[c3_row, z_col] == pytest.approx(3e8)
 
         # Make sure scaling factors don't affect the result
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.c1] = 1e-6
-        m.scaling_factor[m.x] = 1e-3
-        m.scaling_factor[m.y] = 1e-6
-        m.scaling_factor[m.z] = 1e-4
+        sc.set_scaling_factor(m.c1, 1e-6)
+        sc.set_scaling_factor(m.x, 1e-3)
+        sc.set_scaling_factor(m.y, 1e-6)
+        sc.set_scaling_factor(m.z, 1e-4)
         jac, jac_scaled, nlp = sc.constraint_autoscale_large_jac(m, no_scale=True)
         assert jac[c1_row, x_col] == pytest.approx(-1e6)
         # Check the scaled jacobian calculation
