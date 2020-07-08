@@ -539,9 +539,9 @@ def constraint_autoscale_large_jac(
             jac_scaled[i,j] = jac_scaled[i,j]/sv
     # calculate constraint scale factors
     for i in range(len(clist)):
+        c = clist[i]
         sc = get_scaling_factor(c, default=1)
         if not no_scale:
-        c = clist[i]
             if (ignore_constraint_scaling or get_scaling_factor(c) is None):
                 row = jac_scaled[i]
                 for d in row.indices:
