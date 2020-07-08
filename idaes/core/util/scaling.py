@@ -303,20 +303,13 @@ def set_scaling_factor(c, v):
         c.parent_block().scaling_factor[c] = v
 
 
-def get_scaling_factor(c):
+def get_scaling_factor(c, default=None):
     try:
-        sf = c.parent_block().scaling_factor.get(c, 1)
+        sf = c.parent_block().scaling_factor.get(c, default)
     except AttributeError:
-        sf = 1
+        sf = default
     return sf
 
-
-def has_scaling_factor(c):
-    try:
-        sf = c.parent_block().scaling_factor.get(c, False)
-    except AttributeError:
-        sf = False
-    return sf
 
 def grad_fd(c, scaled=False, h=1e-6):
     """Finite difference the gradient for a constraint, objective or named
@@ -344,7 +337,7 @@ def grad_fd(c, scaled=False, h=1e-6):
     if scaled:  # If you want the scaled grad put in variable scaling transform
         orig = [pyo.value(v) for v in vars]
         for i, v in enumerate(vars):
-            sf = get_scaling_factor(v)
+            sf = get_scaling_factor(v, default=1)
             r[id(v)] = v / sf
             v.value = orig[i] * sf
         vis = EXPR.ExpressionReplacementVisitor(
@@ -507,7 +500,7 @@ def constraint_autoscale_large_jac(
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     immitates Ipopt's default constraint scaling.  This scales constraints down
-    to avoid extreemly large values in the Jacobian
+    to avoid extremely large values in the Jacobian
 
     Args:
         m: model to scale
@@ -542,20 +535,21 @@ def constraint_autoscale_large_jac(
             if ignore_variable_scaling:
                 sv = 1
             else:
-                sv = get_scaling_factor(v)
+                sv = get_scaling_factor(v, default=1)
             jac_scaled[i,j] = jac_scaled[i,j]/sv
     # calculate constraint scale factors
     for i in range(len(clist)):
+        sc = get_scaling_factor(c, default=1)
+        if not no_scale:
         c = clist[i]
-        sc = get_scaling_factor(c)
-        if (ignore_constraint_scaling or not has_scaling_factor(c)) and not no_scale:
-            row = jac_scaled[i]
-            for d in row.indices:
-                row[0,d] = abs(row[0,d])
-            mg = row.max()
-            if mg > max_grad:
-                sc = max(min_scale, max_grad/mg)
-            set_scaling_factor(c, sc)
+            if (ignore_constraint_scaling or get_scaling_factor(c) is None):
+                row = jac_scaled[i]
+                for d in row.indices:
+                    row[0,d] = abs(row[0,d])
+                mg = row.max()
+                if mg > max_grad:
+                    sc = max(min_scale, max_grad/mg)
+                set_scaling_factor(c, sc)
         for j in jac_scaled[i].indices:
             # update the scaled jacobian
             jac_scaled[i,j] = jac_scaled[i,j]*sc
