@@ -1385,7 +1385,8 @@ objects linked the mixed state and all outlet states,
         # or the actual state is impossible to calcuate without solving the
         # full separator model.
         # 2. Extensive states are use split fractions if index matches, or
-        # average of split fractions for outlet otherwsie
+        # average of split fractions for outlet otherwise
+        props = blk.config.property_package
         for o in outlet_list:
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o + "_state")
@@ -1401,10 +1402,6 @@ objects linked the mixed state and all outlet states,
                         # Record whether variable was fixed or not
                         o_flags[t, v, k] = s_vars[v][k].fixed
 
-                        avg_split = value(sum(blk.split_fraction[t, o, ...]) /
-                                          len(blk.split_fraction[t, o, ...].keys()))
-                        print(avg_split)
-
                         # If fixed, use current value
                         # otherwise calculate guess from mixed state and fix
                         if not s_vars[v][k].fixed:
@@ -1412,36 +1409,131 @@ objects linked the mixed state and all outlet states,
                             if "flow" in v:
                                 # If a "flow" variable, is extensive
                                 # Apply split fraction
-                                try:
-                                    if (
-                                        k is None
-                                        or blk.config.split_basis
-                                        == SplittingType.totalFlow
-                                    ):
+                                if (blk.config.split_basis
+                                        == SplittingType.totalFlow):
+                                    # All flows split by outlet
+                                    s_vars[v][k].fix(
+                                        value(m_var[k] *
+                                              blk.split_fraction[(t, o)]))
+                                elif "_phase_comp" in v:
+                                    # Need to match indices, but use split frac
+                                    if (blk.config.split_basis
+                                            == SplittingType.phaseComponentFlow):
                                         s_vars[v][k].fix(
                                             value(m_var[k] *
-                                                  blk.split_fraction[(t, o)])
-                                        )
+                                            blk.split_fraction[(t, o)+k]))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.phaseFlow):
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)+k[0]]))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.componentFlow):
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)+k[1]]))
                                     else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers."
+                                            .format(blk.name))
+                                elif "_phase" in v:
+                                    if (blk.config.split_basis
+                                            == SplittingType.phaseComponentFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, k, j]
+                                            for j in props.component_list) /
+                                            len(props.component_list))
                                         s_vars[v][k].fix(
-                                            value(
-                                                m_var[k] *
-                                                blk.split_fraction[(t, o) + k]
-                                            )
-                                        )
-                                except KeyError:
-                                    raise KeyError(
-                                        "{} state variable and split fraction "
-                                        "indexing sets do not match. The "
-                                        "in-built  initialization routine for "
-                                        "Separators relies on the split "
-                                        "fraction and state variable indexing "
-                                        "sets matching to calculate initial "
-                                        "guesses for extensive variables. In "
-                                        "other cases users will need to "
-                                        "provide their own initial guesses"
-                                        .format(blk.name)
-                                    )
+                                            value(m_var[k] * avg_split))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.phaseFlow):
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)+k]))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.componentFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, j]
+                                            for j in props.component_list) /
+                                            len(props.component_list))
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] * avg_split))
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers."
+                                            .format(blk.name))
+                                elif "_comp" in v:
+                                    if (blk.config.split_basis
+                                            == SplittingType.phaseComponentFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, p, k]
+                                            for p in props.phase_list) /
+                                            len(props.phase_list))
+                                        s_vars[v][k].fix(
+                                            value(m_var[k] * avg_split))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.phaseFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, p]
+                                            for p in props.phase_list) /
+                                            len(props.phase_list))
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] * avg_split))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.componentFlow):
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)+k]))
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers."
+                                            .format(blk.name))
+                                else:
+                                    # Assume unindexed extensive state
+                                    # Need average split
+                                    if (blk.config.split_basis
+                                            == SplittingType.phaseComponentFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, p, j]
+                                            for (p, j) in props._phase_component_set) /
+                                            len(props._phase_component_set))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.phaseFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, p]
+                                            for p in props.phase_list) /
+                                            len(props.phase_list))
+                                    elif (blk.config.split_basis
+                                            == SplittingType.componentFlow):
+                                        # Need average split fraction
+                                        avg_split = value(sum(
+                                            blk.split_fraction[t, o, j]
+                                            for j in props.component_list) /
+                                            len(props.component_list))
+                                    else:
+                                        raise BurntToast(
+                                            "{} encountered unrecognised "
+                                            "SplittingType. This should not "
+                                            "occur - please send this bug to "
+                                            "the IDAES developers."
+                                            .format(blk.name))
+                                    s_vars[v][k].fix(value(
+                                            m_var[k] * avg_split))
                             else:
                                 # Otherwise intensive, equate to mixed stream
                                 s_vars[v][k].fix(m_var[k].value)
