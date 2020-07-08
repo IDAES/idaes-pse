@@ -11,7 +11,7 @@ After installing and testing IDAES, it is strongly recommended to do the IDAES t
 located on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/tutorials/index.html>`_.
 
 If you expect to develop custom models, we recommend following the
-:ref:`advanced user installation<advanced_user_guide/advanced_install:Advanced User Installation>`.
+:ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
 
 The OS specific instructions provide information about optionally installing
 Miniconda. If you already have a Python installation you prefer, you can skip

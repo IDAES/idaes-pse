@@ -5,6 +5,7 @@ from idaes.power_generation.unit_models.helm import HelmSplitter
 from idaes.generic_models.properties import iapws95
 
 
+@pytest.mark.component
 def test_splitter():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})

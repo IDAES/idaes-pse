@@ -110,7 +110,7 @@ def _have_sphinx():
     return have_sphinx
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_doctests(docs_path):
     if _have_sphinx():
         build_path = os.path.join(docs_path, "build")

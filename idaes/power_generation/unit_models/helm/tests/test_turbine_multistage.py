@@ -35,6 +35,8 @@ if pyo.SolverFactory('ipopt').available():
 else:
     solver = None
 
+
+@pytest.mark.unit
 def build_turbine_for_run_test():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -60,7 +62,7 @@ def build_turbine_for_run_test():
     return m
 
 
-@pytest.mark.slow
+@pytest.mark.component
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
@@ -138,7 +140,7 @@ def test_initialize():
     return m
 
 
-@pytest.mark.slow
+@pytest.mark.component
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_calc_cf():
