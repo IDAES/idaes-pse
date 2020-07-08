@@ -51,7 +51,157 @@ class ScalingBasis(enum.Enum):
     Mid = 6  # use the bound mid-point
 
 
-def _replacement(m, basis):
+def set_scaling_factor(c, v):
+    """Set a scaling factor for a model component. This function creates the
+    scaling_factor suffix if needed.
+
+    Args:
+        c: component to supply scaling factor for
+        v: scaling factor
+    Returns:
+        None
+    """
+    try:
+        c.parent_block().scaling_factor[c] = v
+    except AttributeError:
+        c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        c.parent_block().scaling_factor[c] = v
+
+
+def get_scaling_factor(c, default=None):
+    """Get a component scale factor.
+
+    Args:
+        c: compoent
+        default: value to return if no scale factor exists (default=None)
+    """
+    try:
+        sf = c.parent_block().scaling_factor.get(c, default)
+    except AttributeError:
+        sf = default
+    return sf
+
+
+def unset_scaling_factor(c):
+    """Delete a component scaling factor.
+
+    Args:
+        c: component
+
+    Returns:
+        None
+    """
+    try:
+        del c.parent_block().scaling_factor[c]
+    except AttributeError:
+        pass # no scaling factor suffix, is fine
+    except KeyError:
+        pass # no scaling factor is fine
+
+
+def set_nominal_value(c, v):
+    """Set a nominal value for a model component. This function creates the
+    nominal_value suffix if needed.
+
+    Args:
+        c: component to supply a nominal value for
+        v: nominal value
+    Returns:
+        None
+    """
+    try:
+        c.parent_block().nominal_value[c] = v
+    except AttributeError:
+        c.parent_block().nominal_value = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        c.parent_block().nominal_value[c] = v
+
+
+def get_nominal_value(c, default=None):
+    """Get a compoent nominal value.
+
+    Args:
+        c: component
+        default: value to return if no nominal value exists (default=None)
+
+    Returns:
+        scale factor
+    """
+    try:
+        sf = c.parent_block().nominal_value.get(c, default)
+    except AttributeError:
+        sf = default
+    return sf
+
+
+def unset_nominal_value(c):
+    """Delete a component nominal value.
+
+    Args:
+        c: component
+
+    Returns:
+        None
+    """
+    try:
+        del c.parent_block().nominal_value[c]
+    except AttributeError:
+        pass # no nominal value suffix, is fine
+    except KeyError:
+        pass # no nominal value, is fine
+
+
+def set_scaling_expression(c, expr):
+    """Set a scaling factor for a model component.  This function creates the
+    scaling_factor suffix if needed.
+
+    Args:
+        c: component to supply scaling factor for
+        expr: scaling expression
+    Returns:
+        None
+    """
+    try:
+        c.parent_block().scaling_expression[c] = expr
+    except AttributeError:
+        c.parent_block().scaling_expression = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        c.parent_block().scaling_expression[c] = expr
+
+
+def get_scaling_expression(c, default=None):
+    """Get a component scaling expression.
+
+    Args:
+        c: component
+        default: value to return if no nominal value exists (default=None)
+
+    Returns:
+        scaling expression
+    """
+    try:
+        sf = c.parent_block().scaling_expression.get(c, default)
+    except AttributeError:
+        sf = default
+    return sf
+
+
+def unset_scaling_expression(c):
+    """Delete a component scaling expression.
+
+    Args:
+        c: component
+
+    Returns:
+        None
+    """
+    try:
+        del c.parent_block().scaling_expression[c]
+    except AttributeError:
+        pass # no scaling factor suffix, is fine
+    except KeyError:
+        pass # no scaling factor is fine
+
+
+def __replacement(m, basis):
     """PRIVATE FUNCTION
     Create a replacement visitor. The replacement visitor is used on
     user-provided scaling expressions. These expressions are written
@@ -138,7 +288,7 @@ def _replacement(m, basis):
         return EXPR.ExpressionReplacementVisitor(substitute=rdict)
 
 
-def _calculate_scale_factors_from_nominal(m):
+def __scale_factors_from_nominal(m):
     """PRIVATE FUNCTION
     For variables and expressions, if a nominal value is provided calculate the
     scaling factor.
@@ -149,24 +299,14 @@ def _calculate_scale_factors_from_nominal(m):
     Returns:
         None
     """
+    components = (pyo.Var, pyo.Expression, pyo.Objective, pyo.Constraint)
+    for c in m.component_data_objects(components):
+        v = get_nominal_value(c)
+        if v is not None:
+            set_scaling_factor(c, 1 / v)
 
-    for c in m.component_data_objects((pyo.Var, pyo.Expression, pyo.Objective)):
-        # Check for a scaling expression.  If there is one, use it to calculate
-        # a scaling factor otherwise use autoscaling.
-        if not hasattr(c.parent_block(), "nominal_value"):
-            continue  # no scaling expression supplied
-        elif c not in c.parent_block().nominal_value:
-            continue  # no scaling expression supplied
 
-        if not hasattr(c.parent_block(), "scaling_factor"):
-            # if there is no scaling_factor Suffix yet make one
-            c.parent_block().scaling_factor = pyo.Suffix(
-                direction=pyo.Suffix.EXPORT)
-
-        # Add scaling factor from nominal value of variables or expressions
-        c.parent_block().scaling_factor[c] = 1 / c.parent_block().nominal_value[c]
-
-def _calculate_scale_factors_from_expr(m, replacement, cls):
+def __scale_factors_from_expr(m, replacement, cls):
     """PRIVATE FUNCTION
     Take the expressions from the scaling_expression suffix and use them to
     calculate scaling factors for the scaling_factor suffix that is used by
@@ -183,31 +323,16 @@ def _calculate_scale_factors_from_expr(m, replacement, cls):
     Returns:
         None
     """
-
     # Calculate scaling factors for each constraint
     for c in m.component_data_objects(cls):
-        # Check for a scaling expression.  If there is one, use it to calculate
-        # a scaling factor otherwise use autoscaling.
-        if not hasattr(c.parent_block(), "scaling_expression"):
-            continue  # no scaling expression supplied
-        elif c not in c.parent_block().scaling_expression:
-            continue  # no scaling expression supplied
-
-        if not hasattr(c.parent_block(), "scaling_factor"):
-            # if there is no scaling_factor Suffix yet make one
-            c.parent_block().scaling_factor = pyo.Suffix(
-                direction=pyo.Suffix.EXPORT)
-
+        expr = get_scaling_expression(c)
+        if expr is None:
+            continue
         # Take scaling expression provided by modeler and put in basis values
-        if replacement is None:
-            expr = c.parent_block().scaling_expression[c]
-        else:
-            expr = replacement.dfs_postorder_stack(
-                c.parent_block().scaling_expression[c]
-            )
-
+        if replacement is not None:
+            expr = replacement.dfs_postorder_stack(expr)
         # Add constraint scaling factor by evaluating provided scale expr
-        c.parent_block().scaling_factor[c] = pyo.value(expr)
+        set_scaling_factor(c, pyo.value(expr))
 
 
 def calculate_scaling_factors(
@@ -241,20 +366,19 @@ def calculate_scaling_factors(
     # a replacement visitor to swap variable values for basis values
     if isinstance(basis, ScalingBasis):
         basis = (basis,)
-    replacement = _replacement(m, basis)
+    replacement = __replacement(m, basis)
 
     # If nominal values are supplied for Vars or named Expressions, use them
     # to set scaling factors
-    _calculate_scale_factors_from_nominal(m)
+    __scale_factors_from_nominal(m)
 
-    # First calculate variable scale factors, where expressions were provided
-    _calculate_scale_factors_from_expr(m, replacement=replacement, cls=pyo.Var)
-    # Then constraints
-    _calculate_scale_factors_from_expr(m, replacement=replacement,
-                                       cls=pyo.Constraint)
-    # Then objective
-    _calculate_scale_factors_from_expr(m, replacement=replacement,
-                                       cls=pyo.Objective)
+    # Calculate scaling factors from expressions. Variables first so the
+    # valiable scaling factors can be used in the constraint and objective
+    # expressions
+    __scale_factors_from_expr(m, replacement=replacement, cls=pyo.Var)
+    __scale_factors_from_expr(m, replacement=replacement, cls=pyo.Expression)
+    __scale_factors_from_expr(m, replacement=replacement, cls=pyo.Constraint)
+    __scale_factors_from_expr(m, replacement=replacement, cls=pyo.Objective)
 
 
 def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
@@ -275,10 +399,7 @@ def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
     for v in blk.component_data_objects(pyo.Var):
         if v.fixed:
             continue
-        try:
-            sf = v.parent_block().scaling_factor.get(v, 1)
-        except AttributeError:  # no scaling factor suffix
-            sf = 1
+        sf = get_scaling_factor(v, default=1)
         sv = abs(pyo.value(v) * sf)  # scaled value
         if sv > large:
             yield v, sv
@@ -288,33 +409,8 @@ def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
             yield v, sv
 
 
-def set_scaling_factor(c, v):
-    """Set a scaling factor for a model component.  This function creates the
-    scaling_factor suffix if needed.
-
-    Args:
-        c: component to supply scaling factor for
-        v: scaling factor
-    Returns:
-        None
-    """
-    try:
-        c.parent_block().scaling_factor[c] = v
-    except AttributeError:
-        c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        c.parent_block().scaling_factor[c] = v
-
-
-def get_scaling_factor(c, default=None):
-    try:
-        sf = c.parent_block().scaling_factor.get(c, default)
-    except AttributeError:
-        sf = default
-    return sf
-
-
 def grad_fd(c, scaled=False, h=1e-6):
-    """Finite difference the gradient for a constraint, objective or named
+    """Finite difference the gradient for a constraint, objective, or named
     expression.  This is only for use in examining scaling.  For faster more
     accurate gradients refer to pynumero.
 
@@ -331,43 +427,21 @@ def grad_fd(c, scaled=False, h=1e-6):
         ex = c.body
     except AttributeError:
         ex = c.expr
-
     vars = list(EXPR.identify_variables(ex))
     grad = [None] * len(vars)
 
-    r = {}
-    if scaled:  # If you want the scaled grad put in variable scaling transform
-        orig = [pyo.value(v) for v in vars]
-        for i, v in enumerate(vars):
-            sf = get_scaling_factor(v, default=1)
-            r[id(v)] = v / sf
-            v.value = orig[i] * sf
-        vis = EXPR.ExpressionReplacementVisitor(
-            substitute=r,
-            remove_named_expressions=True,
-        )
-        e = vis.dfs_postorder_stack(ex)
-    else:
-        e = ex
-
     for i, v in enumerate(vars):
         ov = pyo.value(v)  # original variable value
-        f1 = pyo.value(e)
+        f1 = pyo.value(ex)
         v.value = ov + h
-        f2 = pyo.value(e)
+        f2 = pyo.value(ex)
         v.value = ov
         if scaled:
-            try:
-                sf = c.parent_block().scaling_factor.get(c, 1)
-            except AttributeError:
-                sf = 1
-            grad[i] = sf * (f2 - f1) / h
+            csf = get_scaling_factor(c, default=1)
+            vsf = get_scaling_factor(v, default=1)
+            grad[i] = csf * (f2 - f1) / h / vsf
         else:
             grad[i] = (f2 - f1) / h
-
-    if scaled:
-        for i, v in enumerate(vars):
-            v.value = orig[i]
 
     return grad, vars
 
