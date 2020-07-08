@@ -51,6 +51,13 @@ class ScalingBasis(enum.Enum):
     Mid = 6  # use the bound mid-point
 
 
+def __none_mult(x, y):
+    """PRIVATE FUNCTION, Multiply x by y and if x is None return None"""
+    if x is not None:
+        x *= y
+    return x
+
+
 def set_scaling_factor(c, v):
     """Set a scaling factor for a model component. This function creates the
     scaling_factor suffix if needed.
@@ -442,14 +449,15 @@ def grad_fd(c, scaled=False, h=1e-6):
             grad[i] = csf * (f2 - f1) / h / vsf
         else:
             grad[i] = (f2 - f1) / h
-
     return grad, vars
 
 
 def scale_single_constraint(c):
     """This transforms a constraint with its scaling factor. If there is no
     scaling factor for the constraint, the constraint is not scaled and a
-    message is logged.
+    message is logged. After transforming the constraint the scaling factor,
+    scaling expression, and nomical value are all unset to ensure the constraint
+    isn't scaled twice.
 
     Args:
         c: Pyomo constraint
@@ -462,37 +470,16 @@ def scale_single_constraint(c):
             "{} is not a constraint and cannot be the input to "
             "scale_single_constraint".format(c.name))
 
-    try:
-        v = c.parent_block().scaling_factor[c]
-    except AttributeError:
-        raise ConfigurationError(
-            "There is no scaling factor suffix for the {} block, so the {} "
-            "constraint cannot be scaled.".format(c.parent_block().name,
-                                                  c.name))
-    except KeyError:
-        v = None
-        _log.info('{} constraint has no scaling factor and was not scaled. It '
-                  'is recommended to provide a scaling factor for all '
-                  'constraints and variables, even if it is well scaled '
-                  '(i.e. scaling factor = 1).'
-                  .format(c.name))
-
-    if v is not None:
-        lst = []
-        for prop in ['lower', 'body', 'upper']:
-            c_prop = getattr(c, prop)
-            if c_prop is not None:
-                c_prop = c_prop * v
-            lst.append(c_prop)
-        c.set_value(tuple(lst))  # set the scaled lower, body, and upper
-        c.parent_block().scaling_factor[c] = 1  # set scaling factor to 1
-        if hasattr(c.parent_block(), 'scaling_expression'):
-            try:
-                # set expression to 1
-                c.parent_block().scaling_expression[c] = 1
-            except KeyError:
-                # no expression to set to 1
-                pass
+    v = get_scaling_factor(c)
+    if v is None:
+        _log.warning(
+            f"{c.name} constraint has no scaling factor, so it was not scaled.")
+        return
+    c.set_value(
+        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
+    unset_scaling_factor(c)
+    unset_scaling_expression(c)
+    unset_nominal_value(c)
 
 
 def _scale_block_constraints(b):
@@ -506,12 +493,7 @@ def _scale_block_constraints(b):
     Returns:
         None
     """
-    if not hasattr(b, 'scaling_factor'):
-        raise ConfigurationError(
-            "There is no scaling factor suffix for the {} block, so its "
-            "constraints cannot be scaled.".format(b.name))
-
-    for c in b.component_objects(pyo.Constraint, descend_into=False):
+    for c in b.component_data_objects(pyo.Constraint, descend_into=False):
         scale_single_constraint(c)
 
 
@@ -530,7 +512,7 @@ def scale_constraints(blk, descend_into=True):
     """
     _scale_block_constraints(blk)
     if descend_into:
-        for b in blk.component_objects(pyo.Block, descend_into=True):
+        for b in blk.component_data_objects(pyo.Block, descend_into=True):
             _scale_block_constraints(b)
 
 
@@ -553,18 +535,12 @@ def constraint_fd_autoscale(c, min_scale=1e-6, max_grad=100):
         None
     """
     g, v = grad_fd(c, scaled=True)
-    if not hasattr(c.parent_block(), "scaling_factor"):
-        c.parent_block().scaling_factor = pyo.Suffix(
-            direction=pyo.Suffix.EXPORT)
-    s0 = c.parent_block().scaling_factor.get(c, 1)
+    s0 = get_scaling_factor(c, default=1)
     maxg = max(map(abs, g))
-    ming = min(map(abs, g))
     if maxg > max_grad:
-        c.parent_block().scaling_factor[c] = s0 * max_grad / maxg
-        if c.parent_block().scaling_factor[c] < min_scale:
-            c.parent_block().scaling_factor[c] = min_scale
-    else:
-        c.parent_block().scaling_factor[c] = s0
+        sf = max(s0 * max_grad / maxg, min_scale)
+        set_scaling_factor(c, sf)
+
 
 def constraint_autoscale_large_jac(
     m,

@@ -313,8 +313,8 @@ class TestScaleSingleConstraint():
         model.scaling_expression[model.c4] = 1 / model.x
         scale_single_constraint(model.c4)
         assert model.c4.upper.value == pytest.approx(1)
-        assert model.scaling_factor[model.c4] == pytest.approx(1)
-        assert model.scaling_expression[model.c4] == pytest.approx(1)
+        assert model.c4 not in model.scaling_factor
+        assert model.c4 not in model.scaling_expression
 
     @pytest.fixture(scope="class")
     def model2(self):
@@ -322,11 +322,6 @@ class TestScaleSingleConstraint():
         m.y = pyo.Var()
         m.c = pyo.Constraint(expr=m.y <= 1e3)
         return m
-
-    @pytest.mark.unit
-    def test_no_scaling_factor_suffix(self, model2):
-        with pytest.raises(ConfigurationError):
-            scale_single_constraint(model2.c)
 
     @pytest.mark.unit
     def test_no_scaling_factor(self, model2):
