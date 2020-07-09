@@ -133,11 +133,11 @@ class PhysicalParameterBlock(ProcessBlockData,
             None
         """
         try:
-            # Scalar quantities or top-level indexed quantities
+            # If a specific component data index exists
             return self.default_scaling_factor[(attrbute, index)]
         except KeyError:
             try:
-                # indexed, but no specifc index set?
+                # indexed, but no specifc index?
                 return self.default_scaling_factor[(attrbute, None)]
             except KeyError:
                 # Can't find a default scale factor for what you asked for
