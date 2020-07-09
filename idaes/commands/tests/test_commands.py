@@ -476,9 +476,9 @@ def test_find_notebook_files(remove_cells_notebooks):
 @pytest.mark.unit
 def test_strip_test_cells(remove_cells_notebooks):
     root = remove_cells_notebooks[0].parent
-    examples.strip_test_cells(root)
+    examples.strip_special_cells(root)
     nbfiles = examples.find_notebook_files(root)
-    assert len(nbfiles) == 2 * len(remove_cells_notebooks)
+    assert len(nbfiles) == len(remove_cells_notebooks)
     for nbfile in nbfiles:
         with nbfile.open("r") as f:
             nbdata = json.load(f)
@@ -496,26 +496,3 @@ def test_strip_test_cells(remove_cells_notebooks):
                         n += 1
                 assert n > 0  # tag still there
 
-
-@pytest.mark.unit
-def test_strip_test_cells_nosuffix(remove_cells_notebooks_nosuffix):
-    root = remove_cells_notebooks_nosuffix[0].parent
-    examples.strip_test_cells(root)
-    nbfiles = examples.find_notebook_files(root)
-    assert len(nbfiles) == 2 * len(remove_cells_notebooks_nosuffix)
-    for nbfile in nbfiles:
-        with nbfile.open("r") as f:
-            nbdata = json.load(f)
-            if nbfile.stem.endswith(examples.STRIPPED_NOTEBOOK_SUFFIX):
-                for cell in nbdata["cells"]:
-                    cell_meta = cell["metadata"]
-                    tags = cell_meta.get("tags", [])
-                    assert examples.REMOVE_CELL_TAG not in tags  # tag is gone
-            else:
-                n = 0
-                for cell in nbdata["cells"]:
-                    cell_meta = cell["metadata"]
-                    tags = cell_meta.get("tags", [])
-                    if examples.REMOVE_CELL_TAG in tags:
-                        n += 1
-                assert n > 0  # tag still there
