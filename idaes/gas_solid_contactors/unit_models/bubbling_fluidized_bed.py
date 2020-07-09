@@ -77,125 +77,100 @@ class BubblingFluidizedBedData(UnitModelBlockData):
         default=10,
         domain=int,
         description="Number of finite elements length domain",
-        doc="""
-            Number of finite elements to use when discretizing length
-            domain (default=20)
-            """))
+        doc="""Number of finite elements to use when discretizing length
+domain (default=20)"""))
     CONFIG.declare("length_domain_set", ConfigValue(
         default=[0.0, 1.0],
         domain=list,
         description="Number of finite elements length domain",
-        doc="""
-            length_domain_set - (optional) list of point to use to
-            initialize a new ContinuousSet if length_domain is not
-            provided (default = [0.0, 1.0]).
-            """))
+        doc="""length_domain_set - (optional) list of point to use to
+initialize a new ContinuousSet if length_domain is not
+provided (default = [0.0, 1.0]).
+domain (default = [0.0, 1.0])"""))
     CONFIG.declare("transformation_method", ConfigValue(
         default="dae.finite_difference",
         domain=In(["dae.finite_difference", "dae.collocation"]),
         description="Method to use for DAE transformation",
-        doc="""
-            Method to use to transform domain. Must be a method recognised
-            by the Pyomo TransformationFactory,
-            **default** - "dae.finite_difference".
-            **Valid values:** {
-            **"dae.finite_difference"** - Use a finite difference transformation 
-                                          scheme,
-            **"dae.collocation"** - use a collocation transformation scheme}
-            """))
+        doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory,
+**default** - "dae.finite_difference".
+**Valid values:** {
+**"dae.finite_difference"** - Use a finite difference transformation scheme,
+**"dae.collocation"** - use a collocation transformation scheme}"""))
     CONFIG.declare("transformation_scheme", ConfigValue(
         default=None,
         domain=In([None, "BACKWARD", "FORWARD", "LAGRANGE-RADAU"]),
         description="Scheme to use for DAE transformation",
-        doc="""
-            Scheme to use when transforming domain. See Pyomo
-            documentation for supported schemes,
-            **default** - None.
-            **Valid values:** {
-            **None** - defaults to "BACKWARD" for finite difference 
-                       transformation method, and to "LAGRANGE-RADAU" 
-                       for collocation transformation method,
-            **"BACKWARD"** - Use a finite difference transformation method,
-            **"FORWARD""** - use a finite difference transformation method,
-            **"LAGRANGE-RADAU""** - use a collocation transformation method}
-            """))
+        doc="""Scheme to use when transforming domain. See Pyomo
+documentation for supported schemes,
+**default** - None.
+**Valid values:** {
+**None** - defaults to "BACKWARD" for finite difference transformation method,
+and to "LAGRANGE-RADAU" for collocation transformation method,
+**"BACKWARD"** - Use a finite difference transformation method,
+**"FORWARD""** - use a finite difference transformation method,
+**"LAGRANGE-RADAU""** - use a collocation transformation method}"""))
     CONFIG.declare("collocation_points", ConfigValue(
         default=3,
         domain=int,
         description="Number of collocation points per finite element",
-        doc="""
-            Number of collocation points to use per finite element when
-            discretizing length domain (default=3)
-            """))
+        doc="""Number of collocation points to use per finite element when
+discretizing length domain (default=3)"""))
     CONFIG.declare("flow_type", ConfigValue(
         default="co_current",
         domain=In(['co_current', 'counter_current']),
         description="Flow configuration of Bubbling Fluidized Bed",
-        doc=
-        """
-        Flow configuration of Bubbling Fluidized Bed
-        **default** - "co_current".
-        **Valid values:** {
-        **"co_current"** - gas flows from 0 to 1, solid flows from 0 to 1,
-        **"counter_current"** - gas flows from 0 to 1, solid flows from 1 to 0.}
-        """))
+        doc="""Flow configuration of Bubbling Fluidized Bed
+**default** - "co_current".
+**Valid values:** {
+**"co_current"** - gas flows from 0 to 1, solid flows from 0 to 1,
+**"counter_current"** -  gas flows from 0 to 1, solid flows from 1 to 0.}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentTotal,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc=
-        """
-        Indicates what type of mass balance should be constructed,
-        **default** - MaterialBalanceType.componentTotal.
-        **Valid values:** {
-        **MaterialBalanceType.none** - exclude material balances,
-        **MaterialBalanceType.componentPhase** - use phase component balances,
-        **MaterialBalanceType.componentTotal** - use total component balances,
-        **MaterialBalanceType.elementTotal** - use total element balances,
-        **MaterialBalanceType.total** - use total material balance.}
-        """))
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.componentTotal.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
-        doc=
-        """
-        Indicates what type of energy balance should be constructed,
-        **default** - EnergyBalanceType.enthalpyTotal.
-        **Valid values:** {
-        **EnergyBalanceType.none** - exclude energy balances,
-        **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-        **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-        **EnergyBalanceType.energyTotal** - single energy balance for material,
-        **EnergyBalanceType.energyPhase** - energy balances for each phase.}
-        """))
+        doc="""Indicates what type of energy balance should be constructed,
+**default** - EnergyBalanceType.enthalpyTotal.
+**Valid values:** {
+**EnergyBalanceType.none** - exclude energy balances,
+**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
+**EnergyBalanceType.energyTotal** - single energy balance for material,
+**EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
-        doc=
-        """
-        Indicates what type of momentum balance should be constructed,
-        **default** - MomentumBalanceType.none.
-        **Valid values:** {
-        **MomentumBalanceType.none** - exclude momentum balances,
-        **MomentumBalanceType.pressureTotal** - single pressure balance for material,
-        **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-        **MomentumBalanceType.momentumTotal** - single momentum balance formaterial,
-        **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}
-        """))
+        doc="""Indicates what type of momentum balance should be constructed,
+**default** - MomentumBalanceType.none.
+**Valid values:** {
+**MomentumBalanceType.none** - exclude momentum balances,
+**MomentumBalanceType.pressureTotal** - single pressure balance for material,
+**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+**MomentumBalanceType.momentumTotal** - single momentum balance for material,
+**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
         domain=In([True, False]),
         description="Pressure change term construction flag",
-        doc=
-        """
-        Indicates whether terms for pressure change should be constructed,
-        **default** - False.
-        **Valid values:** {
-        **True** - include pressure change terms,
-        **False** - exclude pressure change terms.}
-        """))
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
 
     # Create template for phase specific config arguments
     _PhaseTemplate = UnitModelBlockData.CONFIG()
@@ -203,61 +178,47 @@ class BubblingFluidizedBedData(UnitModelBlockData):
         default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
-        doc=
-        """
-        Indicates whether terms for equilibrium controlled reactions
-        should be constructed,
-        **default** - True.
-        **Valid values:** {
-        **True** - include equilibrium reaction terms,
-        **False** - exclude equilibrium reaction terms.}
-        """))
+        doc="""Indicates whether terms for equilibrium controlled reactions
+should be constructed,
+**default** - True.
+**Valid values:** {
+**True** - include equilibrium reaction terms,
+**False** - exclude equilibrium reaction terms.}"""))
     _PhaseTemplate.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
         description="Property package to use for control volume",
-        doc=
-        """
-        Property parameter object used to define property calculations
-        (default = 'use_parent_value')
-        - 'use_parent_value' - get package from parent (default = None)
-        - a ParameterBlock object
-        """))
+        doc="""Property parameter object used to define property calculations
+(default = 'use_parent_value')
+- 'use_parent_value' - get package from parent (default = None)
+- a ParameterBlock object"""))
     _PhaseTemplate.declare("property_package_args", ConfigValue(
         default={},
         domain=dict,
         description="Arguments for constructing gas property package",
-        doc=
-        """
-        A dict of arguments to be passed to the PropertyBlockData
-        and used when constructing these (default = 'use_parent_value')
-        - 'use_parent_value' - get package from parent (default = None)
-        - a dict (see property package for documentation)
-        """))
+        doc="""A dict of arguments to be passed to the PropertyBlockData
+and used when constructing these
+(default = 'use_parent_value')
+- 'use_parent_value' - get package from parent (default = None)
+- a dict (see property package for documentation)"""))
     _PhaseTemplate.declare("reaction_package", ConfigValue(
         default=None,
         domain=is_reaction_parameter_block,
         description="Reaction package to use for control volume",
-        doc=
-        """
-        Reaction parameter object used to define reaction calculations,
-        **default** - None.
-        **Valid values:** {
-        **None** - no reaction package,
-        **ReactionParameterBlock** - a ReactionParameterBlock object.}
-        """))
+        doc="""Reaction parameter object used to define reaction calculations,
+**default** - None.
+**Valid values:** {
+**None** - no reaction package,
+**ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
     _PhaseTemplate.declare("reaction_package_args", ConfigBlock(
         implicit=True,
         implicit_domain=ConfigBlock,
         description="Arguments to use for constructing reaction packages",
-        doc=
-        """
-        A ConfigBlock with arguments to be passed to a reaction block(s)
-        and used when constructing these,
-        **default** - None.
-        **Valid values:** {
-        see reaction package for documentation.}
-        """))
+        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+and used when constructing these,
+**default** - None.
+**Valid values:** {
+see reaction package for documentation.}"""))
 
     # Create individual config blocks for the gas and solid phases
     CONFIG.declare("gas_phase_config",
