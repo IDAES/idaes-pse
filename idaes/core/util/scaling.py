@@ -40,6 +40,10 @@ _log = idaeslog.getLogger(__name__)
 
 
 class CacheVars(object):
+    """
+    A class for saving the values of variables then reloading them,
+    usually after they have been used to perform some solve or calculation.
+    """
     def __init__(self, vardata_list):
         self.vars = vardata_list
         self.cache = [None for var in self.vars]
@@ -55,10 +59,41 @@ class CacheVars(object):
 
 
 class FlattenedScalingAssignment(object):
+    """
+    A class to assist in the calculation of scaling factors when a
+    variable-constraint assignment can be constructed, especially when
+    the variables and constraints are all indexed by some common set(s).
+    """
     def __init__(self, scaling_factor, varconlist=[], nominal_index=()):
+        """
+        Args:
+            scaling_factor: A Pyomo scaling_factor Suffix that will hold all
+                            the scaling factors calculated
+            varconlist: A list of variable, constraint tuples. These variables
+                        and constraints should be indexed by the same sets,
+                        so they may need to be references-to-slices along some
+                        common sets.
+            nominal_index: The index of variables and constraints to access
+                           when a calculation needs to be performed using
+                           data objects.
+        """
         self.scaling_factor = scaling_factor
         self.nominal_index = nominal_index
-        self.dim = len(nominal_index)
+        if nominal_index is None:
+            self.dim = 0
+        else:
+            try:
+                self.dim = len(nominal_index)
+            except TypeError:
+                self.dim = 1
+
+        varlist = []
+        conlist = []
+        for var, con in varconlist:
+            varlist.append(var)
+            conlist.append(con)
+        self.varlist = varlist
+        self.conlist = conlist
 
         data_getter = self.get_representative_data_object
         var_con_data_list = [(data_getter(var), data_getter(con))
@@ -69,10 +104,25 @@ class FlattenedScalingAssignment(object):
         self.con2var = ComponentMap(con_var_data_list)
 
     def get_representative_data_object(self, obj):
-        nominal_index = self.nominal_index
-        return obj[nominal_index]
+        """
+        Gets a data object from an object of the appropriate dimension
+        """
+        if self.dim == 0:
+            # In this way, obj can be a data object and this class can be
+            # used even if the assignment is not between "flattened components"
+            return obj
+        else:
+            nominal_index = self.nominal_index
+            return obj[nominal_index]
     
     def calculate_variable_scaling_factor(self, var):
+        """
+        Calculates the scaling factor of a variable based on the 
+        constraint assigned to it. Loads each variable in that constraint
+        with its nominal value (inverse of scaling factor), calculates
+        the value of the target variable from the constraint, then sets
+        its scaling factor to the inverse of the calculated value.
+        """
         vardata = self.get_representative_data_object(var)
         condata = self.var2con[vardata]
         scaling_factor = self.scaling_factor
@@ -88,29 +138,48 @@ class FlattenedScalingAssignment(object):
             # reasonable value
             calculate_variable_from_constraint(vardata, condata)
             nominal_target = vardata.value
-        target_factor = abs(1/nominal_target)
+        if nominal_target == 0:
+            target_factor = 1.0
+        else:
+            target_factor = abs(1/nominal_target)
         # This is unnecessary if var is the Var object itself as Pyomo will
         # recognize a scaling factor on a Component as applying to every
         # data object it contains, but var may be a reference-to-slice.
-        # What happens if I assign scaling_factor[Reference(v[:,:])]?
-        for v in var.values():
-            scaling_factor[v] = target_factor
+        if self.dim == 0:
+            scaling_factor[var] = target_factor
+        else:
+            for v in var.values():
+                scaling_factor[v] = target_factor
 
     def set_constraint_scaling_factor(self, con):
+        """
+        Sets the scaling factor of a constraint to that of its assigned variable
+        """
         condata = self.get_representative_data_object(con)
         vardata = self.con2var[condata]
         scaling_factor = self.scaling_factor
 
         var_factor = scaling_factor[vardata]
-        for c in con.values():
-            scaling_factor[c] = var_factor
+        if self.dim == 0:
+            scaling_factor[con] = var_factor
+        else:
+            for c in con.values():
+                scaling_factor[c] = var_factor
 
-    def set_derivative_factor_from_state(self, deriv):
+    def set_derivative_factor_from_state(self, deriv, nominal_wrt=1.0):
+        """
+        Sets the scaling factor for a DerivativeVar equal to the factor for
+        its state var at every index. This method needs access to the 
+        get_state_var method, so deriv must be an actual DerivativeVar,
+        not a reference-to-slice.
+        """
         scaling_factor = self.scaling_factor
         state_var = deriv.get_state_var()
         for index, dv in deriv.items():
             state_data = state_var[index]
-            scaling_factor[dv] = scaling_factor[state_data]
+            nominal_state = 1/scaling_factor[state_data]
+            nominal_deriv = nominal_state/nominal_wrt
+            scaling_factor[dv] = 1/nominal_deriv
 
 
 class ScalingBasis(enum.Enum):
