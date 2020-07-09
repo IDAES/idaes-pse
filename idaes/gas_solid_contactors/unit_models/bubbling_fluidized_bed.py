@@ -85,8 +85,7 @@ domain (default=20)"""))
         description="Number of finite elements length domain",
         doc="""length_domain_set - (optional) list of point to use to
 initialize a new ContinuousSet if length_domain is not
-provided (default = [0.0, 1.0]).
-domain (default = [0.0, 1.0])"""))
+provided (default = [0.0, 1.0])."""))
     CONFIG.declare("transformation_method", ConfigValue(
         default="dae.finite_difference",
         domain=In(["dae.finite_difference", "dae.collocation"]),
