@@ -19,13 +19,23 @@ import os
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.util.system import mkdtemp
+import shutil
 import pytest
 
 __author__ = "John Eslick"
 
 
 class TestModelSerialize(unittest.TestCase):
-    fname = "crAzYStuff1010202030.json"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dirname = mkdtemp()
+        cls.fname = os.path.join(cls.dirname, "crAzYStuff1010202030.json")
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def tearDown(self):
         try:
