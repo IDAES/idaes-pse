@@ -1002,7 +1002,7 @@ class BubblingFluidizedBedData(UnitModelBlockData):
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Bubble to Emulsion Gas Mass Transfer"
-                    "Coefficient Rreformulation [reform eqn 2]")
+                    "Coefficient Reformulation [reform eqn 2]")
         def _reformulation_eqn_2(b, t, x, j):
             # 1e-4 = diffusion unit conversion factor from cm2/s to m2/s
             return (1e2*b._reform_var_2[t, x, j]**2 == 1e2 *
