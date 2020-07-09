@@ -342,26 +342,38 @@ class ReactionBlockData(ReactionBlockDataBase):
     CONFIG = ConfigBlock()
     CONFIG.declare("parameters", ConfigValue(
             domain=is_reaction_parameter_block,
-            description="""A reference to an instance of the Reaction Parameter
-Block associated with this property package."""))
+            description=
+            """
+            A reference to an instance of the Reaction Parameter
+            Block associated with this property package.
+            """))
     CONFIG.declare("solid_state_block", ConfigValue(
             domain=is_state_block,
-            description="""A reference to an instance of a StateBlock for the
-solid phase with which this reaction block should be associated."""))
+            description=
+            """
+            A reference to an instance of a StateBlock for the
+            solid phase with which this reaction block should be associated.
+            """))
     CONFIG.declare("gas_state_block", ConfigValue(
             domain=is_state_block,
-            description="""A reference to an instance of a StateBlock for the
-gas phase with which this reaction block should be associated."""))
+            description=
+            """
+            A reference to an instance of a StateBlock for the
+            gas phase with which this reaction block should be associated.
+            """))
     CONFIG.declare("has_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
-        doc="""Indicates whether terms for equilibrium controlled reactions
-should be constructed,
-**default** - True.
-**Valid values:** {
-**True** - include equilibrium reaction terms,
-**False** - exclude equilibrium reaction terms.}"""))
+        doc=
+        """
+        Indicates whether terms for equilibrium controlled reactions
+        should be constructed,
+        **default** - True.
+        **Valid values:** {
+        **True** - include equilibrium reaction terms,
+        **False** - exclude equilibrium reaction terms.}
+        """))
 
     def build(self):
         """
@@ -499,8 +511,6 @@ should be constructed,
         """
         # Check temperature bounds
         if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
+            _log.error('{} Temperature set below lower bound.'.format(blk.name))
         if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
+            _log.error('{} Temperature set above upper bound.'.format(blk.name))
