@@ -15,6 +15,7 @@ This module contains classes for property blocks and property parameter blocks.
 """
 
 import sys
+from contextlib import contextmanager
 
 # Import Pyomo libraries
 from pyomo.environ import Set, value
@@ -50,6 +51,16 @@ __all__ = ['StateBlockData',
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class _lock_attribute_creation_context(object):
+    """Context manager to lock creation of new attributes on a state block"""
+    def __init__(self, block):
+        self.block = block
+    def __enter__(self):
+        self.block._lock_attribute_creation = True
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.block._lock_attribute_creation = False
 
 
 class PhysicalParameterBlock(ProcessBlockData,
@@ -494,6 +505,17 @@ should be constructed in this state block,
 **True** - StateBlock should calculate phase equilibrium,
 **False** - StateBlock should not calculate phase equilibrium.}"""))
 
+    def __init__(self, *args, **kwargs):
+        self._lock_attribute_creation = False
+        super().__init__(*args, **kwargs)
+
+    def lock_attribute_creation_context(self):
+        return _lock_attribute_creation_context(self)
+
+    def is_property_constructed(self, attr):
+        with self.lock_attribute_creation_context():
+            return hasattr(self, attr)
+
     def build(self):
         """
         General build method for StateBlockDatas.
@@ -668,6 +690,9 @@ should be constructed in this state block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
+        if self._lock_attribute_creation:
+            raise AttributeError(
+                f"{attr} does not exist, and attribute creation is locked.")
 
         def clear_call_list(self, attr):
             """Local method for cleaning up call list when a call is handled.
