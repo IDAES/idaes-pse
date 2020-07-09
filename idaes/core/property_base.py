@@ -15,7 +15,6 @@ This module contains classes for property blocks and property parameter blocks.
 """
 
 import sys
-from contextlib import contextmanager
 
 # Import Pyomo libraries
 from pyomo.environ import Set, value
