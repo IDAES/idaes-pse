@@ -52,6 +52,42 @@ def test_find_badly_scaled_vars():
     assert id(m.z) not in a
 
 
+@pytest.mark.unit
+def test_find_unscaled_vars_and_constraints():
+    m = pyo.ConcreteModel()
+    m.b = pyo.Block()
+    m.x = pyo.Var(initialize=1e6)
+    m.y = pyo.Var(initialize=1e-8)
+    m.z = pyo.Var(initialize=1e-20)
+    m.c1 = pyo.Constraint(expr=m.x==0)
+    m.c2 = pyo.Constraint(expr=m.y==0)
+    m.b.w = pyo.Var([1,2,3], initialize=1e10)
+    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
+    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
+
+    sc.set_scaling_factor(m.x, 1)
+    sc.set_scaling_factor(m.b.w[1], 2)
+    sc.set_scaling_factor(m.c1, 1)
+    sc.set_scaling_factor(m.b.c1, 1)
+
+    a = [id(v) for v in sc.unscaled_variables_generator(m)]
+    # Make sure we pick up the right variales
+    assert id(m.x) not in a
+    assert id(m.y) in a
+    assert id(m.z) in a
+    assert id(m.b.w[1]) not in a
+    assert id(m.b.w[2]) in a
+    assert id(m.b.w[3]) in a
+    assert len(a) == 4 #make sure we didn't pick up any other random stuff
+
+    a = [id(v) for v in sc.unscaled_constraints_generator(m)]
+    assert id(m.c1) not in a
+    assert id(m.b.c1) not in a
+    assert id(m.c2) in a
+    assert id(m.b.c2) in a
+    assert len(a) == 2 #make sure we didn't pick up any other random stuff
+
+
 class TestScaleSingleConstraint():
     @pytest.fixture(scope="class")
     def model(self):
