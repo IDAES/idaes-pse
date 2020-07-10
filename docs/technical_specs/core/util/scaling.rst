@@ -59,7 +59,7 @@ documentation.
 Constraint Auto-Scaling
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Constraints can be scaled automatically reduce very large entries in the Jacobian
+Constraints can be scaled to automatically reduce very large entries in the Jacobian
 matrix with the ``constraint_autoscale_large_jac()`` function.
 
 .. autofunction:: constraint_autoscale_large_jac
