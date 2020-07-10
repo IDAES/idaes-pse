@@ -11,14 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for methods from Reid, Prausnitz and Poling
-
-All methods and parameters from:
-
-The Properties of Gases & Liquids, 4th Edition
-Reid, Prausnitz and Polling, 1987, McGraw-Hill
-
-All parameter indicies based on conventions used by the source
+Tests for FcTP state formulation
 
 Authors: Andrew Lee
 """
@@ -57,6 +50,8 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -142,8 +137,8 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         for i in frame.props[1].component_flow_balances:
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].mole_frac_comp[i] -
-                frame.props[1].mole_frac_phase_comp[
+                1e3*frame.props[1].mole_frac_comp[i] -
+                1e3*frame.props[1].mole_frac_phase_comp[
                         frame.params.phase_list[1], i])
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -152,19 +147,6 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert i in frame.props[1].params.phase_list
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol_comp.value = 100
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.5
 
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
@@ -185,6 +167,9 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -278,8 +263,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         for i in frame.props[1].component_flow_balances:
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].mole_frac_comp[i] -
-                frame.props[1].mole_frac_phase_comp[
+                1e3*frame.props[1].mole_frac_comp[i] -
+                1e3*frame.props[1].mole_frac_phase_comp[
                         frame.params.phase_list[1], i])
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
@@ -288,21 +273,6 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert i in frame.props[1].params.phase_list
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol.value = 100
-            for j in frame.params.component_list:
-                frame.props[1].mole_frac_comp[j].value = 0.8
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.8
 
 
 class Test2PhaseDefinedStateFalseNoBounds(object):
@@ -320,6 +290,10 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -415,12 +389,12 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].sum_mole_frac, Constraint)
         assert len(frame.props[1].sum_mole_frac) == 1
         assert str(frame.props[1].sum_mole_frac.body) == str(
-                sum(frame.props[1].mole_frac_phase_comp[
+                1e3*sum(frame.props[1].mole_frac_phase_comp[
                         frame.props[1].params.phase_list[1], i]
-                    for i in frame.props[1].params.component_list) -
-                sum(frame.props[1].mole_frac_phase_comp[
+                        for i in frame.props[1].params.component_list) -
+                1e3*sum(frame.props[1].mole_frac_phase_comp[
                         frame.props[1].params.phase_list[2], i]
-                    for i in frame.props[1].params.component_list))
+                        for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 2
@@ -429,21 +403,6 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol.value = 100
-            for j in frame.params.component_list:
-                frame.props[1].mole_frac_comp[j].value = 0.8
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.8
 
 
 class Test2PhaseDefinedStateTrueWithBounds(object):
@@ -464,6 +423,10 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -567,12 +530,12 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].sum_mole_frac, Constraint)
         assert len(frame.props[1].sum_mole_frac) == 1
         assert str(frame.props[1].sum_mole_frac.body) == str(
-                sum(frame.props[1].mole_frac_phase_comp[
+                1e3*sum(frame.props[1].mole_frac_phase_comp[
                         frame.props[1].params.phase_list[1], i]
-                    for i in frame.props[1].params.component_list) -
-                sum(frame.props[1].mole_frac_phase_comp[
+                        for i in frame.props[1].params.component_list) -
+                1e3*sum(frame.props[1].mole_frac_phase_comp[
                         frame.props[1].params.phase_list[2], i]
-                    for i in frame.props[1].params.component_list))
+                        for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 2
@@ -581,21 +544,6 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol.value = 100
-            for j in frame.params.component_list:
-                frame.props[1].mole_frac_comp[j].value = 0.8
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.8
 
 
 class Test3PhaseDefinedStateFalseNoBounds(object):
@@ -613,6 +561,11 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b", "c"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3),
+                        ("c", 1), ("c", 2), ("c", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -704,8 +657,8 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         for p in frame.props[1].sum_mole_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    sum(frame.props[1].mole_frac_phase_comp[p, i]
-                        for i in frame.props[1].params.component_list))
+                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
+                            for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 3
@@ -714,21 +667,6 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol.value = 100
-            for j in frame.params.component_list:
-                frame.props[1].mole_frac_comp[j].value = 0.8
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.8
 
 
 class Test3PhaseDefinedStateTrueWithBounds(object):
@@ -749,6 +687,11 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
         m.params.phase_list = Set(initialize=["a", "b", "c"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3),
+                        ("b", 1), ("b", 2), ("b", 3),
+                        ("c", 1), ("c", 2), ("c", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -848,8 +791,8 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         for p in frame.props[1].sum_mole_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    sum(frame.props[1].mole_frac_phase_comp[p, i]
-                        for i in frame.props[1].params.component_list))
+                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
+                            for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 3
@@ -858,21 +801,6 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
             assert str(frame.props[1].phase_fraction_constraint[i].body) == \
                 str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
                     frame.props[1].flow_mol_phase[i])
-
-        @pytest.mark.unit
-        def test_state_initialization(self, frame):
-            frame.props[1].flow_mol.value = 100
-            for j in frame.params.component_list:
-                frame.props[1].mole_frac_comp[j].value = 0.8
-
-            state_initialization(frame.props[1])
-
-            for p in frame.params.phase_list:
-                assert frame.props[1].flow_mol_phase[p].value == 50
-
-                for j in frame.params.component_list:
-                    assert frame.props[1].mole_frac_phase_comp[p, j].value == \
-                        0.8
 
 
 class TestCommon(object):
@@ -889,6 +817,9 @@ class TestCommon(object):
 
         m.params.phase_list = Set(initialize=["a", "b"], ordered=True)
         m.params.component_list = Set(initialize=[1, 2, 3], ordered=True)
+
+        m.params._phase_component_set = Set(
+            initialize=[("a", 1), ("a", 2), ("a", 3)], ordered=True)
 
         # Create a dummy state block
         m.props = Block([1])
@@ -907,11 +838,10 @@ class TestCommon(object):
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
-        for p in frame.params.phase_list:
-            for j in frame.params.component_list:
-                assert frame.props[1].get_material_flow_terms(p, j) == (
-                    frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j])
+        for (p, j) in frame.params._phase_component_set:
+            assert frame.props[1].get_material_flow_terms(p, j) == (
+                frame.props[1].flow_mol_phase[p] *
+                frame.props[1].mole_frac_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, frame):
@@ -922,11 +852,10 @@ class TestCommon(object):
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
-        for p in frame.params.phase_list:
-            for j in frame.params.component_list:
-                assert frame.props[1].get_material_density_terms(p, j) == (
-                    frame.props[1].dens_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j])
+        for (p, j) in frame.params._phase_component_set:
+            assert frame.props[1].get_material_density_terms(p, j) == (
+                frame.props[1].dens_mol_phase[p] *
+                frame.props[1].mole_frac_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, frame):
@@ -957,16 +886,8 @@ class TestCommon(object):
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
-    @pytest.mark.unit
-    def test_define_port_members(self, frame):
-        assert frame.props[1].define_state_vars() == \
-            {"flow_mol_comp": frame.props[1].flow_mol_comp,
-             "temperature": frame.props[1].temperature,
-             "pressure": frame.props[1].pressure}
-
-    @pytest.mark.unit
     def test_define_display_vars(self, frame):
-        assert frame.props[1].define_state_vars() == \
-            {"flow_mol_comp": frame.props[1].flow_mol_comp,
-             "temperature": frame.props[1].temperature,
-             "pressure": frame.props[1].pressure}
+        assert frame.props[1].define_display_vars() == \
+            {"Molar Flowrate": frame.props[1].flow_mol_comp,
+             "Temperature": frame.props[1].temperature,
+             "Pressure": frame.props[1].pressure}

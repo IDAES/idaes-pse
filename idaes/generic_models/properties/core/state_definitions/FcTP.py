@@ -134,8 +134,7 @@ def define_state(b):
                            units=None)
 
     b.mole_frac_phase_comp = Var(
-        b.params.phase_list,
-        b.params.component_list,
+        b.params._phase_component_set,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
         doc='Phase mole fractions',
@@ -164,8 +163,8 @@ def define_state(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.mole_frac_comp[i] == \
-                b.mole_frac_phase_comp[b.params.phase_list[1], i]
+            return b.mole_frac_comp[i]*1e3 == \
+                1e3*b.mole_frac_phase_comp[b.params.phase_list[1], i]
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
@@ -184,15 +183,20 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
-                       for i in b.params.component_list) -\
-                sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
-                    for i in b.params.component_list) == 0
+            return 1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
+                           for i in b.params.component_list
+                           if (b.params.phase_list[1], i)
+                           in b.params._phase_component_set) -\
+                1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
+                        for i in b.params.component_list
+                        if (b.params.phase_list[2], i)
+                        in b.params._phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
@@ -205,13 +209,15 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
-            return sum(b.mole_frac_phase_comp[p, i]
-                       for i in b.params.component_list) == 1
+            return 1e3*sum(b.mole_frac_phase_comp[p, i]
+                           for i in b.params.component_list
+                           if (p, i) in b.params._phase_component_set) == 1e3
         b.sum_mole_frac = Constraint(b.params.phase_list,
                                      rule=rule_mole_frac)
 
@@ -266,6 +272,13 @@ def define_state(b):
                 "temperature": b.temperature,
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FTPx
+
+    def define_display_vars_FTPx():
+        """Define display vars."""
+        return {"Molar Flowrate": b.flow_mol_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
+    b.define_display_vars = define_display_vars_FTPx
 
 
 # Inherit state_initialization from FTPX form, as the process is the same

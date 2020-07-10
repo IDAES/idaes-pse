@@ -227,10 +227,10 @@ class TestStateBlock(object):
 
         assert len(sv) == 4
         for i in sv:
-            assert i in ["flow_mol",
-                         "mole_frac_comp",
-                         "temperature",
-                         "pressure"]
+            assert i in ["Total Molar Flowrate",
+                         "Total Mole Fraction",
+                         "Temperature",
+                         "Pressure"]
 
     @pytest.mark.unit
     def test_dof(self, model):
