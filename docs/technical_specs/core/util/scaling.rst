@@ -74,14 +74,16 @@ of :math:`1 \times 10^{-8}` is a reasonable criteria for convergence. Then
 transform the constraint, and calculate constraint scale factors by other means
 such as based on the Jacobian.
 
-To multiply a constraint by it's scale factor and replace the original constraint,
-the ``scale_constraints()`` and ``scale_single_constraint()`` functions may be used.
-These methods unset the scale factor, so that other automatic scaling methods can
-be applied.
+To transform constraints with their scale factors or undo the transformations
+the following functions can be used.
 
-.. autofunction:: scale_constraints
+.. autofunction:: constraint_scaling_transform
 
-.. autofunction:: scale_single_constraint
+.. autofunction:: constraint_scaling_transform_undo
+
+.. autofunction:: block_constraint_scaling_transform
+
+.. autofunction:: block_constraint_scaling_transform_undo
 
 
 Inspect Scaling
