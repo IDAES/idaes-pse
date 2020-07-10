@@ -35,7 +35,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
-__author__ = "John Eslick, Tim Bartholomew"
+__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 _log = idaeslog.getLogger(__name__)
 
 
@@ -531,7 +531,7 @@ class FlattenedScalingAssignment(object):
         """
         self.scaling_factor = scaling_factor
         self.nominal_index = nominal_index
-        if nominal_index is None:
+        if nominal_index is None or nominal_index == ():
             self.dim = 0
         else:
             try:
