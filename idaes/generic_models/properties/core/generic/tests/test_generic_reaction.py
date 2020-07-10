@@ -98,6 +98,15 @@ class TestGenericReactionParameterBlock(object):
 
         rxn_config = m.rxn_params.config.rate_reactions
 
+        assert m.rxn_params.get_metadata().default_units == {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+            "current": None,
+            "luminous intensity": None}
+
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)
         assert len(m.rxn_params.rate_reaction_idx) == 1
         assert "r1" in m.rxn_params.rate_reaction_idx
@@ -118,7 +127,68 @@ class TestGenericReactionParameterBlock(object):
         assert m.rxn_params.reaction_idx == m.rxn_params.rate_reaction_idx
 
         assert isinstance(m.rxn_params.reaction_r1, Block)
-        
+
+    @pytest.mark.unit
+    def test_invalid_unit(self, m):
+        with pytest.raises(
+                ConfigurationError,
+                match="rxn_params recieved unexpected units for quantity time:"
+                " foo. Units must be instances of a Pyomo unit object."):
+            m.rxn_params = GenericReactionParameterBlock(default={
+                "property_package": m.params,
+                "rate_reactions": {
+                    "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                             ("p1", "c2"): 2},
+                           "heat_of_reaction": "foo",
+                           "rate_form": "foo"}},
+                "base_units": {"time": "foo",
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
+
+    @pytest.mark.unit
+    def test_invalid_quantity(self, m):
+        with pytest.raises(
+                ConfigurationError,
+                match="rxn_params defined units for an unexpected quantity "
+                "foo. Generic reaction packages only support units for the 7 "
+                "base SI quantities."):
+            m.rxn_params = GenericReactionParameterBlock(default={
+                "property_package": m.params,
+                "rate_reactions": {
+                    "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                             ("p1", "c2"): 2},
+                           "heat_of_reaction": "foo",
+                           "rate_form": "foo"}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K,
+                               "current": pyunits.A,
+                               "luminous intensity": pyunits.candela,
+                               "foo": "bar"}})
+
+    @pytest.mark.unit
+    def test_missing_required_quantity(self, m):
+        with pytest.raises(
+                ConfigurationError,
+                match="rxn_params units for quantity time were not assigned. "
+                "Please make sure to provide units for all base units "
+                "when configuring the reaction package."):
+            m.rxn_params = GenericReactionParameterBlock(default={
+                "property_package": m.params,
+                "rate_reactions": {
+                    "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                             ("p1", "c2"): 2},
+                           "heat_of_reaction": "foo",
+                           "rate_form": "foo"}},
+                "base_units": {"length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
+
     @pytest.mark.unit
     def test_rate_build_no_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,

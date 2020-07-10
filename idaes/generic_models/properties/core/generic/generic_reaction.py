@@ -141,7 +141,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
             else:
                 raise ConfigurationError(
                     "{} defined units for an unexpected quantity {}. "
-                    "Generic property packages only support units for the 7 "
+                    "Generic reaction packages only support units for the 7 "
                     "base SI quantities.".format(self.name, key))
 
         # Check that main 5 base units are assigned
@@ -150,7 +150,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 raise ConfigurationError(
                     "{} units for quantity {} were not assigned. "
                     "Please make sure to provide units for all base units "
-                    "when configuring the property package."
+                    "when configuring the reaction package."
                     .format(self.name, k))
 
         # TODO: Need way to tie reaction package to a specfic property package

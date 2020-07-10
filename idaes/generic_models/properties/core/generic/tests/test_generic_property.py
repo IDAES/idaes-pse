@@ -74,6 +74,15 @@ class TestGenericParameterBlock(object):
 
         assert m.params.configured
 
+        assert m.params.get_metadata().default_units == {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+            "current": None,
+            "luminous intensity": None}
+
         assert isinstance(m.params.component_list, Set)
         assert len(m.params.component_list) == 3
         for j in m.params.component_list:
@@ -101,6 +110,82 @@ class TestGenericParameterBlock(object):
         assert m.params.temperature_ref.value == 300
 
         assert m.params.state_block_class is GenericStateBlock
+
+    @pytest.mark.unit
+    def test_invalid_unit(self):
+        m = ConcreteModel()
+        
+        with pytest.raises(
+                ConfigurationError,
+                match="params recieved unexpected units for quantity time: "
+                "foo. Units must be instances of a Pyomo unit object."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": "foo",
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
+
+    @pytest.mark.unit
+    def test_invalid_quantity(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+                ConfigurationError,
+                match="params defined units for an unexpected quantity foo. "
+                "Generic property packages only support units for the 7 "
+                "base SI quantities."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K,
+                               "current": pyunits.A,
+                               "luminous intensity": pyunits.candela,
+                               "foo": "bar"}})
+
+    @pytest.mark.unit
+    def test_missing_required_quantity(self):
+        m = ConcreteModel()
+
+        with pytest.raises(
+                ConfigurationError,
+                match="params units for quantity time were not assigned. "
+                "Please make sure to provide units for all base units "
+                "when configuring the property package."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
 
     @pytest.mark.unit
     def test_no_components(self):
