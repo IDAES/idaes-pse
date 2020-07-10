@@ -95,9 +95,9 @@ described above can provide Jacobian information at the current variable values.
 
 .. autofunction:: badly_scaled_var_generator
 
-.. autofunction:: unscaled_variables
+.. autofunction:: unscaled_variables_generator
 
-.. autofunction:: unscaled_constarints
+.. autofunction:: unscaled_constraints_generator
 
 
 Applying Scaling
@@ -109,4 +109,4 @@ a scaled version.
 
 Ipopt is the standard solver in IDAES.  To use scale factors the
 ``nlp_scaling_method`` option should be set to ``user-scaling``.  Be aware that
-this deactivates any NLP automatic scaling. 
+this deactivates any NLP automatic scaling.
