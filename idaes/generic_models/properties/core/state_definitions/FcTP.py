@@ -90,20 +90,30 @@ def define_state(b):
         # Both bounds, use mid point
         p_init = (p_bounds[0] + p_bounds[1])/2
 
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
+
     # Add state variables
     b.flow_mol_comp = Var(b.params.component_list,
                           initialize=f_init,
                           domain=NonNegativeReals,
                           bounds=f_bounds,
-                          doc=' Component molar flowrate')
+                          doc=' Component molar flowrate',
+                          units=flow_units)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='State temperature')
+                        doc='State temperature',
+                        units=units_meta["temperature"])
 
     # Add supporting variables
     b.flow_mol = Expression(
@@ -114,25 +124,29 @@ def define_state(b):
                            initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
-                           doc='Phase molar flow rates')
+                           doc='Phase molar flow rates',
+                           units=flow_units)
 
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+                           doc='Mixture mole fractions',
+                           units=None)
 
     b.mole_frac_phase_comp = Var(
         b.params.phase_list,
         b.params.component_list,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
-        doc='Phase mole fractions')
+        doc='Phase mole fractions',
+        units=None)
 
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
         bounds=(0, None),
-        doc='Phase fractions')
+        doc='Phase fractions',
+        units=None)
 
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):

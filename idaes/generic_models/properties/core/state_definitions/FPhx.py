@@ -113,48 +113,67 @@ def define_state(b):
         # Both bounds, use mid point
         t_init = (t_bounds[0] + t_bounds[1])/2
 
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
+    energy_units = (units_meta["mass"] *
+                    units_meta["length"]**2 *
+                    units_meta["time"]**-2 *
+                    units_meta["amount"]**-2)
+
     # Add state variables
     b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
                      bounds=f_bounds,
-                     doc=' Total molar flowrate')
+                     doc=' Total molar flowrate',
+                     units=flow_units)
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+                           doc='Mixture mole fractions',
+                           units=None)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
 
     b.enth_mol = Var(initialize=h_init,
                      bounds=h_bounds,
-                     doc='State molar enthalpy')
+                     doc='State molar enthalpy',
+                     units=energy_units)
 
     # Add supporting variables
     b.flow_mol_phase = Var(b.params.phase_list,
                            initialize=f_init / len(b.params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
-                           doc='Phase molar flow rates')
+                           doc='Phase molar flow rates',
+                           units=flow_units)
 
     b.mole_frac_phase_comp = Var(
         b.params.phase_list,
         b.params.component_list,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
-        doc='Phase mole fractions')
+        doc='Phase mole fractions',
+        units=None)
 
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='Temperature')
+                        doc='Temperature',
+                        units=units_meta["temperature"])
 
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
         bounds=(0, None),
-        doc='Phase fractions')
+        doc='Phase fractions',
+        units=None)
 
     # Add supporting constraints
     if b.config.defined_state is False:
