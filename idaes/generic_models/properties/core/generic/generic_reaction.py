@@ -20,6 +20,7 @@ from pyomo.environ import (Block,
                            Set,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -106,12 +107,55 @@ class GenericReactionParameterData(ReactionParameterBlock):
     CONFIG.declare("equilibrium_reactions", ConfigBlock(
         implicit=True, implicit_domain=equil_rxn_config))
 
+    # Base units of measurement
+    CONFIG.declare("base_units", ConfigValue(
+        default={},
+        domain=dict,
+        description="Base units for property package",
+        doc="Dict containing definition of base units of measurement to use "
+        "with property package."))
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         # Call super.build() to initialize Block
-        super(GenericReactionParameterData, self).build()
+        # In this case we are replicating the super.build to get around a
+        # chicken-and-egg problem
+        # The super.build tries to validate units, but they have not been set
+        # and cannot be set until the config block is created by super.build
+        super(ReactionParameterBlock, self).build()
+
+        # Validate and set base units of measurement
+        units_meta = self.get_metadata().default_units
+
+        for key, unit in self.config.base_units.items():
+            if key in ['time', 'length', 'mass', 'amount', 'temperature',
+                       "current", "luminous intensity"]:
+                if not isinstance(unit, _PyomoUnit):
+                    raise ConfigurationError(
+                        "{} recieved unexpected units for quantity {}: {}. "
+                        "Units must be instances of a Pyomo unit object."
+                        .format(self.name, key, unit))
+                units_meta[key] = unit
+            else:
+                raise ConfigurationError(
+                    "{} defined units for an unexpected quantity {}. "
+                    "Generic property packages only support units for the 7 "
+                    "base SI quantities.".format(self.name, key))
+
+        # Check that main 5 base units are assigned
+        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
+            if not isinstance(units_meta[k], _PyomoUnit):
+                raise ConfigurationError(
+                    "{} units for quantity {} were not assigned. "
+                    "Please make sure to provide units for all base units "
+                    "when configuring the property package."
+                    .format(self.name, k))
+
+        # TODO: Need way to tie reaction package to a specfic property package
+        self._validate_property_parameter_units()
+        self._validate_property_parameter_properties()
 
         # Call configure method to set construction arguments
         self.configure()
@@ -289,13 +333,11 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 'k_rxn': {'method': '_k_rxn'},
                 'reaction_rate': {'method': "_reaction_rate"}
                 })
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': None,
+                               'length': None,
+                               'mass': None,
+                               'amount': None,
+                               'temperature': None})
 
 
 class _GenericReactionBlock(ReactionBlockBase):

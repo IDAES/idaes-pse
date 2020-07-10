@@ -18,7 +18,8 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import Block, ConcreteModel, Param, Set, Var
+from pyomo.environ import (Block, ConcreteModel, Param,
+                           Set, Var, units as pyunits)
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData,
@@ -42,6 +43,13 @@ def build_parameters(cobj, p):
     cobj.add_component("test_param_"+p, Var(initialize=42))
 
 
+# Declare a base units dict to save code later
+base_units = {"time": pyunits.s,
+              "length": pyunits.m,
+              "mass": pyunits.kg,
+              "amount": pyunits.mol,
+              "temperature": pyunits.K}
+
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     def configure(self):
@@ -61,7 +69,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         assert m.params.configured
 
@@ -100,7 +109,8 @@ class TestGenericParameterBlock(object):
         with pytest.raises(ConfigurationError,
                            match="params was not provided with a components "
                            "argument."):
-            m.params = DummyParameterBlock(default={})
+            m.params = DummyParameterBlock(default={
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_no_phases(self):
@@ -110,7 +120,8 @@ class TestGenericParameterBlock(object):
                            match="params was not provided with a phases "
                            "argument."):
             m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}}})
+                "components": {"a": {}, "b": {}, "c": {}},
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_invalid_component_in_phase_component_list(self):
@@ -126,7 +137,8 @@ class TestGenericParameterBlock(object):
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "d"],
                                "equation_of_state": "foo"},
-                        "p2": {"equation_of_state": "bar"}}})
+                        "p2": {"equation_of_state": "bar"}},
+                    "base_units": base_units})
 
     @pytest.mark.unit
     def test_invalid_component_in_phase_component_list_2(self):
@@ -145,7 +157,8 @@ class TestGenericParameterBlock(object):
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
                                "equation_of_state": "foo"},
-                        "p2": {"equation_of_state": "bar"}}})
+                        "p2": {"equation_of_state": "bar"}},
+                    "base_units": base_units})
 
     @pytest.mark.unit
     def test_phase_component_set_from_valid_phases(self):
@@ -164,7 +177,8 @@ class TestGenericParameterBlock(object):
                            "equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         assert len(m.params._phase_component_set) == 4
         for i in m.params._phase_component_set:
@@ -184,7 +198,8 @@ class TestGenericParameterBlock(object):
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
                     "p1": {"equation_of_state": "foo"},
-                    "p2": {"equation_of_state": "bar"}}})
+                    "p2": {"equation_of_state": "bar"}},
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_no_pressure_ref(self):
@@ -200,7 +215,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"equation_of_state": "foo"},
                     "p2": {}},
-                "state_definition": "baz"})
+                "state_definition": "baz",
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_temperature_ref(self):
@@ -217,7 +233,8 @@ class TestGenericParameterBlock(object):
                     "p1": {"equation_of_state": "foo"},
                     "p2": {}},
                 "state_definition": "baz",
-                "pressure_ref": 1e5})
+                "pressure_ref": 1e5,
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_no_eos(self):
@@ -235,7 +252,8 @@ class TestGenericParameterBlock(object):
                     "p2": {}},
                 "state_definition": "baz",
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_phases_in_equilibrium(self):
@@ -253,7 +271,8 @@ class TestGenericParameterBlock(object):
             "pressure_ref": 1e5,
             "temperature_ref": 300,
             "phases_in_equilibrium": [("p1", "p2")],
-            "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
+            "phase_equilibrium_state": {("p1", "p2"): "whoop"},
+            "base_units": base_units})
 
         assert isinstance(m.params.phase_equilibrium_idx, Set)
         assert len(m.params.phase_equilibrium_idx) == 3
@@ -286,7 +305,8 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"},
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_phases_in_equilibrium_missing_pair_form(self):
@@ -311,7 +331,8 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_state": {("p1", "p2"): "whoop"}})
+                "phase_equilibrium_state": {("p1", "p2"): "whoop"},
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_phases_in_equilibrium_no_formulation(self):
@@ -333,7 +354,8 @@ class TestGenericParameterBlock(object):
                 "state_definition": "baz",
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "phases_in_equilibrium": [("p1", "p2")]})
+                "phases_in_equilibrium": [("p1", "p2")],
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_phases_in_equilibrium_missing_pair_formulation(self):
@@ -358,7 +380,8 @@ class TestGenericParameterBlock(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "phases_in_equilibrium": [("p1", "p2")],
-                "phase_equilibrium_state": {(1, 2): "whoop"}})
+                "phase_equilibrium_state": {(1, 2): "whoop"},
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_parameter_construction_no_value(self):
@@ -383,7 +406,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_parameter_construction_no_data(self):
@@ -409,7 +433,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": "bar"}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
     @pytest.mark.unit
     def test_no_elements(self):
@@ -423,7 +448,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         assert not hasattr(m.params, "element_list")
         assert not hasattr(m.params, "element_comp")
@@ -447,7 +473,8 @@ class TestGenericParameterBlock(object):
                         "p2": {"equation_of_state": dummy_eos}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
-                    "temperature_ref": 300})
+                    "temperature_ref": 300,
+                    "base_units": base_units})
 
     @pytest.mark.unit
     def test_elements_not_float(self):
@@ -467,7 +494,8 @@ class TestGenericParameterBlock(object):
                         "p2": {"equation_of_state": dummy_eos}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
-                    "temperature_ref": 300})
+                    "temperature_ref": 300,
+                    "base_units": base_units})
 
     @pytest.mark.unit
     def test_elements(self):
@@ -485,7 +513,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         assert isinstance(m.params.element_list, Set)
         assert len(m.params.element_list) == 4
@@ -510,7 +539,8 @@ class TestGenericParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         assert isinstance(m.params.a.test_param_p1, Var)
         assert m.params.a.test_param_p1.value == 42
@@ -535,7 +565,8 @@ class TestGenericParameterBlock(object):
                         "p2": {"equation_of_state": dummy_eos}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
-                    "temperature_ref": 300})
+                    "temperature_ref": 300,
+                    "base_units": base_units})
 
     @pytest.mark.unit
     def test_henry_invalid_phase_type(self):
@@ -557,7 +588,8 @@ class TestGenericParameterBlock(object):
                         "p2": {"equation_of_state": dummy_eos}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
-                    "temperature_ref": 300})
+                    "temperature_ref": 300,
+                    "base_units": base_units})
 
 
 # -----------------------------------------------------------------------------
@@ -577,7 +609,8 @@ class TestGenericStateBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         m.props = m.params.build_state_block([1],
                                              default={"defined_state": False})

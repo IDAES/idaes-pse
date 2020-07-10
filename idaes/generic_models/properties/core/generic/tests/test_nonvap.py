@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            TerminationCondition,
-                           value)
+                           value,
+                           units as pyunits)
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -147,6 +148,13 @@ configuration = {
                      "pressure": (5e4, 1e6)},
     "pressure_ref": 1e5,
     "temperature_ref": 300,
+
+    # Declare a base units dict to save code later
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],

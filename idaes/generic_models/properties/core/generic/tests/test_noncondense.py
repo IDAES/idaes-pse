@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            TerminationCondition,
-                           value)
+                           value,
+                           units as pyunits)
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -138,6 +139,13 @@ configuration = {
                         "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": Ideal}},
+
+    # Declare a base units dict to save code later
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
 
     # Specifying state definition
     "state_definition": FTPx,

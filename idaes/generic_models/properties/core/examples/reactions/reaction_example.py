@@ -18,6 +18,8 @@ R2)  B + C <-> D  Power law equilibrium reaction
 
 Author: Andrew Lee
 """
+from pyomo.environ import units as pyunits
+
 from idaes.core import LiquidPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FcTP
@@ -53,12 +55,22 @@ thermo_configuration = {
                      "temperature": (273.15, 450),
                      "pressure": (5e4, 1e6)},
     "pressure_ref": 1e5,
-    "temperature_ref": 300}
+    "temperature_ref": 300,
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K}}
 
 
 # Next, create the reaction property definition which describes the system on
 # reactions to be modeled.
 rxn_configuration = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
     "rate_reactions": {
         "R1": {"stoichiometry": {("Liq", "A"): -1,
                                  ("Liq", "B"): -1,
