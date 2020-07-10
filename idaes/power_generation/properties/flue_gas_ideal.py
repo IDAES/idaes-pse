@@ -19,7 +19,7 @@ Main assumptions:
 """
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Param, PositiveReals, Reals,
-                           value, log, exp, sqrt, Var)
+                           value, log, exp, sqrt, Var, Expression)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -237,6 +237,8 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 'flow_volume': {'method': '_flow_volume', 'units': 'm^3/s'},
                 'visc_d_mix': {'method': '_therm_cond', 'units': 'kg/m-s'},
                 'therm_cond_mix': {'method': '_therm_cond', 'units': 'W/m-K'},
+                'mw_comp': {'method': '_mw_comp', 'units': 'kg/mol'},
+                'mw': {'method': '_mw', 'units': 'kg/mol'},
                 })
 
         obj.add_default_units({'time': 's',
@@ -479,6 +481,18 @@ class FlueGasStateBlockData(StateBlockData):
             return b.flow_mass == sum(b.flow_component[j] * b.params.mw[j]
                                       * 0.001 for j in b.params.component_list)
         self.rule_flow_mass = Constraint(rule=rule_flow_mass)
+
+    def _mw_comp(self):
+        def rule_mw_comp(b, j):
+            return b.params.mw[j]
+        self.mw_comp = Expression(self.params.component_list, rule=rule_mw_comp)
+
+    def _mw(self):
+        def rule_mw(b):
+            c = self.params.component_list
+            f_tot = sum(b.flow_component[i] for i in c)
+            return sum(b.mw_comp[j]*b.flow_component[j]/f_tot for j in c)
+        self.mw = Expression(rule=rule_mw)
 
     def _heat_cap_calc(self):
         # heat capacity J/mol-K
