@@ -48,8 +48,8 @@ module outside of the ``idaes`` package ``idaes.`` is prepended to the name.
   _log = idaeslog.getLogger(__name__, tag="framework")
 
 
-idaes.init Logger
-~~~~~~~~~~~~~~~~~
+idaes.init Loggers
+~~~~~~~~~~~~~~~~~~
 
 The init logger will always descend from "idaes.init". This logger is used in
 IDAES model initialization methods, and can be used in user models as well.
@@ -76,8 +76,8 @@ instance the initialization log messages are coming from.
     def initialize(outlvl=idaeslog.INFO):
       init_log = idaeslog.getInitLogger(self.name, level=outlvl, tag="unit")
 
-idaes.model Logger
-~~~~~~~~~~~~~~~~~~
+idaes.model Loggers
+~~~~~~~~~~~~~~~~~~~
 
 The model logger is used to provide a standard way to produce log messages from
 user models that are not part of the ``idaes`` package. The logger name has
@@ -96,8 +96,8 @@ loggers. The user can choose any name they like for these loggers.
 
   _log = idaeslog.getModelLogger("my_model", level=idaeslog.DEBUG, tag="model")
 
-idaes.solve Logger
-~~~~~~~~~~~~~~~~~~
+idaes.solve Loggers
+~~~~~~~~~~~~~~~~~~~
 
 The solve logger will always descend from "idaes.solve". This logger is
 used to log solver output. Since solvers may produce a lot of output,
@@ -160,9 +160,9 @@ Constant Name         Value  Name         Log Method
 CRITICAL              50     CRITICAL     ``critial()``
 ERROR                 40     ERROR        ``error()``, ``exception()``
 WARNING               30     WARNING      ``warning()``
-INFO_LOW              21     INFO         ``unit_low()``
+INFO_LOW              21     INFO         ``info_low()``
 INFO                  20     INFO         ``info()``
-INFO_HIGH             19     INFO         ``unit_high()``
+INFO_HIGH             19     INFO         ``info_high()``
 DEBUG                 10     DEBUG        ``debug()``
 NOTSET                0      NOTSET       --
 ===================== ====== ============ ============================
