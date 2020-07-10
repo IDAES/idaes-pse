@@ -87,20 +87,30 @@ def define_state(b):
         # Both bounds, use mid point
         p_init = (p_bounds[0] + p_bounds[1])/2
 
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
+
     # Add state variables
     b.flow_mol_phase_comp = Var(b.params._phase_component_set,
                                 initialize=f_init,
                                 domain=NonNegativeReals,
                                 bounds=f_bounds,
-                                doc='Phase-component molar flowrate')
+                                doc='Phase-component molar flowrate',
+                                units=flow_units)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='State temperature')
+                        doc='State temperature',
+                        units=units_meta["temperature"])
 
     # Add supporting variables
     b.flow_mol = Expression(
@@ -130,12 +140,13 @@ def define_state(b):
                     if (p, j) in b.params._phase_component_set) / b.flow_mol)
     b.mole_frac_comp = Expression(b.params.component_list,
                                   rule=mole_frac_comp,
-                                  doc='Mixture mole fractions [-]')
+                                  doc='Mixture mole fractions')
 
     b.mole_frac_phase_comp = Var(
             b.params._phase_component_set,
             initialize=1/len(b.params.component_list),
-            doc='Phase mole fractions [-]')
+            doc='Phase mole fractions',
+            units=None)
 
     def rule_mole_frac_phase_comp(b, p, j):
         return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \

@@ -76,7 +76,7 @@ def define_state(b):
 
     if h_bounds == (None, None):
         # No bounds, default to 0
-        h_init = 0
+        h_init = 1000
     elif h_bounds[1] is None and h_bounds[0] is not None:
         # Only lower bound, use lower bound + 1000
         h_init = h_bounds[0] + 1000
@@ -122,7 +122,7 @@ def define_state(b):
     energy_units = (units_meta["mass"] *
                     units_meta["length"]**2 *
                     units_meta["time"]**-2 *
-                    units_meta["amount"]**-2)
+                    units_meta["amount"]**-1)
 
     # Add state variables
     b.flow_mol = Var(initialize=f_init,

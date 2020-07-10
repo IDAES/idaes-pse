@@ -122,7 +122,7 @@ def define_state(b):
     energy_units = (units_meta["mass"] *
                     units_meta["length"]**2 *
                     units_meta["time"]**-2 *
-                    units_meta["amount"]**-2)
+                    units_meta["amount"]**-1)
 
     # Add state variables
     b.flow_mol_comp = Var(b.params.component_list,
