@@ -509,9 +509,22 @@ should be constructed in this state block,
         super().__init__(*args, **kwargs)
 
     def lock_attribute_creation_context(self):
+        """Returns a context manager that does not allow attributes to be created
+        while in the context and allows attributes to be created normally outside
+        the context.
+        """
         return _lock_attribute_creation_context(self)
 
     def is_property_constructed(self, attr):
+        """Returns True if the attribute ``attr`` already exists, or false if it
+        would be added in ``__getattr__``, or does not exist.
+
+        Args:
+            attr (str): Attribute name to check
+
+        Return:
+            True if the attribute is already constructed, False otherwise
+        """
         with self.lock_attribute_creation_context():
             return hasattr(self, attr)
 

@@ -454,6 +454,7 @@ def m():
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
 
 
 @pytest.mark.unit

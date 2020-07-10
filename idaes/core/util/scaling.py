@@ -93,7 +93,40 @@ def unset_scaling_factor(c):
         pass # no scaling factor is fine
 
 
-def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
+def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):
+    """Generator for unscaled variables
+
+    Args:
+        block
+
+    Yields:
+        variables with no scale factor
+    """
+
+    for v in blk.component_data_objects(pyo.Var, descend_into=descend_into):
+        if v.fixed and not include_fixed:
+            continue
+        if get_scaling_factor(v) is None:
+            yield v
+
+
+def unscaled_constraints_generator(blk, descend_into=True):
+    """Generator for unscaled constraints
+
+    Args:
+        block
+
+    Yields:
+        constraints with no scale factor
+    """
+    for c in blk.component_data_objects(
+        pyo.Constraint, active=True, descend_into=descend_into):
+        if get_scaling_factor(c) is None:
+            yield c
+
+
+def badly_scaled_var_generator(
+    blk, large=1e4, small=1e-3, zero=1e-10, descend_into=True, include_fixed=False):
     """This provides a rough check for variables with poor scaling based on
     their current scale factors and values. For each potentially poorly scaled
     variable it returns the var and its current scaled value.
@@ -108,8 +141,8 @@ def badly_scaled_var_generator(blk, large=1e4, small=1e-3, zero=1e-10):
     Yields:
         variable data object, current absolute value of scaled value
     """
-    for v in blk.component_data_objects(pyo.Var):
-        if v.fixed:
+    for v in blk.component_data_objects(pyo.Var, descend_into=descend_into):
+        if v.fixed and not include_fixed:
             continue
         sf = get_scaling_factor(v, default=1)
         sv = abs(pyo.value(v) * sf)  # scaled value
