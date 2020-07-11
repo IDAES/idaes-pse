@@ -35,6 +35,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 @pytest.fixture()
 def build_turbine():
     m = ConcreteModel()
@@ -42,6 +43,7 @@ def build_turbine():
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineInletStage(default={"property_package": m.fs.properties})
     return m
+
 
 @pytest.fixture()
 def build_turbine_dyn():
@@ -53,14 +55,16 @@ def build_turbine_dyn():
         "property_package": m.fs.properties})
     return m
 
+
 @pytest.mark.unit
 def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
+
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
     m = build_turbine
@@ -77,9 +81,10 @@ def test_initialize(build_turbine):
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
 
+
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
+@pytest.mark.component
 def test_initialize_dyn(build_turbine_dyn):
     """Initialize a turbine model"""
     m = build_turbine_dyn

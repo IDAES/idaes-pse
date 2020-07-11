@@ -200,7 +200,7 @@ value of the suffix for the corresponding component.
 
 As a more concrete example, here is the json generated for example model 2 in
 :ref:`Examples <technical_specs/core/util/model_serializer:Examples>`.
-This code can be appended to the 
+This code can be appended to the
 :ref:`example boilerplate above <technical_specs/core/util/model_serializer:Examples>`.
 To generate the example json shown.
 
@@ -229,7 +229,7 @@ just provide a little extra information.
       },
       "__performance__":{
         "n_components":18,
-        "etime_make_dict":0.0009555816650390625
+        "etime_make_dict":0.000955581665039062
       }
     },
     "unknown":{

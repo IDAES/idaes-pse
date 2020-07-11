@@ -308,6 +308,7 @@ class TestBuild(object):
         assert not hasattr(m.fs, "time")
         assert m.fs.time_units is None
 
+    @pytest.mark.unit
     def testtime_units_ss(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={
@@ -316,6 +317,7 @@ class TestBuild(object):
 
         assert m.fs.time_units is units.s
 
+    @pytest.mark.unit
     def testtime_units_dynamic(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={
@@ -324,6 +326,7 @@ class TestBuild(object):
 
         assert m.fs.time_units is units.s
 
+    @pytest.mark.unit
     def testtime_units_external(self):
         # Should ignore time set
         m = ConcreteModel()
@@ -424,6 +427,7 @@ class TestSubFlowsheetBuild(object):
         with pytest.raises(DynamicError):
             m.fs.sub = FlowsheetBlock(default={"dynamic": True, "time": m.s})
 
+    @pytest.mark.unit
     def testtime_units_inherit(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": units.s})

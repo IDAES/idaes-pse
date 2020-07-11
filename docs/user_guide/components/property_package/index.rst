@@ -24,7 +24,7 @@ packages into two parts:
 While the IDAES modeling framework provides several standard property packages, many process
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
-:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Property Model>`.
+:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`.
 Since the effort to develop a custom property package is substantial, the IDAES modeling
 framework provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 

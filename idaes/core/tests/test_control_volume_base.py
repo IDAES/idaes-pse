@@ -59,7 +59,7 @@ def test_momentum_balance_type():
     with pytest.raises(AttributeError):
         MomentumBalanceType.foo
 
-
+@pytest.mark.unit
 def testflow_direction():
     assert len(FlowDirection) == 2
 
