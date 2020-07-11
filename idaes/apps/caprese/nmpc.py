@@ -15,41 +15,58 @@
 Class for performing NMPC simulations of IDAES flowsheets
 """
 
-from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory, Reference, value)
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.environ import (
+        Block, 
+        Constraint, 
+        Var, 
+        TerminationCondition,
+        SolverFactory, 
+        Objective, 
+        NonNegativeReals, 
+        Reals, 
+        TransformationFactory, 
+        Reference, 
+        value,
+        )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentSet, ComponentMap
-from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.dae.set_utils import is_explicitly_indexed_by, get_index_set_except
-from pyomo.dae.initialization import (solve_consistent_initial_conditions,
-        get_inconsistent_initial_conditions)
-from pyomo.opt.solver import SystemCallSolver
+from pyomo.kernel import ComponentMap
+from pyomo.dae.initialization import (
+        solve_consistent_initial_conditions,
+        get_inconsistent_initial_conditions,
+        )
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.util import (initialize_by_element_in_range,
-        find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
-        add_noise_at_time, ElementInitializationInputOption, 
-        TimeResolutionOption, ControlInitOption, ControlPenaltyType,
-        VariableCategory, validate_list_of_vardata, 
-        validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset,
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
+from idaes.core.util.dyn_utils import (
+        deactivate_model_at,
+        path_from_block, 
+        find_comp_in_block, 
+        find_comp_in_block_at_time,
+        )
+from idaes.apps.caprese.common.config import (
+        ControlInitOption,
+        ElementInitializationInputOption,
+        TimeResolutionOption,
+        ControlPenaltyType,
+        VariableCategory)
+from idaes.apps.caprese.util import (
+        initialize_by_element_in_range,
+        find_slices_in_model, 
+        NMPCVarGroup, 
+        NMPCVarLocator, 
+        copy_values_at_time, 
+        add_noise_at_time,
+        validate_list_of_vardata, 
+        validate_list_of_vardata_value_tuples, 
+        validate_solver,
+        find_point_in_continuousset,
         get_violated_bounds_at_time)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
-
-from collections import OrderedDict
-import time as timemodule
-import enum
-import pdb
 
 __author__ = "Robert Parker and David Thierry"
 
