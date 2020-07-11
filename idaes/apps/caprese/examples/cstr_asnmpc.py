@@ -119,28 +119,69 @@ def main(plot_switch=False):
     nmpc.add_setpoint_to_controller()
     
     nmpc.constrain_control_inputs_piecewise_constant()
-    
+
+    # Make sure (first sample of) plant contains control inputs for the 
+    # initial steady state
+    # inject_inputs_into_plant with argument for the inputs?
+    # These inputs should /probably/ come from an InputHistory
+
+    # simulate plant (will be trivial up to noise on the inputs)
+
+    # Initial control problem will not need be altered
+    # initial conditions have been loaded from plant at this point, 
+    # but not updated since the simulation
     nmpc.initialize_control_problem(
             control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
     nmpc.solve_control_problem()
 
+    # As part of the solve, get du/dx_0 matrix
+
+    # Make "measurement" from simulated plant 
+    # Do not load into controller, however
+
+    # update_control_inputs (where to store the updated control inputs?)
+    # Controller? Not obvious...
+
+    # Send new control inputs to plant
+    # Would be nice to have some model-agnostic data structure for inputs...
+    # Maintain one for controller-calculated inputs, one for updated inputs
     nmpc.inject_control_inputs_into_plant(time_plant.first(),
                                   add_input_noise=True)
 
+    # simulate plant with received inputs
     nmpc.simulate_plant(time_plant.first())
 
     for t in plant_sample_points:
+        # DO NOT transfer plant state to controller
         nmpc.transfer_current_plant_state_to_controller(t,
                                                 add_plant_noise=True)
+        # Instead set controller's initial conditions to those the controller
+        # predicted for the end of the first sample
+        # /could/ update those values based on the measured initial conditions
+        # (that were used for the advanced-step update) TODO Is this worthwhile?
+        #
+        # This is just initializing the controller FROM_PREVIOUS, including the
+        # initial conditions.
 
+        # The initialization step will happen simultaneously with the previous
+        # step, which loads initial conditions
         nmpc.initialize_control_problem(
                 control_init_option=ControlInitOption.FROM_PREVIOUS)
 
+        # Solve the control problem. This is unchanged except for the fact
+        # that sensitivity matrices are calculated
         nmpc.solve_control_problem()
 
+        # Make "measurement" from simulated plant. (Store in some data
+        # structure)
+
+        # Use measurement to update inputs based on sensitivity matrix
+
+        # Send new control inputs to plant
         nmpc.inject_control_inputs_into_plant(t,
                                       add_input_noise=True)
         
+        # simulate and repeat
         nmpc.simulate_plant(t)
 
     # TODO: add option for specifying "user-interest variables"
