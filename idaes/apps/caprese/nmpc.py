@@ -666,6 +666,35 @@ class NMPCSim(DynamicBase):
                               **noise_args)
 
 
+    def inject_inputs_into(self, source, model, t_source, t_target, **kwargs):
+        """
+        Args:
+            source: Inputs to copy. Should be a list of time-indexed Vars
+                    or an InputHistory object
+            model: Model into which to copy inputs
+            t_source: Time point at which to access inputs to copy
+            t_target: Time point in model where inputs will be copied
+        """
+        # If source is a varlist:
+        config = self.config(kwargs)
+        tolerance = config.continuous_set_tolerance
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
+        sample_time = self.sample_time
+        sample_end = find_point_in_continuousset(
+                t_target + sample_time,
+                time,
+                tolerance)
+        sample = [t for t in time if t > t_target and t <= sample_end]
+        
+        copy_values_at_time(namespace.input_vars.varlist,
+                source,
+                sample,
+                t_source)
+        # If source is an InputHistory...
+        # TODO: Next: use this function in inject_control_inputs_into_plant
+
+
     def inject_control_inputs_into_plant(self, t_plant, **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
@@ -680,6 +709,9 @@ class NMPCSim(DynamicBase):
         config = self.config(kwargs)
         tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
+        controller_namespace = getattr(self.controller, 
+                self.get_namespace_name())
+        plant_namespace = getattr(self.plant, self.get_namespace_name())
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
@@ -687,16 +719,6 @@ class NMPCSim(DynamicBase):
                 self.controller_time.first() + sample_time, 
                 self.controller_time, tolerance)
         assert t_controller in self.controller_time
-
-        time = self.plant_time
-        plant_sample_end = find_point_in_continuousset(
-                t_plant + sample_time, 
-                time, tolerance)
-        assert plant_sample_end in time
-        plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
-        assert plant_sample_end in plant_sample
-        # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
-        # sample_time is passed in
 
         add_noise = config.add_input_noise
         noise_weights = config.noise_weights
@@ -739,12 +761,16 @@ class NMPCSim(DynamicBase):
             #               apply noise to controller variables (maybe okay...)
             #                ^ can always record nominal values, then revert
             #                  noise after it's copied into plant...
-            # Right now I apply noise to controller model, and don't revert
+            # Right now I apply noise to controller model, and don't revert.
+            # Not a problem as the first sample of controller vars gets back-
+            # shifted into oblivion.
 
-        copy_values_at_time(self.plant._NMPC_NAMESPACE.input_vars.varlist,
-                            self.controller._NMPC_NAMESPACE.plant_input_vars,
-                            plant_sample,
-                            t_controller)
+        self.inject_inputs_into(controller_namespace.plant_input_vars, 
+                self.plant, 
+                t_controller, 
+                t_plant, 
+                **kwargs)
+
 
     def has_consistent_initial_conditions(self, model, **kwargs):
         """
