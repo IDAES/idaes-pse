@@ -305,6 +305,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "your property parameter definition to include this."
                     .format(self.name))
 
+        base_units = self.get_metadata().default_units
+        p_units = (base_units["mass"] *
+                       base_units["length"]**-1 *
+                       base_units["time"]**-2)
+
         # Validate reference state and create Params
         if self.config.pressure_ref is None:
             raise ConfigurationError(
@@ -315,7 +320,8 @@ class GenericParameterData(PhysicalParameterBlock):
         else:
             self.pressure_ref = Param(
                 initialize=self.config.pressure_ref,
-                mutable=True)
+                mutable=True,
+                units=p_units)
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -326,7 +332,8 @@ class GenericParameterData(PhysicalParameterBlock):
         else:
             self.temperature_ref = Param(
                 initialize=self.config.temperature_ref,
-                mutable=True)
+                mutable=True,
+                units=base_units["temperature"])
 
         # Validate equations of state
         for p in self.phase_list:
@@ -953,10 +960,12 @@ class GenericStateBlockData(StateBlockData):
         if (self.params.config.phases_in_equilibrium is not None and
                 (not self.config.defined_state or self.always_flash)):
 
+            t_units = self.params.get_metadata().default_units["temperature"]
             self._teq = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
-                doc='Temperature for calculating phase equilibrium')
+                doc='Temperature for calculating phase equilibrium',
+                units=t_units)
 
         # Create common components for each property package
         for p in self.params.phase_list:
@@ -1009,18 +1018,21 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
+        t_units = b.params.get_metadata().default_units["temperature"]
         try:
             b.temperature_bubble = Var(
                     b.params._pe_pairs,
                     doc="Bubble point temperature",
-                    bounds=(b.temperature.lb, b.temperature.ub))
+                    bounds=(b.temperature.lb, b.temperature.ub),
+                    units=t_units)
 
             b._mole_frac_tbub = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Vapor mole fractions at bubble temperature")
+                    doc="Vapor mole fractions at bubble temperature",
+                    units=None)
 
             b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
@@ -1032,18 +1044,21 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
+        t_units = b.params.get_metadata().default_units["temperature"]
         try:
             b.temperature_dew = Var(
                     b.params._pe_pairs,
                     doc="Dew point temperature",
-                    bounds=(b.temperature.lb, b.temperature.ub))
+                    bounds=(b.temperature.lb, b.temperature.ub),
+                    units=t_units)
 
             b._mole_frac_tdew = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Liquid mole fractions at dew temperature")
+                    doc="Liquid mole fractions at dew temperature",
+                    units=None)
 
             b.params.config.bubble_dew_method.temperature_dew(b)
         except AttributeError:
@@ -1055,18 +1070,24 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
+        units_meta = b.params.get_metadata().default_units["temperature"]
+        p_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
         try:
             b.pressure_bubble = Var(
                     b.params._pe_pairs,
                     doc="Bubble point pressure",
-                    bounds=(b.pressure.lb, b.pressure.ub))
+                    bounds=(b.pressure.lb, b.pressure.ub),
+                    units=p_units)
 
             b._mole_frac_pbub = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Vapor mole fractions at bubble pressure")
+                    doc="Vapor mole fractions at bubble pressure",
+                    units=None)
 
             b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
@@ -1078,18 +1099,24 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
+        units_meta = b.params.get_metadata().default_units["temperature"]
+        p_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
         try:
             b.pressure_dew = Var(
                     b.params._pe_pairs,
                     doc="Dew point pressure",
-                    bounds=(b.pressure.lb, b.pressure.ub))
+                    bounds=(b.pressure.lb, b.pressure.ub),
+                    units=p_units)
 
             b._mole_frac_pdew = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Liquid mole fractions at dew pressure")
+                    doc="Liquid mole fractions at dew pressure",
+                    units=None)
 
             b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:

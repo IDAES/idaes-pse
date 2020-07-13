@@ -285,7 +285,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                     except AttributeError:
                         pass
 
-        # As a saftey check, make sure all Vars in reaction blocks are fixed
+        # As a safety check, make sure all Vars in reaction blocks are fixed
         for v in self.component_objects(Var, descend_into=True):
             for i in v:
                 if v[i].value is None:

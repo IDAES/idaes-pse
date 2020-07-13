@@ -17,28 +17,64 @@ https://webbook.nist.gov/chemistry/
 
 Retrieved: September 13th, 2019
 
-All parameter indicies based on conventions used by the source
+All parameter indicies and units based on conventions used by the source
 """
-from pyomo.environ import log, Var
+from pyomo.environ import log, Var, units as pyunits
 
 
 # -----------------------------------------------------------------------------
 # Shomate Equation for heat capacities, enthalpy and entropy
 class cp_mol_ig_comp():
     def build_parameters(cobj):
-        cobj.cp_mol_ig_comp_coeff = Var(
-                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
-                initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"],
-                doc="Shomate parameters for ideal gas molar heat capacity")
+        cobj.cp_mol_ig_comp_coeff_A = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["A"],
+            doc="Shomate A parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1)
+        cobj.cp_mol_ig_comp_coeff_B = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["B"],
+            doc="Shomate B parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1)
+        cobj.cp_mol_ig_comp_coeff_C = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["C"],
+            doc="Shomate C parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2)
+        cobj.cp_mol_ig_comp_coeff_D = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["D"],
+            doc="Shomate D parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3)
+        cobj.cp_mol_ig_comp_coeff_E = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["E"],
+            doc="Shomate E parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2)
+        cobj.cp_mol_ig_comp_coeff_F = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["F"],
+            doc="Shomate F parameter for ideal gas molar heat capacity",
+            units=pyunits.kJ*pyunits.mol**-1)
+        cobj.cp_mol_ig_comp_coeff_G = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["G"],
+            doc="Shomate G parameter for ideal gas molar heat capacity",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1)
+        cobj.cp_mol_ig_comp_coeff_H = Var(
+            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["H"],
+            doc="Shomate h parameter for ideal gas molar heat capacity",
+            units=pyunits.kJ*pyunits.mol**-1)
 
     def return_expression(b, cobj, T):
         # Specific heat capacity (const. P)  via the Shomate equation
-        t = T/1000
-        return(cobj.cp_mol_ig_comp_coeff["A"] +
-               cobj.cp_mol_ig_comp_coeff["B"]*t +
-               cobj.cp_mol_ig_comp_coeff["C"]*t**2 +
-               cobj.cp_mol_ig_comp_coeff["D"]*t**3 +
-               cobj.cp_mol_ig_comp_coeff["E"]*t**-2)
+        t = pyunits.convert(T, to_units=pyunits.kiloK)
+        cp = (cobj.cp_mol_ig_comp_coeff_A +
+              cobj.cp_mol_ig_comp_coeff_B*t +
+              cobj.cp_mol_ig_comp_coeff_C*t**2 +
+              cobj.cp_mol_ig_comp_coeff_D*t**3 +
+              cobj.cp_mol_ig_comp_coeff_E*t**-2)
+
+        base_units = b.params.get_metadata().default_units
+        cp_units = (base_units["mass"] *
+                    base_units["length"]**2 *
+                    base_units["time"]**-2 *
+                    base_units["amount"]**-1 *
+                    base_units["temperature"]**-1)
+        return pyunits.convert(cp, cp_units)
 
 
 class enth_mol_ig_comp():
@@ -48,18 +84,23 @@ class enth_mol_ig_comp():
 
     def return_expression(b, cobj, T):
         # Specific enthalpy via the Shomate equation
-        t = T/1000
-        tr = b.params.temperature_ref/1000
-        return 1e3*(cobj.cp_mol_ig_comp_coeff["A"]*(t-tr) +
-                    (cobj.cp_mol_ig_comp_coeff["B"]/2) *
-                    (t**2-tr**2) +
-                    (cobj.cp_mol_ig_comp_coeff["C"]/3) *
-                    (t**3-tr**3) +
-                    (cobj.cp_mol_ig_comp_coeff["D"]/4) *
-                    (t**4-tr**4) -
-                    cobj.cp_mol_ig_comp_coeff["E"]*(1/t-1/tr) +
-                    cobj.cp_mol_ig_comp_coeff["F"] -
-                    cobj.cp_mol_ig_comp_coeff["H"])
+        t = pyunits.convert(T, to_units=pyunits.kiloK)
+        tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.kiloK)
+
+        h = (cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
+             (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2-tr**2) +
+             (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3-tr**3) +
+             (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4-tr**4) -
+             cobj.cp_mol_ig_comp_coeff_E*(1/t-1/tr) +
+             cobj.cp_mol_ig_comp_coeff_F -
+             cobj.cp_mol_ig_comp_coeff_H)
+
+        base_units = b.params.get_metadata().default_units
+        h_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1)
+        return pyunits.convert(h, h_units)
 
 
 class entr_mol_ig_comp():
@@ -69,34 +110,68 @@ class entr_mol_ig_comp():
 
     def return_expression(b, cobj, T):
         # Specific entropy via the Shomate equation
-        t = T/1000
-        return(cobj.cp_mol_ig_comp_coeff["A"]*log(t) +
-               cobj.cp_mol_ig_comp_coeff["B"]*t +
-               (cobj.cp_mol_ig_comp_coeff["C"]/2)*t**2 +
-               (cobj.cp_mol_ig_comp_coeff["D"]/3)*t**3 -
-               (cobj.cp_mol_ig_comp_coeff["E"]/2)*t**-2 +
-               cobj.cp_mol_ig_comp_coeff["G"])
+        t = pyunits.convert(T, to_units=pyunits.kiloK)
+        s = (cobj.cp_mol_ig_comp_coeff_A*log(t/pyunits.kiloK) +  # need to make unitless
+             cobj.cp_mol_ig_comp_coeff_B*t +
+             (cobj.cp_mol_ig_comp_coeff_C/2)*t**2 +
+             (cobj.cp_mol_ig_comp_coeff_D/3)*t**3 -
+             (cobj.cp_mol_ig_comp_coeff_E/2)*t**-2 +
+             cobj.cp_mol_ig_comp_coeff_G)
 
+        base_units = b.params.get_metadata().default_units
+        s_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1 *
+                   base_units["temperature"]**-1)
+        return pyunits.convert(s, s_units)
 
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
 class pressure_sat_comp():
     def build_parameters(cobj):
-        cobj.pressure_sat_comp_coeff = Var(
-                ['A', 'B', 'C'],
+        cobj.pressure_sat_comp_coeff_A = Var(
                 initialize=cobj.config.parameter_data[
-                    "pressure_sat_comp_coeff"],
-                doc="Antoine coefficients for calculating Psat")
+                    "pressure_sat_comp_coeff"]["A"],
+                doc="Antoine A coefficient for calculating Psat",
+                units=None)
+
+        cobj.pressure_sat_comp_coeff_B = Var(
+                initialize=cobj.config.parameter_data[
+                    "pressure_sat_comp_coeff"]["B"],
+                doc="Antoine B coefficient for calculating Psat",
+                units=pyunits.K)
+
+        cobj.pressure_sat_comp_coeff_C = Var(
+                initialize=cobj.config.parameter_data[
+                    "pressure_sat_comp_coeff"]["C"],
+                doc="Antoine C coefficient for calculating Psat",
+                units=pyunits.K)
 
     def return_expression(b, cobj, T, dT=False):
         if dT:
             return pressure_sat_comp.dT_expression(b, cobj, T)
 
-        return 10**(cobj.pressure_sat_comp_coeff['A'] -
-                    cobj.pressure_sat_comp_coeff['B'] /
-                    (T + cobj.pressure_sat_comp_coeff['C']))
+        psat = 10**(cobj.pressure_sat_comp_coeff_A -
+                    cobj.pressure_sat_comp_coeff_B /
+                    (pyunits.convert(T, to_units=pyunits.K) +
+                     cobj.pressure_sat_comp_coeff_C))*pyunits.bar
+
+        base_units = b.params.get_metadata().default_units
+        p_units = (base_units["mass"] *
+                   base_units["length"]**-1 *
+                   base_units["time"]**-2)
+        return pyunits.convert(psat, to_units=p_units)
 
     def dT_expression(b, cobj, T):
-        return (pressure_sat_comp.return_expression(b, cobj, T) *
-                cobj.pressure_sat_comp_coeff['B'] *
-                log(10)/(T + cobj.pressure_sat_comp_coeff['C'])**2)
+        p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
+                    cobj.pressure_sat_comp_coeff_B *
+                    log(10)/(pyunits.convert(T, to_units=pyunits.K) +
+                             cobj.pressure_sat_comp_coeff_C)**2)
+
+        base_units = b.params.get_metadata().default_units
+        dp_units = (base_units["mass"] *
+                    base_units["length"]**-1 *
+                    base_units["time"]**-2 *
+                    base_units["temperature"]**-1)
+        return pyunits.convert(p_sat_dT, to_units=dp_units)
