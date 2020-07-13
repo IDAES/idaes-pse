@@ -823,9 +823,8 @@ def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
     return result
 
 def apply_noise_at_time_points(var, points, noise_params, noise_function,
-        bounds=(None, None),
-        bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
+        bounds=(None, None), bound_option=NoiseBoundOption.DISCARD, 
+        max_number_discards=5, bound_push=1e-8):
     """
     """
     # TODO: implement this so I don't have to generate lists of noise params and 
