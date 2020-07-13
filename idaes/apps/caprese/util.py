@@ -786,6 +786,7 @@ def apply_noise_with_bounds(val_list, noise_params, noise_function, bound_list,
     for val, params, bounds in zip(val_list, noise_params, bound_list):
         if type(params) is not tuple:
             # better be a scalar
+            # better check: if type(params) not in {sequence_types}...
             params = (params,)
 
         if bound_option == NoiseBoundOption.DISCARD:
@@ -822,11 +823,36 @@ def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
     return result
 
 def apply_noise_at_time_points(var, points, noise_params, noise_function,
+        bounds=(None, None),
         bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
         bound_push=1e-8):
     """
     """
     # TODO: implement this so I don't have to generate lists of noise params and 
     # bounds every time I call this function
-    pass
+    # Goal: more modular version of add_noise_at_time that uses the functions
+    # I've added above.
+    # Q: Would the efficiency gained by extending to lists of vars be appreciable?
+    params_type = type(params)
+    sequence_types = {tuple, list}
+    if params_type not in sequence_types:
+        # better be a scalar
+        params = (params,)
+    result = []
+    for t in points:
+        val = var[t].value
+        if bound_option == NoiseBoundOption.DISCARD:
+            newval = apply_bounded_noise_discard(val, params, noise_function,
+                    bounds, max_number_discards)
+        elif bound_option == NoiseBoundOption.PUSH:
+            newval = apply_bounded_noise_push(val, params, noise_function,
+                    bounds, bound_push)
+        elif bound_option == NoiseBoundOption.FAIL:
+            newval = apply_bounded_noise_fail(val, params, noise_function, 
+                    bounds)
+        else:
+            raise RuntimeError(
+                'Bound violation option not recognized')
+        result.append(newval)
+    return result
 
