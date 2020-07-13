@@ -472,7 +472,8 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
     #time = model.time
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
-    assert degrees_of_freedom(model) == 0
+    #assert degrees_of_freedom(model) == 0
+    # No need to check dof here as we will check right before each solve
 
     #dae_vars = kwargs.pop('dae_vars', [])
     if not dae_vars:
@@ -611,7 +612,8 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
             if was_originally_active[id(comp)]:
                 comp.activate()
 
-    assert degrees_of_freedom(model) == 0
+    #assert degrees_of_freedom(model) == 0
+    # No need to assert this, as we did not require it up front.
 
 
 def add_noise_at_time(varlist, t_list, **kwargs):
