@@ -93,6 +93,7 @@ def main(plot_switch=False):
 
     plant = nmpc.plant
     controller = nmpc.controller
+    time_controller = controller.time
 
     nmpc.solve_consistent_initial_conditions(plant)
     nmpc.solve_consistent_initial_conditions(controller)
@@ -124,8 +125,34 @@ def main(plot_switch=False):
     # initial steady state
     # inject_inputs_into_plant with argument for the inputs?
     # These inputs should /probably/ come from an InputHistory
+#    plant_inputs = nmpc.plant._NMPC_NAMESPACE.input_vars.varlist
+#    nmpc.inject_inputs_into(plant_inputs, nmpc.plant, 0.0, 0.0)
 
-    # simulate plant (will be trivial up to noise on the inputs)
+    # Populate first sample of controller with inputs that will take place
+    # for the sampling time just before the controller becomes active.
+    # These will usually be the inputs of the initial steady state
+    controller_inputs = nmpc.controller._NMPC_NAMESPACE.input_vars.varlist
+    nmpc.inject_inputs_into(controller_inputs,
+            nmpc.controller, 0.0, 0.0)
+    nmpc.simulate_controller_sample(time_controller.first())
+
+    # Send these control inputs to the plant.
+    nmpc.inject_control_inputs_into_plant(time_plant.first(),
+            add_input_noise=True)
+    # simulate plant (will be trivial up to noise on the inputs, assuming
+    # we start at a steady state)
+    nmpc.simulate_plant(time_plant.first())
+
+    # Just used the controller to simulate first step of plant;
+    # Need to use result to properly fix its initial conditions
+    #
+    # Input values have been overwritten when noise was applied to plant.
+    # Differential, algebraic, and derivative variables should not have been
+    # altered.
+    # If I only shift IC vars, I should re-solve for consistent initial
+    # conditions. If I shift all three of these categories, I shouldn't 
+    # need to.
+    nmpc.shift_controller_initial_conditions()
 
     # Initial control problem will not need be altered
     # initial conditions have been loaded from plant at this point, 
@@ -134,10 +161,14 @@ def main(plot_switch=False):
             control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
     nmpc.solve_control_problem()
 
+    import pdb; pdb.set_trace()
+    # TODO: at what point should I step into NMPC loop?
+
     # As part of the solve, get du/dx_0 matrix
 
     # Make "measurement" from simulated plant 
     # Do not load into controller, however
+    # get_measured_initial_conditions method?
 
     # update_control_inputs (where to store the updated control inputs?)
     # Controller? Not obvious...
