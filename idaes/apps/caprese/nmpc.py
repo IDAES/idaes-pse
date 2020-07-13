@@ -666,7 +666,7 @@ class NMPCSim(DynamicBase):
                               **noise_args)
 
 
-    def get_measured_initial_conditions(self, t_plant=None, apply_noise=False,
+    def get_measured_plant_state(self, t_plant=None, apply_noise=False,
             **kwargs):
         """
         """
@@ -677,7 +677,44 @@ class NMPCSim(DynamicBase):
         # Return list of these values
         #
         # Want to apply noise independent of any model.
-        pass
+        config = self.config(kwargs)
+        sample_time = self.sample_time
+        cs_tolerance = config.continuous_set_tolerance
+        plant_namespace = getattr(self.plant, self.get_namespace_name())
+        controller_namespace = getattr(self.controller, 
+                self.get_namespace_name())
+        locator = controller_namespace.var_locator
+        plant_time = plant_namespace.get_time()
+        controller_time = controller_namespace.get_time()
+        if t_plant is None:
+            t_plant = plant_time.first() + sample_time
+            t_plant = find_point_in_continuousset(
+                    t_plant, 
+                    plant_time, 
+                    cs_tolerance)
+
+        if not apply_noise:
+            return [var[t_plant].value for var in 
+                    plant_namespace.controller_ic_vars]
+
+        measured_state = []
+        t0 = controller_time.first()
+        for p_var, c_var in zip(plant_namespace.controller_ic_vars,
+                controller_namespace.ic_vars):
+            c_var0 = c_var[t0]
+            info = locator[c_var0]
+            group = info.group
+            location = info.location
+            bounds = (group.lb[location], group.ub[location])
+            weight = group.weights[location]
+            newval = apply_noise_at_time_points(
+                    p_var, 
+                    t_plant,
+                    noise_params,
+                    noise_function,
+                    bounds)
+            measured_state.append(newval)
+        return measured_state
 
 
     def shift_controller_initial_conditions(self, t_target=None, shift=None, 
@@ -1347,7 +1384,7 @@ class NMPCSim(DynamicBase):
             model : Model whose variables will be checked for bounds.
 
         """
-
+        # TODO: This should probably be a method of NMPCVarGroup
         varlist = vargroup.varlist
         if not vargroup.is_scalar:
             t0 = vargroup.index_set.first()
