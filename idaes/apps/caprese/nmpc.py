@@ -666,6 +666,47 @@ class NMPCSim(DynamicBase):
                               **noise_args)
 
 
+    def get_measured_initial_conditions(self, t_plant=None, apply_noise=False,
+            **kwargs):
+        """
+        """
+        # grab values out of plant's controller_ic_vars at specified time
+        # ^ Could also access these values from a History-like data structure
+        #   Or could get them from an MHE model
+        # If specified, apply noise to these values
+        # Return list of these values
+        #
+        # Want to apply noise independent of any model.
+        pass
+
+
+    def shift_controller_initial_conditions(self, t_target=None, shift=None, 
+            categories=[
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.DERIVATIVE,
+                ],
+            **kwargs):
+        """
+        """
+        config = self.config(kwargs)
+        cs_tolerance = config.continuous_set_tolerance
+        namespace = getattr(self.controller, self.get_namespace_name())
+        category_dict = namespace.category_dict
+        time = namespace.get_time()
+        sample_time = self.sample_time
+        if t_target is None:
+            t_target = time.first()
+        if shift is None:
+            shift = sample_time
+        t_source = t_target + shift
+        t_source = find_point_in_continuousset(t_source, time, cs_tolerance)
+
+        for categ in categories:
+            varlist = category_dict[categ].varlist
+            copy_values_at_time(varlist, varlist, t_target, t_source)
+
+
     def inject_inputs_into(self, source, model, t_source, t_target, **kwargs):
         """
         Args:
@@ -1395,6 +1436,8 @@ class NMPCSim(DynamicBase):
         pwc_constraint_list = [Reference(pwc_constraint[:, i])
                            for i in input_indices]
         model._NMPC_NAMESPACE.pwc_constraint_list = pwc_constraint_list
+        # TODO: at this point, make sure inputs are unfixed so that the model
+        # is not over-constrained
 
 
     def initialize_control_problem(self, **kwargs):
@@ -1538,8 +1581,6 @@ class NMPCSim(DynamicBase):
 
         time = model._NMPC_NAMESPACE.get_time()
         category_dict = model._NMPC_NAMESPACE.category_dict
-        # TODO: have some attribute for steady time 
-        # Or better yet, don't use a steady_model at all
 
         for categ in categories:
             varlist = category_dict[categ].varlist
@@ -1613,6 +1654,84 @@ class NMPCSim(DynamicBase):
         else:
             init_log.error('Failed to solve optimal control problem')
             raise ValueError
+
+
+    def simulate_controller_sample(self, t_start, **kwargs):
+        """
+        """
+        # get time points within sample
+        # fix inputs at those values
+        # apply strip bounds
+        # deactivate pwc constraints
+        # deactivate objective
+        # simulate_over_range
+        # activate objective
+        # reactivate pwc constraints
+        # revert strip bounds
+        # unfix inputs
+        # TODO: would be nice to have context managers for these things
+        config = self.config(kwargs)
+        sample_time = self.sample_time
+        tolerance = config.tolerance
+        cs_tolerance = config.continuous_set_tolerance
+        solver = config.solver
+        outlvl = config.outlvl
+        objective_name = config.full_state_objective_name
+        controller = self.controller
+        time = self.controller_time
+        namespace = getattr(controller, self.get_namespace_name())
+        # TODO: allow multiple objectives to exist, have mechanism for telling
+        # which should be active
+        objective = getattr(namespace, objective_name)
+        sample_points = namespace.sample_points
+        sample_point_set = set(sample_points)
+        sample_point_set.add(time.first())
+        # ^ Should sample_points include time.first()?
+
+        t_end = t_start + sample_time
+        t_end = find_point_in_continuousset(t_end, time, cs_tolerance)
+        if (t_start not in sample_point_set or 
+                t_end not in sample_point_set):
+            raise ValueError(
+                'Start and end of controller simulation must be sample points')
+        sample = [t for t in time if t_start <= t and t <= t_end]
+
+        for i, _slice in enumerate(namespace.input_vars):
+            for t in sample:
+                _slice[t].fix()
+                if t not in sample_point_set:
+                    namespace.pwc_constraint[t, i].deactivate()
+        objective.deactivate()
+        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
+        strip_bounds.apply_to(controller, reversible=True)
+
+        time_linking_vars = (namespace.diff_vars.varlist + 
+                             namespace.deriv_vars.varlist)
+        time_indexed_vars = namespace.dae_vars
+        initialize_by_element_in_range(
+                controller,
+                time,
+                t_start,
+                t_end,
+                time_linking_vars=time_linking_vars,
+                dae_vars=time_indexed_vars,
+                solver=solver,
+                outlvl=outlvl)
+
+        strip_bounds.revert(controller)
+        objective.activate()
+        for group in [namespace.diff_vars, namespace.alg_vars]:
+            violated = get_violated_bounds_at_time(group, sample, tolerance)
+            if violated:
+                raise ValueError(
+                    'Bounds violated after solving elements: %s'
+                    % str(violated))
+            
+        for i, _slice in enumerate(namespace.input_vars):
+            for t in sample:
+                _slice[t].unfix()
+                if t not in sample_point_set:
+                    namespace.pwc_constraint[t, i].activate()
 
 
     def simulate_plant(self, t_start, **kwargs):
