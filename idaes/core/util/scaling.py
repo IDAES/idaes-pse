@@ -108,18 +108,26 @@ def __set_constarint_tranform_applied_scaling_factor(c, v):
         c.parent_block().constaint_transformed_scaling_factor[c] = v
     except AttributeError:
         c.parent_block().constaint_transformed_scaling_factor = pyo.Suffix(
-            direction=pyo.Suffix.EXPORT)
+            direction=pyo.Suffix.LOCAL)
         c.parent_block().constaint_transformed_scaling_factor[c] = v
 
 
-def __get_constarint_tranform_applied_scaling_factor(c, default=None):
-    """PRIVATE FUNCTION: Get a the scale factor that was used to transform a
+def get_constarint_tranform_applied_scaling_factor(c, default=None):
+    """Get a the scale factor that was used to transform a
     constraint.
+
+    Args:
+        c: constraint data object
+        default: value to return if no scaling factor exisits (default=None)
+
+    Returns:
+        The scaling factor that has been used to transform the constrain or the
+        default.
     """
     try:
         sf = c.parent_block().constaint_transformed_scaling_factor.get(c, default)
     except AttributeError:
-        sf = default
+        sf = default # when there is no suffix
     return sf
 
 
@@ -136,120 +144,45 @@ def __unset_constarint_tranform_applied_scaling_factor(c):
         pass # no scaling factor is fine
 
 
-def constraint_scaling_transform(c):
-    """This transforms a constraint with its scaling factor. If there is no
-    scaling factor for the constraint, the constraint it is assumed to be 1.
-    After transforming the constraint the scaling factor, scaling expression,
-    and nomical value are all unset to ensure the constraint isn't scaled twice.
+def constraint_scaling_transform(c, s):
+    """This transforms a constraint by the argument s.  The scaling factor
+    applies to original constraint (e.g. if one where to call this twice in a row
+    for a constraint with a scaling factor of 2, the original constraint would
+    still, only be scaled by a factor of 2.)
 
     Args:
         c: Pyomo constraint
+        s: scale factor applied to the constraint as origianlly written
 
     Returns:
         None
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    v = get_scaling_factor(c, default=1)
+    st = get_constarint_tranform_applied_scaling_factor(c, default=1)
+    v = s/st
     c.set_value(
         (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
-    vt = __get_constarint_tranform_applied_scaling_factor(c, default=1)
-    __set_constarint_tranform_applied_scaling_factor(c, vt*v)
-    unset_scaling_factor(c)
+    __set_constarint_tranform_applied_scaling_factor(c, s)
 
 
-def constraint_scaling_transform_undo(c, forget=False):
-    """The undoes the scaleing transforms previously applied to a constaint. The
-    scaling that has been done to constraint is moved to the constraint scale
-    factor, unless the forget option is true.
+def constraint_scaling_transform_undo(c):
+    """The undoes the scaling transforms previously applied to a constaint.
 
     Args:
         c: Pyomo constraint
-        forget: don't appy previously applied scaling transformations to current
-            scale factor value.
 
     Returns:
         None
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    v = __get_constarint_tranform_applied_scaling_factor(c)
+    v = get_constarint_tranform_applied_scaling_factor(c)
     if v is None:
         return # hasn't been transformed, so nothing to do.
     c.set_value(
         (__none_mult(c.lower, 1/v), __none_mult(c.body, 1/v), __none_mult(c.upper, 1/v)))
     __unset_constarint_tranform_applied_scaling_factor(c)
-    if not forget:
-        vt = get_scaling_factor(c, default=1)
-        set_scaling_factor(c, v*vt)
-
-
-def __scale_block_constraints_transform(b):
-    """PRIVATE FUNCTION
-    Scales all of the constraints in a block. Does not descend into other
-    blocks.
-
-    Args:
-        b: Pyomo block
-
-    Returns:
-        None
-    """
-    for c in b.component_data_objects(pyo.Constraint, descend_into=False):
-        constraint_scaling_transform(c)
-
-
-def __scale_block_constraints_transform_undo(b, forget=False):
-    """PRIVATE FUNCTION
-    Scales all of the constraints in a block. Does not descend into other
-    blocks.
-
-    Args:
-        b: Pyomo block
-
-    Returns:
-        None
-    """
-    for c in b.component_data_objects(pyo.Constraint, descend_into=False):
-        constraint_scaling_transform_undo(c, forget=forget)
-
-
-def block_constraint_scaling_transform(blk, descend_into=True):
-    """This scales all constraints with their scaling factor suffix for a model
-    or block. After scaling the constraints, the scaling factor and expression
-    for each constraint is unset to avoid double scaling the constraints.
-
-    Args:
-        blk: Pyomo block
-        descend_into: indicates whether to descend into the other blocks on blk.
-            (default = True)
-
-    Returns:
-        None
-    """
-    __scale_block_constraints_transform(blk)
-    if descend_into:
-        for b in blk.component_data_objects(pyo.Block, descend_into=True):
-            __scale_block_constraints_transform(b)
-
-
-def block_constraint_scaling_transform_undo(blk, descend_into=True, forget=False):
-    """This undoes scaling transfromations on all constraints on a block.
-
-    Args:
-        blk: Pyomo block
-        descend_into: indicates whether to descend into the other blocks on blk.
-            (default = True)
-        forget: If True, don't apply the scaling factor that was used in the
-            undone transformation to the constraint scale flactor. Default is False.
-
-    Returns:
-        None
-    """
-    __scale_block_constraints_transform_undo(blk, forget=forget)
-    if descend_into:
-        for b in blk.component_data_objects(pyo.Block, descend_into=True):
-            __scale_block_constraints_transform(b, forget=forget)
 
 
 def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):

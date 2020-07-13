@@ -96,10 +96,6 @@ class TestSingleConstraintScalingTransform():
         m.c1 = pyo.Constraint(expr=m.x <= 1e3)
         m.c2 = pyo.Constraint(expr=m.x == 1e3)
         m.c3 = pyo.Constraint(expr=m.x >= 1e3)
-        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        m.scaling_factor[m.c1] = 1 / 1e3
-        m.scaling_factor[m.c2] = 1 / 1e3
-        m.scaling_factor[m.c3] = 1 / 1e3
         return m
 
     @pytest.mark.unit
@@ -117,82 +113,46 @@ class TestSingleConstraintScalingTransform():
     @pytest.mark.unit
     def test_not_constraint(self, model):
         with pytest.raises(TypeError):
-            sc.constraint_scaling_transform(model.x)
+            sc.constraint_scaling_transform(model.x, 1)
 
     @pytest.mark.unit
     def test_less_than_constraint(self, model):
-        sc.constraint_scaling_transform(model.c1)
+        sc.constraint_scaling_transform(model.c1, 1e-3)
         assert model.c1.lower is None
         assert model.c1.body() == pytest.approx(model.x.value / 1e3)
         assert model.c1.upper.value == pytest.approx(1)
         assert sc.get_scaling_factor(model.c1) is None
         sc.constraint_scaling_transform_undo(model.c1)
-        assert sc.get_scaling_factor(model.c1) == 1e-3
         assert model.c1.lower is None
         assert model.c1.body() == pytest.approx(model.x.value)
         assert model.c1.upper.value == pytest.approx(1e3)
 
     @pytest.mark.unit
     def test_equality_constraint(self, model):
-        sc.constraint_scaling_transform(model.c2)
+        sc.constraint_scaling_transform(model.c2, 1e-3)
+        # Do transformation again to be sure that, despite being called twice in
+        # a row, the transformation only happens once.
+        sc.constraint_scaling_transform(model.c2, 1e-3)
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
+        assert sc.get_constarint_tranform_applied_scaling_factor(model.c2) is 1e-3
         sc.constraint_scaling_transform_undo(model.c2)
+        assert sc.get_constarint_tranform_applied_scaling_factor(model.c2) is None
         assert model.c2.lower.value == pytest.approx(1e3)
         assert model.c2.body() == pytest.approx(model.x.value)
         assert model.c2.upper.value == pytest.approx(1e3)
 
     @pytest.mark.unit
     def test_greater_than_constraint(self, model):
-        sc.constraint_scaling_transform(model.c3)
+        sc.constraint_scaling_transform(model.c3, 1e-3)
         assert sc.get_scaling_factor(model.c3) == None
         assert model.c3.lower.value == pytest.approx(1)
         assert model.c3.body() == pytest.approx(model.x.value / 1e3)
         assert model.c3.upper is None
-        sc.constraint_scaling_transform_undo(model.c3, forget=True)
-        assert sc.get_scaling_factor(model.c3) == None
+        sc.constraint_scaling_transform_undo(model.c3)
         assert model.c3.lower.value == pytest.approx(1e3)
         assert model.c3.body() == pytest.approx(model.x.value)
-        assert model.c3.upper is None
-        sc.set_scaling_factor(model.c3, 1e-3) #shared between test, dont change it
-
-    @pytest.mark.unit
-    def test_block_transform(self, model):
-        sc.block_constraint_scaling_transform(model)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c1.upper.value == pytest.approx(1)
-        assert model.c2.lower.value == pytest.approx(1)
-        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_scaling_factor(model.c3) == None
-        assert model.c3.lower.value == pytest.approx(1)
-        assert model.c3.body() == pytest.approx(model.x.value / 1e3)
-        assert model.c3.upper is None
-        sc.block_constraint_scaling_transform_undo(model)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value)
-        assert model.c1.upper.value == pytest.approx(1e3)
-        assert model.c2.lower.value == pytest.approx(1e3)
-        assert model.c2.body() == pytest.approx(model.x.value)
-        assert model.c2.upper.value == pytest.approx(1e3)
-        assert sc.get_scaling_factor(model.c3) == 1e-3
-        assert model.c3.lower.value == pytest.approx(1e3)
-        assert model.c3.body() == pytest.approx(model.x.value)
-        assert model.c3.upper is None
-        sc.block_constraint_scaling_transform(model)
-        sc.block_constraint_scaling_transform_undo(model, forget=True)
-        assert model.c1.lower is None
-        assert model.c1.body() == pytest.approx(model.x.value)
-        assert model.c1.upper.value == pytest.approx(1e3)
-        assert model.c2.lower.value == pytest.approx(1e3)
-        assert model.c2.body() == pytest.approx(model.x.value)
-        assert model.c2.upper.value == pytest.approx(1e3)
-        assert sc.get_scaling_factor(model.c3) == None
-        assert model.c3.lower.value == pytest.approx(1e3)
-        assert model.c3.body() == pytest.approx(model.x.value)
-        assert model.c3.upper is None
 
 
 class TestScaleSingleConstraint():
