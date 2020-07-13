@@ -667,6 +667,7 @@ class NMPCSim(DynamicBase):
 
 
     def get_measured_plant_state(self, t_plant=None, apply_noise=False,
+            base_noise_param=0.05,
             **kwargs):
         """
         """
@@ -679,6 +680,10 @@ class NMPCSim(DynamicBase):
         # Want to apply noise independent of any model.
         config = self.config(kwargs)
         sample_time = self.sample_time
+        noise_function = config.measurement_noise_function
+        noise_bound_option = config.noise_bound_option
+        max_number_discards = config.max_noise_bound_violations
+        noise_bound_push = config.noise_bound_push
         cs_tolerance = config.continuous_set_tolerance
         plant_namespace = getattr(self.plant, self.get_namespace_name())
         controller_namespace = getattr(self.controller, 
@@ -707,12 +712,17 @@ class NMPCSim(DynamicBase):
             location = info.location
             bounds = (group.lb[location], group.ub[location])
             weight = group.weights[location]
+            noise_params = (weight*base_noise_param,)
             newval = apply_noise_at_time_points(
                     p_var, 
                     t_plant,
                     noise_params,
                     noise_function,
-                    bounds)
+                    bounds,
+                    bound_option=noise_bound_option,
+                    max_number_discards=max_number_discards,
+                    bound_push=noise_bound_push,
+                    )
             measured_state.append(newval)
         return measured_state
 
