@@ -27,6 +27,7 @@ from idaes.apps.caprese.common.config import (
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
+import random
 
 __author__ = "Robert Parker"
 
