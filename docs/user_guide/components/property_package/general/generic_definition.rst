@@ -9,6 +9,15 @@ Introduction
 
 In order to create and use a property package using the IDAES Generic Property Package Framework, users must provide a definition for the material they wish to model. The framework supports two approaches for defining the property package, which are described below, both of which are equivalent in practice.
 
+Units of Measurement
+--------------------
+
+When defining a property package using the generic framework, users must define the base units for the property package (see :ref:`link<user_guide/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units depends on the approach used to define the property package, and is discussed in more detail in each section.
+
+The Generic Property Package Framework includes the necessary code to convert between different units of measurement as required, allowing users to combine property methods with different sets of units into a single property package. In these cases, each property method is written in its natural units (including parameters), and the final result is automatically converted to the base units.
+
+For example, the Antoine equation is generally written with pressure in bars and temperature in either Kelvin or Celsius (depending on source). Using the generic property framework, the users provide the Antoine coefficients in their original units (i.e. bar and Kelvin/Celsius) and the property calculation is written in these units. However, the final result (saturation pressure) is then converted to the base units specified in the property package definition.
+
 Property Parameters
 -------------------
 
@@ -31,11 +40,20 @@ The most common way to use the Generic Property Package Framework is to create a
 
     m.fs.properties = GenericParameterBlock(default=config_dict)
 
-Users need to populate `config_dict` with the desired options for their system as described in the other parts of this documentation. An example of a configuration dictionary for a benzene-toluene VLE system is shown below. For details on each configuration option, please see the relevant documentation.
+Users need to populate `config_dict` with the desired options for their system as described in the other parts of this documentation. An example of a configuration dictionary for a benzene-toluene VLE system is shown below.
+
+Using this approach, units of measurement are defined using the `base_units` option in the configuration dictionary. Users must provide units for the 5 core quantities, and may also provide units for the other 2 SI base quantities (if required). For details on other configuration options, please see the relevant documentation.
 
 .. code-block:: python
 
+    from pyomo.environ import units as pyunits
+
     config_dict = {
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
         "components": {
             'benzene': {
                 "dens_mol_liq_comp": Perrys,
@@ -76,7 +94,7 @@ Users need to populate `config_dict` with the desired options for their system a
                     "mw": 92.1405E-3,  # [1]
                     "pressure_crit": 41e5,  # [1]
                     "temperature_crit": 591.8,  # [1]
-                    "dens_mol_liq_comp_coeff": {'1': 0.8488*1e3,  # [2] pg. 2-98
+                    "dens_mol_liq_comp_coeff": {'1': 0.8488,  # [2] pg. 2-98
                                                 '2': 0.26655,
                                                 '3': 591.8,
                                                 '4': 0.2878},
@@ -116,7 +134,7 @@ Users need to populate `config_dict` with the desired options for their system a
 Data Sources:
 
 1. The Properties of Gases and Liquids (1987), 4th edition, Chemical Engineering Series - Robert C. Reid
-2. Perry's Chemical Engineers' Handbook 7th Ed. (converted to J/mol.K, mol/m^3)
+2. Perry's Chemical Engineers' Handbook 7th Ed.
 3. Engineering Toolbox, https://www.engineeringtoolbox.com, Retrieved 1st December, 2019
 
 Class Definition
@@ -148,7 +166,7 @@ Users should populate the `configure` and `parameters` methods as discussed belo
 Configure
 ^^^^^^^^^
 
-The 'configure` method is used to assign values to the configuration arguments, using the format `self.config.option_name = value`.
+The 'configure` method is used to assign values to the configuration arguments, using the format `self.config.option_name = value`. Users will also need to set the units of measurement in the property package metadata.
 
 Parameters
 ^^^^^^^^^^
