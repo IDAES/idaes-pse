@@ -421,8 +421,8 @@ between flow and pressure driven simulations.}""",
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        for t in self.flowsheet().time:
-            for i, b in self.inlet_blocks.items():
+        for i, b in self.inlet_blocks.items():
+            for t in b:
                 b[t].pressure.fix()
                 b[t].enth_mol.fix()
                 b[t].flow_mol.fix()

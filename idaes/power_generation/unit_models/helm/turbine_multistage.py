@@ -46,6 +46,8 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as copy_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -711,7 +713,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             optarg=optarg,
             calculate_cf=calculate_outlet_cf
         )
-        for t in self.flowsheet().time:
+        for t in self.inlet_split.inlet.flow_mol:
             self.inlet_split.inlet.flow_mol[t].value = \
                 self.outlet_stage.inlet.flow_mol[t].value
 
@@ -719,18 +721,27 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
             icf = {}
-            for t in self.flowsheet().config.time:
-                for i in self.inlet_stage:
+            for i in self.inlet_stage:
+                for t in self.inlet_stage[i].flow_coeff:
                     icf[i,t] = value(self.inlet_stage[i].flow_coeff[t])
         if calculate_outlet_cf:
             ocf = value(self.outlet_stage.flow_coeff)
+
+        slvr = SolverFactory(solver)
+        slvr.options = optarg
+        assert degrees_of_freedom(self) == 0
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = slvr.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete (Multistage Stage): {}".format(idaeslog.condition(res))
+        )
 
         from_json(self, sd=istate, wts=sp)
 
         if calculate_inlet_cf:
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
-            for t in self.flowsheet().config.time:
+            for t in self.inlet_stage[i].flow_coeff:
                 for i in self.inlet_stage:
                     self.inlet_stage[i].flow_coeff[t] = icf[i,t]
         if calculate_outlet_cf:

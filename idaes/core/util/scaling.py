@@ -45,6 +45,28 @@ def __none_mult(x, y):
     return x
 
 
+def propagate_indexed_component_scaling_factors(
+    blk,
+    typ=(pyo.Var, pyo.Constraint, pyo.Expression, pyo.Param),
+    overwrite=True,
+    descend_into=True):
+    """Use the parent compoent scaling factor to set all component data object
+    scaling factors.
+
+    Args:
+        blk: The block on which to search for components
+        typ: Component type(s) (default=(Var, Constraint, Expression, Param))
+        overwrite: if a data object already has a scaling factor should it be
+            overwrittten (default=True)
+        descend_into: descend into child blocks (default=True)
+    """
+    for c in blk.component_objects(typ, descend_into=descend_into):
+        if get_scaling_factor(c) is not None and c.is_indexed():
+            for cdat in c.values():
+                if overwrite or get_scaling_factor(cdat) is None:
+                    set_scaling_factor(cdat, get_scaling_factor(c))
+
+
 def set_scaling_factor(c, v):
     """Set a scaling factor for a model component. This function creates the
     scaling_factor suffix if needed.

@@ -87,6 +87,51 @@ def test_find_unscaled_vars_and_constraints():
     assert id(m.b.c2) in a
     assert len(a) == 2 #make sure we didn't pick up any other random stuff
 
+@pytest.mark.unit
+def test_propogate_indexed_scaling():
+    m = pyo.ConcreteModel()
+    m.b = pyo.Block()
+    m.x = pyo.Var([1,2,3], initialize=1e6)
+    m.y = pyo.Var([1,2,3], initialize=1e-8)
+    m.z = pyo.Var([1,2,3], initialize=1e-20)
+    @m.Constraint([1,2,3])
+    def c1(b, i):
+        return m.x[i] == 0
+    @m.Constraint([1,2,3])
+    def c2(b, i):
+        return m.y[i] == 0
+    m.b.w = pyo.Var([1,2,3], initialize=1e10)
+    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
+    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
+
+    sc.set_scaling_factor(m.x, 11)
+    sc.set_scaling_factor(m.y, 13)
+    sc.set_scaling_factor(m.b.w, 16)
+    sc.set_scaling_factor(m.c1, 14)
+
+    for i in [1,2,3]:
+        assert sc.get_scaling_factor(m.x[i]) is None
+        assert sc.get_scaling_factor(m.y[i]) is None
+        assert sc.get_scaling_factor(m.z[i]) is None
+        assert sc.get_scaling_factor(m.b.w[i]) is None
+        assert sc.get_scaling_factor(m.c1[i]) is None
+        assert sc.get_scaling_factor(m.c2[i]) is None
+    assert sc.get_scaling_factor(m.x) == 11
+    assert sc.get_scaling_factor(m.y) == 13
+    assert sc.get_scaling_factor(m.z) is None
+    assert sc.get_scaling_factor(m.b.w) == 16
+    assert sc.get_scaling_factor(m.c1) == 14
+    assert sc.get_scaling_factor(m.c2) is None
+
+    sc.propagate_indexed_component_scaling_factors(m)
+    for i in [1,2,3]:
+        assert sc.get_scaling_factor(m.x[i]) is 11
+        assert sc.get_scaling_factor(m.y[i]) is 13
+        assert sc.get_scaling_factor(m.z[i]) is None
+        assert sc.get_scaling_factor(m.b.w[i]) is 16
+        assert sc.get_scaling_factor(m.c1[i]) is 14
+        assert sc.get_scaling_factor(m.c2[i]) is None
+
 
 class TestSingleConstraintScalingTransform():
     @pytest.fixture(scope="class")
