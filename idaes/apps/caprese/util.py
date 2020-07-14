@@ -756,7 +756,7 @@ def apply_bounded_noise_discard(val, params, noise_function, bounds,
         newval = noise_function(val, *params)
 
         violated_bound, direction = get_violated_bounds(newval, bounds)
-        if not violated_bound:
+        if violated_bound is None:
             return newval
 
     # NOTE: This is not the most useful place to raise such an error
@@ -822,7 +822,7 @@ def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
             bound_push=bound_push)
     return result
 
-def apply_noise_at_time_points(var, points, noise_params, noise_function,
+def apply_noise_at_time_points(var, points, params, noise_function,
         bounds=(None, None), bound_option=NoiseBoundOption.DISCARD, 
         max_number_discards=5, bound_push=1e-8):
     """
@@ -833,10 +833,14 @@ def apply_noise_at_time_points(var, points, noise_params, noise_function,
     # I've added above.
     # Q: Would the efficiency gained by extending to lists of vars be appreciable?
     params_type = type(params)
+    points_type = type(points)
     sequence_types = {tuple, list}
     if params_type not in sequence_types:
         # better be a scalar
         params = (params,)
+    if points_type not in sequence_types:
+        points = [points]
+
     result = []
     for t in points:
         val = var[t].value
