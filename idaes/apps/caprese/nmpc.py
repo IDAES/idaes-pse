@@ -64,7 +64,8 @@ from idaes.apps.caprese.util import (
         validate_list_of_vardata_value_tuples, 
         validate_solver,
         find_point_in_continuousset,
-        get_violated_bounds_at_time)
+        get_violated_bounds_at_time,
+        apply_noise_at_time_points)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
@@ -627,43 +628,19 @@ class NMPCSim(DynamicBase):
         # probably be done with config blocks somehow.
         # TODO: allow specification of noise args
         config = self.config(kwargs)
+        noise_sigma_0 = config.noise_sigma_0
+        namespace = getattr(self.controller, self.get_namespace_name())
 
         time = self.controller_time
         t0 = time.first()
 
-        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
-                            t0,
-                            t_plant)
+        measured_state = self.get_measured_plant_state(
+                t_plant=t_plant, 
+                base_noise_param=noise_sigma_0,
+                **kwargs)
 
-        # Apply noise to new initial conditions
-        add_noise = config.add_plant_noise
-
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
-
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.ic_vars:
-                    info = locator[var[t0]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, 
-                                                 max_noise_weight))
-                    else:
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                              t0,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
+        for val, var in zip(measured_state, namespace.ic_vars):
+            var[t0].set_value(val)
 
 
     def get_measured_plant_state(self, t_plant=None, apply_noise=False,
@@ -712,13 +689,13 @@ class NMPCSim(DynamicBase):
             location = info.location
             bounds = (group.lb[location], group.ub[location])
             weight = group.weights[location]
-            noise_params = (weight*base_noise_param,)
-            newval = apply_noise_at_time_points(
-                    p_var, 
+            noise_params = (base_noise_param/weight,)
+            newval, = apply_noise_at_time_points(
+                    p_var,
                     t_plant,
                     noise_params,
                     noise_function,
-                    bounds,
+                    bounds=bounds,
                     bound_option=noise_bound_option,
                     max_number_discards=max_number_discards,
                     bound_push=noise_bound_push,
@@ -852,6 +829,7 @@ class NMPCSim(DynamicBase):
             # Right now I apply noise to controller model, and don't revert.
             # Not a problem as the first sample of controller vars gets back-
             # shifted into oblivion.
+            # TODO: replace with new noise function
 
         self.inject_inputs_into(controller_namespace.plant_input_vars, 
                 self.plant, 
