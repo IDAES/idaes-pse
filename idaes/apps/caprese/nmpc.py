@@ -1744,6 +1744,7 @@ class NMPCSim(DynamicBase):
     def initialize_history_from_plant(self, t_start=None, t_end=None, 
             variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
             **kwargs):
+        # TODO: case for None
         config = self.config(kwargs)
         tolerance = config.tolerance
         time = self.plant_time
