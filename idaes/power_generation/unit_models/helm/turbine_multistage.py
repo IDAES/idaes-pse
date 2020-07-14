@@ -711,7 +711,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             optarg=optarg,
             calculate_cf=calculate_outlet_cf
         )
-        for t in self.flowsheet().time:
+        for t in self.inlet_split.inlet.flow_mol:
             self.inlet_split.inlet.flow_mol[t].value = \
                 self.outlet_stage.inlet.flow_mol[t].value
 
@@ -719,8 +719,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
             icf = {}
-            for t in self.flowsheet().config.time:
-                for i in self.inlet_stage:
+            for i in self.inlet_stage:
+                for t in self.inlet_stage[i].flow_coeff:
                     icf[i,t] = value(self.inlet_stage[i].flow_coeff[t])
         if calculate_outlet_cf:
             ocf = value(self.outlet_stage.flow_coeff)
@@ -730,7 +730,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         if calculate_inlet_cf:
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
-            for t in self.flowsheet().config.time:
+            for t in self.inlet_stage[i].flow_coeff:
                 for i in self.inlet_stage:
                     self.inlet_stage[i].flow_coeff[t] = icf[i,t]
         if calculate_outlet_cf:
