@@ -49,7 +49,6 @@ _log = logging.getLogger(__name__)
 # [1] The Properties of Gases and Liquids (1987)
 #     4th edition, Chemical Engineering Series - Robert C. Reid
 # [2] Perry's Chemical Engineers' Handbook 7th Ed.
-#     Converted to J/mol.K, mol/m^3
 # [3] Engineering Toolbox, https://www.engineeringtoolbox.com
 #     Retrieved 1st December, 2019
 
@@ -67,7 +66,7 @@ configuration = {
                         "mw": 78.1136E-3,  # [1]
                         "pressure_crit": 48.9e5,  # [1]
                         "temperature_crit": 562.2,  # [1]
-                        "dens_mol_liq_comp_coeff": {'1': 1.0162*1e3,  # [2] pg. 2-98
+                        "dens_mol_liq_comp_coeff": {'1': 1.0162,  # [2] pg. 2-98
                                                     '2': 0.2655,
                                                     '3': 562.16,
                                                     '4': 0.28212},
@@ -97,7 +96,7 @@ configuration = {
                         "mw": 92.1405E-3,  # [1]
                         "pressure_crit": 41e5,  # [1]
                         "temperature_crit": 591.8,  # [1]
-                        "dens_mol_liq_comp_coeff": {'1': 0.8488*1e3,  # [2] pg. 2-98
+                        "dens_mol_liq_comp_coeff": {'1': 0.8488,  # [2] pg. 2-98
                                                     '2': 0.26655,
                                                     '3': 591.8,
                                                     '4': 0.2878},
