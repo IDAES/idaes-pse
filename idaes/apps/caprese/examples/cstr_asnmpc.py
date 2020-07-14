@@ -109,8 +109,10 @@ def main(plot_switch=False):
     weight_tolerance = 5e-7
     
     # Weight overwrite expects a list of (VarData, value) tuples
-    # in the STEADY MODEL
-    weight_override = [(controller.mixer.E_inlet.flow_vol[0], 20.0)]
+    weight_override = [
+            (controller.mixer.E_inlet.flow_vol[0], 20.0),
+            (controller.cstr.control_volume.energy_holdup[0, 'aq'], 0.1),
+            ]
 
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
@@ -135,14 +137,6 @@ def main(plot_switch=False):
     nmpc.inject_inputs_into(controller_inputs,
             nmpc.controller, 0.0, 0.0)
     nmpc.simulate_controller_sample(time_controller.first())
-
-    # Send these control inputs to the plant.
-    nmpc.inject_control_inputs_into_plant(time_plant.first(),
-            add_input_noise=True)
-    # simulate plant (will be trivial up to noise on the inputs, assuming
-    # we start at a steady state)
-    nmpc.simulate_plant(time_plant.first())
-
     # Just used the controller to simulate first step of plant;
     # Need to use result to properly fix its initial conditions
     #
@@ -154,6 +148,14 @@ def main(plot_switch=False):
     # need to.
     nmpc.shift_controller_initial_conditions()
 
+    # Send these control inputs to the plant.
+    nmpc.inject_control_inputs_into_plant(time_plant.first(),
+            add_input_noise=True)
+    # simulate plant (will be trivial up to noise on the inputs, assuming
+    # we start at a steady state)
+    nmpc.simulate_plant(time_plant.first())
+
+
     # Initial control problem will not need be altered
     # initial conditions have been loaded from plant at this point, 
     # but not updated since the simulation
@@ -161,7 +163,6 @@ def main(plot_switch=False):
             control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
     nmpc.solve_control_problem()
 
-    import pdb; pdb.set_trace()
     # TODO: at what point should I step into NMPC loop?
 
     # As part of the solve, get du/dx_0 matrix
@@ -169,6 +170,9 @@ def main(plot_switch=False):
     # Make "measurement" from simulated plant 
     # Do not load into controller, however
     # get_measured_initial_conditions method?
+    measured_state = nmpc.get_measured_plant_state(apply_noise=True)
+    # Later, will need to 
+    import pdb; pdb.set_trace()
 
     # update_control_inputs (where to store the updated control inputs?)
     # Controller? Not obvious...
@@ -186,10 +190,8 @@ def main(plot_switch=False):
         # DO NOT transfer plant state to controller
         nmpc.transfer_current_plant_state_to_controller(t,
                                                 add_plant_noise=True)
-        # Instead set controller's initial conditions to those the controller
-        # predicted for the end of the first sample
-        # /could/ update those values based on the measured initial conditions
-        # (that were used for the advanced-step update) TODO Is this worthwhile?
+        # Set the controller's initial conditions to those measured and used
+        # for the update.
         #
         # This is just initializing the controller FROM_PREVIOUS, including the
         # initial conditions.
