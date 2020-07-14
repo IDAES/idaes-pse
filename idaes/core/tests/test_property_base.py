@@ -16,14 +16,18 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
+import types
+
 from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.common.config import ConfigBlock
+
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
 from idaes.core.phases import Phase
 from idaes.core.components import Component
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
+from idaes.core.property_meta import PropertyClassMetadata
 
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
@@ -118,6 +122,12 @@ def test_get_component():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
+
     with pytest.raises(AttributeError):
         m.p.get_component("foo")
 
@@ -159,6 +169,12 @@ def test_get_phase():
 def test_make_component_objects():
     m = ConcreteModel()
     m.p = ParameterBlock()
+
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["comp1", "comp2"])
 
@@ -231,6 +247,12 @@ def test_validate_parameter_block_no_component_list():
 def test_validate_parameter_block_no_phase_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
+    
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["c1", "c2"])
 
@@ -258,6 +280,12 @@ def test_validate_parameter_block_invalid_component_object():
 def test_validate_parameter_block_invalid_phase_object():
     m = ConcreteModel()
     m.p = ParameterBlock()
+    
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["c1", "c2"])
 

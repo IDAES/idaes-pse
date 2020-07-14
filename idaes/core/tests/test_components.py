@@ -16,6 +16,7 @@ Tests for Component objects
 Author: Andrew Lee
 """
 import pytest
+import types
 
 from pyomo.environ import ConcreteModel, Set
 
@@ -24,12 +25,19 @@ from idaes.core.components import (Component, Solute, Solvent,
 from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
                                PhaseType)
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.property_meta import PropertyClassMetadata
 
 
 class TestComponent():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+        
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Component()
         m.comp2 = Component()
@@ -122,6 +130,12 @@ class TestSolute():
     def m(self):
         m = ConcreteModel()
 
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
         m.comp = Solute()
 
         return m
@@ -201,6 +215,12 @@ class TestSovent():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Solvent()
 
@@ -282,6 +302,12 @@ class TestIon():
     def m(self):
         m = ConcreteModel()
 
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
         m.comp = Ion()
 
         return m
@@ -329,6 +355,12 @@ class TestAnion():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Anion(default={"charge": -1})
 
@@ -392,6 +424,12 @@ class TestCation():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Cation(default={"charge": +1})
 

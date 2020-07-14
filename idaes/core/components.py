@@ -17,6 +17,7 @@ IDAES Component objects
 """
 from pyomo.environ import Set, Param, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
@@ -83,15 +84,30 @@ class ComponentData(ProcessBlockData):
         if not self.config._component_list_exists:
             self.__add_to_component_list()
 
+        base_units = self.parent_block().get_metadata().default_units
+        if isinstance(base_units["mass"], _PyomoUnit):
+            # Backwards compatability check
+            p_units = (base_units["mass"] /
+                       base_units["length"] /
+                       base_units["time"]**2)
+        else:
+            # Backwards compatability check
+            p_units = None
+
         # Create Param for molecular weight if provided
         if "mw" in self.config.parameter_data:
-            self.mw = Param(initialize=self.config.parameter_data["mw"])
+            self.mw = Param(initialize=self.config.parameter_data["mw"],
+                            units=base_units["mass"]/base_units["amount"])
 
         # Create Vars for common parameters
-        for p in ["pressure_crit", "temperature_crit", "omega"]:
+        param_dict = {"pressure_crit": p_units,
+                      "temperature_crit": base_units["temperature"],
+                      "omega": None}
+        for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(
-                    initialize=self.config.parameter_data[p]))
+                    initialize=self.config.parameter_data[p],
+                    units=u))
 
     def is_solute(self):
         raise TypeError(

@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            value,
                            Var)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
@@ -94,6 +95,8 @@ class TestParamBlock(object):
         assert model.params.pressure_ref.value == 1e5
         assert model.params.temperature_ref.value == 300
 
+        assert_units_consistent(model)
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -153,6 +156,8 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
         assert len(model.props[1].phase_fraction_constraint) == 2
+
+        assert_units_consistent(model)
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
