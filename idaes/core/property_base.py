@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -248,8 +248,14 @@ class PhysicalParameterBlock(ProcessBlockData,
                      "component objects."
                      .format(self.name))
         for c in self.component_list:
-            setattr(self, str(c), Component(
-                        default={"_component_list_exists": True}))
+            if hasattr(self, c):
+                # An object with this name already exists, raise exception
+                raise PropertyPackageError(
+                    "{} could not add Component object {} - an object with "
+                    "that name already exists.".format(self.name, c))
+
+            self.add_component(str(c), Component(
+                default={"_component_list_exists": True}))
 
     def _make_phase_objects(self):
         _log.warning("DEPRECATED: {} appears to be an old-style property "
@@ -259,13 +265,19 @@ class PhysicalParameterBlock(ProcessBlockData,
                      "component objects."
                      .format(self.name))
         for p in self.phase_list:
+            if hasattr(self, p):
+                # An object with this name already exists, raise exception
+                raise PropertyPackageError(
+                    "{} could not add Phase object {} - an object with "
+                    "that name already exists.".format(self.name, p))
+
             try:
                 pc_list = self.phase_comp[p]
             except AttributeError:
                 pc_list = None
-            setattr(self, str(p), Phase(
-                        default={"component_list": pc_list,
-                                 "_phase_list_exists": True}))
+            self.add_component(str(p), Phase(
+                default={"component_list": pc_list,
+                         "_phase_list_exists": True}))
 
 
 class StateBlock(ProcessBlock):
@@ -638,6 +650,12 @@ should be constructed in this state block,
 
         # Check for recursive calls
         try:
+            # Check if __getattrcalls is initialized
+            self.__getattrcalls
+        except AttributeError:
+            # Initialize it
+            self.__getattrcalls = [attr]
+        else:
             # Check to see if attr already appears in call list
             if attr in self.__getattrcalls:
                 # If it does, indicates a recursive loop.
@@ -668,9 +686,6 @@ should be constructed in this state block,
                                     .format(self.name, attr))
             # If not, add call to list
             self.__getattrcalls.append(attr)
-        except AttributeError:
-            # A list of calls if one does not exist, so create one
-            self.__getattrcalls = [attr]
 
         # Get property information from properties metadata
         try:

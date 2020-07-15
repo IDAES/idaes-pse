@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -53,6 +53,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         super(ReactionParameterBlock, self).build()
 
 
+@pytest.mark.unit
 def test_config_block():
     # Test that PhysicalParameterBlock gets module information
     m = ConcreteModel()
@@ -63,6 +64,7 @@ def test_config_block():
     assert len(m.r.config.default_arguments) == 0
 
 
+@pytest.mark.unit
 def test_ReactionParameter_NotImplementedErrors():
     # Test that class methods return NotImplementedError
     m = ConcreteModel()
@@ -92,6 +94,7 @@ class _ReactionParameterBlock2(ReactionParameterBlock):
                                'energy': 'J',
                                'holdup': 'mol'})
 
+@pytest.mark.unit
 def test_validate_state_block_invalid_units():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
@@ -120,6 +123,7 @@ class _ReactionParameterBlock3(ReactionParameterBlock):
         obj.add_required_properties({'prop2': 'some'})
 
 
+@pytest.mark.unit
 def test_validate_state_block_unsupported_prop():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
@@ -148,6 +152,7 @@ class _ReactionParameterBlock4(ReactionParameterBlock):
         obj.add_required_properties({'prop3': 'some'})
 
 
+@pytest.mark.unit
 def test_validate_state_block_unsupported_prop_False():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
@@ -176,6 +181,7 @@ class _ReactionParameterBlock5(ReactionParameterBlock):
         obj.add_required_properties({'prop1': 'km'})
 
 
+@pytest.mark.unit
 def test_validate_state_block_req_prop_wrong_units():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
@@ -204,6 +210,7 @@ class _ReactionParameterBlock6(ReactionParameterBlock):
         obj.add_required_properties({'prop1': 'm'})
 
 
+@pytest.mark.unit
 def test_ReactionParameterBase_build():
     # Test that ReactionParameterBlock builds correctly
     m = ConcreteModel()
@@ -221,6 +228,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         super(ReactionBlockDataBase, self).build()
 
 
+@pytest.mark.unit
 def test_ReactionBlockBase_initialize():
     # Test that ReactionBlockBase initialize method raises NotImplementedError
     m = ConcreteModel()
@@ -232,6 +240,7 @@ def test_ReactionBlockBase_initialize():
         m.r.initialize()
 
 
+@pytest.mark.unit
 def test_ReactionBlockBase_report():
     # Test that ReactionBlockBase report method raises NotImplementedError
     m = ConcreteModel()
@@ -245,6 +254,7 @@ def test_ReactionBlockBase_report():
 
 # -----------------------------------------------------------------------------
 # Test ReactionBlockDataBase
+@pytest.mark.unit
 def test_StateBlock_config():
     # Test that ReactionBlockDataBase config has correct arguments
     m = ConcreteModel()
@@ -269,6 +279,7 @@ class StateTestBlockData(StateBlockData):
         super(StateBlockData, self).build()
 
 
+@pytest.mark.unit
 def test_validate_state_block_fail():
     # Test that ReactionBlockDataBase validate_state_block returns error
     m = ConcreteModel()
@@ -294,6 +305,7 @@ class ReactionBlockData2(ReactionBlockDataBase):
         super(ReactionBlockData2, self).build()
 
 
+@pytest.mark.unit
 def test_build():
     # Test that ReactionBlockDataBase builds correctly with good argumnets
     m = ConcreteModel()
@@ -364,44 +376,52 @@ def m():
     return m
 
 
+@pytest.mark.unit
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
 
 
+@pytest.mark.unit
 def test_getattr_protected(m):
     with pytest.raises(PropertyPackageError):
         # Call a protected component that does not exist
         m.p.cons = Constraint(expr=m.p._foo == 1)
 
 
+@pytest.mark.unit
 def test_getattr_recursion(m):
     with pytest.raises(PropertyPackageError):
         # Call a component that triggers a recursive loop of calls
         m.p.cons = Constraint(expr=m.p.recursion1 == 1)
 
 
+@pytest.mark.unit
 def test_getattr_does_not_exist(m):
     with pytest.raises(PropertyNotSupportedError):
         m.p.cons = Constraint(expr=m.p.does_not_exist == 1)
 
 
+@pytest.mark.unit
 def test_getattr_not_callable(m):
     with pytest.raises(PropertyPackageError):
         m.p.cons = Constraint(expr=m.p.not_callable == 1)
 
 
+@pytest.mark.unit
 def test_getattr_not_supported(m):
     with pytest.raises(PropertyNotSupportedError):
         m.p.cons = Constraint(expr=m.p.not_supported == 1)
 
 
+@pytest.mark.unit
 def test_getattr_raise_exception(m):
     with pytest.raises(Exception):
         m.p.cons = Constraint(expr=m.p.raise_exception == 1)
 
 
 # TODO : Need a test for cases where method does not create property
+#@pytest.mark.unit
 #def test_getattr_does_not_create_component(m):
 #    with pytest.raises(PropertyPackageError):
 #        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)

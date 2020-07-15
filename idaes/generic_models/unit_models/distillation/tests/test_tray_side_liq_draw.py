@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -36,6 +36,7 @@ from idaes.core.util.testing import get_default_solver, \
 solver = get_default_solver()
 
 
+@pytest.mark.unit
 def test_config():
 
     m = ConcreteModel()
@@ -87,6 +88,7 @@ class TestBTXIdeal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
         # General build
         assert hasattr(btx_ftpz.fs.unit, "material_mixing_equations")
@@ -186,6 +188,7 @@ class TestBTXIdeal(object):
         assert number_total_constraints(btx_fctp.fs.unit) == 64
         assert number_unused_variables(btx_fctp) == 1
 
+    @pytest.mark.unit
     def test_dof(self, btx_ftpz, btx_fctp):
 
         # Set inputs
@@ -228,12 +231,14 @@ class TestBTXIdeal(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx_ftpz, btx_fctp):
 
         results = solver.solve(btx_ftpz)
@@ -253,6 +258,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx_ftpz, btx_fctp):
 
         # liq_out port

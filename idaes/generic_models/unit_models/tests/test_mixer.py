@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -84,6 +84,7 @@ class TestMixer(object):
 
         return m
 
+    @pytest.mark.unit
     def test_mixer_config(self, mixer_frame):
         assert len(mixer_frame.fs.mix.config) == 12
         assert mixer_frame.fs.mix.config.dynamic is False
@@ -104,6 +105,7 @@ class TestMixer(object):
         assert mixer_frame.fs.mix.config.material_balance_type == \
             MaterialBalanceType.useDefault
 
+    @pytest.mark.unit
     def test_inherited_methods(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -111,6 +113,7 @@ class TestMixer(object):
         assert hasattr(mixer_frame.fs.mix.config.property_package,
                        "phase_list")
 
+    @pytest.mark.unit
     def test_create_inlet_list_default(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -120,6 +123,7 @@ class TestMixer(object):
         for i in inlet_list:
             assert i in ["inlet_1", "inlet_2"]
 
+    @pytest.mark.unit
     def test_create_inlet_list_inlet_list(self, mixer_frame):
         mixer_frame.fs.mix.config.inlet_list = ["foo", "bar"]
 
@@ -131,6 +135,7 @@ class TestMixer(object):
         for i in inlet_list:
             assert i in ["foo", "bar"]
 
+    @pytest.mark.unit
     def test_create_inlet_list_num_inlets(self, mixer_frame):
         mixer_frame.fs.mix.config.num_inlets = 3
 
@@ -142,6 +147,7 @@ class TestMixer(object):
         for i in inlet_list:
             assert i in ["inlet_1", "inlet_2", "inlet_3"]
 
+    @pytest.mark.unit
     def test_create_inlet_list_both_args_consistent(self, mixer_frame):
         mixer_frame.fs.mix.config.inlet_list = ["foo", "bar"]
         mixer_frame.fs.mix.config.num_inlets = 2
@@ -154,6 +160,7 @@ class TestMixer(object):
         for i in inlet_list:
             assert i in ["foo", "bar"]
 
+    @pytest.mark.unit
     def test_create_inlet_list_both_args_inconsistent(self, mixer_frame):
         mixer_frame.fs.mix.config.inlet_list = ["foo", "bar"]
         mixer_frame.fs.mix.config.num_inlets = 3
@@ -164,6 +171,7 @@ class TestMixer(object):
         with pytest.raises(ConfigurationError):
             mixer_frame.fs.mix.create_inlet_list()
 
+    @pytest.mark.unit
     def test_add_inlet_state_blocks(self, mixer_frame):
         mixer_frame.fs.mix.config.inlet_list = ["foo", "bar"]
 
@@ -184,6 +192,7 @@ class TestMixer(object):
             assert i[0].config.defined_state is True
             assert len(i[0].config) == 3
 
+    @pytest.mark.unit
     def test_add_inlet_state_blocks_prop_pack_args(self, mixer_frame):
         mixer_frame.fs.mix.config.property_package_args = {"test": 1}
         mixer_frame.fs.mix.config.inlet_list = ["foo", "bar"]
@@ -206,6 +215,7 @@ class TestMixer(object):
             assert len(i[0].config) == 4
             assert i[0].config.test == 1
 
+    @pytest.mark.unit
     def test_add_mixed_state_block(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -218,6 +228,7 @@ class TestMixer(object):
         assert mixer_frame.fs.mix.mixed_state[0].config.defined_state is False
         assert len(mixer_frame.fs.mix.mixed_state[0].config) == 3
 
+    @pytest.mark.unit
     def test_add_mixed_state_block_prop_pack_args(self, mixer_frame):
         mixer_frame.fs.mix.config.property_package_args = {"test": 1}
 
@@ -233,6 +244,7 @@ class TestMixer(object):
         assert len(mixer_frame.fs.mix.mixed_state[0].config) == 4
         assert mixer_frame.fs.mix.mixed_state[0].config.test == 1
 
+    @pytest.mark.unit
     def test_get_mixed_state_block(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
                 mixer_frame.fs.time,
@@ -247,6 +259,7 @@ class TestMixer(object):
 
         assert mixed_block == mixer_frame.fs.sb
 
+    @pytest.mark.unit
     def test_get_mixed_state_block_none(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -254,6 +267,7 @@ class TestMixer(object):
         with pytest.raises(BurntToast):
             mixer_frame.fs.mix.get_mixed_state_block()
 
+    @pytest.mark.unit
     def test_get_mixed_state_block_mismatch(self, mixer_frame):
         mixer_frame.fs.sb = TestStateBlock(
                 mixer_frame.fs.time,
@@ -271,6 +285,7 @@ class TestMixer(object):
             mixer_frame.fs.mix.get_mixed_state_block()
 
     # Test mixing equation methods
+    @pytest.mark.unit
     def test_add_material_mixing_equations_pc(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -286,6 +301,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 4
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_pc_equilibrium(self, mixer_frame):
         mixer_frame.fs.mix.config.has_phase_equilibrium = True
 
@@ -305,6 +321,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 4
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_pc_equilibrium_not_supported(
             self, mixer_frame):
         mixer_frame.fs.mix.config.has_phase_equilibrium = True
@@ -324,6 +341,7 @@ class TestMixer(object):
             mixer_frame.fs.mix.add_material_mixing_equations(
                 inlet_blocks, mixed_block, MaterialBalanceType.componentPhase)
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_tc(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.componentTotal
@@ -342,6 +360,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 2
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_tc_equilibrium(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.componentTotal
@@ -361,6 +380,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 2
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_t(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.total
@@ -379,6 +399,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 1
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_t_equilibrium(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.total
@@ -398,6 +419,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.material_mixing_equations) == 1
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_e(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.elementTotal
@@ -414,6 +436,7 @@ class TestMixer(object):
             mixer_frame.fs.mix.add_material_mixing_equations(
                 inlet_blocks, mixed_block, MaterialBalanceType.elementTotal)
 
+    @pytest.mark.unit
     def test_add_material_mixing_equations_none(self, mixer_frame):
         mixer_frame.fs.mix.config.material_balance_type = \
             MaterialBalanceType.none
@@ -431,6 +454,7 @@ class TestMixer(object):
 
         assert not hasattr(mixer_frame.fs.mix, "material_mixing_equations")
 
+    @pytest.mark.unit
     def test_add_energy_mixing_equations(self, mixer_frame):
         mixer_frame.fs.mix.config.has_phase_equilibrium = True
 
@@ -448,6 +472,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.enthalpy_mixing_equations) == 1
 
+    @pytest.mark.unit
     def test_add_pressure_minimization_equations(self, mixer_frame):
         mixer_frame.fs.mix.config.has_phase_equilibrium = True
 
@@ -470,6 +495,7 @@ class TestMixer(object):
         assert len(mixer_frame.fs.mix.minimum_pressure) == 2
         assert isinstance(mixer_frame.fs.mix.mixture_pressure, Constraint)
 
+    @pytest.mark.unit
     def test_add_pressure_equality_equations(self, mixer_frame):
         mixer_frame.fs.mix.config.has_phase_equilibrium = True
 
@@ -487,6 +513,7 @@ class TestMixer(object):
                           Constraint)
         assert len(mixer_frame.fs.mix.pressure_equality_constraints) == 2
 
+    @pytest.mark.unit
     def test_add_port_objects(self, mixer_frame):
         mixer_frame.fs.mix._get_property_package()
         mixer_frame.fs.mix._get_indexing_sets()
@@ -503,6 +530,7 @@ class TestMixer(object):
         assert isinstance(mixer_frame.fs.mix.inlet_2, Port)
         assert isinstance(mixer_frame.fs.mix.outlet, Port)
 
+    @pytest.mark.unit
     def test_add_port_objects_construct_ports_False(self, mixer_frame):
         mixer_frame.fs.mix.config.construct_ports = False
 
@@ -524,6 +552,7 @@ class TestMixer(object):
     # -------------------------------------------------------------------------
     # Test build method
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -551,6 +580,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.outlet, Port)
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build_phase_equilibrium(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -579,6 +609,7 @@ class TestMixer(object):
         assert isinstance(m.fs.mix.outlet, Port)
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build_phase_pressure_equality(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -603,6 +634,7 @@ class TestMixer(object):
 
     # -------------------------------------------------------------------------
     # Test models checks, initialize and release state methods
+    @pytest.mark.unit
     def test_model_checks(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -619,6 +651,7 @@ class TestMixer(object):
         assert m.fs.mix.mixed_state[0].check is True
 
     @pytest.mark.initialization
+    @pytest.mark.unit
     def test_initialize(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -657,6 +690,7 @@ class TestMixer(object):
         assert m.fs.sb[0].hold_state is False
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -680,9 +714,22 @@ class TestBTX(object):
 
         m.fs.unit = Mixer(default={"property_package": m.fs.properties})
 
+        m.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.inlet_1.temperature[0].fix(365)  # K
+        m.fs.unit.inlet_1.pressure[0].fix(2e5)  # Pa
+        m.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet_2.temperature[0].fix(300)  # K
+        m.fs.unit.inlet_2.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet_1")
         assert len(btx.fs.unit.inlet_1.vars) == 4
@@ -709,29 +756,19 @@ class TestBTX(object):
         assert number_total_constraints(btx) == 25
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
-        btx.fs.unit.inlet_1.temperature[0].fix(365)  # K
-        btx.fs.unit.inlet_1.pressure[0].fix(2e5)  # Pa
-        btx.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
-        btx.fs.unit.inlet_2.temperature[0].fix(300)  # K
-        btx.fs.unit.inlet_2.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -740,9 +777,9 @@ class TestBTX(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, btx):
         assert (pytest.approx(6, abs=1e-3) ==
                 value(btx.fs.unit.outlet.flow_mol[0]))
@@ -751,9 +788,9 @@ class TestBTX(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.outlet.pressure[0]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet_1.flow_mol[0] +
                          btx.fs.unit.inlet_2.flow_mol[0] -
@@ -768,6 +805,7 @@ class TestBTX(object):
                 btx.fs.unit.mixed_state[0].enth_mol_phase['Liq']))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -834,6 +872,7 @@ class TestMixer_NoPressure(object):
             super(MixerData, self).build()
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_pressure_minimization_unsupported(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -852,6 +891,7 @@ class TestMixer_NoPressure(object):
                 "construct_ports": False})
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_pressure_equal_unsupported(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -870,6 +910,7 @@ class TestMixer_NoPressure(object):
                 "construct_ports": False})
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_pressure_equal_and_min_unsupported(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -889,6 +930,7 @@ class TestMixer_NoPressure(object):
                 "construct_ports": False})
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_pressure_none_unsupported(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -916,9 +958,17 @@ class TestIAPWS(object):
                 "material_balance_type": MaterialBalanceType.componentTotal,
                 "momentum_mixing_type": MomentumMixingType.equality})
 
+        m.fs.unit.inlet_1.flow_mol[0].fix(100)
+        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        m.fs.unit.inlet_2.flow_mol[0].fix(100)
+        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet_1.vars) == 3
         assert hasattr(iapws.fs.unit.inlet_1, "flow_mol")
@@ -936,24 +986,19 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit.outlet, "enth_mol")
         assert hasattr(iapws.fs.unit.outlet, "pressure")
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.inlet_1.flow_mol[0].fix(100)
-        iapws.fs.unit.inlet_1.enth_mol[0].fix(4000)
-        iapws.fs.unit.inlet_1.pressure[0].fix(101325)
-
-        iapws.fs.unit.inlet_2.flow_mol[0].fix(100)
-        iapws.fs.unit.inlet_2.enth_mol[0].fix(3500)
-
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -962,9 +1007,9 @@ class TestIAPWS(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, iapws):
         assert pytest.approx(200, abs=1e-5) == \
             value(iapws.fs.unit.outlet.flow_mol[0])
@@ -975,9 +1020,9 @@ class TestIAPWS(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(iapws.fs.unit.outlet.pressure[0])
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_conservation(self, iapws):
         assert abs(value(iapws.fs.unit.inlet_1.flow_mol[0] +
                          iapws.fs.unit.inlet_2.flow_mol[0] -
@@ -991,6 +1036,7 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet.enth_mol[0])) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()
 
@@ -1006,9 +1052,28 @@ class TestSaponification(object):
 
         m.fs.unit = Mixer(default={"property_package": m.fs.properties})
 
+        m.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
+        m.fs.unit.inlet_1.temperature[0].fix(320)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
+        m.fs.unit.inlet_2.temperature[0].fix(300)
+        m.fs.unit.inlet_2.pressure[0].fix(101325)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
         assert len(sapon.fs.unit.inlet_1.vars) == 4
         assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
@@ -1032,35 +1097,18 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 10
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.inlet_1.temperature[0].fix(320)
-        sapon.fs.unit.inlet_1.pressure[0].fix(101325)
-        sapon.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
-        sapon.fs.unit.inlet_2.temperature[0].fix(300)
-        sapon.fs.unit.inlet_2.pressure[0].fix(101325)
-        sapon.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -1069,9 +1117,9 @@ class TestSaponification(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, sapon):
         assert pytest.approx(2e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet.flow_vol[0])
@@ -1093,9 +1141,9 @@ class TestSaponification(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(sapon.fs.unit.outlet.pressure[0])
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_conservation(self, sapon):
         assert abs(value(sapon.fs.unit.inlet_1.flow_vol[0] +
                          sapon.fs.unit.inlet_2.flow_vol[0] -
@@ -1116,5 +1164,6 @@ class TestSaponification(object):
                  sapon.fs.properties.temperature_ref))) <= 1e-3
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()

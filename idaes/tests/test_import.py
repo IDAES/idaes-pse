@@ -1,7 +1,7 @@
 # coding: utf-8
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -22,6 +22,7 @@ import time
 # package
 import idaes
 from idaes.dmf.util import ColorTerm
+import pytest
 
 good_modname = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*")
 
@@ -82,6 +83,7 @@ def importr(root: pathlib.Path, max_sec=10):
     return failures, total
 
 
+@pytest.mark.unit
 def test_import():
     root_dir = pathlib.Path(idaes.__file__).parent
     failures, total = importr(root_dir)

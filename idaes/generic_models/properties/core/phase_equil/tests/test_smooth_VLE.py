@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -35,7 +35,10 @@ from idaes.core.util.exceptions import ConfigurationError
 
 # Dummy EoS to use for fugacity calls
 class DummyEoS(object):
-    def common(self):
+    def common(self, pobj):
+        pass
+
+    def build_parameters(b):
         pass
 
     def fug_phase_comp(b, p, j, pp):
@@ -60,8 +63,8 @@ def frame():
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
 
-    m.props[1].temperature_bubble = Var(initialize=300)
-    m.props[1].temperature_dew = Var(initialize=300)
+    m.props[1].temperature_bubble = Var([("Liq", "Vap")], initialize=300)
+    m.props[1].temperature_dew = Var([("Liq", "Vap")], initialize=300)
     m.props[1]._teq = Var([("Liq", "Vap")], initialize=300)
 
     m.props[1].fug_phase_comp = Var(m.params.phase_list,
@@ -73,6 +76,7 @@ def frame():
     return m
 
 
+@pytest.mark.unit
 def test_build(frame):
     assert isinstance(frame.props[1].eps_1_Liq_Vap, Param)
     assert value(frame.props[1].eps_1_Liq_Vap) == 0.01
@@ -86,30 +90,33 @@ def test_build(frame):
     assert isinstance(frame.props[1]._teq_constraint_Liq_Vap, Constraint)
 
 
+@pytest.mark.unit
 def test_t1(frame):
     # Test that T1 is the max(T, T_bubble)
     # Can't check directly, but see that residual of constraint is correct
     for t in [200, 300, 400, 500]:
         for tb in [200, 300, 400, 500]:
             frame.props[1].temperature.value = t
-            frame.props[1].temperature_bubble.value = tb
+            frame.props[1].temperature_bubble[("Liq", "Vap")].value = tb
             frame.props[1]._t1_Liq_Vap.value = max(t, tb)
             assert value(frame.props[1]._t1_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)
 
 
+@pytest.mark.unit
 def test_t_eq(frame):
     # Test that Teq is the min(T1, T_dew)
     # Can't check directly, but see that residual of constraint is correct
     for t1 in [200, 300, 400, 500]:
         for td in [200, 300, 400, 500]:
             frame.props[1]._t1_Liq_Vap.value = t1
-            frame.props[1].temperature_dew.value = td
+            frame.props[1].temperature_dew[("Liq", "Vap")].value = td
             frame.props[1]._teq[("Liq", "Vap")].value = min(t1, td)
             assert value(frame.props[1]._teq_constraint_Liq_Vap.body) == \
                 pytest.approx(0, abs=5e-3)
 
 
+@pytest.mark.unit
 def test_non_VLE_pair():
     m = ConcreteModel()
 

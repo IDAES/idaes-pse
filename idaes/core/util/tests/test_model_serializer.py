@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,12 +19,23 @@ import os
 
 from pyomo.environ import *
 from idaes.core.util import to_json, from_json, StoreSpec
+from idaes.util.system import mkdtemp
+import shutil
+import pytest
 
 __author__ = "John Eslick"
 
 
 class TestModelSerialize(unittest.TestCase):
-    fname = "crAzYStuff1010202030.json"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dirname = mkdtemp()
+        cls.fname = os.path.join(cls.dirname, "crAzYStuff1010202030.json")
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def tearDown(self):
         try:
@@ -54,6 +65,7 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
         return model
 
+    @pytest.mark.unit
     def test01(self):
         """
         Simple test of load save json
@@ -79,6 +91,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(b.lb - -100) < 1e-4)
         assert(abs(b.ub - 100) < 1e-4)
 
+    @pytest.mark.unit
     def test02(self):
         """Test with suffixes"""
         model = self.setup_model02()
@@ -105,6 +118,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(model.ipopt_zU_out[x[1]]) < 1e-5)
         assert(abs(model.ipopt_zU_out[x[2]]) < 1e-5)
 
+    @pytest.mark.unit
     def test03(self):
         """
         This tests a StoreSpec object meant for initialization.  It reloads
@@ -128,6 +142,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(value(x[1]) - 1) < 1e-5)
         assert(abs(value(x[2]) - 10) < 1e-5)
 
+    @pytest.mark.unit
     def test04(self):
         """
         Like test03, but this StoreSpec also saves/loads active/deactivated
@@ -148,6 +163,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(value(x[2]) - 10) < 1e-5)
         assert(model.g.active)
 
+    @pytest.mark.unit
     def test05(self):
         """Try just saving values"""
         model = self.setup_model02()
@@ -164,6 +180,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(value(model.x[2]) - 2.5) < 1e-5)
         assert(not model.g.active)
 
+    @pytest.mark.unit
     def test06(self):
         """Try just saving bounds"""
         model = self.setup_model02()
@@ -180,6 +197,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(value(model.x[2]) - 6) < 1e-5)
         assert(not model.g.active)
 
+    @pytest.mark.unit
     def test07(self):
         """Try just saving just if fixed"""
         model = self.setup_model02()
@@ -198,6 +216,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(not model.x[2].fixed)
         assert(not model.g.active)
 
+    @pytest.mark.unit
     def test08(self):
         """Try just saving suffixes"""
         model = self.setup_model02()
@@ -234,6 +253,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(model.ipopt_zU_out[model.x[2]] - 1) < 1e-5)
         assert(abs(model.x[1].lb + 4) < 1e-5)
 
+    @pytest.mark.unit
     def test09(self):
         """Try just saving suffixes, and suffix filter"""
         model = self.setup_model02()
@@ -260,6 +280,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(model.ipopt_zU_out[model.x[1]] - 10) < 1e-5)
         assert(abs(model.ipopt_zU_out[model.x[2]] - 10) < 1e-5)
 
+    @pytest.mark.unit
     def test10(self):
         """Try just saving suffixes, and suffix filter only on write"""
         model = self.setup_model02()
@@ -286,6 +307,7 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(model.ipopt_zU_out[model.x[1]] - 10) < 1e-5)
         assert(abs(model.ipopt_zU_out[model.x[2]] - 10) < 1e-5)
 
+    @pytest.mark.unit
     def test11(self):
         """Try just saving suffixes, and suffix filter only on read"""
         model = self.setup_model02()

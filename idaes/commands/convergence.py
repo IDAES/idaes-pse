@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -30,11 +30,15 @@ from idaes.dmf.errors import DMFError
 _log = logging.getLogger("idaes.commands.convergence")
 
 @cb.command(name="convergence-sample", help="Create a convergence sample file.")
-@click.option('-e', '--evaluation-class', default=None, type=str, required=True)
-@click.option('-s', '--sample-file', default=None, type=str, required=True)
-@click.option('-N', '--number-samples', default=None, type=int, required=True)
+@click.option('-e', '--evaluation-class', default=None, type=str, required=True,
+    help="Convergence evaluation class")
+@click.option('-s', '--sample-file', default=None, type=str, required=True,
+    help="Output sample file")
+@click.option('-N', '--number-samples', default=None, type=int, required=True,
+    help="Number of samples")
 @click.option('--seed', default=None, type=int)
-def convergence_sample(evaluation_class, sample_file, number_samples, seed):
+def convergence_sample(
+    evaluation_class, sample_file, number_samples, seed):
     try:
         conv_eval_class = cnv._class_import(evaluation_class)
         conv_eval = conv_eval_class()

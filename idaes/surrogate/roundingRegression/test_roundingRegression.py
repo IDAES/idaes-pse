@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -19,7 +19,9 @@ Additional hyper-parameters and features will be added over time
 
 from idaes.surrogate.roundingRegression.RoundingRegression import RoundingRegression
 import numpy as np
+import pytest
 
+@pytest.mark.unit
 def test_simple_regression():
     """ Tests the identification of a simple sparse regression"""
 

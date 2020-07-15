@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -553,8 +553,7 @@ objects linked to all inlet states and the mixed state,
             # Write phase-component balances
             @self.Constraint(
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
@@ -585,6 +584,7 @@ objects linked to all inlet states and the mixed state,
                     )
                     - mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 )
 
         elif mb_type == MaterialBalanceType.total:
@@ -601,6 +601,7 @@ objects linked to all inlet states and the mixed state,
                         )
                         - mixed_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 )

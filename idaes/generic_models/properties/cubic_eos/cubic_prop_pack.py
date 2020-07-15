@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -449,7 +449,7 @@ class _CubicStateBlock(StateBlock):
                 if blk[k].temperature.value > blk[k].temperature_dew.value:
                     # Pure vapour
                     blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         1e-5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -462,7 +462,7 @@ class _CubicStateBlock(StateBlock):
                     # Pure liquid
                     blk[k].flow_mol_phase["Vap"].value = \
                         1e-5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Liq"].value = blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
@@ -474,7 +474,7 @@ class _CubicStateBlock(StateBlock):
                     # TODO : Try to find some better guesses than this
                     blk[k].flow_mol_phase["Vap"].value = \
                         0.5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         0.5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -495,6 +495,7 @@ class _CubicStateBlock(StateBlock):
                                     "_t1_constraint",
                                     "_teq_constraint"):
                     c.activate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Phase equilibrium init: {}.".format(
@@ -1246,7 +1247,7 @@ class CubicStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
 # All of these equations drawn from Properties of Gases and Liquids
-# Quantities appended with _eq represent calcuations at equilibrium temperature
+# Quantities appended with _eq represent calculations at equilibrium temperature
     def common_cubic(blk):
         if hasattr(blk, "omegaA"):
             return

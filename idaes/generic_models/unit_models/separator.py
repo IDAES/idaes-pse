@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -518,6 +518,7 @@ objects linked the mixed state and all outlet states,
             None
         """
         self.outlet_idx = Set(initialize=outlet_list)
+        pc_set = self.config.property_package.get_phase_component_set()
 
         if self.config.split_basis == SplittingType.totalFlow:
             sf_idx = [self.flowsheet().config.time, self.outlet_idx]
@@ -546,13 +547,11 @@ objects linked the mixed state and all outlet states,
             sf_idx = [
                 self.flowsheet().config.time,
                 self.outlet_idx,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
             ]
             sf_sum_idx = [
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
             ]
         else:
             raise BurntToast(
@@ -575,6 +574,7 @@ objects linked the mixed state and all outlet states,
         """
         Creates constraints for splitting the material flows
         """
+        pc_set = self.config.property_package.get_phase_component_set()
 
         def sf(t, o, p, j):
             if self.config.split_basis == SplittingType.totalFlow:
@@ -646,8 +646,7 @@ objects linked the mixed state and all outlet states,
             @self.Constraint(
                 self.flowsheet().config.time,
                 self.outlet_idx,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 doc="Material splitting equations",
             )
             def material_splitting_eqn(b, t, o, p, j):
@@ -671,9 +670,11 @@ objects linked the mixed state and all outlet states,
                     sf(t, o, p, j) *
                     mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 ) == sum(
                     o_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 )
 
         elif mb_type == MaterialBalanceType.total:
@@ -690,12 +691,14 @@ objects linked the mixed state and all outlet states,
                         sf(t, o, p, j) *
                         mixed_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 ) == sum(
                     sum(
                         o_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 )
@@ -823,7 +826,8 @@ objects linked the mixed state and all outlet states,
         if self.config.split_basis == SplittingType.totalFlow:
             raise ConfigurationError(
                 "{} cannot do an ideal separation based "
-                "on total flow.".format(self.name)
+                "on total flow. Either use ideal_separation = False or a "
+                "different separation basis.".format(self.name)
             )
         if self.config.ideal_split_map is None:
             raise ConfigurationError(
@@ -892,6 +896,9 @@ objects linked the mixed state and all outlet states,
         # Get list of port members
         s_vars = mb[self.flowsheet().config.time.first()].define_port_members()
 
+        # Get phase component list(s)
+        pc_set = self.config.property_package.get_phase_component_set()
+
         # Add empty Port objects
         for o in outlet_list:
             p_obj = Port(noruleinit=True, doc="Outlet Port")
@@ -912,23 +919,25 @@ objects linked the mixed state and all outlet states,
                     if "_phase" in l_name:
 
                         def e_rule(b, t, p, j):
-                            if self.config.split_basis == \
-                                    SplittingType.phaseFlow:
-                                return s_vars[s][p, j]
-                            elif self.config.split_basis == \
-                                    SplittingType.componentFlow:
-                                if split_map[j] == o:
-                                    return 1
-                                else:
-                                    return self.eps
-                            elif (
-                                self.config.split_basis
-                                == SplittingType.phaseComponentFlow
-                            ):
-                                for ps in self.config.property_package.phase_list:
-                                    if split_map[ps, j] == o:
+                            if (p, j) in pc_set:
+                                if self.config.split_basis == \
+                                        SplittingType.phaseFlow:
+                                    return s_vars[s][p, j]
+                                elif self.config.split_basis == \
+                                        SplittingType.componentFlow:
+                                    if split_map[j] == o:
                                         return 1
-                                return self.eps
+                                    else:
+                                        return self.eps
+                                elif (
+                                    self.config.split_basis
+                                    == SplittingType.phaseComponentFlow
+                                ):
+                                    for ps in self.config.property_package.phase_list:
+                                        if split_map[ps, j] == o:
+                                            return 1
+                                    else:
+                                        return self.eps
                             else:
                                 raise BurntToast(
                                     "{} This should not happen. Please "
@@ -938,8 +947,7 @@ objects linked the mixed state and all outlet states,
 
                         e_obj = VarLikeExpression(
                             self.flowsheet().config.time,
-                            self.config.property_package.phase_list,
-                            self.config.property_package.component_list,
+                            pc_set,
                             rule=e_rule,
                         )
 
@@ -978,10 +986,11 @@ objects linked the mixed state and all outlet states,
                                     raise AttributeError(
                                         "{} Cannot use ideal splitting with "
                                         "this property package. Package uses "
-                                        "indexed port member {} which does not"
-                                        " have the correct indexing sets, and "
-                                        "an equivalent variable with correct "
-                                        "indexing sets is not available."
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
                                         .format(self.name, s)
                                     )
 
@@ -998,7 +1007,7 @@ objects linked the mixed state and all outlet states,
                                             "developers.".format(self.name)
                                         )
 
-                                    if s_check == o:
+                                    if s_check == o and (p, j) in pc_set:
                                         return mfp[p, j]
                                 # else:
                                 return self.eps
@@ -1036,8 +1045,7 @@ objects linked the mixed state and all outlet states,
 
                     e_obj = VarLikeExpression(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
+                        pc_set,
                         rule=e_rule,
                     )
 
@@ -1057,12 +1065,14 @@ objects linked the mixed state and all outlet states,
 
                             if mfp is None:
                                 raise AttributeError(
-                                    "{} Cannot use ideal splitting with this "
-                                    "property package. Package uses indexed "
-                                    "port member {} which does not have the "
-                                    "correct indexing sets, and an equivalent "
-                                    "variable with correct indexing sets is "
-                                    "not available.".format(self.name, s)
+                                    "{} Cannot use ideal splitting with "
+                                        "this property package. Package uses "
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
+                                        .format(self.name, s)
                                 )
 
                             for j in self.config.property_package.component_list:
@@ -1112,32 +1122,35 @@ objects linked the mixed state and all outlet states,
 
                             if mfp is None:
                                 raise AttributeError(
-                                    "{} Cannot use ideal splitting with this "
-                                    "property package. Package uses indexed "
-                                    "port member {} which does not have the "
-                                    "correct indexing sets, and an equivalent "
-                                    "variable with correct indexing sets is "
-                                    "not available.".format(self.name, s)
+                                    "{} Cannot use ideal splitting with "
+                                        "this property package. Package uses "
+                                        "indexed port member {} which cannot "
+                                        "be partitioned. Please set "
+                                        "configuration argument "
+                                        "ideal_separation = False for this "
+                                        "property package."
+                                        .format(self.name, s)
                                 )
 
                             for p in self.config.property_package.phase_list:
-                                if self.config.split_basis == \
-                                        SplittingType.phaseFlow:
-                                    s_check = split_map[p]
-                                elif (
-                                    self.config.split_basis
-                                    == SplittingType.phaseComponentFlow
-                                ):
-                                    s_check = split_map[p, j]
-                                else:
-                                    raise BurntToast(
-                                        "{} This should not happen. Please"
-                                        " report this bug to the IDAES "
-                                        "developers.".format(self.name)
-                                    )
+                                if (p, j) in pc_set:
+                                    if self.config.split_basis == \
+                                            SplittingType.phaseFlow:
+                                        s_check = split_map[p]
+                                    elif (
+                                        self.config.split_basis
+                                        == SplittingType.phaseComponentFlow
+                                    ):
+                                        s_check = split_map[p, j]
+                                    else:
+                                        raise BurntToast(
+                                            "{} This should not happen. Please"
+                                            " report this bug to the IDAES "
+                                            "developers.".format(self.name)
+                                        )
 
-                                if s_check == o:
-                                    return mfp[p, j]
+                                    if s_check == o:
+                                        return mfp[p, j]
                             # else:
                             return self.eps
 
@@ -1171,6 +1184,7 @@ objects linked the mixed state and all outlet states,
                                                 return sum(
                                                     ivar[p, j]
                                                     for j in self.config.property_package.component_list
+                                                    if (p, j) in pc_set
                                                 )
                                             else:
                                                 continue
@@ -1201,6 +1215,7 @@ objects linked the mixed state and all outlet states,
                                                 return sum(
                                                     ivar[p, j]
                                                     for p in self.config.property_package.phase_list
+                                                    if (p, j) in pc_set
                                                 )
                                             else:
                                                 continue
@@ -1218,7 +1233,7 @@ objects linked the mixed state and all outlet states,
                                         ) in (
                                             self.config.property_package.component_list
                                         ):
-                                            if split_map[p, j] == o:
+                                            if split_map[p, j] == o and (p, j) in pc_set:
                                                 return ivar[p, j]
                                             else:
                                                 continue
@@ -1228,7 +1243,7 @@ objects linked the mixed state and all outlet states,
                                 # Unrecognised split tupe
                                 raise BurntToast(
                                     "{} received unrecognised value for "
-                                    "split_basis argumnet. This should never "
+                                    "split_basis argument. This should never "
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(self.name)
@@ -1244,7 +1259,7 @@ objects linked the mixed state and all outlet states,
                             )
 
                     e_obj = VarLikeExpression(self.flowsheet().config.time,
-                                       rule=e_rule)
+                                              rule=e_rule)
 
                 # Add Reference/Expression object to Separator model object
                 setattr(self, "_" + o + "_" + l_name + "_ref", e_obj)

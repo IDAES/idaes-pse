@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 """
 Tests for Reaction Interrogator Tool
 
@@ -15,6 +27,7 @@ from idaes.generic_models.properties.interrogator import (
         PropertyInterrogatorBlock, ReactionInterrogatorBlock)
 
 
+@pytest.mark.unit
 def test_interrogator_parameter_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -28,6 +41,7 @@ def test_interrogator_parameter_block():
     assert len(m.fs.rxn_params.required_properties) == 0
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_unindexed_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -53,6 +67,7 @@ def test_interrogator_rxn_block_unindexed_call():
             "prop_unindexed": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_phase_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -76,6 +91,7 @@ def test_interrogator_rxn_block_phase_call():
             "prop_phase": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -99,6 +115,7 @@ def test_interrogator_rxn_block_comp_call():
             "prop_comp": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_phase_comp_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -122,6 +139,7 @@ def test_interrogator_rxn_block_phase_comp_call():
             "prop_phase_comp": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_reaction_rate_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -145,6 +163,7 @@ def test_interrogator_rxn_block_reaction_rate_call():
             "reaction_rate": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_rxn_block_dh_rxn_call():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -168,6 +187,7 @@ def test_interrogator_rxn_block_dh_rxn_call():
             "dh_rxn": ["fs.rxns"]}
 
 
+@pytest.mark.unit
 def test_interrogator_initialize_method():
     # Initialize method should return an TypeError
     m = ConcreteModel()
@@ -210,6 +230,7 @@ def model():
 
 # Test for physical parameters too, as these can not be checked without having
 # a reaction package too.
+@pytest.mark.component
 def test_interrogate_flowsheet(model):
     assert model.fs.params.required_properties == {
             "material flow terms": ["fs.R01", "fs.R02"],
@@ -223,6 +244,7 @@ def test_interrogate_flowsheet(model):
             "dh_rxn": ["fs.R01"]}
 
 
+@pytest.mark.component
 def test_list_required_properties(model):
     prop_list = model.fs.params.list_required_properties()
     assert prop_list == ["material density terms",
@@ -235,12 +257,14 @@ def test_list_required_properties(model):
     assert rxn_list == ["dh_rxn", "reaction_rate"]
 
 
+@pytest.mark.unit
 def test_list_models_requiring_property(model):
     for k in model.fs.params.required_properties.keys():
         model_list = model.fs.params.list_models_requiring_property(k)
         assert model_list == ["fs.R01", "fs.R02"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_by_name(model):
     prop_list = model.fs.rxn_params.list_properties_required_by_model("fs.R01")
 
@@ -248,6 +272,7 @@ def test_list_properties_required_by_model_by_name(model):
                          "reaction_rate"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_by_object(model):
     prop_list = model.fs.rxn_params.list_properties_required_by_model(
             model.fs.R01)
@@ -256,11 +281,13 @@ def test_list_properties_required_by_model_by_object(model):
                          "reaction_rate"]
 
 
+@pytest.mark.unit
 def test_list_properties_required_by_model_invalid_model(model):
     with pytest.raises(ValueError):
         model.fs.rxn_params.list_properties_required_by_model("foo")
 
 
+@pytest.mark.unit
 def test_print_required_properties(model, capsys):
     model.fs.params.print_required_properties()
     model.fs.rxn_params.print_required_properties()
@@ -294,6 +321,7 @@ reported here.
 """
 
 
+@pytest.mark.unit
 def test_print_models_requiring_property(model, capsys):
     model.fs.rxn_params.print_models_requiring_property("reaction_rate")
 
@@ -305,6 +333,7 @@ The following models in the Flowsheet require reaction_rate:
 """
 
 
+@pytest.mark.unit
 def test_print_properties_reqruied_by_model(model, capsys):
     model.fs.rxn_params.print_properties_required_by_model("fs.R01")
 

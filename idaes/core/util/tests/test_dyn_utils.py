@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -26,6 +26,7 @@ from idaes.core.util.dyn_utils import *
 __author__ = "Robert Parker"
 
 
+@pytest.mark.unit
 def test_fix_and_deactivate():
     m = ConcreteModel()
     m.time = ContinuousSet(bounds=(0, 10))
@@ -164,6 +165,7 @@ def test_fix_and_deactivate():
             for c2 in m.set2:
                 assert m.fs.b2[m.time[1], x].b3[c1].v[c2].value == -1
 
+@pytest.mark.unit
 def test_copy_non_time_indexed_values():
     m1 = ConcreteModel()
     m1.time = Set(initialize=[1,2,3,4,5])
@@ -213,6 +215,7 @@ def test_copy_non_time_indexed_values():
     assert m1.b3[3].v5.value != m2.b3[3].v5.value
 
 
+@pytest.mark.unit
 def test_find_comp_in_block():
     m1 = ConcreteModel()
 
@@ -247,6 +250,7 @@ def test_find_comp_in_block():
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
 
 
+@pytest.mark.unit
 def test_find_comp_in_block_at_time():
     m1 = ConcreteModel()
     m1.time = Set(initialize=[1,2,3])
@@ -293,10 +297,12 @@ def test_find_comp_in_block_at_time():
         find_comp_in_block_at_time(m1, m2, v2, m1.time, 3)
     with pytest.raises(KeyError, match=r'.*is not a valid index.*'):
         find_comp_in_block_at_time(m1, m2, v4, m1.time, 3)
+
     assert find_comp_in_block_at_time(m1, m2, v2, m1.time, 3, allow_miss=True) is None
     assert find_comp_in_block_at_time(m1, m2, v4, m1.time, 3, allow_miss=True) is None
 
 
+@pytest.mark.unit
 def test_get_location_of_coordinate_set():
     m = ConcreteModel()
     m.s1 = Set(initialize=[1,2,3])
@@ -318,6 +324,7 @@ def test_get_location_of_coordinate_set():
         get_location_of_coordinate_set(m.v121.index_set(), m.s1)
 
 
+@pytest.mark.unit
 def test_get_index_of_set():
     m = ConcreteModel()
     m.s1 = Set(initialize=[1,2,3])
@@ -341,6 +348,7 @@ def test_get_index_of_set():
         get_index_of_set(m.v2[1,'b',2], m.s3)
 
 
+@pytest.mark.unit
 def test_get_implicit_index_of_set():
     m = ConcreteModel()
     m.s1 = Set(initialize=[1,2,3])
@@ -361,5 +369,3 @@ def test_get_implicit_index_of_set():
 
     with pytest.raises(ValueError) as exc_test:
         get_implicit_index_of_set(m.b1.b2['e',5,2].b3.v2[1], m.s1)
-
-

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -83,7 +83,7 @@ def root_finder():
 # TODO - happen.
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_liq(root_finder):
@@ -236,7 +236,7 @@ def test_roots_Z_liq(root_finder):
                     raise
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_vap(root_finder):
@@ -389,7 +389,7 @@ def test_roots_Z_vap(root_finder):
                     raise
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_liq_ext(root_finder):
@@ -597,7 +597,7 @@ def test_roots_Z_liq_ext(root_finder):
                         raise
 
 
-@pytest.mark.slow
+@pytest.mark.integration
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 def test_roots_Z_vap_ext(root_finder):

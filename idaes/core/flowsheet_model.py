@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -15,23 +15,23 @@ This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
 
-import logging
-
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, In
+from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.fsvis.fsvis import visualize
 
 from idaes.core.util import unit_costing as costing
+import idaes.logger as idaeslog
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -40,7 +40,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['FlowsheetBlock', 'FlowsheetBlockData']
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("FlowsheetBlock", doc="""
@@ -84,6 +84,10 @@ reference it here."""))
         doc="""Set of points for initializing time domain. This should be a
 list of floating point numbers,
 **default** - [0]."""))
+    CONFIG.declare("time_units", ConfigValue(
+        description="Units for time domain",
+        doc="""Pyomo Units object describing the units of the time domain.
+This must be defined for dynamic simulations, default = None."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -111,8 +115,14 @@ within this flowsheet if not otherwise specified,
         """
         super(FlowsheetBlockData, self).build()
 
+        self._time_units = None
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
+
+    @property
+    def time_units(self):
+        return self._time_units
 
     def is_flowsheet(self):
         """
@@ -177,7 +187,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name):
+    def visualize(self, model_name, browser=True, overwrite=False):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -185,11 +195,15 @@ within this flowsheet if not otherwise specified,
         Args:
             model_name : The name of the model that flask will use as an argument
                          for the webpage
+            browser : If True a browser window/tab will be opened with the 
+                      visualization. Defaults to True
+            overwrite : If True the visualization ignores any saved visualization 
+                        file
 
         Returns:
             None
         """
-        visualize(self, model_name)
+        visualize(self, model_name, browser, overwrite)
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()
@@ -231,6 +245,21 @@ within this flowsheet if not otherwise specified,
                         'declaring some models as steady-state.'
                         .format(self.name))
 
+        # Validate units for time domain
+        if self.config.time_units is None and self.config.dynamic:
+            _log.warning("DEPRECATED: No units were specified for the time "
+                         "domain. Users should provide units via the "
+                         "time_units configuration argument.")
+        elif self.config.time_units is None and not self.config.dynamic:
+            _log.info_high("DEPRECATED: No units were specified for the time "
+                            "domain. Users should provide units via the "
+                            "time_units configuration argument.")
+        elif not isinstance(self.config.time_units, _PyomoUnit):
+            raise ConfigurationError(
+                "{} unrecognised value for time_units argument. This must be "
+                "a Pyomo Unit object (not a compound unit)."
+                .format(self.name))
+
         if self.config.time is not None:
             # Validate user provided time domain
             if (self.config.dynamic is True and
@@ -238,6 +267,7 @@ within this flowsheet if not otherwise specified,
                 raise DynamicError(
                         '{} was set as a dynamic flowsheet, but time domain '
                         'provided was not a ContinuousSet.'.format(self.name))
+            self._time_units = self.config.time_units
         else:
             # If no parent flowsheet, set up time domain
             if fs is None:
@@ -261,9 +291,11 @@ within this flowsheet if not otherwise specified,
                     # For steady-state, use an ordered Set
                     self.time = pe.Set(initialize=self.config.time_set,
                                        ordered=True)
+                self._time_units = self.config.time_units
 
                 # Set time config argument as reference to time domain
                 self.config.time = self.time
             else:
                 # Set time config argument to parent time
                 self.config.time = fs.config.time
+                self._time_units = fs._time_units

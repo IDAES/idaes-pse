@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -69,6 +69,7 @@ def frame():
     return m
 
 
+@pytest.mark.unit
 def test_cp_mol_ig_comp(frame):
     cp_mol_ig_comp.build_parameters(frame.params)
 
@@ -80,6 +81,7 @@ def test_cp_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(34.467, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
 
@@ -91,17 +93,19 @@ def test_enth_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(-237522.824, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(373.541, abs=1e-3)
+    assert value(expr) == pytest.approx(191.780, abs=1e-3)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(383.542, abs=1e-3)
+    assert value(expr) == pytest.approx(201.780, abs=1e-3)
 
 
+@pytest.mark.unit
 def test_pressure_sat_comp(frame):
     pressure_sat_comp.build_parameters(frame.params)
 
@@ -113,6 +117,7 @@ def test_pressure_sat_comp(frame):
     assert value(expr) == pytest.approx(101378, rel=1e-4)
 
 
+@pytest.mark.unit
 def test_pressure_sat_comp_dT(frame):
     pressure_sat_comp.build_parameters(frame.params)
 

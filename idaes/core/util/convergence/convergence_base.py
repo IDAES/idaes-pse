@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -81,7 +81,16 @@ class ConvergenceEvaluationSpecification(object):
     def __init__(self):
         self._inputs = OrderedDict()
 
-    def add_sampled_input(self, name, pyomo_path, lower, upper, mean, std):
+    def add_sampled_input(
+        self,
+        name,
+        pyomo_path,
+        lower,
+        upper,
+        mean=None,
+        std=None,
+        distribution="normal"
+    ):
         """
         Add an input that should be sampled when forming the set of
         specific points that need to be run for the convergence evaluation
@@ -103,9 +112,11 @@ class ConvergenceEvaluationSpecification(object):
         upper : float
            An upper bound on the input variable or parameter
         mean : float
-           The mean value to use when generating samples
+           The mean value to use when generating normal distribution samples
         std : float
-           The standard deviation to use when generating samples
+           The standard deviation to use when generating normal distribution samples
+        distribution : str
+            The Distribution type {"normal", "uniform"}
 
         Returns
         -------
@@ -120,6 +131,7 @@ class ConvergenceEvaluationSpecification(object):
         spec['upper'] = upper
         spec['mean'] = mean
         spec['std'] = std
+        spec['distribution'] = distribution
         self._inputs[name] = spec
 
     @property
@@ -363,17 +375,18 @@ def write_sample_file(eval_spec,
     for i in range(n_points):
         sample = samples['Sample-{}'.format(i+1)] = OrderedDict()
         for k, v in eval_spec.inputs.items():
-            s = np.random.normal(loc=v['mean'], scale=v['std'])
-            if s > v['upper']:
-                s = v['upper']
-            elif s < v['lower']:
-                s = v['lower']
+            if v["distribution"] == "normal":
+                s = np.random.normal(loc=v['mean'], scale=v['std'])
+                s = v["lower"] if s < v["lower"] else s
+                s = v["upper"] if s > v["upper"] else s
+            elif v["distribution"] == "uniform":
+                s = np.random.uniform(low=v['lower'], high=v['upper'])
             sample[k] = s
 
     # create the dictionary storing all the necessary information
     jsondict = OrderedDict()
     jsondict['inputs'] = OrderedDict(eval_spec.inputs)
-    jsondict['n_points'] = n_points
+    jsondict['n_points'] = len(samples)
     jsondict['seed'] = seed
     jsondict['samples'] = samples
     jsondict['convergence_evaluation_class_str'] = \
@@ -632,11 +645,12 @@ def print_convergence_statistics(inputs, results, s):
                 # ToDo: fix this when the parallel task manager is extended to
                 # handle dicts
                 continue
-            mean = inputs[k]['mean']
-            std = inputs[k]['std']
-            alpha = (v - mean) / std
-            print('       %20s: %10g (%5.2f standard deviations'
-                  ' above/below the mean)' % (k, v, alpha))
+            if inputs[k]['distribution'] == "normal":
+                mean = inputs[k]['mean']
+                std = inputs[k]['std']
+                alpha = (v - mean) / std
+                print('       %20s: %10g (%5.2f standard deviations'
+                      ' above/below the mean)' % (k, v, alpha))
 
 
 def save_results_to_dmf(dmf, inputs, results, stats):

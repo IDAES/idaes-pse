@@ -1,11 +1,11 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
@@ -19,7 +19,7 @@ Main assumptions:
 """
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Param, PositiveReals, Reals,
-                           value, log, exp, sqrt, Var)
+                           value, log, exp, sqrt, Var, Expression)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -61,7 +61,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         Callable method for Block construction.
         '''
         super(FlueGasParameterData, self).build()
-        self.state_block_class = FlueGasStateBlock
+        self._state_block_class = FlueGasStateBlock
 
         # Create Component objects
         self.N2 = Component()
@@ -237,6 +237,8 @@ class FlueGasParameterData(PhysicalParameterBlock):
                 'flow_volume': {'method': '_flow_volume', 'units': 'm^3/s'},
                 'visc_d_mix': {'method': '_therm_cond', 'units': 'kg/m-s'},
                 'therm_cond_mix': {'method': '_therm_cond', 'units': 'W/m-K'},
+                'mw_comp': {'method': '_mw_comp', 'units': 'kg/mol'},
+                'mw': {'method': '_mw', 'units': 'kg/mol'},
                 })
 
         obj.add_default_units({'time': 's',
@@ -307,10 +309,10 @@ class _FlueGasStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        
+
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
-        
+
         # Check when the state vars are fixed already result in dof 0
         for k in blk.keys():
             if degrees_of_freedom(blk[k]) != 0:
@@ -456,10 +458,10 @@ class FlueGasStateBlockData(StateBlockData):
         '''
         Create property constraints
         '''
-        self.mole_frac = Var(self.params.component_list, initialize=1, 
+        self.mole_frac = Var(self.params.component_list, initialize=1,
                              doc='mole fraction of component i')
         def rule_mole_frac(b,c):
-            return b.mole_frac[c]*sum(b.flow_component[j] 
+            return b.mole_frac[c]*sum(b.flow_component[j]
                               for j in b.params.component_list) == b.flow_component[c]
         self.mole_frac_con = Constraint(self.params.component_list, rule=rule_mole_frac)
 
@@ -476,16 +478,28 @@ class FlueGasStateBlockData(StateBlockData):
         '''
         self.flow_mass = Var(initialize=1, doc='total mass flow')
         def rule_flow_mass(b):
-            return b.flow_mass == sum(b.flow_component[j] * b.params.mw[j] 
+            return b.flow_mass == sum(b.flow_component[j] * b.params.mw[j]
                                       * 0.001 for j in b.params.component_list)
         self.rule_flow_mass = Constraint(rule=rule_flow_mass)
+
+    def _mw_comp(self):
+        def rule_mw_comp(b, j):
+            return b.params.mw[j]
+        self.mw_comp = Expression(self.params.component_list, rule=rule_mw_comp)
+
+    def _mw(self):
+        def rule_mw(b):
+            c = self.params.component_list
+            f_tot = sum(b.flow_component[i] for i in c)
+            return sum(b.mw_comp[j]*b.flow_component[j]/f_tot for j in c)
+        self.mw = Expression(rule=rule_mw)
 
     def _heat_cap_calc(self):
         # heat capacity J/mol-K
         self.heat_cap = Var(initialize= 1000, doc='heat capacity [J/mol-K]')
         def rule_Cp(b):
             return b.heat_cap*sum(b.flow_component[j]
-                             for j in b.params.component_list) == sum((b.params.CpIG['A',j] 
+                             for j in b.params.component_list) == sum((b.params.CpIG['A',j]
                   + b.params.CpIG['B',j]*(b.temperature/1000)
                   + b.params.CpIG['C',j]*(b.temperature/1000)**2
                   + b.params.CpIG['D',j]*(b.temperature/1000)**3
@@ -549,7 +563,7 @@ class FlueGasStateBlockData(StateBlockData):
             scale_factor = 1e-3
             return scale_factor*b.pressure_reduced*sum(b.params.pressure_critical[j]*
                 b.flow_component[j] for j in b.params.component_list) == \
-                scale_factor*b.pressure*sum(b.flow_component[j] 
+                scale_factor*b.pressure*sum(b.flow_component[j]
                         for j in b.params.component_list)
 
 
@@ -572,7 +586,7 @@ class FlueGasStateBlockData(StateBlockData):
 
 
     def _compress_fact(self):
-        # Compressibility 
+        # Compressibility
         self.compress_fact = Var(initialize=1.00,
                                        doc='Vapor Compressibility Factor')
 
@@ -613,7 +627,7 @@ class FlueGasStateBlockData(StateBlockData):
                       b.params.vapor_pressure_coeff[j,'A']*b.temperature -
                       (b.params.vapor_pressure_coeff[j,'B']/(b.temperature +
                        b._param.vapor_pressure_coeff[j,'C'])))*
-                                b.flow_component[j] 
+                                b.flow_component[j]
                                 for j in b.params.component_list)
 
         try:
@@ -640,22 +654,22 @@ class FlueGasStateBlockData(StateBlockData):
 
 
     def _therm_cond(self):
-        self.therm_cond = Var(self.params.component_list, initialize=0.05, 
+        self.therm_cond = Var(self.params.component_list, initialize=0.05,
                               doc='thermal conductivity  J/m-K-s')
         self.therm_cond_mix = Var(initialize= 0.05,
                                   doc='thermal conductivity '
                                   'of gas mixture J/m-K-s')
-        self.visc_d = Var(self.params.component_list, 
+        self.visc_d = Var(self.params.component_list,
                           initialize= 2e-5,
                           doc = 'dynamic viscocity of pure gas species')
-        self.visc_d_mix = Var(initialize= 2e-5, 
+        self.visc_d_mix = Var(initialize= 2e-5,
                               doc='viscosity of gas mixture kg/m-s')
-        self.omega = Var(self.params.component_list, 
+        self.omega = Var(self.params.component_list,
                          initialize = 1, doc = 'dim')
-        self.theta = Var(self.params.component_list, initialize = 1, 
+        self.theta = Var(self.params.component_list, initialize = 1,
                          doc = 'dimensionless variable = T/ep/Kappa')
         self.phi_ij = Var(self.params.component_list,
-                          self.params.component_list, 
+                          self.params.component_list,
                           initialize = 1, doc = 'dimensionless var')
         self.sigma = Param(self.params.component_list,
                          initialize={'O2': 3.458,
@@ -677,13 +691,13 @@ class FlueGasStateBlockData(StateBlockData):
                             "constant in Kelvin")
         try:
             def rule_therm_cond(b,c):
-                return b.therm_cond[c] ==   (((b.params.CpIG['A',c] 
+                return b.therm_cond[c] ==   (((b.params.CpIG['A',c]
                   + b.params.CpIG['B',c]*(b.temperature/1000)
                   + b.params.CpIG['C',c]*(b.temperature/1000)**2
                   + b.params.CpIG['D',c]*(b.temperature/1000)**3
                   + b.params.CpIG['E',c]/(b.temperature/1000)**2)/b.params.mw[c]) \
                 + 1.25*(b.params.gas_constant/b.params.mw[c]))*b.visc_d[c]*1000.0
-            self.therm_cond_con = Constraint(self.params.component_list, 
+            self.therm_cond_con = Constraint(self.params.component_list,
                                              rule=rule_therm_cond)
 
             def rule_theta(b,c):
@@ -695,20 +709,20 @@ class FlueGasStateBlockData(StateBlockData):
             - 0.7314*log(b.theta[c]) + 0.2417357*(log(b.theta[c]))**2 \
             - 0.0347045*log(b.theta[c])**3
             self.omega_con = Constraint(self.params.component_list, rule=rule_omega)
-    
+
             # Pure gas viscocity
             def rule_visc_d(b,c):
                 return b.visc_d[c]*b.sigma[c]**2*b.omega[c] == \
             2.6693e-6*sqrt(b.params.mw[c]*b.temperature)
             self.visc_d_con = Constraint(self.params.component_list, rule=rule_visc_d)
-    
+
             # section to calculate viscosity of gas mixture
             def rule_phi(b,i,j):
                 return b.phi_ij[i,j] == 1/2.8284 \
             * (1 + (b.params.mw[i]/b.params.mw[j]))**(-0.5) \
             * (1 + sqrt(b.visc_d[i]/b.visc_d[j])*(b.params.mw[j]/b.params.mw[i])**0.25)**2
-            self.phi_con = Constraint(self.params.component_list, 
-                                      self.params.component_list, 
+            self.phi_con = Constraint(self.params.component_list,
+                                      self.params.component_list,
                                       rule=rule_phi)
 
             # viscosity of Gas mixture kg/m-s
@@ -746,15 +760,15 @@ class FlueGasStateBlockData(StateBlockData):
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
-    
+
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
-    
+
     def get_material_flow_terms(self, p, j):
         return self.flow_component[j]
 
     def get_material_flow_basis(self):
-        return MaterialFlowBasis.molar        
+        return MaterialFlowBasis.molar
 
     def get_enthalpy_flow_terms(self, p):
         return sum(self.flow_component[j]
