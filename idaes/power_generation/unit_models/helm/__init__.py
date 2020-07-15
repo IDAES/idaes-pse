@@ -8,3 +8,4 @@ from idaes.power_generation.unit_models.helm.turbine_inlet import HelmTurbineInl
 from idaes.power_generation.unit_models.helm.turbine_stage import HelmTurbineStage
 from idaes.power_generation.unit_models.helm.turbine_outlet import HelmTurbineOutletStage
 from idaes.power_generation.unit_models.helm.turbine_multistage import HelmTurbineMultistage
+from idaes.power_generation.unit_models.helm.condenser_ntu import HelmNtuCondenser
