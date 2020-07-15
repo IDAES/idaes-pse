@@ -43,6 +43,7 @@ class DummyParameterData(GenericParameterData):
     pass
 
 
+@pytest.mark.unit
 def test_set_metadata():
     m = ConcreteModel()
     m.props = PhysicalParameterTestBlock()
@@ -87,11 +88,13 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -152,6 +155,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
@@ -225,11 +229,13 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -301,6 +307,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
@@ -371,11 +378,13 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -437,6 +446,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
@@ -524,11 +534,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -601,6 +613,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
@@ -685,11 +698,13 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -752,6 +767,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)
@@ -831,11 +847,13 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
         return m
 
+    @pytest.mark.unit
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
         assert frame.props[1].always_flash
 
+    @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
@@ -908,6 +926,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
         assert isinstance(frame.props[1].mole_frac_comp_eq, Constraint)

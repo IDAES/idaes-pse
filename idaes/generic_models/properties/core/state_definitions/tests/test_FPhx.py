@@ -19,7 +19,7 @@ import pytest
 from sys import modules
 
 from pyomo.environ import (ConcreteModel, Constraint, Block,
-                           Expression, value, Var, units as pyunits)
+                           Var, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
@@ -35,6 +35,10 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.testing import PhysicalParameterTestBlock
+
+
+# Mark module as all unit tests
+pytestmark = pytest.mark.unit
 
 
 @declare_process_block_class("DummyParameterBlock")

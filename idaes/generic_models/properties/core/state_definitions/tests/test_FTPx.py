@@ -184,7 +184,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "state_bounds": {"flow_mol": (0, 100, 200),
-                                 "temperature": (290,345,  400),
+                                 "temperature": (290, 345,  400),
                                  "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
                                "length": pyunits.m,
@@ -963,6 +963,7 @@ class TestCommon(object):
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
+    @pytest.mark.unit
     def test_define_display_vars(self, frame):
         assert frame.props[1].define_display_vars() == \
             {"Total Molar Flowrate": frame.props[1].flow_mol,
