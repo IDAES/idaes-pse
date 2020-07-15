@@ -633,87 +633,90 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # initializtion
         flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
-        self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        for it_count in range(2):
+            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        # Initialize valves
-        for i in self.inlet_stage_idx:
-            u = self.throttle_valve[i]
-            copy_port(u.inlet, getattr(self.inlet_split, "outlet_{}".format(i)))
-            u.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            # Initialize valves
+            for i in self.inlet_stage_idx:
+                u = self.throttle_valve[i]
+                copy_port(u.inlet, getattr(self.inlet_split, "outlet_{}".format(i)))
+                u.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        # Initialize turbine
-        for i in self.inlet_stage_idx:
-            u = self.inlet_stage[i]
-            copy_port(u.inlet, self.throttle_valve[i].outlet)
-            u.initialize(
+            # Initialize turbine
+            for i in self.inlet_stage_idx:
+                u = self.inlet_stage[i]
+                copy_port(u.inlet, self.throttle_valve[i].outlet)
+                u.initialize(
+                    outlvl=outlvl,
+                    solver=solver,
+                    optarg=optarg,
+                    calculate_cf=calculate_inlet_cf
+                )
+
+            # Initialize Mixer
+            self.inlet_mix.use_minimum_inlet_pressure_constraint()
+            for i in self.inlet_stage_idx:
+                copy_port(
+                    getattr(self.inlet_mix, "inlet_{}".format(i)),
+                    self.inlet_stage[i].outlet,
+                )
+                getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
+            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            for i in self.inlet_stage_idx:
+                getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
+            self.inlet_mix.use_equal_pressure_constraint()
+
+            prev_port = self.inlet_mix.outlet
+            prev_port = self._init_section(
+                self.hp_stages,
+                self.hp_split,
+                self.config.hp_disconnect,
+                prev_port,
+                outlvl,
+                solver,
+                optarg,
+                copy_disconneted_flow=copy_disconneted_flow,
+                copy_disconneted_pressure=copy_disconneted_pressure,
+            )
+            if len(self.hp_stages) in self.config.hp_disconnect:
+                self.config.ip_disconnect.append(0)
+            prev_port = self._init_section(
+                self.ip_stages,
+                self.ip_split,
+                self.config.ip_disconnect,
+                prev_port,
+                outlvl,
+                solver,
+                optarg,
+                copy_disconneted_flow=copy_disconneted_flow,
+                copy_disconneted_pressure=copy_disconneted_pressure,
+            )
+            if len(self.ip_stages) in self.config.ip_disconnect:
+                self.config.lp_disconnect.append(0)
+            prev_port = self._init_section(
+                self.lp_stages,
+                self.lp_split,
+                self.config.lp_disconnect,
+                prev_port,
+                outlvl,
+                solver,
+                optarg,
+                copy_disconneted_flow=copy_disconneted_flow,
+                copy_disconneted_pressure=copy_disconneted_pressure,
+            )
+
+            copy_port(self.outlet_stage.inlet, prev_port)
+            self.outlet_stage.initialize(
                 outlvl=outlvl,
                 solver=solver,
                 optarg=optarg,
-                calculate_cf=calculate_inlet_cf
+                calculate_cf=calculate_outlet_cf
             )
-
-        # Initialize Mixer
-        self.inlet_mix.use_minimum_inlet_pressure_constraint()
-        for i in self.inlet_stage_idx:
-            copy_port(
-                getattr(self.inlet_mix, "inlet_{}".format(i)),
-                self.inlet_stage[i].outlet,
-            )
-            getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-        self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        for i in self.inlet_stage_idx:
-            getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
-        self.inlet_mix.use_equal_pressure_constraint()
-
-        prev_port = self.inlet_mix.outlet
-        prev_port = self._init_section(
-            self.hp_stages,
-            self.hp_split,
-            self.config.hp_disconnect,
-            prev_port,
-            outlvl,
-            solver,
-            optarg,
-            copy_disconneted_flow=copy_disconneted_flow,
-            copy_disconneted_pressure=copy_disconneted_pressure,
-        )
-        if len(self.hp_stages) in self.config.hp_disconnect:
-            self.config.ip_disconnect.append(0)
-        prev_port = self._init_section(
-            self.ip_stages,
-            self.ip_split,
-            self.config.ip_disconnect,
-            prev_port,
-            outlvl,
-            solver,
-            optarg,
-            copy_disconneted_flow=copy_disconneted_flow,
-            copy_disconneted_pressure=copy_disconneted_pressure,
-        )
-        if len(self.ip_stages) in self.config.ip_disconnect:
-            self.config.lp_disconnect.append(0)
-        prev_port = self._init_section(
-            self.lp_stages,
-            self.lp_split,
-            self.config.lp_disconnect,
-            prev_port,
-            outlvl,
-            solver,
-            optarg,
-            copy_disconneted_flow=copy_disconneted_flow,
-            copy_disconneted_pressure=copy_disconneted_pressure,
-        )
-
-        copy_port(self.outlet_stage.inlet, prev_port)
-        self.outlet_stage.initialize(
-            outlvl=outlvl,
-            solver=solver,
-            optarg=optarg,
-            calculate_cf=calculate_outlet_cf
-        )
-        for t in self.inlet_split.inlet.flow_mol:
-            self.inlet_split.inlet.flow_mol[t].value = \
-                self.outlet_stage.inlet.flow_mol[t].value
+            if calculate_outlet_cf:
+                break
+            for t in self.inlet_split.inlet.flow_mol:
+                self.inlet_split.inlet.flow_mol[t].value = \
+                    self.outlet_stage.inlet.flow_mol[t].value
 
         if calculate_inlet_cf:
             # cf was probably fixed, so will have to set the value agian here
