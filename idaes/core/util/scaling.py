@@ -594,9 +594,7 @@ class FlattenedScalingAssignment(object):
             target_factor = 1.0
         else:
             target_factor = abs(1/nominal_target)
-        # This is unnecessary if var is the Var object itself as Pyomo will
-        # recognize a scaling factor on a Component as applying to every
-        # data object it contains, but var may be a reference-to-slice.
+
         if self.dim == 0:
             scaling_factor[var] = target_factor
         else:
