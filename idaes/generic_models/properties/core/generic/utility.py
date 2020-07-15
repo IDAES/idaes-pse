@@ -18,6 +18,8 @@ Author: A Lee
 
 import types
 
+from pyomo.environ import units as pyunits
+
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 
 
@@ -99,3 +101,43 @@ def get_component_object(self, comp):
 
     """
     return self.params.get_component(comp)
+
+
+def get_bounds_from_config(b, state, base_units):
+    """
+    Method to take a 3- or 4-tuple state definition config argument and return
+    tupels for the bounds and default value of the Var object.
+
+    Expects the form (lower, default, upper, units) where units is optional
+
+    Args:
+        b - StateBlcok on which the state vars are to be constructed
+        state - name of state var as a string (to be matched with config dict)
+        base_units - base units of state var to be used if conversion required
+
+    Returns:
+        bounds - 2-tuple of state var bounds in base units
+        default_val - default value of state var in base units
+    """
+    try:
+        var_config = b.params.config.state_bounds[state]
+    except (KeyError, TypeError):
+        # State definition missing
+        return (None, None), None
+
+    if len(var_config) == 4:
+        # Units provided, need to convert values
+        bounds = (pyunits.convert_value(var_config[0],
+                                        from_units=var_config[3],
+                                        to_units=base_units),
+                  pyunits.convert_value(var_config[2],
+                                        from_units=var_config[3],
+                                        to_units=base_units))
+        default_val = pyunits.convert_value(var_config[1],
+                                            from_units=var_config[3],
+                                            to_units=base_units)
+    else:
+        bounds = (var_config[0], var_config[2])
+        default_val = var_config[1]
+
+    return bounds, default_val

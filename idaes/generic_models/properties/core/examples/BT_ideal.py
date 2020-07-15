@@ -131,11 +131,11 @@ configuration = {
 
     # Specifying state definition
     "state_definition": FTPx,
-    "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 450),
-                     "pressure": (5e4, 1e6)},
-    "pressure_ref": 1e5,
-    "temperature_ref": 300,
+    "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+                     "temperature": (273.15, 300, 450, pyunits.K),
+                     "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+    "pressure_ref": (1e5, pyunits.Pa),
+    "temperature_ref": (300, pyunits.K),
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],

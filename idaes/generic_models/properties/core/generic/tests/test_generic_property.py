@@ -30,6 +30,7 @@ from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase, VaporPhase)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import (ConfigurationError)
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -304,7 +305,46 @@ class TestGenericParameterBlock(object):
                 "base_units": base_units})
 
     @pytest.mark.unit
-    def test_temperature_ref(self):
+    def test_convert_pressure_ref(self):
+        m = ConcreteModel()
+
+        # This will fail, but should set the reference pressure
+        with pytest.raises(ConfigurationError):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {}},
+                "state_definition": "baz",
+                "pressure_ref": (1, pyunits.bar),
+                "base_units": base_units})
+        assert m.params.pressure_ref.value == 1e5
+
+    @pytest.mark.unit
+    def test_log_no_units_pressure_ref(self, caplog):
+        m = ConcreteModel()
+
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger=("idaes.generic_models.properties.core."
+                    "generic.generic_property"))
+
+        # This will fail, but should set the reference pressure
+        with pytest.raises(ConfigurationError):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {}},
+                "state_definition": "baz",
+                "pressure_ref": 1e5,
+                "base_units": base_units})
+        assert m.params.pressure_ref.value == 1e5
+        assert ('params no units provided for parameter pressure_ref - '
+                'assuming default units' in caplog.text)
+
+    @pytest.mark.unit
+    def test_no_temperature_ref(self):
         m = ConcreteModel()
 
         with pytest.raises(ConfigurationError,
@@ -320,6 +360,47 @@ class TestGenericParameterBlock(object):
                 "state_definition": "baz",
                 "pressure_ref": 1e5,
                 "base_units": base_units})
+
+    @pytest.mark.unit
+    def test_log_no_units_temperature_ref(self, caplog):
+        m = ConcreteModel()
+
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger=("idaes.generic_models.properties.core."
+                    "generic.generic_property"))
+
+        # This will fail, but should set the reference pressure
+        with pytest.raises(ConfigurationError):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {}},
+                "state_definition": "baz",
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units})
+        assert m.params.temperature_ref.value == 300
+        assert ('params no units provided for parameter pressure_ref - '
+                'assuming default units' in caplog.text)
+
+    @pytest.mark.unit
+    def test_convert_temperature_ref(self):
+        m = ConcreteModel()
+
+        # This will fail, but should set temerpature_ref
+        with pytest.raises(ConfigurationError):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"equation_of_state": "foo"},
+                    "p2": {}},
+                "state_definition": "baz",
+                "pressure_ref": 1e5,
+                "temperature_ref": (540, pyunits.degR),
+                "base_units": base_units})
+        assert m.params.temperature_ref.value == 300
 
     @pytest.mark.unit
     def test_no_eos(self):

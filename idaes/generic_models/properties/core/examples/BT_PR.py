@@ -113,9 +113,9 @@ configuration = {
 
     # Specifying state definition
     "state_definition": FTPx,
-    "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 500),
-                     "pressure": (5e4, 1e6)},
+    "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+                     "temperature": (273.15, 300, 500, pyunits.K),
+                     "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
     "pressure_ref": 101325,
     "temperature_ref": 298.15,
 

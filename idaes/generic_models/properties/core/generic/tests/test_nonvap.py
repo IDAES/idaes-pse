@@ -143,9 +143,9 @@ configuration = {
 
     # Specifying state definition
     "state_definition": FTPx,
-    "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 450),
-                     "pressure": (5e4, 1e6)},
+    "state_bounds": {"flow_mol": (0, 100, 1000),
+                     "temperature": (273.15, 300, 450),
+                     "pressure": (5e4, 1e5, 1e6)},
     "pressure_ref": 1e5,
     "temperature_ref": 300,
 
@@ -191,9 +191,9 @@ class TestParamBlock(object):
         assert model.params.config.state_definition == FTPx
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
-                "temperature": (273.15, 450),
-                "pressure": (5e4, 1e6)}
+                "flow_mol": (0, 100, 1000),
+                "temperature": (273.15, 300, 450),
+                "pressure": (5e4, 1e5, 1e6)}
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}

@@ -66,7 +66,7 @@ class cp_mol_liq_comp():
 
 class enth_mol_liq_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_liq_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
 
         base_units = cobj.parent_block().get_metadata().default_units
@@ -105,7 +105,7 @@ class enth_mol_liq_comp():
 
 class entr_mol_liq_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_liq_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
 
         base_units = cobj.parent_block().get_metadata().default_units

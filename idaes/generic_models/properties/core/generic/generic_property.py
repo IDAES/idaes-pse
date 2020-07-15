@@ -23,7 +23,8 @@ from pyomo.environ import (Constraint,
                            Param,
                            SolverFactory,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.common.config import ConfigValue
 from pyomo.core.base.units_container import _PyomoUnit
 
@@ -51,6 +52,18 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+def set_param_value(b, param, units):
+    param_obj = getattr(b, param)
+    config = getattr(b.config, param)
+    if isinstance(config, tuple):
+        param_obj.value = pyunits.convert_value(
+            config[0], from_units=config[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = config
 
 
 # TODO: Set a default state definition
@@ -307,8 +320,8 @@ class GenericParameterData(PhysicalParameterBlock):
 
         base_units = self.get_metadata().default_units
         p_units = (base_units["mass"] *
-                       base_units["length"]**-1 *
-                       base_units["time"]**-2)
+                   base_units["length"]**-1 *
+                   base_units["time"]**-2)
 
         # Validate reference state and create Params
         if self.config.pressure_ref is None:
@@ -319,9 +332,9 @@ class GenericParameterData(PhysicalParameterBlock):
                     .format(self.name))
         else:
             self.pressure_ref = Param(
-                initialize=self.config.pressure_ref,
                 mutable=True,
                 units=p_units)
+            set_param_value(self, "pressure_ref", p_units)
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -331,9 +344,9 @@ class GenericParameterData(PhysicalParameterBlock):
                     .format(self.name))
         else:
             self.temperature_ref = Param(
-                initialize=self.config.temperature_ref,
                 mutable=True,
                 units=base_units["temperature"])
+            set_param_value(self, "temperature_ref", base_units["temperature"])
 
         # Validate equations of state
         for p in self.phase_list:

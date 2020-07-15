@@ -79,7 +79,7 @@ class cp_mol_ig_comp():
 
 class enth_mol_ig_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
     def return_expression(b, cobj, T):
@@ -105,7 +105,7 @@ class enth_mol_ig_comp():
 
 class entr_mol_ig_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
     def return_expression(b, cobj, T):

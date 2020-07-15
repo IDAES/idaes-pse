@@ -89,7 +89,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         # Check that all necessary variables have been constructed and have
         # the correct values
         assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 1
+        assert frame.props[1].flow_mol.value is None
         assert check_units_equivalent(frame.props[1].flow_mol,
                                       pyunits.mol/pyunits.s)
 
@@ -102,12 +102,12 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                                       None)
 
         assert isinstance(frame.props[1].pressure, Var)
-        assert frame.props[1].pressure.value == 101325
+        assert frame.props[1].pressure.value is None
         assert check_units_equivalent(frame.props[1].pressure,
                                       pyunits.Pa)
 
         assert isinstance(frame.props[1].temperature, Var)
-        assert frame.props[1].temperature.value == 298.15
+        assert frame.props[1].temperature.value is None
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
@@ -115,7 +115,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].flow_mol_phase) == 1
         for i in frame.props[1].flow_mol_phase:
             assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 1
+            assert frame.props[1].flow_mol_phase[i].value is None
         assert check_units_equivalent(frame.props[1].flow_mol_phase,
                                       pyunits.mol/pyunits.s)
 
@@ -183,9 +183,9 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 200),
-                                 "temperature": (290, 400),
-                                 "pressure": (1e5, 5e5)},
+                "state_bounds": {"flow_mol": (0, 100, 200),
+                                 "temperature": (290,345,  400),
+                                 "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
                                "length": pyunits.m,
                                "mass": pyunits.kg,
@@ -343,7 +343,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         # Check that all necessary variables have been constructed and have
         # the correct values
         assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 1
+        assert frame.props[1].flow_mol.value is None
         assert check_units_equivalent(frame.props[1].flow_mol,
                                       pyunits.mol/pyunits.s)
 
@@ -356,12 +356,12 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
                                       None)
 
         assert isinstance(frame.props[1].pressure, Var)
-        assert frame.props[1].pressure.value == 101325
+        assert frame.props[1].pressure.value is None
         assert check_units_equivalent(frame.props[1].pressure,
                                       pyunits.Pa)
 
         assert isinstance(frame.props[1].temperature, Var)
-        assert frame.props[1].temperature.value == 298.15
+        assert frame.props[1].temperature.value is None
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
@@ -369,7 +369,7 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].flow_mol_phase) == 2
         for i in frame.props[1].flow_mol_phase:
             assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 1/2
+            assert frame.props[1].flow_mol_phase[i].value is None
         assert check_units_equivalent(frame.props[1].flow_mol_phase,
                                       pyunits.mol/pyunits.s)
 
@@ -452,9 +452,9 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 200),
-                                 "temperature": (290, 400),
-                                 "pressure": (1e5, 5e5)},
+                "state_bounds": {"flow_mol": (0, 100, 200),
+                                 "temperature": (290, 345, 400),
+                                 "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
                                "length": pyunits.m,
                                "mass": pyunits.kg,
@@ -627,7 +627,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         # Check that all necessary variables have been constructed and have
         # the correct values
         assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 1
+        assert frame.props[1].flow_mol.value is None
         assert check_units_equivalent(frame.props[1].flow_mol,
                                       pyunits.mol/pyunits.s)
 
@@ -640,12 +640,12 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
                                       None)
 
         assert isinstance(frame.props[1].pressure, Var)
-        assert frame.props[1].pressure.value == 101325
+        assert frame.props[1].pressure.value is None
         assert check_units_equivalent(frame.props[1].pressure,
                                       pyunits.Pa)
 
         assert isinstance(frame.props[1].temperature, Var)
-        assert frame.props[1].temperature.value == 298.15
+        assert frame.props[1].temperature.value is None
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
@@ -653,7 +653,7 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert len(frame.props[1].flow_mol_phase) == 3
         for i in frame.props[1].flow_mol_phase:
             assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 1/3
+            assert frame.props[1].flow_mol_phase[i].value is None
         assert check_units_equivalent(frame.props[1].flow_mol_phase,
                                       pyunits.mol/pyunits.s)
 
@@ -729,9 +729,9 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 200),
-                                 "temperature": (290, 400),
-                                 "pressure": (1e5, 5e5)},
+                "state_bounds": {"flow_mol": (0, 100, 200),
+                                 "temperature": (290, 345, 400),
+                                 "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
                                "length": pyunits.m,
                                "mass": pyunits.kg,
@@ -864,6 +864,10 @@ class TestCommon(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
+                "state_bounds": {
+                    "flow_mol": (0, 0.1, 0.2, pyunits.kmol/pyunits.s),
+                    "temperature": (522, 621, 720, pyunits.degR),
+                    "pressure": (1, 3, 5, pyunits.bar)},
                 "base_units": {"time": pyunits.s,
                                "length": pyunits.m,
                                "mass": pyunits.kg,
@@ -883,6 +887,27 @@ class TestCommon(object):
         define_state(m.props[1])
 
         return m
+
+    @pytest.mark.unit
+    def test_convert_vars(self, frame):
+        # Check that all state var values and bounds were converted correctly
+        assert frame.props[1].flow_mol.value == 100
+        assert frame.props[1].flow_mol.lb == 0
+        assert frame.props[1].flow_mol.ub == 200
+        assert check_units_equivalent(frame.props[1].flow_mol,
+                                      pyunits.mol/pyunits.s)
+
+        assert frame.props[1].pressure.value == 3e5
+        assert frame.props[1].pressure.lb == 1e5
+        assert frame.props[1].pressure.ub == 5e5
+        assert check_units_equivalent(frame.props[1].pressure,
+                                      pyunits.Pa)
+
+        assert frame.props[1].temperature.value == 345
+        assert frame.props[1].temperature.lb == 290
+        assert frame.props[1].temperature.ub == 400
+        assert check_units_equivalent(frame.props[1].temperature,
+                                      pyunits.K)
 
     # Test General Methods
     @pytest.mark.unit
