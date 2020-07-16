@@ -124,7 +124,12 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 ..
 
-   .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX
+   .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
+
+                As fallback (assuming you are uisng a conda env) you can install
+                the generic ipopt solver with the command ``conda install -c
+                conda-forge ipopt`` though this will not have all the features
+                of our extentions package.
 
    .. note:: If you are installing on Linux, you can specify a specific platform.
              While most Linux builds are interchangeable, specifying a build can
