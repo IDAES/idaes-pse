@@ -21,6 +21,7 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
 from idaes.generic_models.unit_models.heater import (
@@ -322,7 +323,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
-        istate = to_json(self, return_dict=True, wts=sp)
+        istate = to_json(blk, return_dict=True, wts=sp)
 
         opt = pyo.SolverFactory(solver)
         opt.options = optarg
@@ -381,8 +382,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # Release Inlet state
         blk.side_1.release_state(flags1, outlvl + 1)
         blk.side_2.release_state(flags2, outlvl + 1)
-        from_json(self, sd=istate, wts=sp)
-        
+        from_json(blk, sd=istate, wts=sp)
+
 
 
     def _get_performance_contents(self, time_point=0):

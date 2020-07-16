@@ -512,8 +512,8 @@ change.
         )
 
         # TODO<jce> leaving flow to not break things, but plan to remove
-        self.set_default_scaling("flow_mol", 1e-3)
-        self.set_default_scaling("flow_mol_comp", 1e-3)
+        self.set_default_scaling("flow_mol", 1e-4)
+        self.set_default_scaling("flow_mol_comp", 1e-4)
         self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mass", 1)
 
