@@ -21,43 +21,84 @@ All parameter indicies and units based on conventions used by the source
 """
 from pyomo.environ import log, Var, units as pyunits
 
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
+
 
 # -----------------------------------------------------------------------------
 # Shomate Equation for heat capacities, enthalpy and entropy
 class cp_mol_ig_comp():
     def build_parameters(cobj):
         cobj.cp_mol_ig_comp_coeff_A = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["A"],
             doc="Shomate A parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1)
+        set_param_value(cobj,
+                        param="cp_mol_ig_comp_coeff",
+                        units=pyunits.J*pyunits.mol**-1*pyunits.K**-1,
+                        index="A")
+
         cobj.cp_mol_ig_comp_coeff_B = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["B"],
             doc="Shomate B parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-1,
+            index="B")
+
         cobj.cp_mol_ig_comp_coeff_C = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["C"],
             doc="Shomate C parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-2,
+            index="C")
+
         cobj.cp_mol_ig_comp_coeff_D = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["D"],
             doc="Shomate D parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**-3,
+            index="D")
+
         cobj.cp_mol_ig_comp_coeff_E = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["E"],
             doc="Shomate E parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1*pyunits.kiloK**2,
+            index="E")
+
         cobj.cp_mol_ig_comp_coeff_F = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["F"],
             doc="Shomate F parameter for ideal gas molar heat capacity",
             units=pyunits.kJ*pyunits.mol**-1)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.kJ*pyunits.mol**-1,
+            index="F")
+
         cobj.cp_mol_ig_comp_coeff_G = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["G"],
             doc="Shomate G parameter for ideal gas molar heat capacity",
             units=pyunits.J*pyunits.mol**-1*pyunits.K**-1)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.J*pyunits.mol**-1*pyunits.K**-1,
+            index="G")
+
         cobj.cp_mol_ig_comp_coeff_H = Var(
-            initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"]["H"],
             doc="Shomate h parameter for ideal gas molar heat capacity",
             units=pyunits.kJ*pyunits.mol**-1)
+        set_param_value(
+            cobj,
+            param="cp_mol_ig_comp_coeff",
+            units=pyunits.kJ*pyunits.mol**-1,
+            index="H")
 
     def return_expression(b, cobj, T):
         # Specific heat capacity (const. P)  via the Shomate equation
@@ -126,27 +167,34 @@ class entr_mol_ig_comp():
                    base_units["temperature"]**-1)
         return pyunits.convert(s, s_units)
 
+
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
 class pressure_sat_comp():
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_A = Var(
-                initialize=cobj.config.parameter_data[
-                    "pressure_sat_comp_coeff"]["A"],
                 doc="Antoine A coefficient for calculating Psat",
                 units=None)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=None,
+                        index="A")
 
         cobj.pressure_sat_comp_coeff_B = Var(
-                initialize=cobj.config.parameter_data[
-                    "pressure_sat_comp_coeff"]["B"],
                 doc="Antoine B coefficient for calculating Psat",
                 units=pyunits.K)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=pyunits.K,
+                        index="B")
 
         cobj.pressure_sat_comp_coeff_C = Var(
-                initialize=cobj.config.parameter_data[
-                    "pressure_sat_comp_coeff"]["C"],
                 doc="Antoine C coefficient for calculating Psat",
                 units=pyunits.K)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=pyunits.K,
+                        index="C")
 
     def return_expression(b, cobj, T, dT=False):
         if dT:

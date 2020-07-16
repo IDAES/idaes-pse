@@ -66,25 +66,30 @@ configuration = {
                         "mw": (78.1136E-3, pyunits.kg/pyunits.mol),  # [1]
                         "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
                         "temperature_crit": (562.2, pyunits.K),  # [1]
-                        "dens_mol_liq_comp_coeff": {'1': 1.0162,  # [2] pg. 2-98
-                                                    '2': 0.2655,
-                                                    '3': 562.16,
-                                                    '4': 0.28212},
-                        "cp_mol_ig_comp_coeff": {'A': -3.392E1,  # [1]
-                                                 'B': 4.739E-1,
-                                                 'C': -3.017E-4,
-                                                 'D': 7.130E-8},
-                        "cp_mol_liq_comp_coeff": {'1': 1.29E2,  # [2]
-                                                  '2': -1.7E-1,
-                                                  '3': 6.48E-4,
-                                                  '4': 0,
-                                                  '5': 0},
-                        "enth_mol_form_liq_comp_ref": 49.0e3,  # [3]
-                        "enth_mol_form_vap_comp_ref": 82.9e3,  # [3]
-                        "pressure_sat_comp_coeff": {'A': -6.98273,  # [1]
-                                                    'B': 1.33213,
-                                                    'C': -2.62863,
-                                                    'D': -3.33399}}},
+                        "dens_mol_liq_comp_coeff": {
+                            '1': (1.0162, pyunits.kmol*pyunits.m**-3),  # [2] pg. 2-98
+                            '2': (0.2655, None),
+                            '3': (562.16, pyunits.K),
+                            '4': (0.28212, None)},
+                        "cp_mol_ig_comp_coeff": {
+                            'A': (-3.392E1, pyunits.J/pyunits.mol/pyunits.K),  # [1]
+                            'B': (4.739E-1, pyunits.J/pyunits.mol/pyunits.K**2),
+                            'C': (-3.017E-4, pyunits.J/pyunits.mol/pyunits.K**3),
+                            'D': (7.130E-8, pyunits.J/pyunits.mol/pyunits.K**4)},
+                        "cp_mol_liq_comp_coeff": {
+                            '1': (1.29E2, pyunits.J/pyunits.kmol/pyunits.K),  # [2]
+                            '2': (-1.7E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
+                            '3': (6.48E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
+                            '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                            '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                        "enth_mol_form_liq_comp_ref": (
+                            49.0e3, pyunits.J/pyunits.mol),  # [3]
+                        "enth_mol_form_vap_comp_ref": (
+                            82.9e3, pyunits.J/pyunits.mol),  # [3]
+                        "pressure_sat_comp_coeff": {'A': (-6.98273, None),  # [1]
+                                                    'B': (1.33213, None),
+                                                    'C': (-2.62863, None),
+                                                    'D': (-3.33399, None)}}},
         'toluene': {"type": Component,
                     "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
@@ -96,25 +101,30 @@ configuration = {
                         "mw": (92.1405E-3, pyunits.kg/pyunits.mol),  # [1]
                         "pressure_crit": (41e5, pyunits.Pa),  # [1]
                         "temperature_crit": (591.8, pyunits.K),  # [1]
-                        "dens_mol_liq_comp_coeff": {'1': 0.8488,  # [2] pg. 2-98
-                                                    '2': 0.26655,
-                                                    '3': 591.8,
-                                                    '4': 0.2878},
-                        "cp_mol_ig_comp_coeff": {'A': -2.435E1,
-                                                 'B': 5.125E-1,
-                                                 'C': -2.765E-4,
-                                                 'D': 4.911E-8},
-                        "cp_mol_liq_comp_coeff": {'1': 1.40E2,  # [2]
-                                                  '2': -1.52E-1,
-                                                  '3': 6.95E-4,
-                                                  '4': 0,
-                                                  '5': 0},
-                        "enth_mol_form_liq_comp_ref": 12.0e3,  # [3]
-                        "enth_mol_form_vap_comp_ref": 50.1e3,  # [3]
-                        "pressure_sat_comp_coeff": {'A': -7.28607,  # [1]
-                                                    'B': 1.38091,
-                                                    'C': -2.83433,
-                                                    'D': -2.79168}}}},
+                        "dens_mol_liq_comp_coeff": {
+                            '1': (0.8488, pyunits.kmol*pyunits.m**-3),  # [2] pg. 2-98
+                            '2': (0.26655, None),
+                            '3': (591.8, pyunits.K),
+                            '4': (0.2878, None)},
+                        "cp_mol_ig_comp_coeff": {
+                            'A': (-2.435E1, pyunits.J/pyunits.mol/pyunits.K),  # [1]
+                            'B': (5.125E-1, pyunits.J/pyunits.mol/pyunits.K**2),
+                            'C': (-2.765E-4, pyunits.J/pyunits.mol/pyunits.K**3),
+                            'D': (4.911E-8, pyunits.J/pyunits.mol/pyunits.K**4)},
+                        "cp_mol_liq_comp_coeff": {
+                            '1': (1.40E2, pyunits.J/pyunits.kmol/pyunits.K),  # [2]
+                            '2': (-1.52E-1, pyunits.J/pyunits.kmol/pyunits.K**2),
+                            '3': (6.95E-4, pyunits.J/pyunits.kmol/pyunits.K**3),
+                            '4': (0, pyunits.J/pyunits.kmol/pyunits.K**4),
+                            '5': (0, pyunits.J/pyunits.kmol/pyunits.K**5)},
+                        "enth_mol_form_liq_comp_ref": (
+                            12.0e3, pyunits.J/pyunits.mol),  # [3]
+                        "enth_mol_form_vap_comp_ref": (
+                            50.1e3, pyunits.J/pyunits.mol),  # [3]
+                        "pressure_sat_comp_coeff": {'A': (-7.28607, None),  # [1]
+                                                    'B': (1.38091, None),
+                                                    'C': (-2.83433, None),
+                                                    'D': (-2.79168, None)}}}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": LiquidPhase,

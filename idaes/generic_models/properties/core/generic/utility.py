@@ -147,7 +147,7 @@ def get_bounds_from_config(b, state, base_units):
     return bounds, default_val
 
 
-def set_param_value(b, param, units):
+def set_param_value(b, param, units, index=None):
     """
     Utility method to set parameter value from config block. This allows for
     converting units if required. This method directly sets the value of the
@@ -157,15 +157,25 @@ def set_param_value(b, param, units):
         b - block on which parameter and config block are defined
         param - name of parameter as str. Used to find param and config arg
         units - units of param object (used if conversion required)
+        index - (optional) used for pure component properties where a signle
+                property may have multiple parameters associated with it.
 
     Returns:
         None
     """
-    param_obj = getattr(b, param)
-    config = b.config.parameter_data[param]
+    if index is None:
+        param_obj = getattr(b, param)
+        config = b.config.parameter_data[param]
+    else:
+        param_obj = getattr(b, param+"_"+index)
+        config = b.config.parameter_data[param][index]
+
     if isinstance(config, tuple):
-        param_obj.value = pyunits.convert_value(
-            config[0], from_units=config[1], to_units=units)
+        if units is None and config[1] is None:
+            param_obj.value = config[0]
+        else:
+            param_obj.value = pyunits.convert_value(
+                config[0], from_units=config[1], to_units=units)
     else:
         _log.debug("{} no units provided for parameter {} - assuming default "
                    "units".format(b.name, param))

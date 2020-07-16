@@ -20,31 +20,53 @@ All parameter indicies and units based on conventions used by the source
 """
 from pyomo.environ import log, Var, units as pyunits
 
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
+
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 class cp_mol_liq_comp():
     def build_parameters(cobj):
         cobj.cp_mol_liq_comp_coeff_1 = Var(
-            initialize=cobj.config.parameter_data["cp_mol_liq_comp_coeff"]['1'],
             doc="Parameter 1 for liquid phase molar heat capacity",
             units=pyunits.J*pyunits.kmol**-1*pyunits.K**-1)
+        set_param_value(cobj,
+                        param="cp_mol_liq_comp_coeff",
+                        units=pyunits.J*pyunits.kmol**-1*pyunits.K**-1,
+                        index="1")
+
         cobj.cp_mol_liq_comp_coeff_2 = Var(
-            initialize=cobj.config.parameter_data["cp_mol_liq_comp_coeff"]['2'],
             doc="Parameter 2 for liquid phase molar heat capacity",
             units=pyunits.J*pyunits.kmol**-1*pyunits.K**-2)
+        set_param_value(cobj,
+                        param="cp_mol_liq_comp_coeff",
+                        units=pyunits.J*pyunits.kmol**-1*pyunits.K**-2,
+                        index="2")
+
         cobj.cp_mol_liq_comp_coeff_3 = Var(
-            initialize=cobj.config.parameter_data["cp_mol_liq_comp_coeff"]['3'],
             doc="Parameter 3 for liquid phase molar heat capacity",
             units=pyunits.J*pyunits.kmol**-1*pyunits.K**-3)
+        set_param_value(cobj,
+                        param="cp_mol_liq_comp_coeff",
+                        units=pyunits.J*pyunits.kmol**-1*pyunits.K**-3,
+                        index="3")
+
         cobj.cp_mol_liq_comp_coeff_4 = Var(
-            initialize=cobj.config.parameter_data["cp_mol_liq_comp_coeff"]['4'],
             doc="Parameter 4 for liquid phase molar heat capacity",
             units=pyunits.J*pyunits.kmol**-1*pyunits.K**-4)
+        set_param_value(cobj,
+                        param="cp_mol_liq_comp_coeff",
+                        units=pyunits.J*pyunits.kmol**-1*pyunits.K**-4,
+                        index="4")
+
         cobj.cp_mol_liq_comp_coeff_5 = Var(
-            initialize=cobj.config.parameter_data["cp_mol_liq_comp_coeff"]['5'],
             doc="Parameter 5 for liquid phase molar heat capacity",
             units=pyunits.J*pyunits.kmol**-1*pyunits.K**-5)
+        set_param_value(cobj,
+                        param="cp_mol_liq_comp_coeff",
+                        units=pyunits.J*pyunits.kmol**-1*pyunits.K**-5,
+                        index="5")
 
     def return_expression(b, cobj, T):
         # Specific heat capacity
@@ -76,10 +98,11 @@ class enth_mol_liq_comp():
                    base_units["amount"]**-1)
 
         cobj.enth_mol_form_liq_comp_ref = Var(
-                initialize=cobj.config.parameter_data[
-                    "enth_mol_form_liq_comp_ref"],
                 doc="Liquid phase molar heat of formation @ Tref",
                 units=h_units)
+        set_param_value(cobj,
+                        param="enth_mol_form_liq_comp_ref",
+                        units=h_units)
 
     def return_expression(b, cobj, T):
         # Specific enthalpy
@@ -116,10 +139,11 @@ class entr_mol_liq_comp():
                    base_units["temperature"]**-1)
 
         cobj.entr_mol_form_liq_comp_ref = Var(
-                initialize=cobj.config.parameter_data[
-                    "entr_mol_form_liq_comp_ref"],
                 doc="Liquid phase molar entropy of formation @ Tref",
                 units=s_units)
+        set_param_value(cobj,
+                        param="entr_mol_form_liq_comp_ref",
+                        units=s_units)
 
     def return_expression(b, cobj, T):
         # Specific entropy
@@ -149,25 +173,36 @@ class entr_mol_liq_comp():
 class dens_mol_liq_comp():
     def build_parameters(cobj):
         cobj.dens_mol_liq_comp_coeff_1 = Var(
-                initialize=cobj.config.parameter_data[
-                    "dens_mol_liq_comp_coeff"]["1"],
                 doc="Parameter 1 for liquid phase molar density",
                 units=pyunits.kmol*pyunits.m**-3)
+        set_param_value(cobj,
+                        param="dens_mol_liq_comp_coeff",
+                        units=pyunits.kmol*pyunits.m**-3,
+                        index="1")
+
         cobj.dens_mol_liq_comp_coeff_2 = Var(
-                initialize=cobj.config.parameter_data[
-                    "dens_mol_liq_comp_coeff"]["2"],
                 doc="Parameter 2 for liquid phase molar density",
                 units=None)
+        set_param_value(cobj,
+                        param="dens_mol_liq_comp_coeff",
+                        units=None,
+                        index="2")
+
         cobj.dens_mol_liq_comp_coeff_3 = Var(
-                initialize=cobj.config.parameter_data[
-                    "dens_mol_liq_comp_coeff"]["3"],
                 doc="Parameter 3 for liquid phase molar density",
                 units=pyunits.K)
+        set_param_value(cobj,
+                        param="dens_mol_liq_comp_coeff",
+                        units=pyunits.K,
+                        index="3")
+
         cobj.dens_mol_liq_comp_coeff_4 = Var(
-                initialize=cobj.config.parameter_data[
-                    "dens_mol_liq_comp_coeff"]["4"],
                 doc="Parameter 4 for liquid phase molar density",
                 units=None)
+        set_param_value(cobj,
+                        param="dens_mol_liq_comp_coeff",
+                        units=None,
+                        index="4")
 
     def return_expression(b, cobj, T):
         # pg. 2-98
