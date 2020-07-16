@@ -179,6 +179,7 @@ svg_test_str = \
 
 
 # Author: John Eslick
+@pytest.mark.unit
 def test_tag_reference():
     m = ConcreteModel()
     m.x = Var([0,1], initialize={0:2.22,1:3.33})

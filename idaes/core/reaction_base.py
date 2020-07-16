@@ -132,7 +132,13 @@ class ReactionParameterBlock(ProcessBlockData,
         prop_units = self.config.property_package.get_metadata().default_units
         for u in r_units:
             try:
-                if prop_units[u] != r_units[u]:
+                # TODO: This check is for backwards compatability with
+                # pre-units property packages. It can be removed once these are
+                # fully deprecated.
+                if isinstance(prop_units[u], str) and (
+                        prop_units[u] != r_units[u]):
+                    raise KeyError()
+                elif prop_units[u] is not r_units[u]:
                     raise KeyError()
             except KeyError:
                 raise PropertyPackageError(
@@ -354,6 +360,12 @@ should be constructed in this reaction block,
 
         # Check for recursive calls
         try:
+            # Check if __getattrcalls is initialized
+            self.__getattrcalls
+        except AttributeError:
+            # Initialize it
+            self.__getattrcalls = [attr]
+        else:
             # Check to see if attr already appears in call list
             if attr in self.__getattrcalls:
                 # If it does, indicates a recursive loop.
@@ -384,9 +396,6 @@ should be constructed in this reaction block,
                                     .format(self.name, attr))
             # If not, add call to list
             self.__getattrcalls.append(attr)
-        except AttributeError:
-            # A list of calls if one does not exist, so create one
-            self.__getattrcalls = [attr]
 
         # Get property information from get_supported_properties
         try:

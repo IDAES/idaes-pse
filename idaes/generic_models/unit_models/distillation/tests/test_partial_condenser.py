@@ -39,6 +39,7 @@ from idaes.core.util.testing import get_default_solver, \
 solver = get_default_solver()
 
 
+@pytest.mark.unit
 def test_config():
 
     m = ConcreteModel()
@@ -101,6 +102,7 @@ class TestBTXIdeal(object):
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
         assert hasattr(btx_ftpz.fs.unit, "reflux_ratio")
         assert not hasattr(btx_ftpz.fs.unit, "eq_total_cond_spec")
@@ -164,6 +166,7 @@ class TestBTXIdeal(object):
         assert number_total_constraints(btx_fctp.fs.unit) == 44
         assert number_unused_variables(btx_fctp) == 1
 
+    @pytest.mark.unit
     def test_dof(self, btx_ftpz, btx_fctp):
 
         # Fix the partial condenser variables (FTPz)
@@ -196,12 +199,14 @@ class TestBTXIdeal(object):
     @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, btx_ftpz, btx_fctp):
         results = solver.solve(btx_ftpz)
 
@@ -220,6 +225,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, btx_ftpz, btx_fctp):
 
         # Using the FTPz state variables
@@ -307,6 +313,7 @@ class TestBTXIdeal(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_conservation(self, btx_ftpz, btx_fctp):
         assert abs(value(btx_ftpz.fs.unit.inlet.flow_mol[0] -
                          (btx_ftpz.fs.unit.reflux.flow_mol[0] +
@@ -327,6 +334,7 @@ class TestBTXIdeal(object):
                           flow_mol_comp[0, "toluene"]))) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx_ftpz, btx_fctp):
         btx_ftpz.fs.unit.report()
         btx_fctp.fs.unit.report()

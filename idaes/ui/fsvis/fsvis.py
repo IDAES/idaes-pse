@@ -11,8 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 # server backend code for fsvis
+import json
+import os
 import requests
 from requests.exceptions import ConnectionError
+from slugify import slugify
 import time
 import webbrowser
 
@@ -20,7 +23,7 @@ from idaes.ui.fsvis.app import App as fsvis_server
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
 # serialize flowsheet and launch the app
-def visualize(flowsheet, name):
+def visualize(flowsheet, name, browser=True, overwrite=False):
     """Visualizes the flowsheet, assigning it to the given name. 
     
     Attempts to
@@ -48,16 +51,25 @@ def visualize(flowsheet, name):
     """
     server = fsvis_server()
     url = f"http://{server.host}:{server.port}/app"
-    
-    # TODO: make sure `name` is valid for use as a URL query string!! E.g. no spaces...
-
-    serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
+        
+    # Check if the {name}.viz file exists and overwrite is not true. If it was True
+    # then we want to serialize the flowsheet and reset to the original
+    file_path = os.path.expandvars(os.path.join(os.path.expanduser("~"), ".idaes", "viz", f"{name}.viz"))
+    if os.path.isfile(file_path) and not overwrite:
+        print(f"Model {name} visualization exists. Reloading the visualization.")
+        print("If you don't want to load the existing visualization specify overwrite=True "
+              "when calling visualize")
+        with open(file_path, "r") as viz_file:
+            serialized_flowsheet = json.load(viz_file)
+    else:
+        serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
     
     repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
-                        params={'id': name})
-    success = webbrowser.open(url + f"?id={name}")
-    print(f'Opened in browser window: {success}')
-    print(f'{url}?id={name}')
+                                      params={'id': slugify(name)})
+    if browser:
+        success = webbrowser.open(url + f"?id={name}")
+        print(f'Opened in browser window: {success}')
+        print(f'{url}?id={name}')
     return server
 
 # possibly should be changed to _repeat_until_connection_available()

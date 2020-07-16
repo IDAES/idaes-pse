@@ -44,6 +44,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -79,9 +80,17 @@ class TestTranslate(object):
                 default={"inlet_property_package": m.fs.properties1,
                          "outlet_property_package": m.fs.properties2})
 
+        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, trans):
         assert hasattr(trans.fs.unit, "properties_in")
         assert hasattr(trans.fs.unit, "properties_out")
@@ -104,24 +113,19 @@ class TestTranslate(object):
         assert number_total_constraints(trans) == 12
         assert number_unused_variables(trans) == 8
 
+    @pytest.mark.unit
     def test_dof(self, trans):
-        trans.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        trans.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
         assert degrees_of_freedom(trans) == 5
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, trans):
         initialization_tester(trans, dof=5)
 
     # No solve, as problem has is missing linking constraints
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, trans):
         trans.fs.unit.report()

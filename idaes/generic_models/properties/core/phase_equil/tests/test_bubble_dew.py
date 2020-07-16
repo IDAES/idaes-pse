@@ -89,6 +89,7 @@ def frame():
 
 
 class TestBubbleTempIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].temperature_bubble = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_tbub = Var(frame.params._pe_pairs,
@@ -105,6 +106,7 @@ class TestBubbleTempIdeal(object):
         for k in frame.props[1].eq_mole_frac_tbub:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -129,6 +131,7 @@ class TestBubbleTempIdeal(object):
 
 
 class TestDewTempIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].temperature_dew = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_tdew = Var(frame.params._pe_pairs,
@@ -145,6 +148,7 @@ class TestDewTempIdeal(object):
         for k in frame.props[1].eq_mole_frac_tdew:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -168,6 +172,7 @@ class TestDewTempIdeal(object):
 
 
 class TestBubblePresIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].pressure_bubble = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_pbub = Var(frame.params._pe_pairs,
@@ -184,6 +189,7 @@ class TestBubblePresIdeal(object):
         for k in frame.props[1].eq_mole_frac_pbub:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -207,6 +213,7 @@ class TestBubblePresIdeal(object):
 
 
 class TestDewPressureIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].pressure_dew = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_pdew = Var(frame.params._pe_pairs,
@@ -223,6 +230,7 @@ class TestDewPressureIdeal(object):
         for k in frame.props[1].eq_mole_frac_pdew:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10

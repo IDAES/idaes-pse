@@ -24,6 +24,7 @@ has_alamo_flag = alamopy.multos.has_alamo()
 
 
 @pytest.mark.skipif(not has_alamo_flag, reason="alamo executable not found")
+@pytest.mark.unit
 def test_basic():
 
     if has_alamo_flag:

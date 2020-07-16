@@ -30,12 +30,14 @@ init_logging()
 _log = logging.getLogger(__name__)
 
 
+@pytest.mark.unit
 def test_init(tmp_dmf):
     exp = experiment.Experiment(tmp_dmf, name="try1", desc="Nice try")
     assert exp.v["name"] == "try1"
     assert exp.id
 
 
+@pytest.mark.component
 def test_create_many(tmp_dmf):
     for i in range(100):
         exp = experiment.Experiment(tmp_dmf, name="try{i}".format(i=i))
@@ -43,6 +45,7 @@ def test_create_many(tmp_dmf):
         assert exp.id
 
 
+@pytest.mark.unit
 def test_remove_workflow(tmp_dmf):
     # A workflow of copy/remove
     # make an experiment

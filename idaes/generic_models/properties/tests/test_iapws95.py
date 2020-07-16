@@ -29,6 +29,7 @@ prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
 # Test Enums and common functions
+@pytest.mark.unit
 def test_htpx_invalid_args():
     with pytest.raises(ConfigurationError):
         iapws95.htpx(300, P=101325, x=0.5)
@@ -53,6 +54,7 @@ def test_htpx_invalid_args():
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.unit
 def test_htpx():
     # Compariosn of IAPWS95 results to data from Spirax-Sarco steam tables
     # https://www.spiraxsarco.com/resources-and-design-tools/steam-tables
@@ -81,6 +83,7 @@ def test_htpx():
     assert iapws95.htpx(400, P=101325) == pytest.approx(2.72979e06 * mw + offset, 1e-5)
 
 
+@pytest.mark.unit
 def test_PhaseType():
     assert len(iapws95.PhaseType) == 4
 
@@ -91,6 +94,7 @@ def test_PhaseType():
     iapws95.PhaseType.G
 
 
+@pytest.mark.unit
 def test_StateVars():
     assert len(iapws95.StateVars) == 2
 
@@ -111,6 +115,7 @@ class TestMixPh(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.MIX
         assert model.params.config.state_vars == iapws95.StateVars.PH
@@ -119,6 +124,7 @@ class TestMixPh(object):
         for i in model.params.phase_list:
             assert i in ["Mix"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -131,6 +137,7 @@ class TestMixPh(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -138,6 +145,7 @@ class TestMixPh(object):
                     model.prop[1].flow_mol
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert (
@@ -145,6 +153,7 @@ class TestMixPh(object):
                 == model.prop[1].enth_mol * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -153,6 +162,7 @@ class TestMixPh(object):
                     is model.prop[1].dens_mol
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert (
@@ -160,30 +170,35 @@ class TestMixPh(object):
                 == model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -197,20 +212,25 @@ class TestMixPh(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -228,6 +248,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -256,6 +277,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -281,6 +303,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -306,6 +329,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -331,6 +355,7 @@ class TestMixPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].enth_mol.fixed = True
@@ -371,6 +396,7 @@ class TestLGPh(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.LG
         assert model.params.config.state_vars == iapws95.StateVars.PH
@@ -379,6 +405,7 @@ class TestLGPh(object):
         for i in model.params.phase_list:
             assert i in ["Liq", "Vap"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -391,6 +418,7 @@ class TestLGPh(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -399,6 +427,7 @@ class TestLGPh(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -407,6 +436,7 @@ class TestLGPh(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -415,6 +445,7 @@ class TestLGPh(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -422,30 +453,35 @@ class TestLGPh(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -459,20 +495,25 @@ class TestLGPh(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -490,6 +531,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -518,6 +560,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -543,6 +586,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -568,6 +612,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -593,6 +638,7 @@ class TestLGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].enth_mol.fixed = True
@@ -633,6 +679,7 @@ class TestLPh(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.L
         assert model.params.config.state_vars == iapws95.StateVars.PH
@@ -641,6 +688,7 @@ class TestLPh(object):
         for i in model.params.phase_list:
             assert i in ["Liq"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -653,6 +701,7 @@ class TestLPh(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -661,6 +710,7 @@ class TestLPh(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -669,6 +719,7 @@ class TestLPh(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -677,6 +728,7 @@ class TestLPh(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -684,30 +736,35 @@ class TestLPh(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -721,20 +778,25 @@ class TestLPh(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -752,6 +814,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -780,6 +843,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -805,6 +869,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -830,6 +895,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -855,6 +921,7 @@ class TestLPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].enth_mol.fixed = True
@@ -895,6 +962,7 @@ class TestGPh(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.G
         assert model.params.config.state_vars == iapws95.StateVars.PH
@@ -903,6 +971,7 @@ class TestGPh(object):
         for i in model.params.phase_list:
             assert i in ["Vap"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -915,6 +984,7 @@ class TestGPh(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -923,6 +993,7 @@ class TestGPh(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -931,6 +1002,7 @@ class TestGPh(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -939,6 +1011,7 @@ class TestGPh(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -946,30 +1019,35 @@ class TestGPh(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -983,20 +1061,25 @@ class TestGPh(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -1014,6 +1097,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -1042,6 +1126,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -1067,6 +1152,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -1092,6 +1178,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
@@ -1117,6 +1204,7 @@ class TestGPh(object):
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].enth_mol.fixed = True
@@ -1157,6 +1245,7 @@ class TestMixTpx(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.MIX
         assert model.params.config.state_vars == iapws95.StateVars.TPX
@@ -1165,6 +1254,7 @@ class TestMixTpx(object):
         for i in model.params.phase_list:
             assert i in ["Mix"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -1178,6 +1268,7 @@ class TestMixTpx(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1185,6 +1276,7 @@ class TestMixTpx(object):
                     model.prop[1].flow_mol
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert (
@@ -1192,6 +1284,7 @@ class TestMixTpx(object):
                 == model.prop[1].enth_mol * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1200,6 +1293,7 @@ class TestMixTpx(object):
                     is model.prop[1].dens_mol
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert (
@@ -1207,30 +1301,35 @@ class TestMixTpx(object):
                 == model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -1244,10 +1343,12 @@ class TestMixTpx(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [
@@ -1256,12 +1357,15 @@ class TestMixTpx(object):
                 model.prop[1].vapor_frac,
             ]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1282,6 +1386,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1320,6 +1425,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1350,6 +1456,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1380,6 +1487,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1410,6 +1518,7 @@ class TestMixTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].temperature.fixed = True
@@ -1457,6 +1566,7 @@ class TestLgTpx(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.LG
         assert model.params.config.state_vars == iapws95.StateVars.TPX
@@ -1465,6 +1575,7 @@ class TestLgTpx(object):
         for i in model.params.phase_list:
             assert i in ["Liq", "Vap"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -1478,6 +1589,7 @@ class TestLgTpx(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1486,6 +1598,7 @@ class TestLgTpx(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -1494,6 +1607,7 @@ class TestLgTpx(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1502,6 +1616,7 @@ class TestLgTpx(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -1509,30 +1624,35 @@ class TestLgTpx(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -1546,10 +1666,12 @@ class TestLgTpx(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [
@@ -1558,12 +1680,15 @@ class TestLgTpx(object):
                 model.prop[1].vapor_frac,
             ]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1584,6 +1709,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1615,6 +1741,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1643,6 +1770,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1671,6 +1799,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1699,6 +1828,7 @@ class TestLgTpx(object):
         assert not model.prop[1].pressure.fixed
         assert not model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].temperature.fixed = True
@@ -1742,6 +1872,7 @@ class TestLTpx(object):
 
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.L
         assert model.params.config.state_vars == iapws95.StateVars.TPX
@@ -1750,6 +1881,7 @@ class TestLTpx(object):
         for i in model.params.phase_list:
             assert i in ["Liq"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -1763,6 +1895,7 @@ class TestLTpx(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1771,6 +1904,7 @@ class TestLTpx(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -1779,6 +1913,7 @@ class TestLTpx(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -1787,6 +1922,7 @@ class TestLTpx(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -1794,30 +1930,35 @@ class TestLTpx(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -1831,10 +1972,12 @@ class TestLTpx(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [
@@ -1843,12 +1986,15 @@ class TestLTpx(object):
                 model.prop[1].vapor_frac,
             ]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1869,6 +2015,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1900,6 +2047,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1928,6 +2076,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1956,6 +2105,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -1984,6 +2134,7 @@ class TestLTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].temperature.fixed = True
@@ -2028,6 +2179,7 @@ class TestGTpx(object):
         )
         return model
 
+    @pytest.mark.unit
     def test_config(self, model):
         assert model.params.config.phase_presentation == iapws95.PhaseType.G
         assert model.params.config.state_vars == iapws95.StateVars.TPX
@@ -2036,6 +2188,7 @@ class TestGTpx(object):
         for i in model.params.phase_list:
             assert i in ["Vap"]
 
+    @pytest.mark.unit
     def test_build(self, model):
         model.prop = iapws95.Iapws95StateBlock(
             [1], default={"parameters": model.params}
@@ -2049,6 +2202,7 @@ class TestGTpx(object):
         assert isinstance(model.prop[1].extensive_set, ComponentSet)
         assert isinstance(model.prop[1].intensive_set, ComponentSet)
 
+    @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -2057,6 +2211,7 @@ class TestGTpx(object):
                     == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
+    @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_enthalpy_flow_terms(p) == (
@@ -2065,6 +2220,7 @@ class TestGTpx(object):
                 * model.prop[1].flow_mol
             )
 
+    @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
@@ -2073,6 +2229,7 @@ class TestGTpx(object):
                     is model.prop[1].dens_mol_phase[p]
                 )
 
+    @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
             assert model.prop[1].get_energy_density_terms(p) == (
@@ -2080,30 +2237,35 @@ class TestGTpx(object):
                 * model.prop[1].energy_internal_mol_phase[p]
             )
 
+    @pytest.mark.unit
     def test_default_material_balance_type(self, model):
         assert (
             model.prop[1].default_material_balance_type()
             is MaterialBalanceType.componentTotal
         )
 
+    @pytest.mark.unit
     def test_default_energy_balance_type(self, model):
         assert (
             model.prop[1].default_energy_balance_type()
             is EnergyBalanceType.enthalpyTotal
         )
 
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
 
+    @pytest.mark.unit
     def test_define_port_members(self, model):
         sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
 
+    @pytest.mark.unit
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -2117,10 +2279,12 @@ class TestGTpx(object):
                 "Molar Enthalpy (J/mol)",
             ]
 
+    @pytest.mark.unit
     def test_extensive_state_vars(self, model):
         for i in model.prop[1].extensive_set:
             assert i is model.prop[1].flow_mol
 
+    @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
             assert i in [
@@ -2129,12 +2293,15 @@ class TestGTpx(object):
                 model.prop[1].vapor_frac,
             ]
 
+    @pytest.mark.unit
     def test_model_check(self, model):
         assert model.prop[1].model_check() is None
 
+    @pytest.mark.unit
     def test_data_initialize(self, model):
         assert model.prop[1].initialize() is None
 
+    @pytest.mark.unit
     def test_initialize(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -2155,6 +2322,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -2186,6 +2354,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_1(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -2214,6 +2383,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_2(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -2242,6 +2412,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_partial_state_3(self, model):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].temperature.fixed
@@ -2270,6 +2441,7 @@ class TestGTpx(object):
         assert not model.prop[1].pressure.fixed
         assert model.prop[1].vapor_frac.fixed
 
+    @pytest.mark.unit
     def test_initialize_w_state_ignore_fixed(self, model):
         model.prop[1].flow_mol.fixed = True
         model.prop[1].temperature.fixed = True

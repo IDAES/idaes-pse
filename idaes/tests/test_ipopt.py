@@ -11,8 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 from pyomo.environ import SolverFactory
+import pytest
 
 
+@pytest.mark.unit
 def test_ipopt_available():
     """
     Tries to set-up the IPOPT and returns exception if not available

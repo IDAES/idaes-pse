@@ -42,6 +42,7 @@ class TestIntegration(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_verify(self, compressor_model):
         model = compressor_model
         # Verify the turbine results against 3 known test cases

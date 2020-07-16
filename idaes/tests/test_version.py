@@ -20,10 +20,12 @@ import idaes
 from idaes import ver
 
 
+@pytest.mark.unit
 def test_idaes_version():
     assert idaes.__version__
 
 
+@pytest.mark.unit
 def test_ver_class():
     v = ver.Version(1, 2, 3)
     assert str(v) == '1.2.3'
@@ -39,11 +41,13 @@ class MyVersionedClass(ver.HasVersion):
         super(MyVersionedClass, self).__init__(1, 2, 3)
 
 
+@pytest.mark.unit
 def test_has_version():
     x = MyVersionedClass()
     assert str(x.version) == '1.2.3'
 
 
+@pytest.mark.unit
 def test_bump_version():
     v = ver.Version(1, 2, 3)
     assert tuple(v) == (1, 2, 3)

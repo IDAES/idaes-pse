@@ -65,6 +65,7 @@ def model():
     return m
 
 
+@pytest.mark.unit
 def test_mole_frac_power_law_equil_no_order(model):
     mole_frac_power_law_equil.build_parameters(
         model.rparams.reaction_r1,
@@ -94,6 +95,7 @@ def test_mole_frac_power_law_equil_no_order(model):
             model.rparams.reaction_r1.reaction_order["p1", "c2"]))
 
 
+@pytest.mark.unit
 def test_mole_frac_power_law_equil_with_order(model):
     model.rparams.config.equilibrium_reactions.r1.parameter_data = {
         "reaction_order": {("p1", "c1"): 1,

@@ -37,6 +37,7 @@ def branin_dataset():
 
     return m, x, y
 
+@pytest.mark.unit
 def test_alamopy(branin_dataset):
     m, x, y = branin_dataset
 
@@ -66,6 +67,7 @@ def test_alamopy(branin_dataset):
 
     return True
 
+@pytest.mark.unit
 def test_pysmo_krig(branin_dataset):
     m, x, y = branin_dataset
 
@@ -86,6 +88,7 @@ def test_pysmo_krig(branin_dataset):
 
     return True
 
+@pytest.mark.component
 def test_pysmo_rbf(branin_dataset):
     m, x, y = branin_dataset
 
@@ -106,6 +109,7 @@ def test_pysmo_rbf(branin_dataset):
 
     return True
 
+@pytest.mark.unit
 def test_pysmo_poly(branin_dataset):
     m, x, y = branin_dataset
 
@@ -129,7 +133,9 @@ def test_pysmo_poly(branin_dataset):
 
     return True
 
+
 @pytest.mark.integration_test
+@pytest.mark.integration
 def test_general_interface(branin_dataset):
     m, x, y = branin_dataset
 
@@ -151,6 +157,9 @@ def test_general_interface(branin_dataset):
     m.pprint()
 
     modeler.save_results('results.pickle', overwrite=True)
+
+    os.remove('results.pickle')
+    os.remove('solution.pickle')
 
     check_metrics(modeler.get_results())
 

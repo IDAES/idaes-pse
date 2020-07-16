@@ -38,6 +38,7 @@ ceval_unfixedvar_mutableparam_str = (
 currdir = this_file_dir()
 
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -59,6 +60,7 @@ def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     if os.path.exists(fname):
         os.remove(fname)
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_unfixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -87,6 +89,7 @@ def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
         os.remove(fname)
 
 
+@pytest.mark.unit
 def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_immutableparam_str)
     ceval = ceval_class()
@@ -117,6 +120,7 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
 
 @pytest.mark.skipif(not ipopt_available,
                     reason="Ipopt solver not available")
+@pytest.mark.unit
 def test_convergence_evaluation_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -142,15 +146,24 @@ def test_convergence_evaluation_fixedvar_mutableparam():
     # compare results
     assert global_results[0]['name'] == 'Sample-1'
     assert global_results[0]['solved']
-    assert global_results[0]['iters'] == 14
+    # This should take 14 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
+    assert global_results[0]['iters'] == pytest.approx(14, abs=2)
 
     assert global_results[1]['name'] == 'Sample-2'
     assert global_results[1]['solved']
-    assert global_results[1]['iters'] == 15
+    # This should take 15 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
+    assert global_results[1]['iters'] == pytest.approx(15, abs=2)
 
     assert global_results[2]['name'] == 'Sample-3'
     assert global_results[2]['solved']
-    assert global_results[2]['iters'] == 12
+    # This should take 12 iterations to converge with the IDAES solver
+    # distribution, but due to various solver factors the number of iterations
+    # could vary.
+    assert global_results[2]['iters'] == pytest.approx(12, abs=2)
 
     if os.path.exists(fname):
         os.remove(fname)
