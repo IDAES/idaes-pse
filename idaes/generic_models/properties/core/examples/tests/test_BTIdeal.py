@@ -96,6 +96,14 @@ class TestParamBlock(object):
         assert model.params.pressure_ref.value == 1e5
         assert model.params.temperature_ref.value == 300
 
+        assert model.params.benzene.mw.value == 78.1136E-3
+        assert model.params.benzene.pressure_crit.value == 48.9e5
+        assert model.params.benzene.temperature_crit.value == 562.2
+
+        assert model.params.toluene.mw.value == 92.1405E-3
+        assert model.params.toluene.pressure_crit.value == 41e5
+        assert model.params.toluene.temperature_crit.value == 591.8
+
         assert_units_consistent(model)
 
 

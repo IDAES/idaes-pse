@@ -59,9 +59,9 @@ configuration = {
                     "pressure_sat_comp": RPP,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
-                        "mw": 78.1136E-3,  # [1]
-                        "pressure_crit": 48.9e5,  # [1]
-                        "temperature_crit": 562.2,  # [1]
+                        "mw": (78.1136E-3, pyunits.kg/pyunits.mol),  # [1]
+                        "pressure_crit": (48.9e5, pyunits.Pa),  # [1]
+                        "temperature_crit": (562.2, pyunits.K),  # [1]
                         "omega": 0.212,  # [1]
                         "cp_mol_ig_comp_coeff": {'A': -3.392E1,  # [1]
                                                  'B': 4.739E-1,
@@ -79,9 +79,9 @@ configuration = {
                     "pressure_sat_comp": RPP,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
-                        "mw": 92.1405E-3,  # [1]
-                        "pressure_crit": 41e5,  # [1]
-                        "temperature_crit": 591.8,  # [1]
+                        "mw": (92.1405E-3, pyunits.kg/pyunits.mol),  # [1]
+                        "pressure_crit": (41e5, pyunits.Pa),  # [1]
+                        "temperature_crit": (591.8, pyunits.K),  # [1]
                         "omega": 0.263,  # [1]
                         "cp_mol_ig_comp_coeff": {'A': -2.435E1,
                                                  'B': 5.125E-1,
@@ -116,8 +116,8 @@ configuration = {
     "state_bounds": {"flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
                      "temperature": (273.15, 300, 500, pyunits.K),
                      "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
-    "pressure_ref": 101325,
-    "temperature_ref": 298.15,
+    "pressure_ref": (101325, pyunits.Pa),
+    "temperature_ref": (298.15, pyunits.Pa),
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],

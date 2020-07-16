@@ -21,6 +21,10 @@ import types
 from pyomo.environ import units as pyunits
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 class GenericPropertyPackageError(PropertyPackageError):
@@ -111,7 +115,7 @@ def get_bounds_from_config(b, state, base_units):
     Expects the form (lower, default, upper, units) where units is optional
 
     Args:
-        b - StateBlcok on which the state vars are to be constructed
+        b - StateBlock on which the state vars are to be constructed
         state - name of state var as a string (to be matched with config dict)
         base_units - base units of state var to be used if conversion required
 
@@ -141,3 +145,28 @@ def get_bounds_from_config(b, state, base_units):
         default_val = var_config[1]
 
     return bounds, default_val
+
+
+def set_param_value(b, param, units):
+    """
+    Utility method to set parameter value from config block. This allows for
+    converting units if required. This method directly sets the value of the
+    parameter.
+
+    Args:
+        b - block on which parameter and config block are defined
+        param - name of parameter as str. Used to find param and config arg
+        units - units of param object (used if conversion required)
+
+    Returns:
+        None
+    """
+    param_obj = getattr(b, param)
+    config = b.config.parameter_data[param]
+    if isinstance(config, tuple):
+        param_obj.value = pyunits.convert_value(
+            config[0], from_units=config[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = config
