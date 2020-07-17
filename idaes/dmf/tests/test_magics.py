@@ -27,9 +27,6 @@ from idaes.dmf.magics import DMFMagicError
 from idaes.dmf.resource import Resource
 from .util import TempDir
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
-
 # monkey-patch webbrowser to do nothing
 webbrowser.open_new = lambda url: None
 

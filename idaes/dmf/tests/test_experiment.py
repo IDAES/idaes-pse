@@ -21,10 +21,7 @@ from idaes.dmf import experiment, errors, resource
 from .util import tmp_dmf  # noqa -- this is a fixture
 from .util import init_logging, tmp_dmf
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)

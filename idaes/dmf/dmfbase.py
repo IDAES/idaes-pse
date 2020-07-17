@@ -38,7 +38,7 @@ from . import workspace
 from .util import mkdir_p, yaml_load
 
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+__author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 
@@ -169,12 +169,12 @@ class DMF(workspace.Workspace, HasTraits):
     }
 
     def __init__(
-        self, path="", name=None, desc=None, create=False, save_path=False, **ws_kwargs
+        self, path: Union[pathlib.Path, str] = "", name=None, desc=None, create=False, save_path=False, **ws_kwargs
     ):
         """Create or load DMF workspace.
 
         Args:
-            path (str): Path to workspace. If given, will override any
+            path (str|Path): Path to workspace. If given, will override any
                   global configuration. If not given (empty or None), then
                   global configuration will be checked first. If empty, and
                   the global configuration does not parse or exist, then
@@ -193,6 +193,8 @@ class DMF(workspace.Workspace, HasTraits):
         """
         # get global configuration
         conf = DMFConfig(defaults={})
+        # normalize path to a string
+        path = str(path)
         # get path, if not specified, from configuration
         if not path:
             path = conf.c.get(DMFConfig.WORKSPACE, ".")

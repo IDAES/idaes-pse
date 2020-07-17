@@ -16,7 +16,11 @@ Tests for idaes.dmf.dmfbase module
 import json
 import logging
 import os
-import sys
+from pathlib import Path
+import shutil
+from tempfile import TemporaryFile, TemporaryDirectory
+import time
+from typing import Union
 
 # third-party
 import pytest
@@ -29,9 +33,6 @@ from idaes.util.system import mkdtemp, NamedTemporaryFile
 from .util import init_logging, tmp_dmf, TempDir
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -60,19 +61,22 @@ prop_json = [
     }
 ]
 
-
-@pytest.fixture(scope="function")
-def tmp_propdata_file(request):
-    sdir = getattr(request.module, "scratchdir", "/tmp")
-    prop = tmp_propdata()
-    tmpf = open(os.path.join(sdir, "resource.json"), "w")
-    json.dump(prop, tmpf)
-    tmpf.close()
-    return tmpf
+scratch_dir: Union[str, None] = None
+scratch_dmf: Union[DMF, None] = None
 
 
-def tmp_propdata():
-    return prop_json[0]
+def setup_module(module):
+    global scratch_dir, scratch_dmf
+    scratch_dir = TemporaryDirectory().name
+    scratch_dmf = DMF(path=scratch_dir, create=True)
+
+
+def teardown_module(module):
+    for i in range(3):
+        try:
+            shutil.rmtree(scratch_dir)
+        except:
+            time.sleep(1)
 
 
 def add_resources(dmf_obj, num=3, **attrs):
@@ -89,8 +93,9 @@ def add_resources(dmf_obj, num=3, **attrs):
 
 
 @pytest.mark.unit
-def test_add_property_data(tmp_dmf, tmp_propdata_file):
-    tmpf, prop = tmp_propdata_file, tmp_propdata()
+def test_add_property_data():
+    prop = prop_json[0]
+    tmp_propdata_file = (Path(scratch_dir) / "add_property_data.json").open("w")
     # Add the resource
     r = resource.Resource(type_="property_data")
     r.set_id()
@@ -100,72 +105,75 @@ def test_add_property_data(tmp_dmf, tmp_propdata_file):
     r.v["sources"].append({"source": work, "date": m["date"]})
     r.data = {"notes": m["notes"]}
     r.v["tags"].append("MEA")
-    r.v["datafiles"].append({"path": tmpf.name})
-    rid = tmp_dmf.add(r)
+    r.v["datafiles"].append({"path": tmp_propdata_file.name})
+    rid = scratch_dmf.add(r)
     assert rid is not None
     # Retrieve the resource
-    r2 = tmp_dmf.fetch_one(rid)
+    r2 = scratch_dmf.fetch_one(rid)
     # Validate the resource
     assert r2.type == "property_data"
     assert "MEA" in r2.v["tags"]
     # Remove the resource
-    tmp_dmf.remove(identifier=rid)
+    scratch_dmf.remove(identifier=rid)
 
 
 @pytest.mark.unit
-def test_property_data_file(tmp_dmf, tmp_propdata_file):
-    tmpf, prop = tmp_propdata_file, tmp_propdata()
+def test_property_data_file():
+    tmp_propdata_file = (Path(scratch_dir) / "property_data_file.json").open("w")
+    json.dump(prop_json[0], tmp_propdata_file)
+    tmp_propdata_file.close()
     # Add the resource
     r = resource.Resource(type_="property_data")
-    r.v["datafiles"].append({"path": tmpf.name})
-    rid = tmp_dmf.add(r)
+    r.v["datafiles"].append({"path": tmp_propdata_file.name})
+    rid = scratch_dmf.add(r)
     assert rid is not None
-    r2 = tmp_dmf.fetch_one(rid)
+    r2 = scratch_dmf.fetch_one(rid)
     path = r2.v["datafiles"][0]["path"]
     f2 = open(path, "r")
     j2 = json.load(f2)
-    assert j2 == prop
+    assert j2 == prop_json[0]
 
 
 @pytest.mark.unit
-def test_find_propertydata(tmp_dmf):
+def test_find_propertydata():
     # populate DMF with some property data resources
     pj = prop_json[0]
-    n = 10
+    n, resource_ids = 10, []
     for i in range(n):
         pd = resource.Resource(value={"data": pj}, type_=resource.TY_PROPERTY)
-        tmp_dmf.add(pd)
+        resource_ids.append(scratch_dmf.add(pd))
     # get them back again
     filter_ = {"type": resource.TY_PROPERTY}
-    pdata = list(tmp_dmf.find(filter_dict=filter_))
+    pdata = list(scratch_dmf.find(filter_dict=filter_))
     assert len(pdata) == n
-
-
-# @pytest.mark.unit
-# def test_dmf_init_minimal():
-#    pytest.raises(errors.DMFError, DMF)
+    for rid in resource_ids:
+        scratch_dmf.remove(identifier=rid)
 
 
 @pytest.mark.unit
-def test_dmf_init_strfile():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write("Hello")
-        pytest.raises(errors.WorkspaceError, DMF, path=tmpdir)
+def test_dmf_init_bad_config1():
+    tmp_dir = Path(scratch_dir) / "dmf_init_bad_config1"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write("Hello")
+    # try to open - should fail
+    pytest.raises(errors.WorkspaceError, DMF, path=tmp_dir.name)
 
 
 @pytest.mark.unit
-def test_dmf_init_badfile():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write("Hello: There")
-        pytest.raises(errors.WorkspaceError, DMF, path=tmpdir)
+def test_dmf_init_bad_config2():
+    tmp_dir = Path(scratch_dir) / "dmf_init_bad_config2"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write("Hello")
+    # try to open - should fail
+    pytest.raises(errors.WorkspaceError, DMF, path=tmp_dir.name)
 
 
 @pytest.mark.unit
 def test_dmf_init_logconf():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write(
-            """
-_id: this-is-a-temporary-config
+    tmp_dir = Path(scratch_dir) / "dmf_init_logconf"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
+        f"""_id: this-is-a-temporary-config
 logging:
     idaes.dmf.dmfbase:
         level: debug
@@ -178,21 +186,22 @@ logging:
         output: _stdout_
     # equivalent to previous
     idaes.dmf.experiment:
-        output: /tmp/experiment.log
+        output: {tmp_dir / "experiment.log"}
     # user
     crazy.little.logger:
         level: error
         output: _stderr_
         """
-        )
-        d = DMF(path=tmpdir)
+    )
+    DMF(path=str(tmp_dir))
 
 
 @pytest.mark.unit
-def test_dmf_init_logconf_badlevel():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write(
-            """
+def test_dmf_init_logconf_bad():
+    tmp_dir = Path(scratch_dir) / "dmf_init_logconf_badlevel"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
+        """
 _id: this-is-a-temporary-config
 logging:
     root:
@@ -201,15 +210,10 @@ logging:
         level: "This is not a valid level"
         output: _stderr_
         """
-        )
-        pytest.raises(errors.DMFError, DMF, path=tmpdir)
-
-
-@pytest.mark.unit
-def test_dmf_init_logconf_badfile():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write(
-            """
+    )
+    pytest.raises(errors.DMFError, DMF, path=tmp_dir)
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
+        """
 _id: this-is-a-temporary-config
 logging:
     root:
@@ -217,35 +221,37 @@ logging:
     idaes.dmf.util:
         output: {}
         """.format(
-                os.path.join(os.path.sep, *map(str, range(10)))
-            )
+            os.path.join(os.path.sep, *map(str, range(10)))
         )
-        pytest.raises(errors.DMFError, DMF, path=tmpdir)
+    )
+    pytest.raises(errors.DMFError, DMF, path=tmp_dir)
 
 
 @pytest.mark.unit
 def test_dmf_init_workspace_name():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write(
-            "_id: this-is-a-temporary-config"
-        )
-        d = DMF(path=tmpdir, name="my workspace", desc="It is a great place to work")
+    tmp_dir = Path(scratch_dir) / "dmf_init_workspace_name"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
+        "_id: this-is-a-temporary-config"
+    )
+    d = DMF(path=tmp_dir, name="my workspace", desc="It is a space to work")
 
 
 @pytest.mark.unit
 def test_dmf_change_traits():
-    with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), "w").write(
-            "_id: this-is-a-temporary-config"
-        )
-        d = DMF(path=tmpdir, name="my workspace", desc="It is a great place to work")
-        assert d.db_file
-        d.db_file = "newdb.json"
-        assert d.db_file == "newdb.json"
+    tmp_dir = Path(scratch_dir) / "dmf_change_traits"
+    tmp_dir.mkdir()
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write("_id: this-is-a-temporary-config")
+    d = DMF(path=tmp_dir, name="my workspace", desc="It is a great place to work")
+    assert d.db_file
+    d.db_file = "newdb.json"
+    assert d.db_file == "newdb.json"
 
 
 @pytest.mark.unit
-def test_dmf_add(tmp_dmf):
+def test_dmf_add():
+    tmp_dir = Path(scratch_dir) / "dmf_add"
+    dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
     r.do_copy = True  # copy by default
     # (1) Copy, and don't remove {default behavior}
@@ -260,7 +266,7 @@ def test_dmf_add(tmp_dmf):
     tmpf3 = NamedTemporaryFile()
     r.v["datafiles"].append({"path": tmpf3.name, "do_copy": False})
 
-    tmp_dmf.add(r)
+    dmf.add(r)
 
     os.unlink(tmpf1.name)
     try:
@@ -274,98 +280,97 @@ def test_dmf_add(tmp_dmf):
     # to be removed, but not copied (just a file delete?!)
     r = resource.Resource(value={"desc": "test resource"})
     r.v["datafiles"].append({"path": "foo", "do_copy": False, "is_tmp": True})
-    tmp_dmf.add(r)
+    dmf.add(r)
 
 
 @pytest.mark.unit
-def test_dmf_add_duplicate(tmp_dmf):
+def test_dmf_add_duplicate():
+    tmp_dir = Path(scratch_dir) / "dmf_add_duplicate"
+    dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
-    tmp_dmf.add(r)
-    pytest.raises(errors.DuplicateResourceError, tmp_dmf.add, r)
+    dmf.add(r)
+    pytest.raises(errors.DuplicateResourceError, dmf.add, r)
 
 
+@pytest.mark.linux
 @pytest.mark.unit
-def test_dmf_add_filesystem_err(tmp_dmf):
+def test_dmf_add_filesystem_err():
+    tmp_dir = Path(scratch_dir) / "dmf_add_filesystem_err"
+    dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile
     tmpf1 = NamedTemporaryFile(delete=False)
     tmpf1.close()
     r.v["datafiles"].append({"path": tmpf1.name})
     # now, to get an error, make the DMF datafile path unwritable
-    path = os.path.join(tmp_dmf.root, tmp_dmf.datafile_dir)
+    path = os.path.join(dmf.root, dmf.datafile_dir)
+    # this file permissions stuff is problematic in Windows, so this test is Linux-only
     os.chmod(path, 000)
     # then try to add the resource, which includes copying the file into
     # the (now unwritable) directory
-    pytest.raises(errors.DMFError, tmp_dmf.add, r)
+    pytest.raises(errors.DMFError, dmf.add, r)
     # make the directory writable again so we can remove it
     os.chmod(path, 0o777)
 
 
 @pytest.mark.unit
 def test_dmf_add_tmp_no_copy(tmp_dmf):
+    tmp_dir = Path(scratch_dir) / "dmf_add_tmp_no_copy"
+    dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile, with temporary-file flag turned on
-    tmpdir = mkdtemp()
-    tmpfile = os.path.join(tmpdir, "foo")
-    open(tmpfile, "w")
-    r.v["datafiles"].append({"path": tmpfile, "is_tmp": True, "do_copy": True})
+    tmp_file = (tmp_dir / "foo").open("w")
+    r.v["datafiles"].append({"path": str(tmp_file), "is_tmp": True, "do_copy": True})
     # we want an error trying to COPY this file; to get this,
     # change the permissions of the directory
-    os.chmod(tmpdir, 0o400)
+    os.chmod(tmp_dir, 0o400)
     ok = False
     try:
-        tmp_dmf.add(r)
+        dmf.add(r)
     except errors.DMFError:
         ok = True
-    finally:
-        # change it back and clean up
-        os.chmod(tmpdir, 0o700)
-        os.unlink(tmpfile)
-        os.rmdir(tmpdir)
     if not ok:
         assert False, "DMFError expected"
 
 
 @pytest.mark.unit
-def test_dmf_add_tmp_no_unlink(tmp_dmf):
+def test_dmf_add_tmp_no_unlink():
+    tmp_dir = Path(scratch_dir) / "dmf_add_tmp_no_unlink"
+    dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
     # create datafile, with temporary-file flag turned on
-    tmpdir = mkdtemp()
-    tmpfile = os.path.join(tmpdir, "foo")
-    open(tmpfile, "w")
-    r.v["datafiles"].append({"path": tmpfile, "is_tmp": True, "do_copy": True})
-    # we want an error trying to UNLINK this file; to get this,
-    # change the permissions of the dir read-only
-    os.chmod(tmpdir, 0o500)
-    try:
-        tmp_dmf.add(r)
-    finally:
-        # change it back and clean up
-        os.chmod(tmpdir, 0o700)
-        os.unlink(tmpfile)
-        os.rmdir(tmpdir)
+    tmp_file = (tmp_dir / "foo").open("w")
+    r.v["datafiles"].append({"path": str(tmp_file), "is_tmp": True, "do_copy": True})
+    # we want an error trying to COPY this file; to get this,
+    # change the permissions of the directory
+    os.chmod(tmp_dir, 0o500)
+    pytest.raises(Exception, dmf.add, r)
 
 
 @pytest.mark.unit
-def test_dmf_update(tmp_dmf):
-    ids = add_resources(tmp_dmf, 2)
-    r1 = tmp_dmf.fetch_one(ids[0])
+def test_dmf_update():
+    tmp_dir = Path(scratch_dir) / "dmf_update"
+    dmf = DMF(path=tmp_dir, create=True)
+    ids = add_resources(dmf, 2)
+    r1 = dmf.fetch_one(ids[0])
     r1.v[r1.TYPE_FIELD] = "test"
     r1.v["desc"] = "Updated description"
-    tmp_dmf.update(r1)
-    r1b = tmp_dmf.fetch_one(ids[0])
+    dmf.update(r1)
+    r1b = dmf.fetch_one(ids[0])
     assert r1b.v["desc"] == "Updated description"
-    r2 = tmp_dmf.fetch_one(ids[1])
+    r2 = dmf.fetch_one(ids[1])
     assert r2.v["desc"] != "Updated description"
 
 
 @pytest.mark.unit
-def test_dmf_update_newtype(tmp_dmf):
-    ids = add_resources(tmp_dmf, 1)
-    r1 = tmp_dmf.fetch_one(ids[0])
+def test_dmf_update_newtype():
+    tmp_dir = Path(scratch_dir) / "dmf_update_newtype"
+    dmf = DMF(path=tmp_dir, create=True)
+    ids = add_resources(dmf, 1)
+    r1 = dmf.fetch_one(ids[0])
     r1.v[r1.TYPE_FIELD] = "this type is different"
     try:
-        tmp_dmf.update(r1)
+        dmf.update(r1)
     except errors.DMFError:
         pass
     else:
@@ -373,150 +378,154 @@ def test_dmf_update_newtype(tmp_dmf):
 
 
 @pytest.mark.unit
-def test_dmf_remove(tmp_dmf):
+def test_dmf_remove():
+    tmp_dir = Path(scratch_dir) / "dmf_remove"
+    dmf = DMF(path=tmp_dir, create=True)
     n = 10
-    ids = add_resources(tmp_dmf, num=n)
-    assert tmp_dmf.count() == n
+    ids = add_resources(dmf, num=n)
+    assert dmf.count() == n
     while n > 0:
         n = n - 1
-        tmp_dmf.remove(ids[n])
-        assert tmp_dmf.count() == n
+        dmf.remove(ids[n])
+        assert dmf.count() == n
 
 
 @pytest.mark.unit
-def test_dmf_remove_filter(tmp_dmf):
+def test_dmf_remove_filter(t):
+    tmp_dir = Path(scratch_dir) / "dmf_remove_filter"
+    dmf = DMF(path=tmp_dir, create=True)
     n = 10
-    ids = add_resources(tmp_dmf, num=n)
+    ids = add_resources(dmf, num=n)
     assert tmp_dmf.count() == n
     # remove half of the added resources
     print("@@ remove half")
-    tmp_dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
-    n2 = tmp_dmf.count()
+    dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
+    n2 = dmf.count()
     assert n2 == n / 2
     # try to remove the same group (should do nothing
     print("@@ remove more")
-    tmp_dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
-    n2 = tmp_dmf.count()
-    assert tmp_dmf.count() == n / 2
+    dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
+    n2 = dmf.count()
+    assert dmf.count() == n / 2
     # remove the rest
     print("@@ remove the rest")
-    tmp_dmf.remove(filter_dict={"data.i": {"$ge": n / 2}})
-    assert tmp_dmf.count() == 0
+    dmf.remove(filter_dict={"data.i": {"$ge": n / 2}})
+    assert dmf.count() == 0
 
 
-@pytest.mark.component
-def test_dmf_find(tmp_dmf):
-    # populate with batches of records
-    # they all have the tag 'all', each batch has 'batch<N>' as well
-    # All resources in a batch are given version 1.0.<N>
-    # Individual resources will have data of {i: 0..<batchsz-1>}
-    batchsz, numbatches = 10, 9
-    all_ids = []
-    for i in range(numbatches):
-        n = batchsz
-        batch = "batch{:d}".format(i + 1)
-        version = resource.version_list([1, 0, i + 1])
-        ids = add_resources(
-            tmp_dmf, num=n, tags=["all", batch], version_info={"version": version}
-        )
-        all_ids.extend(ids)
-    if _log.isEnabledFor(logging.DEBUG):
-        r = tmp_dmf.fetch_one(all_ids[0])
-        _log.debug("First resource:\n{}".format(r))
-    # Find all records, 2 ways
-    total_num = batchsz * numbatches
-    result = list(tmp_dmf.find())
-    assert len(result) == total_num
-    result = list(tmp_dmf.find({"tags": ["all"]}))
-    assert len(result) == total_num
-    # Find with 'all'
-    result = list(tmp_dmf.find({"tags!": ["all", "batch1"]}))
-    assert len(result) == batchsz
-
-
-@pytest.mark.unit
-def test_dmf_str(tmp_dmf):
-    s = str(tmp_dmf)
-    assert len(s) > 0
-
-
-#########################
-# DMFConfig             #
-#########################
-
-
-@pytest.fixture
-def dmfconfig_tmp():
-    """Default file is in user's home directory.
-       We don't want to actually modify this with a test.
-       So switch it out and switch it back when the fixture
-       is done.
-    """
-    default_filename = DMFConfig._filename
-    tmpfile = NamedTemporaryFile()
-    DMFConfig._filename = tmpfile.name
-    yield tmpfile
-    tmpfile.close()
-    DMFConfig._filename = default_filename
-
-
-@pytest.fixture
-def dmfconfig_none():
-    """Default file is in user's home directory.
-    Replace it with a nonexistent file.
-    """
-    default_filename = DMFConfig._filename
-    DMFConfig._filename = os.path.join(os.path.sep, "idaes", *map(str, range(20)))
-    yield True
-    DMFConfig._filename = default_filename
-
-
-@pytest.mark.unit
-def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
-    config = DMFConfig()
-    assert config.c == DMFConfig.DEFAULTS
-
-
-@pytest.mark.unit
-def test_dmfconfig_init_defaults_emptyfile(dmfconfig_tmp):
-    config = DMFConfig()
-    assert config.c == DMFConfig.DEFAULTS
-
-
-@pytest.mark.unit
-def test_dmfconfig_init_defaults2(dmfconfig_tmp):
-    config = DMFConfig(defaults={"look": "here"})
-    assert config.c["look"] == "here"
-
-
-@pytest.mark.unit
-def test_dmfconfig_bad_file(dmfconfig_tmp):
-    dmfconfig_tmp.write(b"{[\n")
-    dmfconfig_tmp.file.flush()
-    pytest.raises(ValueError, DMFConfig)
-
-
-@pytest.mark.unit
-def test_dmfconfig_somefile(dmfconfig_tmp):
-    dmfconfig_tmp.write(b"workspace: foobar\n")
-    dmfconfig_tmp.file.flush()
-    config = DMFConfig()
-
-
-@pytest.mark.unit
-def test_dmfconfig_save(dmfconfig_tmp):
-    config = DMFConfig()
-    config.save()
-
-
-@pytest.mark.unit
-def test_dmfconfig_save_nofile(dmfconfig_none):
-    config = DMFConfig()
-    pytest.raises(IOError, config.save)
-
-
-@pytest.mark.unit
-def test_dmfconfig_attrs(dmfconfig_tmp):
-    config = DMFConfig()
-    assert config.workspace is not None
-
+# @pytest.mark.component
+# def test_dmf_find(tmp_dmf):
+#     # populate with batches of records
+#     # they all have the tag 'all', each batch has 'batch<N>' as well
+#     # All resources in a batch are given version 1.0.<N>
+#     # Individual resources will have data of {i: 0..<batchsz-1>}
+#     batchsz, numbatches = 10, 9
+#     all_ids = []
+#     for i in range(numbatches):
+#         n = batchsz
+#         batch = "batch{:d}".format(i + 1)
+#         version = resource.version_list([1, 0, i + 1])
+#         ids = add_resources(
+#             tmp_dmf, num=n, tags=["all", batch], version_info={"version": version}
+#         )
+#         all_ids.extend(ids)
+#     if _log.isEnabledFor(logging.DEBUG):
+#         r = tmp_dmf.fetch_one(all_ids[0])
+#         _log.debug("First resource:\n{}".format(r))
+#     # Find all records, 2 ways
+#     total_num = batchsz * numbatches
+#     result = list(tmp_dmf.find())
+#     assert len(result) == total_num
+#     result = list(tmp_dmf.find({"tags": ["all"]}))
+#     assert len(result) == total_num
+#     # Find with 'all'
+#     result = list(tmp_dmf.find({"tags!": ["all", "batch1"]}))
+#     assert len(result) == batchsz
+#
+#
+# @pytest.mark.unit
+# def test_dmf_str(tmp_dmf):
+#     s = str(tmp_dmf)
+#     assert len(s) > 0
+#
+#
+# #########################
+# # DMFConfig             #
+# #########################
+#
+#
+# @pytest.fixture
+# def dmfconfig_tmp():
+#     """Default file is in user's home directory.
+#        We don't want to actually modify this with a test.
+#        So switch it out and switch it back when the fixture
+#        is done.
+#     """
+#     default_filename = DMFConfig._filename
+#     tmpfile = NamedTemporaryFile()
+#     DMFConfig._filename = tmpfile.name
+#     yield tmpfile
+#     tmpfile.close()
+#     DMFConfig._filename = default_filename
+#
+#
+# @pytest.fixture
+# def dmfconfig_none():
+#     """Default file is in user's home directory.
+#     Replace it with a nonexistent file.
+#     """
+#     default_filename = DMFConfig._filename
+#     DMFConfig._filename = os.path.join(os.path.sep, "idaes", *map(str, range(20)))
+#     yield True
+#     DMFConfig._filename = default_filename
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
+#     config = DMFConfig()
+#     assert config.c == DMFConfig.DEFAULTS
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_init_defaults_emptyfile(dmfconfig_tmp):
+#     config = DMFConfig()
+#     assert config.c == DMFConfig.DEFAULTS
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_init_defaults2(dmfconfig_tmp):
+#     config = DMFConfig(defaults={"look": "here"})
+#     assert config.c["look"] == "here"
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_bad_file(dmfconfig_tmp):
+#     dmfconfig_tmp.write(b"{[\n")
+#     dmfconfig_tmp.file.flush()
+#     pytest.raises(ValueError, DMFConfig)
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_somefile(dmfconfig_tmp):
+#     dmfconfig_tmp.write(b"workspace: foobar\n")
+#     dmfconfig_tmp.file.flush()
+#     config = DMFConfig()
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_save(dmfconfig_tmp):
+#     config = DMFConfig()
+#     config.save()
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_save_nofile(dmfconfig_none):
+#     config = DMFConfig()
+#     pytest.raises(IOError, config.save)
+#
+#
+# @pytest.mark.unit
+# def test_dmfconfig_attrs(dmfconfig_tmp):
+#     config = DMFConfig()
+#     assert config.workspace is not None
+#

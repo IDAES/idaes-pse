@@ -27,10 +27,7 @@ from idaes.dmf.experiment import Experiment
 # for testing
 from .util import init_logging, tmp_dmf
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)

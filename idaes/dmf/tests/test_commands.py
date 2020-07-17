@@ -26,7 +26,7 @@ from idaes.dmf import dmfbase, commands, errors, workspace, util
 from idaes.util.system import mkdtemp
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
