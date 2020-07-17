@@ -27,7 +27,7 @@ from idaes.core.util.misc import add_object_reference
 
 
 @pytest.mark.unit
-def test_mole_frac_power_law_rate_no_order():
+def test_power_law_rate_no_order():
     m = ConcreteModel()
 
     # # Add a test thermo package for validation
@@ -44,7 +44,7 @@ def test_mole_frac_power_law_rate_no_order():
         "rate_reactions": {
             "r1": {"stoichiometry": {("p1", "c1"): -1,
                                      ("p1", "c2"): 2},
-                   "rate_form": mole_frac_power_law_rate}}})
+                   "rate_form": power_law_rate}}})
 
     # Create a dummy state block
     m.rxn = Block([1])
@@ -53,7 +53,7 @@ def test_mole_frac_power_law_rate_no_order():
 
     m.rxn[1].k_rxn = Var(["r1"], initialize=1)
 
-    mole_frac_power_law_rate.build_parameters(
+    power_law_rate.build_parameters(
         m.rparams.reaction_r1, m.rparams.config.rate_reactions["r1"])
 
     # Check parameter construction
@@ -71,7 +71,7 @@ def test_mole_frac_power_law_rate_no_order():
             assert v.value == 0
 
     # Check reaction form
-    rform = mole_frac_power_law_rate.return_expression(
+    rform = power_law_rate.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
     assert str(rform) == str(
@@ -81,7 +81,7 @@ def test_mole_frac_power_law_rate_no_order():
 
 
 @pytest.mark.unit
-def test_mole_frac_power_law_rate_with_order():
+def test_power_law_rate_with_order():
     m = ConcreteModel()
 
     # # Add a test thermo package for validation
@@ -98,7 +98,7 @@ def test_mole_frac_power_law_rate_with_order():
         "rate_reactions": {
             "r1": {"stoichiometry": {("p1", "c1"): -1,
                                      ("p1", "c2"): 2},
-                   "rate_form": mole_frac_power_law_rate,
+                   "rate_form": power_law_rate,
                    "parameter_data": {
                        "reaction_order": {("p1", "c1"): 1,
                                           ("p1", "c2"): 2,
@@ -112,7 +112,7 @@ def test_mole_frac_power_law_rate_with_order():
 
     m.rxn[1].k_rxn = Var(["r1"], initialize=1)
 
-    mole_frac_power_law_rate.build_parameters(
+    power_law_rate.build_parameters(
         m.rparams.reaction_r1, m.rparams.config.rate_reactions["r1"])
 
     # Check parameter construction
@@ -124,7 +124,7 @@ def test_mole_frac_power_law_rate_with_order():
     assert m.rparams.reaction_r1.reaction_order["p2", "c2"] == 4
 
     # Check reaction form
-    rform = mole_frac_power_law_rate.return_expression(
+    rform = power_law_rate.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
     assert str(rform) == str(

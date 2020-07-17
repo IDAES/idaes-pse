@@ -30,11 +30,11 @@ from idaes.generic_models.properties.core.reactions.dh_rxn import \
 from idaes.generic_models.properties.core.reactions.rate_constant import \
     arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import \
-    mole_frac_power_law_rate
+    power_law_rate
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
-    mole_frac_power_law_equil
+    power_law_equil
 
 
 # First, create a thermophsyical property definition that will be used
@@ -77,7 +77,7 @@ rxn_configuration = {
                                  ("Liq", "C"): 2},
                "heat_of_reaction": constant_dh_rxn,
                "rate_constant": arrhenius,
-               "rate_form": mole_frac_power_law_rate,
+               "rate_form": power_law_rate,
                "parameter_data": {
                    "dh_rxn_ref": -10000,
                    "arrhenius_const": 1,
@@ -88,7 +88,7 @@ rxn_configuration = {
                                  ("Liq", "D"): 1},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": mole_frac_power_law_equil,
+               "equilibrium_form": power_law_equil,
                "parameter_data": {
                    "dh_rxn_ref": -20000,
                    "k_eq_ref": 100,

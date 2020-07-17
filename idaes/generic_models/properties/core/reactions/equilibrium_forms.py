@@ -13,10 +13,12 @@
 """
 Methods for defining equibilibrium reactions
 """
+from idaes.generic_models.properties.core.generic.generic_reaction import \
+    get_concentration_term
 
 
 # ----------------------------------------------------------------------------
-class mole_frac_power_law_equil():
+class power_law_equil():
     def build_parameters(rblock, config):
         pass
 
@@ -28,8 +30,8 @@ class mole_frac_power_law_equil():
                 o = rblock.reaction_order[p, j]
 
                 if e is None and o != 0:
-                    e = b.state_ref.mole_frac_phase_comp[p, j]**o
+                    e = get_concentration_term(b, r_idx)[p, j]**o
                 elif e is not None and o != 0:
-                    e = e*b.state_ref.mole_frac_phase_comp[p, j]**o
+                    e = e*get_concentration_term(b, r_idx)[p, j]**o
 
         return b.k_eq[r_idx] == e
