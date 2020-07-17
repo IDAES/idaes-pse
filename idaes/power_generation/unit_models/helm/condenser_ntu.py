@@ -27,6 +27,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.generic_models.unit_models.heater import (
     _make_heater_config_block, _make_heater_control_volume)
 import idaes.core.util.unit_costing as costing
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
@@ -327,13 +328,11 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         opt = pyo.SolverFactory(solver)
         opt.options = optarg
-        flags1 = blk.side_1.initialize(
-            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_1
-        )
 
+        flags1 = blk.side_1.initialize(
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1)
         flags2 = blk.side_2.initialize(
-            outlvl=outlvl + 1, optarg=optarg, solver=solver, state_args=state_args_2
-        )
+            outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2)
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
@@ -415,3 +414,38 @@ class HelmNtuCondenserData(UnitModelBlockData):
         self.costing = pyo.Block()
 
         module.hx_costing(self.costing)
+
+    def calculate_scaling_factors(self):
+        area_sf_default = 1e-2
+        overall_heat_transfer_coefficient_sf_default = 1e-2
+
+        # Function to set defaults so I don't need to reproduce the same code
+        def _fill_miss_with_default(name, s):
+            try:
+                c = getattr(self, name)
+            except AttributeError:
+                return # it's okay if the attribute doesn't exist, spell careful
+            if iscale.get_scaling_factor(c) is None:
+                for ci in c.values():
+                    if iscale.get_scaling_factor(ci) is None:
+                        iscale.set_scaling_factor(ci, s)
+
+        # Set defaults where scale factors are missing
+        _fill_miss_with_default("area", area_sf_default)
+        _fill_miss_with_default(
+            "overall_heat_transfer_coefficient",
+             overall_heat_transfer_coefficient_sf_default
+        )
+
+        for t, c in self.heat_transfer_equation.items():
+            sf = iscale.get_scaling_factor(self.cold_side.heat[t])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.unit_heat_balance.items():
+            sf = iscale.get_scaling_factor(self.cold_side.heat[t])
+            iscale.constraint_scaling_transform(c, sf)
+
+        for t, c in self.saturation_eqn.items():
+            sf = iscale.get_scaling_factor(
+                self.hot_side.properties_in[t].enth_mol_phase["Liq"])
+            iscale.constraint_scaling_transform(c, sf)

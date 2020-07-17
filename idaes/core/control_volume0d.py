@@ -1127,7 +1127,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.phase_list,
                              doc="Enthalpy holdup constraint")
-            def enthalpy_holdup_calculation(b, t, p):
+            def energy_holdup_calculation(b, t, p):
                 return b.energy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
                             b.properties_out[t].get_energy_density_terms(p))
@@ -1540,30 +1540,34 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def calculate_scaling_factors(self):
         # Default scale factors
-        heat_scaling_factor_default = 1e-6
-        work_scaling_factor_default = 1e-6
-        energy_holdup_scaling_factor_default = 1e-6
-        material_holdup_scaling_factor_default = 1e-6
+        deltaP_sf_default = 1e-3
+        heat_sf_default = 1e-6
+        work_sf_default = 1e-6
+        volume_sf_default = 1e-3
+        energy_holdup_sf_default = 1e-6
+        material_holdup_sf_default = 1e-6
 
-        # set some default values if not provided
-        def _fill_missing_with_defalut(c, s):
+        # Function to set defaults so I don't need to reproduce the same code
+        def _fill_miss_with_default(name, s):
+            try:
+                c = getattr(self, name)
+            except AttributeError:
+                return # it's okay if the attribute doesn't exist, spell careful
             if iscale.get_scaling_factor(c) is None:
                 for ci in c.values():
                     if iscale.get_scaling_factor(ci) is None:
                         iscale.set_scaling_factor(ci, s)
-        if hasattr(self, "heat"):
-            _fill_missing_with_defalut(self.heat, heat_scaling_factor_default)
-        if hasattr(self, "work"):
-            _fill_missing_with_defalut(self.work, work_scaling_factor_default)
-        if hasattr(self, "energy_holdup"):
-            _fill_missing_with_defalut(
-                self.energy_holdup, energy_holdup_scaling_factor_default)
-        if hasattr(self, "material_holdup"):
-            _fill_missing_with_defalut(
-                self.material_holdup, material_holdup_scaling_factor_default)
 
-        # If the paraent componet of an indexed component has a scale factor, but
-        # some of the data objects don't propogate the indexed component scale
+        # Set defaults where scale factors are missing
+        _fill_miss_with_default("deltaP", deltaP_sf_default)
+        _fill_miss_with_default("volume", heat_sf_default)
+        _fill_miss_with_default("heat", heat_sf_default)
+        _fill_miss_with_default("work", work_sf_default)
+        _fill_miss_with_default("energy_holdup", energy_holdup_sf_default)
+        _fill_miss_with_default("material_holdup", material_holdup_sf_default)
+
+        # If the paraent component of an indexed component has a scale factor, but
+        # some of the data objects don't, propogate the indexed component scale
         # factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
 
@@ -1604,3 +1608,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
                             for p in self.config.property_package.phase_list]))
                 iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "energy_holdup_calculation"):
+            for i, c in self.energy_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.energy_holdup[i]))
+
+        if hasattr(self, "meterial_holdup_calculation"):
+            for i, c in self.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.material_holdup[i]))
