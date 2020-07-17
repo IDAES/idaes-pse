@@ -1078,7 +1078,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             self.heat = Var(self.flowsheet().config.time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Heat transfered into congtrol volume",
+                            doc="Heat transfered into control volume",
                             units=units['energy_flow'])
 
         # Work transfer
