@@ -309,7 +309,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
-            setattr(blk, "_"+name+"_"+s+"_ref", r)
+            #setattr(blk, "_"+name+"_"+s+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -465,7 +465,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
-            setattr(blk, "_"+name+"_"+s+"_ref", r)
+            #setattr(blk, "_"+name+"_"+s+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
