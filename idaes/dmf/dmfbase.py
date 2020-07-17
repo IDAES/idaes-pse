@@ -788,7 +788,7 @@ class DMF(workspace.Workspace, HasTraits):
         try:
             self._db.update(rsrc.id, rsrc.v)
             did_update = True
-        except KeyError:
+        except errors.NoSuchResourceError:
             if upsert:
                 self._db.put(rsrc)
                 did_update = True

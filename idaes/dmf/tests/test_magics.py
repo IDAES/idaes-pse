@@ -14,8 +14,10 @@
 Tests for DMF Jupyter "magics"
 """
 # stdlib
+from pathlib import Path
 import os
-import sys
+from tempfile import TemporaryDirectory
+from typing import Union
 import webbrowser
 
 # third-party
@@ -25,7 +27,6 @@ import pytest
 from idaes.dmf import magics, DMF
 from idaes.dmf.magics import DMFMagicError
 from idaes.dmf.resource import Resource
-from .util import TempDir
 
 # monkey-patch webbrowser to do nothing
 webbrowser.open_new = lambda url: None
@@ -48,52 +49,48 @@ class MockShell(object):
         return DMF
 
 
-###############################################################################
-# Fixtures
-
-
 @pytest.fixture
 def magics_impl():
     shell = MockShell()
     return magics.DmfMagicsImpl(shell)
 
 
-@pytest.fixture
-def tmp_dmf():
-    with TempDir() as d:
-        dmf = DMF(d, name="tempdmf", create=True)
-        yield dmf
-        del dmf
+scratch_dir: Union[str, None] = None
+scratch_path: Union[Path, None] = None
 
 
-@pytest.fixture
-def tmp_magics():
-    with TempDir() as d:
-        magics_impl.dmf_init(d, "create")
-        yield magics_impl
-        del magics_impl
+def setup_module(module):
+    global scratch_dir, scratch_path
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_path = Path(scratch_dir.name)
 
 
-###############################################################################
-# Tests
+def teardown_module(module):
+    global scratch_dir
+    del scratch_dir
 
 
 @pytest.mark.unit
 def test_init_create(magics_impl):
-    with TempDir() as d:
-        magics_impl.dmf_init(d, "create")
-        assert magics_impl.initialized
+    tmp_dir = scratch_path / "init_create"
+    dmf = DMF(path=tmp_dir, create=True)
+    magics_impl.dmf_init(str(tmp_dir), "create")
+    assert magics_impl.initialized
 
 
 @pytest.mark.unit
-def test_init_existing(tmp_dmf, magics_impl):
-    magics_impl.dmf_init(tmp_dmf.root)
+def test_init_existing(magics_impl):
+    tmp_dir = scratch_path / "init_existing"
+    dmf = DMF(path=tmp_dir, create=True)
+    magics_impl.dmf_init(str(tmp_dir))
 
 
 @pytest.mark.unit
-def test_init_extraignored(tmp_dmf, magics_impl):
-    magics_impl.dmf_init(tmp_dmf.root, "foo")  # just generate warning
-    magics_impl.dmf_init(tmp_dmf.root, "foo", "bar")  # ditto
+def test_init_extraignored(magics_impl):
+    tmp_dir = scratch_path / "init_extraignored"
+    dmf = DMF(path=tmp_dir, create=True)
+    magics_impl.dmf_init(str(tmp_dir), "foo")  # just generate warning
+    magics_impl.dmf_init(str(tmp_dir), "foo", "bar")  # ditto
 
 
 @pytest.mark.unit
@@ -111,8 +108,8 @@ def test_init_badpath(magics_impl):
 
 @pytest.mark.unit
 def test_init_goodpath(magics_impl):
-    with TempDir() as goodpath:
-        magics_impl.dmf_init(goodpath, "create")
+    tmp_dir = scratch_path / "init_goodpath"
+    magics_impl.dmf_init(str(tmp_dir), "create")
 
 
 @pytest.mark.unit
@@ -124,19 +121,19 @@ def test_dmf_cmd(magics_impl):
 
 @pytest.mark.unit
 def test_dmf_workspaces(magics_impl):
-    with TempDir() as goodpath:
-        # Try with a good path, but no workspace
-        # so should return "No valid workspaces found"
-        msg = magics_impl.dmf_workspaces(goodpath)
-        # make sure first token of response is not a number
-        token = msg.split()[0]
-        pytest.raises(ValueError, int, token)
-        # Create a workspace
-        magics_impl.dmf_init(goodpath, "create")
-        # Try again, should return "1 workspace found" (or similar)
-        msg = magics_impl.dmf_workspaces(goodpath)
-        token = msg.split()[0]
-        assert int(token) > 0
+    tmp_dir = scratch_path / "dmf_workspaces"
+    # Try with a good path, but no workspace
+    # so should return "No valid workspaces found"
+    msg = magics_impl.dmf_workspaces(tmp_dir)
+    # make sure first token of response is not a number
+    token = msg.split()[0]
+    pytest.raises(ValueError, int, token)
+    # Create a workspace
+    magics_impl.dmf_init(tmp_dir, "create")
+    # Try again, should return "1 workspace found" (or similar)
+    msg = magics_impl.dmf_workspaces(tmp_dir)
+    token = msg.split()[0]
+    assert int(token) > 0
 
 
 @pytest.mark.unit
@@ -145,11 +142,11 @@ def test_dmf_list(magics_impl):
     pytest.raises(DMFMagicError, magics_impl.dmf, "list")
     # Now set up the DMF, add 1 resource, call again. This time,
     # should be OK
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        rsrc = Resource()
-        magics_impl._dmf.add(rsrc)  # XXX: fragile since it accesses _dmf
-        magics_impl.dmf("list")
+    tmp_dir = scratch_path / "dmf_list"
+    magics_impl.dmf_init(tmp_dir, "create")
+    rsrc = Resource()
+    magics_impl._dmf.add(rsrc)  # XXX: fragile since it accesses _dmf
+    magics_impl.dmf("list")
 
 
 @pytest.mark.unit
@@ -160,27 +157,22 @@ def test_dmf_info_initrequired(magics_impl):
 
 @pytest.mark.unit
 def test_dmf_info_topics(magics_impl):
+    tmp_dir = scratch_path / "dmf_info_topics"
     # should fail with DMF, and topics (not implemented)
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        pytest.raises(DMFMagicError, magics_impl.dmf_info, "uptime")
-
-
-@pytest.mark.unit
-def test_dmf_info_notopics(magics_impl):
+    magics_impl.dmf_init(str(tmp_dir), "create")
+    pytest.raises(DMFMagicError, magics_impl.dmf_info, "uptime")
     # should succeed with DMF, and no topics
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        magics_impl.dmf_info()
+    magics_impl.dmf_info()
 
 
 @pytest.mark.unit
-def test_dmf_info_extrameta(magics_impl):
+def test_dmf_info_extra_meta(magics_impl):
+    tmp_dir = scratch_path / "dmf_info_extra_meta"
+    tmp_dir.mkdir()
     # by filling in the metadata, this will test the dmf_info code
     # that prints out list and dict data structures
-    with TempDir() as wspath:
-        open(os.path.join(wspath, DMF.WORKSPACE_CONFIG), "w").write(
-            """
+    (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
+        f"""
 _id: this-is-a-temporary-config
 logging:
     idaes.dmf.dmfbase:
@@ -194,43 +186,31 @@ logging:
         output: _stdout_
     # equivalent to previous
     idaes.dmf.experiment:
-        output: /tmp/experiment.log
+        output: {tmp_dir / 'experiment.log'}
     # user
     crazy.little.logger:
         level: error
         output: _stderr_
         """
-        )
-        magics_impl.dmf_init(wspath)
-        magics_impl.dmf_info()
+    )
+    magics_impl.dmf_init(str(tmp_dir))
+    magics_impl.dmf_info()
 
 
 @pytest.mark.unit
 def test_dmf_help(magics_impl):
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        magics_impl.dmf_help()
-
-
-@pytest.mark.unit
-def test_dmf_help_badargs(magics_impl):
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        # This will generate a warning, but is OK. Only the first
-        # object is tried (which fails; another warning)
-        result = magics_impl.dmf_help("this", "that")
-        assert result is None  # None means "OK"
-
-
-@pytest.mark.unit
-def test_dmf_help_obj(magics_impl):
-    with TempDir() as wspath:
-        magics_impl.dmf_init(wspath, "create")
-        # "special" names
-        for name in "dmf", "help", "idaes":
-            magics_impl.dmf_help(name)
-        # object
-        magics_impl.dmf_help("idaes.dmf.dmfbase.DMF")
-        # failure (still returns None)
-        assert magics_impl.dmf_help("FAIL") is None
+    tmp_dir = scratch_path / "dmf_help"
+    magics_impl.dmf_init(str(tmp_dir), "create")
+    magics_impl.dmf_help()
+    # fail with bad args
+    result = magics_impl.dmf_help("this", "that")
+    assert result is None  # None means "OK"
+    # with objects
+    # a) "special" names
+    for name in "dmf", "help", "idaes":
+        magics_impl.dmf_help(name)
+    # b) object
+    magics_impl.dmf_help("idaes.dmf.dmfbase.DMF")
+    # c) failure (still returns None)
+    assert magics_impl.dmf_help("FAIL") is None
 

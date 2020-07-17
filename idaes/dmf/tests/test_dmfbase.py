@@ -12,6 +12,9 @@
 ##############################################################################
 """
 Tests for idaes.dmf.dmfbase module
+
+Skip tests that do chmod() except on Linux, as Windows at least leaves
+the resulting directories in an un-removable state.
 """
 import json
 import logging
@@ -29,8 +32,8 @@ import pytest
 from idaes.dmf import resource
 from idaes.dmf import errors
 from idaes.dmf.dmfbase import DMFConfig, DMF
-from idaes.util.system import mkdtemp, NamedTemporaryFile
-from .util import init_logging, tmp_dmf, TempDir
+from idaes.util.system import NamedTemporaryFile
+from .util import init_logging
 
 __author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
@@ -67,16 +70,14 @@ scratch_dmf: Union[DMF, None] = None
 
 def setup_module(module):
     global scratch_dir, scratch_dmf
-    scratch_dir = TemporaryDirectory().name
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_").name
     scratch_dmf = DMF(path=scratch_dir, create=True)
 
 
 def teardown_module(module):
-    for i in range(3):
-        try:
-            shutil.rmtree(scratch_dir)
-        except:
-            time.sleep(1)
+    global scratch_dmf, scratch_dir
+    del scratch_dmf
+    del scratch_dir
 
 
 def add_resources(dmf_obj, num=3, **attrs):
@@ -313,8 +314,9 @@ def test_dmf_add_filesystem_err():
     os.chmod(path, 0o777)
 
 
+@pytest.mark.linux
 @pytest.mark.unit
-def test_dmf_add_tmp_no_copy(tmp_dmf):
+def test_dmf_add_tmp_no_copy():
     tmp_dir = Path(scratch_dir) / "dmf_add_tmp_no_copy"
     dmf = DMF(path=tmp_dir, create=True)
     r = resource.Resource(value={"desc": "test resource"})
@@ -333,6 +335,7 @@ def test_dmf_add_tmp_no_copy(tmp_dmf):
         assert False, "DMFError expected"
 
 
+@pytest.mark.linux
 @pytest.mark.unit
 def test_dmf_add_tmp_no_unlink():
     tmp_dir = Path(scratch_dir) / "dmf_add_tmp_no_unlink"
