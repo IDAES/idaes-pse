@@ -18,6 +18,7 @@ def pytest_collection_modifyitems(config, items):
 
 ALL = set("darwin linux win32".split())
 
+
 def pytest_runtest_setup(item):
     supported_platforms = ALL.intersection(mark.name for mark in item.iter_markers())
     plat = sys.platform
