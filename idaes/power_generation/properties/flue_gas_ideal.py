@@ -228,8 +228,8 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("mole_frac", 1e2, index="CO2")
         self.set_default_scaling("flow_volume", 1)
 
-        # For flow_mol_comp, will calculate from flow_mol and mol_frac
-        # user should set a scale for both, and for each compoent of mol_frac
+        # For flow_component, will calculate from flow_mol and mole_frac
+        # user should set a scale for both, and for each compoent of mole_frac
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("temperature", 1e-1)
         self.set_default_scaling("pressure_reduced", 1e-3)
@@ -240,6 +240,8 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("compress_fact", 1)
         self.set_default_scaling("dens_mol_phase", 1)
         self.set_default_scaling("vapor_pressure", 1e-4)
+        self.set_default_scaling("visc_d", 1e4)
+        self.set_default_scaling("therm_cond", 1e2)
         self.set_default_scaling("visc_d_mix", 1e4)
         self.set_default_scaling("therm_cond_mix", 1e2)
         self.set_default_scaling("mw", 1)
@@ -517,9 +519,8 @@ class FlueGasStateBlockData(StateBlockData):
         self.enthalpy = Var(self.params.phase_list, doc='Specific Enthalpy [J/mol]')
         # Specific Enthalpy
         def enthalpy_correlation(b, p):
-            scale_factor = 1e-3
-            return scale_factor*b.enthalpy[p]*sum(b.flow_component[j]
-                             for j in b.params.component_list) == scale_factor*(
+            return b.enthalpy[p]*sum(b.flow_component[j]
+                             for j in b.params.component_list) == (
                       sum((b.params.CpIG['A',j]*(b.temperature/1000) +\
                       b.params.CpIG['B',j]*(b.temperature/1000)**2/2 +\
                       b.params.CpIG['C',j]*(b.temperature/1000)**3/3 +\
@@ -742,7 +743,7 @@ class FlueGasStateBlockData(StateBlockData):
 
     def calculate_scaling_factors(self):
         # Grab default scale factors for anything not explicitly specified.
-        t = (Constraint, Var, Expression, Param)
+        t = (Constraint, Var, Expression)
         for v in self.component_data_objects(t, descend_into=False):
             if iscale.get_scaling_factor(v) is None: # don't replace if set
                 name = v.getname().split("[")[0]
@@ -750,16 +751,16 @@ class FlueGasStateBlockData(StateBlockData):
                 sf = self.config.parameters.get_default_scaling(name, index)
                 if sf is not None:
                     iscale.set_scaling_factor(v, sf)
+
         # Get some scale factors that are frequently used to calculate others
         sf_flow = iscale.get_scaling_factor(self.flow_mol)
-        sf_mol_frac = {}
+        sf_mol_fraction = {}
         comps = self.params.component_list
         for i in comps:
-            sf_mol_frac[i] = iscale.get_scaling_factor(self.mol_frac[i])
-        sf_enth = iscale.get_scaling_factor(self.enthalpy)
-        # calculate flow_mol_component scale factors
-        for i, c in self.flow_mol_component.items():
-            iscale.set_scaling_factor(c, sf_flow*sf_mol_frac[i])
+            sf_mol_fraction[i] = iscale.get_scaling_factor(self.mole_frac[i])
+        # calculate flow_component scale factors
+        for i, c in self.flow_component.items():
+            iscale.set_scaling_factor(c, sf_flow*sf_mol_fraction[i])
 
         if self.is_property_constructed("energy_density_terms"):
             for i, c in self.energy_density_terms.items():
@@ -768,20 +769,22 @@ class FlueGasStateBlockData(StateBlockData):
                 iscale.set_scaling_factor(c, sf1*sf2)
 
         if self.is_property_constructed("enthalpy_flow_terms"):
-            for i, c in self.energy_density_terms.items():
+            for i, c in self.enthalpy_flow_terms.items():
                 sf1 = iscale.get_scaling_factor(self.enthalpy[i])
-                sf2 = iscale.get_scaling_factor(self.flow_mol[i])
+                sf2 = iscale.get_scaling_factor(self.flow_mol)
                 iscale.set_scaling_factor(c, sf1*sf2)
 
         if self.is_property_constructed("heat_cap_correlation"):
             iscale.constraint_scaling_transform(
                 self.heat_cap_correlation, iscale.get_scaling_factor(self.heat_cap))
         if self.is_property_constructed("enthalpy_correlation"):
-            iscale.constraint_scaling_transform(
-                self.enthalpy_correlation, iscale.get_scaling_factor(self.enthalpy))
+            for p, c in self.enthalpy_correlation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.enthalpy[p]))
         if self.is_property_constructed("entropy_correlation"):
-            iscale.constraint_scaling_transform(
-                self.entropy_correlation, iscale.get_scaling_factor(self.entropy))
+            for p, c in self.entropy_correlation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.entropy[p]))
         if self.is_property_constructed("vapor_pressure_correlation"):
             iscale.constraint_scaling_transform(
                 self.vapor_pressure_correlation,
@@ -793,9 +796,9 @@ class FlueGasStateBlockData(StateBlockData):
         if self.is_property_constructed("therm_mix_con"):
             iscale.constraint_scaling_transform(
                 self.therm_mix_con,
-                iscale.get_scaling_factor(self.therm_mix))
+                iscale.get_scaling_factor(self.therm_cond_mix))
         if self.is_property_constructed("visc_d_con"):
-            for i, c in visc_d_con.items:
+            for i, c in self.visc_d_con.items():
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(self.visc_d[i]))
         if self.is_property_constructed("visc_d_mix_con"):

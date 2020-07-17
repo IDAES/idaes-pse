@@ -67,6 +67,21 @@ def propagate_indexed_component_scaling_factors(
                     set_scaling_factor(cdat, get_scaling_factor(c))
 
 
+def calculate_scaling_factors(blk):
+    """Look for calculate scaling factor methods this uses a depth first
+    ordering, so sub-block scale factors are called first. Scale factor
+    calculations should only depend on descendent blocks.
+    """
+    def cs(blk2):
+        """ Recursive function for depth first ordering """
+        for b in blk2.component_data_objects(pyo.Block, descend_into=False):
+            cs(b)
+        if hasattr(blk2, "calculate_scaling_factors"):
+            blk2.calculate_scaling_factors()
+    cs(blk)
+    propagate_indexed_component_scaling_factors(blk)
+
+
 def set_scaling_factor(c, v):
     """Set a scaling factor for a model component. This function creates the
     scaling_factor suffix if needed.

@@ -13,6 +13,7 @@
 """
 Base class for control volumes
 """
+__author__ = "Andrew Lee"
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, units as pyunits, Var
@@ -20,21 +21,22 @@ from pyomo.dae import DerivativeVar
 from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        ControlVolumeBlockData,
-                        FlowDirection,
-                        MaterialFlowBasis,
-                        MaterialBalanceType)
-from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
-                                        BurntToast,
-                                        ConfigurationError,
-                                        PropertyNotSupportedError)
+from idaes.core import (
+    declare_process_block_class,
+    ControlVolumeBlockData,
+    FlowDirection,
+    MaterialFlowBasis,
+    MaterialBalanceType
+)
+from idaes.core.util.exceptions import (
+    BalanceTypeNotSupportedError,
+    BurntToast,
+    ConfigurationError,
+    PropertyNotSupportedError
+)
 from idaes.core.util.tables import create_stream_table_dataframe
-
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-
-__author__ = "Andrew Lee"
-
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1106,20 +1108,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Energy balance equation
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_balances(b, t):
-            return (sum(accumulation_term(b, t, p) for p in
-                    b.config.property_package.phase_list) *
-                    b.scaling_factor_energy) == (
-                        sum(b.properties_in[t].get_enthalpy_flow_terms(p)
-                            for p in b.config.property_package.phase_list) *
-                        b.scaling_factor_energy -
-                        sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-                            for p in b.config.property_package.phase_list) *
-                        b.scaling_factor_energy +
-                        heat_term(b, t)*b.scaling_factor_energy +
-                        work_term(b, t)*b.scaling_factor_energy +
-                        enthalpy_transfer_term(b, t)*b.scaling_factor_energy +
-                        rxn_heat_term(b, t)*b.scaling_factor_energy +
-                        user_term(t)*b.scaling_factor_energy)
+            plist = b.config.property_package.phase_list
+
+            return sum(accumulation_term(b, t, p) for p in plist) == (
+                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in plist)
+                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in plist)
+                + heat_term(b, t)
+                + work_term(b, t)
+                + enthalpy_transfer_term(b, t)
+                + rxn_heat_term(b, t)
+                + user_term(t))
 
         # Energy Holdup
         if has_holdup:
@@ -1154,9 +1152,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 "add_total_energy_balances."
                 .format(self.name))
 
-    def add_total_pressure_balances(self,
-                                    has_pressure_change=False,
-                                    custom_term=None):
+    def add_total_pressure_balances(
+        self, has_pressure_change=False, custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.
 
@@ -1211,12 +1208,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Momentum balance equation
         @self.Constraint(self.flowsheet().config.time, doc='Momentum balance')
         def pressure_balance(b, t):
-            return 0 == (b.properties_in[t].pressure *
-                         b.scaling_factor_pressure -
-                         b.properties_out[t].pressure *
-                         b.scaling_factor_pressure +
-                         deltaP_term(b, t)*b.scaling_factor_pressure +
-                         user_term(t)*b.scaling_factor_pressure)
+            return 0 == (
+                b.properties_in[t].pressure
+                - b.properties_out[t].pressure
+                + deltaP_term(b, t)
+                + user_term(t)
+            )
 
         return self.pressure_balance
 
@@ -1539,3 +1536,71 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             return (f"Unit model {self.name} does not have the standard Port "
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
+
+
+    def calculate_scaling_factors(self):
+        # Default scale factors
+        heat_scaling_factor_default = 1e-6
+        work_scaling_factor_default = 1e-6
+        energy_holdup_scaling_factor_default = 1e-6
+        material_holdup_scaling_factor_default = 1e-6
+
+        # set some default values if not provided
+        def _fill_missing_with_defalut(c, s):
+            if iscale.get_scaling_factor(c) is None:
+                for ci in c.values():
+                    if iscale.get_scaling_factor(ci) is None:
+                        iscale.set_scaling_factor(ci, s)
+        if hasattr(self, "heat"):
+            _fill_missing_with_defalut(self.heat, heat_scaling_factor_default)
+        if hasattr(self, "work"):
+            _fill_missing_with_defalut(self.work, work_scaling_factor_default)
+        if hasattr(self, "energy_holdup"):
+            _fill_missing_with_defalut(
+                self.energy_holdup, energy_holdup_scaling_factor_default)
+        if hasattr(self, "material_holdup"):
+            _fill_missing_with_defalut(
+                self.material_holdup, material_holdup_scaling_factor_default)
+
+        # If the paraent componet of an indexed component has a scale factor, but
+        # some of the data objects don't propogate the indexed component scale
+        # factor to the missing scaling factors.
+        iscale.propagate_indexed_component_scaling_factors(self)
+
+        # Material Holdup Constraints
+        if hasattr(self, "material_holdup_calculation"):
+            for i, c in self.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+
+        if hasattr(self, "pressure_balance"):
+            for t, c in self.pressure_balance.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.properties_in[t].pressure))
+
+        # Material Balance Constraints
+        if hasattr(self, "material_balances"):
+            for i, c in self.material_balances.items():
+                if len(i) == 3:
+                    t = i[0]
+                    p = i[1]
+                    j = i[2]
+                    sf = iscale.get_scaling_factor(
+                        self.properties_in[t].get_material_flow_terms(p, j))
+                elif len(i) == 2:
+                    t = i[0]
+                    j = i[1]
+                    sf = min(map(
+                        lambda x: iscale.get_scaling_factor(x, default=1),
+                        [self.properties_in[t].get_material_flow_terms(p, j)
+                            for p in self.config.property_package.phase_list]))
+                iscale.constraint_scaling_transform(c, sf)
+
+        # Energy Balance Constraints
+        if hasattr(self, "enthalpy_balances"):
+            for t, c in self.enthalpy_balances.items():
+                sf = min(map(
+                    lambda x: iscale.get_scaling_factor(x, default=1),
+                    [self.properties_in[t].get_enthalpy_flow_terms(p)
+                            for p in self.config.property_package.phase_list]))
+                iscale.constraint_scaling_transform(c, sf)

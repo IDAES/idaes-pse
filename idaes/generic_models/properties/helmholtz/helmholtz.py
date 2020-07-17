@@ -1225,7 +1225,6 @@ class HelmholtzStateBlockData(StateBlockData):
         self.energy_density_terms = Expression(
             pub_phlist, rule=rule_energy_density_terms
         )
-        self.calculate_scaling_factors()
 
 
     def get_material_flow_terms(self, p, j):
