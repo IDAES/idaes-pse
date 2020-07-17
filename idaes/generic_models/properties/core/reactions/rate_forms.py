@@ -13,41 +13,13 @@
 """
 Methods for defining reaction rates
 """
-from pyomo.environ import Var
 
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class mole_frac_power_law_rate():
     def build_parameters(rblock, config):
-        order_init = {}
-        ppack = rblock.parent_block().config.property_package
-        for p in ppack.phase_list:
-            for j in ppack.component_list:
-                if "reaction_order" in config.parameter_data:
-                    try:
-                        order_init[p, j] = config.parameter_data[
-                            "reaction_order"][p, j]
-                    except KeyError:
-                        order_init[p, j] = 0
-                else:
-                    # Assume elementary reaction and use stoichiometry
-                    try:
-                        if config.stoichiometry[p, j] < 0:
-                            # These are reactants, but order is -ve stoic
-                            order_init[p, j] = -config.stoichiometry[p, j]
-                        else:
-                            # Anything else is a product, and not be included
-                            order_init[p, j] = 0
-                    except KeyError:
-                        order_init[p, j] = 0
-
-        rblock.reaction_order = Var(
-                ppack.phase_list,
-                ppack.component_list,
-                initialize=order_init,
-                doc="Reaction order",
-                units=None)
+        pass
 
     def return_expression(b, rblock, r_idx, T):
         e = None

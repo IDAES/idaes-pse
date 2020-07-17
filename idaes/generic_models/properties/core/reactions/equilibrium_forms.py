@@ -13,42 +13,12 @@
 """
 Methods for defining equibilibrium reactions
 """
-from pyomo.environ import Var
 
 
 # ----------------------------------------------------------------------------
 class mole_frac_power_law_equil():
     def build_parameters(rblock, config):
-        order_init = {}
-        ppack = rblock.parent_block().config.property_package
-        for p in ppack.phase_list:
-            for j in ppack.component_list:
-                if "reaction_order" in config.parameter_data:
-                    try:
-                        order_init[p, j] = config.parameter_data[
-                            "reaction_order"][p, j]
-                    except KeyError:
-                        order_init[p, j] = 0
-                else:
-                    # Assume elementary reaction and use stoichiometry
-                    try:
-                        # Here we use the stoic. coeff. directly
-                        # However, solids should be excluded as they normally
-                        # do not appear in the equilibrium relationship
-                        pobj = ppack.get_phase(p)
-                        if not pobj.is_solid_phase():
-                            order_init[p, j] = config.stoichiometry[p, j]
-                        else:
-                            order_init[p, j] = 0
-                    except KeyError:
-                        order_init[p, j] = 0
-
-        rblock.reaction_order = Var(
-                ppack.phase_list,
-                ppack.component_list,
-                initialize=order_init,
-                doc="Reaction order",
-                units=None)
+        pass
 
     def return_expression(b, rblock, r_idx, T):
         e = None

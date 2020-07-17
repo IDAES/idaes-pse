@@ -175,9 +175,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct rate reaction stoichiometry dict
             self.rate_reaction_stoichiometry = {}
             for r, rxn in self.config.rate_reactions.items():
-                for p in ppack.phase_list:
-                    for j in ppack.component_list:
-                        self.rate_reaction_stoichiometry[(r, p, j)] = 0
+                for p, j in ppack._phase_component_set:
+                    self.rate_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
                     raise ConfigurationError(
@@ -214,9 +213,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct equilibrium reaction stoichiometry dict
             self.equilibrium_reaction_stoichiometry = {}
             for r, rxn in self.config.equilibrium_reactions.items():
-                for p in ppack.phase_list:
-                    for j in ppack.component_list:
-                        self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
+                for p, j in ppack._phase_component_set:
+                    self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
                     raise ConfigurationError(
@@ -268,6 +266,35 @@ class GenericReactionParameterData(ReactionParameterBlock):
         if len(self.config.rate_reactions) > 0:
             for r in self.rate_reaction_idx:
                 rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.rate_reactions[r]
+
+                order_init = {}
+                for p, j in ppack._phase_component_set:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            if r_config.stoichiometry[p, j] < 0:
+                                # These are reactants, but order is -ve stoic
+                                order_init[p, j] = -r_config.stoichiometry[p,
+                                                                           j]
+                            else:
+                                # Anything else is a product, not be included
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        ppack._phase_component_set,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
                 for val in self.config.rate_reactions[r].values():
                     try:
                         val.build_parameters(rblock,
@@ -278,6 +305,37 @@ class GenericReactionParameterData(ReactionParameterBlock):
         if len(self.config.equilibrium_reactions) > 0:
             for r in self.equilibrium_reaction_idx:
                 rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.equilibrium_reactions[r]
+
+                order_init = {}
+                for p, j in ppack._phase_component_set:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            # Here we use the stoic. coeff. directly
+                            # However, solids should be excluded as they
+                            # normally do not appear in the equilibrium
+                            # relationship
+                            pobj = ppack.get_phase(p)
+                            if not pobj.is_solid_phase():
+                                order_init[p, j] = r_config.stoichiometry[p, j]
+                            else:
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        ppack._phase_component_set,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
                 for val in self.config.equilibrium_reactions[r].values():
                     try:
                         val.build_parameters(
