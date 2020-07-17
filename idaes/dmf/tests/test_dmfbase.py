@@ -391,141 +391,143 @@ def test_dmf_remove():
 
 
 @pytest.mark.unit
-def test_dmf_remove_filter(t):
+def test_dmf_remove_filter():
     tmp_dir = Path(scratch_dir) / "dmf_remove_filter"
     dmf = DMF(path=tmp_dir, create=True)
     n = 10
     ids = add_resources(dmf, num=n)
-    assert tmp_dmf.count() == n
+    assert dmf.count() == n
     # remove half of the added resources
-    print("@@ remove half")
+    # print("@@ remove half")
     dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
     n2 = dmf.count()
     assert n2 == n / 2
     # try to remove the same group (should do nothing
-    print("@@ remove more")
+    # print("@@ remove more")
     dmf.remove(filter_dict={"data.i": {"$lt": n / 2}})
     n2 = dmf.count()
     assert dmf.count() == n / 2
     # remove the rest
-    print("@@ remove the rest")
+    # print("@@ remove the rest")
     dmf.remove(filter_dict={"data.i": {"$ge": n / 2}})
     assert dmf.count() == 0
 
 
-# @pytest.mark.component
-# def test_dmf_find(tmp_dmf):
-#     # populate with batches of records
-#     # they all have the tag 'all', each batch has 'batch<N>' as well
-#     # All resources in a batch are given version 1.0.<N>
-#     # Individual resources will have data of {i: 0..<batchsz-1>}
-#     batchsz, numbatches = 10, 9
-#     all_ids = []
-#     for i in range(numbatches):
-#         n = batchsz
-#         batch = "batch{:d}".format(i + 1)
-#         version = resource.version_list([1, 0, i + 1])
-#         ids = add_resources(
-#             tmp_dmf, num=n, tags=["all", batch], version_info={"version": version}
-#         )
-#         all_ids.extend(ids)
-#     if _log.isEnabledFor(logging.DEBUG):
-#         r = tmp_dmf.fetch_one(all_ids[0])
-#         _log.debug("First resource:\n{}".format(r))
-#     # Find all records, 2 ways
-#     total_num = batchsz * numbatches
-#     result = list(tmp_dmf.find())
-#     assert len(result) == total_num
-#     result = list(tmp_dmf.find({"tags": ["all"]}))
-#     assert len(result) == total_num
-#     # Find with 'all'
-#     result = list(tmp_dmf.find({"tags!": ["all", "batch1"]}))
-#     assert len(result) == batchsz
-#
-#
-# @pytest.mark.unit
-# def test_dmf_str(tmp_dmf):
-#     s = str(tmp_dmf)
-#     assert len(s) > 0
-#
-#
-# #########################
-# # DMFConfig             #
-# #########################
-#
-#
-# @pytest.fixture
-# def dmfconfig_tmp():
-#     """Default file is in user's home directory.
-#        We don't want to actually modify this with a test.
-#        So switch it out and switch it back when the fixture
-#        is done.
-#     """
-#     default_filename = DMFConfig._filename
-#     tmpfile = NamedTemporaryFile()
-#     DMFConfig._filename = tmpfile.name
-#     yield tmpfile
-#     tmpfile.close()
-#     DMFConfig._filename = default_filename
-#
-#
-# @pytest.fixture
-# def dmfconfig_none():
-#     """Default file is in user's home directory.
-#     Replace it with a nonexistent file.
-#     """
-#     default_filename = DMFConfig._filename
-#     DMFConfig._filename = os.path.join(os.path.sep, "idaes", *map(str, range(20)))
-#     yield True
-#     DMFConfig._filename = default_filename
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
-#     config = DMFConfig()
-#     assert config.c == DMFConfig.DEFAULTS
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_init_defaults_emptyfile(dmfconfig_tmp):
-#     config = DMFConfig()
-#     assert config.c == DMFConfig.DEFAULTS
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_init_defaults2(dmfconfig_tmp):
-#     config = DMFConfig(defaults={"look": "here"})
-#     assert config.c["look"] == "here"
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_bad_file(dmfconfig_tmp):
-#     dmfconfig_tmp.write(b"{[\n")
-#     dmfconfig_tmp.file.flush()
-#     pytest.raises(ValueError, DMFConfig)
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_somefile(dmfconfig_tmp):
-#     dmfconfig_tmp.write(b"workspace: foobar\n")
-#     dmfconfig_tmp.file.flush()
-#     config = DMFConfig()
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_save(dmfconfig_tmp):
-#     config = DMFConfig()
-#     config.save()
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_save_nofile(dmfconfig_none):
-#     config = DMFConfig()
-#     pytest.raises(IOError, config.save)
-#
-#
-# @pytest.mark.unit
-# def test_dmfconfig_attrs(dmfconfig_tmp):
-#     config = DMFConfig()
-#     assert config.workspace is not None
-#
+@pytest.mark.component
+def test_dmf_find():
+    tmp_dir = Path(scratch_dir) / "dmf_find"
+    dmf = DMF(path=tmp_dir, create=True)
+    # populate with batches of records
+    # they all have the tag 'all', each batch has 'batch<N>' as well
+    # All resources in a batch are given version 1.0.<N>
+    # Individual resources will have data of {i: 0..<batchsz-1>}
+    batchsz, numbatches = 10, 9
+    all_ids = []
+    for i in range(numbatches):
+        n = batchsz
+        batch = "batch{:d}".format(i + 1)
+        version = resource.version_list([1, 0, i + 1])
+        ids = add_resources(
+            dmf, num=n, tags=["all", batch], version_info={"version": version}
+        )
+        all_ids.extend(ids)
+    if _log.isEnabledFor(logging.DEBUG):
+        r = dmf.fetch_one(all_ids[0])
+        _log.debug("First resource:\n{}".format(r))
+    # Find all records, 2 ways
+    total_num = batchsz * numbatches
+    result = list(dmf.find())
+    assert len(result) == total_num
+    result = list(dmf.find({"tags": ["all"]}))
+    assert len(result) == total_num
+    # Find with 'all'
+    result = list(dmf.find({"tags!": ["all", "batch1"]}))
+    assert len(result) == batchsz
+
+
+@pytest.mark.unit
+def test_dmf_str():
+    tmp_dir = Path(scratch_dir) / "dmf_str"
+    dmf = DMF(path=tmp_dir, create=True)
+    s = str(dmf)
+    assert len(s) > 0
+
+#########################
+# DMFConfig             #
+#########################
+
+
+@pytest.fixture
+def dmfconfig_tmp():
+    """Default file is in user's home directory.
+       We don't want to actually modify this with a test.
+       So switch it out and switch it back when the fixture
+       is done.
+    """
+    default_filename = DMFConfig._filename
+    path = Path(scratch_dir) / "config.yaml"
+    DMFConfig._filename = str(path)
+    yield path.open("w")
+    DMFConfig._filename = default_filename
+
+
+@pytest.fixture
+def dmfconfig_none():
+    """Default file is in user's home directory.
+    Replace it with a nonexistent file.
+    """
+    default_filename = DMFConfig._filename
+    DMFConfig._filename = os.path.join(os.path.sep, "idaes", *map(str, range(10)))
+    yield True
+    DMFConfig._filename = default_filename
+
+
+@pytest.mark.unit
+def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
+    config = DMFConfig()
+    assert config.c == DMFConfig.DEFAULTS
+
+
+@pytest.mark.unit
+def test_dmfconfig_init_defaults_emptyfile(dmfconfig_tmp):
+    config = DMFConfig()
+    assert config.c == DMFConfig.DEFAULTS
+
+
+@pytest.mark.unit
+def test_dmfconfig_init_defaults2(dmfconfig_tmp):
+    config = DMFConfig(defaults={"look": "here"})
+    assert config.c["look"] == "here"
+
+
+@pytest.mark.unit
+def test_dmfconfig_bad_file(dmfconfig_tmp):
+    dmfconfig_tmp.write("{[\n")
+    dmfconfig_tmp.flush()
+    pytest.raises(ValueError, DMFConfig)
+
+
+@pytest.mark.unit
+def test_dmfconfig_somefile(dmfconfig_tmp):
+    dmfconfig_tmp.write("workspace: foobar\n")
+    dmfconfig_tmp.flush()
+    config = DMFConfig()
+
+
+@pytest.mark.unit
+def test_dmfconfig_save(dmfconfig_tmp):
+    config = DMFConfig()
+    config.save()
+
+
+@pytest.mark.unit
+def test_dmfconfig_save_nofile(dmfconfig_none):
+    config = DMFConfig()
+    pytest.raises(IOError, config.save)
+
+
+@pytest.mark.unit
+def test_dmfconfig_attrs(dmfconfig_tmp):
+    config = DMFConfig()
+    assert config.workspace is not None
+
