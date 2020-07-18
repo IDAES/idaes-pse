@@ -273,8 +273,11 @@ def badly_scaled_var_generator(
     for v in blk.component_data_objects(pyo.Var, descend_into=descend_into):
         if v.fixed and not include_fixed:
             continue
+        val = pyo.value(v, exception=False)
+        if val is None:
+            continue
         sf = get_scaling_factor(v, default=1)
-        sv = abs(pyo.value(v) * sf)  # scaled value
+        sv = abs(val * sf)  # scaled value
         if sv > large:
             yield v, sv
         elif sv < zero:

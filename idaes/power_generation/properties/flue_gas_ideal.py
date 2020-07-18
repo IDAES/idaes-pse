@@ -218,7 +218,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
             mutable=True,
             doc="Antoine coefficients for vapor pressure P in bar, T in K")
 
-        self.set_default_scaling("flow_mol", 1e-3)
+        self.set_default_scaling("flow_mol", 1e-4)
         self.set_default_scaling("flow_mass", 1e-3)
         self.set_default_scaling("flow_vol", 1e-3)
         self.set_default_scaling("mole_frac", 1) # anything not explicitly listed
@@ -710,11 +710,10 @@ class FlueGasStateBlockData(StateBlockData):
         return self.dens_mol_phase[p]
 
     def get_energy_density_terms(self, p):
-        # enthalpy here needs to be updated to internal energy
         if not self.is_property_constructed("energy_density_terms"):
             try:
                 def rule_energy_density_terms(b, p):
-                    return self.enthalpy[p]*self.dens_mol_phase[p]
+                    return self.enthalpy[p]*self.dens_mol_phase[p] - self.pressure
                 self.energy_density_terms = Expression(
                     self.params.phase_list,
                     rule=rule_energy_density_terms

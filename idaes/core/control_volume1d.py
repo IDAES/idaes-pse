@@ -24,7 +24,8 @@ from pyomo.environ import (Constraint,
                            Reals,
                            TransformationFactory,
                            units as pyunits,
-                           Var)
+                           Var,
+                           Reference)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
@@ -41,6 +42,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
@@ -1409,18 +1411,7 @@ argument)."""))
             units['pressure_l'] = None
 
         # Create dP/dx terms
-        # TODO : Replace with Reference if possible
-        self.pressure = Var(self.flowsheet().config.time,
-                            self.length_domain,
-                            initialize=1e5,
-                            doc="Pressure",
-                            units=units['pressure'])
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.length_domain,
-                         doc="Equating local pressure to StateBlocks")
-        def pressure_linking_constraint(b, t, x):
-            return b.pressure[t, x] == b.properties[t, x].pressure
+        self.pressure = Reference(self.properties[:,:].pressure)
 
         self.pressure_dx = DerivativeVar(
                                   self.pressure,
@@ -1782,3 +1773,103 @@ argument)."""))
                 Due ot the difficultly in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently support
                 the report method.""")
+
+    def calculate_scaling_factors(self):
+        # Default scale factors
+        deltaP_sf_default = 1e-3*10
+        heat_sf_default = 1e-6*10
+        work_sf_default = 1e-6*10
+        volume_sf_default = 1e-3*10
+        energy_holdup_sf_default = 1e-6*10
+        material_holdup_sf_default = 1e-6*10
+
+        # Function to set defaults so I don't need to reproduce the same code
+        def _fill_miss_with_default(name, s):
+            try:
+                c = getattr(self, name)
+            except AttributeError:
+                return # it's okay if the attribute doesn't exist, spell careful
+            if iscale.get_scaling_factor(c) is None:
+                for ci in c.values():
+                    if iscale.get_scaling_factor(ci) is None:
+                        iscale.set_scaling_factor(ci, s)
+
+        # Set defaults where scale factors are missing
+        _fill_miss_with_default("deltaP", deltaP_sf_default)
+        _fill_miss_with_default("volume", heat_sf_default)
+        _fill_miss_with_default("heat", heat_sf_default)
+        _fill_miss_with_default("work", work_sf_default)
+        _fill_miss_with_default("energy_holdup", energy_holdup_sf_default)
+        _fill_miss_with_default("material_holdup", material_holdup_sf_default)
+
+        # If the paraent component of an indexed component has a scale factor, but
+        # some of the data objects don't, propogate the indexed component scale
+        # factor to the missing scaling factors.
+        iscale.propagate_indexed_component_scaling_factors(self)
+
+        # Enthalpy flow variable and constraint
+        if hasattr(self, "_enthalpy_flow"):
+            for (t,x,p), v in self._enthalpy_flow.items():
+                sf = iscale.get_scaling_factor(
+                    self.properties[t, x].get_enthalpy_flow_terms(p))
+                iscale.set_scaling_factor(v, sf)
+                c = self.enthalpy_flow_linking_constraint[t,x,p]
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "_flow_terms"):
+            for (t,x,p,j), v in self._flow_terms.items():
+                sf = iscale.get_scaling_factor(
+                    self.properties[t, x].get_material_flow_terms(p, j))
+                iscale.set_scaling_factor(v, sf)
+                c = self.material_flow_linking_constraints[t,x,p,j]
+                iscale.constraint_scaling_transform(c, sf)
+
+        # Material Holdup Constraints
+        if hasattr(self, "material_holdup_calculation"):
+            for i, c in self.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+
+        if hasattr(self, "pressure_balance"):
+            for i, c in self.pressure_balance.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.properties[i].pressure))
+
+        # Material Balance Constraints
+        if hasattr(self, "material_balances"):
+            for i, c in self.material_balances.items():
+                if len(i) == 4:
+                    t = i[0]
+                    x = i[1]
+                    p = i[2]
+                    j = i[3]
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].get_material_flow_terms(p, j))
+                elif len(i) == 3:
+                    t = i[0]
+                    x = i[1]
+                    j = i[2]
+                    sf = min(map(
+                        lambda x: iscale.get_scaling_factor(x, default=1),
+                        [self.properties[t, x].get_material_flow_terms(p, j)
+                            for p in self.config.property_package.phase_list]))
+                iscale.constraint_scaling_transform(c, sf)
+
+        # Energy Balance Constraints
+        if hasattr(self, "enthalpy_balances"):
+            for i, c in self.enthalpy_balances.items():
+                sf = min(map(
+                    lambda x: iscale.get_scaling_factor(x, default=1),
+                    [self.properties[i].get_enthalpy_flow_terms(p)
+                            for p in self.config.property_package.phase_list]))
+                iscale.constraint_scaling_transform(c, sf)
+
+        if hasattr(self, "energy_holdup_calculation"):
+            for i, c in self.energy_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.energy_holdup[i]))
+
+        if hasattr(self, "meterial_holdup_calculation"):
+            for i, c in self.material_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(self.material_holdup[i]))
