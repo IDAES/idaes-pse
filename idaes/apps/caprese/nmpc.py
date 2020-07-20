@@ -1302,24 +1302,6 @@ class NMPCSim(DynamicBase):
             vargroup.set_ub(i, ub)
 
 
-    def transfer_bounds(self, tgt_group, src_group):
-        """
-        Transfers bounds from source model's bound lists
-        to target model's differential, algebraic, and input
-        variables, and sets domain to Reals.
-
-        Args:
-            tgt_model : Model whose variables bounds will be transferred to
-            src_model : Model whose bound lists will be used to set bounds.
-
-        """
-        n_vars = tgt_group.n_vars
-        for i in range(n_vars):
-            tgt_group.set_lb(i, src_group.lb[i])
-            tgt_group.set_ub(i, src_group.ub[i])
-            tgt_group.set_domain(i, Reals)
-
-
     def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
         """Function to add piecewise constant (PWC) constraints to controller
