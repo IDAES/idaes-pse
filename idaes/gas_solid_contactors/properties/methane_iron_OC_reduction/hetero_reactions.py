@@ -23,9 +23,6 @@ Chem. Eng. Sci. 62 (2007) 533–549.
 
 """
 
-# Changes the divide behavior to not do integer division
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            exp,

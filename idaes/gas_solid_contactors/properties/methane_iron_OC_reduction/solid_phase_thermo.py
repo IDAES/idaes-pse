@@ -21,9 +21,6 @@ https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
 
-# Changes the divide behavior to not do integer division
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Param,

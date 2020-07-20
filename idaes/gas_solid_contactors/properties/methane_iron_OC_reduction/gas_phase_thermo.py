@@ -23,9 +23,6 @@ https://webbook.nist.gov/chemistry/ (accessed March 10, 2018).
 
 """
 
-# Changes the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 # import logging
 
@@ -301,21 +298,6 @@ class _GasPhaseThermoStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            for j in blk[k]._params.component_list:
-                if hasattr(blk[k], "diffusion_comp_constraint"):
-                    calculate_variable_from_constraint(
-                                blk[k].diffusion_comp[j],
-                                blk[k].diffusion_comp_constraint[j])
-
-                if hasattr(blk[k], "cp_shomate_eqn"):
-                    calculate_variable_from_constraint(blk[k].cp_mol_comp[j],
-                                                       blk[k].cp_shomate_eqn[j]
-                                                       )
-
-                if hasattr(blk[k], "enthalpy_shomate_eqn"):
-                    calculate_variable_from_constraint(
-                            blk[k].enth_mol_vap_comp[j],
-                            blk[k].enthalpy_shomate_eqn[j])
 
             if hasattr(blk[k], "mw_gas_eqn"):
                 calculate_variable_from_constraint(
@@ -326,11 +308,6 @@ class _GasPhaseThermoStateBlock(StateBlock):
                 calculate_variable_from_constraint(
                             blk[k].dens_mol_vap,
                             blk[k].ideal_gas)
-
-            if hasattr(blk[k], "comp_conc_eqn"):
-                calculate_variable_from_constraint(
-                            blk[k].dens_mol_vap_comp[j],
-                            blk[k].comp_conc_eqn[j])
 
             if hasattr(blk[k], "dens_mass_basis"):
                 calculate_variable_from_constraint(
@@ -362,10 +339,27 @@ class _GasPhaseThermoStateBlock(StateBlock):
                             blk[k].enth_mol,
                             blk[k].mixture_enthalpy_eqn)
 
-            if hasattr(blk[k], "comp_conc_eqn"):
-                calculate_variable_from_constraint(
-                            blk[k].dens_mol_vap_comp[j],
-                            blk[k].comp_conc_eqn[j])
+            for j in blk[k]._params.component_list:
+
+                if hasattr(blk[k], "comp_conc_eqn"):
+                    calculate_variable_from_constraint(
+                                blk[k].dens_mol_vap_comp[j],
+                                blk[k].comp_conc_eqn[j])
+
+                if hasattr(blk[k], "diffusion_comp_constraint"):
+                    calculate_variable_from_constraint(
+                                blk[k].diffusion_comp[j],
+                                blk[k].diffusion_comp_constraint[j])
+
+                if hasattr(blk[k], "cp_shomate_eqn"):
+                    calculate_variable_from_constraint(
+                        blk[k].cp_mol_comp[j],
+                        blk[k].cp_shomate_eqn[j])
+
+                if hasattr(blk[k], "enthalpy_shomate_eqn"):
+                    calculate_variable_from_constraint(
+                            blk[k].enth_mol_vap_comp[j],
+                            blk[k].enthalpy_shomate_eqn[j])
 
         # Solve property block if non-empty
         free_vars = 0
