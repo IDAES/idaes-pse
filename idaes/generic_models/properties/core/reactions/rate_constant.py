@@ -18,6 +18,8 @@ from pyomo.environ import exp, Var, units as pyunits
 from idaes.core import MaterialFlowBasis
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     ConcentrationForm
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
@@ -80,14 +82,20 @@ class arrhenius():
                        c_units**order)
 
         rblock.arrhenius_const = Var(
-                initialize=config.parameter_data["arrhenius_const"],
                 doc="Arrhenius constant (pre-exponential factor)",
                 units=r_units)
+        set_param_value(rblock,
+                        param="arrhenius_const",
+                        units=r_units,
+                        config=config)
 
         rblock.energy_activation = Var(
-                initialize=config.parameter_data["energy_activation"],
                 doc="Activation energy",
                 units=e_units)
+        set_param_value(rblock,
+                        param="energy_activation",
+                        units=e_units,
+                        config=config)
 
     def return_expression(b, rblock, r_idx, T):
         base_units = rblock.parent_block().get_metadata().default_units

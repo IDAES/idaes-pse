@@ -490,9 +490,9 @@ class GenericReactionBlockData(ReactionBlockDataBase):
     def _dh_rxn(self):
         def dh_rule(b, r):
             rblock = getattr(b.params, "reaction_"+r)
-            if r in b.params.rate_reaction_idx:
+            try:
                 carg = b.params.config.rate_reactions[r]
-            else:
+            except (AttributeError, KeyError):
                 carg = b.params.config.equilibrium_reactions[r]
             return carg["heat_of_reaction"].return_expression(
                 b, rblock, r, b.state_ref.temperature)
