@@ -71,7 +71,12 @@ def get_concentration_term(blk, r_idx):
     except KeyError:
         conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
 
-    if conc_form == ConcentrationForm.molarity:
+    if conc_form is None:
+        raise ConfigurationError(
+            "{} concentration_form configuration argument was not set. "
+            "Please ensure that this argument is included in your "
+            "configuration dict.".format(blk.name))
+    elif conc_form == ConcentrationForm.molarity:
         conc_term = getattr(blk.state_ref, "conc_mole_phase_comp")
     elif conc_form == ConcentrationForm.activity:
         conc_term = getattr(blk.state_ref, "act_phase_comp")
@@ -86,7 +91,7 @@ def get_concentration_term(blk, r_idx):
                      getattr(blk.state_ref, "pressure"))
     else:
         raise BurntToast(
-            "{} get_concnetration_term recieved unrecognised "
+            "{} get_concentration_term received unrecognised "
             "ConcentrationForm ({}). This should not happen - please contact "
             "the IDAES developers with this bug.".format(blk.name, conc_form))
 
@@ -103,7 +108,7 @@ rxn_config.declare("heat_of_reaction", ConfigValue(
     doc="Valid Python class containing instructions on how to calculate "
     "the heat of reaction for this reaction."))
 rxn_config.declare("concentration_form", ConfigValue(
-    default=ConcentrationForm.moleFraction,
+    default=None,
     domain=In(ConcentrationForm),
     description="Form to use for concentration terms in reaction equation",
     doc="ConcentrationForm Enum indicating what form to use for concentration "

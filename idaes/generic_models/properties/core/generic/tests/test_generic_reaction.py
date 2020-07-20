@@ -27,7 +27,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-        GenericReactionParameterBlock)
+        GenericReactionParameterBlock, ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.rate_constant import \
@@ -454,6 +454,7 @@ class TestGenericReactionBlock(object):
                        "heat_of_reaction": constant_dh_rxn,
                        "rate_constant": arrhenius,
                        "rate_form": power_law_rate,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -10000,
                            "arrhenius_const": 1,
@@ -464,6 +465,7 @@ class TestGenericReactionBlock(object):
                        "heat_of_reaction": constant_dh_rxn,
                        "equilibrium_constant": van_t_hoff,
                        "equilibrium_form": power_law_equil,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -20000,
                            "k_eq_ref": 100,

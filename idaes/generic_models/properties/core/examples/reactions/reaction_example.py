@@ -25,6 +25,8 @@ from idaes.core import LiquidPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+        ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.rate_constant import \
@@ -78,6 +80,7 @@ rxn_configuration = {
                "heat_of_reaction": constant_dh_rxn,
                "rate_constant": arrhenius,
                "rate_form": power_law_rate,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": -10000,
                    "arrhenius_const": 1,
@@ -89,6 +92,7 @@ rxn_configuration = {
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
                "equilibrium_form": power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
                    "dh_rxn_ref": -20000,
                    "k_eq_ref": 100,

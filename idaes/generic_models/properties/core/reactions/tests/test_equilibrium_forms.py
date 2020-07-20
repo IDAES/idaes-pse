@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import Block, ConcreteModel, Var, units as pyunits
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
-    GenericReactionParameterBlock
+    GenericReactionParameterBlock, ConcentrationForm
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import *
 
 from idaes.core import SolidPhase
@@ -52,7 +52,8 @@ def test_power_law_equil_no_order():
                                      ("p1", "c2"): 2,
                                      ("sol", "c1"): -3,
                                      ("sol", "c2"): 4},
-                   "equilibrium_form": power_law_equil}}})
+                   "equilibrium_form": power_law_equil,
+                   "concentration_form": ConcentrationForm.moleFraction}}})
 
     # Create a dummy state block
     m.rxn = Block([1])
@@ -115,6 +116,7 @@ def test_power_law_equil_with_order():
                                      ("sol", "c1"): -3,
                                      ("sol", "c2"): 4},
                    "equilibrium_form": power_law_equil,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
                        "reaction_order": {("p1", "c1"): 1,
                                           ("p1", "c2"): 2,
