@@ -157,7 +157,7 @@ def set_param_value(b, param, units, index=None):
         b - block on which parameter and config block are defined
         param - name of parameter as str. Used to find param and config arg
         units - units of param object (used if conversion required)
-        index - (optional) used for pure component properties where a signle
+        index - (optional) used for pure component properties where a single
                 property may have multiple parameters associated with it.
 
     Returns:

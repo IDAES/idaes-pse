@@ -92,7 +92,7 @@ class cp_mol_ig_comp():
             index="G")
 
         cobj.cp_mol_ig_comp_coeff_H = Var(
-            doc="Shomate h parameter for ideal gas molar heat capacity",
+            doc="Shomate H parameter for ideal gas molar heat capacity",
             units=pyunits.kJ*pyunits.mol**-1)
         set_param_value(
             cobj,
