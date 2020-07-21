@@ -28,6 +28,14 @@ class Series(list):
                     'least twice the tolerance')
         return time
 
+    def is_within_bounds(self, t):
+        if not self:
+            raise ValueError('List is empty. No bounds exist.')
+        lower = self.time[0]
+        upper = self.time[-1]
+        tolerance = self.tolerance
+        return lower - tolerance < t and t < upper + tolerance
+
     def is_valid_append(self, t):
         if not self:
             return True
@@ -125,6 +133,19 @@ class Series(list):
         return val_l + (val_g - val_l)/(t_g - t_l)*(t - t_l)
 
 
+class InputSeries(Series):
+    """
+    For consistency with the backwards discretization schemes most commonly
+    used, the time corresponding to a value in an input history is the last
+    time point at which that input is applied.
+    """
+    def get(self, t):
+        if not self.is_within_bounds(t):
+            return None
+        found, i = self.binary_search(t)
+        return self[i]
+
+
 class History(OrderedDict):
     """
     """
@@ -155,8 +176,46 @@ class History(OrderedDict):
                     name=str(cuid),
                     tolerance=tolerance)
 
+        self.dim = len(init)
         self.name = name
         self.tolerance = tolerance
         self.time = time
 
         super().__init__(init)
+
+    def extend(self, data_list, time_list=None):
+        if time_list is None and self.synchronous:
+            raise ValueError(
+                'A single time list must be passed in for synchronous data')
+        elif time_list is not None and not self.synchronous:
+            raise ValueError(
+                'Time list must be omitted for asynchronous data')
+        if len(data_list) != self.dim:
+            raise ValueError(
+                "Must extend with same number of data series as History's dimension")
+
+        if self.synchonous:
+            t_last = self.time[-1]
+            t0 = time_list[0]
+
+            # For now, time will always be offset from last existing value.
+            # Unsure whether I should (add an option to) relax this.
+            new_time = [t_last + (t-t0) for t in time_list]
+            try:
+                # Extending from time-indexed Pyomo variables
+                new_data_list = [[container[t].value for t in time_list]
+                        for container in data_list]
+            except AttributeError as ae:
+                if 'value' not in str(ae):
+                    raise ae
+                # Extending from lists of values
+                new_data_list = []
+                for data in data_list:
+                    if len(data) != len(time_list):
+                        raise ValueError(
+                            'Data must have same length as time list for '
+                            'synchronous data.')
+                    new_data_list.append(data)
+        
+        for data, series in zip(data_list, self.values()):
+            series.extend
