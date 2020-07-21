@@ -1354,7 +1354,7 @@ argument)."""))
                              self.length_domain,
                              self.config.property_package.phase_list,
                              doc="Enthalpy holdup constraint")
-            def enthalpy_holdup_calculation(b, t, x, p):
+            def energy_holdup_calculation(b, t, x, p):
                 return b.energy_holdup[t, x, p] == (
                     b._area_func(t, x) * self.phase_fraction[t, x, p] *
                     b.properties[t, x].get_energy_density_terms(p))
@@ -1813,6 +1813,7 @@ argument)."""))
                 sf = iscale.get_scaling_factor(
                     self.properties[t, x].get_enthalpy_flow_terms(p))
                 iscale.set_scaling_factor(v, sf)
+                iscale.set_scaling_factor(self.enthalpy_flow_dx[t,x,p], sf*100)
                 c = self.enthalpy_flow_linking_constraint[t,x,p]
                 iscale.constraint_scaling_transform(c, sf)
 
@@ -1821,6 +1822,7 @@ argument)."""))
                 sf = iscale.get_scaling_factor(
                     self.properties[t, x].get_material_flow_terms(p, j))
                 iscale.set_scaling_factor(v, sf)
+                iscale.set_scaling_factor(self.material_flow_dx[t,x,p,j], sf*100)
                 c = self.material_flow_linking_constraints[t,x,p,j]
                 iscale.constraint_scaling_transform(c, sf)
 

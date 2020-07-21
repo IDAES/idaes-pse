@@ -25,6 +25,8 @@ from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbin
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -60,12 +62,6 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         self.efficiency_mech = Var(
             initialize=1.0,
             doc="Turbine mechanical efficiency"
-        )
-        self.flow_scale = Param(
-            mutable=True,
-            default=1e3,
-            doc="Scaling factor for pressure flow relation should be approximatly"
-            " the same order of magnitude as the expected flow.",
         )
 
         self.eff_nozzle.fix()
@@ -107,11 +103,9 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
-            return (1 / b.flow_scale ** 2) * flow ** 2 * mw ** 2 * (Tin - 273.15) == (
-                1 / b.flow_scale ** 2
-            ) * cf ** 2 * Pin ** 2 * (
-                g / (g - 1) * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g))
-            )
+            return flow ** 2 * mw ** 2 * (Tin - 273.15) == (
+                cf ** 2 * Pin ** 2 * g / (g - 1)
+                    * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g)))
 
         @self.Constraint(self.flowsheet().config.time, doc="Equation: Efficiency")
         def efficiency_correlation(b, t):
@@ -209,3 +203,10 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             # if you ask for it to be calculated.
             for t in self.flowsheet().config.time:
                 self.flow_coeff[t] = cf[t]
+
+    def calculate_scaling_factors(self):
+
+        for t, c in self.inlet_flow_constraint.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].flow_mol)**2
+            iscale.constraint_scaling_transform(c, s)

@@ -82,7 +82,7 @@ def calculate_scaling_factors(blk):
     propagate_indexed_component_scaling_factors(blk)
 
 
-def set_scaling_factor(c, v):
+def set_scaling_factor(c, v, data_objects=True):
     """Set a scaling factor for a model component. This function creates the
     scaling_factor suffix if needed.
 
@@ -93,10 +93,15 @@ def set_scaling_factor(c, v):
         None
     """
     try:
-        c.parent_block().scaling_factor[c] = v
+        suf = c.parent_block().scaling_factor
     except AttributeError:
         c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-        c.parent_block().scaling_factor[c] = v
+        suf = c.parent_block().scaling_factor
+
+    suf[c] = v
+    if data_objects and c.is_indexed():
+        for cdat in c.values():
+            suf[cdat] = v
 
 
 def get_scaling_factor(c, default=None):

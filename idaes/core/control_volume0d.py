@@ -1540,7 +1540,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def calculate_scaling_factors(self):
         # Default scale factors
-        deltaP_sf_default = 1e-3
         heat_sf_default = 1e-6
         work_sf_default = 1e-6
         volume_sf_default = 1e-3
@@ -1559,7 +1558,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         iscale.set_scaling_factor(ci, s)
 
         # Set defaults where scale factors are missing
-        _fill_miss_with_default("deltaP", deltaP_sf_default)
         _fill_miss_with_default("volume", heat_sf_default)
         _fill_miss_with_default("heat", heat_sf_default)
         _fill_miss_with_default("work", work_sf_default)
@@ -1570,6 +1568,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # some of the data objects don't, propogate the indexed component scale
         # factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
+
+        if hasattr(self, "deltaP"):
+            for t, v in self.deltaP.items():
+                if iscale.get_scaling_factor(v) is None:
+                    s = iscale.get_scaling_factor(self.properties_in[t].pressure)
+                    iscale.set_scaling_factor(v, s)
 
         # Material Holdup Constraints
         if hasattr(self, "material_holdup_calculation"):

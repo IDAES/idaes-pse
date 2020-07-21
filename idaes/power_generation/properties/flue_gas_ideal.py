@@ -775,11 +775,11 @@ class FlueGasStateBlockData(StateBlockData):
 
         if self.is_property_constructed("heat_cap_correlation"):
             iscale.constraint_scaling_transform(
-                self.heat_cap_correlation, iscale.get_scaling_factor(self.heat_cap))
+                self.heat_cap_correlation, iscale.get_scaling_factor(self.heat_cap)*iscale.get_scaling_factor(self.flow_mol))
         if self.is_property_constructed("enthalpy_correlation"):
             for p, c in self.enthalpy_correlation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.enthalpy[p]))
+                    c, iscale.get_scaling_factor(self.enthalpy[p])*iscale.get_scaling_factor(self.flow_mol))
         if self.is_property_constructed("entropy_correlation"):
             for p, c in self.entropy_correlation.items():
                 iscale.constraint_scaling_transform(
@@ -787,7 +787,7 @@ class FlueGasStateBlockData(StateBlockData):
         if self.is_property_constructed("vapor_pressure_correlation"):
             iscale.constraint_scaling_transform(
                 self.vapor_pressure_correlation,
-                iscale.get_scaling_factor(self.vapor_pressure))
+                log(iscale.get_scaling_factor(self.vapor_pressure))*iscale.get_scaling_factor(self.flow_mol))
         if self.is_property_constructed("therm_cond_con"):
             for i, c in self.therm_cond_con.items():
                 iscale.constraint_scaling_transform(

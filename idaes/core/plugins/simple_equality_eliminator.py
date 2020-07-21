@@ -21,6 +21,8 @@ from pyomo.core.expr import current as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -43,8 +45,8 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
                 c.body.polynomial_degree() == 1
             ):
                 repn = generate_standard_repn(c.body)
-                assert len(repn.nonlinear_vars) == 0
-                assert len(repn.quadratic_vars) == 0
+                if len(repn.nonlinear_vars) != 0 or len(repn.quadratic_vars) != 0:
+                    continue
                 if len(repn.linear_vars) > 2:
                     continue
                 elif len(repn.linear_vars) < 1:
