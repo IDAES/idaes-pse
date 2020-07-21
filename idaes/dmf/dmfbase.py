@@ -608,9 +608,11 @@ class DMF(workspace.Workspace, HasTraits):
         """Find and return one matching resource.
 
         This is a wrapper around `find()` that does two things:
-        1. Only returns the first result (if any)
-        2. By default, calls `attach()` on the result to add it to the DMF.
-           You can change this by passing `attach=False` as a keyword.
+
+            1. Only returns the first result (if any)
+
+            2. By default, calls `attach()` on the result to add it to the DMF.
+               You can change this by passing `attach=False` as a keyword.
 
         Returns:
             Resource, or None or an empty list.
