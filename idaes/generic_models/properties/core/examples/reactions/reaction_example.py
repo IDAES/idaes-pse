@@ -82,9 +82,9 @@ rxn_configuration = {
                "rate_form": power_law_rate,
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   "dh_rxn_ref": -10000,
-                   "arrhenius_const": 1,
-                   "energy_activation": 1000}}},
+                   "dh_rxn_ref": (-10000, pyunits.J/pyunits.mol),
+                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "energy_activation": (1000, pyunits.J/pyunits.mol)}}},
     "equilibrium_reactions": {
         "R2": {"stoichiometry": {("Liq", "B"): -1,
                                  ("Liq", "C"): -1,
@@ -94,6 +94,6 @@ rxn_configuration = {
                "equilibrium_form": power_law_equil,
                "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   "dh_rxn_ref": -20000,
-                   "k_eq_ref": 100,
-                   "T_eq_ref": 350}}}}
+                   "dh_rxn_ref": (-20000, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (100, None),
+                   "T_eq_ref": (350, pyunits.K)}}}}
