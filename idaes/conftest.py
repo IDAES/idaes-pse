@@ -1,17 +1,20 @@
 import pytest
 import sys
 
-output = open("test_files.txt", "w")
-
-
-def pytest_collection_modifyitems(config, items):
-    fspaths = set()
-    for item in items:
-        fspaths.add(item.fspath)
-    for p in fspaths:
-        output.write(str(p))
-        output.write("\n")
-    output.close()
+####
+# Uncomment this to collect list of all test files
+# into 'test_files.txt'
+#
+# def pytest_collection_modifyitems(config, items):
+#     output = open("test_files.txt", "w")
+#     fspaths = set()
+#     for item in items:
+#         fspaths.add(item.fspath)
+#     for p in fspaths:
+#         output.write(str(p))
+#         output.write("\n")
+#     output.close()
+####
 
 ####
 # Only run the tests for your particular platform(s), if it is marked with those platform(s)
