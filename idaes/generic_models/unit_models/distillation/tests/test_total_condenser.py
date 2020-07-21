@@ -32,7 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom, \
     fixed_variables_set, activated_constraints_set
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
-
+from idaes.core.util.exceptions import PropertyPackageError
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -46,21 +46,24 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = Condenser(
-        default={"property_package": m.fs.properties,
-                 "condenser_type": CondenserType.totalCondenser,
-                 "temperature_spec": TemperatureSpec.customTemperature})
+    with pytest.raises(PropertyPackageError):
 
-    assert len(m.fs.unit.config) == 10
-    assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.useDefault
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_pressure_change
-    assert hasattr(m.fs.unit, "heat_duty")
+        m.fs.unit = Condenser(
+            default={"property_package": m.fs.properties,
+                     "condenser_type": CondenserType.totalCondenser,
+                     "temperature_spec": TemperatureSpec.customTemperature})
+
+        assert len(m.fs.unit.config) == 10
+        assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.useDefault
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.useDefault
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_pressure_change
+        assert hasattr(m.fs.unit, "heat_duty")
+
 
 
 class TestBTXIdeal(object):
