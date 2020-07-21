@@ -240,6 +240,9 @@ class PhysicalParameterBlock(ProcessBlockData,
             raise PropertyPackageError("Property package {} has not defined a "
                                        "phase list.".format(self.name))
 
+        # Also check that the phase-component set has been created.
+        self.get_phase_component_set()
+
     def _make_component_objects(self):
         _log.warning("DEPRECATED: {} appears to be an old-style property "
                      "package. It will be automatically converted to a "
