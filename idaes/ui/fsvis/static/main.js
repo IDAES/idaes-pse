@@ -19,25 +19,35 @@ var paper = new joint.dia.Paper({
     interactive: true
 });
 
-var paperScroller = new joint.ui.PaperScroller({
-    paper: paper,
-    autoResizePaper: true,
-    scrollWhileDragging: true,
-    cursor: 'grab'
-});
+// Get the model from the div tag (see the html file for an explanation)
+var data_model = $("#model").data("model");
+var model_id = data_model.model.id;
+var url = "/fs?id=".concat(model_id)
+renderModel(data_model)
 
-$("#idaes-canvas")[0].append(paperScroller.el);
-paperScroller.render().center();
+// var paperScroller = new joint.ui.PaperScroller({
+//     paper: paper,
+//     autoResizePaper: true,
+//     scrollWhileDragging: true,
+//     cursor: 'grab'
+// });
+
+// $("#idaes-canvas")[0].append(paperScroller.render().el);
 
 var toolbar = new joint.ui.Toolbar({
     autoToggle: true,
     references: {
-        paperScroller: paperScroller,
+        paper: paper,
     },
     tools: [
         { type: 'toggle', name: 'labels', label: 'Labels' },
         { type: 'separator' },
+        { type: 'button', name: 'zoomIn', text: 'Zoom In'}
     ]
+});
+
+toolbar.on('zoomIn:click', function(value, event) {
+    paperScroller.zoom(0.2, { max: 4 });
 });
 
 toolbar.on('labels:change', function(value, event) {
@@ -128,11 +138,7 @@ paper.on("link:mouseout", function(cellView, evt) {
     cellView.hideTools()
 });
 
-// Get the model from the div tag (see the html file for an explanation)
-var data_model = $("#model").data("model");
-var model_id = data_model.model.id;
-var url = "/fs?id=".concat(model_id)
-renderModel(data_model)
+
 
 // Send a post request to the server with the new graph 
 // This is essentially the saving mechanism (for a server instance) for right now
