@@ -12,7 +12,7 @@ In order to create and use a property package using the IDAES Generic Reaction P
 Units of Measurement
 --------------------
 
-As with generic thermophsyical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<user_guide/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
+As with generic thermophysical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<user_guide/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units and units for all parameters is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
 
 Config Dictionary
 -----------------
@@ -50,7 +50,9 @@ Configuration Example
 
 .. code-block:: python
 
-    from from idaes.core import MaterialFlowBasis
+    from pyomo.environ import units as pyunits
+
+    from idaes.core import MaterialFlowBasis
 
     config_dict = {
         "base_units": {"time": pyunits.s,
@@ -58,27 +60,30 @@ Configuration Example
                        "mass": pyunits.kg,
                        "amount": pyunits.mol,
                        "temperature": pyunits.K},
-        "reaction_basis": MaterialFlowBasis.molar,
         "rate_reactions": {
-            "r1": {"stoichiometry": {("phase_1", "component_1"): -1,
-                                     ("phase_1", "component_2"): 2},
+            "R1": {"stoichiometry": {("Liq", "A"): -1,
+                                     ("Liq", "B"): -1,
+                                     ("Liq", "C"): 2},
                    "heat_of_reaction": constant_dh_rxn,
                    "rate_constant": arrhenius,
-                   "rate_form": mole_frac_power_law_rate,
+                   "rate_form": power_law_rate,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": -10000,
-                       "arrhenius_const": 1,
-                       "energy_activation": 1000}}},
+                       "dh_rxn_ref": (-10000, pyunits.J/pyunits.mol),
+                       "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                       "energy_activation": (1000, pyunits.J/pyunits.mol)}}},
         "equilibrium_reactions": {
-            "e1": {"stoichiometry": {("phase_2", "component_1"): -3,
-                                     ("phase_2", "component_2"): 4},
+            "R2": {"stoichiometry": {("Liq", "B"): -1,
+                                     ("Liq", "C"): -1,
+                                     ("Liq", "D"): 1},
                    "heat_of_reaction": constant_dh_rxn,
                    "equilibrium_constant": van_t_hoff,
-                   "equilibrium_form": mole_frac_power_law_equil,
+                   "equilibrium_form": power_law_equil,
+                   "concentration_form": ConcentrationForm.moleFraction,
                    "parameter_data": {
-                       "dh_rxn_ref": -20000,
-                       "k_eq_ref": 100,
-                       "T_eq_ref": 350}}}}
+                       "dh_rxn_ref": (-20000, pyunits.J/pyunits.mol),
+                       "k_eq_ref": (100, None),
+                       "T_eq_ref": (350, pyunits.K)}}}}
 
 Class Definition
 ----------------
@@ -115,4 +120,3 @@ Parameters
 ^^^^^^^^^^
 
 The `parameters` method is used to construct all the parameters associated with the property calculations and to specify values for these. The list of necessary parameters is based on the configuration options and the selected methods. Each method lists their necessary parameters in their documentation. Users need only define those parameters required by the options they have chosen.
-

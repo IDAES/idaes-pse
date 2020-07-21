@@ -14,8 +14,8 @@ The method uses the Arrhenius equation to calculate the rate constant.
 **Parameters**
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Indices", "Description"
+   :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A`", "arrhenius_const", "", "Pre-exponential factor"
-   ":math:`E_A`", "energy_activation", "", "Activation energy"
+   ":math:`A`", "arrhenius_const", "Varies, based on reaction form", "Pre-exponential factor"
+   ":math:`E_A`", "energy_activation", "Base units", "Activation energy"
 
