@@ -111,6 +111,9 @@ kwargs = dict(
             "*.csv",
             "*.ipynb",
             "*.txt",
+            "*.js",
+            "*.css",
+            "*.html",
         ]
     },
     include_package_data=True,
