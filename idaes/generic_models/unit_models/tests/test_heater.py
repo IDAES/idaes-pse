@@ -475,16 +475,18 @@ class TestBT_Generic(object):
         assert hasattr(btg.fs.unit.outlet, "pressure")
 
         assert hasattr(btg.fs.unit, "heat_duty")
-        # assert_units_equivalent(btg.fs.unit.control_volume.heat, pyunits.J/pyunits.s)
-        # assert_units_equivalent(btg.fs.unit.heat_duty, pyunits.J/pyunits.s)
         assert hasattr(btg.fs.unit, "deltaP")
-        # assert_units_equivalent(btg.fs.unit.deltaP, pyunits.Pa)
 
         assert number_variables(btg) == 74
         assert number_total_constraints(btg) == 37
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 
+    @pytest.mark.component
+    def test_units(self, btg):
+        # assert_units_equivalent(btg.fs.unit.control_volume.heat, pyunits.J/pyunits.s)
+        # assert_units_equivalent(btg.fs.unit.heat_duty, pyunits.J/pyunits.s)
+        # assert_units_equivalent(btg.fs.unit.deltaP, pyunits.Pa)
         assert_units_consistent(btg)
 
     @pytest.mark.unit

@@ -21,32 +21,21 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
-    Param,
     log,
-    Expression,
-    Constraint,
     Reference,
     PositiveReals,
     SolverFactory,
     ExternalFunction,
-    exp,
-    log10,
     Block,
-    Reference,
+    units as pyunits
 )
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
     declare_process_block_class,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    MaterialBalanceType,
     UnitModelBlockData,
-    useDefault,
 )
 
 import idaes.logger as idaeslog
@@ -255,24 +244,50 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         # Add variables                                                        #
         ########################################################################
+        # Use side 1 units as basis
+        base_units = (
+            config.hot_side_config.property_package.get_metadata().default_units)
+        if not (isinstance(base_units["mass"], str) or
+                base_units["mass"] is None):
+            q_units = (base_units["mass"] *
+                       base_units["length"]**2 *
+                       base_units["time"]**-3)
+            u_units = (base_units["mass"] *
+                       base_units["time"]**-3 *
+                       base_units["temperature"]**-1)
+            a_units = base_units["length"]**2
+            t_units = base_units["temperature"]
+        else:
+            # Backwards compatability for pre-units property packages
+            q_units = None
+            u_units = None
+            a_units = None
+            t_units = None
+
         u = self.overall_heat_transfer_coefficient = Var(
             self.flowsheet().config.time,
             domain=PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
+            units=u_units
         )
         a = self.area = Var(
-            domain=PositiveReals, initialize=1000.0, doc="Heat exchange area"
+            domain=PositiveReals,
+            initialize=1000.0,
+            doc="Heat exchange area",
+            units=a_units
         )
         self.delta_temperature_in = Var(
             self.flowsheet().config.time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
+            units=t_units
         )
         self.delta_temperature_out = Var(
             self.flowsheet().config.time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
+            units=t_units
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
@@ -307,7 +322,9 @@ class HeatExchangerData(UnitModelBlockData):
         add_object_reference(self, config.cold_side_name, self.side_2)
 
         # Add convienient references to heat duty.
-        q = self.heat_duty = Reference(self.side_2.heat)
+        self.heat_duty = Reference(self.side_2.heat)
+        # Need to do this as Reference does not have units (Pyomo fixing this)
+        q = self.side_2.heat
         ########################################################################
         # Add ports                                                            #
         ########################################################################
@@ -332,13 +349,15 @@ class HeatExchangerData(UnitModelBlockData):
                 return (
                     b.delta_temperature_in[t]
                     == b.side_1.properties_in[t].temperature
-                    - b.side_2.properties_in[t].temperature
+                    - pyunits.convert(b.side_2.properties_in[t].temperature,
+                                      to_units=t_units)
                 )
             else:
                 return (
                     b.delta_temperature_in[t]
                     == b.side_1.properties_in[t].temperature
-                    - b.side_2.properties_out[t].temperature
+                    - pyunits.convert(b.side_2.properties_out[t].temperature,
+                                      to_units=t_units)
                 )
 
         @self.Constraint(self.flowsheet().config.time)
@@ -347,13 +366,15 @@ class HeatExchangerData(UnitModelBlockData):
                 return (
                     b.delta_temperature_out[t]
                     == b.side_1.properties_out[t].temperature
-                    - b.side_2.properties_out[t].temperature
+                    - pyunits.convert(b.side_2.properties_out[t].temperature,
+                                      to_units=t_units)
                 )
             else:
                 return (
                     b.delta_temperature_out[t]
                     == b.side_1.properties_out[t].temperature
-                    - b.side_2.properties_in[t].temperature
+                    - pyunits.convert(b.side_2.properties_in[t].temperature,
+                                      to_units=t_units)
                 )
 
         ########################################################################
@@ -361,7 +382,9 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         @self.Constraint(self.flowsheet().config.time)
         def unit_heat_balance(b, t):
-            return 0 == self.side_1.heat[t] + self.side_2.heat[t]
+            return 0 == (self.side_1.heat[t] +
+                         pyunits.convert(self.side_2.heat[t],
+                                         to_units=q_units))
 
         ########################################################################
         # Add delta T calculations using callack function, lots of options,    #
@@ -377,9 +400,11 @@ class HeatExchangerData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return 0 == (f[t] * u[t] * a * deltaT[t] - q[t]) * scale
+                return 0 == (f[t] * u[t] * a * deltaT[t] -
+                             pyunits.convert(q[t], to_units=q_units)) * scale
             else:
-                return 0 == (u[t] * a * deltaT[t] - q[t]) * scale
+                return 0 == (u[t] * a * deltaT[t] -
+                             pyunits.convert(q[t], to_units=q_units)) * scale
 
         ########################################################################
         # Add symbols for LaTeX equation rendering                             #
@@ -446,7 +471,23 @@ class HeatExchangerData(UnitModelBlockData):
             pass
 
         self.heat_transfer_equation.deactivate()
-        self.side_2.heat.fix(duty)
+
+        # Get side 1 and side 2 heat units, and convert duty as needed
+        s1_units = self.side_1.heat.get_units()
+        s2_units = self.side_2.heat.get_units()
+
+        if s1_units is None or s2_units is None:
+            # Backwards compatability for unitless property packages
+            s2_duty = duty
+        else:
+            s2_duty = pyunits.convert_value(duty,
+                                            from_units=s1_units,
+                                            to_units=s2_units)
+
+        self.side_2.heat.fix(s2_duty)
+        for i in self.side_1.heat:
+            self.side_1.heat[i].value = -duty
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
