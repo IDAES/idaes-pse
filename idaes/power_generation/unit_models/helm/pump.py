@@ -98,7 +98,7 @@ class HelmPumpData(BalanceBlockData):
             initialize=0.9,
             doc="Pump efficiency"
         )
-        eff.fix()
+        #eff.fix()
         self.efficiency_isentropic = pyo.Reference(self.efficiency_pump[:])
 
         pratio = self.ratioP = pyo.Var(
@@ -190,6 +190,8 @@ class HelmPumpData(BalanceBlockData):
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)

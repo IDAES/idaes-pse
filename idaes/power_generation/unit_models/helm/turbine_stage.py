@@ -83,4 +83,4 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
     def calculate_scaling_factors(self):
-        pass # there are not variables or constraints so do nothing for now
+        super().calculate_scaling_factors()

@@ -205,7 +205,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 self.flow_coeff[t] = cf[t]
 
     def calculate_scaling_factors(self):
-
+        super().calculate_scaling_factors()
         for t, c in self.inlet_flow_constraint.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)**2

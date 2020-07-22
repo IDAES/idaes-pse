@@ -1,4 +1,5 @@
 from idaes.power_generation.unit_models.helm.splitter import HelmSplitter
+from idaes.power_generation.unit_models.helm.valve_steam import HelmValve, ValveFunctionType
 from idaes.power_generation.unit_models.helm.mixer import HelmMixer
 from idaes.generic_models.unit_models import MomentumMixingType
 from idaes.power_generation.unit_models.helm.compressor import HelmIsentropicCompressor

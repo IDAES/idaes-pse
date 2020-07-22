@@ -19,14 +19,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 import copy
 
-from pyomo.environ import (
-    RangeSet,
-    Set,
-    TransformationFactory,
-    Var,
-    value,
-    SolverFactory,
-)
+import pyomo.environ as pyo
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -239,7 +232,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             "property_package_args": config.property_package_args,
         }
         ni = self.config.num_parallel_inlet_stages
-        inlet_idx = self.inlet_stage_idx = RangeSet(ni)
+        inlet_idx = self.inlet_stage_idx = pyo.RangeSet(ni)
 
         # Adding unit models
         # ------------------------
@@ -253,9 +246,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         self.inlet_mix = HelmMixer(default=self._mix_cfg(unit_cfg, ni))
         # add turbine sections.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
-        self.hp_stages = HelmTurbineStage(RangeSet(config.num_hp), default=unit_cfg)
-        self.ip_stages = HelmTurbineStage(RangeSet(config.num_ip), default=unit_cfg)
-        self.lp_stages = HelmTurbineStage(RangeSet(config.num_lp), default=unit_cfg)
+        self.hp_stages = HelmTurbineStage(pyo.RangeSet(config.num_hp), default=unit_cfg)
+        self.ip_stages = HelmTurbineStage(pyo.RangeSet(config.num_ip), default=unit_cfg)
+        self.lp_stages = HelmTurbineStage(pyo.RangeSet(config.num_lp), default=unit_cfg)
         self.outlet_stage = HelmTurbineOutletStage(default=unit_cfg)
 
         for i in self.hp_stages:
@@ -390,9 +383,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             return _rule
 
         # Create initial arcs index sets with all possible streams
-        self.hp_stream_idx = Set(initialize=self.hp_stages.index_set() * [1, 2])
-        self.ip_stream_idx = Set(initialize=self.ip_stages.index_set() * [1, 2])
-        self.lp_stream_idx = Set(initialize=self.lp_stages.index_set() * [1, 2])
+        self.hp_stream_idx = pyo.Set(initialize=self.hp_stages.index_set() * [1, 2])
+        self.ip_stream_idx = pyo.Set(initialize=self.ip_stages.index_set() * [1, 2])
+        self.lp_stream_idx = pyo.Set(initialize=self.lp_stages.index_set() * [1, 2])
 
         # Throw out unneeded streams for disconnected stages or no splitter
         _arc_indexes(
@@ -487,7 +480,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 source=self.lp_stages[last_lp].outlet,
                 destination=self.outlet_stage.inlet,
             )
-        TransformationFactory("network.expand_arcs").apply_to(self)
+        pyo.TransformationFactory("network.expand_arcs").apply_to(self)
 
     def _split_cfg(self, unit_cfg, no=2):
         """
@@ -566,10 +559,10 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             else:
                 if copy_disconneted_flow:
                     for t in stages[i].inlet.flow_mol:
-                        stages[i].inlet.flow_mol[t] = value(prev_port.flow_mol[t])
+                        stages[i].inlet.flow_mol[t] = pyo.value(prev_port.flow_mol[t])
                 if copy_disconneted_pressure:
                     for t in stages[i].inlet.pressure:
-                        stages[i].inlet.pressure[t] = value(prev_port.pressure[t])
+                        stages[i].inlet.pressure[t] = pyo.value(prev_port.pressure[t])
             stages[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
             prev_port = stages[i].outlet
             if i in splits:
@@ -724,9 +717,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             icf = {}
             for i in self.inlet_stage:
                 for t in self.inlet_stage[i].flow_coeff:
-                    icf[i,t] = value(self.inlet_stage[i].flow_coeff[t])
+                    icf[i,t] = pyo.value(self.inlet_stage[i].flow_coeff[t])
         if calculate_outlet_cf:
-            ocf = value(self.outlet_stage.flow_coeff)
+            ocf = pyo.value(self.outlet_stage.flow_coeff)
 
         from_json(self, sd=istate, wts=sp)
 

@@ -21,6 +21,7 @@ from pyomo.environ import (
     RangeSet,
     SolverFactory,
     Var,
+    value
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -45,6 +46,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.generic_models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
+import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -193,12 +195,11 @@ between flow and pressure driven simulations.}""",
 
         @self.Constraint(self.flowsheet().config.time)
         def energy_balance(b, t):
-            return self.mixed_state[t].enth_mol == sum(
-                self.inlet_blocks[i][t].enth_mol*
-                self.inlet_blocks[i][t].flow_mol/
-                sum(self.inlet_blocks[i][t].flow_mol for i in self.inlet_list)
-                for i in self.inlet_list
-            )
+            return self.mixed_state[t].enth_mol*self.mixed_state[t].flow_mol == \
+                sum(self.inlet_blocks[i][t].enth_mol
+                    * self.inlet_blocks[i][t].flow_mol
+                    for i in self.inlet_list
+                )
 
         mmx_type = self.config.momentum_mixing_type
         if mmx_type == MomentumMixingType.minimize:
@@ -421,30 +422,47 @@ between flow and pressure driven simulations.}""",
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        for i, b in self.inlet_blocks.items():
-            for t in b:
-                b[t].pressure.fix()
-                b[t].enth_mol.fix()
-                b[t].flow_mol.fix()
+        for b in self.inlet_blocks.values():
+            for bdat in b.values():
+                bdat.pressure.fix()
+                bdat.enth_mol.fix()
+                bdat.flow_mol.fix()
         self.outlet.unfix()
+
+        for t, v in self.outlet.pressure.items():
+            if not v.fixed:
+                v.value = min([value(
+                    self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks])
 
         if (hasattr(self, "pressure_equality_constraints") and
             self.pressure_equality_constraints.active
         ):
             # If using the equal pressure constraint fix the outlet and free
             # the inlet pressures, this is typical for pressure driven flow
-            for t in self.flowsheet().time:
-                for i, b in self.inlet_blocks.items():
-                    b[t].pressure.unfix()
+            for i, b in self.inlet_blocks.items():
+                for bdat in b.values():
+                    bdat.pressure.unfix()
             self.outlet.pressure.fix()
-        else:
-            # If the outlet pressure is the minimum of the inlet pressures
-            # fix the inlet pressures (already done), this is typlical for flow
-            # driven models, or if there is no pressure constraint, assume a
-            # resonable outlet pressure value was provided before initializtion
-            pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        for t, c in self.mass_balance.items():
+            s = iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
+            iscale.constraint_scaling_transform(c, s)
+        for t, c in self.energy_balance.items():
+            s = iscale.get_scaling_factor(self.mixed_state[t].enth_mol)
+            s *= iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
+            iscale.constraint_scaling_transform(c, s)
+        if hasattr(self, "minimum_pressure_constraint"):
+            for t, c in self.minimum_pressure_constraint.items():
+                s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
+                iscale.constraint_scaling_transform(c, s)
+        if hasattr(self, "pressure_equality_constraints"):
+            for (t, i), c in self.pressure_equality_constraints.items():
+                s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
+                iscale.constraint_scaling_transform(c, s)

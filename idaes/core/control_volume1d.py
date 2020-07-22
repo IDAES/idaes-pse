@@ -1775,6 +1775,7 @@ argument)."""))
                 the report method.""")
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
         # Default scale factors
         deltaP_sf_default = 1e-3*10
         heat_sf_default = 1e-6*10

@@ -741,6 +741,7 @@ class FlueGasStateBlockData(StateBlockData):
                 _log_error(f"{v} is above upper bound in {self.name}")
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
         # Grab default scale factors for anything not explicitly specified.
         t = (Constraint, Var, Expression)
         for v in self.component_data_objects(t, descend_into=False):

@@ -1271,6 +1271,7 @@ class HelmholtzStateBlockData(StateBlockData):
         pass
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
         # Get scaling factor defaults, if no scaling factor set
         t = (Constraint, Var, Expression, Param)
         for v in self.component_data_objects(t, descend_into=False):

@@ -1539,6 +1539,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
         # Default scale factors
         heat_sf_default = 1e-6
         work_sf_default = 1e-6

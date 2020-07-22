@@ -416,6 +416,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         module.hx_costing(self.costing)
 
     def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        
         area_sf_default = 1e-2
         overall_heat_transfer_coefficient_sf_default = 1e-2
 
@@ -447,5 +449,5 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
-                self.hot_side.properties_in[t].enth_mol_phase["Liq"])
+                self.hot_side.properties_out[t].enth_mol)
             iscale.constraint_scaling_transform(c, sf)

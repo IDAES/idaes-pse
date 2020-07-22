@@ -21,9 +21,17 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
 )
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from enum import Enum
 
 
 _log = idaeslog.getLogger(__name__)
+
+
+class ValveFunctionType(Enum):
+    linear = 1
+    quick_opening = 2
+    equal_percentage = 3
+    custom = 4
 
 
 def _assert_properties(pb):
@@ -39,10 +47,44 @@ def _assert_properties(pb):
         raise
 
 
-@declare_process_block_class("HelmIsentropicTurbine")
-class HelmIsentropicTurbineData(BalanceBlockData):
+def _linear_rule(b, t):
+    return b.valve_opening[t]
+
+
+def _quick_open_rule(b, t):
+    return sqrt(b.valve_opening[t])
+
+
+def _equal_percentage_rule(b, t):
+    return b.alpha ** (b.valve_opening[t] - 1)
+
+
+def _liquid_pressure_flow_rule(b, t):
     """
-    Basic isentropic 0D turbine model.  This inherits the heater block to get
+    For liquid F = Cv*sqrt(Pi**2 - Po**2)*f(x)
+    """
+    Po = b.control_volume.properties_out[t].pressure
+    Pi = b.control_volume.properties_in[t].pressure
+    F = b.control_volume.properties_in[t].flow_mol
+    fun = b.valve_function[t]
+    return F ** 2 == b.Cv ** 2 * (Pi - Po) * fun ** 2
+
+
+def _vapor_pressure_flow_rule(b, t):
+    """
+    For vapor F = Cv*sqrt(Pi**2 - Po**2)*f(x)
+    """
+    Po = b.control_volume.properties_out[t].pressure
+    Pi = b.control_volume.properties_in[t].pressure
+    F = b.control_volume.properties_in[t].flow_mol
+    fun = b.valve_function[t]
+    return F ** 2 == b.Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
+
+
+@declare_process_block_class("HelmValve")
+class HelmValveData(BalanceBlockData):
+    """
+    Basic adiabatic 0D valve model.  This inherits the balance block to get
     a lot of unit model boilerplate and the mass balance, enegy balance and
     pressure equations.  This model is intended to be used only with Helmholtz
     EOS property pacakges in mixed or single phase mode with P-H state vars.
@@ -54,7 +96,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
     1) Mass Balance:
         0 = flow_mol_in[t] - flow_mol_out[t]
     2) Energy Balance:
-        0 = (flow_mol[t]*h_mol[t])_in - (flow_mol[t]*h_mol[t])_out + Q_in + W_in
+        0 = (flow_mol[t]*h_mol[t])_in - (flow_mol[t]*h_mol[t])_out
     3) Pressure:
         0 = P_in[t] + deltaP[t] - P_out[t]
     """
@@ -71,13 +113,45 @@ class HelmIsentropicTurbineData(BalanceBlockData):
     CONFIG.has_pressure_change = True
     CONFIG.get("has_pressure_change")._default = True
     CONFIG.get("has_pressure_change")._domain = In([True])
-    CONFIG.has_work_transfer = True
-    CONFIG.get("has_work_transfer")._default = True
-    CONFIG.get("has_work_transfer")._domain = In([True])
+    CONFIG.has_work_transfer = False
+    CONFIG.get("has_work_transfer")._default = False
+    CONFIG.get("has_work_transfer")._domain = In([False])
     CONFIG.has_heat_transfer = False
     CONFIG.get("has_heat_transfer")._default = False
     CONFIG.get("has_heat_transfer")._domain = In([False])
-
+    CONFIG.declare(
+        "valve_function",
+        ConfigValue(
+            default=ValveFunctionType.linear,
+            domain=In(ValveFunctionType),
+            description="Valve function type, if custom provide an expression rule",
+            doc="""The type of valve function, if custom provide an expression rule
+with the valve_function_rule argument.
+**default** - ValveFunctionType.linear
+**Valid values** - {
+ValveFunctionType.linear,
+ValveFunctionType.quick_opening,
+ValveFunctionType.equal_percentage,
+ValveFunctionType.custom}""",
+        ),
+    )
+    CONFIG.declare(
+        "valve_function_rule",
+        ConfigValue(
+            default=None,
+            description="This is a rule that returns a time indexed valve function expression.",
+            doc="""This is a rule that returns a time indexed valve function expression.
+This is required only if valve_function==ValveFunctionType.custom""",
+        ),
+    )
+    CONFIG.declare(
+        "phase",
+        ConfigValue(
+            default="Vap",
+            domain=In(("Vap", "Liq")),
+            description='Expected phase of fluid in valve in {"Liq", "Vap"}',
+        ),
+    )
 
     def build(self):
         """
@@ -93,61 +167,44 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         _assert_properties(config.property_package)
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
-        eff = self.efficiency_isentropic = pyo.Var(
+        self.valve_opening = pyo.Var(
             self.flowsheet().config.time,
-            initialize=0.9,
-            doc="Isentropic efficiency"
+            initialize=1,
+            doc="Fraction open for valve from 0 to 1",
         )
-        eff.fix()
+        self.Cv = pyo.Var(
+            initialize=0.1,
+            doc="Valve flow coefficent, for vapor "
+            "[mol/s/Pa] for liquid [mol/s/Pa^0.5]",
+        )
+        #self.Cv.fix()
 
-        pratio = self.ratioP = pyo.Var(
-            self.flowsheet().config.time,
-            initialize=0.7,
-            doc="Ratio of outlet to inlet pressure"
+        # set up the valve function rule.  I'm not sure these matter too much
+        # for us, but the options are easy enough to provide.
+        if self.config.valve_function == ValveFunctionType.linear:
+            rule = _linear_rule
+        elif self.config.valve_function == ValveFunctionType.quick_opening:
+            rule = _quick_open_rule
+        elif self.config.valve_function == ValveFunctionType.equal_percentage:
+            self.alpha = Var(initialize=1, doc="Valve function parameter")
+            self.alpha.fix()
+            rule = equal_percentage_rule
+        else:
+            rule = self.config.valve_function_rule
+
+        self.valve_function = pyo.Expression(
+            self.flowsheet().config.time, rule=rule, doc="Valve function expression"
         )
 
-        # Some shorter refernces to property blocks
-        properties_in = self.control_volume.properties_in
-        properties_out = self.control_volume.properties_out
+        if self.config.phase == "Liq":
+            rule = _liquid_pressure_flow_rule
+        else:
+            rule = _vapor_pressure_flow_rule
 
-        @self.Expression(
-            self.flowsheet().config.time,
-            doc="Outlet isentropic enthalpy"
+        self.pressure_flow_equation = pyo.Constraint(
+            self.flowsheet().config.time, rule=rule
         )
-        def h_is(b, t):
-            return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
-        @self.Expression(
-            self.flowsheet().config.time,
-            doc="Isentropic enthalpy change"
-        )
-        def delta_enth_isentropic(b, t):
-            return self.h_is[t] - properties_in[t].enth_mol
-
-        @self.Expression(
-            self.flowsheet().config.time,
-            doc="Isentropic work"
-        )
-        def work_isentropic(b, t):
-            return properties_in[t].flow_mol*(
-                properties_in[t].enth_mol - self.h_is[t])
-
-        @self.Expression(
-            self.flowsheet().config.time,
-            doc="Outlet enthalpy"
-        )
-        def h_o(b, t): # Early access to the outlet enthalpy and work
-            return properties_in[t].enth_mol - eff[t]*(
-                properties_in[t].enth_mol - self.h_is[t])
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_work(b, t): # Work from energy balance
-            return properties_out[t].enth_mol == self.h_o[t]
-
-        @self.Constraint(self.flowsheet().config.time)
-        def eq_pressure_ratio(b, t):
-            return (pratio[t]*properties_in[t].pressure ==
-                properties_out[t].pressure)
 
     def _get_performance_contents(self, time_point=0):
         """This returns a dictionary of quntities to be used in IDAES unit model
@@ -179,34 +236,20 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         # Check for alternate pressure specs
         for t in self.flowsheet().config.time:
             if self.outlet.pressure[t].fixed:
-                self.ratioP[t] = pyo.value(
-                    self.outlet.pressure[t]/self.inlet.pressure[t])
-            elif self.control_volume.deltaP[t].fixed:
-                self.ratioP[t] = pyo.value(
-                    (self.control_volume.deltaP[t] + self.inlet.pressure[t])/
-                    self.inlet.pressure[t]
-                )
-        # Fix the variables we base the initializtion on and free the rest.
-        # This requires good values to be provided for pressure, efficency,
-        # and inlet conditions, but it is simple and reliable.
+                self.deltaP[t].fix(pyo.value(
+                    self.outlet.pressure[t] - self.inlet.pressure[t]))
+                self.outlet.pressure[t].unfix()
+            elif self.deltaP[t].fixed:
+                # No outlet pressure specified guess a small pressure drop
+                self.outlet.pressure[t] = pyo.value(
+                    self.inlet.pressure[t] + self.deltaP[t])
+
         self.inlet.fix()
         self.outlet.unfix()
-        self.ratioP.fix()
-        self.deltaP.unfix()
-        self.efficiency_isentropic.fix()
-        for t in self.flowsheet().config.time:
-            self.outlet.pressure[t] = pyo.value(
-                self.inlet.pressure[t]*self.ratioP[t])
-            self.deltaP[t] = pyo.value(
-                self.outlet.pressure[t] - self.inlet.pressure[t])
+        for t, v in self.deltaP.items():
+            if v.fixed:
+                self.inlet.flow_mol[t].unfix()
 
-            self.outlet.enth_mol[t] = pyo.value(self.h_o[t])
-            self.control_volume.work[t] = pyo.value(
-                self.inlet.flow_mol[t]*self.inlet.enth_mol[t] -
-                self.outlet.flow_mol[t]*self.outlet.enth_mol[t]
-            )
-            self.outlet.flow_mol[t] = pyo.value(self.inlet.flow_mol[t])
-        # Solve the model (should be already solved from above)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
@@ -214,11 +257,9 @@ class HelmIsentropicTurbineData(BalanceBlockData):
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         
-        for t, c in self.eq_pressure_ratio.items():
+        for t, c in self.pressure_flow_equation.items():
             s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
-        for t, c in self.eq_work.items():
-            s = iscale.get_scaling_factor(
-                self.control_volume.work[t])
+                self.control_volume.properties_in[t].flow_mol)
+            if self.config.phase == "Vap":
+                s = s ** 2
             iscale.constraint_scaling_transform(c, s)
