@@ -621,7 +621,7 @@ class KrigingModel:
         var_list = []
         for i in variable_headers:
             var_list.append(variable_headers[i])
-        eqn = self.kriging_generate_expression(var_list)
+        eqn = self.generate_expression(var_list)
 
         double_line = "=" * 120
         s = (f"\n{double_line}"
