@@ -104,7 +104,7 @@ def set_scaling_factor(c, v, data_objects=True):
             suf[cdat] = v
 
 
-def get_scaling_factor(c, default=None):
+def get_scaling_factor(c, default=None, warning=False, exception=False):
     """Get a component scale factor.
 
     Args:
@@ -114,6 +114,11 @@ def get_scaling_factor(c, default=None):
     try:
         sf = c.parent_block().scaling_factor.get(c, default)
     except AttributeError:
+        if warning:
+            _log.warning(f"Accessing missing scale factor for {c}")
+        if exception:
+            _log.error(f"Accessing missing scale factor for {c}")
+            raise
         sf = default
     return sf
 
