@@ -19,20 +19,14 @@ var paper = new joint.dia.Paper({
     interactive: true
 });
 
-// Get the model from the div tag (see the html file for an explanation)
-var data_model = $("#model").data("model");
-var model_id = data_model.model.id;
-var url = "/fs?id=".concat(model_id)
-renderModel(data_model)
+var paperScroller = new joint.ui.PaperScroller({
+    paper: paper,
+    autoResizePaper: true,
+    scrollWhileDragging: true,
+    cursor: 'grab'
+});
 
-// var paperScroller = new joint.ui.PaperScroller({
-//     paper: paper,
-//     autoResizePaper: true,
-//     scrollWhileDragging: true,
-//     cursor: 'grab'
-// });
-
-// $("#idaes-canvas")[0].append(paperScroller.render().el);
+$("#idaes-canvas")[0].append(paperScroller.render().el);
 
 var toolbar = new joint.ui.Toolbar({
     autoToggle: true,
@@ -42,12 +36,12 @@ var toolbar = new joint.ui.Toolbar({
     tools: [
         { type: 'toggle', name: 'labels', label: 'Labels' },
         { type: 'separator' },
-        { type: 'button', name: 'zoomIn', text: 'Zoom In'}
+        { type: 'button', name: 'save', text: 'Save'},
+        { type: 'separator' },
+        { type: 'button', name: 'svg', text: 'Export SVG'},
+        { type: 'separator' },
+        { type: 'button', name: 'help', text: 'Help'},
     ]
-});
-
-toolbar.on('zoomIn:click', function(value, event) {
-    paperScroller.zoom(0.2, { max: 4 });
 });
 
 toolbar.on('labels:change', function(value, event) {
@@ -81,6 +75,43 @@ toolbar.on('labels:change', function(value, event) {
             });
         });
     }
+});
+
+toolbar.on('save:pointerclick', function(event) {
+    $.ajax({
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(graph.toJSON()),
+        dataType: 'json',
+        url: url,
+        beforeSend: function(request) {
+            request.setRequestHeader("Source", "save_button");
+        },
+        success: function (e) {
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+});
+
+toolbar.on('svg:pointerclick', function(event) {
+    paper.toSVG(function(svg) {
+        new joint.ui.Lightbox({
+            image: 'data:image/svg+xml,' + encodeURIComponent(svg),
+            downloadable: true,
+            fileName: model_id.concat(".svg")
+        }).open();
+    }, {
+        preserveDimensions: true,
+        convertImagesToDataUris: true,
+        useComputedStyles: true,
+        stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+    });
+});
+
+toolbar.on('help:pointerclick', function(event) {
+    window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
 });
 
 $('#toolbar-container').append(toolbar.render().el);
@@ -164,6 +195,11 @@ function renderModel(model) {
     graph.fromJSON(model);
 }
 
+// Get the model from the div tag (see the html file for an explanation)
+var data_model = $("#model").data("model");
+var model_id = data_model.model.id;
+var url = "/fs?id=".concat(model_id)
+renderModel(data_model)
 
 // // Set up the help button
 // // Not implemented yet
@@ -204,28 +240,11 @@ paper.on("link:contextmenu", function(linkView, evt) {
     }
 });
 
-// When the save button is clicked send a post request to the server with the layout
-// We still need to differentiate between the saving the layout in the server and the
-// save button save
-// I (Makayla) assume that we'll need to modify this to send a signal or something to the server to
-// save the json to a file.
 $(document).ready( function() {
-    $('#save_button').click(function() {
-       $.ajax({
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(graph.toJSON()),
-            dataType: 'json',
-            url: url,
-            beforeSend: function(request) {
-                request.setRequestHeader("Source", "save_button");
-            },
-            success: function (e) {
-            },
-            error: function(error) {
-                console.log(error);
-            }
-        });
+    $(window).resize(function() {
+        var canvas = $("#idaes-canvas")[0].getBoundingClientRect();
+        paper.setDimensions(canvas.width, canvas.height);
+
     });
 
 });
