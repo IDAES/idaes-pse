@@ -139,12 +139,21 @@ class PropertyClassMetadata(object):
 
     def __init__(self):
         self._default_units = _base_units.copy()
+        self._derived_units = None
         self._properties = {}
         self._required_properties = {}
 
     @property
     def default_units(self):
         return self._default_units
+
+    @property
+    def derived_units(self):
+        # this will return a PropertyPackageError if used on a property package
+        # which has not defined units.
+        if self._derived_units is None:
+            self._create_derived_units()
+        return self._derived_units
 
     @property
     def properties(self):
@@ -243,26 +252,44 @@ class PropertyClassMetadata(object):
         base_units = self.default_units
         if (isinstance(base_units["mass"], str) or
                 base_units["mass"] is None):
+            # If one entry is not a units object, then none will be
             # Backwards compatability for pre-units property packages
             return None
         else:
-            return getattr(self, "_"+units)()
+            return self.derived_units[units]
 
-    def _area(self):
-        return self.default_units["length"]**2
-
-    def _heat_transfer_coefficient(self):
-        return (self.default_units["mass"] *
-                self.default_units["time"]**-3 *
-                self.default_units["temperature"]**-1)
-
-    def _power(self):
-        return (self.default_units["mass"] *
-                self.default_units["length"]**2 *
-                self.default_units["time"]**-3)
-
-    def _temperature(self):
-        return self.default_units["temperature"]
+    def _create_derived_units(self):
+        try:
+            self._derived_units = {
+                "length": self.default_units["length"],
+                "area": self.default_units["length"]**2,
+                "volume": self.default_units["length"]**3,
+                "density_mass": (self.default_units["mass"] *
+                                 self.default_units["length"]**-3),
+                "density_mole": (self.default_units["amount"] *
+                                 self.default_units["length"]**-3),
+                "energy": (self.default_units["mass"] *
+                           self.default_units["length"]**2 *
+                           self.default_units["time"]**-2),
+                "entropy": (self.default_units["mass"] *
+                            self.default_units["length"]**2 *
+                            self.default_units["time"]**-2 *
+                            self.default_units["temperature"]),
+                "power": (self.default_units["mass"] *
+                          self.default_units["length"]**2 *
+                          self.default_units["time"]**-3),
+                "pressure": (self.default_units["mass"] *
+                             self.default_units["length"]**-1 *
+                             self.default_units["time"]**-2),
+                "temperature": self.default_units["temperature"],
+                "heat_transfer_coefficient":
+                    (self.default_units["mass"] *
+                     self.default_units["time"]**-3 *
+                     self.default_units["temperature"]**-1)}
+        except TypeError:
+            raise PropertyPackageError(
+                "{} cannot determine derived units, as property package has "
+                "not defined a set of base units.".format(self.name))
 
 
 class PropertyMetadata(dict):

@@ -48,7 +48,6 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.units import base_units
 
 _log = idaeslog.getLogger(__name__)
 
