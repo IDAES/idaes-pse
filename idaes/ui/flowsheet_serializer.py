@@ -97,24 +97,15 @@ class FlowsheetSerializer:
         for component in flowsheet.component_objects(Block, descend_into=True):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
-                self.unit_models[component] = {
-                    "name": component.getname(), 
-                    "type": component._orig_module.split(".")[-1]
-                }
-                for subcomponent in component.component_objects(Port, descend_into=True):
-                    self.ports[subcomponent] = component
+                self._add_unit_model_with_ports(component)
             else:
+                # some unit models are nested within Indexed blocks
                 component_object_op = getattr(component, "component_object", None)
                 if not callable(component_object_op):
                     for item in component.parent_component().values():
                         if isinstance(item, UnitModelBlockData):
                             if any((item == arc.source.parent_block() or item == arc.dest.parent_block()) for arc in self.arcs.values()):
-                                self.unit_models[item] = {
-                                    "name": item.getname(), 
-                                    "type": item._orig_module.split(".")[-1]
-                                }
-                                for subcomponent in item.component_objects(Port, descend_into=True):
-                                    self.ports[subcomponent] = item
+                                self._add_unit_model_with_ports(item)
   
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
@@ -284,3 +275,12 @@ class FlowsheetSerializer:
                 name,
                 self.labels[name]
             )
+
+    def _add_unit_model_with_ports(self, unit):
+        self.unit_models[unit] = {
+                "name": unit.getname(),
+                "type": unit._orig_module.split(".")[-1]
+            }
+        for subcomponent in unit.component_objects(Port, descend_into=True):
+            self.ports[subcomponent] = unit
+
