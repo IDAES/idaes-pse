@@ -956,7 +956,7 @@ class RadialBasisFunctions:
         y_prediction_unscaled = self.y_data_min + y_prediction_scaled * (self.y_data_max - self.y_data_min)
         return y_prediction_unscaled
 
-    def rbf_generate_expression(self, variable_list):
+    def generate_expression(self, variable_list):
         """
         The ``rbf_generate_expression`` method returns the Pyomo expression for the RBF model trained.
 
