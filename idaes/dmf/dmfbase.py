@@ -340,6 +340,12 @@ class DMF(workspace.Workspace, HasTraits):
     def datafiles_path(self):
         return self._datafile_path
 
+    @property
+    def workspace_path(self) -> pathlib.Path:
+        """Path to workspace directory.
+        """
+        return pathlib.Path(self.root)
+
     def new(
         self,
         file: Union[str, pathlib.Path] = None,

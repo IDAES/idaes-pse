@@ -53,7 +53,7 @@ def teardown_module(module):
 def test_create_relation_in_resource():
     a = resource.Resource()
     b = resource.Resource()
-    resource.create_relation_args(a, "contains", b)
+    resource.create_relation(a, "contains", b)
     assert len(a.v["relations"]) == 1
     assert len(b.v["relations"]) == 1
     # bad type
@@ -111,7 +111,7 @@ def test_find_related():
     dmf = DMF(path=tmp_dir, create=True)
     r = [resource.Resource({"name": "r{}".format(i)}) for i in range(5)]
     # r3 <-- derived <-- r2 <-- version <-- r1
-    cr = resource.create_relation_args  # shortcut
+    cr = resource.create_relation  # shortcut
     cr(r[2], resource.PR_DERIVED, r[3])
     cr(r[1], resource.PR_VERSION, r[2])
     # r4 <-- derived <-- r2
@@ -145,9 +145,9 @@ def test_circular():
     tmp_dir = scratch_path / "circular"
     dmf = DMF(path=tmp_dir, create=True)
     r = [resource.Resource({"name": "r{}".format(i)}) for i in range(3)]
-    resource.create_relation_args(r[0], resource.PR_DERIVED, r[1])
-    resource.create_relation_args(r[1], resource.PR_DERIVED, r[2])
-    resource.create_relation_args(r[2], resource.PR_USES, r[0])
+    resource.create_relation(r[0], resource.PR_DERIVED, r[1])
+    resource.create_relation(r[1], resource.PR_DERIVED, r[2])
+    resource.create_relation(r[2], resource.PR_USES, r[0])
     for rr in r:
         dmf.add(rr)
     # outgoing from r0

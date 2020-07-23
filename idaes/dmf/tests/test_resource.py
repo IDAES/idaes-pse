@@ -210,7 +210,7 @@ def test_create_relation(default_resource, example_resource):
     assert r2.v["relations"][0]["identifier"] == r1.v[r2.ID_FIELD]
     # some errors
     with pytest.raises(ValueError):
-        resource.create_relation_args("foo", "bad predicate", "bar")
+        resource.create_relation("foo", "bad predicate", "bar")
     # delete relation from subject to test duplicate check for object
     r1.v["relations"] = []
     with pytest.raises(ValueError):  # dup raises ValueError
