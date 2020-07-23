@@ -47,7 +47,8 @@ class mole_frac_power_law_equil():
                 ppack.phase_list,
                 ppack.component_list,
                 initialize=order_init,
-                doc="Reaction order")
+                doc="Reaction order",
+                units=None)
 
     def return_expression(b, rblock, r_idx, T):
         e = None

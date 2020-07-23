@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, log, Var
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -64,6 +64,11 @@ def m():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -95,6 +100,11 @@ def m_sol():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -157,8 +167,8 @@ def test_dens_mol_phase_liq(m):
 @pytest.mark.unit
 def test_dens_mol_phase_vap(m):
     assert str(Ideal.dens_mol_phase(m.props[1], "Vap")) == (
-            str(m.props[1].pressure)+"/(8.314462618*J/mol/K*" +
-            str(m.props[1].temperature)+")")
+            'props[1].pressure/(kg * m ** 2 / K / mol / s ** 2/J / K / '
+            'mol*(8.314462618*J/mol/K)*props[1].temperature)')
 
 
 @pytest.mark.unit
@@ -214,10 +224,10 @@ def test_entr_mol_phase_comp(m):
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(
-            42 - const.gas_constant*log(
-                m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure /
-                m.props[1].params.pressure_ref))
+        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == (
+            '42 - kg * m ** 2 / K / mol / s ** 2/J / K / '
+            'mol*(8.314462618*J/mol/K)*log(props[1].mole_frac_phase_comp'
+            '[Vap,{}]*props[1].pressure/params.pressure_ref)'.format(j))
 
 
 @pytest.mark.unit

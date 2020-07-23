@@ -16,72 +16,146 @@ Methods for calculating pure component properties from:
 The Properties of Gases & Liquids, 4th Edition
 Reid, Prausnitz and Polling, 1987, McGraw-Hill
 
-All parameter indicies based on conventions used by the source
+All parameter indicies and units based on conventions used by the source
 """
-from pyomo.environ import exp, log, Var
+from pyomo.environ import exp, log, Var, units as pyunits
+
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
 
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 class cp_mol_ig_comp():
     def build_parameters(cobj):
-        cobj.cp_mol_ig_comp_coeff = Var(
-                ['A', 'B', 'C', 'D'],
-                initialize=cobj.config.parameter_data["cp_mol_ig_comp_coeff"],
-                doc="Parameters for ideal gas molar heat capacity")
+        cobj.cp_mol_ig_comp_coeff_A = Var(
+                doc="Parameter A for ideal gas molar heat capacity",
+                units=pyunits.J/pyunits.mol/pyunits.K)
+        set_param_value(cobj,
+                        param="cp_mol_ig_comp_coeff",
+                        units=pyunits.J/pyunits.mol/pyunits.K,
+                        index="A")
+
+        cobj.cp_mol_ig_comp_coeff_B = Var(
+                doc="Parameter B for ideal gas molar heat capacity",
+                units=pyunits.J/pyunits.mol/pyunits.K**2)
+        set_param_value(cobj,
+                        param="cp_mol_ig_comp_coeff",
+                        units=pyunits.J/pyunits.mol/pyunits.K**2,
+                        index="B")
+
+        cobj.cp_mol_ig_comp_coeff_C = Var(
+                doc="Parameter C for ideal gas molar heat capacity",
+                units=pyunits.J/pyunits.mol/pyunits.K**3)
+        set_param_value(cobj,
+                        param="cp_mol_ig_comp_coeff",
+                        units=pyunits.J/pyunits.mol/pyunits.K**3,
+                        index="C")
+
+        cobj.cp_mol_ig_comp_coeff_D = Var(
+                doc="Parameter D for ideal gas molar heat capacity",
+                units=pyunits.J/pyunits.mol/pyunits.K**4)
+        set_param_value(cobj,
+                        param="cp_mol_ig_comp_coeff",
+                        units=pyunits.J/pyunits.mol/pyunits.K**4,
+                        index="D")
 
     def return_expression(b, cobj, T):
         # Specific heat capacity
-        return (cobj.cp_mol_ig_comp_coeff["D"]*T**3 +
-                cobj.cp_mol_ig_comp_coeff["C"]*T**2 +
-                cobj.cp_mol_ig_comp_coeff["B"]*T +
-                cobj.cp_mol_ig_comp_coeff["A"])
+        T = pyunits.convert(T, to_units=pyunits.K)
+
+        cp = (cobj.cp_mol_ig_comp_coeff_D*T**3 +
+              cobj.cp_mol_ig_comp_coeff_C*T**2 +
+              cobj.cp_mol_ig_comp_coeff_B*T +
+              cobj.cp_mol_ig_comp_coeff_A)
+
+        base_units = b.params.get_metadata().default_units
+        cp_units = (base_units["mass"] *
+                    base_units["length"]**2 *
+                    base_units["time"]**-2 *
+                    base_units["amount"]**-1 *
+                    base_units["temperature"]**-1)
+        return pyunits.convert(cp, cp_units)
 
 
 class enth_mol_ig_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
+        base_units = cobj.parent_block().get_metadata().default_units
+        h_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1)
+
         cobj.enth_mol_form_vap_comp_ref = Var(
-                initialize=cobj.config.parameter_data[
-                    "enth_mol_form_vap_comp_ref"],
-                doc="Vapor phase molar heat of formation @ Tref")
+                doc="Vapor phase molar heat of formation @ Tref",
+                units=h_units)
+        set_param_value(cobj,
+                        param="enth_mol_form_vap_comp_ref",
+                        units=h_units)
 
     def return_expression(b, cobj, T):
         # Specific enthalpy
-        return ((cobj.cp_mol_ig_comp_coeff["D"]/4) *
-                (T**4-b.params.temperature_ref**4) +
-                (cobj.cp_mol_ig_comp_coeff["C"]/3) *
-                (T**3-b.params.temperature_ref**3) +
-                (cobj.cp_mol_ig_comp_coeff["B"]/2) *
-                (T**2-b.params.temperature_ref**2) +
-                cobj.cp_mol_ig_comp_coeff["A"] *
-                (T-b.params.temperature_ref) +
-                cobj.enth_mol_form_vap_comp_ref)
+        T = pyunits.convert(T, to_units=pyunits.K)
+        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+
+        base_units = b.params.get_metadata().default_units
+        h_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1)
+
+        h = (pyunits.convert(
+                (cobj.cp_mol_ig_comp_coeff_D/4)*(T**4-Tr**4) +
+                (cobj.cp_mol_ig_comp_coeff_C/3)*(T**3-Tr**3) +
+                (cobj.cp_mol_ig_comp_coeff_B/2)*(T**2-Tr**2) +
+                cobj.cp_mol_ig_comp_coeff_A*(T-Tr), h_units) +
+             cobj.enth_mol_form_vap_comp_ref)
+
+        return h
 
 
 class entr_mol_ig_comp():
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
+        base_units = cobj.parent_block().get_metadata().default_units
+        s_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1 *
+                   base_units["temperature"]**-1)
+
         cobj.entr_mol_form_vap_comp_ref = Var(
-                initialize=cobj.config.parameter_data[
-                    "entr_mol_form_vap_comp_ref"],
-                doc="Vapor phase molar entropy of formation @ Tref")
+                doc="Vapor phase molar entropy of formation @ Tref",
+                units=s_units)
+        set_param_value(cobj,
+                        param="entr_mol_form_vap_comp_ref",
+                        units=s_units)
 
     def return_expression(b, cobj, T):
         # Specific entropy
-        return ((cobj.cp_mol_ig_comp_coeff['D']/3) *
-                (T**3-b.params.temperature_ref**3) +
-                (cobj.cp_mol_ig_comp_coeff['C']/2) *
-                (T**2-b.params.temperature_ref**2) +
-                cobj.cp_mol_ig_comp_coeff['B'] *
-                (T-b.params.temperature_ref) +
-                cobj.cp_mol_ig_comp_coeff['A'] *
-                log(T/b.params.temperature_ref) +
-                cobj.entr_mol_form_vap_comp_ref)
+        T = pyunits.convert(T, to_units=pyunits.K)
+        Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
+
+        base_units = b.params.get_metadata().default_units
+        s_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["time"]**-2 *
+                   base_units["amount"]**-1 *
+                   base_units["temperature"]**-1)
+
+        s = (pyunits.convert(
+                (cobj.cp_mol_ig_comp_coeff_D/3)*(T**3-Tr**3) +
+                (cobj.cp_mol_ig_comp_coeff_C/2)*(T**2-Tr**2) +
+                cobj.cp_mol_ig_comp_coeff_B*(T-Tr) +
+                cobj.cp_mol_ig_comp_coeff_A*log(T/Tr), s_units) +
+             cobj.entr_mol_form_vap_comp_ref)
+
+        return s
 
 
 # -----------------------------------------------------------------------------
@@ -89,11 +163,37 @@ class entr_mol_ig_comp():
 # Note that this equation in not valid beyond the critical temperature
 class pressure_sat_comp():
     def build_parameters(cobj):
-        cobj.pressure_sat_comp_coeff = Var(
-                ['A', 'B', 'C', 'D'],
-                initialize=cobj.config.parameter_data[
-                    "pressure_sat_comp_coeff"],
-                doc="Coefficients for calculating Psat")
+        cobj.pressure_sat_comp_coeff_A = Var(
+                doc="Coefficient A for calculating Psat",
+                units=None)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=None,
+                        index="A")
+
+        cobj.pressure_sat_comp_coeff_B = Var(
+                doc="Coefficient B for calculating Psat",
+                units=None)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=None,
+                        index="B")
+
+        cobj.pressure_sat_comp_coeff_C = Var(
+                doc="Coefficient C for calculating Psat",
+                units=None)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=None,
+                        index="C")
+
+        cobj.pressure_sat_comp_coeff_D = Var(
+                doc="Coefficient D for calculating Psat",
+                units=None)
+        set_param_value(cobj,
+                        param="pressure_sat_comp_coeff",
+                        units=None,
+                        index="D")
 
     def return_expression(b, cobj, T, dT=False):
         if dT:
@@ -101,22 +201,22 @@ class pressure_sat_comp():
 
         x = 1 - T/cobj.temperature_crit
 
-        return (exp((1-x)**-1 * (cobj.pressure_sat_comp_coeff['A']*x +
-                                 cobj.pressure_sat_comp_coeff['B']*x**1.5 +
-                                 cobj.pressure_sat_comp_coeff['C']*x**3 +
-                                 cobj.pressure_sat_comp_coeff['D']*x**6)) *
+        return (exp((1-x)**-1 * (cobj.pressure_sat_comp_coeff_A*x +
+                                 cobj.pressure_sat_comp_coeff_B*x**1.5 +
+                                 cobj.pressure_sat_comp_coeff_C*x**3 +
+                                 cobj.pressure_sat_comp_coeff_D*x**6)) *
                 cobj.pressure_crit)
 
     def dT_expression(b, cobj, T):
         x = 1 - T/cobj.temperature_crit
 
         return (-pressure_sat_comp.return_expression(b, cobj, T) *
-                ((cobj.pressure_sat_comp_coeff['A'] +
-                  1.5*cobj.pressure_sat_comp_coeff['B']*x**0.5 +
-                  3*cobj.pressure_sat_comp_coeff['C']*x**2 +
-                  6*cobj.pressure_sat_comp_coeff['D']*x**5)/T +
+                ((cobj.pressure_sat_comp_coeff_A +
+                  1.5*cobj.pressure_sat_comp_coeff_B*x**0.5 +
+                  3*cobj.pressure_sat_comp_coeff_C*x**2 +
+                  6*cobj.pressure_sat_comp_coeff_D*x**5)/T +
                  (cobj.temperature_crit/T**2) *
-                 (cobj.pressure_sat_comp_coeff['A']*x +
-                  cobj.pressure_sat_comp_coeff['B']*x**1.5 +
-                  cobj.pressure_sat_comp_coeff['C']*x**3 +
-                  cobj.pressure_sat_comp_coeff['D']*x**6)))
+                 (cobj.pressure_sat_comp_coeff_A*x +
+                  cobj.pressure_sat_comp_coeff_B*x**1.5 +
+                  cobj.pressure_sat_comp_coeff_C*x**3 +
+                  cobj.pressure_sat_comp_coeff_D*x**6)))
