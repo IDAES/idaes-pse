@@ -185,8 +185,7 @@ see property package for documentation.}"""))
         # a similar order of magnitude as log(Yi)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         self.config.property_package._phase_component_set,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
@@ -208,9 +207,39 @@ see property package for documentation.}"""))
             def inert_species_balance(b, t, p, j):
                 # Add species balances for inert components
                 cv = b.control_volume
-                return 0 == (
-                    cv.properties_in[t].get_material_flow_terms(p, j) -
-                    cv.properties_out[t].get_material_flow_terms(p, j))
+                e_comp = cv.properties_out[t].config.parameters.element_comp
+
+                # Check for linear dependence with element balances
+                # If an inert species is the only source of element e,
+                # the inert species balance would be linearly dependent on the
+                # element balance for e.
+                dependent = True
+
+                if len(self.config.property_package.phase_list) > 1:
+                    # Multiple phases avoid linear dependency
+                    dependent = False
+                else:
+                    for e in self.config.property_package.element_list:
+                        if e_comp[j][e] == 0:
+                            # Element e not in component j, no effect
+                            continue
+                        else:
+                            for i in self.config.property_package.component_list:
+                                if i == j:
+                                    continue
+                                else:
+                                    # If comp j shares element e with comp i
+                                    # cannot be linearly dependent
+                                    if e_comp[i][e] != 0:
+                                        dependent = False
+
+                if (not dependent and (p, j) in
+                        self.config.property_package._phase_component_set):
+                    return 0 == (
+                        cv.properties_in[t].get_material_flow_terms(p, j) -
+                        cv.properties_out[t].get_material_flow_terms(p, j))
+                else:
+                    return Constraint.Skip
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and

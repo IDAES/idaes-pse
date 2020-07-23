@@ -15,17 +15,19 @@
 __author__ = "John Eslick"
 
 import inspect
-import pkgutil
 import re
 import os
 import click
 import logging
-import idaes.solvers
+from pyomo.common.dependencies import attempt_import
 from idaes.commands import cb
+import idaes
 
-import idaes.core.util.convergence.convergence_base as cnv
-from idaes.dmf import DMF
-from idaes.dmf.errors import DMFError
+cnv = attempt_import('idaes.core.util.convergence.convergence_base')[0]
+dmf = attempt_import('idaes.dmf')[0]
+dmf_error = attempt_import('idaes.dmf.errors')[0]
+pkgutil = attempt_import('pkgutil')[0]
+
 
 _log = logging.getLogger("idaes.commands.convergence")
 
@@ -62,8 +64,8 @@ def convergence_sample(
 def convergence_eval(sample_file, dmf):
     if dmf is not None:
         try:
-            dmf = DMF(dmf)
-        except DMFError as err:
+            dmf = dmf.DMF(dmf)
+        except dmf_error.DMFError as err:
             _log.error('Unable to init DMF: {}'.format(err))
             return -1
     (inputs, samples, results) = cnv.run_convergence_evaluation_from_sample_file(
