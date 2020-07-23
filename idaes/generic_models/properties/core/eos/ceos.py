@@ -33,7 +33,6 @@ from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
 from idaes import bin_directory
-from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import BurntToast
 
@@ -104,7 +103,7 @@ class Cubic(EoSBase):
             cobj = m.params.get_component(j)
             fw = getattr(m, cname+"_fw")
             return (EoS_param[ctype]['omegaA']*(
-                       (const.gas_constant *
+                       (Cubic.gas_constant(b) *
                         cobj.temperature_crit)**2/cobj.pressure_crit) *
                     ((1+fw[j]*(1-sqrt(m.temperature /
                                       cobj.temperature_crit)))**2))
@@ -115,7 +114,7 @@ class Cubic(EoSBase):
 
         def func_b(m, j):
             cobj = m.params.get_component(j)
-            return (EoS_param[ctype]['coeff_b'] * const.gas_constant *
+            return (EoS_param[ctype]['coeff_b'] * Cubic.gas_constant(b) *
                     cobj.temperature_crit/cobj.pressure_crit)
         b.add_component(cname+'_b',
                         Expression(b.params.component_list,
@@ -143,14 +142,14 @@ class Cubic(EoSBase):
         def rule_A(m, p):
             am = getattr(m, cname+"_am")
             return (am[p]*m.pressure /
-                    (const.gas_constant*m.temperature)**2)
+                    (Cubic.gas_constant(b)*m.temperature)**2)
         b.add_component(cname+'_A',
                         Expression(b.params.phase_list, rule=rule_A))
 
         def rule_B(m, p):
             bm = getattr(m, cname+"_bm")
             return (bm[p]*m.pressure /
-                    (const.gas_constant*m.temperature))
+                    (Cubic.gas_constant(b)*m.temperature))
         b.add_component(cname+'_B',
                         Expression(b.params.phase_list, rule=rule_B))
 
@@ -173,7 +172,7 @@ class Cubic(EoSBase):
             a = getattr(m, cname+"_a")
             fw = getattr(m, cname+"_fw")
             kappa = getattr(m.params, cname+"_kappa")
-            return -((const.gas_constant/2)*sqrt(EoS_param[ctype]['omegaA']) *
+            return -((Cubic.gas_constant(b)/2)*sqrt(EoS_param[ctype]['omegaA']) *
                      sum(sum(m.mole_frac_phase_comp[p, i] *
                              m.mole_frac_phase_comp[p, j] *
                              (1-kappa[i, j]) *
@@ -197,7 +196,7 @@ class Cubic(EoSBase):
                 cobj = m.params.get_component(j)
                 fw = getattr(m, cname+"_fw")
                 return (EoS_param[ctype]['omegaA']*(
-                            (const.gas_constant *
+                            (Cubic.gas_constant(b) *
                              cobj.temperature_crit)**2/cobj.pressure_crit) *
                         ((1+fw[j]*(1-sqrt(m._teq[p1, p2] /
                                           cobj.temperature_crit)))**2))
@@ -224,7 +223,7 @@ class Cubic(EoSBase):
             def rule_A_eq(m, p1, p2, p3):
                 am_eq = getattr(m, "_"+cname+"_am_eq")
                 return (am_eq[p1, p2, p3]*m.pressure /
-                        (const.gas_constant*m._teq[p1, p2])**2)
+                        (Cubic.gas_constant(b)*m._teq[p1, p2])**2)
             b.add_component('_'+cname+'_A_eq',
                             Expression(b.params._pe_pairs,
                                        b.params.phase_list,
@@ -233,7 +232,7 @@ class Cubic(EoSBase):
             def rule_B_eq(m, p1, p2, p3):
                 bm = getattr(m, cname+"_bm")
                 return (bm[p3]*m.pressure /
-                        (const.gas_constant*m._teq[p1, p2]))
+                        (Cubic.gas_constant(b)*m._teq[p1, p2]))
             b.add_component('_'+cname+'_B_eq',
                             Expression(b.params._pe_pairs,
                                        b.params.phase_list,
@@ -280,7 +279,8 @@ class Cubic(EoSBase):
                 param_block.component_list,
                 within=Reals,
                 initialize=kappa_data,
-                doc=cname+' binary interaction parameters'))
+                doc=cname+' binary interaction parameters',
+                units=None))
 
     def compress_fact_phase(b, p):
         pobj = b.params.get_phase(p)
@@ -303,7 +303,7 @@ class Cubic(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
             return b.pressure/(
-                const.gas_constant*b.temperature*b.compress_fact_phase[p])
+                Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -326,7 +326,7 @@ class Cubic(EoSBase):
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((blk.temperature*dadT - am) *
                  log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
-                 const.gas_constant*blk.temperature*(Z-1)*bm*EoS_p) /
+                 Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "enth_mol_ig_comp", j)(
                                             blk, cobj(blk, j), blk.temperature)
@@ -351,7 +351,7 @@ class Cubic(EoSBase):
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((blk.temperature*dadT - am) *
                  log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
-                 const.gas_constant*blk.temperature*(Z-1)*bm*EoS_p) /
+                 Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + get_method(blk, "enth_mol_ig_comp", j)(
                                         blk, cobj(blk, j), blk.temperature))
 
@@ -371,9 +371,9 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # See pg. 102 in Properties of Gases and Liquids
-        return ((const.gas_constant*log(
+        return ((Cubic.gas_constant(blk)*log(
                     (Z-B)/Z)*bm*EoS_p +
-                 const.gas_constant *
+                 Cubic.gas_constant(blk) *
                  log(Z*blk.params.pressure_ref/blk.pressure)*bm*EoS_p +
                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
                           (2*Z + B*(EoS_u - EoS_p)))) /
@@ -398,8 +398,8 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # See pg. 102 in Properties of Gases and Liquids
-        return (((const.gas_constant*log((Z-B)/Z)*bm*EoS_p +
-                  const.gas_constant *
+        return (((Cubic.gas_constant(blk)*log((Z-B)/Z)*bm*EoS_p +
+                  Cubic.gas_constant(blk) *
                   log(Z*blk.params.pressure_ref /
                       (blk.mole_frac_phase_comp[p, j]*blk.pressure))*bm*EoS_p +
                   dadT*log((2*Z + B*(EoS_u + EoS_p)) /
@@ -429,7 +429,7 @@ class Cubic(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
             return (log(b.mole_frac_phase_comp[p, j]) +
-                    log(b.pressure) +
+                    log(b.pressure/b.params.pressure_ref) +
                     _log_fug_coeff_phase_comp_eq(b, p, j, pp))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -475,7 +475,7 @@ class Cubic(EoSBase):
             cobj = blk.params.get_component(k)
             fw = getattr(blk, cname+"_fw")[k]
             return (EoS_param[ctype]['omegaA'] *
-                    ((const.gas_constant * cobj.temperature_crit)**2 /
+                    ((Cubic.gas_constant(blk) * cobj.temperature_crit)**2 /
                      cobj.pressure_crit) *
                     ((1+fw*(1-sqrt(blk.temperature_bubble[pp] /
                                    cobj.temperature_crit)))**2))
@@ -488,8 +488,10 @@ class Cubic(EoSBase):
         b = getattr(blk, cname+"_b")
         bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
 
-        A = am*blk.pressure/(const.gas_constant*blk.temperature_bubble[pp])**2
-        B = bm*blk.pressure/(const.gas_constant*blk.temperature_bubble[pp])
+        A = am*blk.pressure/(Cubic.gas_constant(blk) 
+                             *blk.temperature_bubble[pp])**2
+        B = bm*blk.pressure/(Cubic.gas_constant(blk) *
+                             blk.temperature_bubble[pp])
 
         delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
                                        for i in blk.params.component_list))
@@ -525,7 +527,7 @@ class Cubic(EoSBase):
             cobj = blk.params.get_component(k)
             fw = getattr(blk, cname+"_fw")[k]
             return (EoS_param[ctype]['omegaA'] *
-                    ((const.gas_constant * cobj.temperature_crit)**2 /
+                    ((Cubic.gas_constant(blk) * cobj.temperature_crit)**2 /
                      cobj.pressure_crit) *
                     ((1+fw*(1-sqrt(blk.temperature_dew[pp] /
                                    cobj.temperature_crit)))**2))
@@ -538,8 +540,10 @@ class Cubic(EoSBase):
         b = getattr(blk, cname+"_b")
         bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
 
-        A = am*blk.pressure/(const.gas_constant*blk.temperature_dew[pp])**2
-        B = bm*blk.pressure/(const.gas_constant*blk.temperature_dew[pp])
+        A = am*blk.pressure/(Cubic.gas_constant(blk) *
+                             blk.temperature_dew[pp])**2
+        B = bm*blk.pressure/(Cubic.gas_constant(blk) *
+                             blk.temperature_dew[pp])
 
         delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
                                        for i in blk.params.component_list))
@@ -581,8 +585,10 @@ class Cubic(EoSBase):
         b = getattr(blk, cname+"_b")
         bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
 
-        A = am*blk.pressure_bubble[pp]/(const.gas_constant*blk.temperature)**2
-        B = bm*blk.pressure_bubble[pp]/(const.gas_constant*blk.temperature)
+        A = am*blk.pressure_bubble[pp]/(Cubic.gas_constant(blk) *
+                                        blk.temperature)**2
+        B = bm*blk.pressure_bubble[pp]/(Cubic.gas_constant(blk) *
+                                        blk.temperature)
 
         delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
                                        for i in blk.params.component_list))
@@ -624,8 +630,9 @@ class Cubic(EoSBase):
         b = getattr(blk, cname+"_b")
         bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
 
-        A = am*blk.pressure_dew[pp]/(const.gas_constant*blk.temperature)**2
-        B = bm*blk.pressure_dew[pp]/(const.gas_constant*blk.temperature)
+        A = am*blk.pressure_dew[pp]/(Cubic.gas_constant(blk) *
+                                     blk.temperature)**2
+        B = bm*blk.pressure_dew[pp]/(Cubic.gas_constant(blk)*blk.temperature)
 
         delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
                                        for i in blk.params.component_list))

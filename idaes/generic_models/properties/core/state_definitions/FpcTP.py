@@ -19,6 +19,8 @@ from pyomo.environ import Constraint, Expression, NonNegativeReals, Var, value
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
+from idaes.generic_models.properties.core.generic.utility import \
+    get_bounds_from_config
 
 
 def set_metadata(b):
@@ -31,76 +33,41 @@ def define_state(b):
     # calculations re not always needed
     b.always_flash = False
 
-    # Get bounds if provided
-    try:
-        f_bounds = b.params.config.state_bounds["flow_mol_phase_comp"]
-    except (KeyError, TypeError):
-        f_bounds = (None, None)
+    base_units = b.params.get_metadata().default_units
+    # Get bounds and initial values from config args
+    f_bounds, f_init = get_bounds_from_config(
+        b, "flow_mol_phase_comp", base_units["amount"]/base_units["time"])
+    t_bounds, t_init = get_bounds_from_config(
+        b, "temperature", base_units["temperature"])
+    p_bounds, p_init = get_bounds_from_config(
+        b,
+        "pressure",
+        base_units["mass"]/base_units["length"]/base_units["time"]**2)
 
-    try:
-        t_bounds = b.params.config.state_bounds["temperature"]
-    except (KeyError, TypeError):
-        t_bounds = (None, None)
-
-    try:
-        p_bounds = b.params.config.state_bounds["pressure"]
-    except (KeyError, TypeError):
-        p_bounds = (None, None)
-
-    # Set an initial value for each state var
-    if f_bounds == (None, None):
-        # No bounds, default to 1
-        f_init = 1
-    elif f_bounds[1] is None and f_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        f_init = f_bounds[0] + 10
-    elif f_bounds[1] is not None and f_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        f_init = f_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        f_init = (f_bounds[0] + f_bounds[1])/2
-
-    if t_bounds == (None, None):
-        # No bounds, default to 298.15
-        t_init = 298.15
-    elif t_bounds[1] is None and t_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        t_init = t_bounds[0] + 10
-    elif t_bounds[1] is not None and t_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        t_init = t_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        t_init = (t_bounds[0] + t_bounds[1])/2
-
-    if p_bounds == (None, None):
-        # No bounds, default to 101325
-        p_init = 101325
-    elif p_bounds[1] is None and p_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        p_init = p_bounds[0] + 10
-    elif p_bounds[1] is not None and p_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        p_init = p_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        p_init = (p_bounds[0] + p_bounds[1])/2
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
 
     # Add state variables
     b.flow_mol_phase_comp = Var(b.params._phase_component_set,
                                 initialize=f_init,
                                 domain=NonNegativeReals,
                                 bounds=f_bounds,
-                                doc='Phase-component molar flowrate')
+                                doc='Phase-component molar flowrate',
+                                units=flow_units)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='State temperature')
+                        doc='State temperature',
+                        units=units_meta["temperature"])
 
     # Add supporting variables
     b.flow_mol = Expression(
@@ -130,12 +97,13 @@ def define_state(b):
                     if (p, j) in b.params._phase_component_set) / b.flow_mol)
     b.mole_frac_comp = Expression(b.params.component_list,
                                   rule=mole_frac_comp,
-                                  doc='Mixture mole fractions [-]')
+                                  doc='Mixture mole fractions')
 
     b.mole_frac_phase_comp = Var(
             b.params._phase_component_set,
             initialize=1/len(b.params.component_list),
-            doc='Phase mole fractions [-]')
+            doc='Phase mole fractions',
+            units=None)
 
     def rule_mole_frac_phase_comp(b, p, j):
         return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \

@@ -29,9 +29,9 @@ from io import StringIO
 import logging
 from operator import attrgetter
 import os
-from pathlib import Path
 import re
 from setuptools import setup, find_packages
+from pathlib import Path
 import shutil
 import sys
 from typing import List
@@ -749,5 +749,3 @@ def has_tagged_cells(nb: Path):
             return True  # can stop now, one is enough
     # no tagged cells
     return False
-
-
