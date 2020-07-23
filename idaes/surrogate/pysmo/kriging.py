@@ -20,75 +20,6 @@ import os.path, pickle
 from matplotlib import pyplot as plt
 
 
-class ResultReport:
-
-    def __init__(self, theta, reg_param, mean, variance, cov_mat, cov_inv, ymu, y_training, r2_training, rmse_error, p, x_data, x_data_scaled, x_data_min, x_data_max):
-        """
-        A class for creating an object containing information about the Kriging model to be returned to the user.
-
-            Returns:
-            self function containing several attributes -
-
-                self.optimal_weights(NumPy Array)          : array containing kriging hyperparameters (coefficients)
-                self.regularization_parameter(float)      : best regularization parameter found.
-                self.optimal_mean(float)                  : Kriging model mean
-                self.optimal_variance(float)              : Kriging model variance
-                self.optimal_covariance_matrix(NumPy Array): Kriging model covaruiance matrix (regularized)
-                self.covariance_matrix_inverse(NumPy Array): Inverse of the Kriging covariance matrix
-                self.output_predictions(NumPy Array)       : Output predictions fosupplied inputs based on final Kriging model
-                self.training_R2                            : R2 coefficient-of-fit between the actual output and the surrogate predictions
-                self.training_rmse                          : RMSE error on the training output predictions
-                self.x_data(NumPy Array)                   : Input features data (unscaled)
-                self.scaled_x(NumPy Array)                 : Input features data (scaled)
-                self.x_min = x_data_min                     : Lower bounds of features data
-                self.x_max = x_data_max                     : Upper bounds of features data
-
-        """
-        self.optimal_weights = theta
-        self.optimal_p = p
-        self.optimal_mean = mean
-        self.optimal_variance = variance
-        self.regularization_parameter = reg_param
-        self.optimal_covariance_matrix = cov_mat
-        self.covariance_matrix_inverse = cov_inv
-        self.optimal_y_mu = ymu
-        self.output_predictions = y_training
-        self.training_R2 = r2_training
-        self.training_rmse = rmse_error
-        self.x_data = x_data
-        self.scaled_x = x_data_scaled
-        self.x_min = x_data_min
-        self.x_max = x_data_max
-
-    def kriging_generate_expression(self, variable_list):
-        """
-        The ``kriging_generate_expression`` method returns the Pyomo expression for the Kriging model trained.
-
-        The expression is constructed based on the supplied list of variables **variable_list** and the results of the previous Kriging training process.
-
-        Args:
-            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the output of ``get_feature_vector``.  The user can also choose to supply a new list of the appropriate length.
-
-        Returns:
-            Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
-
-        """
-        t1 = np.array([variable_list])
-        phi_var = []
-        for i in range(0, self.x_data.shape[0]):
-            curr_term = sum(self.optimal_weights[j] * ( ((t1[0, j] - self.x_min[0, j])/(self.x_max[0, j] - self.x_min[0, j])) - self.scaled_x[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
-
-            curr_term = exp(-curr_term)
-            phi_var.append(curr_term)
-        phi_var_array = np.asarray(phi_var)
-
-        phi_inv_times_y_mu = np.matmul(self.covariance_matrix_inverse, self.optimal_y_mu)
-        phi_inv_times_y_mu = phi_inv_times_y_mu.reshape(phi_inv_times_y_mu.shape[0], )
-        kriging_expr = self.optimal_mean[0,0]
-        kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
-        return kriging_expr
-
-
 class MyBounds(object):
     """
     The Class MyBounds tests whether the reguularization parameter value is within the expected range.
@@ -211,6 +142,19 @@ class KrigingModel:
             self.regularization = regularization
         else:
             raise Exception('Choice of regularization must be boolean.')
+
+        # Results
+        self.optimal_weights = None
+        self.optimal_p = None
+        self.optimal_mean = None
+        self.optimal_variance = None
+        self.regularization_parameter = None
+        self.optimal_covariance_matrix = None
+        self.covariance_matrix_inverse = None
+        self.optimal_y_mu = None
+        self.output_predictions = None
+        self.training_R2 = None
+        self.training_rmse = None
 
 
     @staticmethod
@@ -502,12 +446,11 @@ class KrigingModel:
         r_square = 1 - (ss_residual / ss_total)
         return r_square
 
-    def kriging_predict_output(self, kriging_params, x_pred):
+    def predict_output(self, x_pred):
         """
         The ``kriging_predict_output`` method generates output predictions for input data x_pred based a previously trained Kriging model.
 
         Args:
-            kriging_params (tuple)          : Results of Kriging training generated by calling the ``kriging_training`` method.
             x_pred(NumPy Array)             : Array of designs for which the output is to be evaluated/predicted.
 
         Returns:
@@ -520,12 +463,12 @@ class KrigingModel:
             x_pred = x_pred.reshape(1, len(x_pred))
         y_pred = np.zeros((x_pred.shape[0], 1))
         for i in range(0, x_pred.shape[0]):
-            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data_scaled)) ** kriging_params.optimal_p), kriging_params.optimal_weights)).transpose()
+            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data_scaled)) ** self.optimal_p), self.optimal_weights)).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
-            y_pred[i, 0] = kriging_params.optimal_mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), kriging_params.covariance_matrix_inverse), kriging_params.optimal_y_mu)
+            y_pred[i, 0] = self.optimal_mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse), self.optimal_y_mu)
         return y_pred
 
-    def kriging_training(self):
+    def training(self):
         """
         Main function for Kriging training.
 
@@ -558,10 +501,49 @@ class KrigingModel:
         # Training performance
         training_ss_error, rmse_error, y_training_predictions = self.error_calculation(optimal_theta, p, optimal_mean, opt_cov_inv, optimal_ymu, self.x_data_scaled, self.y_data)
         r2_training = self.r2_calculation(self.y_data, y_training_predictions)
+
         # Return results
-        results = ResultReport(optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu, y_training_predictions, r2_training, rmse_error, p, self.x_data, self.x_data_scaled, self.x_data_min, self.x_data_max)
-        self.pickle_save({'set-up':self, 'result':results})
-        return results
+        self.optimal_weights = optimal_theta
+        self.optimal_p = p
+        self.optimal_mean = optimal_mean
+        self.optimal_variance = optimal_variance
+        self.regularization_parameter = optimal_reg_param
+        self.optimal_covariance_matrix = optimal_cov_mat
+        self.covariance_matrix_inverse = opt_cov_inv
+        self.optimal_y_mu = optimal_ymu
+        self.output_predictions = y_training_predictions
+        self.training_R2 = r2_training
+        self.training_rmse = rmse_error
+        self.pickle_save({'model' : self})
+        return self
+
+    def generate_expression(self, variable_list):
+        """
+        The ``kriging_generate_expression`` method returns the Pyomo expression for the Kriging model trained.
+
+        The expression is constructed based on the supplied list of variables **variable_list** and the results of the previous Kriging training process.
+
+        Args:
+            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the output of ``get_feature_vector``.  The user can also choose to supply a new list of the appropriate length.
+
+        Returns:
+            Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
+
+        """
+        t1 = np.array([variable_list])
+        phi_var = []
+        for i in range(0, self.x_data.shape[0]):
+            curr_term = sum(self.optimal_weights[j] * ( ((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j] - self.x_data_min[0, j])) - self.x_data_scaled[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+
+            curr_term = exp(-curr_term)
+            phi_var.append(curr_term)
+        phi_var_array = np.asarray(phi_var)
+
+        phi_inv_times_y_mu = np.matmul(self.covariance_matrix_inverse, self.optimal_y_mu)
+        phi_inv_times_y_mu = phi_inv_times_y_mu.reshape(phi_inv_times_y_mu.shape[0], )
+        kriging_expr = self.optimal_mean[0,0]
+        kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
+        return kriging_expr
 
     def get_feature_vector(self):
         """
