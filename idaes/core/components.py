@@ -15,14 +15,22 @@ IDAES Component objects
 
 @author: alee
 """
-from pyomo.environ import Set, Param, Var
+from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
+import idaes.logger as idaeslog
+
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Component")
@@ -83,15 +91,38 @@ class ComponentData(ProcessBlockData):
         if not self.config._component_list_exists:
             self.__add_to_component_list()
 
+        base_units = self.parent_block().get_metadata().default_units
+        if isinstance(base_units["mass"], _PyomoUnit):
+            # Backwards compatability check
+            p_units = (base_units["mass"] /
+                       base_units["length"] /
+                       base_units["time"]**2)
+        else:
+            # Backwards compatability check
+            p_units = None
+
         # Create Param for molecular weight if provided
         if "mw" in self.config.parameter_data:
-            self.mw = Param(initialize=self.config.parameter_data["mw"])
+            if isinstance(self.config.parameter_data["mw"], tuple):
+                mw_init = pyunits.convert_value(
+                    self.config.parameter_data["mw"][0],
+                    from_units=self.config.parameter_data["mw"][1],
+                    to_units=base_units["mass"]/base_units["amount"])
+            else:
+                _log.debug("{} no units provided for parameter mw - assuming "
+                           "default units".format(self.name))
+                mw_init = self.config.parameter_data["mw"]
+            self.mw = Param(initialize=mw_init,
+                            units=base_units["mass"]/base_units["amount"])
 
         # Create Vars for common parameters
-        for p in ["pressure_crit", "temperature_crit", "omega"]:
+        param_dict = {"pressure_crit": p_units,
+                      "temperature_crit": base_units["temperature"],
+                      "omega": None}
+        for p, u in param_dict.items():
             if p in self.config.parameter_data:
-                self.add_component(p, Var(
-                    initialize=self.config.parameter_data[p]))
+                self.add_component(p, Var(units=u))
+                set_param_value(self, p, u)
 
     def is_solute(self):
         raise TypeError(
