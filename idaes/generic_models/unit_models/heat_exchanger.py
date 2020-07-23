@@ -48,6 +48,7 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.units import base_units
 
 _log = idaeslog.getLogger(__name__)
 
@@ -245,24 +246,12 @@ class HeatExchangerData(UnitModelBlockData):
         # Add variables                                                        #
         ########################################################################
         # Use side 1 units as basis
-        base_units = (
-            config.hot_side_config.property_package.get_metadata().default_units)
-        if not (isinstance(base_units["mass"], str) or
-                base_units["mass"] is None):
-            q_units = (base_units["mass"] *
-                       base_units["length"]**2 *
-                       base_units["time"]**-3)
-            u_units = (base_units["mass"] *
-                       base_units["time"]**-3 *
-                       base_units["temperature"]**-1)
-            a_units = base_units["length"]**2
-            t_units = base_units["temperature"]
-        else:
-            # Backwards compatability for pre-units property packages
-            q_units = None
-            u_units = None
-            a_units = None
-            t_units = None
+        s1_metadata = config.hot_side_config.property_package.get_metadata()
+
+        q_units = s1_metadata.get_derived_units("power")
+        u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
+        a_units = s1_metadata.get_derived_units("area")
+        t_units = s1_metadata.get_derived_units("temperature")
 
         u = self.overall_heat_transfer_coefficient = Var(
             self.flowsheet().config.time,
@@ -422,7 +411,7 @@ class HeatExchangerData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
         optarg={"tol": 1e-6},
-        duty=1000,
+        duty=None,
     ):
         """
         Heat exchanger initialization method.
@@ -438,8 +427,9 @@ class HeatExchangerData(UnitModelBlockData):
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
-            duty : an initial guess for the amount of heat transfered
-                (default = 10000)
+            duty : an initial guess for the amount of heat transfered. This
+                should be a tuple in the form (value, units), (default
+                = (1000 J/s))
 
         Returns:
             None
@@ -476,17 +466,31 @@ class HeatExchangerData(UnitModelBlockData):
         s1_units = self.side_1.heat.get_units()
         s2_units = self.side_2.heat.get_units()
 
-        if s1_units is None or s2_units is None:
-            # Backwards compatability for unitless property packages
-            s2_duty = duty
+        if duty is None:
+            # Assume 1000 J/s and check for unitless properties
+            if s1_units is None and s2_units is None:
+                # Backwards compatability for unitless properties
+                s1_duty = - 1000
+                s2_duty = 1000
+            else:
+                s1_duty = pyunits.convert_value(-1000,
+                                                from_units=pyunits.W,
+                                                to_units=s1_units)
+                s2_duty = pyunits.convert_value(1000,
+                                                from_units=pyunits.W,
+                                                to_units=s2_units)
         else:
-            s2_duty = pyunits.convert_value(duty,
-                                            from_units=s1_units,
+            # Duty provided with explicit units
+            s1_duty = -pyunits.convert_value(duty[0],
+                                             from_units=duty[1],
+                                             to_units=s1_units)
+            s2_duty = pyunits.convert_value(duty[0],
+                                            from_units=duty[1],
                                             to_units=s2_units)
 
         self.side_2.heat.fix(s2_duty)
         for i in self.side_1.heat:
-            self.side_1.heat[i].value = -duty
+            self.side_1.heat[i].value = s1_duty
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)

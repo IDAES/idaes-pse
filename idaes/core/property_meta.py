@@ -239,6 +239,31 @@ class PropertyClassMetadata(object):
                 v = PropertyMetadata(name=k, units=v)
             self._required_properties[k] = v
 
+    def get_derived_units(self, units):
+        base_units = self.default_units
+        if (isinstance(base_units["mass"], str) or
+                base_units["mass"] is None):
+            # Backwards compatability for pre-units property packages
+            return None
+        else:
+            return getattr(self, "_"+units)()
+
+    def _area(self):
+        return self.default_units["length"]**2
+
+    def _heat_transfer_coefficient(self):
+        return (self.default_units["mass"] *
+                self.default_units["time"]**-3 *
+                self.default_units["temperature"]**-1)
+
+    def _power(self):
+        return (self.default_units["mass"] *
+                self.default_units["length"]**2 *
+                self.default_units["time"]**-3)
+
+    def _temperature(self):
+        return self.default_units["temperature"]
+
 
 class PropertyMetadata(dict):
     """Container for property parameter metadata.
