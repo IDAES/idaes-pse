@@ -15,15 +15,18 @@ Tests for rate forms
 """
 
 import pytest
+import types
 
-from pyomo.environ import Block, ConcreteModel, exp, Var
+from pyomo.environ import Block, ConcreteModel, Var, units as pyunits, value
 from pyomo.common.config import ConfigBlock
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import *
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
+from idaes.core.property_meta import PropertyClassMetadata
 
 
 @pytest.fixture
@@ -49,12 +52,25 @@ def model():
 
     m.rparams.reaction_r1 = Block()
 
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.default_units["temperature"] = pyunits.K
+    m.meta_object.default_units["mass"] = pyunits.kg
+    m.meta_object.default_units["length"] = pyunits.m
+    m.meta_object.default_units["time"] = pyunits.s
+    m.meta_object.default_units["amount"] = pyunits.mol
+
+    def get_metadata(self):
+        return m.meta_object
+    m.rparams.get_metadata = types.MethodType(get_metadata, m.rparams)
+
     # Create a dummy state block
     m.rxn = Block([1])
     add_object_reference(m.rxn[1], "params", m.rparams)
     add_object_reference(m.rxn[1], "state_ref", m.thermo[1])
 
-    m.rxn[1].dh_rxn = Var(["r1"], initialize=1)
+    m.rxn[1].dh_rxn = Var(["r1"],
+                          initialize=1,
+                          units=pyunits.J/pyunits.mol)
 
     return m
 
@@ -78,9 +94,7 @@ def test_van_t_hoff(model):
 
     # Check expression
     rform = van_t_hoff.return_expression(
-        model.rxn[1], model.rparams.reaction_r1, "r1", 300)
+        model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
 
-    assert str(rform) == str(
-        model.rparams.reaction_r1.k_eq_ref *
-        exp(-(model.rxn[1].dh_rxn["r1"]/c.gas_constant) *
-            (1/300 - 1/model.rparams.reaction_r1.T_eq_ref)))
+    assert value(rform) == pytest.approx(0.99984, rel=1e-3)
+    assert_units_equivalent(rform, None)

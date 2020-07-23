@@ -13,7 +13,7 @@
 """
 Methods for calculating equilibrium constants
 """
-from pyomo.environ import exp, Var
+from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.core.util.constants import Constants as c
 
@@ -22,14 +22,26 @@ from idaes.core.util.constants import Constants as c
 # Constant dh_rxn
 class van_t_hoff():
     def build_parameters(rblock, config):
+        base_units = rblock.parent_block().get_metadata().default_units
+
         rblock.k_eq_ref = Var(
                 initialize=config.parameter_data["k_eq_ref"],
                 doc="Equilibrium constant at reference state")
 
         rblock.T_eq_ref = Var(
                 initialize=config.parameter_data["T_eq_ref"],
-                doc="Reference temperature for equilibrium constant")
+                doc="Reference temperature for equilibrium constant",
+                units=base_units["temperature"])
 
     def return_expression(b, rblock, r_idx, T):
+        base_units = rblock.parent_block().get_metadata().default_units
+        R_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["temperature"]**-1 *
+                   base_units["amount"]**-1 *
+                   base_units["time"]**-2)
+
         return rblock.k_eq_ref * exp(
-            -(b.dh_rxn[r_idx]/c.gas_constant) * (1/T - 1/rblock.T_eq_ref))
+            -(b.dh_rxn[r_idx] /
+              pyunits.convert(c.gas_constant, to_units=R_units)) *
+            (1/T - 1/rblock.T_eq_ref))
