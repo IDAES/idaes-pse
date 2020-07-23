@@ -33,7 +33,7 @@ where :math:`t = \frac{T}{1000}`. Units are :math:`\text{J/mol}\cdotp\text{K}`.
    ":math:`H`", "cp_mol_ig_comp_coeff_H", ":math:`\text{kJ/mol}`", ""
 
 .. note::
-    The due to the division by 1000, most temperature units are in kilo-Kelvins, and reference enthalpies (F and H) are in kJ/mol.
+    Due to the division of temperature by 1000 in the expression form, most temperature units are in kilo-Kelvins and reference enthalpies (F and H) are in kJ/mol.
     The parameter `cp_mol_ig_comp_coeff` is also used when calculating specific enthalpy and entropy and parameters 'F', 'G' and 'H' are only required for these properties.
 
 Ideal Gas Molar Enthalpy
@@ -59,7 +59,7 @@ Units are :math:`\text{J/mol}`.
 
 .. note::
     This correlation uses the same parameters as for the ideal gas heat capacity with additional parameters `F` and `H`. These parameters account for the enthalpy at the reference state defined by NIST. Users wanting to use a different reference state will need to update `H`.
-    The due to the division by 1000, most temperature units are in kilo-Kelvins, and reference enthalpies (F and H) are in kJ/mol.
+    Due to the division of temperature by 1000 in the expression form, most temperature units are in kilo-Kelvins and reference enthalpies (F and H) are in kJ/mol.
 
 Ideal Gas Molar Entropy
 ------------------------
@@ -84,7 +84,7 @@ Units are :math:`\text{J/mol}\cdotp\text{K}`.
 
 .. note::
     This correlation uses the same parameters as for the ideal gas heat capacity with additional parameter `G`, which accounts for the standard entropy at the reference state defined by NIST. Users wanting to use a different reference state will need to update `G`.
-    The due to the division by 1000, most temperature units are in kilo-Kelvins.
+    Due to the division of temperature by 1000 in the expression form, most temperature units are in kilo-Kelvins and reference enthalpies (F and H) are in kJ/mol.
 
 Saturation (Vapor) Pressure
 ---------------------------

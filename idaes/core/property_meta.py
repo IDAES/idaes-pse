@@ -196,7 +196,7 @@ class PropertyClassMetadata(object):
                          "to automatically determine units of measurement "
                          "for quantities and convert where necessary. "
                          "Users are strongly encouraged to convert their "
-                         "property packages to use Pyomo Units obejcts.")
+                         "property packages to use Pyomo Units objects.")
 
     def add_properties(self, p):
         """Add properties to the metadata.
