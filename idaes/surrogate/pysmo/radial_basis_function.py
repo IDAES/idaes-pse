@@ -31,99 +31,6 @@ The purpose of this file is to perform radial basis functions in Pyomo.
 """
 
 
-class ResultReport:
-
-
-    def __init__(self, radial_weights, best_r_value, best_lambda_param, centres, y_training_predictions, rmse_error, x_condition_number, reg_setting, r_square, basis_function, data_min, data_max):
-        """
-        A class for creating an object containing information about the RBF solution to be returned to the user.
-
-        Returns:
-            self function containing ten attributes -
-
-            self.weights(NumPy Array)              : array containing optimal radial weights (coefficients) for the RBF
-            self.sigma(float)                     : best shape parameter found for selected parametric basis function. Will return zero for fixed basis functions.
-            self.regularization                     : Boolean variable indicating whether regularization was turned on/off for the problem
-            self.regularization_parameter           : best regularization parameter found. Will return zero when reqularization is turned off
-            self.centres                            : co-ordinates of RBF centres
-            self.rmse                               : RMSE error on the training output predictions
-            self.output_predictions                 : Predictions from the RBF surrogate for the output variable of the training data
-            self.condition_number                   : Condition number of the regularized coefficient matrix used to generate the radial weights in the regression problem
-            self.R2                                 : R2 coefficient-of-fit between the actual output and the surrogate predictions
-            self.solution_status                    : Judgement on coefficient matrix conditioning. Returns 'ok' when problem is sufficiently well conditioned (condition number < 1 / eps); 'unstable solution' when the problem is ill-conditioned.
-
-        """
-        self.weights = radial_weights
-        self.sigma = best_r_value
-        self.regularization = reg_setting
-        self.regularization_parameter = best_lambda_param
-        self.centres = centres
-        self.rmse = rmse_error
-        self.output_predictions = y_training_predictions
-        self.condition_number = x_condition_number
-        self.R2 = r_square
-        self.basis_function = basis_function
-        self.x_data_min = data_min[:, :-1]
-        self.x_data_max = data_max[:, :-1]
-        self.y_data_min = data_min[:, -1]
-        self.y_data_max = data_max[:, -1]
-        if x_condition_number < (1 / np.finfo(float).eps):
-            self.solution_status = 'ok'
-        else:
-            warnings.warn('The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution')
-            self.solution_status = 'unstable solution'
-
-    def rbf_generate_expression(self, variable_list):
-        """
-        The ``rbf_generate_expression`` method returns the Pyomo expression for the RBF model trained.
-
-        The expression is constructed based on the supplied list of variables **variable_list** and the results of the previous RBF training process.
-
-        Args:
-            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the output of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
-
-        Returns:
-            Pyomo Expression              : Pyomo expression of the RBF model based on the variables provided in **variable_list**
-
-        """
-        t1 = np.array([variable_list])
-        basis_vector = []
-        # Calculate distances from centres
-        for i in range(0, self.centres.shape[0]):
-            ans = 0
-            for j in range(0, self.centres.shape[1]):
-                ans += (((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j]- self.x_data_min[0, j])) - self.centres[i, j]) ** 2
-            eucl_d = ans ** 0.5
-            basis_vector.append(eucl_d)
-        rbf_terms_list = []
-        if self.basis_function == 'linear':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(RadialBasisFunctions.linear_transformation(basis_vector[k]))
-        elif self.basis_function == 'cubic':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(RadialBasisFunctions.cubic_transformation(basis_vector[k]))
-        elif self.basis_function == 'gaussian':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(exp(-1 * ((self.sigma * basis_vector[k]) ** 2)))
-        elif self.basis_function == 'mq':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5)
-        elif self.basis_function == 'imq':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(1 / ((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5))
-        elif self.basis_function == 'spline':
-            for k in range(0, len(basis_vector)):
-                rbf_terms_list.append(((basis_vector[k] ** 2) * log(basis_vector[k])))
-
-        rbf_terms_array = np.asarray(rbf_terms_list)
-        rbf_expr = self.y_data_min[0]
-        rbf_expr += (self.y_data_max[0] - self.y_data_min[0]) * sum(w * t for w, t in zip(
-            np.nditer(self.weights),
-            np.nditer(rbf_terms_array, flags=['refs_ok'])
-        ))
-        return rbf_expr
-
-
 class FeatureScaling:
     """
 
@@ -385,6 +292,20 @@ class RadialBasisFunctions:
         elif (regularization is True) or (regularization is False):
             self.regularization = regularization
         print('Regularization done: ', self.regularization)
+
+        # Results
+        self.weights = None
+        self.sigma = None
+        self.regularization_parameter = None
+        self.rmse = None
+        self.output_predictions = None
+        self.condition_number = None
+        self.R2 = None
+        self.x_data_min = None
+        self.x_data_max = None
+        self.y_data_min = None
+        self.y_data_max = None
+        self.solution_status = None
 
     def r2_distance(self, c):
         """
@@ -919,7 +840,7 @@ class RadialBasisFunctions:
         error_best = error_vector[minimum_value_column, 2]
         return r_best, lambda_best, error_best
 
-    def rbf_training(self):
+    def training(self):
         """
         Main function for RBF training.
 
@@ -936,7 +857,7 @@ class RadialBasisFunctions:
         The pre-defined shape parameter set considers 24 irregularly spaced values ranging between 0.001 - 1000, while the regularization parameter set considers 21 values ranging between 0.00001 - 1.
 
         Returns:
-            tuple   : Python object (**results**) containing the all information about the best RBF fitting obtained, including:
+            tuple   : self object (**results**) containing the all information about the best RBF fitting obtained, including:
                 - the optimal radial weights  (**results.radial_weights**),
                 - when relevant, the optimal shape parameter found :math:`\sigma` (**results.sigma**),
                 - when relevant, the optimal regularization parameter found :math:`\lambda` (**results.regularization**),
@@ -964,30 +885,47 @@ class RadialBasisFunctions:
         training_ss_error, rmse_error, y_training_predictions_scaled = self.error_calculation(radial_weights, self.basis_generation(best_r_value), self.y_data)
         r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
         y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
-        results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square, self.basis_function, self.data_min, self.data_max)
-        self.pickle_save({'set-up':self, 'result':results})
-        return results
 
-    def rbf_predict_output(self, results_vector, x_data):
+        # Results
+        self.weights = radial_weights
+        self.sigma = best_r_value
+        self.regularization_parameter = best_lambda_param
+        self.rmse = rmse_error
+        self.output_predictions = y_training_predictions
+        self.condition_number = x_condition_number
+        self.R2 = r_square
+        self.x_data_min = self.data_min[:, :-1]
+        self.x_data_max = self.data_max[:, :-1]
+        self.y_data_min = self.data_min[:, -1]
+        self.y_data_max = self.data_max[:, -1]
+        if x_condition_number < (1 / np.finfo(float).eps):
+            self.solution_status = 'ok'
+        else:
+            warnings.warn('The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution')
+            self.solution_status = 'unstable solution'
+
+        self.pickle_save({'model':self})
+        return self
+
+    def predict_output(self, x_data):
         """
 
         The ``rbf_predict_output`` method generates output predictions for input data x_data based a previously generated RBF fitting.
 
         Args:
-            results_vector(tuple)  : Results of RBF training generated by calling the ``rbf_training`` function.
             x_data(NumPy Array)    : Designs for which the output is to be evaluated/predicted.
 
         Returns:
              Numpy Array    : Output variable predictions based on the rbf fit.
 
         """
-        radial_weights = results_vector.weights
-        centres_matrix = results_vector.centres
-        r = results_vector.sigma
-        lambda_reg = results_vector.regularization_parameter
-        scale = results_vector.x_data_max - results_vector.x_data_min
+        radial_weights = self.weights
+        centres_matrix = self.centres
+        r = self.sigma
+        lambda_reg = self.regularization_parameter
+        scale = self.x_data_max - self.x_data_min
         scale[scale == 0.0] = 1.0
-        x_pred_scaled = (x_data - results_vector.x_data_min)/scale
+        x_pred_scaled = (x_data - self.x_data_min)/scale
         x_data = x_pred_scaled.reshape(x_data.shape)
 
         basis_vector = np.zeros((x_data.shape[0], centres_matrix.shape[0]))
@@ -1015,8 +953,58 @@ class RadialBasisFunctions:
         x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         # x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         y_prediction_scaled = np.matmul(x_transformed, radial_weights)
-        y_prediction_unscaled = results_vector.y_data_min + y_prediction_scaled * (results_vector.y_data_max - results_vector.y_data_min)
+        y_prediction_unscaled = self.y_data_min + y_prediction_scaled * (self.y_data_max - self.y_data_min)
         return y_prediction_unscaled
+
+    def rbf_generate_expression(self, variable_list):
+        """
+        The ``rbf_generate_expression`` method returns the Pyomo expression for the RBF model trained.
+
+        The expression is constructed based on the supplied list of variables **variable_list** and the results of the previous RBF training process.
+
+        Args:
+            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the output of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
+
+        Returns:
+            Pyomo Expression              : Pyomo expression of the RBF model based on the variables provided in **variable_list**
+
+        """
+        t1 = np.array([variable_list])
+        basis_vector = []
+        # Calculate distances from centres
+        for i in range(0, self.centres.shape[0]):
+            ans = 0
+            for j in range(0, self.centres.shape[1]):
+                ans += (((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j]- self.x_data_min[0, j])) - self.centres[i, j]) ** 2
+            eucl_d = ans ** 0.5
+            basis_vector.append(eucl_d)
+        rbf_terms_list = []
+        if self.basis_function == 'linear':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(RadialBasisFunctions.linear_transformation(basis_vector[k]))
+        elif self.basis_function == 'cubic':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(RadialBasisFunctions.cubic_transformation(basis_vector[k]))
+        elif self.basis_function == 'gaussian':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(exp(-1 * ((self.sigma * basis_vector[k]) ** 2)))
+        elif self.basis_function == 'mq':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5)
+        elif self.basis_function == 'imq':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(1 / ((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5))
+        elif self.basis_function == 'spline':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(((basis_vector[k] ** 2) * log(basis_vector[k])))
+
+        rbf_terms_array = np.asarray(rbf_terms_list)
+        rbf_expr = self.y_data_min[0]
+        rbf_expr += (self.y_data_max[0] - self.y_data_min[0]) * sum(w * t for w, t in zip(
+            np.nditer(self.weights),
+            np.nditer(rbf_terms_array, flags=['refs_ok'])
+        ))
+        return rbf_expr
 
     def get_feature_vector(self):
         """
@@ -1050,7 +1038,7 @@ class RadialBasisFunctions:
 
     def pickle_save(self, solutions):
         """
-        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        The pickle_save method saves the results of the run in a pickle object.
         """
         try:
             filehandler = open(self.filename, 'wb')
@@ -1063,7 +1051,7 @@ class RadialBasisFunctions:
     @staticmethod
     def pickle_load(solution_file):
         """
-        pickle_load loads the results of a saved run 'file.obj'. It returns an array of two elements: the setup (index[0]) and the results (index[1]).
+        pickle_load loads the results of a saved run 'file.obj'.
 
         Input arguments:
                 solution_file            : Pickle object file containing previous solution to be loaded.
@@ -1075,11 +1063,10 @@ class RadialBasisFunctions:
         except:
             raise Exception('File could not be loaded.')
 
-    def parity_residual_plots(self, results_vector):
+    def parity_residual_plots(self):
         """
 
         inputs:
-            results_vector: Result object created by run.
 
         Returns:
 
@@ -1088,13 +1075,13 @@ class RadialBasisFunctions:
         fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
         ax = fig1.add_subplot(121)
         ax.plot(self.y_data_unscaled, self.y_data_unscaled, '-')
-        ax.plot(self.y_data_unscaled, results_vector.output_predictions, 'o')
+        ax.plot(self.y_data_unscaled, self.output_predictions, 'o')
         ax.set_xlabel(r'True data', fontsize=12)
         ax.set_ylabel(r'Surrogate values', fontsize=12)
         ax.set_title(r'Parity plot', fontsize=12)
 
         ax2 = fig1.add_subplot(122)
-        ax2.plot(self.y_data_unscaled, self.y_data_unscaled - results_vector.output_predictions, 's', mfc='w', mec='m', ms=6)
+        ax2.plot(self.y_data_unscaled, self.y_data_unscaled - self.output_predictions, 's', mfc='w', mec='m', ms=6)
         ax2.axhline(y=0, xmin=0, xmax=1)
         ax2.set_xlabel(r'True data', fontsize=12)
         ax2.set_ylabel(r'Residuals', fontsize=12)
@@ -1104,40 +1091,40 @@ class RadialBasisFunctions:
 
         return
 
-    def _report(self, results_vector):
+    def _report(self):
         ## Will only work with Python > 3.5
         variable_headers = self.get_feature_vector()
         var_list = []
         for i in variable_headers:
             var_list.append(variable_headers[i])
-        eqn = results_vector.rbf_generate_expression(var_list)
+        eqn = self.rbf_generate_expression(var_list)
 
         double_line = "=" * 120
         s = (f"\n{double_line}"
              f"\nResults of radial basis function run:\n"
-             f"\nBasis function type               : {results_vector.basis_function}\n"
-             f"Shape parameter                    : {results_vector.sigma}\n"
-             f"Regularization parameter           : {results_vector.regularization_parameter}\n"
-             f"Number of terms in RBF model       : {results_vector.weights.size + 1}\n"  # The additional term is y_min
+             f"\nBasis function type               : {self.basis_function}\n"
+             f"Shape parameter                    : {self.sigma}\n"
+             f"Regularization parameter           : {self.regularization_parameter}\n"
+             f"Number of terms in RBF model       : {self.weights.size + 1}\n"  # The additional term is y_min
              f"\nRBF Expression:\n"
              f"--------------------------\n"
              f"\n{eqn}\n"
              f"--------------------------\n"
              f"\nModel training errors:"
              f"\n-----------------------\n"
-             f"Mean Squared Error (MSE)         : {results_vector.rmse ** 2}\n"
-             f"Root Mean Squared Error (RMSE)   : {results_vector.rmse}\n"
-             f"Goodness of fit (R2)             : {results_vector.R2}\n"             
+             f"Mean Squared Error (MSE)         : {self.rmse ** 2}\n"
+             f"Root Mean Squared Error (RMSE)   : {self.rmse}\n"
+             f"Goodness of fit (R2)             : {self.R2}\n"             
              f"\n{double_line}"
              )
         return s
 
-    def print_report(self, results_vector):
-        s = self._report(results_vector)
+    def print_report(self):
+        s = self._report()
         print(s)
 
-    def _repr_pretty_(self, results_vector):
+    def _repr_pretty_(self):
         import pprint
-        s = self._report(results_vector)
+        s = self._report()
         j = pprint.PrettyPrinter(width=80)
         j.pprint(s)
