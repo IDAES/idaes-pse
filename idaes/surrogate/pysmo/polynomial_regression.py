@@ -49,83 +49,6 @@ The Pyomo optimization approach is enabled as the default at this time.
 """
 
 
-class ResultReport:
-
-    def __init__(self, optimal_weight_vector, polynomial_order, multinomials,
-                 mae_error, mse_error, R2, adjusted_R2, number_of_iterations,
-                 results_vector, additional_features_array,
-                 final_regression_data, df_coefficients, extra_terms_coeffs,
-                 extra_terms_feature_vector, extra_terms_expressions):
-        """
-        A class for creating an object containing the information to be returned to the user.
-
-        Returns:
-            self function containing several attributes:
-                - self.optimal_weights_array : np.ndarray containing the coefficients of all terms in the regressed polynomial, including user-specified terms
-                - self.polynomial_order : the optimal polynomial order which results in the smallest training and cross-validation errors
-                - self.errors : list containing four error/fit measures: the mean absolute error (MAE), mean squared error (MSE), R-squared and adjusted R-squared. The latter error is not always computed.
-                - self.number_of_iterations : the number of err-r maximization iterations carried out by th algorithm. Returns an empty list is returned when no iterations are carried out
-                - self.iteration_summary : summary of the best results available at each iteration. Can be used to monitor convergence. Returns an empty list is returned when no iterations are carried out
-                - self.additional_features_data : np.ndarray containing the vector of additional training features supplied by the user.
-                - self.final_training_data : np.ndarray containing the dataset used for regression training at the final iteration.
-                - self.dataframe_of_optimal_weights_polynomial : Dataframe containing each polynomial term its the corresponding weight.
-                - self.dataframe_of_optimal_weights_extra_terms : Dataframe containing weights for user-specified terms. Returns an empty list when no additional terms have been supplied.
-                - self.fit_status : Judgement of performance of algorithm on inputted dataset based on final R-squared value. Returns 'ok' when R2>0.95, 'poor' when it is not.
-
-        """
-        self.optimal_weights_array = optimal_weight_vector
-        self.polynomial_order = polynomial_order
-        self.multinomials = multinomials
-        self.errors = {'MAE': mae_error, 'MSE': mse_error, 'R2': R2, 'Adjusted R2': adjusted_R2}
-        self.number_of_iterations = number_of_iterations
-        self.iteration_summary = results_vector
-        self.additional_features_data = additional_features_array
-        self.final_training_data = final_regression_data
-        self.dataframe_of_optimal_weights_polynomial = df_coefficients
-        self.dataframe_of_optimal_weights_extra_terms = extra_terms_coeffs
-        self.extra_terms_feature_vector = extra_terms_feature_vector
-        self.extra_terms_expressions = extra_terms_expressions
-
-        if R2 > 0.95:
-            self.fit_status = 'ok'
-        else:
-            warnings.warn('Polynomial regression generates poor fit for the dataset')
-            self.fit_status = 'poor'
-
-    def generate_expression(self, variable_list):
-        """
-
-        The ``generate_expression`` method returns the Pyomo expression for the polynomial model trained.
-
-        The expression is constructed based on a supplied list of variables **variable_list** and the output of ``poly_training``.
-
-        Args:
-            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the results of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
-
-        Returns:
-            Pyomo Expression              : Pyomo expression of the polynomial model based on the variables provided in **variable_list**.
-
-        """
-        terms = PolynomialRegression.polygeneration(
-            self.polynomial_order, self.multinomials, np.array([variable_list])
-        ).transpose()
-        n = len(terms)
-
-        ans = sum(w*t for w, t in zip(
-            np.nditer(self.optimal_weights_array),
-            np.nditer(terms, flags=['refs_ok'])
-        ))
-
-        user_term_map = dict((id(a), b) for a, b in zip(
-            self.extra_terms_feature_vector,
-            variable_list,
-        ))
-        if len(self.extra_terms_expressions) > 0:
-            for w, expr in zip(np.nditer(self.optimal_weights_array[n:]), self.extra_terms_expressions):
-                ans += float(w) * replace_expressions(expr, user_term_map)
-        return ans
-
-
 class FeatureScaling:
     """
 
@@ -422,6 +345,20 @@ class PolynomialRegression:
 
         self.feature_list = []
         self.additional_term_expressions = []
+
+        # Results
+        self.optimal_weights_array = None
+        self.final_polynomial_order = None
+        self.errors = None
+        self.number_of_iterations = None
+        self.iteration_summary = None
+        self.additional_features_data = None
+        self.final_training_data = None
+        self.dataframe_of_optimal_weights_polynomial = None
+        self.dataframe_of_optimal_weights_extra_terms = None
+        self.extra_terms_feature_vector = None
+        self.fit_status = None
+
 
     def training_test_data_creation(self, additional_features=None):
 
@@ -1071,16 +1008,26 @@ class PolynomialRegression:
 
             extra_terms_feature_vector = list(self.feature_list[i] for i in self.regression_data_columns)
 
-            results = ResultReport(
-                phi_opt, order_opt, self.multinomials, mae_error_opt,
-                mse_error_opt, r_square_opt, r_square_adj_opt,
-                iteration_number, vector_of_results_df, None,
-                self.regression_data, dataframe_coeffs, [],
-                extra_terms_feature_vector,
-                self.additional_term_expressions)
+            # Results
+            self.optimal_weights_array = phi_opt
+            self.final_polynomial_order = order_opt
+            self.errors = {'MAE': mae_error_opt, 'MSE': mse_error_opt, 'R2': r_square_opt, 'Adjusted R2': r_square_adj_opt}
+            self.number_of_iterations = iteration_number
+            self.iteration_summary = vector_of_results_df
+            self.additional_features_data = None
+            self.final_training_data = self.regression_data
 
-            self.pickle_save({'set-up':self, 'result':results})
-            return results
+            self.dataframe_of_optimal_weights_polynomial = dataframe_coeffs
+            self.dataframe_of_optimal_weights_extra_terms = []
+            self.extra_terms_feature_vector = extra_terms_feature_vector
+            if R2 > 0.95:
+                self.fit_status = 'ok'
+            else:
+                warnings.warn('Polynomial regression generates poor fit for the dataset')
+                self.fit_status = 'poor'
+
+            self.pickle_save({'model':self})
+            return self
 
         else:
             print('No iterations will be run.')
@@ -1122,14 +1069,26 @@ class PolynomialRegression:
 
             extra_terms_feature_vector = list(self.feature_list[i] for i in self.regression_data_columns)
 
-            results = ResultReport(
-                phi_best, order_best, self.multinomials, mae_error, mse_error,
-                r_square, [], [], [], additional_features_array,
-                self.regression_data, dataframe_coeffs, extra_terms_coeffs,
-                extra_terms_feature_vector, self.additional_term_expressions)
+            # Results
+            self.optimal_weights_array = phi_best
+            self.final_polynomial_order = order_best
+            self.errors = {'MAE': mae_error, 'MSE': mse_error, 'R2': r_square}
+            self.number_of_iterations = []
+            self.iteration_summary = []
+            self.additional_features_data = additional_features_array
+            self.final_training_data = self.regression_data
+            self.dataframe_of_optimal_weights_polynomial = dataframe_coeffs
+            self.dataframe_of_optimal_weights_extra_terms = extra_terms_coeffs
+            self.extra_terms_feature_vector = extra_terms_feature_vector
+            if r_square > 0.95:
+                self.fit_status = 'ok'
+            else:
+                warnings.warn('Polynomial regression generates poor fit for the dataset')
+                self.fit_status = 'poor'
 
-            self.pickle_save({'set-up':self, 'result':results})
-            return results
+            self.pickle_save({'model': self})
+
+            return self
 
     def get_feature_vector(self):
         """
@@ -1185,7 +1144,7 @@ class PolynomialRegression:
         self.additional_term_expressions = term_list
 
     # def fit_surrogate(self):
-    def poly_training(self):
+    def training(self):
         """
 
         The ``poly_training`` method trains a polynomial model to an input dataset.
@@ -1194,7 +1153,7 @@ class PolynomialRegression:
 
         Returns:
             tuple   : Python Object (**results**) containing the results of the polynomial regression process including:
-                - the polynomial order  (**self.polynomial_order**)
+                - the polynomial order  (**self.final_polynomial_order**)
                 - polynomial coefficients (**self.optimal_weights_array**), and
                 - MAE and MSE errors as well as the :math:`R^{2}` (**results.errors**).
 
@@ -1209,13 +1168,45 @@ class PolynomialRegression:
         )
         return self.polynomial_regression_fitting(additional_data)
 
-    def poly_predict_output(self, results_vector, x_data):
+    def generate_expression(self, variable_list):
         """
 
-        The ``poly_predict_output`` method generates output predictions for input data x_data based a previously generated polynomial fitting.
+        The ``generate_expression`` method returns the Pyomo expression for the polynomial model trained.
+
+        The expression is constructed based on a supplied list of variables **variable_list** and the output of ``poly_training``.
 
         Args:
-            results_vector  : Python object containing results of polynomial fit generated by calling the poly_training function.
+            variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the results of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
+
+        Returns:
+            Pyomo Expression              : Pyomo expression of the polynomial model based on the variables provided in **variable_list**.
+
+        """
+        terms = PolynomialRegression.polygeneration(
+            self.final_polynomial_order, self.multinomials, np.array([variable_list])
+        ).transpose()
+        n = len(terms)
+
+        ans = sum(w*t for w, t in zip(
+            np.nditer(self.optimal_weights_array),
+            np.nditer(terms, flags=['refs_ok'])
+        ))
+
+        user_term_map = dict((id(a), b) for a, b in zip(
+            self.extra_terms_feature_vector,
+            variable_list,
+        ))
+        if len(self.additional_term_expressions) > 0:
+            for w, expr in zip(np.nditer(self.optimal_weights_array[n:]), self.additional_term_expressions):
+                ans += float(w) * replace_expressions(expr, user_term_map)
+        return ans
+
+    def predict_output(self, x_data):
+        """
+
+        The ``predict_output`` method generates output predictions for input data x_data based a previously generated polynomial fitting.
+
+        Args:
             x_data          : Numpy array of designs for which the output is to be evaluated/predicted.
 
         Returns:
@@ -1228,7 +1219,7 @@ class PolynomialRegression:
         m = aml.ConcreteModel()
         i = aml.Set(initialize=x_list)
         m.xx = aml.Var(i)
-        m.o2 = aml.Objective(expr=results_vector.generate_expression([m.xx[i] for i in x_list]))
+        m.o2 = aml.Objective(expr=self.generate_expression([m.xx[i] for i in x_list]))
         y_eq = np.zeros((x_data.shape[0], 1))
         for j in range(0, x_data.shape[0]):
             for i in x_list:
@@ -1262,26 +1253,25 @@ class PolynomialRegression:
         except:
             raise Exception('File could not be loaded.')
 
-    def parity_residual_plots(self, results_vector):
+    def parity_residual_plots(self):
         """
 
         inputs:
-            results_vector: Result object created by run.
 
         Returns:
 
         """
-        y_predicted = self.poly_predict_output(results_vector, results_vector.final_training_data[:, :-1])
+        y_predicted = self.predict_output(self.final_training_data[:, :-1])
         fig1 = plt.figure(figsize=(16, 9), tight_layout=True)
         ax = fig1.add_subplot(121)
-        ax.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1], '-')
-        ax.plot(results_vector.final_training_data[:, -1], y_predicted, 'o')
+        ax.plot(self.final_training_data[:, -1], self.final_training_data[:, -1], '-')
+        ax.plot(self.final_training_data[:, -1], y_predicted, 'o')
         ax.set_xlabel(r'True data', fontsize=12)
         ax.set_ylabel(r'Surrogate values', fontsize=12)
         ax.set_title(r'Parity plot', fontsize=12)
 
         ax2 = fig1.add_subplot(122)
-        ax2.plot(results_vector.final_training_data[:, -1], results_vector.final_training_data[:, -1] - y_predicted[:, ].reshape(y_predicted.shape[0], ), 's', mfc='w', mec='m', ms=6)
+        ax2.plot(self.final_training_data[:, -1], self.final_training_data[:, -1] - y_predicted[:, ].reshape(y_predicted.shape[0], ), 's', mfc='w', mec='m', ms=6)
         ax2.axhline(y=0, xmin=0, xmax=1)
         ax2.set_xlabel(r'True data', fontsize=12)
         ax2.set_ylabel(r'Residuals', fontsize=12)
@@ -1291,72 +1281,71 @@ class PolynomialRegression:
 
         return
 
-    def _report(self, results_vector):
+    def _report(self):
         ## Will only work with Python > 3.5
         variable_headers = self.get_feature_vector()
         var_list = []
         for i in variable_headers:
             var_list.append(variable_headers[i])
-        eqn = results_vector.generate_expression(var_list)
+        eqn = self.generate_expression(var_list)
 
         double_line = "=" * 120
         s = (f"\n{double_line}"
              f"\nResults of polynomial regression run:\n"
-             f"\nPolynomial order                   : {results_vector.polynomial_order}\n"
-             f"Number of terms in polynomial model: {results_vector.optimal_weights_array.size}\n"
+             f"\nPolynomial order                   : {self.final_polynomial_order}\n"
+             f"Number of terms in polynomial model: {self.optimal_weights_array.size}\n"
              f"\nPolynomial Expression:\n"
              f"--------------------------\n"
              f"\n{eqn}\n"
              f"--------------------------\n"
              f"\nModel training errors:"
              f"\n-----------------------\n"
-             f"Mean Squared Error (MSE)         : {results_vector.errors['MSE']}\n"
-             f"Root Mean Squared Error (RMSE)   : {np.sqrt(results_vector.errors['MSE'])}\n"
-             f"Mean Absolute error (MSE)        : {results_vector.errors['MAE']}\n"
-             f"Goodness of fit (R2)             : {results_vector.errors['R2']}\n"             
+             f"Mean Squared Error (MSE)         : {self.errors['MSE']}\n"
+             f"Root Mean Squared Error (RMSE)   : {np.sqrt(self.errors['MSE'])}\n"
+             f"Mean Absolute error (MSE)        : {self.errors['MAE']}\n"
+             f"Goodness of fit (R2)             : {self.errors['R2']}\n"             
              f"\n{double_line}"
              )
         return s
 
-    def print_report(self, results_vector):
-        s = self._report(results_vector)
+    def print_report(self):
+        s = self._report()
         print(s)
 
-    def _repr_pretty_(self, results_vector):
+    def _repr_pretty_(self):
         import pprint
-        s = self._report(results_vector)
+        s = self._report()
         j = pprint.PrettyPrinter(width=80)
         j.pprint(s)
 
-    def confint_regression(self, results_vector, confidence=0.95):
+    def confint_regression(self, confidence=0.95):
         """
         The ``confint_regression`` method prints the confidence intervals for the regression patamaters.
 
         Args:
-            results_vector  : Python object containing results of polynomial fit generated by calling the poly_training function.
             confidence      : Required confidence interval level, default = 0.95 (95%)
 
         """
         from scipy.stats import t
-        data = results_vector.final_training_data
-        y_pred = self.poly_predict_output(results_vector, data[:, :-1])
-        dof = data.shape[0] - len(results_vector.optimal_weights_array) + 1  # be careful when there are additional features
+        data = self.final_training_data
+        y_pred = self.predict_output(data[:, :-1])
+        dof = data.shape[0] - len(self.optimal_weights_array) + 1  # be careful when there are additional features
         ssr = np.sum((data[:, -1] - y_pred[:, 0]) ** 2)
         sig_sq = ssr / dof
-        if (results_vector.additional_features_data is None) or (len(results_vector.additional_features_data) == 0):
-            x_exp = self.polygeneration(results_vector.polynomial_order, results_vector.multinomials, data[:, :-1])  # will not account for additional features
+        if (self.additional_features_data is None) or (len(self.additional_features_data) == 0):
+            x_exp = self.polygeneration(self.final_polynomial_order, self.multinomials, data[:, :-1])  # will not account for additional features
         else:
-            x_exp = self.polygeneration(results_vector.polynomial_order, results_vector.multinomials, data[:, :-1],additional_x_training_data = results_vector.additional_features_data)
+            x_exp = self.polygeneration(self.final_polynomial_order, self.multinomials, data[:, :-1],additional_x_training_data = self.additional_features_data)
 
         covar = sig_sq * np.linalg.pinv(x_exp.transpose() @ x_exp)
         ss_reg_params = np.sqrt(np.diag(covar))  # standard error for each regression parameter
         t_dist = t.ppf((1 + confidence) / 2, dof)  # alternatively, t_dist_data = st.t.interval(0.99, 8)
         # Evaluate confidence intervals, Tabulate and print results
-        c_data = np.zeros((results_vector.optimal_weights_array.shape[0], 4))
-        c_data[:, 0] = results_vector.optimal_weights_array[:, 0]
+        c_data = np.zeros((self.optimal_weights_array.shape[0], 4))
+        c_data[:, 0] = self.optimal_weights_array[:, 0]
         c_data[:, 1] = ss_reg_params[:, ]
-        c_data[:, 2] = results_vector.optimal_weights_array[:, 0] - t_dist * ss_reg_params[:, ]
-        c_data[:, 3] = results_vector.optimal_weights_array[:, 0] + t_dist * ss_reg_params[:, ]
+        c_data[:, 2] = self.optimal_weights_array[:, 0] - t_dist * ss_reg_params[:, ]
+        c_data[:, 3] = self.optimal_weights_array[:, 0] + t_dist * ss_reg_params[:, ]
 
         headers = ['Regression coeff.', 'Std. error', 'Conf. int. lower', 'Conf. int. upper']
         c_data_df = pd.DataFrame(data=c_data, columns=headers)

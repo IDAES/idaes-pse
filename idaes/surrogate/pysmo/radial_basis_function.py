@@ -910,7 +910,7 @@ class RadialBasisFunctions:
     def predict_output(self, x_data):
         """
 
-        The ``rbf_predict_output`` method generates output predictions for input data x_data based a previously generated RBF fitting.
+        The ``predict_output`` method generates output predictions for input data x_data based a previously generated RBF fitting.
 
         Args:
             x_data(NumPy Array)    : Designs for which the output is to be evaluated/predicted.

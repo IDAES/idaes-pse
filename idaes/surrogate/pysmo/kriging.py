@@ -519,7 +519,7 @@ class KrigingModel:
 
     def generate_expression(self, variable_list):
         """
-        The ``kriging_generate_expression`` method returns the Pyomo expression for the Kriging model trained.
+        The ``generate_expression`` method returns the Pyomo expression for the Kriging model trained.
 
         The expression is constructed based on the supplied list of variables **variable_list** and the results of the previous Kriging training process.
 
