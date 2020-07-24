@@ -15,7 +15,7 @@ import os
 import io
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 from idaes.surrogate.pysmo.kriging import (
-    KrigingModel, ResultReport, MyBounds
+    KrigingModel, MyBounds
 )
 import numpy as np
 import pandas as pd
