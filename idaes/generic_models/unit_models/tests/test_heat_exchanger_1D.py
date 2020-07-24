@@ -216,8 +216,8 @@ class TestBTX_cocurrent(object):
         assert hasattr(btx.fs.unit, "area_calc_tube")
         assert hasattr(btx.fs.unit, "area_calc_shell")
 
-        assert number_variables(btx) == 911
-        assert number_total_constraints(btx) == 845
+        assert number_variables(btx) == 869
+        assert number_total_constraints(btx) == 803
         assert number_unused_variables(btx) == 8
 
     @pytest.mark.unit
@@ -370,8 +370,8 @@ class TestBTX_countercurrent(object):
         assert hasattr(btx.fs.unit, "area_calc_tube")
         assert hasattr(btx.fs.unit, "area_calc_shell")
 
-        assert number_variables(btx) == 911
-        assert number_total_constraints(btx) == 845
+        assert number_variables(btx) == 869
+        assert number_total_constraints(btx) == 803
         assert number_unused_variables(btx) == 8
 
     @pytest.mark.unit
@@ -526,8 +526,8 @@ class TestIAPWS_cocurrent(object):
         assert hasattr(iapws.fs.unit, "area_calc_tube")
         assert hasattr(iapws.fs.unit, "area_calc_shell")
 
-        assert number_variables(iapws) == 659
-        assert number_total_constraints(iapws) == 595
+        assert number_variables(iapws) == 617
+        assert number_total_constraints(iapws) == 553
         assert number_unused_variables(iapws) == 10
 
     @pytest.mark.unit
@@ -676,8 +676,8 @@ class TestIAPWS_countercurrent(object):
         assert hasattr(iapws.fs.unit, "area_calc_tube")
         assert hasattr(iapws.fs.unit, "area_calc_shell")
 
-        assert number_variables(iapws) == 659
-        assert number_total_constraints(iapws) == 595
+        assert number_variables(iapws) == 617
+        assert number_total_constraints(iapws) == 553
         assert number_unused_variables(iapws) == 10
 
     @pytest.mark.unit
@@ -834,8 +834,8 @@ class TestSaponification_cocurrent(object):
         assert hasattr(sapon.fs.unit, "area_calc_tube")
         assert hasattr(sapon.fs.unit, "area_calc_shell")
 
-        assert number_variables(sapon) == 1037
-        assert number_total_constraints(sapon) == 959
+        assert number_variables(sapon) == 995
+        assert number_total_constraints(sapon) == 917
         assert number_unused_variables(sapon) == 14
 
     @pytest.mark.unit
@@ -1011,8 +1011,8 @@ class TestSaponification_countercurrent(object):
         assert hasattr(sapon.fs.unit, "area_calc_tube")
         assert hasattr(sapon.fs.unit, "area_calc_shell")
 
-        assert number_variables(sapon) == 1037
-        assert number_total_constraints(sapon) == 959
+        assert number_variables(sapon) == 995
+        assert number_total_constraints(sapon) == 917
         assert number_unused_variables(sapon) == 14
 
     @pytest.mark.unit

@@ -324,7 +324,9 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve_heat_duty(self, methane):
-        results = solver.solve(methane)
+        solver.options["tol"] = 1e-9
+        solver.options["nlp_scaling_method"] = "user-scaling"
+        results = solver.solve(methane, tee=True)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -335,7 +337,7 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution_duty(self, methane):
-        assert (pytest.approx(250.06, abs=1e-2) ==
+        assert (pytest.approx(250.06, abs=1e-1) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
         assert (pytest.approx(0.0, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
@@ -369,7 +371,7 @@ class TestMethane(object):
                 methane.fs.unit.outlet.flow_mol[0] *
                 methane.fs.unit.control_volume.properties_out[0]
                     .enth_mol_phase["Vap"] +
-                methane.fs.unit.heat_duty[0])) <= 1e-6
+                methane.fs.unit.heat_duty[0])) <= 1e-4
 
     @pytest.mark.ui
     @pytest.mark.unit
