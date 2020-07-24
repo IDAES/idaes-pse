@@ -136,6 +136,7 @@ class DmfMagicsImpl(object):
                          path if it is not found.
         """
         kwargs, create = {}, False
+        path = os.path.expanduser(path)
         if len(extra) > 0:
             if extra[0].lower() == 'create':
                 if os.path.exists(

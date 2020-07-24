@@ -1,4 +1,5 @@
-﻿
+﻿.. _dmf-cli:
+
 DMF Command-line Interface
 ==========================
 
@@ -7,6 +8,7 @@ which is a Python program called `dmf`. There are several usage examples for eac
 sub-command. These examples assume the UNIX `bash` shell.
 
 .. contents::
+    :local:
     :depth: 2
 
 

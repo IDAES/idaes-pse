@@ -16,9 +16,23 @@ Base class for EoS modules.
 Raises NotImplementedErrors for all expected methods in case developer misses
 some. EoS developers should overload all these methods.
 """
+from pyomo.environ import units as pyunits
+from idaes.core.util.constants import Constants as const
 
 
 class EoSBase():
+    def gas_constant(b):
+        # Utility method to convert gas constant to base units
+        base_units = b.params.get_metadata().default_units
+
+        r_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["temperature"]**-1 *
+                   base_units["amount"]**-1 *
+                   base_units["time"]**-2)
+
+        return pyunits.convert(const.gas_constant, to_units=r_units)
+
     def common(b, pobj):
         raise NotImplementedError(_msg(b, "common"))
 
