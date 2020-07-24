@@ -19,7 +19,7 @@ Main assumptions:
 """
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Param, PositiveReals, Reals,
-                           value, log, exp, sqrt, Var, Expression)
+                           value, log, exp, sqrt, Var, Expression, Reference)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores

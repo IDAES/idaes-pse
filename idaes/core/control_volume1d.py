@@ -1329,20 +1329,17 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return (b.length*sum(
+                return b.length*sum(
                         accumulation_term(b, t, x, p) for p in
-                        b.config.property_package.phase_list) *
-                        b.scaling_factor_energy) == (
+                        b.config.property_package.phase_list) == (
                     b._flow_direction_term * sum(b.enthalpy_flow_dx[t, x, p]
                                                  for p in b.config.
-                                                 property_package.phase_list) *
-                    b.scaling_factor_energy +
-                    b.length*heat_term(b, t, x)*b.scaling_factor_energy +
-                    b.length*work_term(b, t, x)*b.scaling_factor_energy +
-                    b.length*enthalpy_transfer_term(b, t, x) *
-                    b.scaling_factor_energy +
-                    b.length*rxn_heat_term(b, t, x)*b.scaling_factor_energy +
-                    b.length*user_term(t, x)*b.scaling_factor_energy)
+                                                 property_package.phase_list) +
+                    b.length*heat_term(b, t, x) +
+                    b.length*work_term(b, t, x) +
+                    b.length*enthalpy_transfer_term(b, t, x) +
+                    b.length*rxn_heat_term(b, t, x) +
+                    b.length*user_term(t, x))
                     # TODO : Add conduction/dispersion term
 
         # Energy Holdup
@@ -1459,12 +1456,9 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return 0 == (b._flow_direction_term*b.pressure_dx[t, x] *
-                             b.scaling_factor_pressure +
-                             b.length*deltaP_term(b, t, x) *
-                             b.scaling_factor_pressure +
-                             b.length*user_term(t, x) *
-                             b.scaling_factor_pressure)
+                return 0 == (b._flow_direction_term*b.pressure_dx[t, x]  +
+                             b.length*deltaP_term(b, t, x) +
+                             b.length*user_term(t, x))
 
         return self.pressure_balance
 
@@ -1812,7 +1806,9 @@ argument)."""))
         if hasattr(self, "_enthalpy_flow"):
             for (t,x,p), v in self._enthalpy_flow.items():
                 sf = iscale.get_scaling_factor(
-                    self.properties[t, x].get_enthalpy_flow_terms(p))
+                    self.properties[t, x].get_enthalpy_flow_terms(p),
+                    default=1,
+                    warning=True)
                 iscale.set_scaling_factor(v, sf)
                 iscale.set_scaling_factor(self.enthalpy_flow_dx[t,x,p], sf*100)
                 c = self.enthalpy_flow_linking_constraint[t,x,p]
@@ -1821,7 +1817,9 @@ argument)."""))
         if hasattr(self, "_flow_terms"):
             for (t,x,p,j), v in self._flow_terms.items():
                 sf = iscale.get_scaling_factor(
-                    self.properties[t, x].get_material_flow_terms(p, j))
+                    self.properties[t, x].get_material_flow_terms(p, j),
+                    default=1,
+                    warning=True)
                 iscale.set_scaling_factor(v, sf)
                 iscale.set_scaling_factor(self.material_flow_dx[t,x,p,j], sf*100)
                 c = self.material_flow_linking_constraints[t,x,p,j]
@@ -1831,38 +1829,42 @@ argument)."""))
         if hasattr(self, "material_holdup_calculation"):
             for i, c in self.material_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.material_holdup[i], default=1, warning=True))
 
         if hasattr(self, "pressure_balance"):
             for i, c in self.pressure_balance.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.properties[i].pressure))
+                    c, iscale.get_scaling_factor(
+                        self.properties[i].pressure, default=1, warning=True))
 
-        # Material Balance Constraints
         if hasattr(self, "material_balances"):
-            for i, c in self.material_balances.items():
-                if len(i) == 4:
-                    t = i[0]
-                    x = i[1]
-                    p = i[2]
-                    j = i[3]
+            mb_type = self._constructed_material_balance_type
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, x, p, j), c in self.material_balances.items():
                     sf = iscale.get_scaling_factor(
-                        self.properties[t, x].get_material_flow_terms(p, j))
-                elif len(i) == 3:
-                    t = i[0]
-                    x = i[1]
-                    j = i[2]
+                        self.properties[t,x].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, x, j), c in self.material_balances.items():
                     sf = min(map(
-                        lambda x: iscale.get_scaling_factor(x, default=1),
-                        [self.properties[t, x].get_material_flow_terms(p, j)
-                            for p in self.config.property_package.phase_list]))
-                iscale.constraint_scaling_transform(c, sf)
+                            lambda x: iscale.get_scaling_factor(
+                                x, default=1, warning=True),
+                            [self.properties[t,x].get_material_flow_terms(p, j)
+                                for p in self.config.property_package.phase_list]
+                        ))
+                    iscale.constraint_scaling_transform(c, sf)
+            else:
+                _log.warning(f"Unknow material balance type {mb_type}")
 
         # Energy Balance Constraints
         if hasattr(self, "enthalpy_balances"):
             for i, c in self.enthalpy_balances.items():
                 sf = min(map(
-                    lambda x: iscale.get_scaling_factor(x, default=1),
+                    lambda x: iscale.get_scaling_factor(
+                        x, default=1, warning=True),
                     [self.properties[i].get_enthalpy_flow_terms(p)
                             for p in self.config.property_package.phase_list]))
                 iscale.constraint_scaling_transform(c, sf)
@@ -1870,9 +1872,11 @@ argument)."""))
         if hasattr(self, "energy_holdup_calculation"):
             for i, c in self.energy_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.energy_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.energy_holdup[i], default=1, warning=True))
 
         if hasattr(self, "meterial_holdup_calculation"):
             for i, c in self.material_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.material_holdup[i], default=1, warning=True))

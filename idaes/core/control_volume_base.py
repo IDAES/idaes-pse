@@ -421,6 +421,7 @@ have a config block which derives from CONFIG_Base,
                         "your property package to implement the necessary "
                         "default attributes.".format(self.name))
 
+        self._constructed_material_balance_type = balance_type
         if balance_type == MaterialBalanceType.none:
             mb = None
         elif balance_type == MaterialBalanceType.componentPhase:
@@ -476,6 +477,7 @@ have a config block which derives from CONFIG_Base,
                         "your property package to implement the necessary "
                         "default attributes.".format(self.name))
 
+        self._constructed_energy_balance_type = balance_type
         if balance_type == EnergyBalanceType.none:
             eb = None
         elif balance_type == EnergyBalanceType.enthalpyTotal:
@@ -514,6 +516,7 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        self._constructed_momentum_balance_type = balance_type
         if balance_type == MomentumBalanceType.none:
             mb = None
         elif balance_type == MomentumBalanceType.pressureTotal:

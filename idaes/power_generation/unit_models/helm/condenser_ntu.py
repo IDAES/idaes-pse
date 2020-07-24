@@ -335,36 +335,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2)
         init_log.info_high("Initialization Step 1 Complete.")
 
-        # ---------------------------------------------------------------------
-        # Solve unit without heat transfer equation
-        duty = pyo.value(blk.heat_transfer[0])
-        blk.saturation_eqn.deactivate()
-        blk.unit_heat_balance.deactivate()
-        blk.side_2.heat[:].value = duty
-        blk.side_1.heat[:].fix(-duty)
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-                "Initialization Step 2 {}.".format(idaeslog.condition(res)))
-
         # Solve with all constraints activated
-        blk.side_1.heat[:].unfix()
-        #blk.side_2.heat[:].unfix()
         blk.saturation_eqn.activate()
-        #blk.unit_heat_balance.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
-        init_log.info_high(
-                "Initialization Step 3 {}.".format(idaeslog.condition(res))
-            )
-
-        # Solve with all constraints activated
-        blk.side_1.heat[:].unfix()
-        blk.side_2.heat[:].unfix()
-        blk.saturation_eqn.activate()
-        blk.unit_heat_balance.activate()
         if unfix == 'pressure':
             blk.hot_side.properties_in[0].pressure.unfix()
         elif unfix == 'hot_flow':
@@ -375,8 +347,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
-                "Initialization Step 4 {}.".format(idaeslog.condition(res))
-            )
+            "Initialization Step 4 {}.".format(idaeslog.condition(res))
+        )
 
         # Release Inlet state
         blk.side_1.release_state(flags1, outlvl + 1)
@@ -417,7 +389,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         area_sf_default = 1e-2
         overall_heat_transfer_coefficient_sf_default = 1e-2
 

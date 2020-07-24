@@ -1580,36 +1580,43 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "material_holdup_calculation"):
             for i, c in self.material_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.material_holdup[i], default=1, warning=True))
 
         if hasattr(self, "pressure_balance"):
             for t, c in self.pressure_balance.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.properties_in[t].pressure))
+                    c, iscale.get_scaling_factor(
+                        self.properties_in[t].pressure, default=1, warning=True))
 
         # Material Balance Constraints
         if hasattr(self, "material_balances"):
-            for i, c in self.material_balances.items():
-                if len(i) == 3:
-                    t = i[0]
-                    p = i[1]
-                    j = i[2]
+            mb_type = self._constructed_material_balance_type
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, p, j), c in self.material_balances.items():
                     sf = iscale.get_scaling_factor(
-                        self.properties_in[t].get_material_flow_terms(p, j))
-                elif len(i) == 2:
-                    t = i[0]
-                    j = i[1]
+                        self.properties_in[t].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t , j), c in self.material_balances.items():
                     sf = min(map(
-                        lambda x: iscale.get_scaling_factor(x, default=1),
-                        [self.properties_in[t].get_material_flow_terms(p, j)
-                            for p in self.config.property_package.phase_list]))
-                iscale.constraint_scaling_transform(c, sf)
+                            lambda x: iscale.get_scaling_factor(
+                                x, default=1, warning=True),
+                            [self.properties_in[t].get_material_flow_terms(p, j)
+                                for p in self.config.property_package.phase_list]
+                        ))
+                    iscale.constraint_scaling_transform(c, sf)
+            else:
+                _log.warning(f"Unknow material balance type {mb_type}")
 
         # Energy Balance Constraints
         if hasattr(self, "enthalpy_balances"):
             for t, c in self.enthalpy_balances.items():
                 sf = min(map(
-                    lambda x: iscale.get_scaling_factor(x, default=1),
+                    lambda x: iscale.get_scaling_factor(
+                        x, default=1, warning=True),
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
                             for p in self.config.property_package.phase_list]))
                 iscale.constraint_scaling_transform(c, sf)
@@ -1617,9 +1624,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "energy_holdup_calculation"):
             for i, c in self.energy_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.energy_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.energy_holdup[i], default=1, warning=True))
 
         if hasattr(self, "meterial_holdup_calculation"):
             for i, c in self.material_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_holdup[i]))
+                    c, iscale.get_scaling_factor(
+                        self.material_holdup[i], default=1, warning=True))
