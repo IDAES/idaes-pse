@@ -427,12 +427,12 @@ between flow and pressure driven simulations.}""",
                 bdat.pressure.fix()
                 bdat.enth_mol.fix()
                 bdat.flow_mol.fix()
-        self.outlet.unfix()
 
         for t, v in self.outlet.pressure.items():
             if not v.fixed:
                 v.value = min([value(
                     self.inlet_blocks[i][t].pressure) for i in self.inlet_blocks])
+        self.outlet.unfix()
 
         if (hasattr(self, "pressure_equality_constraints") and
             self.pressure_equality_constraints.active
