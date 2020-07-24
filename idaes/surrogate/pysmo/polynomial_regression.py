@@ -1020,7 +1020,7 @@ class PolynomialRegression:
             self.dataframe_of_optimal_weights_polynomial = dataframe_coeffs
             self.dataframe_of_optimal_weights_extra_terms = []
             self.extra_terms_feature_vector = extra_terms_feature_vector
-            if R2 > 0.95:
+            if r_square_opt > 0.95:
                 self.fit_status = 'ok'
             else:
                 warnings.warn('Polynomial regression generates poor fit for the dataset')
