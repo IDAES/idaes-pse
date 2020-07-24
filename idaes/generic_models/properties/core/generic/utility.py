@@ -159,7 +159,7 @@ def set_param_value(b, param, units, config=None, index=None):
         units - units of param object (used if conversion required)
         config - (optional) config block to get parameter data from. If
                 unset, assumes b.config.
-        index - (optional) used for pure component properties where a signle
+        index - (optional) used for pure component properties where a single
                 property may have multiple parameters associated with it.
 
     Returns:
