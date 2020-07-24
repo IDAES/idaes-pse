@@ -13,6 +13,7 @@ detail with a link in their description.
 
 .. toctree::
     :maxdepth: 1
+    :titlesonly:
     
     flowsheet/index
     property_package/index
