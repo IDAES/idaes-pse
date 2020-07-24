@@ -14,42 +14,64 @@
 Tests for idaes.dmf.experiment module
 """
 import logging
-import pytest
+from pathlib import Path
 import sys
+from tempfile import TemporaryDirectory
+import time
+from typing import Union
 
-from idaes.dmf import experiment, errors, resource
-from .util import tmp_dmf  # noqa -- this is a fixture
-from .util import init_logging, tmp_dmf
+import pytest
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+from idaes.dmf import experiment, errors, resource, DMF
+from .util import init_logging
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
 
 
+scratch_dir: Union[str, None] = None
+scratch_path: Union[Path, None] = None
+
+
+def setup_module(module):
+    global scratch_dir, scratch_path
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_path = Path(scratch_dir.name)
+
+
+def teardown_module(module):
+    global scratch_dir
+    del scratch_dir
+
+
 @pytest.mark.unit
-def test_init(tmp_dmf):
-    exp = experiment.Experiment(tmp_dmf, name="try1", desc="Nice try")
-    assert exp.v["name"] == "try1"
+def test_init():
+    tmp_dir = scratch_path / "init"
+    dmf = DMF(path=tmp_dir, create=True)
+    exp = experiment.Experiment(dmf, name="try1", desc="Nice try")
+    assert exp.name == "try1"
     assert exp.id
 
 
 @pytest.mark.component
-def test_create_many(tmp_dmf):
+def test_create_many():
+    tmp_dir = scratch_path / "create_many"
+    dmf = DMF(path=tmp_dir, create=True)
     for i in range(100):
-        exp = experiment.Experiment(tmp_dmf, name="try{i}".format(i=i))
-        assert exp.v["name"] == "try{i}".format(i=i)
+        exp = experiment.Experiment(dmf, name="try{i}".format(i=i))
+        assert exp.name == "try{i}".format(i=i)
         assert exp.id
 
 
 @pytest.mark.unit
-def test_remove_workflow(tmp_dmf):
+def test_remove_workflow():
+    tmp_dir = scratch_path / "remove_workflow"
+    dmf = DMF(path=tmp_dir, create=True)
     # A workflow of copy/remove
     # make an experiment
-    e1 = experiment.Experiment(tmp_dmf, name="one", version="0.0.1")
+    e1 = experiment.Experiment(dmf, name="one", version="0.0.1")
     # make a new version of it
     e2 = e1.copy(version="0.0.2")
     # link the two together

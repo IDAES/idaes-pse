@@ -55,6 +55,73 @@ When writing your own tests, make sure to remember to keep each test
 focused on a single piece of functionality. If a unit test
 fails, it should be obvious which code is causing the problem.
 
+Tagging tests
+~~~~~~~~~~~~~
+Since we use `pytest <pytest.org>`_ for our testing, we have access to the very nice
+pytest "tag" feature, which uses `Python decorators <https://www.python.org/dev/peps/pep-0318/>`_
+to add labels to tests.
+
+An example of a test with a tag is (assume ``import pytest`` at the top of every test module):
+
+.. code-block:: python
+
+    @pytest.mark.unit
+    def test_something():
+        assert 2. + 2. == 4.
+
+**Every** test should be decorated with ``@pytest.mark.<level>`` where `<level>` has one of three values:
+
+* unit
+    Test runs quickly (under 2 seconds) and has no network/system dependencies. Uses only libraries installed by default with the software
+* component
+    Test may run more slowly (under 10 seconds, or so), e.g. it may run a solver or create a bunch of files.
+    Like unit tests, it still shouldn't depend on special libraries or dependencies.
+* integration
+    Test may take a long time to run, and may have complex dependencies.
+
+The expectation is that unit tests should be run by developers rather frequently, component tests should be run
+by the continuous integration system before running code, and integration tests are run across the codebase
+regularly, but infrequently (e.g. daily).
+
+Sometimes you may also want to run tests on only a particular platform. We currently support Windows,
+Linux, and (to a lesser extent) MacOS. To restrict a test to one or more of these platforms, typically
+Linux-only, use ``@pytest.mark.<platform>``, or ``@pytest.mark.no<platform>``
+where `<platform>` has one of three values:
+
+* linux / nolinux
+    Linux systems, regardless of distribution, e.g. CentOS, Ubuntu, Debian, *et al.*
+* win32 / nowin32
+    Windows 10
+* darwin / nodarwin
+    Mac OSX
+
+As you may have guessed, the "no<platform>" version means that any operating system *except* "<platform>"
+will run the test. You can combine these tags as you wish, though until we have more than three options
+it is not necessary.
+
+Here are a few examples:
+
+.. code-block:: python
+
+    @pytest.mark.unit
+    def test_something():
+        print("unit test, all platforms")
+
+    @pytest.mark.unit
+    @pytest.mark.nowin32
+    def test_something():
+        print("unit test, all platforms except Windows")
+
+    @pytest.mark.component
+    @pytest.mark.linux
+    def test_something():
+        print("component test, linux-only")
+
+    @pytest.mark.integration
+    @pytest.mark.nodarwin
+    def test_something():
+        print("integration test, all platforms except MacOS")
+
 Mocking
 ~~~~~~~
 Mocking is a common, but important, technique for avoiding dependencies that make your tests
