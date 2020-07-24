@@ -261,9 +261,19 @@ class PropertyClassMetadata(object):
     def _create_derived_units(self):
         try:
             self._derived_units = {
+                "time": self.default_units["time"],
                 "length": self.default_units["length"],
+                "mass": self.default_units["mass"],
+                "amount": self.default_units["amount"],
+                "temperature": self.default_units["temperature"],
+                "current": self.default_units["current"],
+                "luminous intensity": self.default_units["luminous intensity"],
                 "area": self.default_units["length"]**2,
                 "volume": self.default_units["length"]**3,
+                "flow_mass": (self.default_units["mass"] *
+                              self.default_units["time"]**-1),
+                "flow_mole": (self.default_units["amount"] *
+                              self.default_units["time"]**-1),
                 "density_mass": (self.default_units["mass"] *
                                  self.default_units["length"]**-3),
                 "density_mole": (self.default_units["amount"] *
@@ -274,14 +284,21 @@ class PropertyClassMetadata(object):
                 "entropy": (self.default_units["mass"] *
                             self.default_units["length"]**2 *
                             self.default_units["time"]**-2 *
-                            self.default_units["temperature"]),
+                            self.default_units["temperature"]**-1),
                 "power": (self.default_units["mass"] *
                           self.default_units["length"]**2 *
                           self.default_units["time"]**-3),
                 "pressure": (self.default_units["mass"] *
                              self.default_units["length"]**-1 *
                              self.default_units["time"]**-2),
-                "temperature": self.default_units["temperature"],
+                "heat_capacity_mass": (self.default_units["length"]**2 *
+                                       self.default_units["time"]**-2 *
+                                       self.default_units["temperature"]**-1),
+                "heat_capacity_mole": (self.default_units["mass"] *
+                                       self.default_units["length"]**2 *
+                                       self.default_units["time"]**-2 *
+                                       self.default_units["temperature"]**-1 *
+                                       self.default_units["amount"]**-1),
                 "heat_transfer_coefficient":
                     (self.default_units["mass"] *
                      self.default_units["time"]**-3 *

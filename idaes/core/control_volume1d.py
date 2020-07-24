@@ -27,7 +27,6 @@ from pyomo.environ import (Constraint,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigValue, In
-from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -173,15 +172,7 @@ argument)."""))
         Returns:
             None
         """
-        l_units = self.config.property_package.get_metadata().default_units[
-                                                                      "length"]
-        # TODO : This check is needed for backwards compatability with
-        # property packages not using Pyomo Units
-        if not isinstance(l_units, _PyomoUnit):
-            l_units = None
-            a_units = None
-        else:
-            a_units = l_units**2
+        units = self.config.property_package.get_metadata().get_derived_units
 
         if length_domain is not None:
             # Validate domain and make a reference
@@ -216,14 +207,14 @@ argument)."""))
                             self.length_domain,
                             initialize=1.0,
                             doc='Cross-sectional area of Control Volume',
-                            units=a_units)
+                            units=units("area"))
         else:
             self.area = Var(initialize=1.0,
                             doc='Cross-sectional area of Control Volume',
-                            units=a_units)
+                            units=units("area"))
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume',
-                          units=l_units)
+                          units=units("length"))
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
@@ -360,38 +351,34 @@ argument)."""))
                             .format(self.name))
 
         # Get units from property package
-        units = {}
-        for u in ['length', 'mass', 'amount', 'time']:
-            units[u] = \
-                   self.config.property_package.get_metadata().default_units[u]
-            if not isinstance(units[u], _PyomoUnit):
-                units[u] = None
-        if units['amount'] is not None:
+        units = self.config.property_package.get_metadata().get_derived_units
+
+        if units('length') is not None:
             if (self.properties[self.flowsheet().config.time.first(),
                                 self.length_domain.first()]
                     .get_material_flow_basis() == MaterialFlowBasis.molar):
-                units['holdup_l'] = units['amount']/units["length"]
-                units['flow'] = units['amount']/units['time']
-                units['flow_l'] = units['amount']/units["length"]/units['time']
+                holdup_l_units = units('amount')/units("length")
+                flow_units = units('flow_mole')
+                flow_l_units = units('flow_mole')/units('length')
             elif (self.properties[self.flowsheet().config.time.first(),
                                   self.length_domain.first()]
                   .get_material_flow_basis() == MaterialFlowBasis.mass):
-                units['holdup_l'] = units['mass']/units["length"]
-                units['flow'] = units['mass']/units['time']
-                units['flow_l'] = units['mass']/units["length"]/units['time']
+                holdup_l_units = units('mass')/units("length")
+                flow_units = units('flow_mass')
+                flow_l_units = units('flow_mass')/units('length')
             else:
-                units['holdup_l'] = None
-                units['flow'] = None
-                units['flow_l'] = None
+                holdup_l_units = None
+                flow_units = None
+                flow_l_units = None
         else:
-            units['holdup_l'] = None
-            units['flow'] = None
-            units['flow_l'] = None
+            holdup_l_units = None
+            flow_units = None
+            flow_l_units = None
 
         # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().config.time_units
-            if (f_time_units is None) ^ (units['time'] is None):
+            if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
                     "flowsheet and property package. Either both must use "
@@ -401,14 +388,10 @@ argument)."""))
                 acc_units = None
             elif (self.properties[self.flowsheet().config.time.first(),
                                   self.length_domain.first()]
-                  .get_material_flow_basis() == MaterialFlowBasis.molar):
-                acc_units = units['amount']/units['length']/f_time_units
-            elif (self.properties[self.flowsheet().config.time.first(),
-                                  self.length_domain.first()]
-                  .get_material_flow_basis() == MaterialFlowBasis.mass):
-                acc_units = units['mass']/units['length']/f_time_units
-            else:
+                  .get_material_flow_basis() == MaterialFlowBasis.other):
                 acc_units = None
+            else:
+                acc_units = holdup_l_units/f_time_units
 
         # Get phase component set and lists
         pc_set = self.config.property_package.get_phase_component_set()
@@ -422,7 +405,7 @@ argument)."""))
                     domain=Reals,
                     initialize=1.0,
                     doc="Material holdup per unit length",
-                    units=units['holdup_l'])
+                    units=holdup_l_units)
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
@@ -437,7 +420,7 @@ argument)."""))
                                pc_set,
                                initialize=1.0,
                                doc="Flow terms for material balance equations",
-                               units=units['flow'])
+                               units=flow_units)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
@@ -452,7 +435,7 @@ argument)."""))
                                      wrt=self.length_domain,
                                      doc="Parital derivative of material flow "
                                          "wrt to normalized length",
-                                     units=units['flow'])
+                                     units=flow_units)
 
         # Kinetic reaction generation
         if has_rate_reactions:
@@ -469,7 +452,7 @@ argument)."""))
                         initialize=0.0,
                         doc="Amount of component generated in "
                             "by kinetic reactions per unit length",
-                        units=units['flow_l'])
+                        units=flow_l_units)
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
@@ -488,7 +471,7 @@ argument)."""))
                 initialize=0.0,
                 doc="Amount of component generated by equilibrium "
                     "reactions per unit length",
-                units=units['flow_l'])
+                units=flow_l_units)
 
         # Phase equilibrium generation
         if has_phase_equilibrium and \
@@ -507,7 +490,7 @@ argument)."""))
                         initialize=0.0,
                         doc="Amount of generation in unit by phase "
                             "equilibria per unit length",
-                        units=units['flow_l'])
+                        units=flow_l_units)
 
         # Material transfer term
         if has_mass_transfer:
@@ -519,13 +502,13 @@ argument)."""))
                         initialize=0.0,
                         doc="Component material transfer into unit per unit "
                             "length",
-                        units=units['flow_l'])
+                        units=flow_l_units)
 
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, x, p, j):
             return pyunits.convert(b.material_accumulation[t, x, p, j],
-                                   to_units=units['flow_l']) if dynamic else 0
+                                   to_units=flow_l_units) if dynamic else 0
 
         def kinetic_term(b, t, x, p, j):
             return (b.rate_reaction_generation[t, x, p, j]
@@ -590,7 +573,7 @@ argument)."""))
                     domain=Reals,
                     initialize=0.0,
                     doc="Extent of kinetic reactions at point x",
-                    units=units['flow_l'])
+                    units=flow_l_units)
 
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
@@ -615,7 +598,7 @@ argument)."""))
                 domain=Reals,
                 initialize=0.0,
                 doc="Extent of equilibrium reactions at point x",
-                units=units['flow_l'])
+                units=flow_l_units)
 
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
@@ -952,25 +935,21 @@ argument)."""))
                 .format(self.name))
 
         # Get units from property package
-        units = {}
-        for u in ['amount', 'length', 'time']:
-            units[u] = \
-                   self.config.property_package.get_metadata().default_units[u]
-            if not isinstance(units[u], _PyomoUnit):
-                units[u] = None
-        if units['amount'] is not None:
-            units['amount_l'] = units['amount']/units['length']
-            units['flow'] = units['amount']/units['time']
-            units['flow_l'] = units['amount']/units['time']/units['length']
+        units = self.config.property_package.get_metadata().get_derived_units
+
+        if units('amount') is not None:
+            amount_l_units = units('amount')/units('length')
+            flow_units = units('flow_mole')
+            flow_l_units = units('flow_mole')/units('length')
         else:
-            units['amount_l'] = None
-            units['flow'] = None
-            units['flow_l'] = None
+            amount_l_units = None
+            flow_units = None
+            flow_l_units = None
 
         # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().config.time_units
-            if (f_time_units is None) ^ (units['time'] is None):
+            if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
                     "flowsheet and property package. Either both must use "
@@ -979,7 +958,7 @@ argument)."""))
             if f_time_units is None:
                 acc_units = None
             else:
-                acc_units = units['amount']/units['length']/f_time_units
+                acc_units = amount_l_units/f_time_units
 
         # Identify linearly dependent elements
         # It is possible for there to be linearly dependent element balances
@@ -1039,7 +1018,7 @@ argument)."""))
                     domain=Reals,
                     initialize=1.0,
                     doc="Elemental holdup per unit length",
-                    units=units['amount_l'])
+                    units=amount_l_units)
 
         if dynamic:
             self.element_accumulation = DerivativeVar(
@@ -1054,7 +1033,7 @@ argument)."""))
                                        element_list,
                                        initialize=1.0,
                                        doc="Elemental flow terms",
-                                       units=units['flow'])
+                                       units=flow_units)
 
         # Method to convert mass flow basis to mole flow basis
         def conv_factor(b, t, x, j):
@@ -1086,7 +1065,7 @@ argument)."""))
                                                doc="Partial derivative of "
                                                "elemental flow wrt normalized "
                                                "length",
-                                               units=units['flow'])
+                                               units=flow_units)
 
         # Create material balance terms as needed
         if has_mass_transfer:
@@ -1098,13 +1077,13 @@ argument)."""))
                             initialize=0.0,
                             doc="Element material transfer into unit per unit "
                                 "length",
-                            units=units['flow_l'])
+                            units=flow_l_units)
 
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, x, e):
             return pyunits.convert(b.element_accumulation[t, x, e],
-                                   to_units=units['flow_l']) if dynamic else 0
+                                   to_units=flow_l_units) if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, x, e):
@@ -1207,28 +1186,19 @@ argument)."""))
                         " adding energy balances.".format(self.name))
 
         # Get units from property package
-        # Get units from property package
-        units = {}
-        for u in ['mass', 'length', 'time']:
-            units[u] = \
-                   self.config.property_package.get_metadata().default_units[u]
-            if not isinstance(units[u], _PyomoUnit):
-                units[u] = None
-        if units['mass'] is not None:
-            units['energy'] = units['mass']*units['length']**2/units['time']**2
-            units['energy_l'] = units['energy']/units['length']
-            units['energy_flow'] = units['energy']/units['time']
-            units['energy_flow_l'] = units['energy_flow']/units['length']
+        units = self.config.property_package.get_metadata().get_derived_units
+
+        if units('energy') is not None:
+            energy_l_units = units('energy')/units('length')
+            power_l_units = units('power')/units('length')
         else:
-            units['energy'] = None
-            units['energy_l'] = None
-            units['energy_flow'] = None
-            units['energy_flow_l'] = None
+            energy_l_units = None
+            power_l_units = None
 
         # Get units for accumulation term if required
         if self.config.dynamic:
             f_time_units = self.flowsheet().config.time_units
-            if (f_time_units is None) ^ (units['time'] is None):
+            if (f_time_units is None) ^ (units('time') is None):
                 raise ConfigurationError(
                     "{} incompatible time unit specification between "
                     "flowsheet and property package. Either both must use "
@@ -1237,7 +1207,7 @@ argument)."""))
             if f_time_units is None:
                 acc_units = None
             else:
-                acc_units = units['energy']/units['length']/f_time_units
+                acc_units = energy_l_units/f_time_units
 
         # Create variables
         self._enthalpy_flow = Var(self.flowsheet().config.time,
@@ -1245,7 +1215,7 @@ argument)."""))
                                   self.config.property_package.phase_list,
                                   initialize=1.0,
                                   doc="Enthalpy flow terms",
-                                  units=units['energy_flow'])
+                                  units=units('power'))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
@@ -1260,7 +1230,7 @@ argument)."""))
                                               doc="Partial derivative of "
                                               "enthalpy flow wrt normlaized "
                                               "length",
-                                              units=units['energy_flow'])
+                                              units=units('power'))
 
         if has_holdup:
             self.energy_holdup = Var(
@@ -1270,7 +1240,7 @@ argument)."""))
                         domain=Reals,
                         initialize=1.0,
                         doc="Enthalpy holdup per unit length",
-                        units=units['energy_l'])
+                        units=energy_l_units)
 
         if dynamic is True:
             self.energy_accumulation = DerivativeVar(
@@ -1293,7 +1263,7 @@ argument)."""))
                             domain=Reals,
                             initialize=0.0,
                             doc="Heat transfered per unit length",
-                            units=units['energy_flow_l'])
+                            units=power_l_units)
 
         # Work transfer
         if has_work_transfer:
@@ -1302,7 +1272,7 @@ argument)."""))
                             domain=Reals,
                             initialize=0.0,
                             doc="Work transfered per unit length",
-                            units=units['energy_flow_l'])
+                            units=power_l_units)
 
         # Enthalpy transfer
         if has_enthalpy_transfer:
@@ -1312,7 +1282,7 @@ argument)."""))
                 domain=Reals,
                 initialize=0.0,
                 doc="Enthalpy transfered due to mass transfer per unit length",
-                units=units['energy_flow_l'])
+                units=power_l_units)
 
         # Heat of Reaction
         if has_heat_of_reaction:
@@ -1343,7 +1313,7 @@ argument)."""))
         # Accumulation term
         def accumulation_term(b, t, x, p):
             return (pyunits.convert(b.energy_accumulation[t, x, p],
-                                    to_units=units['energy_flow_l'])
+                                    to_units=power_l_units)
                     if dynamic else 0)
 
         def heat_term(b, t, x):
@@ -1444,18 +1414,12 @@ argument)."""))
         """
 
         # Get units from property package
-        units = {}
-        for u in ['mass', 'length', 'time']:
-            units[u] = \
-                   self.config.property_package.get_metadata().default_units[u]
-            if not isinstance(units[u], _PyomoUnit):
-                units[u] = None
-        if units['mass'] is not None:
-            units['pressure'] = units['mass']/units['length']/units['time']**2
-            units['pressure_l'] = units['pressure']/units['length']
+        units = self.config.property_package.get_metadata().get_derived_units
+        
+        if units('pressure') is not None:
+            pressure_l_units = units('pressure')/units('length')
         else:
-            units['pressure'] = None
-            units['pressure_l'] = None
+            pressure_l_units = None
 
         # Create dP/dx terms
         # TODO : Replace with Reference if possible
@@ -1463,7 +1427,7 @@ argument)."""))
                             self.length_domain,
                             initialize=1e5,
                             doc="Pressure",
-                            units=units['pressure'])
+                            units=units('pressure'))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
@@ -1476,7 +1440,7 @@ argument)."""))
                                   wrt=self.length_domain,
                                   doc="Partial derivative of pressure wrt "
                                       "normalized length domain",
-                                  units=units['pressure'])
+                                  units=units('pressure'))
 
         # Add Momentum Balance Variables as necessary
         if has_pressure_change:
@@ -1486,7 +1450,7 @@ argument)."""))
                               initialize=0.0,
                               doc="Pressure difference per unit length "
                                   "of domain",
-                              units=units["pressure_l"])
+                              units=pressure_l_units)
 
         # Create rules to substitute energy balance terms
         # Pressure change term
