@@ -3033,8 +3033,7 @@ def test_add_total_pressure_balances_default():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
-    assert isinstance(m.fs.cv.pressure, Var)
-    assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.pressure, Var) # Reference to state block pressure
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
 
     with pytest.raises(KeyError):
@@ -3067,8 +3066,7 @@ def test_add_total_pressure_balances_default_FFD():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 1
-    assert isinstance(m.fs.cv.pressure, Var)
-    assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.pressure, Var) # Reference to state block pressure
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
 
     with pytest.raises(KeyError):

@@ -91,6 +91,7 @@ def test_find_unscaled_vars_and_constraints():
 def test_propogate_indexed_scaling():
     m = pyo.ConcreteModel()
     m.b = pyo.Block()
+    m.a = pyo.Var()
     m.x = pyo.Var([1,2,3], initialize=1e6)
     m.y = pyo.Var([1,2,3], initialize=1e-8)
     m.z = pyo.Var([1,2,3], initialize=1e-20)
@@ -104,10 +105,14 @@ def test_propogate_indexed_scaling():
     m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
     m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
 
-    sc.set_scaling_factor(m.x, 11)
-    sc.set_scaling_factor(m.y, 13)
-    sc.set_scaling_factor(m.b.w, 16)
-    sc.set_scaling_factor(m.c1, 14)
+    sc.set_scaling_factor(m.a, 104)
+    sc.set_scaling_factor(m.b.c1, 14)
+
+    # Set sufix directly since set_scaling_factor also sets data objects
+    m.scaling_factor[m.x] = 11
+    m.scaling_factor[m.y] = 13
+    m.b.scaling_factor[m.b.w] = 16
+    m.scaling_factor[m.c1] = 14
 
     for i in [1,2,3]:
         assert sc.get_scaling_factor(m.x[i]) is None
