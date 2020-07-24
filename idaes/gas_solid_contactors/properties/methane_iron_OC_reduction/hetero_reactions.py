@@ -50,7 +50,8 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
-from idaes.core.util.model_statistics import number_unfixed_variables
+from idaes.core.util.model_statistics import (
+    number_unfixed_variables_in_activated_equalities)
 from idaes.core.util.config import (is_state_block,
                                     is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -121,9 +122,9 @@ class ReactionParameterData(ReactionParameterBlock):
                                doc='Gas Constant [kJ/mol.K]')
 
         # Smoothing factor
-        self._eps = Param(mutable=True,
-                          default=1e-8,
-                          doc='Smoothing Factor')
+        self.eps = Param(mutable=True,
+                         default=1e-8,
+                         doc='Smoothing Factor')
         # Reaction rate scale factor
         self._scale_factor_rxn = Param(mutable=True,
                                        default=1,
@@ -260,12 +261,12 @@ class _ReactionBlock(ReactionBlockBase):
 
         for k in blk.keys():
             for j in blk[k]._params.gas_component_list:
-                if blk[k].gas_state_ref.dens_mol_vap_comp[j].fixed is True:
+                if blk[k].gas_state_ref.dens_mol_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
                     Cflag[k, j] = False
-                    blk[k].gas_state_ref.dens_mol_vap_comp[j].fix(
-                            blk[k].gas_state_ref.dens_mol_vap_comp[j].value)
+                    blk[k].gas_state_ref.dens_mol_comp[j].fix(
+                            blk[k].gas_state_ref.dens_mol_comp[j].value)
             if blk[k].solid_state_ref.dens_mass_sol.fixed is True:
                 Dflag[k] = True
             else:
@@ -303,7 +304,8 @@ class _ReactionBlock(ReactionBlockBase):
         # Solve property block if non-empty
         free_vars = 0
         for k in blk.keys():
-            free_vars += number_unfixed_variables(blk[k])
+            free_vars += number_unfixed_variables_in_activated_equalities(
+                blk[k])
 
         if free_vars > 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -322,7 +324,7 @@ class _ReactionBlock(ReactionBlockBase):
         for k in blk.keys():
             for j in blk[k]._params.gas_component_list:
                 if Cflag[k, j] is False:
-                    blk[k].gas_state_ref.dens_mol_vap_comp[j].unfix()
+                    blk[k].gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
                 blk[k].solid_state_ref.dens_mass_sol.unfix()
 
@@ -339,22 +341,19 @@ class ReactionBlockData(ReactionBlockDataBase):
     CONFIG = ConfigBlock()
     CONFIG.declare("parameters", ConfigValue(
             domain=is_reaction_parameter_block,
-            description=
-            """
+            description="""
             A reference to an instance of the Reaction Parameter
             Block associated with this property package.
             """))
     CONFIG.declare("solid_state_block", ConfigValue(
             domain=is_state_block,
-            description=
-            """
+            description="""
             A reference to an instance of a StateBlock for the
             solid phase with which this reaction block should be associated.
             """))
     CONFIG.declare("gas_state_block", ConfigValue(
             domain=is_state_block,
-            description=
-            """
+            description="""
             A reference to an instance of a StateBlock for the
             gas phase with which this reaction block should be associated.
             """))
@@ -362,8 +361,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
-        doc=
-        """
+        doc="""
         Indicates whether terms for equilibrium controlled reactions
         should be constructed,
         **default** - True.
@@ -435,15 +433,15 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def OC_conv_eqn(b):
             return 1e6 * b.OC_conv * \
-                   (b.solid_state_ref.mass_frac['Fe3O4'] +
-                    (b.solid_state_ref._params.mw['Fe3O4'] /
-                        b.solid_state_ref._params.mw['Fe2O3']) *
+                   (b.solid_state_ref.mass_frac_comp['Fe3O4'] +
+                    (b.solid_state_ref._params.mw_comp['Fe3O4'] /
+                        b.solid_state_ref._params.mw_comp['Fe2O3']) *
                     (b._params.rate_reaction_stoichiometry
                        ['R1', 'Sol', 'Fe3O4']
                        / -b._params.rate_reaction_stoichiometry
                        ['R1', 'Sol', 'Fe2O3']) *
-                    b.solid_state_ref.mass_frac['Fe2O3']) == \
-                   1e6 * b.solid_state_ref.mass_frac['Fe3O4']
+                    b.solid_state_ref.mass_frac_comp['Fe2O3']) == \
+                   1e6 * b.solid_state_ref.mass_frac_comp['Fe3O4']
         try:
             # Try to build constraint
             self.OC_conv_eqn = Constraint(rule=OC_conv_eqn)
@@ -477,13 +475,14 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def rate_rule(b, r):
             return b.reaction_rate[r]*1e4 == b._params._scale_factor_rxn*1e4*(
-                b.solid_state_ref.mass_frac['Fe2O3'] *
+                b.solid_state_ref.mass_frac_comp['Fe2O3'] *
                 (1 - b.solid_state_ref._params.particle_porosity) *
                 b.solid_state_ref.dens_mass_sol *
-                (b._params.a_vol/(b.solid_state_ref._params.mw['Fe2O3'])) *
+                (b._params.a_vol /
+                 (b.solid_state_ref._params.mw_comp['Fe2O3'])) *
                 3*b._params.rxn_stoich_coeff[r]*b.k_rxn[r] *
-                (((b.gas_state_ref.dens_mol_vap_comp['CH4']**2 +
-                  b._params._eps**2)**0.5) **
+                (((b.gas_state_ref.dens_mol_comp['CH4']**2 +
+                  b._params.eps**2)**0.5) **
                  b._params.rxn_order[r]) *
                 b.OC_conv_temp/(b._params.dens_mol_sol *
                                 b._params.grain_radius) /
@@ -508,6 +507,8 @@ class ReactionBlockData(ReactionBlockDataBase):
         """
         # Check temperature bounds
         if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'.format(blk.name))
+            _log.error('{} Temperature set below lower bound.'.format(blk.name)
+                       )
         if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'.format(blk.name))
+            _log.error('{} Temperature set above upper bound.'.format(blk.name)
+                       )

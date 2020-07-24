@@ -14,66 +14,63 @@
 Tests for CLC solid phase thermo state block; tests for construction and solve
 Author: Chinedu Okoli
 """
-import sys
-import os
+
 import pytest
 
-from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
-                           SolverStatus, value)
+from pyomo.environ import (ConcreteModel,
+                           Var)
+
+from idaes.core import FlowsheetBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-# Access parent directory (property_packages_subfolder) of the current dir
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 
-from solid_phase_thermo import SolidPhaseThermoParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    solid_phase_thermo import SolidPhaseThermoParameterBlock
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-else:
-    solver = None
+# Get default solver for testing
+solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
-m = ConcreteModel()
+@pytest.fixture(scope="class")
+def solid_prop():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
 
-# solid properties and state inlet block
-m.properties = SolidPhaseThermoParameterBlock()
-m.state_block = m.properties.state_block_class(
-    default={"parameters": m.properties,
-             "defined_state": True})
+    # solid properties and state inlet block
+    m.fs.properties = SolidPhaseThermoParameterBlock()
 
+    m.fs.unit = m.fs.properties.build_state_block(
+        default={"parameters": m.fs.properties,
+                 "defined_state": True})
 
-def test_build_inlet_state_block():
-    assert hasattr(m.state_block, "enth_mol_comp")
-    assert hasattr(m.state_block, "enth_mass")
-    assert hasattr(m.state_block, "cp_mol_comp")
-    assert hasattr(m.state_block, "cp_mass")
+    m.fs.unit.flow_mass.fix(1)
+    m.fs.unit.temperature.fix(1183.15)
+    m.fs.unit.mass_frac_comp["Fe2O3"].fix(0.45)
+    m.fs.unit.mass_frac_comp["Fe3O4"].fix(1e-9)
+    m.fs.unit.mass_frac_comp["Al2O3"].fix(0.55)
 
-
-def test_setInputs_state_block():
-
-    m.state_block.flow_mass.fix(1)
-    m.state_block.temperature.fix(1183.15)
-    m.state_block.mass_frac["Fe2O3"].fix(0.45)
-    m.state_block.mass_frac["Fe3O4"].fix(1e-9)
-    m.state_block.mass_frac["Al2O3"].fix(0.55)
-
-    assert degrees_of_freedom(m) == 0
+    return m
 
 
+@pytest.mark.unit
+def test_build_inlet_state_block(solid_prop):
+    assert isinstance(solid_prop.fs.unit.enth_mol_comp, Var)
+    assert isinstance(solid_prop.fs.unit.enth_mass, Var)
+    assert isinstance(solid_prop.fs.unit.cp_mol_comp, Var)
+    assert isinstance(solid_prop.fs.unit.cp_mass, Var)
+
+
+@pytest.mark.unit
+def test_setInputs_state_block(solid_prop):
+    assert degrees_of_freedom(solid_prop.fs.unit) == 0
+
+
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_solve():
-    # Initialize and solve block
-    m.state_block.initialize()
-    results = solver.solve(m.state_block, tee=False)
-
-    # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
-
-    # Check if values are as expected
-    assert value(m.state_block.mass_frac['Fe2O3']) == \
-        pytest.approx(0.45, abs=1e-3)
-    assert value(m.state_block.mass_frac['Fe3O4']) == \
-        pytest.approx(0.0001, abs=1e-3)
+@pytest.mark.component
+def test_initialize(solid_prop):
+    initialization_tester(
+            solid_prop)

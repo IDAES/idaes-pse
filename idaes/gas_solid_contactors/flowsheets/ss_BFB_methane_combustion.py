@@ -89,15 +89,15 @@ def main():
     m.fs.BFB.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
     m.fs.BFB.gas_inlet.temperature[0].fix(373)  # K
     m.fs.BFB.gas_inlet.pressure[0].fix(1.86)  # bar
-    m.fs.BFB.gas_inlet.mole_frac[0, "CO2"].fix(0.4772)
-    m.fs.BFB.gas_inlet.mole_frac[0, "H2O"].fix(0.0646)
-    m.fs.BFB.gas_inlet.mole_frac[0, "CH4"].fix(0.4582)
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
+    m.fs.BFB.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
 
     m.fs.BFB.solid_inlet.flow_mass[0].fix(1230)  # kg/s
     m.fs.BFB.solid_inlet.temperature[0].fix(1186)  # K
-    m.fs.BFB.solid_inlet.mass_frac[0, "Fe2O3"].fix(0.45)
-    m.fs.BFB.solid_inlet.mass_frac[0, "Fe3O4"].fix(1e-9)
-    m.fs.BFB.solid_inlet.mass_frac[0, "Al2O3"].fix(0.55)
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+    m.fs.BFB.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
 
     # ---------------------------------------------------------------------
     # Initialize reactor
@@ -113,16 +113,16 @@ def main():
             'temperature': blk.solid_inlet.temperature[0].value,
             'pressure': blk.gas_inlet.pressure[0].value,
             'mole_frac': {
-                'CH4': blk.gas_inlet.mole_frac[0, 'CH4'].value,
-                'CO2': blk.gas_inlet.mole_frac[0, 'CO2'].value,
-                'H2O': blk.gas_inlet.mole_frac[0, 'H2O'].value}}
+                'CH4': blk.gas_inlet.mole_frac_comp[0, 'CH4'].value,
+                'CO2': blk.gas_inlet.mole_frac_comp[0, 'CO2'].value,
+                'H2O': blk.gas_inlet.mole_frac_comp[0, 'H2O'].value}}
     solid_phase_state_args = {
             'flow_mass': blk.solid_inlet.flow_mass[0].value,
             'temperature': blk.solid_inlet.temperature[0].value,
             'mass_frac': {
-                    'Fe2O3': blk.solid_inlet.mass_frac[0, 'Fe2O3'].value,
-                    'Fe3O4': blk.solid_inlet.mass_frac[0, 'Fe3O4'].value,
-                    'Al2O3': blk.solid_inlet.mass_frac[0, 'Al2O3'].value}}
+                    'Fe2O3': blk.solid_inlet.mass_frac_comp[0, 'Fe2O3'].value,
+                    'Fe3O4': blk.solid_inlet.mass_frac_comp[0, 'Fe3O4'].value,
+                    'Al2O3': blk.solid_inlet.mass_frac_comp[0, 'Al2O3'].value}}
 
     m.fs.BFB.initialize(outlvl=idaeslog.INFO,
                         gas_phase_state_args=gas_phase_state_args,
@@ -162,17 +162,17 @@ def print_summary(self):
 
         mole_gas_reacted = (
                 m.fs.BFB.gas_inlet.flow_mol[0].value *
-                m.fs.BFB.gas_inlet.mole_frac[0, 'CH4'].value -
+                m.fs.BFB.gas_inlet.mole_frac_comp[0, 'CH4'].value -
                 m.fs.BFB.gas_outlet.flow_mol[0].value *
-                m.fs.BFB.gas_outlet.mole_frac[0, 'CH4'].value)
+                m.fs.BFB.gas_outlet.mole_frac_comp[0, 'CH4'].value)
 
         mole_solid_reacted = (
                 (m.fs.BFB.solid_inlet.flow_mass[0].value *
-                 m.fs.BFB.solid_inlet.mass_frac[0, 'Fe2O3'].value /
-                 m.fs.BFB.solid_inlet_block[0]._params.mw['Fe2O3']) -
+                 m.fs.BFB.solid_inlet.mass_frac_comp[0, 'Fe2O3'].value /
+                 m.fs.BFB.solid_inlet_block[0]._params.mw_comp['Fe2O3']) -
                 (m.fs.BFB.solid_outlet.flow_mass[0].value *
-                 m.fs.BFB.solid_outlet.mass_frac[0, 'Fe2O3'].value /
-                 m.fs.BFB.solid_outlet_block[0]._params.mw['Fe2O3']))
+                 m.fs.BFB.solid_outlet.mass_frac_comp[0, 'Fe2O3'].value /
+                 m.fs.BFB.solid_outlet_block[0]._params.mw_comp['Fe2O3']))
 
         print('stoichiometric ratio:', mole_solid_reacted/mole_gas_reacted)
 
@@ -180,16 +180,16 @@ def print_summary(self):
     print('Mass balance closure check =>')
 
     calculate_variable_from_constraint(
-                m.fs.BFB.gas_inlet_block[0].mw_gas,
-                m.fs.BFB.gas_inlet_block[0].mw_gas_eqn)
+                m.fs.BFB.gas_inlet_block[0].mw_phase,
+                m.fs.BFB.gas_inlet_block[0].mw_phase_eqn)
     calculate_variable_from_constraint(
-                m.fs.BFB.gas_outlet_block[0].mw_gas,
-                m.fs.BFB.gas_outlet_block[0].mw_gas_eqn)
+                m.fs.BFB.gas_outlet_block[0].mw_phase,
+                m.fs.BFB.gas_outlet_block[0].mw_phase_eqn)
 
     mbal_gas = ((m.fs.BFB.gas_inlet.flow_mol[0].value *
-                m.fs.BFB.gas_inlet_block[0].mw_gas.value) -
+                m.fs.BFB.gas_inlet_block[0].mw_phase.value) -
                 (m.fs.BFB.gas_outlet_block[0].flow_mol.value *
-                m.fs.BFB.gas_outlet_block[0].mw_gas.value))
+                m.fs.BFB.gas_outlet_block[0].mw_phase.value))
 
     mbal_solid = (
             m.fs.BFB.solid_inlet.flow_mass[0].value -
@@ -235,9 +235,9 @@ def print_summary(self):
         # Oxygen carrier and fuel conversion
         Conv_gas = 1 - (
             ((m.fs.BFB.gas_outlet.flow_mol[0].value *
-              m.fs.BFB.gas_outlet_block[0].mole_frac['CH4'].value)) /
+              m.fs.BFB.gas_outlet_block[0].mole_frac_comp['CH4'].value)) /
             (m.fs.BFB.gas_inlet.flow_mol[0].value *
-             m.fs.BFB.gas_inlet_block[0].mole_frac['CH4'].value))
+             m.fs.BFB.gas_inlet_block[0].mole_frac_comp['CH4'].value))
 
         if m.fs.BFB.config.flow_type == "counter_current":
             Conv_OC = (m.fs.BFB.solid_emulsion.reactions[0, 0].

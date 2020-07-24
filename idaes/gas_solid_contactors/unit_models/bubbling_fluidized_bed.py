@@ -30,7 +30,6 @@ Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
 
 """
-from __future__ import division
 
 # Import Python libraries
 import matplotlib.pyplot as plt
@@ -230,7 +229,7 @@ see reaction package for documentation.}"""))
     # =========================================================================
     def build(self):
         """
-        Begin building model (pre-DAE transformation).
+        Begin building model
 
         Args:
             None
@@ -490,22 +489,22 @@ see reaction package for documentation.}"""))
         # varying solid flow directions (co_current and counter_current)
         self.gas_inlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().time,
+                self.flowsheet().config.time,
                 default={"defined_state": True}))
 
         self.gas_outlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().time,
+                self.flowsheet().config.time,
                 default={"defined_state": False}))
 
         self.solid_inlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().time,
+                self.flowsheet().config.time,
                 default={"defined_state": True}))
 
         self.solid_outlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().time,
+                self.flowsheet().config.time,
                 default={"defined_state": False}))
 
         # Add Ports for gas side
@@ -543,7 +542,7 @@ see reaction package for documentation.}"""))
         self.gc = constants.acceleration_gravity  # units - m/s^2
 
         # Declare Mutable Parameters
-        self._eps = Param(mutable=True,
+        self.eps = Param(mutable=True,
                           default=1e-8,
                           doc='Smoothing Factor for Smooth IF Statements')
 
@@ -998,14 +997,14 @@ see reaction package for documentation.}"""))
                 gas_phase.property_package.component_list,
                 doc="Bulk Gas Mass Transfer Between Bubble and Emulsion")
         def bubble_cloud_bulk_mass_trans(b, t, x, j):
-            conc_diff = (b.gas_emulsion.properties[t, x].dens_mol_vap -
-                         b.bubble.properties[t, x].dens_mol_vap)
+            conc_diff = (b.gas_emulsion.properties[t, x].dens_mol -
+                         b.bubble.properties[t, x].dens_mol)
             return (b.Kgbulk_c[t, x, j] * b.bubble_diameter[t, x] ==
                     6 * b.Kd * b.delta[t, x] * b.bed_area *
-                    (b.gas_emulsion.properties[t, x].mole_frac[j] *
-                     smooth_max(conc_diff, 0, b._eps) +
-                     b.bubble.properties[t, x].mole_frac[j] *
-                     smooth_min(conc_diff, 0, b._eps)))
+                    (b.gas_emulsion.properties[t, x].mole_frac_comp[j] *
+                     smooth_max(conc_diff, 0, b.eps) +
+                     b.bubble.properties[t, x].mole_frac_comp[j] *
+                     smooth_min(conc_diff, 0, b.eps)))
         # ---------------------------------------------------------------------
         # Heat transfer constraints
 
@@ -1019,7 +1018,7 @@ see reaction package for documentation.}"""))
                 return (b._reform_var_4[t, x]**2 ==
                         34.2225 * b.bubble.properties[t, x].therm_cond *
                         b.bubble.properties[t, x].enth_mol *
-                        b.bubble.properties[t, x].dens_mol_vap *
+                        b.bubble.properties[t, x].dens_mol *
                         (b.gc ** 0.5))
 
             # Convective heat transfer coefficient
@@ -1033,7 +1032,7 @@ see reaction package for documentation.}"""))
                     b.gas_emulsion.properties[t, x].visc_d ==
                     1e2 * b.velocity_emulsion_gas[t, x] *
                     b.solid_emulsion.properties[t, x]._params.particle_dia *
-                    b.gas_emulsion.properties[t, x].dens_mol_vap)
+                    b.gas_emulsion.properties[t, x].dens_mol)
 
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
@@ -1044,7 +1043,7 @@ see reaction package for documentation.}"""))
                     b.Hbe[t, x] * b._reform_var_3[t, x] ** 5 == 4.5 *
                     b.solid_emulsion.properties[t, x]._params.velocity_mf *
                     b.bubble.properties[t, x].enth_mol *
-                    b.bubble.properties[t, x].dens_mol_vap *
+                    b.bubble.properties[t, x].dens_mol *
                     b._reform_var_3[t, x] +
                     b._reform_var_4[t, x])
 
@@ -1056,7 +1055,7 @@ see reaction package for documentation.}"""))
                     1e6*b.htc_conv[t, x] *
                     b.solid_emulsion.properties[t, x]._params.particle_dia ==
                     1e6 * 0.03 * b.gas_emulsion.properties[t, x].therm_cond *
-                    ((b._reform_var_5[t, x]**2 + b._eps)**0.5) ** 1.3)
+                    ((b._reform_var_5[t, x]**2 + b.eps)**0.5) ** 1.3)
 
             # Gas to solid convective heat transfer # replaced "ap" with
             # "6/(dp*rho_sol)"
@@ -1080,15 +1079,15 @@ see reaction package for documentation.}"""))
                                  "Bubble and Emulsion")
             def bubble_cloud_bulk_heat_trans(b, t, x):
                 conc_diff = (
-                        b.gas_emulsion.properties[t, x].dens_mol_vap -
-                        b.bubble.properties[t, x].dens_mol_vap)
+                        b.gas_emulsion.properties[t, x].dens_mol -
+                        b.bubble.properties[t, x].dens_mol)
                 return (
                     b.Hgbulk[t, x] * b.bubble_diameter[t, x] ==
                     6 * b.Kd * b.delta[t, x] * b.bed_area *
                     (b.gas_emulsion.properties[t, x].enth_mol *
-                     smooth_max(conc_diff, 0, b._eps) +
+                     smooth_max(conc_diff, 0, b.eps) +
                      b.bubble.properties[t, x].enth_mol *
-                     smooth_min(conc_diff, 0, b._eps)))
+                     smooth_min(conc_diff, 0, b.eps)))
         # ---------------------------------------------------------------------
         # Mass and heat transfer terms in control volumes
 
@@ -1100,8 +1099,8 @@ see reaction package for documentation.}"""))
                 doc="Bubble Mass Transfer")
         def bubble_mass_transfer(b, t, x, j):
             comp_conc_diff = (
-                    b.bubble.properties[t, x].dens_mol_vap_comp[j] -
-                    b.gas_emulsion.properties[t, x].dens_mol_vap_comp[j])
+                    b.bubble.properties[t, x].dens_mol_comp[j] -
+                    b.gas_emulsion.properties[t, x].dens_mol_comp[j])
             return (1e3*b.bubble.mass_transfer_term[t, x, 'Vap', j] ==
                     1e3*(b.Kgbulk_c[t, x, j] -
                     b.bubble.area[t, x] *
@@ -1119,8 +1118,8 @@ see reaction package for documentation.}"""))
                 doc="Gas Emulsion Mass Transfer")
         def gas_emulsion_mass_transfer(b, t, x, j):
             comp_conc_diff = (
-                    b.bubble.properties[t, x].dens_mol_vap_comp[j] -
-                    b.gas_emulsion.properties[t, x].dens_mol_vap_comp[j])
+                    b.bubble.properties[t, x].dens_mol_comp[j] -
+                    b.gas_emulsion.properties[t, x].dens_mol_comp[j])
             return (1e3*b.gas_emulsion.mass_transfer_term[t, x, 'Vap', j] ==
                     1e3*(- b.Kgbulk_c[t, x, j] +
                     b.bubble.area[t, x] *
@@ -1221,7 +1220,7 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Flowrate constraints
 
-        # Bubble gas flowrate - this eqn calcs bubble conc. (dens_mol_vap)
+        # Bubble gas flowrate - this eqn calcs bubble conc. (dens_mol)
         # which is then used to calculate the bubble pressure
         @self.Constraint(
                 self.flowsheet().config.time,
@@ -1230,7 +1229,7 @@ see reaction package for documentation.}"""))
         def bubble_gas_flowrate(b, t, x):
             return (b.bubble.properties[t, x].flow_mol ==
                     b.bed_area * b.delta[t, x] * b.velocity_bubble[t, x] *
-                    b.bubble.properties[t, x].dens_mol_vap)
+                    b.bubble.properties[t, x].dens_mol)
 
         # Emulsion gas flowrate - this eqn indirectly calcs bubble voidage
         # (delta) in conjuction with the mass conservation eqns in the
@@ -1243,7 +1242,7 @@ see reaction package for documentation.}"""))
         def emulsion_gas_flowrate(b, t, x):
             return (b.gas_emulsion.properties[t, x].flow_mol ==
                     b.bed_area * b.velocity_emulsion_gas[t, x] *
-                    b.gas_emulsion.properties[t, x].dens_mol_vap)
+                    b.gas_emulsion.properties[t, x].dens_mol)
 
         # ---------------------------------------------------------------------
         # Inlet boundary Conditions
@@ -1270,7 +1269,7 @@ see reaction package for documentation.}"""))
         def velocity_superficial_gas_inlet(b, t):
             return (b.gas_inlet_block[t].flow_mol ==
                     b.velocity_superficial_gas[t, 0] * b.bed_area *
-                    b.gas_emulsion.properties[t, 0].dens_mol_vap)
+                    b.gas_emulsion.properties[t, 0].dens_mol)
 
         # Bubble mole frac at inlet
         @self.Constraint(
@@ -1278,8 +1277,8 @@ see reaction package for documentation.}"""))
                 gas_phase.property_package.component_list,
                 doc="Bubble Mole Fraction at Inlet")
         def bubble_mole_frac_in(b, t, j):
-            return (1e2*b.gas_inlet_block[t].mole_frac[j] ==
-                    1e2*b.bubble.properties[t, 0].mole_frac[j])
+            return (1e2*b.gas_inlet_block[t].mole_frac_comp[j] ==
+                    1e2*b.bubble.properties[t, 0].mole_frac_comp[j])
 
         # Gas_emulsion mole frac at inlet
         @self.Constraint(
@@ -1287,8 +1286,8 @@ see reaction package for documentation.}"""))
                 gas_phase.property_package.component_list,
                 doc="Gas Emulsion Mole Fraction at Inlet")
         def gas_emulsion_mole_frac_in(b, t, j):
-            return (1e2*b.gas_inlet_block[t].mole_frac[j] ==
-                    1e2*b.gas_emulsion.properties[t, 0].mole_frac[j])
+            return (1e2*b.gas_inlet_block[t].mole_frac_comp[j] ==
+                    1e2*b.gas_emulsion.properties[t, 0].mole_frac_comp[j])
 
         # Solid emulsion mass flow at inlet
         @self.Constraint(self.flowsheet().config.time,
@@ -1308,11 +1307,13 @@ see reaction package for documentation.}"""))
                 doc="Solid Emulsion Mass Fraction at Inlet")
         def solid_emulsion_mass_frac_in(b, t, j):
             if (self.config.flow_type == "co_current"):
-                return (1e2*b.solid_inlet_block[t].mass_frac[j] ==
-                        1e2*b.solid_emulsion.properties[t, 0].mass_frac[j])
+                return (1e2 * b.solid_inlet_block[t].mass_frac_comp[j] ==
+                        1e2 *
+                        b.solid_emulsion.properties[t, 0].mass_frac_comp[j])
             elif (self.config.flow_type == "counter_current"):
-                return (1e2*b.solid_inlet_block[t].mass_frac[j] ==
-                        1e2*b.solid_emulsion.properties[t, 1].mass_frac[j])
+                return (1e2 * b.solid_inlet_block[t].mass_frac_comp[j] ==
+                        1e2 *
+                        b.solid_emulsion.properties[t, 1].mass_frac_comp[j])
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             @self.Constraint(
@@ -2090,9 +2091,9 @@ see reaction package for documentation.}"""))
                 Ge.append(value(blk.gas_emulsion.properties[t, x].flow_mol))
                 Gb.append(value(blk.bubble.properties[t, x].flow_mol))
                 cet.append(value(
-                        blk.gas_emulsion.properties[t, x].dens_mol_vap))
+                        blk.gas_emulsion.properties[t, x].dens_mol))
                 cbt.append(value(
-                        blk.bubble.properties[t, x].dens_mol_vap))
+                        blk.bubble.properties[t, x].dens_mol))
 
         # Bed temperature profile
         plt.figure(1)
@@ -2135,7 +2136,8 @@ see reaction package for documentation.}"""))
             for i in (gas_phase.property_package.component_list):
                 y_b = []
                 for x in blk.gas_emulsion.length_domain:
-                    y_b.append(value(blk.bubble.properties[t, x].mole_frac[i]))
+                    y_b.append(value(
+                        blk.bubble.properties[t, x].mole_frac_comp[i]))
                 plt.figure(5)
                 plt.plot(blk.gas_emulsion.length_domain, y_b, label=i)
         plt.legend(loc=9, ncol=len(
@@ -2150,7 +2152,7 @@ see reaction package for documentation.}"""))
                 x_e = []
                 for x in blk.solid_emulsion.length_domain:
                     x_e.append(value(
-                            blk.solid_emulsion.properties[t, x].mass_frac[i]))
+                        blk.solid_emulsion.properties[t, x].mass_frac_comp[i]))
                 plt.figure(6)
                 plt.plot(blk.solid_emulsion.length_domain, x_e, label=i)
         plt.legend(loc=9, ncol=len(

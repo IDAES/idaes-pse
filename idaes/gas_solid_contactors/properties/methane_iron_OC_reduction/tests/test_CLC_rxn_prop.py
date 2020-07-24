@@ -14,75 +14,85 @@
 Tests for CLC heterogeneous reaction block; tests for construction and solve
 Author: Chinedu Okoli
 """
-import sys
-import os
+
 import pytest
 
-from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
-                           SolverStatus)
+from pyomo.environ import (ConcreteModel,
+                           Var)
+
+from idaes.core import FlowsheetBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-# Access parent directory (property_packages_subfolder) of the current dir
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 
-from solid_phase_thermo import SolidPhaseThermoParameterBlock
-from gas_phase_thermo import GasPhaseThermoParameterBlock
-from hetero_reactions import HeteroReactionParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    gas_phase_thermo import GasPhaseThermoParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    solid_phase_thermo import SolidPhaseThermoParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    hetero_reactions import HeteroReactionParameterBlock
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-else:
-    solver = None
+
+# Get default solver for testing
+solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
-m = ConcreteModel()
+@pytest.fixture(scope="class")
+def rxn_prop():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
 
-# Set up thermo props and reaction props
-m.solid_properties = SolidPhaseThermoParameterBlock()
-m.solid_state_block = m.solid_properties.state_block_class(
-    default={"parameters": m.solid_properties,
-             "defined_state": True})
+    # Set up thermo props and reaction props
+    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+    m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
+        default={"parameters": m.fs.solid_properties,
+                 "defined_state": True})
 
-m.gas_properties = GasPhaseThermoParameterBlock()
-m.gas_state_block = m.gas_properties.state_block_class(
-    default={"parameters": m.gas_properties,
-             "defined_state": True})
+    m.fs.gas_properties = GasPhaseThermoParameterBlock()
+    m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
+        default={"parameters": m.fs.gas_properties,
+                 "defined_state": True})
 
-m.reactions = HeteroReactionParameterBlock(
-            default={"solid_property_package": m.solid_properties,
-                     "gas_property_package": m.gas_properties})
-m.reaction_block = m.reactions.reaction_block_class(
-        default={"parameters": m.reactions,
-                 "solid_state_block": m.solid_state_block,
-                 "gas_state_block": m.gas_state_block,
-                 "has_equilibrium": False})
+    m.fs.reactions = HeteroReactionParameterBlock(
+                default={"solid_property_package": m.fs.solid_properties,
+                         "gas_property_package": m.fs.gas_properties})
+    m.fs.unit = m.fs.reactions.reaction_block_class(
+            default={"parameters": m.fs.reactions,
+                     "solid_state_block": m.fs.solid_state_block,
+                     "gas_state_block": m.fs.gas_state_block,
+                     "has_equilibrium": False})
 
-
-def test_build_reaction_block():
-    assert hasattr(m.reaction_block, "k_rxn")
-    assert hasattr(m.reaction_block, "OC_conv")
-    assert hasattr(m.reaction_block, "OC_conv_temp")
-    assert hasattr(m.reaction_block, "reaction_rate")
-
-
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_solve():
     # Fix required variables to make reaction model square
-    # (gas density, solid density, temperature and component fractions)
-    m.reaction_block.gas_state_ref.dens_mol_vap_comp['CH4'].fix(10)
-    m.reaction_block.solid_state_ref.dens_mass_sol.fix(
-            m.reaction_block.solid_state_ref.dens_mass_sol.value)
-    m.reaction_block.solid_state_ref.temperature.fix(1183.15)
-    m.reaction_block.solid_state_ref.mass_frac["Fe2O3"].fix(0.45)
-    m.reaction_block.solid_state_ref.mass_frac["Fe3O4"].fix(1e-9)
-    m.reaction_block.solid_state_ref.mass_frac["Al2O3"].fix(0.55)
+    # (gas mixture and component densities,
+    # solid density and component fractions)
+    m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.45)
+    m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(1e-9)
+    m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.55)
+    m.fs.gas_state_block.dens_mol.fix(10)
+    m.fs.gas_state_block.dens_mol_comp.fix(10)
+    m.fs.solid_state_block.dens_mass_sol.fix(1)
 
-    m.reaction_block.initialize()
-    results = solver.solve(m.reaction_block, tee=False)
-    assert degrees_of_freedom(m.reaction_block) == 0
+    return m
 
-    # Check for optimal solution
-    assert results.solver.termination_condition == TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+
+@pytest.mark.unit
+def test_build_reaction_block(rxn_prop):
+    assert isinstance(rxn_prop.fs.unit.k_rxn, Var)
+    assert isinstance(rxn_prop.fs.unit.OC_conv, Var)
+    assert isinstance(rxn_prop.fs.unit.OC_conv_temp, Var)
+    assert isinstance(rxn_prop.fs.unit.reaction_rate, Var)
+
+
+@pytest.mark.unit
+def test_setInputs_reaction_block(rxn_prop):
+    assert degrees_of_freedom(rxn_prop.fs.unit) == 0
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize(rxn_prop):
+    initialization_tester(
+            rxn_prop)
