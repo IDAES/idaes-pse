@@ -240,12 +240,6 @@ see property package for documentation.}""",
         # Add Momentum balance variable 'deltaP' as necessary
         add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
-        # Set reference to scaling factor for pressure in control volume
-        add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
-
-        # Set reference to scaling factor for energy in control volume
-        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
-
         # Performance Variables
         self.ratioP = Var(
             self.flowsheet().config.time, initialize=1.0, doc="Pressure Ratio"
@@ -255,8 +249,8 @@ see property package for documentation.}""",
         @self.Constraint(self.flowsheet().config.time, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
             return (
-                self.sfp * b.ratioP[t] * b.control_volume.properties_in[t].pressure
-                == self.sfp * b.control_volume.properties_out[t].pressure
+                b.ratioP[t] * b.control_volume.properties_in[t].pressure
+                == b.control_volume.properties_out[t].pressure
             )
 
         # Construct equations for thermodynamic assumption
@@ -305,11 +299,11 @@ see property package for documentation.}""",
         )
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe * b.work_fluid[t] == b.sfe * (
+                return b.work_fluid[t] == (
                     b.work_mechanical[t] * b.efficiency_pump[t]
                 )
             else:
-                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                return b.work_mechanical[t] == (
                     b.work_fluid[t] * b.efficiency_pump[t]
                 )
 
@@ -395,8 +389,8 @@ see property package for documentation.}""",
         )
         def isentropic_pressure(b, t):
             return (
-                b.sfp * b.properties_isentropic[t].pressure
-                == b.sfp * b.control_volume.properties_out[t].pressure
+                b.properties_isentropic[t].pressure
+                == b.control_volume.properties_out[t].pressure
             )
 
         # This assumes isentropic composition is the same as outlet
@@ -417,7 +411,7 @@ see property package for documentation.}""",
             self.flowsheet().config.time, doc="Calculate work of isentropic process"
         )
         def isentropic_energy_balance(b, t):
-            return b.sfe * b.work_isentropic[t] == b.sfe * (
+            return b.work_isentropic[t] == (
                 sum(
                     b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list
@@ -434,11 +428,11 @@ see property package for documentation.}""",
         )
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe * b.work_isentropic[t] == b.sfe * (
+                return b.work_isentropic[t] == (
                     b.work_mechanical[t] * b.efficiency_isentropic[t]
                 )
             else:
-                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                return b.work_mechanical[t] == (
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 

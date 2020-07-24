@@ -193,19 +193,6 @@ class HeatExchangerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     _make_heat_exchanger_config(CONFIG)
 
-    def set_scaling_factor_energy(self, f):
-        """
-        This function sets scaling_factor_energy for both side_1 and side_2.
-        This factor multiplies the energy balance and heat transfer equations
-        in the heat exchnager.  The value of this factor should be about
-        1/(expected heat duty).
-
-        Args:
-            f: Energy balance scaling factor
-        """
-        self.side_1.scaling_factor_energy.value = f
-        self.side_2.scaling_factor_energy.value = f
-
     def _process_config(self):
         """Check for configuration errors and alternate config option names.
         """

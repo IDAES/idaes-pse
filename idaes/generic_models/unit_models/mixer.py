@@ -627,13 +627,10 @@ objects linked to all inlet states and the mixed state,
         """
         Add energy mixing equations (total enthalpy balance).
         """
-        self.scaling_factor_energy = Param(
-            default=1e-6, mutable=True, doc="Energy balance scaling parameter"
-        )
 
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
-            return 0 == self.scaling_factor_energy * (
+            return 0 == (
                 sum(
                     sum(
                         inlet_blocks[i][t].get_enthalpy_flow_terms(p)
