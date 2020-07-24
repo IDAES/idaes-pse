@@ -78,7 +78,7 @@ kwargs = dict(
         # For developers. Only installed if [dev] is added to package name
         "dev": [
             "alabaster>=0.7.7",
-            "coverage==4.5.4",
+            "coverage",
             "flake8",
             "flask>=1.0",
             "flask-bower",
