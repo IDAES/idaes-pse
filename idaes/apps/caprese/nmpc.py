@@ -1476,6 +1476,7 @@ class NMPCSim(DynamicBase):
         """
         config = self.config(kwargs)
         tol = config.tolerance
+        outlvl = config.outlvl
         objective = getattr(model._NMPC_NAMESPACE, 
                             objective_name)
         namespace = model._NMPC_NAMESPACE
@@ -1510,7 +1511,9 @@ class NMPCSim(DynamicBase):
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.controller, self.controller_time, 
-                    time.first(), time.last(),
+                    time.first(), 
+                    time.last(),
+                    outlvl=outlvl,
                     dae_vars=self.controller._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.controller._NMPC_NAMESPACE.diff_vars)
 
