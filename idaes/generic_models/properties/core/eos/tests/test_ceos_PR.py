@@ -25,7 +25,8 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            sqrt,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 
 from idaes.core import (declare_process_block_class,
@@ -116,6 +117,11 @@ def m():
                             "equation_of_state": Cubic,
                             "equation_of_state_options": {
                                 "type": CubicType.PR}}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -173,6 +179,11 @@ def m_sol():
                             "equation_of_state": Cubic,
                             "equation_of_state_options": {
                                 "type": CubicType.PR}}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -429,11 +440,10 @@ def test_dens_mass_phase(m):
 
 @pytest.mark.unit
 def test_dens_mol_phase(m):
-    for p in m.params.phase_list:
-        assert str(Cubic.dens_mol_phase(m.props[1], p)) == (
-                str(m.props[1].pressure)+"/(8.314462618*J/mol/K*" +
-                str(m.props[1].temperature *
-                    m.props[1].compress_fact_phase[p])+")")
+    assert value(Cubic.dens_mol_phase(m.props[1], "Vap")) == pytest.approx(
+            44.800, rel=1e-3)
+    assert value(Cubic.dens_mol_phase(m.props[1], "Liq")) == pytest.approx(
+            41.157, rel=1e-3)
 
 
 @pytest.mark.unit

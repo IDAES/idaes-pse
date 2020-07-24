@@ -90,6 +90,16 @@ Parameter Data
 
 Most pure component property correlations depend upon empirical parameters which need to be specified by the user. All the in-built property libraries built these parameters automatically expect the user to provide values these parameters via the `parameter_data` configuration argument. The `parameter_data` configuration argument should be a `dict` with keys being the name of the required parameters and the values being a value or dict of values to use when initializing the parameter (i.e. the dict must have keys which match the indexing set of the parameter).
 
+Users can specify the units of measurement for each parameter value, which will be automatically converted to match the set of units required by the property method. Users are encouraged to explicitly state the units of each parameter value for clarity, which is done using a tuple with the form (value, units), as shown in the example below. Users may choose to omit the units, providing only a value for the parameter (not as a tuple) in which case the units are assumed to match those defined for the associated parameter.
+
+.. code-block:: python
+
+    "parameter_data": {
+        "property": (value, units),
+        "indexed_property": {
+            "index_1": (value, units),
+            "index_2: (value, units)}}
+
 .. note::
     A `dict` is used for specifying parameter values to allow users greater flexibility in defining their own methods with custom parameters.
 

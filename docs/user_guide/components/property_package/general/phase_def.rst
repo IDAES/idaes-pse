@@ -48,7 +48,7 @@ Equation of State Libraries
 Phase-Specific Parameter
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-In some cases, a property package may include parameters which are specific to a given phase. In these cases, these parameters are stored as part of the associated `Phase` object and the values of these set using the `parameter_data` argument when declaring the phase.
+In some cases, a property package may include parameters which are specific to a given phase. In these cases, these parameters are stored as part of the associated `Phase` object and the values of these set using the `parameter_data` argument when declaring the phase. This is done in the same fashion as for :ref:`component specific parameters<user_guide/components/property_package/general/component_def:Parameter Data>`.
 
 Phases with Partial Component Lists
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

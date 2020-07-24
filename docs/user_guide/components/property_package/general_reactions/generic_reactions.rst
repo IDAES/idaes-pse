@@ -9,6 +9,11 @@ Introduction
 
 In order to create and use a property package using the IDAES Generic Reaction Package Framework, users must provide a definition for the system they wish to model. The framework supports two approaches for defining the property package, which are described below, both of which are equivalent in practice.
 
+Units of Measurement
+--------------------
+
+As with generic thermophsyical property packages, when defining a reaction package using the generic framework users must define the base units for the reaction package (see :ref:`link<user_guide/components/property_package/uom:Defining Units of Measurement>`). The approach for setting the base units is the same as for thermophysical property packages and depends on the approach used to define the reaction package.
+
 Config Dictionary
 -----------------
 
@@ -28,6 +33,8 @@ In the above example, the PhysicalParameterBlock object can be from any thermoph
 
 Users need to populate `config_dict` with the desired options for their system as described in the other parts of this documentation. An example of a configuration dictionary can be found later on this page. For details on each configuration option, please see the relevant documentation.
 
+Using this approach, units of measurement are defined using the `base_units` option in the configuration dictionary. Users must provide units for the 5 core quantities, and may also provide units for the other 2 SI base quantities (if required). For details on other configuration options, please see the relevant documentation.
+
 Linking to a Thermophysical Property Package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -46,6 +53,11 @@ Configuration Example
     from from idaes.core import MaterialFlowBasis
 
     config_dict = {
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K},
         "reaction_basis": MaterialFlowBasis.molar,
         "rate_reactions": {
             "r1": {"stoichiometry": {("phase_1", "component_1"): -1,
@@ -97,7 +109,7 @@ Users should populate the `configure` and `parameters` methods as discussed belo
 Configure
 ^^^^^^^^^
 
-The 'configure` method is used to assign values to the configuration arguments, using the format `self.config.option_name = value`.
+The 'configure` method is used to assign values to the configuration arguments, using the format `self.config.option_name = value`. Users will also need to set the units of measurement in the property package metadata.
 
 Parameters
 ^^^^^^^^^^

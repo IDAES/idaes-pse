@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for FTP state formulation
+Tests for FpcTP state formulation
 
 Authors: Andrew Lee
 """
@@ -20,12 +20,12 @@ import pytest
 from sys import modules
 
 from pyomo.environ import (ConcreteModel, Constraint, Block,
-                           Var, units as pyunits)
+                           Expression, Var, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
-from idaes.generic_models.properties.core.state_definitions.FTPx import \
+from idaes.generic_models.properties.core.state_definitions.FpcTP import \
     define_state, set_metadata
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -82,24 +82,19 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value is None
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value is None
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value is None
@@ -111,60 +106,67 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 1
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value is None
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 1
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 3
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 1
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 1
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(1.0)
+
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol -
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]])
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
-
-        assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
-        assert len(frame.props[1].sum_mole_frac_out) == 1
-        assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 1
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 3
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -183,7 +185,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 100, 200),
+                "state_bounds": {"flow_mol_phase_comp": (0, 100, 200),
                                  "temperature": (290, 345,  400),
                                  "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
@@ -208,26 +210,21 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 100
-        assert frame.props[1].flow_mol.lb == 0
-        assert frame.props[1].flow_mol.ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -243,58 +240,67 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 1
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 100
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 1
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 3
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 1
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 1
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(1.0)
+
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-            frame.props[1].flow_mol -
-            frame.props[1].flow_mol_phase[frame.params.phase_list[1]])
-
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
-
-        assert not hasattr(frame.props[1], "sum_mole_frac_out")
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 1
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 3
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -336,24 +342,19 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value is None
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value is None
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value is None
@@ -365,74 +366,68 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 2
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value is None
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 2
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/2
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 6
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3"),
-                         ("p2", "c1"), ("p2", "c2"), ("p2", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
-    def test_constraints(self, frame):
-        # Check that the correct constraints are present
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-                sum(frame.props[1].flow_mol_phase[p]
-                    for p in frame.props[1].params.phase_list) -
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 2
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
                 frame.props[1].flow_mol)
 
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].flow_mol * frame.props[1].mole_frac_comp[i] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, i]
-                    for p in frame.props[1].params.phase_list))
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 2
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 1
-        assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
-        assert len(frame.props[1].sum_mole_frac_out) == 1
-        assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 2
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+    @pytest.mark.unit
+    def test_constraints(self, frame):
+        # Check that the correct constraints are present
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -452,7 +447,7 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 100, 200),
+                "state_bounds": {"flow_mol_phase_comp": (0, 100, 200),
                                  "temperature": (290, 345, 400),
                                  "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
@@ -477,26 +472,21 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 100
-        assert frame.props[1].flow_mol.lb == 0
-        assert frame.props[1].flow_mol.ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -512,72 +502,68 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 2
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 100/2
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 2
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/2
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 6
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3"),
-                         ("p2", "c1"), ("p2", "c2"), ("p2", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
-    def test_constraints(self, frame):
-        # Check that the correct constraints are present
-        assert isinstance(frame.props[1].total_flow_balance, Constraint)
-        assert len(frame.props[1].total_flow_balance) == 1
-        assert str(frame.props[1].total_flow_balance.body) == str(
-                sum(frame.props[1].flow_mol_phase[p]
-                    for p in frame.props[1].params.phase_list) -
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 2
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
                 frame.props[1].flow_mol)
 
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for i in frame.props[1].component_flow_balances:
-            assert i in frame.props[1].params.component_list
-            assert str(frame.props[1].component_flow_balances[i].body) == str(
-                frame.props[1].flow_mol * frame.props[1].mole_frac_comp[i] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, i]
-                    for p in frame.props[1].params.phase_list))
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 2
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
 
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 1
-        assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
-
-        assert not hasattr(frame.props[1], "sum_mole_frac_out")
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 2
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+    @pytest.mark.unit
+    def test_constraints(self, frame):
+        # Check that the correct constraints are present
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -620,24 +606,19 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value is None
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value is None
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value is None
@@ -649,66 +630,68 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 3
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value is None
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 3
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 9
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3"),
-                         ("p2", "c1"), ("p2", "c2"), ("p2", "c3"),
-                         ("p3", "c1"), ("p3", "c2"), ("p3", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 3
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 3
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
+
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for j in frame.props[1].component_flow_balances:
-            assert j in frame.params.component_list
-            assert str(frame.props[1].component_flow_balances[j].body) == str(
-                frame.props[1].flow_mol*frame.props[1].mole_frac_comp[j] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 3
-        for p in frame.props[1].sum_mole_frac:
-            assert p in frame.params.phase_list
-            assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
-        assert len(frame.props[1].sum_mole_frac_out) == 1
-        assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 3
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 9
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -729,7 +712,7 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
-                "state_bounds": {"flow_mol": (0, 100, 200),
+                "state_bounds": {"flow_mol_phase_comp": (0, 100, 200),
                                  "temperature": (290, 345, 400),
                                  "pressure": (1e5, 3e5, 5e5)},
                 "base_units": {"time": pyunits.s,
@@ -754,26 +737,21 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
     def test_always_flash(self, frame):
         define_state(frame.props[1])
 
-        assert frame.props[1].always_flash
+        assert not frame.props[1].always_flash
 
     @pytest.mark.unit
     def test_vars(self, frame):
         # Check that all necessary variables have been constructed and have
         # the correct values
-        assert isinstance(frame.props[1].flow_mol, Var)
-        assert frame.props[1].flow_mol.value == 100
-        assert frame.props[1].flow_mol.lb == 0
-        assert frame.props[1].flow_mol.ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Var)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert (p, i) in frame.props[1].params._phase_component_set
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].mole_frac_comp, Var)
-        assert len(frame.props[1].mole_frac_comp) == 3
-        for i in frame.props[1].mole_frac_comp:
-            assert i in frame.props[1].params.component_list
-            assert frame.props[1].mole_frac_comp[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].mole_frac_comp,
-                                      None)
 
         assert isinstance(frame.props[1].pressure, Var)
         assert frame.props[1].pressure.value == 3e5
@@ -789,64 +767,68 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
-        assert isinstance(frame.props[1].flow_mol_phase, Var)
-        assert len(frame.props[1].flow_mol_phase) == 3
-        for i in frame.props[1].flow_mol_phase:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].flow_mol_phase[i].value == 100/3
-            assert frame.props[1].flow_mol_phase[i].lb == 0
-            assert frame.props[1].flow_mol_phase[i].ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol_phase,
-                                      pyunits.mol/pyunits.s)
-
-        assert isinstance(frame.props[1].phase_frac, Var)
-        assert len(frame.props[1].phase_frac) == 3
-        for i in frame.props[1].phase_frac:
-            assert i in frame.props[1].params.phase_list
-            assert frame.props[1].phase_frac[i].value == 1/3
-        assert check_units_equivalent(frame.props[1].phase_frac,
-                                      None)
-
         assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
         assert len(frame.props[1].mole_frac_phase_comp) == 9
         for i in frame.props[1].mole_frac_phase_comp:
-            assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3"),
-                         ("p2", "c1"), ("p2", "c2"), ("p2", "c3"),
-                         ("p3", "c1"), ("p3", "c2"), ("p3", "c3")]
+            assert i in frame.params._phase_component_set
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
 
     @pytest.mark.unit
+    def test_expressions(self, frame):
+        assert isinstance(frame.props[1].flow_mol, Expression)
+        assert len(frame.props[1].flow_mol) == 1
+        assert str(frame.props[1].flow_mol.expr) == str(
+            sum(frame.props[1].flow_mol_phase_comp[i]
+                for i in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 3
+        for p in frame.props[1].flow_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].flow_mol_phase[p].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for j in frame.props[1].params.component_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].flow_mol_comp, Expression)
+        assert len(frame.props[1].flow_mol_comp) == 3
+        for j in frame.props[1].flow_mol_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].flow_mol_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set))
+
+        assert isinstance(frame.props[1].mole_frac_comp, Expression)
+        assert len(frame.props[1].mole_frac_comp) == 3
+        for j in frame.props[1].mole_frac_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].mole_frac_comp[j].expr) == str(
+                sum(frame.props[1].flow_mol_phase_comp[p, j]
+                    for p in frame.props[1].params.phase_list
+                    if (p, j) in frame.props[1].params._phase_component_set) /
+                frame.props[1].flow_mol)
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 3
+        for p in frame.props[1].phase_frac:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].phase_frac[p].expr) == str(
+                frame.props[1].flow_mol_phase[p] / frame.props[1].flow_mol)
+
+    @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
-        assert isinstance(frame.props[1].component_flow_balances, Constraint)
-        assert len(frame.props[1].component_flow_balances) == 3
-        for j in frame.props[1].component_flow_balances:
-            assert j in frame.params.component_list
-            assert str(frame.props[1].component_flow_balances[j].body) == str(
-                frame.props[1].flow_mol*frame.props[1].mole_frac_comp[j] -
-                sum(frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j]
-                    for p in frame.props[1].params.phase_list))
-
-        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
-        assert len(frame.props[1].sum_mole_frac) == 3
-        for p in frame.props[1].sum_mole_frac:
-            assert p in frame.params.phase_list
-            assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
-
-        assert not hasattr(frame.props[1], "sum_mole_frac_out")
-
-        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
-        assert len(frame.props[1].phase_fraction_constraint) == 3
-        for i in frame.props[1].phase_fraction_constraint:
-            assert i in frame.props[1].params.phase_list
-            assert str(frame.props[1].phase_fraction_constraint[i].body) == \
-                str(frame.props[1].phase_frac[i]*frame.props[1].flow_mol -
-                    frame.props[1].flow_mol_phase[i])
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 9
+        for (p, i) in frame.props[1].mole_frac_phase_comp_eq:
+            assert str(
+                frame.props[1].mole_frac_phase_comp_eq[p, i].body) == str(
+                frame.props[1].mole_frac_phase_comp[p, i] *
+                frame.props[1].flow_mol_phase[p] -
+                frame.props[1].flow_mol_phase_comp[p, i])
 
         assert_units_consistent(frame.props[1])
 
@@ -865,7 +847,8 @@ class TestCommon(object):
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "state_bounds": {
-                    "flow_mol": (0, 0.1, 0.2, pyunits.kmol/pyunits.s),
+                    "flow_mol_phase_comp": (
+                        0, 0.1, 0.2, pyunits.kmol/pyunits.s),
                     "temperature": (522, 621, 720, pyunits.degR),
                     "pressure": (1, 3, 5, pyunits.bar)},
                 "base_units": {"time": pyunits.s,
@@ -891,10 +874,11 @@ class TestCommon(object):
     @pytest.mark.unit
     def test_convert_vars(self, frame):
         # Check that all state var values and bounds were converted correctly
-        assert frame.props[1].flow_mol.value == 100
-        assert frame.props[1].flow_mol.lb == 0
-        assert frame.props[1].flow_mol.ub == 200
-        assert check_units_equivalent(frame.props[1].flow_mol,
+        for (p, i) in frame.props[1].flow_mol_phase_comp:
+            assert frame.props[1].flow_mol_phase_comp[p, i].value == 100
+            assert frame.props[1].flow_mol_phase_comp[p, i].lb == 0
+            assert frame.props[1].flow_mol_phase_comp[p, i].ub == 200
+        assert check_units_equivalent(frame.props[1].flow_mol_phase_comp,
                                       pyunits.mol/pyunits.s)
 
         assert frame.props[1].pressure.value == 3e5
@@ -912,11 +896,10 @@ class TestCommon(object):
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
-        for p in frame.params.phase_list:
-            for j in frame.params.component_list:
-                assert frame.props[1].get_material_flow_terms(p, j) == (
-                    frame.props[1].flow_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j])
+        for (p, j) in frame.params._phase_component_set:
+            assert frame.props[1].get_material_flow_terms(p, j) == (
+                frame.props[1].flow_mol_phase[p] *
+                frame.props[1].mole_frac_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, frame):
@@ -927,11 +910,10 @@ class TestCommon(object):
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
-        for p in frame.params.phase_list:
-            for j in frame.params.component_list:
-                assert frame.props[1].get_material_density_terms(p, j) == (
-                    frame.props[1].dens_mol_phase[p] *
-                    frame.props[1].mole_frac_phase_comp[p, j])
+        for (p, j) in frame.params._phase_component_set:
+            assert frame.props[1].get_material_density_terms(p, j) == (
+                frame.props[1].dens_mol_phase[p] *
+                frame.props[1].mole_frac_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, frame):
@@ -958,15 +940,13 @@ class TestCommon(object):
     @pytest.mark.unit
     def test_define_state_vars(self, frame):
         assert frame.props[1].define_state_vars() == \
-            {"flow_mol": frame.props[1].flow_mol,
-             "mole_frac_comp": frame.props[1].mole_frac_comp,
+            {"flow_mol_phase_comp": frame.props[1].flow_mol_phase_comp,
              "temperature": frame.props[1].temperature,
              "pressure": frame.props[1].pressure}
 
     @pytest.mark.unit
     def test_define_display_vars(self, frame):
         assert frame.props[1].define_display_vars() == \
-            {"Total Molar Flowrate": frame.props[1].flow_mol,
-             "Total Mole Fraction": frame.props[1].mole_frac_comp,
+            {"Molar Flowrate": frame.props[1].flow_mol_phase_comp,
              "Temperature": frame.props[1].temperature,
              "Pressure": frame.props[1].pressure}

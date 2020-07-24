@@ -21,7 +21,6 @@ from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
-from idaes.core.util.constants import Constants as const
 
 
 # TODO: Add support for ideal solids
@@ -47,7 +46,7 @@ class Ideal(EoSBase):
     def dens_mol_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
-            return b.pressure/(const.gas_constant*b.temperature)
+            return b.pressure/(Ideal.gas_constant(b)*b.temperature)
         elif pobj.is_liquid_phase():
             return sum(b.mole_frac_phase_comp[p, j] *
                        get_method(b, "dens_mol_liq_comp", j)(
@@ -80,7 +79,7 @@ class Ideal(EoSBase):
         if pobj.is_vapor_phase():
             return (get_method(b, "entr_mol_ig_comp", j)(
                 b, cobj(b, j), b.temperature) -
-                const.gas_constant*log(
+                Ideal.gas_constant(b)*log(
                     b.mole_frac_phase_comp[p, j]*b.pressure /
                     b.params.pressure_ref))
         elif pobj.is_liquid_phase():

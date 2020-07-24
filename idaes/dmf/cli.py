@@ -486,9 +486,9 @@ def register(
                 click.echo(f"Relation {rel_name} target not found: {rel_id}")
                 sys.exit(Code.DMF_OPER.value)
             if is_subject == "yes":
-                resource.create_relation_args(rsrc, rel_name, rel_subj)
+                resource.create_relation(rsrc, rel_name, rel_subj)
             else:
-                resource.create_relation_args(rel_subj, rel_name, rsrc)
+                resource.create_relation(rel_subj, rel_name, rsrc)
             _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
     _log.debug("update resource relations")
     for rel_rsrc in target_resources.values():

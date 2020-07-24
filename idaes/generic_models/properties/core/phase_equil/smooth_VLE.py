@@ -44,14 +44,19 @@ def phase_equil(b, phase_pair):
             .format(b.params.name, phase_pair[0], phase_pair[1]))
 
     # Definition of equilibrium temperature for smooth VLE
+    t_units = b.params.get_metadata().default_units["temperature"]
     if v_only_comps == []:
         b.add_component("_t1"+suffix, Var(
                 initialize=b.temperature.value,
-                doc='Intermediate temperature for calculating Teq'))
+                doc='Intermediate temperature for calculating Teq',
+                units=t_units))
         _t1 = getattr(b, "_t1"+suffix)
 
         b.add_component("eps_1"+suffix, Param(
-            default=0.01, mutable=True, doc='Smoothing parameter for Teq'))
+            default=0.01,
+            mutable=True,
+            doc='Smoothing parameter for Teq',
+            units=t_units))
         eps_1 = getattr(b, "eps_1"+suffix)
 
         # PSE paper Eqn 13
@@ -65,7 +70,8 @@ def phase_equil(b, phase_pair):
 
     if l_only_comps == []:
         b.add_component("eps_2"+suffix, Param(
-            default=0.0005, mutable=True, doc='Smoothing parameter for Teq'))
+            default=0.0005, mutable=True, doc='Smoothing parameter for Teq',
+            units=t_units))
         eps_2 = getattr(b, "eps_2"+suffix)
 
         # PSE paper Eqn 14

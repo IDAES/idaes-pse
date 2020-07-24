@@ -18,7 +18,13 @@ Author: A Lee
 
 import types
 
+from pyomo.environ import units as pyunits
+
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 class GenericPropertyPackageError(PropertyPackageError):
@@ -99,3 +105,78 @@ def get_component_object(self, comp):
 
     """
     return self.params.get_component(comp)
+
+
+def get_bounds_from_config(b, state, base_units):
+    """
+    Method to take a 3- or 4-tuple state definition config argument and return
+    tupels for the bounds and default value of the Var object.
+
+    Expects the form (lower, default, upper, units) where units is optional
+
+    Args:
+        b - StateBlock on which the state vars are to be constructed
+        state - name of state var as a string (to be matched with config dict)
+        base_units - base units of state var to be used if conversion required
+
+    Returns:
+        bounds - 2-tuple of state var bounds in base units
+        default_val - default value of state var in base units
+    """
+    try:
+        var_config = b.params.config.state_bounds[state]
+    except (KeyError, TypeError):
+        # State definition missing
+        return (None, None), None
+
+    if len(var_config) == 4:
+        # Units provided, need to convert values
+        bounds = (pyunits.convert_value(var_config[0],
+                                        from_units=var_config[3],
+                                        to_units=base_units),
+                  pyunits.convert_value(var_config[2],
+                                        from_units=var_config[3],
+                                        to_units=base_units))
+        default_val = pyunits.convert_value(var_config[1],
+                                            from_units=var_config[3],
+                                            to_units=base_units)
+    else:
+        bounds = (var_config[0], var_config[2])
+        default_val = var_config[1]
+
+    return bounds, default_val
+
+
+def set_param_value(b, param, units, index=None):
+    """
+    Utility method to set parameter value from config block. This allows for
+    converting units if required. This method directly sets the value of the
+    parameter.
+
+    Args:
+        b - block on which parameter and config block are defined
+        param - name of parameter as str. Used to find param and config arg
+        units - units of param object (used if conversion required)
+        index - (optional) used for pure component properties where a single
+                property may have multiple parameters associated with it.
+
+    Returns:
+        None
+    """
+    if index is None:
+        param_obj = getattr(b, param)
+        config = b.config.parameter_data[param]
+    else:
+        param_obj = getattr(b, param+"_"+index)
+        config = b.config.parameter_data[param][index]
+
+    if isinstance(config, tuple):
+        if units is None and config[1] is None:
+            param_obj.value = config[0]
+        else:
+            param_obj.value = pyunits.convert_value(
+                config[0], from_units=config[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = config
