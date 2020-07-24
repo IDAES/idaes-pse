@@ -86,9 +86,56 @@ def test_inerts():
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
 
     assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
     assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_multi_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_single_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Set phase list to only have 1 phase
+    m.fs.properties.phase_list = ["p1"]
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 0
+    assert (0, "p1", "c1") not in m.fs.unit.inert_species_balance
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 1
 
 
 @pytest.mark.unit

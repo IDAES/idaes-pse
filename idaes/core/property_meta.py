@@ -190,14 +190,13 @@ class PropertyClassMetadata(object):
                     .format(q, u))
 
         # Take opportunity to log a deprecation warning if units are not used
-        # TODO : Add back in after June 2020 release
-        # if _units == 0:
-        #     _log.warning("DEPRECATED: IDAES is moving to using Pyomo Units "
-        #                  "when defining default units, which are used "
-        #                  "to automatically determine units of measurement "
-        #                  "for quantities and convert where necessary. "
-        #                  "Users are strongly encouraged to convert their "
-        #                  "property packages to use Pyomo Units obejcts.")
+        if _units == 0:
+            _log.warning("DEPRECATED: IDAES is moving to using Pyomo Units "
+                         "when defining default units, which are used "
+                         "to automatically determine units of measurement "
+                         "for quantities and convert where necessary. "
+                         "Users are strongly encouraged to convert their "
+                         "property packages to use Pyomo Units objects.")
 
     def add_properties(self, p):
         """Add properties to the metadata.

@@ -24,10 +24,11 @@ The Generic Reaction Package Framework breaks down reaction packages into a numb
 
 The components which make up a generic reaction package are as follows:
 
-1. :ref:`Associate<user_guide/components/property_package/general_reactions/generic_reactions:Linking to a Thermophysical Property Package>` the reaction package with an appropriate thermodynamic property package.
-2. Define the :ref:`basis of the reaction terms<user_guide/components/property_package/general_reactions/generic_reactions:Setting Reaction Basis>` for the reaction package.
-3. Define the :ref:`rate-based reactions<user_guide/components/property_package/general_reactions/rate_rxns:Defining Rate-Based Reactions>` of interest in the system.
-4. Define the :ref:`equilibrium-based reactions<user_guide/components/property_package/general_reactions/equil_rxns:Defining Equilibrium Reactions>` of interest in the system. Nore that phase equilibrium is generally handled in the thermodynamic property package.
+1. Choose a base set of :ref:`units of measurement<user_guide/components/property_package/general_reactions/generic_reactions:Units of Measurement>` for the property package.
+2. :ref:`Associate<user_guide/components/property_package/general_reactions/generic_reactions:Linking to a Thermophysical Property Package>` the reaction package with an appropriate thermodynamic property package. The thermodynamic property package must use the same set of base units of measurement,
+3. Define the :ref:`basis of the reaction terms<user_guide/components/property_package/general_reactions/generic_reactions:Setting Reaction Basis>` for the reaction package.
+4. Define the :ref:`rate-based reactions<user_guide/components/property_package/general_reactions/rate_rxns:Defining Rate-Based Reactions>` of interest in the system.
+5. Define the :ref:`equilibrium-based reactions<user_guide/components/property_package/general_reactions/equil_rxns:Defining Equilibrium Reactions>` of interest in the system. Nore that phase equilibrium is generally handled in the thermodynamic property package.
 
 The following sections will describe how to define a reaction package using the Generic Reaction Package Framework along with the libraries of sub-models currently available. Finally, the :ref:`developers<user_guide/components/property_package/general/developers:Developing New Property Libraries>` section describes how to go about defining your own custom components to use when creating custom property packages.
 

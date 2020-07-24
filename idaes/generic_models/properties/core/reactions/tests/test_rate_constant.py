@@ -15,15 +15,18 @@ Tests for rate forms
 """
 
 import pytest
+import types
 
-from pyomo.environ import Block, ConcreteModel, exp, Var
+from pyomo.environ import Block, ConcreteModel, Var, units as pyunits, value
 from pyomo.common.config import ConfigBlock
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.reactions.rate_constant import *
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
+from idaes.core.property_meta import PropertyClassMetadata
 
 
 @pytest.fixture
@@ -48,6 +51,17 @@ def model():
         "parameter_data": {}}
 
     m.rparams.reaction_r1 = Block()
+
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.default_units["temperature"] = pyunits.K
+    m.meta_object.default_units["mass"] = pyunits.kg
+    m.meta_object.default_units["length"] = pyunits.m
+    m.meta_object.default_units["time"] = pyunits.s
+    m.meta_object.default_units["amount"] = pyunits.mol
+
+    def get_metadata(self):
+        return m.meta_object
+    m.rparams.get_metadata = types.MethodType(get_metadata, m.rparams)
 
     # Create a dummy state block
     m.rxn = Block([1])
@@ -76,9 +90,7 @@ def test_arrhenius(model):
 
     # Check expressions
     rform = arrhenius.return_expression(
-        model.rxn[1], model.rparams.reaction_r1, "r1", 300)
+        model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
 
-    assert str(rform) == str(
-        model.rparams.reaction_r1.arrhenius_const *
-        exp(-model.rparams.reaction_r1.energy_activation /
-            (c.gas_constant*300)))
+    assert value(rform) == pytest.approx(0.81836, rel=1e-3)
+    assert_units_equivalent(rform, None)
