@@ -1147,7 +1147,7 @@ class PolynomialRegression:
     def training(self):
         """
 
-        The ``poly_training`` method trains a polynomial model to an input dataset.
+        The ``training`` method trains a polynomial model to an input dataset.
         It calls the core method which is called in the PolynomialRegression class (polynomial_regression_fitting).
         It accepts no user input, inheriting the information passed in class initialization.
 

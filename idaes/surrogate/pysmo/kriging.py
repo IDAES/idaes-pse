@@ -448,7 +448,7 @@ class KrigingModel:
 
     def predict_output(self, x_pred):
         """
-        The ``kriging_predict_output`` method generates output predictions for input data x_pred based a previously trained Kriging model.
+        The ``predict_output`` method generates output predictions for input data x_pred based a previously trained Kriging model.
 
         Args:
             x_pred(NumPy Array)             : Array of designs for which the output is to be evaluated/predicted.
