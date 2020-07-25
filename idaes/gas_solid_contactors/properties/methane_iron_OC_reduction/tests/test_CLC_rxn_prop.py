@@ -72,7 +72,7 @@ def rxn_prop():
     m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.55)
     m.fs.gas_state_block.dens_mol.fix(10)
     m.fs.gas_state_block.dens_mol_comp.fix(10)
-    m.fs.solid_state_block.dens_mass_sol.fix(1)
+    m.fs.solid_state_block.dens_mass.fix(1)
 
     return m
 
