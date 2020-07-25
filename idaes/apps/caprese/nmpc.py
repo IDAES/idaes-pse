@@ -1335,9 +1335,9 @@ class NMPCSim(DynamicBase):
         def pwc_rule(ns, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            if t in ns.sample_points:
+            time = ns.get_time()
+            if t in ns.sample_points or t == time.first():
                 return Constraint.Skip
-            # ^ Here, the constraint will be applied at t == 0
             t_next = time.next(t)
             inputs = ns.input_vars.varlist
             _slice = inputs[i]
@@ -1449,7 +1449,9 @@ class NMPCSim(DynamicBase):
 
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
+                if t != time.first():
+                    # Don't want to unfix inputs at time.first()
+                    _slice[t].unfix()
 
         strip_controller_bounds.revert(self.controller)
 
@@ -1555,10 +1557,10 @@ class NMPCSim(DynamicBase):
         time = self.controller_time
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
-        # ^ Maybe should fix inputs at time.first()?
-        # Also, this should be redundant as inputs have been unfixed
-        # after initialization
+                if t == time.first():
+                    _slice[t].fix()
+                else:
+                    _slice[t].unfix()
 
         assert (degrees_of_freedom(self.controller) == 
                 self.controller._NMPC_NAMESPACE.n_input_vars*
