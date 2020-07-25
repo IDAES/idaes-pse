@@ -15,8 +15,11 @@ Tests for DMF CLI
 """
 # stdlib
 import json
+import logging
 import os
 from pathlib import Path
+from shutil import rmtree
+from typing import Union
 
 # third-party
 from click.testing import CliRunner
@@ -27,7 +30,10 @@ from idaes.dmf.cli import init, register, info, ls, related, rm, status
 from idaes.dmf.dmfbase import DMFConfig, DMF
 from idaes.dmf.workspace import Workspace
 from idaes.dmf import resource
-from . import random_tempdir
+
+__author__ = "Dan Gunter"
+
+_log = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
@@ -35,17 +41,43 @@ def runner():
     return CliRunner()
 
 
+scratch_path: Union[Path, None] = None
+
+
+def setup_module(module):
+    """Create a scratch that is easily found (by developers) and removed, and doesn't
+    clutter up the working directories.
+    """
+    global scratch_path
+    scratch_path = Path("~/.idaes/_scratch").expanduser()
+    if not scratch_path.exists():
+        scratch_path.mkdir()
+    scratch_path = scratch_path / module.__name__
+    if not scratch_path.exists():
+        scratch_path.mkdir()
+
+
+def teardown_module(module):
+    """Do our level best to remove all the temporary files.
+    """
+    _log.info(f"Remove files from: {scratch_path}")
+    try:
+        rmtree(scratch_path, ignore_errors=True)
+    except Exception as err:
+        pass
+
+
 DATAFILE = "foo.txt"
 
 
 @pytest.fixture()
-def dmf_context(random_tempdir):
+def dmf_context():
     """Switch DMF context to a random subdir, then switch back when done.
     """
-    path = (random_tempdir / ".dmf").absolute()
+    path = (scratch_path / ".dmf").absolute()
     DMFConfig._filename = str(path)
     origdir = os.getcwd()
-    os.chdir(random_tempdir)
+    os.chdir(str(scratch_path))
     with open(DATAFILE, "w") as fp:
         fp.write("This is some sample data")
     yield path
