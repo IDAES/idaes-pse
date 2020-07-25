@@ -154,7 +154,6 @@ Must be True if dynamic = True,
                 slicer = block[:].component(member_list[s].local_name)[...]
 
             r = Reference(slicer)
-            setattr(blk, "_"+name+"_"+s+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -309,7 +308,6 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
-            setattr(blk, "_"+name+"_"+s+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -465,7 +463,6 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
-            setattr(blk, "_"+name+"_"+s+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)

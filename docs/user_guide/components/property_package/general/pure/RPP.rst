@@ -12,6 +12,8 @@ Methods for calculating pure component properties from:
 The Properties of Gases & Liquids, 4th Edition
 Reid, Prausnitz and Polling, 1987, McGraw-Hill
 
+All methods use SI units.
+
 Ideal Gas Molar Heat Capacity (Constant Pressure)
 -------------------------------------------------
 
@@ -22,9 +24,12 @@ Properties of Gases and Liquids uses the following correlation for the ideal gas
 **Parameters**
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Indices", "Description"
+   :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
 
 Ideal Gas Molar Enthalpy
 ------------------------
@@ -36,10 +41,13 @@ The correlation for the ideal gas molar enthalpy is derived from the correlation
 **Parameters**
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Indices", "Description"
+   :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", "phase, component", "Molar heat of formation at reference state"
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
+   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", ":math:`\text{J/mol}`", "Molar heat of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation.
@@ -54,10 +62,13 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
 **Parameters**
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Indices", "Description"
+   :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", "phase, component", "Standard molar entropy of formation at reference state"
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
+   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", ":math:`\text{J/mol}\cdotp\text{K}`", "Standard molar entropy of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation .
@@ -72,11 +83,14 @@ Properties of Gases and Liquids uses the following correlation to calculate the 
 where :math:`x = 1 - \frac{T}{T_{crit}}`.
 
 .. csv-table::
-   :header: "Symbol", "Parameter Name", "Indices", "Description"
+   :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A, B, C, D`", "pressure_sat_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`P_{crit}`", "pressure_crit_comp", "None", "Critical pressure"
-   ":math:`T_{crit}`", "temperature_crit_comp", "None", "Critical temperature"
+   ":math:`A`", "pressure_sat_comp_coeff_A", "None", ""
+   ":math:`B`", "pressure_sat_comp_coeff_B", "None", ""
+   ":math:`C`", "pressure_sat_comp_coeff_C", "None", ""
+   ":math:`D`", "pressure_sat_comp_coeff_D", "None", ""
+   ":math:`P_{crit}`", "pressure_crit_comp", "Same as system pressure", "Critical pressure"
+   ":math:`T_{crit}`", "temperature_crit_comp", "Same as system temperature", "Critical temperature"
 
 .. note::
     This correlation is only valid at temperatures **below** the critical temperature. Above this point, there is no real solution to the equation.

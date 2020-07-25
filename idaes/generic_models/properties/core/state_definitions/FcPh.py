@@ -22,6 +22,8 @@ from idaes.core import (MaterialFlowBasis,
 
 from idaes.generic_models.properties.core.state_definitions.FTPx import (
     state_initialization)
+from idaes.generic_models.properties.core.generic.utility import \
+    get_bounds_from_config
 
 
 # TODO : Need a way to get a guess for T during initialization
@@ -38,128 +40,93 @@ def define_state(b):
     # TODO: should have some checking to make sure developers implement this properly
     b.always_flash = True
 
-    # Get bounds if provided
-    try:
-        f_bounds = b.params.config.state_bounds["flow_mol_comp"]
-    except (KeyError, TypeError):
-        f_bounds = (None, None)
+    base_units = b.params.get_metadata().default_units
+    # Get bounds and initial values from config args
+    f_bounds, f_init = get_bounds_from_config(
+        b, "flow_mol_comp", base_units["amount"]/base_units["time"])
+    h_bounds, h_init = get_bounds_from_config(
+        b,
+        "enth_mol",
+        (base_units["mass"]*base_units["length"]**2 /
+         base_units["time"]**2/base_units["amount"]))
+    p_bounds, p_init = get_bounds_from_config(
+        b,
+        "pressure",
+        base_units["mass"]/base_units["length"]/base_units["time"]**2)
+    t_bounds, t_init = get_bounds_from_config(
+        b, "temperature", base_units["temperature"])
 
-    try:
-        h_bounds = b.params.config.state_bounds["enth_mol"]
-    except (KeyError, TypeError):
-        h_bounds = (None, None)
-
-    try:
-        p_bounds = b.params.config.state_bounds["pressure"]
-    except (KeyError, TypeError):
-        p_bounds = (None, None)
-
-    # Also include bounds on T, as they might be useful
-    try:
-        t_bounds = b.params.config.state_bounds["temperature"]
-    except (KeyError, TypeError):
-        t_bounds = (None, None)
-
-    # Set an initial value for each state var
-    if f_bounds == (None, None):
-        # No bounds, default to 1
-        f_init = 1
-    elif f_bounds[1] is None and f_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        f_init = f_bounds[0] + 10
-    elif f_bounds[1] is not None and f_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        f_init = f_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        f_init = (f_bounds[0] + f_bounds[1])/2
-
-    if h_bounds == (None, None):
-        # No bounds, default to 1000
-        h_init = 1000
-    elif h_bounds[1] is None and h_bounds[0] is not None:
-        # Only lower bound, use lower bound + 1000
-        h_init = h_bounds[0] + 1000
-    elif h_bounds[1] is not None and h_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        h_init = h_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        h_init = (h_bounds[0] + h_bounds[1])/2
-
-    if p_bounds == (None, None):
-        # No bounds, default to 101325
-        p_init = 101325
-    elif p_bounds[1] is None and p_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        p_init = p_bounds[0] + 10
-    elif p_bounds[1] is not None and p_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        p_init = p_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        p_init = (p_bounds[0] + p_bounds[1])/2
-
-    if t_bounds == (None, None):
-        # No bounds, default to 298.15
-        t_init = 298.15
-    elif t_bounds[1] is None and t_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        t_init = t_bounds[0] + 10
-    elif t_bounds[1] is not None and t_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        t_init = t_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        t_init = (t_bounds[0] + t_bounds[1])/2
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
+    energy_units = (units_meta["mass"] *
+                    units_meta["length"]**2 *
+                    units_meta["time"]**-2 *
+                    units_meta["amount"]**-1)
 
     # Add state variables
     b.flow_mol_comp = Var(b.params.component_list,
                           initialize=f_init,
                           domain=NonNegativeReals,
                           bounds=f_bounds,
-                          doc='Component molar flowrate')
+                          doc='Component molar flowrate',
+                          units=flow_units)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
     b.enth_mol = Var(initialize=h_init,
                      domain=NonNegativeReals,
                      bounds=h_bounds,
-                     doc='Mixture molar specific enthalpy')
+                     doc='Mixture molar specific enthalpy',
+                     units=energy_units)
 
     # Add supporting variables
     b.flow_mol = Expression(expr=sum(b.flow_mol_comp[j]
                                      for j in b.params.component_list),
                             doc="Total molar flowrate")
 
+    if f_init is None:
+        fp_init = None
+    else:
+        fp_init = f_init / len(b.params.phase_list)
+
     b.flow_mol_phase = Var(b.params.phase_list,
-                           initialize=f_init / len(b.params.phase_list),
+                           initialize=fp_init,
                            domain=NonNegativeReals,
                            bounds=f_bounds,
-                           doc='Phase molar flow rates')
+                           doc='Phase molar flow rates',
+                           units=flow_units)
 
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='Temperature')
+                        doc='Temperature',
+                        units=units_meta["temperature"])
 
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+                           doc='Mixture mole fractions',
+                           units=None)
 
     b.mole_frac_phase_comp = Var(
         b.params._phase_component_set,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
-        doc='Phase mole fractions')
+        doc='Phase mole fractions',
+        units=None)
 
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
         bounds=(0, None),
-        doc='Phase fractions')
+        doc='Phase fractions',
+        units=None)
 
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
