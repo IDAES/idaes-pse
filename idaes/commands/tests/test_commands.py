@@ -36,6 +36,7 @@ __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 
+
 @pytest.fixture(scope="module")
 def runner():
     return CliRunner()
