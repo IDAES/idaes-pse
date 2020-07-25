@@ -444,7 +444,7 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
     # variables.
     time = controller._NMPC_NAMESPACE.get_time()
     for i, t in enumerate(controller._NMPC_NAMESPACE.get_time()):
-        if t not in sample_points:
+        if t not in sample_points and t != time.first():
             t_next = time[i+2]
             var_in_0 = [id(v) for v in 
                 identify_variables(controller._NMPC_NAMESPACE.pwc_constraint[t, 0].expr)]
@@ -486,10 +486,6 @@ def test_initialization_by_time_element(nmpc):
     assert (degrees_of_freedom(controller) == 
             controller._NMPC_NAMESPACE.n_input_vars*
             controller._NMPC_NAMESPACE.samples_per_horizon)
-    # The +1 is to account for the inputs at the initial conditions,
-    # which maybe should be fixed...
-    # ^These inputs will now remain fixed, as time.first() is not
-    # a sample point.
 
     for con in activated_equalities_generator(controller):
         # Don't require pwc constraints to be satisfied,
