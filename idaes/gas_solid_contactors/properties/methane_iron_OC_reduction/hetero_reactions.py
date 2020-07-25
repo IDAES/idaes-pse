@@ -267,12 +267,12 @@ class _ReactionBlock(ReactionBlockBase):
                     Cflag[k, j] = False
                     blk[k].gas_state_ref.dens_mol_comp[j].fix(
                             blk[k].gas_state_ref.dens_mol_comp[j].value)
-            if blk[k].solid_state_ref.dens_mass.fixed is True:
+            if blk[k].solid_state_ref.dens_mass_sol.fixed is True:
                 Dflag[k] = True
             else:
                 Dflag[k] = False
-                blk[k].solid_state_ref.dens_mass.fix(
-                        blk[k].solid_state_ref.dens_mass.value)
+                blk[k].solid_state_ref.dens_mass_sol.fix(
+                        blk[k].solid_state_ref.dens_mass_sol.value)
 
         # Set solver options
         opt = SolverFactory(solver)
@@ -326,7 +326,7 @@ class _ReactionBlock(ReactionBlockBase):
                 if Cflag[k, j] is False:
                     blk[k].gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
-                blk[k].solid_state_ref.dens_mass.unfix()
+                blk[k].solid_state_ref.dens_mass_sol.unfix()
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="reactions")
         init_log.info_high('States released.')
@@ -477,7 +477,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             return b.reaction_rate[r]*1e4 == b._params._scale_factor_rxn*1e4*(
                 b.solid_state_ref.mass_frac_comp['Fe2O3'] *
                 (1 - b.solid_state_ref._params.particle_porosity) *
-                b.solid_state_ref.dens_mass *
+                b.solid_state_ref.dens_mass_sol *
                 (b._params.a_vol /
                  (b.solid_state_ref._params.mw_comp['Fe2O3'])) *
                 3*b._params.rxn_stoich_coeff[r]*b.k_rxn[r] *

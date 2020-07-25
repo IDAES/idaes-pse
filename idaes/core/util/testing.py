@@ -109,13 +109,7 @@ def initialization_tester(m, dof=0, **init_kwargs):
 
     fin_fixed_vars = fixed_variables_set(m)
     fin_act_consts = activated_constraints_set(m)
-    
-    print("fin_act_consts = ", len(fin_act_consts))
-    print("fin_fixed_vars = ", len(fin_fixed_vars))
 
-    print("orig_act_consts = ", len(orig_act_consts))
-    print("orig_fixed_vars = ", len(orig_fixed_vars))
-    
     assert len(fin_act_consts) == len(orig_act_consts)
     assert len(fin_fixed_vars) == len(orig_fixed_vars)
 

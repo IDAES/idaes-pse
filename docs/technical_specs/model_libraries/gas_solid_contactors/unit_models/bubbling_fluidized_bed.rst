@@ -455,10 +455,10 @@ Variable                    Name                                                
 :math:`A_{ge,t,x}`          gas_emulsion_region.area                          
 :math:`A_{se,t,x}`          solid_emulsion_region.area                          
 :math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                            pressure drop across gas emulsion region
-:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass            solid mass density         
+:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol        solid mass density         
 :math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
-:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol                     gas mole density in the bubble region 
-:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol               gas mole density in the emulsion region       
+:math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                 gas mole density in the bubble region 
+:math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap           gas mole density in the emulsion region       
 :math:`M_{tr,b,t,x,p,j}`    bubble_region.mass_transfer_term              
 :math:`M_{tr,ge,t,x,p,j}`   gas_emulsion_region.mass_transfer_term             
 :math:`M_{tr,se,t,x,p,j}`   solid_emulsion_region.mass_transfer_term            
@@ -478,17 +478,17 @@ Variable                    Name                                                
 :math:`H_{tr, se, t,x}`     solid_emulsion_region.heat                            solid emulsion region heat transfer term
 :math:`F_{mol,b,t,x}`       bubble_region.properties.flow_mol                  
 :math:`F_{mol,ge,t,x}`      gas_emulsion_region.properties.flow_mol            
-:math:`y_{b,t,x,j}`         bubble_region.properties.mole_frac_comp                  
-:math:`y_{ge,t,x,j}`        gas_emulsion_region.properties.mole_frac_comp            
-:math:`x_{se,t,x,j}`        solid_emulsion_region.properties.mass_frac_comp          
+:math:`y_{b,t,x,j}`         bubble_region.properties.mole_frac                  
+:math:`y_{ge,t,x,j}`        gas_emulsion_region.properties.mole_frac            
+:math:`x_{se,t,x,j}`        solid_emulsion_region.properties.mass_frac          
 :math:`P_{ge,t,x}`          gas_emulsion_region.properties.pressure             
 :math:`F_{mol,g,t,inlet}`   gas_inlet.flow_mol                      
-:math:`y_{g,t,inlet,j}`     gas_inlet.mole_frac_comp                     
+:math:`y_{g,t,inlet,j}`     gas_inlet.mole_frac                     
 :math:`P_{g,t,inlet}`       gas_inlet.pressure                     
 :math:`T_{g,t,inlet}`       gas_inlet.temperature                   
 :math:`H_{g,t,inlet}`       gas_inlet.enthalpy                      
 :math:`F_{mass,s,t,inlet}`  solid_inlet.flow_mass                     
-:math:`x_{s,t,inlet}`       solid_inlet.mass_frac_comp                    
+:math:`x_{s,t,inlet}`       solid_inlet.mass_frac                    
 :math:`T_{s,t,inlet}`       solid_inlet.temperature                   
 :math:`H_{s,t,inlet}`       solid_inlet.enthalpy                      
 :math:`F_{mass,se,t,x}`     solid_emulsion_region.properties.flow_mass                     
@@ -496,12 +496,12 @@ Variable                    Name                                                
 :math:`H_{ge,t,x}`          gas_emulsion_region.properties.enthalpy                      
 :math:`H_{se,t,x}`          solid_emulsion_region.properties.enthalpy                      
 :math:`F_{mol,g,t,outlet}`  gas_outlet.flow_mol                      
-:math:`y_{g,t,outlet,j}`    gas_outlet.mole_frac_comp                     
+:math:`y_{g,t,outlet,j}`    gas_outlet.mole_frac                     
 :math:`P_{g,t,outlet}`      gas_outlet.pressure                      
 :math:`T_{g,t,outlet}`      gas_outlet.temperature                   
 :math:`H_{g,t,outlet}`      gas_outlet.enthalpy                      
 :math:`F_{mass,s,t,outlet}` solid_outlet.flow_mass                     
-:math:`x_{s,t,outlet}`      solid_outlet.mass_frac_comp                     
+:math:`x_{s,t,outlet}`      solid_outlet.mass_frac                     
 :math:`T_{s,t,outlet}`      solid_outlet.temperature                   
 :math:`H_{s,t,outlet}`      solid_outlet.mass_enthalpy                      
 :math:`v_{mf,se}`           solid_emulsion_region.properties.velocity_mf          velocity at minimum fluidization
