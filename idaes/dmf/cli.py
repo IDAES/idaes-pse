@@ -22,6 +22,7 @@ from enum import Enum
 import json
 import logging
 from operator import itemgetter
+import os
 import pathlib
 import sys
 from typing import List
@@ -212,7 +213,7 @@ def init(path, create, name, desc, html):
     """Initialize the current workspace used for the data management framework commands.
     Optionally, create a new workspace.
     """
-    _log.info(f"Initialize with workspace path={path}")
+    _log.info(f"Initialize with workspace path={path} cwd={os.path.abspath(os.curdir)}")
     if create:
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
