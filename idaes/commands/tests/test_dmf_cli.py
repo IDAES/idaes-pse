@@ -66,6 +66,7 @@ def dmf_context():
     """Switch DMF context to a random subdir, then switch back when done.
     """
     global dmf_context_num
+    os.chdir(os.path.expanduser("~"))  # make sure we start in HOME
     path = scratch_path / str(dmf_context_num)
     try:
         path.mkdir()
