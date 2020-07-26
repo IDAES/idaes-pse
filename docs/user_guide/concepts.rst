@@ -59,7 +59,7 @@ designed to be fully open and extensible, allowing users to inspect and modify t
 their needs. Documentation of the available model libraries can be found
 :ref:`here<user_guide/model_libraries/index:IDAES Model Libraries>`.
 
-Modelling Extensions
+Modeling Extensions
 --------------------
 The IDAES tools set also provides users with access to a number of cutting edge tools not
 directly related to process modeling. These tools are collected under the heading of Modeling
