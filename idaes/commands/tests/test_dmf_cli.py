@@ -31,6 +31,8 @@ from idaes.dmf.dmfbase import DMFConfig, DMF
 from idaes.dmf.workspace import Workspace
 from idaes.dmf import resource
 
+from . import create_module_scratch, rmtree_scratch
+
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
@@ -42,29 +44,16 @@ def runner():
 
 
 scratch_path: Union[Path, None] = None
+dmf_context_num = 1
 
 
 def setup_module(module):
-    """Create a scratch that is easily found (by developers) and removed, and doesn't
-    clutter up the working directories.
-    """
     global scratch_path
-    scratch_path = Path("~/.idaes/_scratch").expanduser()
-    if not scratch_path.exists():
-        scratch_path.mkdir()
-    scratch_path = scratch_path / module.__name__
-    if not scratch_path.exists():
-        scratch_path.mkdir()
+    scratch_path = create_module_scratch(module.__name__)
 
 
 def teardown_module(module):
-    """Do our level best to remove all the temporary files.
-    """
-    _log.info(f"Remove files from: {scratch_path}")
-    try:
-        rmtree(scratch_path, ignore_errors=True)
-    except Exception as err:
-        pass
+    rmtree_scratch(scratch_path)
 
 
 DATAFILE = "foo.txt"
@@ -74,16 +63,20 @@ DATAFILE = "foo.txt"
 def dmf_context():
     """Switch DMF context to a random subdir, then switch back when done.
     """
-    path = (scratch_path / ".dmf").absolute()
-    DMFConfig._filename = str(path)
+    global dmf_context_num
+    path = scratch_path / str(dmf_context_num)
+    path.mkdir()
+    dmf_path = (path / ".dmf").absolute()
+    DMFConfig._filename = str(dmf_path)
     origdir = os.getcwd()
-    os.chdir(str(scratch_path))
+    os.chdir(str(path))
     with open(DATAFILE, "w") as fp:
         fp.write("This is some sample data")
     yield path
     os.unlink(DATAFILE)
     DMFConfig._filename = str(Path("~/.dmf").expanduser())
     os.chdir(origdir)
+    dmf_context_num += 1
 
 
 def create_foo_workspace(runner):

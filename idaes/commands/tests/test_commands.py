@@ -31,6 +31,7 @@ import pytest
 # package
 from idaes.commands import examples
 from idaes.util.system import TemporaryDirectory
+from . import create_module_scratch, rmtree_scratch
 
 __author__ = "Dan Gunter"
 
@@ -46,26 +47,14 @@ scratch_path: Union[Path, None] = None
 
 
 def setup_module(module):
-    """Create a scratch that is easily found (by developers) and removed, and doesn't
-    clutter up the working directories.
-    """
     global scratch_path
-    scratch_path = Path("~/.idaes/_scratch").expanduser()
-    if not scratch_path.exists():
-        scratch_path.mkdir()
-    scratch_path = scratch_path / module.__name__
-    if not scratch_path.exists():
-        scratch_path.mkdir()
+    scratch_path = create_module_scratch(module.__name__)
+    _log.info(f"Using scratch dir: {scratch_path}")
 
 
 def teardown_module(module):
-    """Do our level best to remove all the temporary files.
-    """
     _log.info(f"Remove files from: {scratch_path}")
-    try:
-        rmtree(scratch_path, ignore_errors=True)
-    except Exception as err:
-        pass
+    rmtree_scratch(scratch_path)
 
 
 @pytest.fixture
