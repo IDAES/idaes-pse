@@ -18,7 +18,8 @@ import json
 import logging
 import os
 from pathlib import Path
-from shutil import rmtree
+import sys
+import time
 from typing import Union
 
 # third-party
@@ -45,6 +46,7 @@ def runner():
 
 scratch_path: Union[Path, None] = None
 dmf_context_num = 1
+# on_windows = sys.platform == "win32"  -- maybe needed later
 
 
 def setup_module(module):
@@ -70,15 +72,12 @@ def dmf_context():
     except:
         pass
     dmf_path = (path / ".dmf").absolute()
-    try:
-        dmf_path.mkdir()
-    except:
-        pass
     DMFConfig._filename = str(dmf_path)
     origdir = os.getcwd()
     os.chdir(str(path))
     with open(DATAFILE, "w") as fp:
         fp.write("This is some sample data")
+    fp.close()
     yield path
     os.unlink(DATAFILE)
     DMFConfig._filename = str(Path("~/.dmf").expanduser())
