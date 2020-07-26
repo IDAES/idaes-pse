@@ -20,9 +20,9 @@ The configuration arguments for each equilibrium reaction are used to define met
 
 * stoichiometry (required)
 * equilibrium_form (required)
+* concentration_form
 * heat_of_reaction
 * equilibrium_constant
-
 
 Stoichiometry
 ^^^^^^^^^^^^^
@@ -34,6 +34,11 @@ The `stoichiometry` configuration argument is used to define which components ta
     "stoichiometry": {
         ("phase_1", "component_1"): -1,
         ("phase_1", "component_2"): 1}
+
+Concentration Form
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`rate reaction<user_guide/components/property_package/general_reactions/rate_rxns:Concentration Form>` documentation.
 
 Other Reaction Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^
