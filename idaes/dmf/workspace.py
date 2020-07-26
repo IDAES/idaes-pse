@@ -176,19 +176,20 @@ class Workspace(object):
         self._cached_conf = None
         if create:
             # note: these raise OSError on failure
-            try:
-                os.mkdir(self._wsdir, 0o770)
-            except OSError:
-                if not os.path.exists(self._wsdir):
-                    raise WorkspaceCannotCreateError(self._wsdir)
-                if os.path.exists(self._conf):
-                    raise WorkspaceError(
-                        'existing configuration would be '
-                        'overwritten: {}'.format(self._conf)
+            if not os.path.exists(self._wsdir):
+                try:
+                    os.mkdir(self._wsdir, 0o770)
+                except OSError:
+                    if not os.path.exists(self._wsdir):
+                        raise WorkspaceCannotCreateError(self._wsdir)
+                    if os.path.exists(self._conf):
+                        raise WorkspaceError(
+                            'existing configuration would be '
+                            'overwritten: {}'.format(self._conf)
+                        )
+                    _log.warning(
+                        'Using existing path for new DMF workspace: {}'.format(self._wsdir)
                     )
-                _log.warning(
-                    'Using existing path for new DMF workspace: {}'.format(self._wsdir)
-                )
             try:
                 self._create_new_config(add_defaults)
             except OSError as err:
@@ -214,6 +215,7 @@ class Workspace(object):
             self.set_doc_paths(html_paths)
 
     def _create_new_config(self, add_defaults):
+        _log.info(f"Create new configuration at '{self._conf}'")
         conf = open(self._conf, 'w')  # create the file
         new_id = uuid.uuid4().hex  # create new unique ID
         conf.write('{}: {}\n'.format(self.ID_FIELD, new_id))  # write ID

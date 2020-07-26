@@ -65,9 +65,15 @@ def dmf_context():
     """
     global dmf_context_num
     path = scratch_path / str(dmf_context_num)
-    path.mkdir()
+    try:
+        path.mkdir()
+    except:
+        pass
     dmf_path = (path / ".dmf").absolute()
-    dmf_path.mkdir()
+    try:
+        dmf_path.mkdir()
+    except:
+        pass
     DMFConfig._filename = str(dmf_path)
     origdir = os.getcwd()
     os.chdir(str(path))
@@ -81,8 +87,12 @@ def dmf_context():
 
 
 def create_foo_workspace(runner):
+    if (Path("ws") / Workspace.WORKSPACE_CONFIG).exists():
+        create_flag = ""
+    else:
+        create_flag = "--create"
     result = runner.invoke(
-        init, ["ws", "--create", "--name", "foo", "--desc", "foo workspace description"]
+        init, ["ws", create_flag, "--name", "foo", "--desc", "foo workspace description"]
     )
     assert result.exit_code == 0
     return result

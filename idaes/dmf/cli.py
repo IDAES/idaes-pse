@@ -33,7 +33,7 @@ import yaml
 import click
 
 # package
-from idaes.dmf import DMF, DMFConfig, resource
+from idaes.dmf import DMF, DMFConfig, resource, workspace
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
@@ -218,8 +218,9 @@ def init(path, create, name, desc, html):
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
         try:
-            if pathlib.Path(path).exists():
-                click.echo(f"Cannot create workspace: path '{path}' already exists")
+            wspath = pathlib.Path(path)
+            if wspath.exists() and (wspath / workspace.Workspace.WORKSPACE_CONFIG).exists():
+                click.echo(f"Cannot create workspace: '{path}/{workspace.Workspace.WORKSPACE_CONFIG}' already exists")
                 sys.exit(Code.DMF_OPER.value)
         except PermissionError:
             click.echo(f"Cannot create workspace: path '{path}' not accessible")

@@ -118,10 +118,13 @@ class DMFConfig(object):
         return pathlib.Path(cls._filename)
 
     def save(self):
+        _log.info(f"Saving configuration location to: {self._filename}")
         try:
             fp = open(self._filename, "w")
-        except IOError:
+        except IOError as err:
+            _log.info(f"Saving configuration to '{self._filename}' failed: {err}")
             raise
+        _log.debug(f"Writing new global config to: {self._filename}")
         yaml.dump(self.c, fp)
 
     @property
