@@ -147,9 +147,9 @@ def get_bounds_from_config(b, state, base_units):
     return bounds, default_val
 
 
-def set_param_value(b, param, units, index=None):
+def set_param_value(b, param, units, config=None, index=None):
     """
-    Utility method to set parameter value from config block. This allows for
+    Utility method to set parameter value from a config block. This allows for
     converting units if required. This method directly sets the value of the
     parameter.
 
@@ -157,26 +157,31 @@ def set_param_value(b, param, units, index=None):
         b - block on which parameter and config block are defined
         param - name of parameter as str. Used to find param and config arg
         units - units of param object (used if conversion required)
+        config - (optional) config block to get parameter data from. If
+                unset, assumes b.config.
         index - (optional) used for pure component properties where a single
                 property may have multiple parameters associated with it.
 
     Returns:
         None
     """
+    if config is None:
+        config = b.config
+
     if index is None:
         param_obj = getattr(b, param)
-        config = b.config.parameter_data[param]
+        p_data = config.parameter_data[param]
     else:
         param_obj = getattr(b, param+"_"+index)
-        config = b.config.parameter_data[param][index]
+        p_data = config.parameter_data[param][index]
 
-    if isinstance(config, tuple):
-        if units is None and config[1] is None:
-            param_obj.value = config[0]
+    if isinstance(p_data, tuple):
+        if units is None and p_data[1] is None:
+            param_obj.value = p_data[0]
         else:
             param_obj.value = pyunits.convert_value(
-                config[0], from_units=config[1], to_units=units)
+                p_data[0], from_units=p_data[1], to_units=units)
     else:
         _log.debug("{} no units provided for parameter {} - assuming default "
                    "units".format(b.name, param))
-        param_obj.value = config
+        param_obj.value = p_data
