@@ -67,6 +67,7 @@ def dmf_context():
     path = scratch_path / str(dmf_context_num)
     path.mkdir()
     dmf_path = (path / ".dmf").absolute()
+    dmf_path.mkdir()
     DMFConfig._filename = str(dmf_path)
     origdir = os.getcwd()
     os.chdir(str(path))
