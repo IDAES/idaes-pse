@@ -42,7 +42,8 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.config import (is_transformation_method,
                                     is_transformation_scheme)
-import idaes.core.util.scaling as iscale
+from idaes.core.util import scaling as iscale
+
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee, Jaffer Ghouse"

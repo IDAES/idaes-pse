@@ -21,7 +21,6 @@ from pyomo.core.expr import current as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
-import idaes.core.util.scaling as iscale
 
 
 _log = idaeslog.getLogger(__name__)

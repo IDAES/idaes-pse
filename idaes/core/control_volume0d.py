@@ -35,7 +35,7 @@ from idaes.core.util.exceptions import (
     PropertyNotSupportedError
 )
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.scaling as iscale
+from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
