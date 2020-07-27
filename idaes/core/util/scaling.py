@@ -381,7 +381,7 @@ def constraint_autoscale_large_jac(
     """
     # Pynumero requires an objective, but I don't, so let's see if we have one
     n_obj = 0
-    for m.component_data_objects(pyo.Objective, active=True):
+    for c in m.component_data_objects(pyo.Objective, active=True):
         n_obj += 1
     # Add an objective if there isn't one
     if n_obj == 0:
