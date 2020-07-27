@@ -1,7 +1,7 @@
 Defining Components
 ===================
 
-The first step in defining a generic property package is to describe each of the chemical species of interest within the system, including methods for calculating the necessary thermophysical properties of the pure component. Components are defined using `IDAES Component objects<core/comp:Component Objects>`, and are automatically constructed using the `components` configuration argument from the `GenericParameterBlock`.
+The first step in defining a generic property package is to describe each of the chemical species of interest within the system, including methods for calculating the necessary thermophysical properties of the pure component. Components are defined using :ref:`IDAES Component objects<user_guide/components/property_package/comp:Component Object>`, and are automatically constructed using the `components` configuration argument from the `GenericParameterBlock`.
 
 The `components` Argument
 -------------------------
@@ -17,7 +17,7 @@ Each `GenericParameterBlock` has a configuration argument named `components` whi
 Configuration Arguments
 -----------------------
 
-The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found `here<core/comp:Component Class>`.
+The configuration arguments for each chemical species are used to define methods for calculating pure component properties and defining the parameters associated with these. A full list of the supported configuration arguments for `Component` objects can be found :ref:`here<user_guide/components/property_package/comp:Component Object>`.
 
 Type Argument
 ^^^^^^^^^^^^^

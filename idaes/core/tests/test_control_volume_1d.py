@@ -877,11 +877,11 @@ def test_rxn_rate_conv_mole_mass():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = {"c1": 2, "c2": 3}
+            m.fs.cv.properties[t, x].mw_comp = {"c1": 2, "c2": 3}
             for j in m.fs.pp.component_list:
                 assert (m.fs.cv._rxn_rate_conv(
                         t, x, j, has_rate_reactions=True) ==
-                        1/m.fs.cv.properties[t, x].mw[j])
+                        1/m.fs.cv.properties[t, x].mw_comp[j])
 
 
 @pytest.mark.unit
@@ -906,11 +906,11 @@ def test_rxn_rate_conv_mass_mole():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = {"c1": 2, "c2": 3}
+            m.fs.cv.properties[t, x].mw_comp = {"c1": 2, "c2": 3}
             for j in m.fs.pp.component_list:
                 assert (m.fs.cv._rxn_rate_conv(
                         t, x, j, has_rate_reactions=True) ==
-                        m.fs.cv.properties[t, x].mw[j])
+                        m.fs.cv.properties[t, x].mw_comp[j])
 
 
 # -----------------------------------------------------------------------------
@@ -1452,7 +1452,7 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = Var(
+            m.fs.cv.properties[t, x].mw_comp = Var(
                 m.fs.cv.properties[t, x].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -1529,7 +1529,7 @@ def test_add_phase_component_balances_custom_mass_term():
 
 
 @pytest.mark.unit
-def test_add_phase_component_balances_custom_mass_term_no_mw():
+def test_add_phase_component_balances_custom_mass_term_no_mw_comp():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -1586,7 +1586,7 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = Var(
+            m.fs.cv.properties[t, x].mw_comp = Var(
                 m.fs.cv.properties[t, x].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -2056,7 +2056,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = Var(
+            m.fs.cv.properties[t, x].mw_comp = Var(
                 m.fs.cv.properties[t, x].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -2186,7 +2186,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
-            m.fs.cv.properties[t, x].mw = Var(
+            m.fs.cv.properties[t, x].mw_comp = Var(
                 m.fs.cv.properties[t, x].config.parameters.component_list,
                 units=units.kg/units.mol)
 

@@ -485,7 +485,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     elif flow_basis == MaterialFlowBasis.mass:
                         try:
                             return (custom_molar_term(t, p, j) *
-                                    b.properties_out[t].mw[j])
+                                    b.properties_out[t].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -510,7 +510,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     elif flow_basis == MaterialFlowBasis.molar:
                         try:
                             return (custom_mass_term(t, p, j) /
-                                    b.properties_out[t].mw[j])
+                                    b.properties_out[t].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -554,7 +554,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     elif flow_basis == MaterialFlowBasis.mass:
                         try:
                             return (custom_molar_term(t, j) *
-                                    b.properties_out[t].mw[j])
+                                    b.properties_out[t].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -579,7 +579,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     elif flow_basis == MaterialFlowBasis.molar:
                         try:
                             return (custom_mass_term(t, j) /
-                                    b.properties_out[t].mw[j])
+                                    b.properties_out[t].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -880,7 +880,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             if flow_basis == MaterialFlowBasis.molar:
                 return 1
             elif flow_basis == MaterialFlowBasis.mass:
-                return 1/b.properties_out[t].mw
+                return 1/b.properties_out[t].mw_comp[j]
             else:
                 raise BalanceTypeNotSupportedError(
                     "{} property package MaterialFlowBasis == 'other'. Cannot "
