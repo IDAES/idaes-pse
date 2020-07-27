@@ -326,6 +326,7 @@ class TestMethane(object):
     def test_solve_heat_duty(self, methane):
         solver.options["tol"] = 1e-9
         solver.options["nlp_scaling_method"] = "user-scaling"
+
         results = solver.solve(methane, tee=True)
 
         # Check for optimal solution
@@ -341,19 +342,19 @@ class TestMethane(object):
                 value(methane.fs.unit.outlet.flow_mol[0]))
         assert (pytest.approx(0.0, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
-        assert (pytest.approx(0.0974, abs=1e-4) ==
+        assert (pytest.approx(0.103863, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
-        assert (pytest.approx(0.0226, abs=1e-4) ==
+        assert (pytest.approx(0.016123, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
-        assert (pytest.approx(0.1030, abs=1e-4) ==
+        assert (pytest.approx(0.096080, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
-        assert (pytest.approx(0.1769, abs=1e-4) ==
+        assert (pytest.approx(0.183897, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
-        assert (pytest.approx(0.5999, abs=1e-4) ==
+        assert (pytest.approx(0.600030, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
         assert (pytest.approx(0.0, abs=1e-5) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
-        assert (pytest.approx(0.0002, abs=1e-4) ==
+        assert (pytest.approx(2.86950e-06, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
         assert (pytest.approx(-7454077, abs=1e2) ==
                 value(methane.fs.unit.heat_duty[0]))
