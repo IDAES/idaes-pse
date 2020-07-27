@@ -31,8 +31,6 @@ import pyomo.environ as pyo
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.modeling import unique_component_name
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -382,7 +380,9 @@ def constraint_autoscale_large_jac(
             anything
     """
     # Pynumero requires an objective, but I don't, so let's see if we have one
-    n_obj = number_activated_objectives(m)
+    n_obj = 0
+    for m.component_data_objects(pyo.Objective, active=True):
+        n_obj += 1
     # Add an objective if there isn't one
     if n_obj == 0:
         dummy_objective_name = unique_component_name(m, "objective")
