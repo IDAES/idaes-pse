@@ -15,7 +15,8 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Expression,
                            Set,
-                           Var)
+                           Var,
+                           Param)
 
 from idaes.core import (ControlVolume0DBlock,
                         FlowsheetBlock,
@@ -27,6 +28,11 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import get_default_solver
 
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.param import _ParamData
+from pyomo.core.base.expression import _ExpressionData
+
+_scalable = (_VarData, _ParamData, _ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -141,7 +147,9 @@ class PropertyTestHarness(object):
         try:
             for p in frame.fs.params.phase_list:
                 for j in frame.fs.params.component_list:
-                    frame.fs.props[1].get_material_flow_terms(p, j)
+                    term = frame.fs.props[1].get_material_flow_terms(p, j)
+                    # Assert that the term can be assigned a scale factor
+                    assert isinstance(term, _scalable)
         except KeyError:
             raise KeyError(
                 "get_material_flow_terms method is not indexed by phase and "
@@ -154,7 +162,9 @@ class PropertyTestHarness(object):
     def test_get_enthalpy_flow_terms(self, frame):
         try:
             for p in frame.fs.params.phase_list:
-                frame.fs.props[1].get_enthalpy_flow_terms(p)
+                term = frame.fs.props[1].get_enthalpy_flow_terms(p)
+                # Assert that the term can be assigned a scale factor
+                assert isinstance(term, _scalable)
         except KeyError:
             raise KeyError(
                 "get_enthalpy_flow_terms method is not indexed by phase.")
@@ -168,7 +178,9 @@ class PropertyTestHarness(object):
             try:
                 for p in frame.fs.params.phase_list:
                     for j in frame.fs.params.component_list:
-                        frame.fs.props[1].get_material_density_terms(p, j)
+                        term = frame.fs.props[1].get_material_density_terms(p, j)
+                        # Assert that the term can be assigned a scale factor
+                        assert isinstance(term, _scalable)
             except KeyError:
                 raise KeyError(
                     "get_material_density_terms method is not indexed by phase"
@@ -182,7 +194,8 @@ class PropertyTestHarness(object):
         if frame.has_density_terms:
             try:
                 for p in frame.fs.params.phase_list:
-                    frame.fs.props[1].get_energy_density_terms(p)
+                    term = frame.fs.props[1].get_energy_density_terms(p)
+                    assert isinstance(term, _scalable)
             except KeyError:
                 raise KeyError(
                     "get_enthalpy_density_terms method is not indexed by "

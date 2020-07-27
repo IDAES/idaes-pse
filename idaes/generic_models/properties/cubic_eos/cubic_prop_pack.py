@@ -838,25 +838,69 @@ class CubicStateBlockData(StateBlockData):
 # General Methods
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+                def rule_material_flow_terms(b, p, j):
+                    return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                self.material_flow_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_flow_terms
+                )
+            except AttributeError:
+                self.del_component(material_flow_terms)
+
         if j in self.params.component_list:
-            return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+            return self.material_flow_terms[p, j]
         else:
             return 0
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        return self.flow_mol_phase[p] * self.enth_mol_phase[p]
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+                def rule_enthalpy_flow_terms(b, p):
+                    return self.flow_mol_phase[p] * self.enth_mol_phase[p]
+                self.enthalpy_flow_terms = Expression(
+                    self.params.phase_list,
+                    rule=rule_enthalpy_flow_terms
+                )
+            except AttributeError:
+                self.del_component(enthalpy_flow_terms)
+        return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+                def rule_material_density_terms(b, p, j):
+                    return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                self.material_density_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_density_terms
+                )
+            except AttributeError:
+                self.del_component(material_density_terms)
+
         if j in self.params.component_list:
-            return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+            return self.material_density_terms[p, j]
         else:
             return 0
 
     def get_energy_density_terms(self, p):
         """Create energy density terms."""
-        return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+                def rule_energy_density_terms(b, p):
+                    return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+                self.energy_density_terms = Expression(
+                    self.params.phase_list,
+                    rule=rule_energy_density_terms
+                )
+            except AttributeError:
+                self.del_component(energy_density_terms)
+        return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal

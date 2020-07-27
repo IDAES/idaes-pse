@@ -39,6 +39,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_activated_constraints,
                                               number_activated_blocks)
+from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -880,3 +881,16 @@ should be constructed in this state block,
         comp = getattr(self, attr)
         clear_call_list(self, attr)
         return comp
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        # Get scaling factor defaults, if no scaling factor set
+        for v in self.component_data_objects(
+            (Constraint, Var, Expression, Param),
+            descend_into=False):
+            if iscale.get_scaling_factor(v) is None: # don't replace if set
+                name = v.getname().split("[")[0]
+                index = v.index()
+                sf = self.config.parameters.get_default_scaling(name, index)
+                if sf is not None:
+                    iscale.set_scaling_factor(v, sf)

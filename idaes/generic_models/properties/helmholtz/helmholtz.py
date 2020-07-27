@@ -1193,6 +1193,18 @@ class HelmholtzStateBlockData(StateBlockData):
                 "pressure": self.pressure,
             }
 
+
+        def rule_mole_frac_phase_comp(b, p, j):
+            if p == "Mix":
+                return 1.0
+            else:
+                return self.phase_frac[p]
+        self.mole_frac_phase_comp = Expression(
+            pub_phlist,
+            component_list,
+            rule=rule_mole_frac_phase_comp
+        )
+
         # Define some expressions for the balance terms returned by functions
         # This is just to allow assigning scale factors to the expressions
         # returned
@@ -1272,15 +1284,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # Get scaling factor defaults, if no scaling factor set
-        t = (Constraint, Var, Expression, Param)
-        for v in self.component_data_objects(t, descend_into=False):
-            if iscale.get_scaling_factor(v) is None: # don't replace if set
-                name = v.getname().split("[")[0]
-                index = v.index()
-                sf = self.config.parameters.get_default_scaling(name, index)
-                if sf is not None:
-                    iscale.set_scaling_factor(v, sf)
+
         sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1)
         sf_enth = iscale.get_scaling_factor(self.enth_mol, default=1)
         sf_inte = iscale.get_scaling_factor(self.energy_internal_mol, default=1)
