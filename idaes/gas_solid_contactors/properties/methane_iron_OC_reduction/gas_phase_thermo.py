@@ -202,7 +202,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'pressure': {'method': None, 'units': 'bar'},
                 'temperature': {'method': None, 'units': 'K'},
                 'mole_frac_comp': {'method': None, 'units': None},
-                'mw_phase': {'method': '_mw_phase', 'units': 'kg/mol'},
+                'mw': {'method': '_mw', 'units': 'kg/mol'},
                 'cp_mol': {'method': '_cp_mol', 'units': 'kJ/mol.K'},
                 'cp_mol_comp': {'method': '_cp_mol_comp',
                                 'units': 'kJ/mol.K'},
@@ -297,10 +297,10 @@ class _GasPhaseThermoStateBlock(StateBlock):
         # Initialise values
         for k in blk.keys():
 
-            if hasattr(blk[k], "mw_phase_eqn"):
+            if hasattr(blk[k], "mw_eqn"):
                 calculate_variable_from_constraint(
-                            blk[k].mw_phase,
-                            blk[k].mw_phase_eqn)
+                            blk[k].mw,
+                            blk[k].mw_eqn)
 
             if hasattr(blk[k], "ideal_gas"):
                 calculate_variable_from_constraint(
@@ -420,7 +420,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
-        add_object_reference(self, "mw",
+        add_object_reference(self, "mw_comp",
                              self.config.parameters.mw_comp)
 
         """List the necessary state variable objects."""
@@ -447,23 +447,23 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                                         for j in b._params.component_list)
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
-    def _mw_phase(self):
+    def _mw(self):
         # Molecular weight of gas mixture
-        self.mw_phase = Var(domain=Reals,
-                            initialize=1.0,
-                            doc="Molecular weight of gas mixture [kg/mol]")
+        self.mw = Var(domain=Reals,
+                      initialize=1.0,
+                      doc="Molecular weight of gas mixture [kg/mol]")
 
-        def mw_phase_eqn(b):
-            return (b.mw_phase ==
+        def mw_eqn(b):
+            return (b.mw ==
                     sum(b.mole_frac_comp[j]*b._params.mw_comp[j]
                         for j in b._params.component_list))
         try:
             # Try to build constraint
-            self.mw_phase_eqn = Constraint(rule=mw_phase_eqn)
+            self.mw_eqn = Constraint(rule=mw_eqn)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.mw_phase)
-            self.del_component(self.mw_phase_eqn)
+            self.del_component(self.mw)
+            self.del_component(self.mw_eqn)
             raise
 
     def _dens_mol(self):
@@ -512,7 +512,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                              doc="Mass density [kg/m3]")
 
         def dens_mass_basis(b):
-            return b.dens_mass == b.mw_phase*b.dens_mol
+            return b.dens_mass == b.mw*b.dens_mol
         try:
             # Try to build constraint
             self.dens_mass_basis = Constraint(rule=dens_mass_basis)
@@ -680,7 +680,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                            doc="Mixture heat capacity, mass-basis [kJ/kg.K]")
 
         def cp_mass(b):
-            return b.cp_mass*b.mw_phase == b.cp_mol
+            return b.cp_mass*b.mw == b.cp_mol
         try:
             # Try to build constraint
             self.cp_mass_basis = Constraint(rule=cp_mass)

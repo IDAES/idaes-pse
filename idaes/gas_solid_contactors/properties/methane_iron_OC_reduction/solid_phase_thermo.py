@@ -368,7 +368,7 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
-        add_object_reference(self, "mw",
+        add_object_reference(self, "mw_comp",
                              self.config.parameters.mw_comp)
 
         self._make_state_vars()

@@ -151,112 +151,12 @@ def main():
 
     return m
 
-# %% # ------------------------------------------------------------------------
-
-
-# Function to print some variables of interest
-def print_summary(self):
-    if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
-        print()
-        print("Reaction stoichiometry ratio check (expected value is 12) =>")
-
-        mole_gas_reacted = (
-                m.fs.BFB.gas_inlet.flow_mol[0].value *
-                m.fs.BFB.gas_inlet.mole_frac_comp[0, 'CH4'].value -
-                m.fs.BFB.gas_outlet.flow_mol[0].value *
-                m.fs.BFB.gas_outlet.mole_frac_comp[0, 'CH4'].value)
-
-        mole_solid_reacted = (
-                (m.fs.BFB.solid_inlet.flow_mass[0].value *
-                 m.fs.BFB.solid_inlet.mass_frac_comp[0, 'Fe2O3'].value /
-                 m.fs.BFB.solid_inlet_block[0]._params.mw_comp['Fe2O3']) -
-                (m.fs.BFB.solid_outlet.flow_mass[0].value *
-                 m.fs.BFB.solid_outlet.mass_frac_comp[0, 'Fe2O3'].value /
-                 m.fs.BFB.solid_outlet_block[0]._params.mw_comp['Fe2O3']))
-
-        print('stoichiometric ratio:', mole_solid_reacted/mole_gas_reacted)
-
-    print()
-    print('Mass balance closure check =>')
-
-    calculate_variable_from_constraint(
-                m.fs.BFB.gas_inlet_block[0].mw_phase,
-                m.fs.BFB.gas_inlet_block[0].mw_phase_eqn)
-    calculate_variable_from_constraint(
-                m.fs.BFB.gas_outlet_block[0].mw_phase,
-                m.fs.BFB.gas_outlet_block[0].mw_phase_eqn)
-
-    mbal_gas = ((m.fs.BFB.gas_inlet.flow_mol[0].value *
-                m.fs.BFB.gas_inlet_block[0].mw_phase.value) -
-                (m.fs.BFB.gas_outlet_block[0].flow_mol.value *
-                m.fs.BFB.gas_outlet_block[0].mw_phase.value))
-
-    mbal_solid = (
-            m.fs.BFB.solid_inlet.flow_mass[0].value -
-            m.fs.BFB.solid_outlet.flow_mass[0].value)
-
-    mbal_tol = mbal_gas + mbal_solid
-
-    print('Mass Balance Tolerance:', mbal_tol)
-    print('Mass balance gas_FR:', mbal_gas)
-    print('Mass balance solids_FR:', mbal_solid)
-
-    if m.fs.BFB.config.energy_balance_type != EnergyBalanceType.none:
-        print()
-        print('Energy balance closure check =>')
-        ebal_gas = (
-            (m.fs.BFB.gas_inlet.flow_mol[0].value *
-             m.fs.BFB.gas_inlet_block[0].enth_mol.value) -
-            (m.fs.BFB.gas_outlet.flow_mol[0].value *
-             m.fs.BFB.gas_outlet_block[0].enth_mol.value))
-
-        ebal_solid = (
-            (m.fs.BFB.solid_inlet.flow_mass[0].value *
-             m.fs.BFB.solid_inlet_block[0].enth_mass.value) -
-            (m.fs.BFB.solid_outlet.flow_mass[0].value *
-             m.fs.BFB.solid_outlet_block[0].enth_mass.value))
-
-        if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
-            e_reaction = (mole_gas_reacted *
-                          m.fs.BFB.solid_emulsion.reactions[0, 0].
-                          _params.dh_rxn["R1"])
-        else:
-            e_reaction = 0
-
-        ebal_tol = ebal_gas + ebal_solid - e_reaction
-
-        print('Energy Balance Tolerance_FR:', ebal_tol)
-        print('Energy balance gas_FR:', ebal_gas)
-        print('Energy balance solids_FR:', ebal_solid)
-        print('Total heat due to reaction:', e_reaction)
-
-    if m.fs.BFB.config.solid_phase_config.reaction_package is not None:
-        print()
-        # Oxygen carrier and fuel conversion
-        Conv_gas = 1 - (
-            ((m.fs.BFB.gas_outlet.flow_mol[0].value *
-              m.fs.BFB.gas_outlet_block[0].mole_frac_comp['CH4'].value)) /
-            (m.fs.BFB.gas_inlet.flow_mol[0].value *
-             m.fs.BFB.gas_inlet_block[0].mole_frac_comp['CH4'].value))
-
-        if m.fs.BFB.config.flow_type == "counter_current":
-            Conv_OC = (m.fs.BFB.solid_emulsion.reactions[0, 0].
-                       OC_conv.value)
-        else:
-            Conv_OC = (m.fs.BFB.solid_emulsion.reactions[0, 1].
-                       OC_conv.value)
-
-        print('Fuel and OC conversion =>')
-        print("CH4 conversion:", value(Conv_gas)*100, "%")
-        print("Fe2O3 conversion:", value(Conv_OC)*100, "%")
-
 
 # %%        # -----------------------------------------------------------------
 if __name__ == "__main__":
     m = main()
 
     # Plot some results
-    print_summary(m)
     print()
     stream_table = m.fs.BFB._get_stream_table_contents()
     print(stream_table)

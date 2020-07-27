@@ -56,7 +56,7 @@ def gas_prop():
 
 @pytest.mark.unit
 def test_build_inlet_state_block(gas_prop):
-    assert isinstance(gas_prop.fs.unit.mw_phase, Var)
+    assert isinstance(gas_prop.fs.unit.mw, Var)
     assert isinstance(gas_prop.fs.unit.dens_mol, Var)
     assert isinstance(gas_prop.fs.unit.dens_mol_comp, Var)
     assert isinstance(gas_prop.fs.unit.dens_mass, Var)

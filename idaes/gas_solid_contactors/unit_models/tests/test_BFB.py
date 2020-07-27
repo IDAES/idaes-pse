@@ -272,16 +272,16 @@ class TestIronOC(object):
     def test_conservation(self, iron_oc):
         # Conservation of material check
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_phase,
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_phase_eqn)
+                    iron_oc.fs.unit.gas_inlet_block[0].mw,
+                    iron_oc.fs.unit.gas_inlet_block[0].mw_eqn)
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_phase,
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_phase_eqn)
+                    iron_oc.fs.unit.gas_outlet_block[0].mw,
+                    iron_oc.fs.unit.gas_outlet_block[0].mw_eqn)
         mbal_gas = value(
                 (iron_oc.fs.unit.gas_inlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_inlet_block[0].mw_phase) -
+                 iron_oc.fs.unit.gas_inlet_block[0].mw) -
                 (iron_oc.fs.unit.gas_outlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_outlet_block[0].mw_phase))
+                 iron_oc.fs.unit.gas_outlet_block[0].mw))
         mbal_solid = value(
                 iron_oc.fs.unit.solid_inlet.flow_mass[0] -
                 iron_oc.fs.unit.solid_outlet.flow_mass[0])
@@ -471,16 +471,16 @@ class TestIronOC_EnergyBalanceType(object):
     def test_conservation(self, iron_oc):
         # Conservation of material check
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_phase,
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_phase_eqn)
+                    iron_oc.fs.unit.gas_inlet_block[0].mw,
+                    iron_oc.fs.unit.gas_inlet_block[0].mw_eqn)
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_phase,
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_phase_eqn)
+                    iron_oc.fs.unit.gas_outlet_block[0].mw,
+                    iron_oc.fs.unit.gas_outlet_block[0].mw_eqn)
         mbal_gas = value(
                 (iron_oc.fs.unit.gas_inlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_inlet_block[0].mw_phase) -
+                 iron_oc.fs.unit.gas_inlet_block[0].mw) -
                 (iron_oc.fs.unit.gas_outlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_outlet_block[0].mw_phase))
+                 iron_oc.fs.unit.gas_outlet_block[0].mw))
         mbal_solid = value(
                 iron_oc.fs.unit.solid_inlet.flow_mass[0] -
                 iron_oc.fs.unit.solid_outlet.flow_mass[0])
