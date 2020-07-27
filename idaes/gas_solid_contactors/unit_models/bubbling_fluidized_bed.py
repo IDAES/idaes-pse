@@ -543,8 +543,8 @@ see reaction package for documentation.}"""))
 
         # Declare Mutable Parameters
         self.eps = Param(mutable=True,
-                          default=1e-8,
-                          doc='Smoothing Factor for Smooth IF Statements')
+                         default=1e-8,
+                         doc='Smoothing Factor for Smooth IF Statements')
 
         # Vessel dimensions
         self.bed_diameter = Var(domain=Reals,

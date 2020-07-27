@@ -23,10 +23,9 @@ import time
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, SolverFactory, value
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES core modules
-from idaes.core import FlowsheetBlock, EnergyBalanceType
+from idaes.core import FlowsheetBlock
 
 # Import IDAES logger
 import idaes.logger as idaeslog

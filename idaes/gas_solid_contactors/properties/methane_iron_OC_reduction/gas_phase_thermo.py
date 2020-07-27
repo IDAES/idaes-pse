@@ -389,7 +389,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
-            outlvl : sets output level of of logging
+            outlvl : sets output level of logging
         """
         if flags is None:
             return
