@@ -22,11 +22,7 @@ from idaes.core.util.constants import Constants as c
 # Constant dh_rxn
 class arrhenius():
     def build_parameters(rblock, config):
-        base_units = rblock.parent_block().get_metadata().default_units
-        e_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        units = rblock.parent_block().get_metadata().derived_units
 
         rblock.arrhenius_const = Var(
                 initialize=config.parameter_data["arrhenius_const"],
@@ -35,16 +31,12 @@ class arrhenius():
         rblock.energy_activation = Var(
                 initialize=config.parameter_data["energy_activation"],
                 doc="Activation energy",
-                units=e_units)
+                units=units["energy_mole"])
 
     def return_expression(b, rblock, r_idx, T):
-        base_units = rblock.parent_block().get_metadata().default_units
-        R_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["temperature"]**-1 *
-                   base_units["amount"]**-1 *
-                   base_units["time"]**-2)
+        units = rblock.parent_block().get_metadata().derived_units
 
         return rblock.arrhenius_const * exp(
             -rblock.energy_activation / (
-                pyunits.convert(c.gas_constant, to_units=R_units)*T))
+                pyunits.convert(c.gas_constant,
+                                to_units=units["gas_constant"])*T))

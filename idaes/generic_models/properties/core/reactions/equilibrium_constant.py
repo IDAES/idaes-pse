@@ -34,14 +34,10 @@ class van_t_hoff():
                 units=base_units["temperature"])
 
     def return_expression(b, rblock, r_idx, T):
-        base_units = rblock.parent_block().get_metadata().default_units
-        R_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["temperature"]**-1 *
-                   base_units["amount"]**-1 *
-                   base_units["time"]**-2)
+        units = rblock.parent_block().get_metadata().derived_units
 
         return rblock.k_eq_ref * exp(
             -(b.dh_rxn[r_idx] /
-              pyunits.convert(c.gas_constant, to_units=R_units)) *
+              pyunits.convert(c.gas_constant,
+                              to_units=units["gas_constant"])) *
             (1/T - 1/rblock.T_eq_ref))

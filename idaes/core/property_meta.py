@@ -281,10 +281,24 @@ class PropertyClassMetadata(object):
                 "energy": (self.default_units["mass"] *
                            self.default_units["length"]**2 *
                            self.default_units["time"]**-2),
+                "energy_mass": (self.default_units["length"]**2 *
+                                self.default_units["time"]**-2),
+                "energy_mole": (self.default_units["mass"] *
+                                self.default_units["length"]**2 *
+                                self.default_units["time"]**-2 *
+                                self.default_units["amount"]**-1),
                 "entropy": (self.default_units["mass"] *
                             self.default_units["length"]**2 *
                             self.default_units["time"]**-2 *
                             self.default_units["temperature"]**-1),
+                "entropy_mass": (self.default_units["length"]**2 *
+                                 self.default_units["time"]**-2 *
+                                 self.default_units["temperature"]**-1),
+                "entropy_mole": (self.default_units["mass"] *
+                                 self.default_units["length"]**2 *
+                                 self.default_units["time"]**-2 *
+                                 self.default_units["temperature"]**-1 *
+                                 self.default_units["amount"]**-1),
                 "power": (self.default_units["mass"] *
                           self.default_units["length"]**2 *
                           self.default_units["time"]**-3),
@@ -302,7 +316,12 @@ class PropertyClassMetadata(object):
                 "heat_transfer_coefficient":
                     (self.default_units["mass"] *
                      self.default_units["time"]**-3 *
-                     self.default_units["temperature"]**-1)}
+                     self.default_units["temperature"]**-1),
+                "gas_constant": (self.default_units["mass"] *
+                                 self.default_units["length"]**2 *
+                                 self.default_units["time"]**-2 *
+                                 self.default_units["temperature"]**-1 *
+                                 self.default_units["amount"]**-1)}
         except TypeError:
             raise PropertyPackageError(
                 "{} cannot determine derived units, as property package has "
