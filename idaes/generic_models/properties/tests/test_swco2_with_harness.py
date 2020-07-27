@@ -14,9 +14,9 @@
 __author__ = "John Eslick"
 
 import pytest
-import idaes.generic_models.properties.iapws95 as iapws95
+import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.properties.tests.test_harness import PropertyTestHarness
-from idaes.generic_models.properties.iapws95 import iapws95_available as prop_available
+from idaes.generic_models.properties.swco2 import swco2_available as prop_available
 import pyomo.environ as pyo
 
 if pyo.SolverFactory('ipopt').available():
@@ -30,8 +30,8 @@ else:
 @pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = iapws95.Iapws95ParameterBlock
-        self.param_args = {"phase_presentation":iapws95.PhaseType.MIX}
+        self.prop_pack = swco2.SWCO2ParameterBlock
+        self.param_args = {"phase_presentation":swco2.PhaseType.MIX}
         self.prop_args = {}
         self.has_density_terms = True
 
@@ -39,8 +39,8 @@ class TestBasicMix(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = iapws95.Iapws95ParameterBlock
-        self.param_args = {"phase_presentation":iapws95.PhaseType.LG}
+        self.prop_pack = swco2.SWCO2ParameterBlock
+        self.param_args = {"phase_presentation":swco2.PhaseType.LG}
         self.prop_args = {}
         self.has_density_terms = True
 
@@ -48,8 +48,8 @@ class TestBasicLV(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicL(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = iapws95.Iapws95ParameterBlock
-        self.param_args = {"phase_presentation":iapws95.PhaseType.L}
+        self.prop_pack = swco2.SWCO2ParameterBlock
+        self.param_args = {"phase_presentation":swco2.PhaseType.L}
         self.prop_args = {}
         self.has_density_terms = True
 
@@ -57,7 +57,7 @@ class TestBasicL(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicV(PropertyTestHarness):
     def configure(self):
-        self.prop_pack = iapws95.Iapws95ParameterBlock
-        self.param_args = {"phase_presentation":iapws95.PhaseType.G}
+        self.prop_pack = swco2.SWCO2ParameterBlock
+        self.param_args = {"phase_presentation":swco2.PhaseType.G}
         self.prop_args = {}
         self.has_density_terms = True

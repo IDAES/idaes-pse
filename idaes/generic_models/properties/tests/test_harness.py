@@ -16,7 +16,8 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            Set,
                            Var,
-                           Param)
+                           Param,
+                           Constraint)
 
 from idaes.core import (ControlVolume0DBlock,
                         FlowsheetBlock,
@@ -27,6 +28,8 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import get_default_solver
+import idaes.core.util.scaling as iscale
+
 
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.param import _ParamData
@@ -288,3 +291,18 @@ class PropertyTestHarness(object):
         frame.fs.cv.add_energy_balances()
 
         frame.fs.cv.add_momentum_balances()
+
+    def test_default_scaling_factors(self, frame):
+        # check that the calculate_scaling_factors method successfully copies the
+        # default scaling factors to the scaling suffixes.  If there are no
+        # default scaling factors, this should pass
+        iscale.calculate_scaling_factors(frame)
+        for v in frame.fs.props[1].component_data_objects(
+            (Constraint, Var, Expression, Param),
+            descend_into=False):
+            name = v.getname().split("[")[0]
+            index = v.index()
+            print(v)
+            assert (iscale.get_scaling_factor(v) ==
+                frame.fs.props[1].config.parameters.get_default_scaling(name, index)) or (
+                frame.fs.props[1].config.parameters.get_default_scaling(name, index) is None)
