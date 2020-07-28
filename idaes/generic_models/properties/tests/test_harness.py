@@ -298,7 +298,7 @@ class PropertyTestHarness(object):
         # default scaling factors, this should pass
         iscale.calculate_scaling_factors(frame)
         for v in frame.fs.props[1].component_data_objects(
-            (Constraint, Var, Expression, Param),
+            (Constraint, Var, Expression),
             descend_into=False):
             name = v.getname().split("[")[0]
             index = v.index()

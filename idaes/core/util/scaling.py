@@ -90,6 +90,11 @@ def set_scaling_factor(c, v, data_objects=True):
     Returns:
         None
     """
+    if isinstance(c, (float, int)):
+        # property packages can return 0 for material balance terms on compoents
+        # doesn't exist.  This handels the case where you get a constant 0 and
+        # need it's scale factor to scale the mass balance. 
+        return 1
     try:
         suf = c.parent_block().scaling_factor
     except AttributeError:
