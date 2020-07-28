@@ -16,6 +16,7 @@ var paper = new joint.dia.Paper({
     height: height,
     gridSize: gridSize,
     drawGrid: true,
+    background: { color: "#FFFFFF" },
     interactive: true
 });
 
@@ -39,6 +40,8 @@ var toolbar = new joint.ui.Toolbar({
         { type: 'button', name: 'save', text: 'Save'},
         { type: 'separator' },
         { type: 'button', name: 'svg', text: 'Export SVG'},
+        { type: 'separator' },
+        { type: 'toggle', name: 'grid', label: 'Grid'},
         { type: 'separator' },
         { type: 'button', name: 'help', text: 'Help'},
     ]
@@ -116,29 +119,33 @@ toolbar.on('help:pointerclick', function(event) {
 
 $('#toolbar-container').append(toolbar.render().el);
 
-// stencil_obj.render().load();
+function setGrid(paper, gridSize, color) {
+    // Set grid size on the JointJS paper object (joint.dia.Paper instance)
+    paper.options.gridSize = gridSize;
+    // Draw a grid into the HTML 5 canvas and convert it to a data URI image
+    var canvas = $('<canvas/>', { width: gridSize, height: gridSize });
+    canvas[0].width = gridSize;
+    canvas[0].height = gridSize;
+    var context = canvas[0].getContext('2d');
+    context.beginPath();
+    context.rect(1, 1, 1, 1);
+    context.fillStyle = color || '#AAAAAA';
+    context.fill();
+    // Finally, set the grid background image of the paper container element.
+    var gridBackgroundImage = canvas[0].toDataURL('image/png');
+    paper.$el.css('background-image', 'url("' + gridBackgroundImage + '")');
+}
 
-// If we decide to do this, add a button to the side panel that enables/disables 
-// it (just change the grid color to white)
+setGrid(paper, 10, '#FFFFFF');
 
-// function setGrid(paper, gridSize, color) {
-//     // Set grid size on the JointJS paper object (joint.dia.Paper instance)
-//     paper.options.gridSize = gridSize;
-//     // Draw a grid into the HTML 5 canvas and convert it to a data URI image
-//     var canvas = $('<canvas/>', { width: gridSize, height: gridSize });
-//     canvas[0].width = gridSize;
-//     canvas[0].height = gridSize;
-//     var context = canvas[0].getContext('2d');
-//     context.beginPath();
-//     context.rect(1, 1, 1, 1);
-//     context.fillStyle = color || '#AAAAAA';
-//     context.fill();
-//     // Finally, set the grid background image of the paper container element.
-//     var gridBackgroundImage = canvas[0].toDataURL('image/png');
-//     paper.$el.css('background-image', 'url("' + gridBackgroundImage + '")');
-// }
-
-// setGrid(paper, 10, '#FF0000');
+toolbar.on('grid:change', function(value, event) {
+    if (value == true) {
+        setGrid(paper, 10, '#BBBBBB');
+    }
+    else {
+        setGrid(paper, 10, '#FFFFFF');
+    }
+});
 
 // /images/icons rotate 90 degrees on right click. Replaces browser context menu
 paper.on("element:contextmenu", function(cellView, evt) {
@@ -238,13 +245,4 @@ paper.on("link:contextmenu", function(linkView, evt) {
             }
         });
     }
-});
-
-$(document).ready( function() {
-    $(window).resize(function() {
-        var canvas = $("#idaes-canvas")[0].getBoundingClientRect();
-        paper.setDimensions(canvas.width, canvas.height);
-
-    });
-
 });
