@@ -27,17 +27,17 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-        GenericReactionParameterBlock)
+        GenericReactionParameterBlock, ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.rate_constant import \
     arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import \
-    mole_frac_power_law_rate
+    power_law_rate
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
-    mole_frac_power_law_equil
+    power_law_equil
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
@@ -453,7 +453,8 @@ class TestGenericReactionBlock(object):
                                          ("p1", "c2"): 2},
                        "heat_of_reaction": constant_dh_rxn,
                        "rate_constant": arrhenius,
-                       "rate_form": mole_frac_power_law_rate,
+                       "rate_form": power_law_rate,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -10000,
                            "arrhenius_const": 1,
@@ -463,7 +464,8 @@ class TestGenericReactionBlock(object):
                                          ("p2", "c2"): 4},
                        "heat_of_reaction": constant_dh_rxn,
                        "equilibrium_constant": van_t_hoff,
-                       "equilibrium_form": mole_frac_power_law_equil,
+                       "equilibrium_form": power_law_equil,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -20000,
                            "k_eq_ref": 100,
