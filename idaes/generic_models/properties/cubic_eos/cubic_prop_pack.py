@@ -23,10 +23,6 @@ Symposium on Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego
 
 All results have been cross-referenced against other sources.
 """
-
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import math
 import os
