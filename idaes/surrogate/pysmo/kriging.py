@@ -349,7 +349,13 @@ class KrigingModel:
         if self.num_grads:
             print('Optimizing kriging parameters using L-BFGS-B algorithm...')
             other_args = (self.x_data_scaled, self.y_data, p)
-            opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
+            #opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
+            opt_results1 = opt.minimize(self.objective_function, initial_value, args=other_args, method='tnc', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7})
+            opt_results2 = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7})  # , 'disp': True})
+            if opt_results1.fun < opt_results2.fun:
+                opt_results = opt_results1
+            else:
+                opt_results = opt_results2
         else:
             print('Optimizing Kriging parameters using Basinhopping algorithm...')
             other_args = {"args": (self.x_data_scaled, self.y_data, p), 'bounds': bounds}
