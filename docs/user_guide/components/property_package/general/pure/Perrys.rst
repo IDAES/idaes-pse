@@ -1,5 +1,5 @@
-Perry's Chemical Engineers' Handbook
-====================================
+Perry's Chemical Engineers' Handbook (Perrys)
+=============================================
 
 .. contents:: Contents 
     :depth: 2

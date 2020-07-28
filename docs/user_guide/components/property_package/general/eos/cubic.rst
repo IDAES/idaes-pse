@@ -1,5 +1,5 @@
-Cubic Equations of State
-========================
+Cubic Equations of State (Cubic)
+================================
 
 .. contents:: Contents 
     :depth: 2
