@@ -7,6 +7,13 @@ class Series(list):
     """
     def __init__(self, data=[], time=[], name=None, tolerance=1e-8):
         """
+        Args:
+            data: List of data points
+            time: List of time points
+            name: Name of this data series
+            tolerance: Tolerance used to check "equality" between floating
+                       point time values. Values with a difference less than
+                       or equal to this tolerance are "equal."
         """
         self.name = name
         self.tolerance = tolerance
@@ -17,36 +24,52 @@ class Series(list):
         super().__init__(data)
 
     def validate_time(self, time):
+        """
+        Make sure that list of time points used to initialize is 
+        increasing, and that points are separated by more than twice
+        the tolerance, as is required for time points to be "unique-
+        within-tolerance."
+        """
         len_time = len(time)
         if len_time == 0 or len_time == 1:
             return time
         t0 = time[0]
         for t1 in time[1:]:
-            if t1 - t0 <= 2*self.tolerance:
+            if t1 - t0 > 2*self.tolerance:
                 raise ValueError(
                     'Time points must be increasing and separated by at '
                     'least twice the tolerance')
         return time
 
     def is_within_bounds(self, t):
+        """
+        Checks whether point t is in the interval bounded by the first and
+        last time points.
+        """
         if not self:
             raise ValueError('List is empty. No bounds exist.')
         lower = self.time[0]
         upper = self.time[-1]
         tolerance = self.tolerance
-        return lower - tolerance < t and t < upper + tolerance
+        return lower - tolerance <= t and t <= upper + tolerance
 
     def is_valid_append(self, t):
+        """
+        Checks whether point t is greater than the last existing time point
+        by an amount consistent with the tolerance.
+        """
         if not self:
             return True
         t_last = self.time[-1]
-        return (t - t_last >= 2*tolerance)
+        return (t - t_last > 2*tolerance)
 
     def is_consistent_with_last_value(self, val):
+        """
+        Checks whether a value is equal to the last existing
+        data value. This may need to be overridden.
+        """
         last = self[-1]
-        # Equality may or may not be the right check here. 
-        # Should be overridden if necessary.
-        return last == val
+        return val == last
 
     # TODO: Convert to validate_extend function so I can give more specific
     # error messages
@@ -75,9 +98,12 @@ class Series(list):
             return True
 
     def append(self, t, val):
+        """
+        
+        """
         if not self.is_valid_append(t):
             raise ValueError(
-                'Appended time values must at least 2*tolerance later than '
+                'Appended time values must more than 2*tolerance later than '
                 'current values')
         self.time.append(t)
         super().append(val)
@@ -149,7 +175,7 @@ class InputSeries(Series):
 class History(OrderedDict):
     """
     """
-    def __init__(self, init=OrderedDict(), time=None, name=None, tolerance=1e-8):
+    def __init__(self, init={}, time=None, name=None, tolerance=1e-8):
         """
         init should map: cuid -> list of data points
         """
