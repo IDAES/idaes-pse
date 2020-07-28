@@ -625,7 +625,7 @@ argument)."""))
                     elif flow_basis == MaterialFlowBasis.mass:
                         try:
                             return (custom_molar_term(t, x, p, j) *
-                                    b.properties[t, x].mw[j])
+                                    b.properties[t, x].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -650,7 +650,7 @@ argument)."""))
                     elif flow_basis == MaterialFlowBasis.molar:
                         try:
                             return (custom_mass_term(t, x, p, j) /
-                                    b.properties[t, x].mw[j])
+                                    b.properties[t, x].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -702,7 +702,7 @@ argument)."""))
                     elif flow_basis == MaterialFlowBasis.mass:
                         try:
                             return (custom_molar_term(t, x, j) *
-                                    b.properties[t, x].mw[j])
+                                    b.properties[t, x].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -727,7 +727,7 @@ argument)."""))
                     elif flow_basis == MaterialFlowBasis.molar:
                         try:
                             return (custom_mass_term(t, x, j) /
-                                    b.properties[t, x].mw[j])
+                                    b.properties[t, x].mw_comp[j])
                         except AttributeError:
                             raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -1041,7 +1041,7 @@ argument)."""))
             if flow_basis == MaterialFlowBasis.molar:
                 return 1
             elif flow_basis == MaterialFlowBasis.mass:
-                return 1/b.properties[t, x].mw
+                return 1/b.properties[t, x].mw_comp[j]
             else:
                 raise BalanceTypeNotSupportedError(
                     "{} property package MaterialFlowBasis == 'other'. Cannot "

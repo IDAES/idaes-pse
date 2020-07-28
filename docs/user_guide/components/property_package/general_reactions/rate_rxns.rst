@@ -20,6 +20,7 @@ The configuration arguments for each rate-based reaction are used to define meth
 
 * stoichiometry (required)
 * rate_form (required)
+* concentration_form
 * heat_of_reaction
 * rate_constant
 
@@ -35,6 +36,18 @@ The `stoichiometry` configuration argument is used to define which components ta
         ("phase_1", "component_1"): -1,
         ("phase_1", "component_2"): 1}
 
+Concentration Form
+^^^^^^^^^^^^^^^^^^
+
+Many common rate forms can be written using a number of different bases, such as molarity, molality or partial pressure. The `concentration_form` configuration argument is used in these cases to determine what basis to use for the concentration terms in the rate form and automatically write the correct expression (and determine units for the associated parameters. The `concentration_form` configuration argument must be an instance of a `ConcentrationForm` `Enum` (imported from idaes.generic_models.properties.core.generic.utility), and the following forms are currently available:
+
+* molarity: ConcentrationForm.molarity
+* activity: ConcentrationForm.activity
+* molality: ConcentrationForm.molality
+* mole fractions: ConcentrationForm.moleFraction
+* mass fractions: ConcentrationForm.massFraction
+* partial pressure: ConcentrationForm.partialPressure
+
 Other Reaction Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -44,4 +57,3 @@ The remaining configuration arguments are used to define how different propertie
 * classes are used for more generic correlations which require associated parameters.
 
 A list of the libraries of methods available in the IDAES Framework can be found :ref:`here<user_guide/components/property_package/general_reactions/method_libraries:Reaction Module Libraries>`.
-

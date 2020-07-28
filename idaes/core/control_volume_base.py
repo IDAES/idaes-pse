@@ -795,10 +795,10 @@ have a config block which derives from CONFIG_Base,
                 return 1
             elif (flow_basis == MaterialFlowBasis.mass and
                   rxn_basis == MaterialFlowBasis.molar):
-                return prop.mw[j]
+                return prop.mw_comp[j]
             elif (flow_basis == MaterialFlowBasis.molar and
                   rxn_basis == MaterialFlowBasis.mass):
-                return 1/prop.mw[j]
+                return 1/prop.mw_comp[j]
             else:
                 raise BurntToast(
                         "{} encountered unrecognsied combination of bases "

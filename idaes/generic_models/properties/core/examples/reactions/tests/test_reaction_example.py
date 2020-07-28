@@ -20,6 +20,7 @@ from pyomo.environ import (Block,
                            SolverStatus,
                            TerminationCondition,
                            value)
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
@@ -82,6 +83,8 @@ class TestParamBlock(object):
         assert isinstance(model.rxn_params.reaction_R1, Block)
         assert isinstance(model.rxn_params.reaction_R2, Block)
 
+        assert_units_equivalent(model)
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -102,6 +105,8 @@ class TestStateBlock(object):
                 [1],
                 default={"state_block": model.props,
                          "has_equilibrium": True})
+
+        assert_units_equivalent(model)
 
         return model
 
