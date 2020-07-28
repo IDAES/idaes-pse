@@ -1,5 +1,5 @@
-Smooth Vapor-Liquid Equilibrium Formulation (smooth_VLE)
-========================================================
+Smooth Vapor-Liquid Equilibrium Formulation (``smooth_VLE``)
+============================================================
 
 .. contents:: Contents 
     :depth: 2

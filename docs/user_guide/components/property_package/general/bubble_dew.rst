@@ -4,8 +4,8 @@ Bubble and Dew Point Methods
 .. contents:: Contents 
     :depth: 3
 
-Ideal Assumptions (IdealBubbleDew)
-----------------------------------
+Ideal Assumptions (``IdealBubbleDew``)
+--------------------------------------
 
 In the case where ideal behavior can be assumed, i.e. ideal gas assumption and Raoult's Law holds, the bubble and dew points can be calculated directly from the saturation pressure using the following equations.
 
@@ -41,8 +41,8 @@ Ideal Dew Temperature
 
 where :math:`P` is the system pressure, :math:`P_{sat, j}(T_{dew})` is the saturation pressure of component :math:`j` at the dew temperature, :math:`T_{bub}`, :math:`x_j` is the overall mixture mole fraction and :math:`y_j(T_{dew})` is the mole fraction of the liquid phase at the dew temperature.
 
-Equal Fugacity (log form) (LogBubbleDew)
-----------------------------------------
+Equal Fugacity (log form) (``LogBubbleDew``)
+--------------------------------------------
 
 For cases where ideal behavior is insufficient, it is necessary to calculate the fugacity of each component at the relevant transition point and enforce equality of the fugacity in each phase. As such, this methods depends upon the definition of fugacity for each phase and component. In this formulation, the logarithm of the phase equilibrium constraint is used.
 

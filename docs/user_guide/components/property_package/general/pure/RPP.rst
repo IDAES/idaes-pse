@@ -1,5 +1,5 @@
-Properties of Gases and Liquids (RPP)
-=====================================
+Properties of Gases and Liquids (``RPP``)
+=========================================
 
 .. contents:: Contents 
     :depth: 2
