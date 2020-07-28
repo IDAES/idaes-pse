@@ -1587,12 +1587,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+        # If the paraent component of an indexed component has a scale factor, but
+        # some of the data objects don't, propogate the indexed component scale
+        # factor to the missing scaling factors.
+        iscale.propagate_indexed_component_scaling_factors(self)
+
         # Default scale factors
         heat_sf_default = 1e-6
         work_sf_default = 1e-6
         volume_sf_default = 1e-3
-        energy_holdup_sf_default = 1e-6
-        material_holdup_sf_default = 1e-6
+        phase_frac_sf_default = 10
 
         # Function to set defaults so I don't need to reproduce the same code
         def _fill_miss_with_default(name, s):
@@ -1609,13 +1613,39 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         _fill_miss_with_default("volume", heat_sf_default)
         _fill_miss_with_default("heat", heat_sf_default)
         _fill_miss_with_default("work", work_sf_default)
-        _fill_miss_with_default("energy_holdup", energy_holdup_sf_default)
-        _fill_miss_with_default("material_holdup", material_holdup_sf_default)
+        _fill_miss_with_default("phase_fraction", phase_frac_sf_default)
 
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
-        # factor to the missing scaling factors.
-        iscale.propagate_indexed_component_scaling_factors(self)
+        if hasattr(self, "energy_holdup"):
+            for (t, p), v in self.energy_holdup.items():
+                sf = iscale.get_scaling_factor(
+                    self.volume[t], default=1, warning=True)
+                sf *= iscale.get_scaling_factor(
+                    self.properties_out[t].get_energy_density_terms(p),
+                    default=1,
+                    warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "material_holdup"):
+            for (t, p, i), v in self.material_holdup.items():
+                sf = iscale.get_scaling_factor(
+                    self.volume[t], default=1, warning=True)
+                sf *= iscale.get_scaling_factor(
+                    self.properties_out[t].get_material_density_terms(p, i),
+                    default=1,
+                    warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "material_accumulation"):
+            for i, v in self.material_accumulation.items():
+                sf = 100*iscale.get_scaling_factor(
+                    self.material_holdup[i], default=1, warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "energy_accumulation"):
+            for i, v in self.energy_accumulation.items():
+                sf = 100*iscale.get_scaling_factor(
+                    self.energy_holdup[i], default=1, warning=True)
+                iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "deltaP"):
             for t, v in self.deltaP.items():
