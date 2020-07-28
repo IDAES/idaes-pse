@@ -293,10 +293,10 @@ class PropertyTestHarness(object):
         frame.fs.cv.add_momentum_balances()
 
     def test_default_scaling_factors(self, frame):
-        # check that the calculate_scaling_factors method successfully copies the
-        # default scaling factors to the scaling suffixes.  If there are no
-        # default scaling factors, this should pass
-        iscale.calculate_scaling_factors(frame)
+        # check that the calculate_scaling_factors method successfully copies
+        # the default scaling factors to the scaling suffixes.  If there are
+        # no default scaling factors, this should pass
+        iscale.calculate_scaling_factors(frame) #this also ensure, it doesn't except 
         for v in frame.fs.props[1].component_data_objects(
             (Constraint, Var, Expression),
             descend_into=False):
