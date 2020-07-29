@@ -43,10 +43,51 @@ def __none_mult(x, y):
     return x
 
 
+def map_scaling_factor(iter, default=1, warning=True, func=min):
+    """Map get_scaling_factor to an iterable of Pyomo compoents, and call func
+    on the result.  This could be use, for example, to get the minimum or
+    maximum scaling factor of a set of compoents.
+
+    Args:
+        iter: Iterable yeilding Pyomo componentes
+        default: The default value used when a scaling factor is missing. The
+            default is default=1.
+        warning: Log a warning for missing scaling factors
+        func: The function to call on the resulting iterable of scaling factors.
+            The default is min().
+
+    Returns:
+        The result of func on the set of scaling factors
+    """
+    return func(
+        map(
+            lambda x: get_scaling_factor(x, default=default, warning=warning),
+            iter
+        )
+    )
+
+
+def min_scaling_factor(iter, default=1, warning=True):
+    """Map get_scaling_factor to an iterable of Pyomo compoents, and get the
+    minimum caling factor.
+
+    Args:
+        iter: Iterable yeilding Pyomo componentes
+        default: The default value used when a scaling factor is missing.  If
+            None, this will raise an exception when scaling factors are missing.
+            The default is default=1.
+        warning: Log a warning for missing scaling factors
+
+    Returns:
+        Minimum scaling factor of the compoents in iter
+    """
+    return map_scaling_factor(iter, default=default, warning=warning, func=min)
+
+
 def propagate_indexed_component_scaling_factors(
     blk,
     typ=(pyo.Var, pyo.Constraint, pyo.Expression, pyo.Param),
-    overwrite=True,
+    overwrite=False,
     descend_into=True):
     """Use the parent compoent scaling factor to set all component data object
     scaling factors.
@@ -55,7 +96,7 @@ def propagate_indexed_component_scaling_factors(
         blk: The block on which to search for components
         typ: Component type(s) (default=(Var, Constraint, Expression, Param))
         overwrite: if a data object already has a scaling factor should it be
-            overwrittten (default=True)
+            overwrittten (default=False)
         descend_into: descend into child blocks (default=True)
     """
     for c in blk.component_objects(typ, descend_into=descend_into):
@@ -93,7 +134,7 @@ def set_scaling_factor(c, v, data_objects=True):
     if isinstance(c, (float, int)):
         # property packages can return 0 for material balance terms on compoents
         # doesn't exist.  This handels the case where you get a constant 0 and
-        # need it's scale factor to scale the mass balance. 
+        # need it's scale factor to scale the mass balance.
         return 1
     try:
         suf = c.parent_block().scaling_factor
@@ -182,7 +223,7 @@ def get_constarint_tranform_applied_scaling_factor(c, default=None):
 
 
 def __unset_constarint_tranform_applied_scaling_factor(c):
-    """PRIVATE FUNCTION: Delete a the recored scale factor that has been used
+    """PRIVATE FUNCTION: Delete the recored scale factor that has been used
     to transofrm constraint c.  This is used when undoing a constraint
     transformation.
     """
@@ -299,68 +340,6 @@ def badly_scaled_var_generator(
             yield v, sv
 
 
-def scale_single_constraint(c):
-    """This transforms a constraint with its scaling factor. If there is no
-    scaling factor for the constraint, the constraint is not scaled and a
-    message is logged. After transforming the constraint the scaling factor,
-    scaling expression, and nomical value are all unset to ensure the constraint
-    isn't scaled twice.
-
-    Args:
-        c: Pyomo constraint
-
-    Returns:
-        None
-    """
-    if not isinstance(c, _ConstraintData):
-        raise TypeError(
-            "{} is not a constraint and cannot be the input to "
-            "scale_single_constraint".format(c.name))
-
-    v = get_scaling_factor(c)
-    if v is None:
-        _log.warning(
-            f"{c.name} constraint has no scaling factor, so it was not scaled.")
-        return
-    c.set_value(
-        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
-    unset_scaling_factor(c)
-
-
-def __scale_block_constraints(b):
-    """PRIVATE FUNCTION
-    Scales all of the constraints in a block. Does not descend into other
-    blocks.
-
-    Args:
-        b: Pyomo block
-
-    Returns:
-        None
-    """
-    for c in b.component_data_objects(pyo.Constraint, descend_into=False):
-        scale_single_constraint(c)
-
-
-def scale_constraints(blk, descend_into=True):
-    """This scales all constraints with their scaling factor suffix for a model
-    or block. After scaling the constraints, the scaling factor and expression
-    for each constraint is set to 1 to avoid double scaling the constraints.
-
-    Args:
-        blk: Pyomo block
-        descend_into: indicates whether to descend into the other blocks on blk.
-            (default = True)
-
-    Returns:
-        None
-    """
-    __scale_block_constraints(blk)
-    if descend_into:
-        for b in blk.component_data_objects(pyo.Block, descend_into=True):
-            __scale_block_constraints(b)
-
-
 def constraint_autoscale_large_jac(
     m,
     ignore_constraint_scaling=False,
@@ -429,3 +408,60 @@ def constraint_autoscale_large_jac(
     if n_obj == 0:
         delattr(m, dummy_objective_name)
     return jac, jac_scaled, nlp
+
+
+# DEPRECATED functions below.
+
+def scale_single_constraint(c):
+    """This transforms a constraint with its scaling factor. If there is no
+    scaling factor for the constraint, the constraint is not scaled and a
+    message is logged. After transforming the constraint the scaling factor,
+    scaling expression, and nomical value are all unset to ensure the constraint
+    isn't scaled twice.
+
+    Args:
+        c: Pyomo constraint
+
+    Returns:
+        None
+    """
+    _log.warning(
+        "DEPRECATED: scale_single_constraint() will be removed and has no "
+        "direct replacement")
+    if not isinstance(c, _ConstraintData):
+        raise TypeError(
+            "{} is not a constraint and cannot be the input to "
+            "scale_single_constraint".format(c.name))
+
+    v = get_scaling_factor(c)
+    if v is None:
+        _log.warning(
+            f"{c.name} constraint has no scaling factor, so it was not scaled.")
+        return
+    c.set_value(
+        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
+    unset_scaling_factor(c)
+
+
+def scale_constraints(blk, descend_into=True):
+    """This scales all constraints with their scaling factor suffix for a model
+    or block. After scaling the constraints, the scaling factor and expression
+    for each constraint is set to 1 to avoid double scaling the constraints.
+
+    Args:
+        blk: Pyomo block
+        descend_into: indicates whether to descend into the other blocks on blk.
+            (default = True)
+
+    Returns:
+        None
+    """
+    _log.warning(
+        "DEPRECATED: scale_single_constraint() will be removed and has no "
+        "direct replacement")
+    for c in blk.component_data_objects(pyo.Constraint, descend_into=False):
+        scale_single_constraint(c)
+    if descend_into:
+        for b in blk.component_data_objects(pyo.Block, descend_into=True):
+            for c in b.component_data_objects(pyo.Constraint, descend_into=False):
+                scale_single_constraint(c)
