@@ -1821,12 +1821,15 @@ argument)."""))
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         # Default scale factors
-        deltaP_sf_default = 1e-3*10
+        # If the paraent component of an indexed component has a scale factor, but
+        # some of the data objects don't, propogate the indexed component scale
+        # factor to the missing scaling factors.
+        iscale.propagate_indexed_component_scaling_factors(self)
+
         heat_sf_default = 1e-6*10
         work_sf_default = 1e-6*10
-        volume_sf_default = 1e-3*10
-        energy_holdup_sf_default = 1e-6*10
-        material_holdup_sf_default = 1e-6*10
+        area_sf_default = 1
+        length_sf_default = 1
 
         # Function to set defaults so I don't need to reproduce the same code
         def _fill_miss_with_default(name, s):
@@ -1840,17 +1843,54 @@ argument)."""))
                         iscale.set_scaling_factor(ci, s)
 
         # Set defaults where scale factors are missing
-        _fill_miss_with_default("deltaP", deltaP_sf_default)
-        _fill_miss_with_default("volume", heat_sf_default)
         _fill_miss_with_default("heat", heat_sf_default)
         _fill_miss_with_default("work", work_sf_default)
-        _fill_miss_with_default("energy_holdup", energy_holdup_sf_default)
-        _fill_miss_with_default("material_holdup", material_holdup_sf_default)
+        _fill_miss_with_default("area", area_sf_default)
+        _fill_miss_with_default("length", length_sf_default)
 
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
-        # factor to the missing scaling factors.
-        iscale.propagate_indexed_component_scaling_factors(self)
+        if hasattr(self, "energy_holdup"):
+            for (t, x, p), v in self.energy_holdup.items():
+                sf = iscale.get_scaling_factor(
+                    self._area_func(t,x), default=1, warning=True)
+                sf *= iscale.get_scaling_factor(
+                    self.properties[t, x].get_energy_density_terms(p),
+                    default=1,
+                    warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "material_holdup"):
+            for (t, x, p, i), v in self.material_holdup.items():
+                sf = iscale.get_scaling_factor(
+                    self._area_func(t,x), default=1, warning=True)
+                sf *= iscale.get_scaling_factor(
+                    self.properties[t, x].get_material_density_terms(p, i),
+                    default=1,
+                    warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "material_accumulation"):
+            for i, v in self.material_accumulation.items():
+                sf = 100*iscale.get_scaling_factor(
+                    self.material_holdup[i], default=1, warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "energy_accumulation"):
+            for i, v in self.energy_accumulation.items():
+                sf = 100*iscale.get_scaling_factor(
+                    self.energy_holdup[i], default=1, warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "deltaP"):
+            for (t, x), v in self.deltaP.items():
+                if iscale.get_scaling_factor(v) is None:
+                    s = iscale.get_scaling_factor(self.properties[t, x].pressure)
+                    iscale.set_scaling_factor(v, 10*s)
+
+        if hasattr(self, "pressure_dx"):
+            for (t, x), v in self.pressure_dx.items():
+                if iscale.get_scaling_factor(v) is None:
+                    s = iscale.get_scaling_factor(self.properties[t, x].pressure)
+                    iscale.set_scaling_factor(v, 100*s)
 
         # Enthalpy flow variable and constraint
         if hasattr(self, "_enthalpy_flow"):
@@ -1899,12 +1939,9 @@ argument)."""))
                     iscale.constraint_scaling_transform(c, sf)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
-                    sf = min(map(
-                            lambda x: iscale.get_scaling_factor(
-                                x, default=1, warning=True),
-                            [self.properties[t,x].get_material_flow_terms(p, j)
-                                for p in self.config.property_package.phase_list]
-                        ))
+                    sf = iscale.min_scaling_factor(
+                        [self.properties[t,x].get_material_flow_terms(p, j)
+                            for p in self.config.property_package.phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 _log.warning(f"Unknow material balance type {mb_type}")
@@ -1912,11 +1949,9 @@ argument)."""))
         # Energy Balance Constraints
         if hasattr(self, "enthalpy_balances"):
             for i, c in self.enthalpy_balances.items():
-                sf = min(map(
-                    lambda x: iscale.get_scaling_factor(
-                        x, default=1, warning=True),
+                sf = iscale.min_scaling_factor(
                     [self.properties[i].get_enthalpy_flow_terms(p)
-                            for p in self.config.property_package.phase_list]))
+                        for p in self.config.property_package.phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "energy_holdup_calculation"):
