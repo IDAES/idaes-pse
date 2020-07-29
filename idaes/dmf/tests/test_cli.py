@@ -29,9 +29,6 @@ from idaes.dmf import cli
 __author__ = "Dan Gunter"
 
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
-
 
 @pytest.fixture
 def runner():

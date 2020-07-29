@@ -30,10 +30,10 @@ from idaes.core import property_meta
 from idaes.util.system import mkdtemp
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+__author__ = "Dan Gunter"
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+#if sys.platform.startswith("win"):
+#    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)

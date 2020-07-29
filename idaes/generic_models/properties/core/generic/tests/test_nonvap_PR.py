@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            TerminationCondition,
-                           value)
+                           value,
+                           units as pyunits)
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -123,11 +124,18 @@ configuration = {
 
     # Specifying state definition
     "state_definition": FTPx,
-    "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 450),
-                     "pressure": (5e4, 1e6)},
+    "state_bounds": {"flow_mol": (0, 100, 1000),
+                     "temperature": (273.15, 300, 450),
+                     "pressure": (5e4, 1e5, 1e6)},
     "pressure_ref": 1e5,
     "temperature_ref": 300,
+
+    # Declare a base units dict to save code later
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
@@ -173,9 +181,9 @@ class TestParamBlock(object):
         assert model.params.config.state_definition == FTPx
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
-                "temperature": (273.15, 450),
-                "pressure": (5e4, 1e6)}
+                "flow_mol": (0, 100, 1000),
+                "temperature": (273.15, 300, 450),
+                "pressure": (5e4, 1e5, 1e6)}
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}

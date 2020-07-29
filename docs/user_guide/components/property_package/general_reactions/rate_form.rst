@@ -4,12 +4,12 @@ Rate-Based Reaction Forms
 .. contents:: Contents 
     :depth: 2
 
-Mole Fraction Power Law (mole_frac_power_law_rate)
---------------------------------------------------
+Power Law (power_law_rate)
+--------------------------
 
-The method uses a power law form using the component mole fractions to calculate the reaction rate.
+The method uses a power law form using the concentration form provided to calculate the reaction rate.
 
-.. math:: r_{rxn} = k_{rxn} \prod_{(p, j)}{x_{(p,j)}^{O_{(p,j)}}}
+.. math:: r_{rxn} = k_{rxn} \prod_{(p, j)}{C_{(p,j)}^{O_{(p,j)}}}
 
 **Parameters**
 
