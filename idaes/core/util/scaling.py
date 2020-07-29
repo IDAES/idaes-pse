@@ -113,12 +113,12 @@ def propagate_indexed_component_scaling_factors(
 
 
 def calculate_scaling_factors(blk):
-    """Look for calculate scaling factor methods this uses a depth first
-    ordering, so sub-block scale factors are called first. Scale factor
-    calculations should only depend on descendent blocks.
+    """Look for calculate_scaling_factors methods and run them. This uses a
+    recursive function to execute the subblock calculate_scaling_factors
+    methods first.
     """
     def cs(blk2):
-        """ Recursive function for depth first ordering """
+        """ Recursive function for to do subblocks first"""
         for b in blk2.component_data_objects(pyo.Block, descend_into=False):
             cs(b)
         if hasattr(blk2, "calculate_scaling_factors"):
