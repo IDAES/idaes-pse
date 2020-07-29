@@ -21,17 +21,7 @@ import pyomo.dae as dae
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
-from idaes.core.util.scaling import (
-    ScalingBasis,
-    calculate_scaling_factors,
-    badly_scaled_var_generator,
-    grad_fd,
-    constraint_fd_autoscale,
-    scale_single_constraint,
-    scale_constraints,
-    CacheVars,
-    FlattenedScalingAssignment,
-)
+from idaes.core.util.scaling import CacheVars, FlattenedScalingAssignment
 
 __author__ = "John Eslick, Tim Bartholomew"
 
