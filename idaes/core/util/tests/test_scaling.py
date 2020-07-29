@@ -22,8 +22,42 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
 from idaes.core.util.scaling import CacheVars, FlattenedScalingAssignment
+import logging
 
 __author__ = "John Eslick, Tim Bartholomew"
+
+
+@pytest.mark.unit
+def test_none_mult():
+    assert sc.__none_mult(4, None) is None
+    assert sc.__none_mult(None, 4) is None
+    assert sc.__none_mult(3, 4) == 12
+
+
+@pytest.mark.unit
+def test_map_scaling_factor(caplog):
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var([1, 2, 3, 4])
+    sc.set_scaling_factor(m.x[1], 11)
+    sc.set_scaling_factor(m.x[2], 12)
+    sc.set_scaling_factor(m.x[3], 13)
+    caplog.set_level(logging.WARNING)
+    caplog.clear()
+    assert sc.map_scaling_factor(m.x.values(), warning=True) == 1
+    logrec = caplog.records[0]
+    assert logrec.levelno == logging.WARNING
+    assert "missing scaling factor" in logrec.message
+
+    assert sc.map_scaling_factor(m.x.values(), func=max) == 13
+    assert sc.map_scaling_factor(m.x.values(), default=20) == 11
+    with pytest.raises(TypeError) as excinfo:
+        sc.map_scaling_factor(m.x.values(), default=None)
+
+    # test min_scaling_factor with just calls map_scaling_factor
+    assert sc.min_scaling_factor(m.x.values()) == 1
+    assert sc.min_scaling_factor(m.x.values(), default=14) == 11
+
+
 
 
 @pytest.mark.unit

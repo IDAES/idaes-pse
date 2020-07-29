@@ -44,12 +44,12 @@ _log = idaeslog.getLogger(__name__)
 
 def __none_mult(x, y):
     """PRIVATE FUNCTION, Multiply x by y and if x is None return None"""
-    if x is not None:
-        x *= y
-    return x
+    if x is not None and y is not None:
+        return x * y
+    return None
 
 
-def map_scaling_factor(iter, default=1, warning=True, func=min):
+def map_scaling_factor(iter, default=1, warning=False, func=min):
     """Map get_scaling_factor to an iterable of Pyomo compoents, and call func
     on the result.  This could be use, for example, to get the minimum or
     maximum scaling factor of a set of compoents.
@@ -162,12 +162,12 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
         default: value to return if no scale factor exists (default=None)
     """
     try:
-        sf = c.parent_block().scaling_factor.get(c, default)
-    except AttributeError:
+        sf = c.parent_block().scaling_factor[c]
+    except (AttributeError, KeyError):
         if warning:
-            _log.warning(f"Accessing missing scale factor for {c}")
+            _log.warning(f"Accessing missing scaling factor for {c}")
         if exception:
-            _log.error(f"Accessing missing scale factor for {c}")
+            _log.error(f"Accessing missing scaling factor for {c}")
             raise
         sf = default
     return sf
