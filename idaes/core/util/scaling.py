@@ -30,6 +30,8 @@ __author__ = "John Eslick, Tim Bartholomew"
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.visitor import identify_variables
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.kernel import ComponentMap
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
