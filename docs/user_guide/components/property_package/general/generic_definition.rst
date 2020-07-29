@@ -131,17 +131,15 @@ Using this approach, units of measurement are defined using the `base_units` opt
                             "equation_of_state": ideal}},
         "state_definition": FcPh,
         "state_bounds": {
+            # Note format is (lower, nominal, upper, units)
             "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
             "temperature": (273.15, 300, 450, pyunits.K),
             "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
         "pressure_ref": (1e5, pyunits.Pa),
         "temperature_ref": (300, pyunits.K),
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_formulation": {("Vap", "Liq"): smooth_VLE},
-        "temperature_bubble": bubble_temp_ideal,
-        "temperature_dew": dew_temp_ideal,
-        "pressure_bubble": bubble_press_ideal,
-        "pressure_dew": dew_press_ideal}
+        "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+        "bubble_dew_method": IdealBubbleDew}
 
 Data Sources:
 

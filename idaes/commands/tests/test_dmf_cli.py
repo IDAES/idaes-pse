@@ -227,7 +227,7 @@ def test_dmf_related(dmf_context, runner):
         for r2 in rlist:
             if r is r2:
                 continue
-            resource.create_relation_args(r, relation, r2)
+            resource.create_relation(r, relation, r2)
     for r in rlist:
         dmf.add(r)
     #

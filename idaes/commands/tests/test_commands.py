@@ -113,7 +113,7 @@ def test_examples_cli_copy(runner, random_tempdir):
 def test_examples_n():
     target_dir = str(uuid.uuid4())  # pick something that won't exist
     retcode = subprocess.call(["idaes", "get-examples", "-N", "-d", target_dir])
-    assert retcode == 255  # result of sys.exit(-1)
+    assert retcode != 0  # failure
 
 
 @pytest.mark.integration()  # goes out to network
@@ -184,7 +184,7 @@ def test_examples_check_github_response():
     )
 
 
-@pytest.mark.component
+@pytest.mark.integration
 def test_examples_install_src(random_tempdir):
     # monkey patch a random install package name so as not to have
     # any weird side-effects on other tests
