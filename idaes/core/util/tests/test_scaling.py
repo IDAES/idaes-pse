@@ -21,7 +21,6 @@ import pyomo.dae as dae
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
-from idaes.core.util.scaling import CacheVars, FlattenedScalingAssignment
 import logging
 
 __author__ = "John Eslick, Tim Bartholomew"
@@ -58,6 +57,179 @@ def test_map_scaling_factor(caplog):
     assert sc.min_scaling_factor(m.x.values(), default=14) == 11
 
 
+@pytest.mark.unit
+def test_propogate_indexed_scaling():
+    m = pyo.ConcreteModel()
+    m.b = pyo.Block()
+    m.a = pyo.Var()
+    m.x = pyo.Var([1,2,3], initialize=1e6)
+    m.y = pyo.Var([1,2,3], initialize=1e-8)
+    m.z = pyo.Var([1,2,3], initialize=1e-20)
+    @m.Constraint([1,2,3])
+    def c1(b, i):
+        return m.x[i] == 0
+    @m.Constraint([1,2,3])
+    def c2(b, i):
+        return m.y[i] == 0
+    m.b.w = pyo.Var([1,2,3], initialize=1e10)
+    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
+    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
+
+    sc.set_scaling_factor(m.a, 104)
+    sc.set_scaling_factor(m.b.c1, 14)
+
+    # Set sufix directly since set_scaling_factor also sets data objects
+    m.scaling_factor[m.x] = 11
+    m.scaling_factor[m.y] = 13
+    m.b.scaling_factor[m.b.w] = 16
+    m.scaling_factor[m.c1] = 14
+
+    for i in [1,2,3]:
+        assert sc.get_scaling_factor(m.x[i]) is None
+        assert sc.get_scaling_factor(m.y[i]) is None
+        assert sc.get_scaling_factor(m.z[i]) is None
+        assert sc.get_scaling_factor(m.b.w[i]) is None
+        assert sc.get_scaling_factor(m.c1[i]) is None
+        assert sc.get_scaling_factor(m.c2[i]) is None
+    assert sc.get_scaling_factor(m.x) == 11
+    assert sc.get_scaling_factor(m.y) == 13
+    assert sc.get_scaling_factor(m.z) is None
+    assert sc.get_scaling_factor(m.b.w) == 16
+    assert sc.get_scaling_factor(m.c1) == 14
+    assert sc.get_scaling_factor(m.c2) is None
+
+    sc.propagate_indexed_component_scaling_factors(m)
+    for i in [1,2,3]:
+        assert sc.get_scaling_factor(m.x[i]) is 11
+        assert sc.get_scaling_factor(m.y[i]) is 13
+        assert sc.get_scaling_factor(m.z[i]) is None
+        assert sc.get_scaling_factor(m.b.w[i]) is 16
+        assert sc.get_scaling_factor(m.c1[i]) is 14
+        assert sc.get_scaling_factor(m.c2[i]) is None
+
+def test_calculate_scaling_factors():
+    r"""This tests the method to find and execute calculate_scaling_factors
+    methods, here we make sure they are found and run in a right order.  The
+    contnets of specific calculate_scaling_factors methods will have to be
+    tested in the models they belong to.
+
+        m          To be correct:
+       / \           f and g are before e
+      a   b          c and d are before a
+     / \   \         e is before b
+    c   d   e        a and b are before m
+           / \
+          f   g
+    """
+    o = []
+    def rule(blk):
+        def ca():
+            o.append(blk.name)
+        blk.calculate_scaling_factors = ca
+    m = pyo.ConcreteModel(name="m", rule=rule)
+    m.a = pyo.Block(rule=rule)
+    m.b = pyo.Block(rule=rule)
+    m.a.c = pyo.Block(rule=rule)
+    m.a.d = pyo.Block(rule=rule)
+    m.b.e = pyo.Block(rule=rule)
+    m.b.e.f = pyo.Block(rule=rule)
+    m.b.e.g = pyo.Block(rule=rule)
+    sc.calculate_scaling_factors(m)
+    # We should iterate through the blocks in construction order where there is
+    # no specific correct order, so we can depend on the order the
+    # calculate_scaling_factors() are called being deterministic, so we just
+    # need to check the specific expected order.
+    assert tuple(o) == ("a.c", "a.d", "a", "b.e.f", "b.e.g", "b.e", "b", "m")
+
+
+@pytest.mark.unit
+def test_set_get_unset(caplog):
+    """Make sure the Jacobian from Pynumero matches expectation.  This is
+    mostly to ensure we understand the interface and catch if things change.
+    """
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var()
+    m.z = pyo.Var([1,2,3,4])
+    m.c1 = pyo.Constraint(expr=0 == m.x)
+    @m.Constraint([1,2,3,4])
+    def c2(b, i):
+        return b.z[i] == 0
+    m.ex = pyo.Expression(expr=m.x)
+
+    sc.set_scaling_factor(m.z, 10)
+    assert sc.get_scaling_factor(m.z) == 10
+    assert sc.get_scaling_factor(m.z[1]) == 10
+    assert sc.get_scaling_factor(m.z[2]) == 10
+    assert sc.get_scaling_factor(m.z[3]) == 10
+    assert sc.get_scaling_factor(m.z[4]) == 10
+    sc.unset_scaling_factor(m.z)
+    assert sc.get_scaling_factor(m.z) is None
+    assert sc.get_scaling_factor(m.z[1]) is None
+    assert sc.get_scaling_factor(m.z[2]) is None
+    assert sc.get_scaling_factor(m.z[3]) is None
+    assert sc.get_scaling_factor(m.z[4]) is None
+    sc.set_scaling_factor(m.z, 10, data_objects=False)
+    assert sc.get_scaling_factor(m.z) == 10
+    assert sc.get_scaling_factor(m.z[1]) is None
+    assert sc.get_scaling_factor(m.z[2]) is None
+    assert sc.get_scaling_factor(m.z[3]) is None
+    assert sc.get_scaling_factor(m.z[4]) is None
+    sc.set_scaling_factor(m.z, 10)
+    sc.unset_scaling_factor(m.z, data_objects=False)
+    assert sc.get_scaling_factor(m.z) is None
+    assert sc.get_scaling_factor(m.z[1]) == 10
+    assert sc.get_scaling_factor(m.z[2]) == 10
+    assert sc.get_scaling_factor(m.z[3]) == 10
+    assert sc.get_scaling_factor(m.z[4]) == 10
+    sc.unset_scaling_factor(m.z)
+
+    caplog.set_level(logging.WARNING)
+    caplog.clear()
+    assert sc.get_scaling_factor(m.z[1], warning=True) is None
+    assert sc.get_scaling_factor(m.z[1], warning=True, default=1) == 1
+    for i in [0, 1]: # two calls should be two log records
+        logrec = caplog.records[i]
+        assert logrec.levelno == logging.WARNING
+        assert "missing scaling factor" in logrec.message
+
+    # This one is a bit of a mystery, what do you really expect if you provide
+    # a default and ask for an exception.  I'll guess if you provide a default,
+    # your don't really want an exception.
+    assert sc.get_scaling_factor(m.z[1], exception=True, default=1) == 1
+
+    caplog.clear()
+    with pytest.raises(KeyError) as excinfo:
+        sc.get_scaling_factor(m.z[1], exception=True)
+    logrec = caplog.records[0]
+    assert logrec.levelno == logging.ERROR
+    assert "missing scaling factor" in logrec.message
+
+    # Okay it's pretty well tested, but make sure it works for constraints and
+    # expressions
+
+    sc.set_scaling_factor(m.x, 11)
+    sc.set_scaling_factor(m.ex, 2)
+    sc.set_scaling_factor(m.c1, 3)
+    sc.set_scaling_factor(m.c2, 4)
+
+    assert sc.get_scaling_factor(m.x) == 11
+    assert sc.get_scaling_factor(m.ex) == 2
+    assert sc.get_scaling_factor(m.c1) == 3
+    assert sc.get_scaling_factor(m.c2) == 4
+    assert sc.get_scaling_factor(m.c2[1]) == 4
+    assert sc.get_scaling_factor(m.c2[2]) == 4
+    assert sc.get_scaling_factor(m.c2[3]) == 4
+    assert sc.get_scaling_factor(m.c2[4]) == 4
+
+    # Check the underlying suffix
+    assert m.scaling_factor[m.x] == 11
+    assert m.scaling_factor[m.ex] == 2
+    assert m.scaling_factor[m.c1] == 3
+    assert m.scaling_factor[m.c2] == 4
+    assert m.scaling_factor[m.c2[1]] == 4
+    assert m.scaling_factor[m.c2[2]] == 4
+    assert m.scaling_factor[m.c2[3]] == 4
+    assert m.scaling_factor[m.c2[4]] == 4
 
 
 @pytest.mark.unit
@@ -123,56 +295,6 @@ def test_find_unscaled_vars_and_constraints():
     assert id(m.c2) in a
     assert id(m.b.c2) in a
     assert len(a) == 2 #make sure we didn't pick up any other random stuff
-
-@pytest.mark.unit
-def test_propogate_indexed_scaling():
-    m = pyo.ConcreteModel()
-    m.b = pyo.Block()
-    m.a = pyo.Var()
-    m.x = pyo.Var([1,2,3], initialize=1e6)
-    m.y = pyo.Var([1,2,3], initialize=1e-8)
-    m.z = pyo.Var([1,2,3], initialize=1e-20)
-    @m.Constraint([1,2,3])
-    def c1(b, i):
-        return m.x[i] == 0
-    @m.Constraint([1,2,3])
-    def c2(b, i):
-        return m.y[i] == 0
-    m.b.w = pyo.Var([1,2,3], initialize=1e10)
-    m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
-    m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
-
-    sc.set_scaling_factor(m.a, 104)
-    sc.set_scaling_factor(m.b.c1, 14)
-
-    # Set sufix directly since set_scaling_factor also sets data objects
-    m.scaling_factor[m.x] = 11
-    m.scaling_factor[m.y] = 13
-    m.b.scaling_factor[m.b.w] = 16
-    m.scaling_factor[m.c1] = 14
-
-    for i in [1,2,3]:
-        assert sc.get_scaling_factor(m.x[i]) is None
-        assert sc.get_scaling_factor(m.y[i]) is None
-        assert sc.get_scaling_factor(m.z[i]) is None
-        assert sc.get_scaling_factor(m.b.w[i]) is None
-        assert sc.get_scaling_factor(m.c1[i]) is None
-        assert sc.get_scaling_factor(m.c2[i]) is None
-    assert sc.get_scaling_factor(m.x) == 11
-    assert sc.get_scaling_factor(m.y) == 13
-    assert sc.get_scaling_factor(m.z) is None
-    assert sc.get_scaling_factor(m.b.w) == 16
-    assert sc.get_scaling_factor(m.c1) == 14
-    assert sc.get_scaling_factor(m.c2) is None
-
-    sc.propagate_indexed_component_scaling_factors(m)
-    for i in [1,2,3]:
-        assert sc.get_scaling_factor(m.x[i]) is 11
-        assert sc.get_scaling_factor(m.y[i]) is 13
-        assert sc.get_scaling_factor(m.z[i]) is None
-        assert sc.get_scaling_factor(m.b.w[i]) is 16
-        assert sc.get_scaling_factor(m.c1[i]) is 14
-        assert sc.get_scaling_factor(m.c2[i]) is None
 
 
 class TestSingleConstraintScalingTransform():
@@ -327,18 +449,6 @@ class TestScaleConstraintsPynumero():
         m.c3 = pyo.Constraint(expr=0 <= z**3)
         return m
 
-    @pytest.mark.unit
-    def test_set_get_unset(self):
-        """Make sure the Jacobian from Pynumero matches expectation.  This is
-        mostly to ensure we understand the interface and catch if things change.
-        """
-        m = self.model()
-        assert sc.get_scaling_factor(m.x) is None
-        assert sc.get_scaling_factor(m.x, default=1) == 1
-        sc.set_scaling_factor(m.x, 1e-4)
-        assert sc.get_scaling_factor(m.x) == 1e-4
-        sc.unset_scaling_factor(m.x)
-        assert sc.get_scaling_factor(m.x) is None
 
     @pytest.mark.unit
     def test_jacobian(self):
@@ -567,7 +677,7 @@ class TestCacheVars():
         varlist = [m.v1, m.v2]
         varset = pyk.ComponentSet(varlist)
 
-        with CacheVars(varlist) as cache:
+        with sc.CacheVars(varlist) as cache:
             assert cache.cache == [1,2]
             for var in cache.vars:
                 assert var in varset
@@ -628,7 +738,7 @@ class TestFlattenedScalingAssignment():
                 (m.y, m.ae),
                 (m.dz, m.de),
                 ]
-        scaler = FlattenedScalingAssignment(scaling_factor, assignment, (0,0))
+        scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, (0,0))
 
         y = scaler.get_representative_data_object(m.y)
         assert y is m.y[0,0]
@@ -668,7 +778,7 @@ class TestFlattenedScalingAssignment():
         assignment = [
                 (m.u, m.ue),
                 ]
-        scaler = FlattenedScalingAssignment(scaling_factor, assignment, 0)
+        scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, 0)
 
         u = scaler.get_representative_data_object(m.u)
         assert u is m.u[0]
@@ -695,7 +805,7 @@ class TestFlattenedScalingAssignment():
                 (m.s, m.se),
                 (m.y[0,0], m.ae[0,0]),
                 ]
-        scaler = FlattenedScalingAssignment(scaling_factor, assignment, None)
+        scaler = sc.FlattenedScalingAssignment(scaling_factor, assignment, None)
 
         s = scaler.get_representative_data_object(m.s)
         y = scaler.get_representative_data_object(m.y[0,0])

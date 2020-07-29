@@ -92,7 +92,7 @@ def min_scaling_factor(iter, default=1, warning=True):
 
 def propagate_indexed_component_scaling_factors(
     blk,
-    typ=(pyo.Var, pyo.Constraint, pyo.Expression, pyo.Param),
+    typ=(pyo.Var, pyo.Constraint, pyo.Expression),
     overwrite=False,
     descend_into=True):
     """Use the parent compoent scaling factor to set all component data object
@@ -166,14 +166,14 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     except (AttributeError, KeyError):
         if warning:
             _log.warning(f"Accessing missing scaling factor for {c}")
-        if exception:
+        if exception and default is None:
             _log.error(f"Accessing missing scaling factor for {c}")
             raise
         sf = default
     return sf
 
 
-def unset_scaling_factor(c):
+def unset_scaling_factor(c, data_objects=True):
     """Delete a component scaling factor.
 
     Args:
@@ -184,10 +184,14 @@ def unset_scaling_factor(c):
     """
     try:
         del c.parent_block().scaling_factor[c]
-    except AttributeError:
+    except (AttributeError, KeyError):
         pass # no scaling factor suffix, is fine
-    except KeyError:
-        pass # no scaling factor is fine
+    try:
+        if data_objects and c.is_indexed():
+            for cdat in c.values():
+                del cdat.parent_block().scaling_factor[cdat]
+    except (AttributeError, KeyError):
+        pass # no scaling factor suffix, is fine
 
 
 def __set_constarint_tranform_applied_scaling_factor(c, v):
