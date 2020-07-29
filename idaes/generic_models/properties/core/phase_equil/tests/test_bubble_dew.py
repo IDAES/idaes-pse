@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Set,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     IdealBubbleDew
@@ -72,7 +73,12 @@ def frame():
                            "Vap": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
     m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
 
     m.props = m.params.build_state_block([1],

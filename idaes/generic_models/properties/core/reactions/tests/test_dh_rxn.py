@@ -15,14 +15,18 @@ Tests for rate forms
 """
 
 import pytest
+import types
 
-from pyomo.environ import Block, ConcreteModel, Var
+from pyomo.environ import Block, ConcreteModel, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.reactions.dh_rxn import *
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.misc import add_object_reference
+from idaes.core.property_meta import PropertyClassMetadata
+from idaes.core import MaterialFlowBasis
 
 
 @pytest.fixture
@@ -39,6 +43,7 @@ def model():
     m.rparams.config = ConfigBlock(implicit=True)
 
     m.rparams.config.property_package = m.pparams
+    m.rparams.config.reaction_basis = MaterialFlowBasis.molar
     m.rparams.config.rate_reactions = ConfigBlock(implicit=True)
     m.rparams.config.rate_reactions.r1 = ConfigBlock(implicit=True)
     m.rparams.config.rate_reactions.r1 = {
@@ -54,6 +59,17 @@ def model():
 
     m.rparams.reaction_r1 = Block()
     m.rparams.reaction_e1 = Block()
+
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.default_units["temperature"] = pyunits.K
+    m.meta_object.default_units["mass"] = pyunits.kg
+    m.meta_object.default_units["length"] = pyunits.m
+    m.meta_object.default_units["time"] = pyunits.s
+    m.meta_object.default_units["amount"] = pyunits.mol
+
+    def get_metadata(self):
+        return m.meta_object
+    m.rparams.get_metadata = types.MethodType(get_metadata, m.rparams)
 
     # Create a dummy state block
     m.rxn = Block([1])
@@ -93,3 +109,5 @@ def test_constant_dh_rxn(model):
         model.rxn[1], model.rparams.reaction_e1, "e1", 300)
 
     assert str(rform) == str(model.rparams.reaction_e1.dh_rxn_ref)
+    
+    assert_units_equivalent(rform, pyunits.J/pyunits.mol)

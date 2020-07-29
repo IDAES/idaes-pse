@@ -28,10 +28,11 @@ The Generic Property Package Framework breaks down property packages into a numb
 
 The components which make up a generic property package are as follows:
 
-1. Define the :ref:`components<user_guide/components/property_package/general/component_def:Defining Components>` which make up the material of interest, including methods for calculating the pure component properties of interest in the system.
-2. Define the :ref:`phases of interest<user_guide/components/property_package/general/phase_def:Defining Phases>` for the application, including equations of state and other phase specific decisions.
-3. Choose the set of :ref:`state variables<user_guide/components/property_package/general/state_definition:State Definition>` you wish to use and a reference state for the system.
-4. (Optional) Define any :ref:`phase equilibria<user_guide/components/property_package/general/phase_equilibrium:Defining Phase Equilibria>` which occurs in the system and methods associated with calculating this.
+1. Choose a base set of :ref:`units of measurement<user_guide/components/property_package/general/generic_definition:Units of Measurement>` for the property package.
+2. Define the :ref:`components<user_guide/components/property_package/general/component_def:Defining Components>` which make up the material of interest, including methods for calculating the pure component properties of interest in the system.
+3. Define the :ref:`phases of interest<user_guide/components/property_package/general/phase_def:Defining Phases>` for the application, including equations of state and other phase specific decisions.
+4. Choose the set of :ref:`state variables<user_guide/components/property_package/general/state_definition:State Definition>` you wish to use and a reference state for the system.
+5. (Optional) Define any :ref:`phase equilibria<user_guide/components/property_package/general/phase_equilibrium:Defining Phase Equilibria>` which occurs in the system and methods associated with calculating this.
 
 The following sections will describe how to define a property package using the Generic Property Package Framework along with the libraries of sub-models currently available. Finally, the :ref:`developers<user_guide/components/property_package/general/developers:Developing New Property Libraries>` section describes how to go about defining your own custom components to use when creating custom property packages.
 

@@ -18,12 +18,16 @@ import importlib
 import logging
 import os
 import shutil
+import time
+import warnings
 # third party
 import pytest
 # local
 from idaes.dmf import dmfbase
 from idaes.util.system import mkdtemp
 from mock import MagicMock, patch
+
+__author__ = "Dan Gunter"
 
 scratchdir = None
 
@@ -183,10 +187,18 @@ def tmp_dmf():
     """Test fixture to create a DMF in a temporary
     directory.
     """
-    global scratchdir
     tmpdir = mkdtemp()
-    tmpdmf = dmfbase.DMF(path=tmpdir, create=True)
-    scratchdir = os.path.join(tmpdir, 'scratch')
-    os.mkdir(scratchdir)
-    yield tmpdmf
-    shutil.rmtree(tmpdir)
+    dmf = dmfbase.DMF(path=tmpdir, create=True)
+    yield dmf
+    removed = False
+    for i in range(3):
+        try:
+            shutil.rmtree(tmpdir)
+            removed = True
+            print(f"@@ removed DMF temp dir on try {i+1}")
+        except Exception as err:
+            print(f"@@ error removing tempdir: {err}")
+            time.sleep(1)
+    print(f"@@ tries = {i + 1}")
+    if not removed:
+        warnings.warn(f"failed to remove temporary directory: {tmpdir}")

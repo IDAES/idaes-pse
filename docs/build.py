@@ -6,6 +6,7 @@ import argparse
 import glob
 import logging
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -49,9 +50,32 @@ def run_apidoc(clean=True):
     os.environ["SPHINX_APIDOC_OPTIONS"] = "members,ignore-module-all,noindex"
     _run(
         "apidoc",
-        ["sphinx-apidoc", "-o", "apidoc", "../idaes", "../idaes/*tests*"],
+        ["sphinx-apidoc", "--module-first", "--output-dir", "apidoc", "../idaes", "../idaes/*tests*"],
         60,
     )
+    postprocess_apidoc(Path("apidoc"))
+
+
+def postprocess_apidoc(root):
+    """Perform postprocessing on generated apidoc files
+    """
+    # Remove :noindex: from all entries in given modules
+    remove_noindex = ["idaes.dmf"]
+    for module in remove_noindex:
+        module_path = root / (module + ".rst")
+        _log.debug(f"Looking for :noindex: in {module_path}")
+        lines, has_noindex = [], False
+        with module_path.open("r") as input_file:
+            for line in input_file:
+                if ":noindex:" in line:
+                    has_noindex = True
+                else:
+                    lines.append(line)
+        if has_noindex:
+            _log.debug(f"Removing :noindex: from {module_path}")
+            with module_path.open("w") as output_file:
+                for line in lines:
+                    output_file.write(line)
 
 
 def run_html(clean=True):
