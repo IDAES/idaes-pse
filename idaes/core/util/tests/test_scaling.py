@@ -19,10 +19,8 @@ import pyomo.environ as pyo
 import pyomo.kernel as pyk
 import pyomo.dae as dae
 from idaes.core.util.exceptions import ConfigurationError
-<<<<<<< HEAD
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
-=======
 from idaes.core.util.scaling import (
     ScalingBasis,
     calculate_scaling_factors,
@@ -34,7 +32,6 @@ from idaes.core.util.scaling import (
     CacheVars,
     FlattenedScalingAssignment,
 )
->>>>>>> cad0162ffc7c008ab805c31c22ed8bba66bc4fc5
 
 __author__ = "John Eslick, Tim Bartholomew"
 
@@ -578,7 +575,7 @@ class TestFlattenedScalingAssignment():
         m.s = pyo.Var()
 
         def de_rule(m, t, x):
-            return m.dz[t,x] == 5*m.y[t,x] - 10*m.z[t,x] 
+            return m.dz[t,x] == 5*m.y[t,x] - 10*m.z[t,x]
         m.de = pyo.Constraint(m.time, m.space, rule=de_rule)
 
         def ae_rule(m, t, x):
