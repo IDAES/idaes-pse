@@ -9,14 +9,13 @@ Context
 -------
 Creating well scaled models is important for increasing the efficiency and
 reliability of solvers. Since the standard units for IDAES are SI, oftentimes
-variables and constraints are considered badly scaled (values less than
-:math:`10^{-3}` and greater than :math:`10^3`).
+variables and constraints are considered badly scaled.
 
 Scaling factors can be specified for any variable or constraint. Pyomo and many
 solvers support the ``scaling_factor`` suffix. To eliminate the possibility of
 defining conflicting scaling factors in various places in the model, the IDAES
 standard is to define the ``scaling_factor`` suffixes in the same block as the
-variable or constraint that they are scaling.  This ensures that each scale
+variable or constraint that they are scaling. This ensures that each scale
 factor is defined in only one place, and is organized based on the model block
 structure.
 
@@ -34,6 +33,19 @@ determined from flow rate scale factors. To calculate scale factors, models may
 have a standard ``calculate_scaling_factors()`` method.  For more specific scaling
 information, see the model documentation.
 
+For much of the core IDAES framework, model constraints are automatically scaled
+via a simple transformation where both sides of the constraint are multiplied by
+a scale factor determined based on supplied variable and expression scaling
+factors. The goal of this is to ensure that solver tolerances are meaningful for
+each constraint.  A constraint violation of :math:`1 \times 10^{-8}` should be
+acceptable, but not too tight to achieve given machine precision limits.  IDAES
+model constraints should conform approximately to this guideline after the
+``calculate_scaling_factors()`` method is executed.  Users should follow this
+guideline for constraints they write.  The scaling of constraints for reasonable
+residual tolerances is done as a constraint transformation independent of the
+scaling factor suffix.  Scaling factors for constraints can still be set based
+on other methods such as reducing very large Jacobian matrix entries.
+
 Specifying Scaling
 ------------------
 Suffixes are used to specify scaling factors for IDAES models. These suffixes
@@ -49,12 +61,35 @@ location.
 
 .. autofunction:: unset_scaling_factor
 
+
+Constraint Transformation
+-------------------------
+As mentioned previously, constraints in the IDAES framework are transformed such
+that :math:`1 \times 10^{-8}` is a reasonable criteria for convergence before any
+other scaling factors are applied. There are a few utility functions for scaling
+transformation of constraints. When transforming constraints with these functions,
+the scaling applies to the original constraint, not combined with any previous
+transformation.
+
+.. autofunction:: constraint_scaling_transform
+
+.. autofunction:: constraint_scaling_transform_undo
+
+.. autofunction:: get_constarint_tranform_applied_scaling_factor
+
+
 Calculation in Model
 ~~~~~~~~~~~~~~~~~~~~
 
 Some scaling factors may also be calculated by a call to a model's
 ``calculate_scaling_factors()`` method.  For more information see specific model
 documentation.
+
+Sometimes a scaling factor may be set on an indexed component and prorogated to
+it's data objects later can be useful for example in models that use the DAE
+transformation, not all data objects exist until after the transformation.
+
+.. autofunction:: propagate_indexed_component_scaling_factors
 
 Constraint Auto-Scaling
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,30 +98,6 @@ Constraints can be scaled to automatically reduce very large entries in the Jaco
 matrix with the ``constraint_autoscale_large_jac()`` function.
 
 .. autofunction:: constraint_autoscale_large_jac
-
-
-Constraint Transformation
--------------------------
-Depending on the solver various tolerances may be applied to either the scaled
-or unscaled problem.  It can also be desirable to perform constraint scaling in
-two steps.  First scale the constraint so that a constraint violation tolerance
-of :math:`1 \times 10^{-8}` is a reasonable criteria for convergence. Then
-transform the constraint.  This will ensure that various solver tolerances make
-sense, and ensure that things like selection of units of measure don't affect
-the problem solution. Other constraint scaling methods such as Jacobian based
-scaling can be applied to the transformed constraints.
-
-To transform constraints, the following functions can be used.  These functions
-are often used in general unit models to scale constraints such as mass an energy
-balances where proper constraint scaling must be determined based on process size
-and units of measure.  Scaling factors supplied are usually based on some known
-variable scale factors.
-
-.. autofunction:: constraint_scaling_transform
-
-.. autofunction:: constraint_scaling_transform_undo
-
-.. autofunction:: get_constarint_tranform_applied_scaling_factor
 
 
 Inspect Scaling
@@ -103,6 +114,10 @@ described above can provide Jacobian information at the current variable values.
 .. autofunction:: unscaled_variables_generator
 
 .. autofunction:: unscaled_constraints_generator
+
+.. autofunction:: map_scaling_factor
+
+.. autofunction:: min_scaling_factor
 
 
 Applying Scaling
