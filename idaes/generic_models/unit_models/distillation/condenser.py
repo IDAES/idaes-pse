@@ -397,21 +397,20 @@ see property package for documentation.}"""))
                     # add phase index to the port members. Hence, the check
                     # for length of local liq and vap phase sets.
 
-                    if len(self._liquid_set)>1:
-                        # Rule for liquid phase mole fraction
-                        def rule_liq_frac(self, t, p, i):
-                            return self.control_volume.properties_out[t].\
+
+                    # Rule for liquid phase mole fraction
+                    def rule_liq_frac(self, t, i):
+                        if len(self._liquid_set)>1:
+                            return sum(
+                                self.control_volume.properties_out[t].\
                                 component(local_name)[p, i]
-                        self.e_liq_frac = Expression(
-                            self.flowsheet().time, self._liquid_set, index_set,
-                            rule=rule_liq_frac)
-                    else:
-                        def rule_liq_frac(self, t, i):
+                                for p in self._liquid_set)
+                        else:
                             return self.control_volume.properties_out[t].\
                                 component(local_name)[self._liquid_set[1], i]
-                        self.e_liq_frac = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_liq_frac)
+                    self.e_liq_frac = Expression(
+                        self.flowsheet().time, index_set,
+                        rule=rule_liq_frac)
 
                     # NOTE:pass phase index when generating expression only
                     # when multiple liquid or vapor phases detected
@@ -419,21 +418,19 @@ see property package for documentation.}"""))
                     # add phase index to the port members. Hence, the check
                     # for length of local liq and vap phase sets.
 
-                    if len(self._vapor_set)>1:
-                        # Rule for vapor phase mole fraction
-                        def rule_vap_frac(self, t, p, i):
-                            return self.control_volume.properties_out[t].\
+                    # Rule for vapor phase mole fraction
+                    def rule_vap_frac(self, t, i):
+                        if len(self._vapor_set)>1:
+                            return sum(
+                                self.control_volume.properties_out[t].\
                                 component(local_name)[p, i]
-                        self.e_vap_frac = Expression(
-                            self.flowsheet().time, self._vapor_set, index_set,
-                            rule=rule_vap_frac)
-                    else:
-                        def rule_vap_frac(self, t, i):
+                                for p in self._vapor_set)
+                        else:
                             return self.control_volume.properties_out[t].\
                                 component(local_name)[self._vapor_set[1], i]
-                        self.e_vap_frac = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_vap_frac)
+                    self.e_vap_frac = Expression(
+                        self.flowsheet().time, index_set,
+                        rule=rule_vap_frac)
 
                     # add the reference and variable name to the reflux port
                     self.reflux.add(self.e_liq_frac, k)
@@ -469,70 +466,38 @@ see property package for documentation.}"""))
                     # Check if it is not indexed by component list and this
                     # is total flow
                     if not member_list[k].is_indexed():
-                        # if state var is not flow_mol/flow_mass
-                        # by phase
+                        # if state var is not flow_mol/flow_mass by phase
                         local_name = str(member_list[k].local_name) + \
                             "_phase"
 
+                        # Rule for vap phase flow
+                        def rule_vap_flow(self, t):
+                            return sum(
+                                self.control_volume.properties_out[t].\
+                                component(local_name)[p]
+                                for p in self._vapor_set)
+                        self.e_vap_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_vap_flow)
 
-                        # NOTE:pass phase index when generating expression only
-                        # when multiple liquid or vapor phases detected
-                        # else ensure consistency with state vars and do not
-                        # add phase index to the port members. Hence, the check
-                        # for length of local liq and vap phase sets.
-                        if len(self._vapor_set)>1:
-                            # Rule for vap phase flow
-                            def rule_vap_flow(self, t, p):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p]
-
-                            self.e_vap_flow = Expression(
-                                self.flowsheet().time, self._vapor_set,
-                                rule=rule_vap_flow)
-                        else:
-                            def rule_vap_flow(self, t):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[self._vapor_set[1]]
-
-                            self.e_vap_flow = Expression(
-                                self.flowsheet().time,
-                                rule=rule_vap_flow)
 
                         # Rule to link the liq phase flow to the reflux
-                        if len(self._liquid_set)>1:
-                            def rule_reflux_flow(self, t, p):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p] * \
-                                    (self.reflux_ratio / (1 + self.reflux_ratio))
-                            self.e_reflux_flow = Expression(
-                                self.flowsheet().time, self._liquid_set,
-                                rule=rule_reflux_flow)
+                        def rule_reflux_flow(self, t):
+                            return sum(self.control_volume.properties_out[t].\
+                                component(local_name)[p] for p in self._liquid_set) * \
+                                (self.reflux_ratio / (1 + self.reflux_ratio))
+                        self.e_reflux_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_reflux_flow)
 
-                            # Rule to link the liq flow to the distillate
-                            def rule_distillate_flow(self, t, p):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p] / \
-                                    (1 + self.reflux_ratio)
-                            self.e_distillate_flow = Expression(
-                                self.flowsheet().time, self._liquid_set,
-                                rule=rule_distillate_flow)
-                        else:
-                            def rule_reflux_flow(self, t):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[self._liquid_set[1]] * \
-                                    (self.reflux_ratio /
-                                     (1 + self.reflux_ratio))
-                            self.e_reflux_flow = Expression(
-                                self.flowsheet().time, rule=rule_reflux_flow)
-
-                            # Rule to link the liq flow to the distillate
-                            def rule_distillate_flow(self, t):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[self._liquid_set[1]] / \
-                                    (1 + self.reflux_ratio)
-                            self.e_distillate_flow = Expression(
-                                self.flowsheet().time,
-                                rule=rule_distillate_flow)
+                        # Rule to link the liq flow to the distillate
+                        def rule_distillate_flow(self, t):
+                            return sum(self.control_volume.properties_out[t].\
+                                component(local_name)[p] for p in self._liquid_set) / \
+                                (1 + self.reflux_ratio)
+                        self.e_distillate_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_distillate_flow)
 
                     else:
                         # when it is flow comp indexed by component list
@@ -551,61 +516,35 @@ see property package for documentation.}"""))
                         # add phase index to the port members. Hence, the check
                         # for length of local liq and vap phase sets.
 
-                        if len(self._vapor_set)>1:
-                            # Rule for vap phase flow to the vapor outlet
-                            def rule_vap_flow(self, t, p, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p, i]
-                            self.e_vap_flow = Expression(
-                                self.flowsheet().time, self._vapor_set, index_set,
-                                rule=rule_vap_flow)
-                        else:
-                            # Rule for vap phase flow to the vapor outlet
-                            def rule_vap_flow(self, t, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[self._vapor_set[1], i]
-                            self.e_vap_flow = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_vap_flow)
 
-                        if len(self._liquid_set)>1:
-                            # Rule to link the liq flow to the reflux
-                            def rule_reflux_flow(self, t, p, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p, i] * \
-                                    (self.reflux_ratio / (1 + self.reflux_ratio))
-                            self.e_reflux_flow = Expression(
-                                self.flowsheet().time, self._liquid_set, index_set,
-                                rule=rule_reflux_flow)
+                        # Rule for vap phase flow to the vapor outlet
+                        def rule_vap_flow(self, t, i):
+                            return sum(self.control_volume.properties_out[t].\
+                                component(local_name)[p, i]
+                                for p in self._vapor_set)
+                        self.e_vap_flow = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_vap_flow)
 
-                            # Rule to link the liq flow to the distillate
-                            def rule_distillate_flow(self, t, p, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)[p, i] / \
-                                    (1 + self.reflux_ratio)
-                            self.e_distillate_flow = Expression(
-                                self.flowsheet().time, self._liquid_set, index_set,
-                                rule=rule_distillate_flow)
-                        else:
-                            # Rule to link the liq flow to the reflux
-                            def rule_reflux_flow(self, t, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)\
-                                    [self._liquid_set[1], i] * \
-                                    (self.reflux_ratio / (1 + self.reflux_ratio))
-                            self.e_reflux_flow = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_reflux_flow)
+                        # Rule to link the liq flow to the reflux
+                        def rule_reflux_flow(self, t, i):
+                            return sum(self.control_volume.properties_out[t].\
+                                component(local_name)[p, i]
+                                for p in self._liquid_set) * \
+                                (self.reflux_ratio / (1 + self.reflux_ratio))
+                        self.e_reflux_flow = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_reflux_flow)
 
-                            # Rule to link the liq flow to the distillate
-                            def rule_distillate_flow(self, t, i):
-                                return self.control_volume.properties_out[t].\
-                                    component(local_name)\
-                                    [self._liquid_set[1], i] / \
-                                    (1 + self.reflux_ratio)
-                            self.e_distillate_flow = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_distillate_flow)
+                        # Rule to link the liq flow to the distillate
+                        def rule_distillate_flow(self, t, i):
+                            return sum(self.control_volume.properties_out[t].\
+                                component(local_name)[p, i]
+                                for p in self._liquid_set) / \
+                                (1 + self.reflux_ratio)
+                        self.e_distillate_flow = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_distillate_flow)
 
                     # add the reference and variable name to the reflux port
                     self.reflux.add(self.e_reflux_flow, k)
