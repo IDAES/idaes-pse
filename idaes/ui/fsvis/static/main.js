@@ -16,7 +16,6 @@ var paper = new joint.dia.Paper({
     height: height,
     gridSize: gridSize,
     drawGrid: true,
-    background: { color: "#FFFFFF" },
     interactive: true
 });
 
@@ -24,27 +23,42 @@ var paperScroller = new joint.ui.PaperScroller({
     paper: paper,
     autoResizePaper: true,
     scrollWhileDragging: true,
+    baseWidth: 10,
+    baseHeight: 10,
     cursor: 'grab'
 });
 
+$('#idaes-canvas').css({ width: 800, height: 800 });
 $("#idaes-canvas")[0].append(paperScroller.render().el);
 
 var toolbar = new joint.ui.Toolbar({
     autoToggle: true,
     references: {
         paper: paper,
+        paperScroller: paperScroller
     },
     tools: [
-        { type: 'toggle', name: 'labels', label: 'Labels' },
+        { type: 'toggle', name: 'labels', label: 'Labels:' },
         { type: 'separator' },
         { type: 'button', name: 'save', text: 'Save'},
         { type: 'separator' },
         { type: 'button', name: 'svg', text: 'Export SVG'},
         { type: 'separator' },
-        { type: 'toggle', name: 'grid', label: 'Grid'},
+        { type: 'toggle', name: 'grid', label: 'Grid:'},
+        { type: 'separator' },
+        { type: 'zoomIn' },
+        { type: 'zoomOut' },
+        { type: 'zoomToFit' },
+        { type: 'separator' },
+        { type: 'label', text: 'Canvas size:' },
+        { type: 'selectBox', name: 'sizeBox', options: [{content: 800, selected: true}, {content: 1600, selected: true}, {content: 3200}, {content: 6400}] },
         { type: 'separator' },
         { type: 'button', name: 'help', text: 'Help'},
-    ]
+    ],
+});
+
+toolbar.on('sizeBox:option:select', function(value, event) {
+    $('#idaes-canvas').css({ width: value["content"], height: value["content"] });
 });
 
 toolbar.on('labels:change', function(value, event) {
@@ -117,8 +131,6 @@ toolbar.on('help:pointerclick', function(event) {
     window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
 });
 
-$('#toolbar-container').append(toolbar.render().el);
-
 function setGrid(paper, gridSize, color) {
     // Set grid size on the JointJS paper object (joint.dia.Paper instance)
     paper.options.gridSize = gridSize;
@@ -146,6 +158,8 @@ toolbar.on('grid:change', function(value, event) {
         setGrid(paper, 10, '#FFFFFF');
     }
 });
+
+$('#toolbar-container').append(toolbar.render().el);
 
 // /images/icons rotate 90 degrees on right click. Replaces browser context menu
 paper.on("element:contextmenu", function(cellView, evt) {
@@ -176,8 +190,6 @@ paper.on("link:mouseout", function(cellView, evt) {
     cellView.hideTools()
 });
 
-
-
 // Send a post request to the server with the new graph 
 // This is essentially the saving mechanism (for a server instance) for right now
 // See the comments above the save button for more saving TODOs
@@ -207,15 +219,6 @@ var data_model = $("#model").data("model");
 var model_id = data_model.model.id;
 var url = "/fs?id=".concat(model_id)
 renderModel(data_model)
-
-// // Set up the help button
-// // Not implemented yet
-// var help_button = document.getElementById("help_button");
-
-// //help_button.innerText = "Help";
-// help_button.onclick = () => {
-//     window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
-// }
 
 // Link labels will appear and disapper on right click. Replaces browser context menu
 paper.on("link:contextmenu", function(linkView, evt) {
