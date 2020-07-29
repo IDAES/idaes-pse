@@ -2382,9 +2382,8 @@ def test_get_performance_contents():
     for k in dd["exprs"].keys():
         assert k in ["Heat of Reaction Term"]
 
-    assert len(dd["params"]) == 2
-    for k in dd["params"].keys():
-        assert k in ["Pressure Scaling", "Energy Scaling"]
+    assert len(dd["params"]) == 0
+
 
 
 @pytest.mark.unit
@@ -2446,9 +2445,7 @@ def test_get_performance_contents_elemental():
                      "Element Flow Out [p2, He]",
                      "Element Flow Out [p2, Li]"]
 
-    assert len(dd["params"]) == 2
-    for k in dd["params"].keys():
-        assert k in ["Pressure Scaling", "Energy Scaling"]
+    assert len(dd["params"]) == 0
 
 
 @pytest.mark.unit

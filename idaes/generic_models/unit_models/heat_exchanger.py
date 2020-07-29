@@ -359,14 +359,13 @@ class HeatExchangerData(UnitModelBlockData):
         # Add Heat transfer equation                                           #
         ########################################################################
         deltaT = self.delta_temperature
-        scale = self.side_1.scaling_factor_energy
 
         @self.Constraint(self.flowsheet().config.time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return 0 == (f[t] * u[t] * a * deltaT[t] - q[t]) * scale
+                return q[t] == f[t] * u[t] * a * deltaT[t]
             else:
-                return 0 == (u[t] * a * deltaT[t] - q[t]) * scale
+                return q[t] == u[t] * a * deltaT[t]
 
         ########################################################################
         # Add symbols for LaTeX equation rendering                             #

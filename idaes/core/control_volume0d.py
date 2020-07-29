@@ -1068,12 +1068,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         doc="Energy accumulation in control volume",
                         units=acc_units)
 
-        # Create scaling factor
-        self.scaling_factor_energy = Param(
-                        default=1e-6,
-                        mutable=True,
-                        doc='Energy balance scaling parameter')
-
         # Create energy balance terms as needed
         # Heat transfer term
         if has_heat_transfer:
@@ -1245,12 +1239,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 return custom_term(t)
             else:
                 return 0
-
-        # Create scaling factor
-        self.scaling_factor_pressure = Param(
-                    default=1e-4,
-                    mutable=True,
-                    doc='Momentum balance scaling parameter')
 
         # Momentum balance equation
         @self.Constraint(self.flowsheet().config.time, doc='Momentum balance')
@@ -1556,8 +1544,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             except AttributeError:
                 pass
 
-        params = {"scaling_factor_energy": "Energy Scaling",
-                  "scaling_factor_pressure": "Pressure Scaling"}
+        params = {}
 
         for p, n in params.items():
             try:

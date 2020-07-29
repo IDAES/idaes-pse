@@ -1282,12 +1282,6 @@ argument)."""))
                         doc="Energy accumulation per unit length",
                         units=acc_units)
 
-        # Create scaling factor
-        self.scaling_factor_energy = Param(
-                        default=1e-6,
-                        mutable=True,
-                        doc='Energy balance scaling parameter')
-
         # Create energy balance terms as needed
         # Heat transfer term
         if has_heat_transfer:
@@ -1488,12 +1482,6 @@ argument)."""))
                 return custom_term(t, x)
             else:
                 return 0
-
-        # Create scaling factor
-        self.scaling_factor_pressure = Param(
-                    default=1e-4,
-                    mutable=True,
-                    doc='Momentum balance scaling parameter')
 
         # Momentum balance equation
         @self.Constraint(self.flowsheet().config.time,
