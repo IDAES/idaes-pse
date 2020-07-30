@@ -39,29 +39,29 @@ from idaes.core.util.exceptions import PropertyPackageError
 solver = get_default_solver()
 
 
-# @pytest.mark.unit
-# def test_config():
-#
-#     m = ConcreteModel()
-#     m.fs = FlowsheetBlock(default={"dynamic": False})
-#     m.fs.properties = PhysicalParameterTestBlock()
-#
-#
-#     m.fs.unit = Condenser(
-#         default={"property_package": m.fs.properties,
-#                  "condenser_type": CondenserType.partialCondenser,
-#                  "temperature_spec": TemperatureSpec.customTemperature})
-#
-#     assert len(m.fs.unit.config) == 10
-#     assert m.fs.unit.config.condenser_type == CondenserType.partialCondenser
-#     assert m.fs.unit.config.material_balance_type == \
-#         MaterialBalanceType.useDefault
-#     assert m.fs.unit.config.energy_balance_type == \
-#         EnergyBalanceType.useDefault
-#     assert m.fs.unit.config.momentum_balance_type == \
-#         MomentumBalanceType.pressureTotal
-#     assert not m.fs.unit.config.has_pressure_change
-#     assert hasattr(m.fs.unit, "heat_duty")
+@pytest.mark.unit
+def test_config():
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+
+
+    m.fs.unit = Condenser(
+        default={"property_package": m.fs.properties,
+                 "condenser_type": CondenserType.partialCondenser,
+                 "temperature_spec": TemperatureSpec.customTemperature})
+
+    assert len(m.fs.unit.config) == 10
+    assert m.fs.unit.config.condenser_type == CondenserType.partialCondenser
+    assert m.fs.unit.config.material_balance_type == \
+        MaterialBalanceType.useDefault
+    assert m.fs.unit.config.energy_balance_type == \
+        EnergyBalanceType.useDefault
+    assert m.fs.unit.config.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert not m.fs.unit.config.has_pressure_change
+    assert hasattr(m.fs.unit, "heat_duty")
 
 
 class TestBTXIdeal(object):
