@@ -42,6 +42,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import scaling as iscale
 
 
 # -----------------------------------------------------------------------------
@@ -164,6 +165,8 @@ class TestBTX_cocurrent(object):
         m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
         m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        iscale.calculate_scaling_factors(m)
 
         return m
 

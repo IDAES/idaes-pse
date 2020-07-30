@@ -1871,13 +1871,15 @@ argument)."""))
         if hasattr(self, "deltaP"):
             for (t, x), v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
-                    s = iscale.get_scaling_factor(self.properties[t, x].pressure)
+                    s = iscale.get_scaling_factor(
+                        self.properties[t, x].pressure, default=1, warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
         if hasattr(self, "pressure_dx"):
             for (t, x), v in self.pressure_dx.items():
                 if iscale.get_scaling_factor(v) is None:
-                    s = iscale.get_scaling_factor(self.properties[t, x].pressure)
+                    s = iscale.get_scaling_factor(
+                        self.properties[t, x].pressure, default=1, warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
         # Enthalpy flow variable and constraint
