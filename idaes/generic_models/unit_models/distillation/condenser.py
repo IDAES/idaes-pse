@@ -374,22 +374,48 @@ see property package for documentation.}"""))
                 # vapor outlet port
                 self.vapor_outlet.add(Reference(var), k)
 
-            elif "frac" in k and ("mole" in k or "mass" in k):
+            elif "frac" in k:
 
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
                 if "phase" not in k:
-                    # Assuming the state block has the var
-                    # "mole_frac_phase_comp". Valid if VLE is supported
-                    # Create a string "mole_frac_phase_comp" or
-                    # "mass_frac_phase_comp". Cannot directly append phase
-                    # to k as the naming convention is phase followed
-                    # by comp
-                    str_split = k.split('_')
-                    local_name = '_'.join(str_split[0:2]) + \
-                        "_phase" + "_" + str_split[2]
+                    if "mole" in k: # check mole basis/mass basis
+
+                        if hasattr(self.control_volume.properties_out[0],
+                            "mole_frac_phase_comp") and \
+                            hasattr(self.control_volume.properties_out[0],
+                                "flow_mol_phase"):
+                            flow_mol_phase_comp = False
+                            local_name_frac = "mole_frac_phase_comp"
+                            local_name_flow = "flow_mol_phase"
+                        elif hasattr(self.control_volum.properties_out[0],
+                            "flow_mol_phase_comp"):
+                            flow_mol_phase_comp = True
+                            local_name_flow = "flow_mol_phase_comp"
+                        else:
+                            raise PropertyNotSupportedError(
+                                "No mole_frac_phase_comp or flow_mol_phase or"
+                                " flow_mol_phase_comp variables encountered "
+                                "while building ports for the condenser. ")
+                    else:
+                        if hasattr(self.control_volume.properties_out[0],
+                            "mass_frac_phase_comp") and \
+                            hasattr(self.control_volume.properties_out[0],
+                                "flow_mass_phase"):
+
+                            local_name_frac = "mass_frac_phase_comp"
+                            local_name_flow = "flow_mass_phase"
+                        elif hasattr(self.control_volum.properties_out[0],
+                            "flow_mass_phase_comp"):
+
+                            local_name_flow = "flow_mass_phase_comp"
+                        else:
+                            raise PropertyNotSupportedError(
+                                "No mass_frac_phase_comp or flow_mass_phase or"
+                                " flow_mass_phase_comp variables encountered "
+                                "while building ports for the condenser.")
 
                     # NOTE:pass phase index when generating expression only
                     # when multiple liquid or vapor phases detected
@@ -400,14 +426,31 @@ see property package for documentation.}"""))
 
                     # Rule for liquid phase mole fraction
                     def rule_liq_frac(self, t, i):
-                        if len(self._liquid_set)>1:
-                            return sum(
+                        if not flow_mol_phase_comp:
+                            sum_flow_mol_comp = 0
+                            for p in self._liquid_set:
+                                sum_flow_mol_comp += \
                                 self.control_volume.properties_out[t].\
-                                component(local_name)[p, i]
+                                component(local_name_frac)[p, i] * \
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
+
+                            return sum_flow_mol_comp/sum(
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
                                 for p in self._liquid_set)
                         else:
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)[self._liquid_set[1], i]
+                            sum_flow_mol_comp = 0
+                            for p in self._liquid_set:
+                                sum_flow_mol_comp += \
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p, i]
+
+                            return sum_flow_mol_comp/sum(
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
+                                for p in self._liquid_set)
+
                     self.e_liq_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_liq_frac)
@@ -420,14 +463,31 @@ see property package for documentation.}"""))
 
                     # Rule for vapor phase mole fraction
                     def rule_vap_frac(self, t, i):
-                        if len(self._vapor_set)>1:
-                            return sum(
+                        if not flow_mol_phase_comp:
+                            sum_flow_mol_comp = 0
+                            for p in self._vapor_set:
+                                sum_flow_mol_comp += \
                                 self.control_volume.properties_out[t].\
-                                component(local_name)[p, i]
+                                component(local_name_frac)[p, i] * \
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
+
+                            return sum_flow_mol_comp/sum(
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
                                 for p in self._vapor_set)
                         else:
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)[self._vapor_set[1], i]
+                            sum_flow_mol_comp = 0
+                            for p in self._vapor_set:
+                                sum_flow_mol_comp += \
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p, i]
+
+                            return sum_flow_mol_comp/sum(
+                                self.control_volume.properties_out[t].\
+                                component(local_name_flow)[p]
+                                for p in self._vapor_set)
+
                     self.e_vap_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_vap_frac)
