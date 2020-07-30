@@ -15,7 +15,7 @@ var paper = new joint.dia.Paper({
     width: width,
     height: height,
     gridSize: gridSize,
-    drawGrid: true,
+    drawGrid: false,
     interactive: true
 });
 
