@@ -1878,7 +1878,7 @@ argument)."""))
             for (t, x), v in self.pressure_dx.items():
                 if iscale.get_scaling_factor(v) is None:
                     s = iscale.get_scaling_factor(self.properties[t, x].pressure)
-                    iscale.set_scaling_factor(v, 100*s)
+                    iscale.set_scaling_factor(v, 10*s)
 
         # Enthalpy flow variable and constraint
         if hasattr(self, "_enthalpy_flow"):
@@ -1953,3 +1953,36 @@ argument)."""))
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(
                         self.material_holdup[i], default=1, warning=True))
+
+        if hasattr(self, "elemental_holdup_calculation"):
+            for i, c in self.elemental_holdup_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.element_holdup[i], default=1, warning=True))
+
+        if hasattr(self, "element_balances"):
+            for i, c in self.element_balances.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.elemental_flow_dx[i], default=1, warning=True))
+
+        if hasattr(self, "elemental_flow_constraint"):
+            for i, c in self.elemental_flow_constraint.items():
+                sf = conv_factor(self, *i)
+                sf *= iscale.min_scaling_factor(
+                    [self.properties[t, x].get_material_flow_terms(p, j)
+                        for j in b.config.property_package.component_list
+                        for p in b.config.property_package.phase_list])
+                iscale.constraint_scaling_transform(s, sf)
+
+        if hasattr(self, "rate_reaction_stoichiometry_constraint"):
+            for i, c in self.rate_reaction_stoichiometry_constraint.items():
+                iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                    self.rate_reaction_generation[i], default=1, warning=True))
+
+        if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
+            for i, c in self.equilibrium_reaction_stoichiometry_constraint.items():
+                iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                    self.equilibrium_reaction_generation[i],
+                    default=1,
+                    warning=True))
