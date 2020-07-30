@@ -67,7 +67,7 @@ class NumpyEvaluator(EXPR.StreamBasedExpressionVisitor):
             return numpy.abs(values[0])
         return node._apply_operation(values)
 
-    def beforeChild(self, node, child):
+    def beforeChild(self, node, child, child_idx):
         #
         # Don't replace native types
         #
