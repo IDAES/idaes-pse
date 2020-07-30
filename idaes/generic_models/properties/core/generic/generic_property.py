@@ -165,7 +165,6 @@ class GenericParameterData(PhysicalParameterBlock):
                         "{} recieved unexpected units for quantity {}: {}. "
                         "Units must be instances of a Pyomo unit object."
                         .format(self.name, key, unit))
-                units_meta[key] = unit
             else:
                 raise ConfigurationError(
                     "{} defined units for an unexpected quantity {}. "
@@ -537,12 +536,6 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'}})
-
-        # obj.add_default_units({'time': None,
-        #                        'length': None,
-        #                        'mass': None,
-        #                        'amount': None,
-        #                        'temperature': None})
 
 
 class _GenericStateBlock(StateBlock):
