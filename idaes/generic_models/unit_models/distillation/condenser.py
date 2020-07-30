@@ -44,6 +44,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
+from idaes.core.util.testing import get_default_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -727,6 +728,16 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.activate()
 
         if solver is not None:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
+            init_log.info(
+                "Initialization Complete, {}.".format(idaeslog.condition(res))
+            )
+        else:
+            init_log.warning(
+                "Solver not provided during initialization, proceeding"
+                " with deafult solver in idaes.")
+            solver = get_default_solver()
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
             init_log.info(
