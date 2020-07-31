@@ -1637,7 +1637,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "deltaP"):
             for t, v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
-                    s = iscale.get_scaling_factor(self.properties_in[t].pressure)
+                    s = iscale.get_scaling_factor(
+                        self.properties_in[t].pressure,
+                        default=1,
+                        warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
         # Material Holdup Constraints

@@ -39,6 +39,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
+from idaes.core.util import scaling as iscale
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -738,6 +739,99 @@ see property package for documentation.}""",
                                         pump_type=pump_type,
                                         pump_type_factor=pump_type_factor,
                                         pump_motor_type_factor=pump_motor_type_factor)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "work_fluid"):
+            for t, v in self.work_fluid.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "work_mechanical"):
+            for t, v in self.work_mechanical.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "work_isentropic"):
+            for t, v in self.work_isentropic.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "ratioP_calculation"):
+            for t, c in self.ratioP_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].pressure,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "fluid_work_calculation"):
+            for t, c in self.fluid_work_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.deltaP[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "actual_work"):
+            for t, c in self.actual_work.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "adiabatic"):
+            for t, c in self.adiabatic.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].enth_mol,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic_pressure"):
+            for t, c in self.isentropic_pressure.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].pressure,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic"):
+            for t, c in self.isentropic.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].entr_mol,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic_energy_balance"):
+            for t, c in self.isentropic_energy_balance.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
 
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")

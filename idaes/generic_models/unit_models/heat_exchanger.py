@@ -59,6 +59,7 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import scaling as iscale
 
 _log = idaeslog.getLogger(__name__)
 
@@ -491,3 +492,42 @@ class HeatExchangerData(UnitModelBlockData):
         self.costing = Block()
         module.hx_costing(self.costing, hx_type=hx_type, Mat_factor=Mat_factor,
                           length_factor=length_factor)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # We have a pretty good idea that the delta Ts will be beteen about
+        # 1 and 100 regaurdless of process of temperature units, so a default
+        # should be fine, so don't warn.  Guessing a typical delta t around 10
+        # the default scaling factor is set to 0.1
+        sf_dT1 = dict(zip(
+            self.delta_temperature_in.keys(),
+            [iscale.get_scaling_factor(v, default=0.1)
+                for v in self.delta_temperature_in.values()]))
+        sf_dT2 = dict(zip(
+            self.delta_temperature_out.keys(),
+            [iscale.get_scaling_factor(v, default=0.1)
+                for v in self.delta_temperature_out.values()]))
+
+        # U depends a lot on the process and units of measure so user should set
+        # this one.
+        sf_u = dict(zip(
+            self.overall_heat_transfer_coefficient.keys(),
+            [iscale.get_scaling_factor(v, default=1, warning=True)
+                for v in self.overall_heat_transfer_coefficient.values()]))
+
+        # Since this depends on the process size this is another scaling factor
+        # the user should always set.
+        sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
+
+        for t, c in self.heat_transfer_equation.items():
+            iscale.constraint_scaling_transform(c, sf_dT[t]*sf_u[t]*sf_a)
+
+        for t, c in self.unit_heat_balance.items():
+            iscale.constraint_scaling_transform(c, sf_dT[t]*sf_u[t]*sf_a)
+
+        for t,c in self.delta_temperature_in_equation.itmes():
+            iscale.constraint_scaling_transform(c, sf_dT1[t])
+
+        for t,c in self.delta_temperature_out_equation.itmes():
+            iscale.constraint_scaling_transform(c, sf_dT2[t])
