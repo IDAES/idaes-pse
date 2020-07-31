@@ -113,6 +113,9 @@ toolbar.on('save:pointerclick', function(event) {
 });
 
 toolbar.on('svg:pointerclick', function(event) {
+    // Make sure to hide all of the vertices and bars on the links 
+    // so they don't show up in the SVG
+    paper.hideTools()
     paper.toSVG(function(svg) {
         new joint.ui.Lightbox({
             image: 'data:image/svg+xml,' + encodeURIComponent(svg),
