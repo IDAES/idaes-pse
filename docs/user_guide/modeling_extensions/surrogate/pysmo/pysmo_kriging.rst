@@ -26,7 +26,7 @@ are selected such that the concentrated log likelihood function is maximized.
 Basic Usage
 ------------
 To generate a Kriging model with PySMO, the  *pysmo.kriging* class is first initialized,
-and then the function *kriging_training* is called on the initialized object:
+and then the function *training* is called on the initialized object:
 
 .. code:: python
 
@@ -40,7 +40,7 @@ and then the function *kriging_training* is called on the initialized object:
    # Initialize the KrigingModel class, extract the list of features and train the model
    >>> krg_init = kriging.KrigingModel(xy_data, *kwargs)
    >>> features = krg_init.get_feature_vector()
-   >>> krg_fit = krg_init.kriging_training()
+   >>> krg_init.training()
 
 * *xy_data* is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
 
@@ -58,11 +58,11 @@ and then the function *kriging_training* is called on the initialized object:
 
 *pysmo.kriging* Output
 ---------------------------------------
-The result of *pysmo.kriging* (*krg_fit* in above example) is a python object containing information
+The result of *pysmo.kriging* is a python object containing information
 about the optimal Kriging hyperparameters :math:`\left(\mu,\sigma^{2},\theta_{1},\ldots,\theta_{n}\right)`
 and different error and quality-of-fit metrics such as the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit.
 A Pyomo expression can be generated from the object simply passing a list of variables into the function
-*kriging_generate_expression*:
+*generate_expression*:
 
 .. code:: python
 
@@ -72,20 +72,20 @@ A Pyomo expression can be generated from the object simply passing a list of var
    >>>     list_vars.append(features[i])
 
    # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(krg_fit.kriging_generate_expression(list_vars))
+   >>> print(krg_init.generate_expression(list_vars))
 
-Similar to the *pysmo.polynomial_regression* module, the output of the *kriging_generate_expression* function can be passed
+Similar to the *pysmo.polynomial_regression* module, the output of the *generate_expression* function can be passed
 into an IDAES or Pyomo module as a constraint, objective or expression.
 
 Prediction with *pysmo.kriging* models
 -----------------------------------------------------
 Once a Kriging model has been trained, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling the
-*kriging_predict_output()* function on the resulting Python object and the unsampled points:
+*predict_output()* function on the unsampled points:
 
 .. code:: python
 
    # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = kriging_init.kriging_predict_output(krg_fit, x_unsampled)
+   >>> y_unsampled = kriging_init.predict_output(x_unsampled)
 
 Further details about *pysmo.kriging* module may be found by consulting the examples or reading the paper [...]
 
@@ -96,10 +96,7 @@ Available Methods
 ------------------
 
 .. autoclass:: idaes.surrogate.pysmo.kriging.KrigingModel
-    :members: __init__, get_feature_vector, kriging_training, kriging_predict_output, r2_calculation
-
-.. autoclass:: idaes.surrogate.pysmo.kriging.ResultReport
-    :members: kriging_generate_expression	
+    :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
 
 References:
 ----------------

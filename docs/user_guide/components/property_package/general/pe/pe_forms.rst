@@ -6,8 +6,8 @@ The IDAES Generic Property Package Framework contains a library of common forms 
 .. contents:: Contents 
     :depth: 2
 
-Fugacity
---------
+Fugacity (``fugacity``)
+-----------------------
 
 Fugacity of each component must be equal between interacting phases
 

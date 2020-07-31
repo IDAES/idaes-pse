@@ -13,6 +13,9 @@
 """
 Framework for generic reaction packages
 """
+from enum import Enum
+
+
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Constraint,
@@ -51,16 +54,65 @@ class GenericReactionPackageError(PropertyPackageError):
                f"in the reaction parameter configuration."
 
 
+# Enumerate concentration form options
+class ConcentrationForm(Enum):
+    molarity = 1
+    activity = 2
+    molality = 3
+    moleFraction = 4
+    massFraction = 5
+    partialPressure = 6
+
+
+def get_concentration_term(blk, r_idx):
+    # conc_form = rblock.config.concentration_form
+    try:
+        conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
+    except KeyError:
+        conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+
+    if conc_form is None:
+        raise ConfigurationError(
+            "{} concentration_form configuration argument was not set. "
+            "Please ensure that this argument is included in your "
+            "configuration dict.".format(blk.name))
+    elif conc_form == ConcentrationForm.molarity:
+        conc_term = getattr(blk.state_ref, "conc_mole_phase_comp")
+    elif conc_form == ConcentrationForm.activity:
+        conc_term = getattr(blk.state_ref, "act_phase_comp")
+    elif conc_form == ConcentrationForm.molality:
+        conc_term = getattr(blk.state_ref, "molality_phase_comp")
+    elif conc_form == ConcentrationForm.moleFraction:
+        conc_term = getattr(blk.state_ref, "mole_frac_phase_comp")
+    elif conc_form == ConcentrationForm.massFraction:
+        conc_term = getattr(blk.state_ref, "mass_frac_phase_comp")
+    elif conc_form == ConcentrationForm.partialPressure:
+        conc_term = (getattr(blk.state_ref, "mole_frac_phase_comp") *
+                     getattr(blk.state_ref, "pressure"))
+    else:
+        raise BurntToast(
+            "{} get_concentration_term received unrecognised "
+            "ConcentrationForm ({}). This should not happen - please contact "
+            "the IDAES developers with this bug.".format(blk.name, conc_form))
+
+    return conc_term
+
+
 rxn_config = ConfigBlock()
 rxn_config.declare("stoichiometry", ConfigValue(
     domain=dict,
     description="Stoichiometry of reaction",
     doc="Dict describing stoichiometry of reaction"))
-
 rxn_config.declare("heat_of_reaction", ConfigValue(
     description="Method for calculating specific heat of reaction",
     doc="Valid Python class containing instructions on how to calculate "
     "the heat of reaction for this reaction."))
+rxn_config.declare("concentration_form", ConfigValue(
+    default=None,
+    domain=In(ConcentrationForm),
+    description="Form to use for concentration terms in reaction equation",
+    doc="ConcentrationForm Enum indicating what form to use for concentration "
+    "terms when constructing reaction equation."))
 rxn_config.declare("parameter_data", ConfigValue(
     default={},
     domain=dict,
@@ -175,9 +227,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct rate reaction stoichiometry dict
             self.rate_reaction_stoichiometry = {}
             for r, rxn in self.config.rate_reactions.items():
-                for p in ppack.phase_list:
-                    for j in ppack.component_list:
-                        self.rate_reaction_stoichiometry[(r, p, j)] = 0
+                for p, j in ppack._phase_component_set:
+                    self.rate_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
                     raise ConfigurationError(
@@ -214,9 +265,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct equilibrium reaction stoichiometry dict
             self.equilibrium_reaction_stoichiometry = {}
             for r, rxn in self.config.equilibrium_reactions.items():
-                for p in ppack.phase_list:
-                    for j in ppack.component_list:
-                        self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
+                for p, j in ppack._phase_component_set:
+                    self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
                     raise ConfigurationError(
@@ -268,6 +318,35 @@ class GenericReactionParameterData(ReactionParameterBlock):
         if len(self.config.rate_reactions) > 0:
             for r in self.rate_reaction_idx:
                 rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.rate_reactions[r]
+
+                order_init = {}
+                for p, j in ppack._phase_component_set:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            if r_config.stoichiometry[p, j] < 0:
+                                # These are reactants, but order is -ve stoic
+                                order_init[p, j] = -r_config.stoichiometry[p,
+                                                                           j]
+                            else:
+                                # Anything else is a product, not be included
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        ppack._phase_component_set,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
                 for val in self.config.rate_reactions[r].values():
                     try:
                         val.build_parameters(rblock,
@@ -278,6 +357,37 @@ class GenericReactionParameterData(ReactionParameterBlock):
         if len(self.config.equilibrium_reactions) > 0:
             for r in self.equilibrium_reaction_idx:
                 rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.equilibrium_reactions[r]
+
+                order_init = {}
+                for p, j in ppack._phase_component_set:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            # Here we use the stoic. coeff. directly
+                            # However, solids should be excluded as they
+                            # normally do not appear in the equilibrium
+                            # relationship
+                            pobj = ppack.get_phase(p)
+                            if not pobj.is_solid_phase():
+                                order_init[p, j] = r_config.stoichiometry[p, j]
+                            else:
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        ppack._phase_component_set,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
                 for val in self.config.equilibrium_reactions[r].values():
                     try:
                         val.build_parameters(
@@ -380,9 +490,9 @@ class GenericReactionBlockData(ReactionBlockDataBase):
     def _dh_rxn(self):
         def dh_rule(b, r):
             rblock = getattr(b.params, "reaction_"+r)
-            if r in b.params.rate_reaction_idx:
+            try:
                 carg = b.params.config.rate_reactions[r]
-            else:
+            except (AttributeError, KeyError):
                 carg = b.params.config.equilibrium_reactions[r]
             return carg["heat_of_reaction"].return_expression(
                 b, rblock, r, b.state_ref.temperature)
