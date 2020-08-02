@@ -910,7 +910,7 @@ class NMPCSim(DynamicBase):
             group = category_dict[categ]
             group.set_setpoint(loc, val)
 
-        # Save user set-point and weights as attributes of namespace
+        # Save user setpoint and weights as attributes of namespace
         # in case they are required later
         user_setpoint = []
         user_setpoint_vars = []
