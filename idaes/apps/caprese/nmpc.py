@@ -845,13 +845,6 @@ class NMPCSim(DynamicBase):
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
         user_objective_name = config.user_objective_name
 
-        # Categories of variables whose set point values will be added to controller
-        categories = [VariableCategory.DIFFERENTIAL,
-                      VariableCategory.ALGEBRAIC,
-                      VariableCategory.DERIVATIVE,
-                      VariableCategory.INPUT,
-                      VariableCategory.SCALAR]
-
         controller = self.controller
         time = self.controller_time
         t0 = time.first()
@@ -875,6 +868,28 @@ class NMPCSim(DynamicBase):
             else:
                 raise RuntimeError(msg)
 
+        # Categories of variables whose set point values will be added to controller
+        # TODO: maybe this should be an argument
+        categories = [VariableCategory.DIFFERENTIAL,
+                      VariableCategory.ALGEBRAIC,
+                      VariableCategory.DERIVATIVE,
+                      VariableCategory.INPUT,
+                      VariableCategory.SCALAR]
+    
+        # Clear any previous existing setpoint values in these variables
+        for categ in categories:
+            group = category_dict[categ]
+            for i in range(group.n_vars):
+                group.set_setpoint(i, None)
+
+        # Populate appropriate setpoint values from argument
+        for vardata, val in setpoint:
+            info = locator[vardata]
+            categ = info.category
+            loc = info.location
+            group = category_dict[categ]
+            group.set_setpoint(loc, val)
+
         # Calculate objective weights for all variables.
         for categ, vargroup in category_dict.items():
             if categ == VariableCategory.SCALAR:
@@ -895,21 +910,7 @@ class NMPCSim(DynamicBase):
                             VariableCategory.ALGEBRAIC,
                             VariableCategory.DERIVATIVE,
                             VariableCategory.INPUT])
-    
-        # Clear any previous existing setpoint values in these variables
-        for categ in categories:
-            group = category_dict[categ]
-            for i in range(group.n_vars):
-                group.set_setpoint(i, None)
                 
-        # Populate appropriate setpoint values from argument
-        for vardata, val in setpoint:
-            info = locator[vardata]
-            categ = info.category
-            loc = info.location
-            group = category_dict[categ]
-            group.set_setpoint(loc, val)
-
         # Save user setpoint and weights as attributes of namespace
         # in case they are required later
         user_setpoint = []
