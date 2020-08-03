@@ -107,7 +107,8 @@ class NMPCVar(object):
 
 
 class NMPCVarGroup(object):
-    # TODO: implement __iter__ that iterates over varlist
+    # This is basically just an IndexedVar
+    # TODO: Create a ctype that inherits from IndexedVar
     def __init__(self, varlist, index_set, is_scalar=False):
         if type(varlist) is not list:
             raise TypeError(
