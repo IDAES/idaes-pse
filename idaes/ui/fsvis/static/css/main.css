@@ -1,0 +1,64 @@
+body {
+  padding: 20px;
+  font-family: oxygen, sans-serif;
+  background: white;
+  background-size: cover;
+}
+.idaes-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+}
+.idaes-titlebar {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-grow: 0;
+}
+#idaes_logo img {
+  height: 80px;
+}
+#idaes-fs-name {
+  font-size: 125%;
+  font-family: 'Raleway', sans-serif;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 3em;
+}
+#idaes-titlebar-right {
+  width: 100px;
+}
+
+.idaes-content {
+  display: flex;
+  flex-grow: 1;
+}
+.idaes-palette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#idaes-canvas {
+  min-width: 800px;
+  min-height: 800px;
+  flex-grow: 1;
+  background-color: white;
+  box-shadow: 4px 4px 4px #e5e5e5;
+  margin-left: 0px;
+  border: 1px solid #e5e5e5;
+}
+
+.idaes-palette div {
+  color: Dodgerblue;
+}
+.idaes-palette div.idaes-groupsep {
+  height: 3px;
+  width: 80%;
+  background: #e5e5e5;
+  margin: 5px 0;
+}
+
+.joint-dialog.joint-lightbox .fg {
+  background-color: #FFFFFF;
+}
