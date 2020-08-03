@@ -35,7 +35,7 @@ class TimeList(list):
             return time
         t0 = time[0]
         for t1 in time[1:]:
-            if t1 - t0 > 2*self.tolerance:
+            if t1 - t0 <= 2*self.tolerance:
                 raise ValueError(
                     'Time points must be increasing and separated by at '
                     'least twice the tolerance')
@@ -133,7 +133,7 @@ class VectorSeries(OrderedDict):
     # This class's purpose is suspiciously similar to that of IndexedComponent.
     # Could have an OrderedDict of time-indexed variables/Parameters that I
     # continually update along with the underlying time set.
-    def __init__(self, data=None, time=None, name=None):
+    def __init__(self, data=None, time=None, name=None, tolerance=0.0):
         """
         Args:
             data: OrderedDict mapping cuids to lists of values
@@ -146,13 +146,13 @@ class VectorSeries(OrderedDict):
             time = []
 
         len_time = len(time)
-        for val_list in data:
-            if len(val_list) == len_time:
+        for val_list in data.values():
+            if len(val_list) != len_time:
                 raise ValueError(
                     'data lists and time list must have same length')
 
         self.name = name
-        self.time = TimeList(time)
+        self.time = TimeList(time, tolerance=tolerance)
 
         super().__init__(data)
 
@@ -203,7 +203,10 @@ class VectorSeries(OrderedDict):
         """
         data is a matrix.
         """
-        # TODO: how should I infer whether to check for consistency?
+        #       How should I infer whether to check for consistency?
+        #       Just compare last existing and first new time values
+        # TODO: Should I have an option that allows the user to violate 
+        #       consistency?
         try:
             data = list(data.values())
         except AttributeError as ae:
