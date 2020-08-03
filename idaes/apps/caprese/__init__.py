@@ -4,5 +4,11 @@
 from .nmpc import NMPCSim
 #from .mhe import MHESim
 from .base_class import DynamicBase
-from .common import *
-from .util import (NMPCVarGroup)
+from .common.config import (
+        ControlInitOption, 
+        ElementInitializationInputOption,
+        TimeResolutionOption, 
+        ControlPenaltyType, 
+        VariableCategory,
+        )
+from .util import NMPCVarGroup

@@ -15,43 +15,62 @@
 Class for performing NMPC simulations of IDAES flowsheets
 """
 
-from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory, Reference, value)
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.environ import (
+        Block, 
+        Constraint, 
+        Var, 
+        TerminationCondition,
+        SolverFactory, 
+        Objective, 
+        NonNegativeReals, 
+        Reals, 
+        TransformationFactory, 
+        Reference, 
+        value,
+        )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentSet, ComponentMap
-from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.dae.set_utils import (is_explicitly_indexed_by, get_index_set_except,
-        deactivate_model_at)
-from pyomo.dae.initialization import (solve_consistent_initial_conditions,
-        get_inconsistent_initial_conditions)
-from pyomo.opt.solver import SystemCallSolver
+from pyomo.kernel import ComponentMap
+from pyomo.dae.initialization import (
+        solve_consistent_initial_conditions,
+        get_inconsistent_initial_conditions,
+        )
+from pyomo.dae.set_utils import deactivate_model_at
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, path_from_block, 
-        find_comp_in_block, find_comp_in_block_at_time)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.util import (initialize_by_element_in_range,
-        find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
-        add_noise_at_time, validate_list_of_vardata,
-        validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset,
-        get_violated_bounds_at_time, PlantHistory)
-from idaes.apps.caprese.common.config import (TimeResolutionOption, ControlInitOption,
-        ElementInitializationInputOption, ControlPenaltyType,
-        VariableCategory, NoiseBoundOption, PlantHorizonType)
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
+from idaes.core.util.dyn_utils import (
+        path_from_block, 
+        find_comp_in_block, 
+        find_comp_in_block_at_time,
+        )
+from idaes.apps.caprese.common.config import (
+        ControlInitOption,
+        ElementInitializationInputOption,
+        TimeResolutionOption,
+        ControlPenaltyType,
+        VariableCategory,
+        NoiseBoundOption,
+        PlantHorizonType,
+        )
+from idaes.apps.caprese.util import (
+        initialize_by_element_in_range,
+        find_slices_in_model, 
+        NMPCVarGroup, 
+        NMPCVarLocator, 
+        copy_values_at_time, 
+        add_noise_at_time,
+        validate_list_of_vardata, 
+        validate_list_of_vardata_value_tuples, 
+        validate_solver,
+        get_violated_bounds_at_time,
+        PlantHistory,
+        )
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
-
-from collections import OrderedDict
-import time as timemodule
-import enum
-import pdb
 
 __author__ = "Robert Parker and David Thierry"
 
@@ -704,18 +723,19 @@ class NMPCSim(DynamicBase):
         plant_type = config.plant_horizon_type
         t_plant = self.validate_plant_start_time(t_plant, 
                 plant_horizon_type=plant_type)
+        controller_time = self.controller_time
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        t_controller = find_point_in_continuousset(
-                self.controller_time.first() + sample_time, 
-                self.controller_time, tolerance)
+        c_target = controller_time.first() + sample_time
+        c_index = controller_time.find_nearest_index(c_target, tolerance)
+        t_controller = controller_time[c_index]
         assert t_controller in self.controller_time
 
         time = self.plant_time
-        plant_sample_end = find_point_in_continuousset(
-                t_plant + sample_time, 
-                time, tolerance)
+        p_target = t_plant + sample_time
+        p_index = time.find_nearest_index(p_target, tolerance)
+        plant_sample_end = time[p_index]
         assert plant_sample_end in time
         plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
         assert plant_sample_end in plant_sample
@@ -1327,24 +1347,6 @@ class NMPCSim(DynamicBase):
             vargroup.set_ub(i, ub)
 
 
-    def transfer_bounds(self, tgt_group, src_group):
-        """
-        Transfers bounds from source model's bound lists
-        to target model's differential, algebraic, and input
-        variables, and sets domain to Reals.
-
-        Args:
-            tgt_model : Model whose variables bounds will be transferred to
-            src_model : Model whose bound lists will be used to set bounds.
-
-        """
-        n_vars = tgt_group.n_vars
-        for i in range(n_vars):
-            tgt_group.set_lb(i, src_group.lb[i])
-            tgt_group.set_ub(i, src_group.ub[i])
-            tgt_group.set_domain(i, Reals)
-
-
     def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
         """Function to add piecewise constant (PWC) constraints to controller
@@ -1378,9 +1380,9 @@ class NMPCSim(DynamicBase):
         def pwc_rule(ns, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            if t in ns.sample_points:
+            time = ns.get_time()
+            if t in ns.sample_points or t == time.first():
                 return Constraint.Skip
-            # ^ Here, the constraint will be applied at t == 0
             t_next = time.next(t)
             inputs = ns.input_vars.varlist
             _slice = inputs[i]
@@ -1446,6 +1448,7 @@ class NMPCSim(DynamicBase):
         """
         config = self.config(kwargs)
         tol = config.tolerance
+        outlvl = config.outlvl
         objective = getattr(model._NMPC_NAMESPACE, 
                             objective_name)
         namespace = model._NMPC_NAMESPACE
@@ -1480,7 +1483,9 @@ class NMPCSim(DynamicBase):
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.controller, self.controller_time, 
-                    time.first(), time.last(),
+                    time.first(), 
+                    time.last(),
+                    outlvl=outlvl,
                     dae_vars=self.controller._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.controller._NMPC_NAMESPACE.diff_vars)
 
@@ -1489,7 +1494,9 @@ class NMPCSim(DynamicBase):
 
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
+                if t != time.first():
+                    # Don't want to unfix inputs at time.first()
+                    _slice[t].unfix()
 
         strip_controller_bounds.revert(self.controller)
 
@@ -1546,9 +1553,9 @@ class NMPCSim(DynamicBase):
                 for t in time:
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
-                        t_next = find_point_in_continuousset(
-                                t + sample_time,
-                                time, tolerance=tolerance)
+                        target = t + sample_time
+                        next_idx = time.find_nearest_index(target, tolerance)
+                        t_next = time[next_idx]
                         _slice[t].set_value(_slice[t_next].value)
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
@@ -1595,10 +1602,10 @@ class NMPCSim(DynamicBase):
         time = self.controller_time
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
-        # ^ Maybe should fix inputs at time.first()?
-        # Also, this should be redundant as inputs have been unfixed
-        # after initialization
+                if t == time.first():
+                    _slice[t].fix()
+                else:
+                    _slice[t].unfix()
 
         assert (degrees_of_freedom(self.controller) == 
                 self.controller._NMPC_NAMESPACE.n_input_vars*
@@ -1635,10 +1642,12 @@ class NMPCSim(DynamicBase):
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         tol = config.continuous_set_tolerance
+        plant_time = self.plant_time
 
         t_end = t_start + sample_time 
         assert t_start in self.plant_time
-        t_end = find_point_in_continuousset(t_end, self.plant_time, tol)
+        end_idx = self.plant_time.find_nearest_index(t_end, tol)
+        t_end = plant_time[end_idx]
         assert t_end in self.plant_time
 
         initialize_by_element_in_range(self.plant, self.plant_time, t_start, t_end, 

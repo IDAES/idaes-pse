@@ -32,9 +32,14 @@ from pyomo.opt.solver import SystemCallSolver
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block_at_time, get_implicit_index_of_set,
-        get_fixed_dict, deactivate_constraints_unindexed_by, find_comp_in_block)
+from idaes.core.util.dyn_utils import (get_activity_dict, 
+                                       deactivate_model_at,
+                                       path_from_block, 
+                                       find_comp_in_block_at_time, 
+                                       get_implicit_index_of_set,
+                                       get_fixed_dict, 
+                                       deactivate_constraints_unindexed_by, 
+                                       find_comp_in_block)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.apps.caprese.common.config import VariableCategory, NoiseBoundOption
 import idaes.logger as idaeslog
@@ -312,16 +317,6 @@ def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
                     violated.append(var[t])
                     continue
     return violated
-
-
-def find_point_in_continuousset(point, cset, tolerance=1e-8):
-    for t in cset:
-        diff = abs(point-t)
-        if diff < tolerance:
-            return t
-        if t > point:
-            break
-    return None
 
 
 def copy_weights(tgt_group, src_group):
