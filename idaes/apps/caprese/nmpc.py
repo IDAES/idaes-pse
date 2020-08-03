@@ -377,6 +377,7 @@ class NMPCSim(DynamicBase):
         # instance some measurement noise. 
         # Remember: Need to calculate weight matrices before populating this. 
 
+        self.previous_plant_time = None
         self.current_plant_time = 0
 
     def add_namespace_to(self, model, time):
@@ -1623,8 +1624,9 @@ class NMPCSim(DynamicBase):
             init_log.info('Successfully solved optimal control problem')
             self.controller_solved = True
         else:
-            init_log.error('Failed to solve optimal control problem')
-            raise ValueError
+            msg = 'Failed to solve optimal control problem'
+            init_log.error(msg)
+            raise ValueError(msg)
 
 
     def simulate_plant(self, t_start=None, **kwargs):
@@ -1661,7 +1663,10 @@ class NMPCSim(DynamicBase):
                 time_linking_vars=self.plant._NMPC_NAMESPACE.diff_vars,
                 outlvl=outlvl)
 
-        self.current_plant_time = t_end
+        # Store previous to help with construction of data series from plant.
+        self.previous_plant_time = self.current_plant_time
+        # This will have round off error. Should not use as an index.
+        self.current_plant_time = self.current_plant_time + sample_time
 
         msg = ('Successfully simulated plant over the sampling period '
                 'through ' + str(self.current_plant_time))
@@ -1727,29 +1732,23 @@ class NMPCSim(DynamicBase):
                 plant_horizon_type=plant_type)
         plant = self.plant
         plant_time = self.plant_time
-#        namespace = getattr(plant, self.get_namespace_name())
-#        var_locator = namespace.var_locator
+        t0 = plant_time.first()
+        t_prev = self.previous_plant_time
         sample_time = self.sample_time
 
         t_start, t_end = self.validate_time_bounds(plant_time, t_start, t_end)
         time_list = [t for t in plant_time if t_start <= t and t <= t_end]
+        real_time = [t_prev + (t - t0) for t in time_list]
 
         data_list = []
         for cuid in history:
             for comp in cuid.list_components(plant.model()):
                 break
-#            info = var_locator[comp]
-#            group = info.group
-#            location = info.location
-#            _slice = group.varlist[location]
             _slice = self.get_slice(plant, comp)
             data = [_slice[t].value for t in time_list]
             data_list.append(data)
 
-        history.extend(time_list, data_list) #, require_consistency=True)
-        # Is consistency getting violated because of noise?
-        # -> Take this opportunity to make sure noise isn't applied to plant model
-
+        history.extend(real_time, data_list)
         return history
 
 
@@ -1769,8 +1768,12 @@ class NMPCSim(DynamicBase):
 
 
     def get_slice(self, model, vardata):
+        # Awkward that this method needs a model as an input
+        # Should probably make it a method of some model container
+        # class.
         namespace = getattr(model, self.namespace_name)
-        info = var_locator[var]
+        var_locator = namespace.var_locator
+        info = var_locator[vardata]
         group = info.group
         location = info.location
         _slice = group[location]
@@ -1786,13 +1789,18 @@ class NMPCSim(DynamicBase):
         tolerance = config.tolerance
         cs_tolerance = config.continuous_set_tolerance
         time = self.plant_time
+        t_prev = self.previous_plant_time
         t0 = time.first()
         namespace = getattr(self.plant, self.get_namespace_name())
-#        var_locator = namespace.var_locator
         category_dict = namespace.category_dict
 
         t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
+        # Time points are added to history as offsets from time.first().
+        # If t_start != time.first(), it is not obvious that this is correct.
+        # If this were a method of some model container, that container would
+        # need to know the model's current_time.
         time_list = [t for t in time if t_start <= t and t <= t_end]
+        real_time = [t_prev + (t - t0) for t in time_list]
 
         data = OrderedDict()
         for var in variables:
@@ -1802,21 +1810,13 @@ class NMPCSim(DynamicBase):
                 # Extend the queue
                 variables.extend(var[t0] for var in group)
                 continue
-            # The following block of code is repeated everywhere.
-            # TODO: Add method for this. Complication is that I need
-            # to know what model to search on.
-            # => It should be a method of my still-hypothetical model class
-#            info = var_locator[var]
-#            group = info.group
-#            location = info.location
-#            _slice = group[location]
             _slice = self.get_slice(self.plant, var)
             cuid = cuid_from_timeslice(_slice, time)
             data[cuid] = [_slice[t].value for t in time_list]
 
         history = VectorSeries(
                 data=data,
-                time=time_list,
+                time=real_time,
                 name=name,
                 tolerance=cs_tolerance,
                 )
