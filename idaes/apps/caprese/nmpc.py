@@ -15,48 +15,72 @@
 Class for performing NMPC simulations of IDAES flowsheets
 """
 
-from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory, Reference, value)
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.environ import (
+        Block, 
+        Constraint, 
+        Var, 
+        TerminationCondition,
+        SolverFactory, 
+        Objective, 
+        NonNegativeReals, 
+        Reals, 
+        TransformationFactory, 
+        Reference, 
+        value,
+        )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentSet, ComponentMap
-from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.dae.set_utils import (is_explicitly_indexed_by, get_index_set_except,
-        deactivate_model_at)
-from pyomo.dae.initialization import (solve_consistent_initial_conditions,
-        get_inconsistent_initial_conditions)
-from pyomo.opt.solver import SystemCallSolver
+from pyomo.kernel import ComponentMap
+from pyomo.dae.initialization import (
+        solve_consistent_initial_conditions,
+        get_inconsistent_initial_conditions,
+        )
+from pyomo.dae.set_utils import deactivate_model_at
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, path_from_block, 
-        find_comp_in_block, find_comp_in_block_at_time)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.util import (initialize_by_element_in_range,
-        find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
-        add_noise_at_time, validate_list_of_vardata,
-        validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset,
-        get_violated_bounds_at_time, PlantHistory)
-from idaes.apps.caprese.common.config import (TimeResolutionOption, ControlInitOption,
-        ElementInitializationInputOption, ControlPenaltyType,
-        VariableCategory, NoiseBoundOption, PlantHorizonType)
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
+from idaes.core.util.dyn_utils import (
+        path_from_block, 
+        find_comp_in_block, 
+        find_comp_in_block_at_time,
+        )
+from idaes.apps.caprese.common.config import (
+        ControlInitOption,
+        ElementInitializationInputOption,
+        TimeResolutionOption,
+        ControlPenaltyType,
+        VariableCategory,
+        NoiseBoundOption,
+        PlantHorizonType,
+        )
+from idaes.apps.caprese.util import (
+        initialize_by_element_in_range,
+        find_slices_in_model, 
+        NMPCVarGroup, 
+        NMPCVarLocator, 
+        copy_values_at_time, 
+        add_noise_at_time,
+        validate_list_of_vardata, 
+        validate_list_of_vardata_value_tuples, 
+        validate_solver,
+        get_violated_bounds_at_time,
+        PlantHistory,
+        cuid_from_timeslice,
+        )
+from idaes.apps.caprese.rolling import TimeList, VectorSeries
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
 from collections import OrderedDict
-import time as timemodule
-import enum
-import pdb
 
 __author__ = "Robert Parker and David Thierry"
 
 
 class NMPCSim(DynamicBase):
+    # TODO: A better name might be NMPCManager
     """
     Main class for NMPC simulations of Pyomo models.
     """
@@ -455,8 +479,8 @@ class NMPCSim(DynamicBase):
         sample_time = self.sample_time
         t0 = plant_time.first()
         ts = t0 + sample_time
-        ts_plant = find_point_in_continuousset(ts, plant_time,
-                tolerance=continuous_set_tolerance)
+        s_index = plant_time.find_nearest_index(ts, continuous_set_tolerance)
+        ts_plant = plant_time[s_index]
         if ts_plant is None:
             raise RuntimeError(
                 'Could not find sample point %s in the plant' % ts)
@@ -705,18 +729,19 @@ class NMPCSim(DynamicBase):
         plant_type = config.plant_horizon_type
         t_plant = self.validate_plant_start_time(t_plant, 
                 plant_horizon_type=plant_type)
+        controller_time = self.controller_time
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        t_controller = find_point_in_continuousset(
-                self.controller_time.first() + sample_time, 
-                self.controller_time, tolerance)
+        c_target = controller_time.first() + sample_time
+        c_index = controller_time.find_nearest_index(c_target, tolerance)
+        t_controller = controller_time[c_index]
         assert t_controller in self.controller_time
 
         time = self.plant_time
-        plant_sample_end = find_point_in_continuousset(
-                t_plant + sample_time, 
-                time, tolerance)
+        p_target = t_plant + sample_time
+        p_index = time.find_nearest_index(p_target, tolerance)
+        plant_sample_end = time[p_index]
         assert plant_sample_end in time
         plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
         assert plant_sample_end in plant_sample
@@ -1328,24 +1353,6 @@ class NMPCSim(DynamicBase):
             vargroup.set_ub(i, ub)
 
 
-    def transfer_bounds(self, tgt_group, src_group):
-        """
-        Transfers bounds from source model's bound lists
-        to target model's differential, algebraic, and input
-        variables, and sets domain to Reals.
-
-        Args:
-            tgt_model : Model whose variables bounds will be transferred to
-            src_model : Model whose bound lists will be used to set bounds.
-
-        """
-        n_vars = tgt_group.n_vars
-        for i in range(n_vars):
-            tgt_group.set_lb(i, src_group.lb[i])
-            tgt_group.set_ub(i, src_group.ub[i])
-            tgt_group.set_domain(i, Reals)
-
-
     def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
         """Function to add piecewise constant (PWC) constraints to controller
@@ -1379,9 +1386,9 @@ class NMPCSim(DynamicBase):
         def pwc_rule(ns, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            if t in ns.sample_points:
+            time = ns.get_time()
+            if t in ns.sample_points or t == time.first():
                 return Constraint.Skip
-            # ^ Here, the constraint will be applied at t == 0
             t_next = time.next(t)
             inputs = ns.input_vars.varlist
             _slice = inputs[i]
@@ -1447,6 +1454,7 @@ class NMPCSim(DynamicBase):
         """
         config = self.config(kwargs)
         tol = config.tolerance
+        outlvl = config.outlvl
         objective = getattr(model._NMPC_NAMESPACE, 
                             objective_name)
         namespace = model._NMPC_NAMESPACE
@@ -1481,7 +1489,9 @@ class NMPCSim(DynamicBase):
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.controller, self.controller_time, 
-                    time.first(), time.last(),
+                    time.first(), 
+                    time.last(),
+                    outlvl=outlvl,
                     dae_vars=self.controller._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.controller._NMPC_NAMESPACE.diff_vars)
 
@@ -1490,7 +1500,9 @@ class NMPCSim(DynamicBase):
 
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
+                if t != time.first():
+                    # Don't want to unfix inputs at time.first()
+                    _slice[t].unfix()
 
         strip_controller_bounds.revert(self.controller)
 
@@ -1547,9 +1559,9 @@ class NMPCSim(DynamicBase):
                 for t in time:
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
-                        t_next = find_point_in_continuousset(
-                                t + sample_time,
-                                time, tolerance=tolerance)
+                        target = t + sample_time
+                        next_idx = time.find_nearest_index(target, tolerance)
+                        t_next = time[next_idx]
                         _slice[t].set_value(_slice[t_next].value)
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
@@ -1596,10 +1608,10 @@ class NMPCSim(DynamicBase):
         time = self.controller_time
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
-        # ^ Maybe should fix inputs at time.first()?
-        # Also, this should be redundant as inputs have been unfixed
-        # after initialization
+                if t == time.first():
+                    _slice[t].fix()
+                else:
+                    _slice[t].unfix()
 
         assert (degrees_of_freedom(self.controller) == 
                 self.controller._NMPC_NAMESPACE.n_input_vars*
@@ -1636,10 +1648,12 @@ class NMPCSim(DynamicBase):
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         tol = config.continuous_set_tolerance
+        plant_time = self.plant_time
 
         t_end = t_start + sample_time 
         assert t_start in self.plant_time
-        t_end = find_point_in_continuousset(t_end, self.plant_time, tol)
+        end_idx = self.plant_time.find_nearest_index(t_end, tol)
+        t_end = plant_time[end_idx]
         assert t_end in self.plant_time
 
         initialize_by_element_in_range(self.plant, self.plant_time, t_start, t_end, 
@@ -1680,7 +1694,7 @@ class NMPCSim(DynamicBase):
         """
         # By default, copy fixed variables
         config = self.config(kwargs)
-        continuous_set_tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         plant = self.plant
         plant_time = self.plant_time
         namespace = getattr(plant, self.get_namespace_name())
@@ -1692,8 +1706,8 @@ class NMPCSim(DynamicBase):
             t_start = plant_time.first()
         if t_end is None:
             t_end = t_start + sample_time
-            t_end = find_point_in_continuousset(t_end, plant_time,
-                    tolerance=continuous_set_tolerance)
+            end_idx = plant_time.find_nearest_index(t_end, cs_tolerance)
+            t_end = plant_time[end_idx]
         for t in [t_start, t_end]:
             if t not in sample_set:
                 raise ValueError(
@@ -1704,72 +1718,108 @@ class NMPCSim(DynamicBase):
             copy_values_at_time(varlist, varlist, t_start, t_end)
             
 
-    def extend_history_from_plant(self, history=None, t_start=None, t_end=None,
+    def extend_history_from_plant(self, history, t_start=None, t_end=None,
             **kwargs):
         config = self.config(kwargs)
         plant_type = config.plant_horizon_type
-        continuous_set_tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         t_start = self.validate_plant_start_time(t_start,
                 plant_horizon_type=plant_type)
         plant = self.plant
         plant_time = self.plant_time
-        namespace = getattr(plant, self.get_namespace_name())
-        var_locator = namespace.var_locator
+#        namespace = getattr(plant, self.get_namespace_name())
+#        var_locator = namespace.var_locator
         sample_time = self.sample_time
 
-        if t_start is None:
-            t_start = plant_time.first()
-        if t_end is None:
-            t_end = t_start + sample_time
-            t_end = find_point_in_continuousset(t_end, plant_time,
-                    tolerance=continuous_set_tolerance)
+        t_start, t_end = self.validate_time_bounds(plant_time, t_start, t_end)
         time_list = [t for t in plant_time if t_start <= t and t <= t_end]
 
         data_list = []
         for cuid in history:
             for comp in cuid.list_components(plant.model()):
                 break
-            info = var_locator[comp]
-            group = info.group
-            location = info.location
-            _slice = group.varlist[location]
-            data_list.append(_slice)
+#            info = var_locator[comp]
+#            group = info.group
+#            location = info.location
+#            _slice = group.varlist[location]
+            _slice = self.get_slice(plant, comp)
+            data = [_slice[t].value for t in time_list]
+            data_list.append(data)
 
-        history.extend(time_list, data_list, require_consistency=True)
+        history.extend(time_list, data_list) #, require_consistency=True)
         # Is consistency getting violated because of noise?
         # -> Take this opportunity to make sure noise isn't applied to plant model
 
         return history
 
 
+    def validate_time_bounds(self, time, t_start, t_end):
+        cs_tolerance = self.config.continuous_set_tolerance
+        sample_time = self.config.sample_time
+        if t_start is None:
+            t_start = time.first()
+        else:
+            start_idx = time.find_nearest_index(t_start, cs_tolerance)
+            t_start = time[start_idx]
+        if t_end is None:
+            t_end = t_start + sample_time
+        end_idx = time.find_nearest_index(t_end, cs_tolerance)
+        t_end = time[end_idx]
+        return t_start, t_end
+
+
+    def get_slice(self, model, vardata):
+        namespace = getattr(model, self.namespace_name)
+        info = var_locator[var]
+        group = info.group
+        location = info.location
+        _slice = group[location]
+        return _slice
+
+
     def initialize_history_from_plant(self, t_start=None, t_end=None, 
             variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
+            name = None,
             **kwargs):
         # TODO: case for None
         config = self.config(kwargs)
         tolerance = config.tolerance
+        cs_tolerance = config.continuous_set_tolerance
         time = self.plant_time
+        t0 = time.first()
         namespace = getattr(self.plant, self.get_namespace_name())
-        var_locator = namespace.var_locator
+#        var_locator = namespace.var_locator
         category_dict = namespace.category_dict
 
-        slices = []
+        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
+        time_list = [t for t in time if t_start <= t and t <= t_end]
+
+        data = OrderedDict()
         for var in variables:
             if var in VariableCategory:
                 category = var
-                slices.extend(category_dict[category].varlist)
+                group = category_dict[category]
+                # Extend the queue
+                variables.extend(var[t0] for var in group)
                 continue
-            info = var_locator[var]
-            group = info.group
-            location = info.location
-            slices.append(group.varlist[location])
-        # Should I pass in the plant here so I can construct CUIDs with
-        # context=plant?
-        # Or, probably better, create CUIDs here then pass to history
-        # Then history could be created with any names for each variable,
-        # which could be a good and bad thing.
-        history = PlantHistory(time, slices, t_start=t_start, t_end=t_end,
-                tolerance=tolerance)
+            # The following block of code is repeated everywhere.
+            # TODO: Add method for this. Complication is that I need
+            # to know what model to search on.
+            # => It should be a method of my still-hypothetical model class
+#            info = var_locator[var]
+#            group = info.group
+#            location = info.location
+#            _slice = group[location]
+            _slice = self.get_slice(self.plant, var)
+            cuid = cuid_from_timeslice(_slice, time)
+            data[cuid] = [_slice[t].value for t in time_list]
+
+        history = VectorSeries(
+                data=data,
+                time=time_list,
+                name=name,
+                tolerance=cs_tolerance,
+                )
         return history
 
 

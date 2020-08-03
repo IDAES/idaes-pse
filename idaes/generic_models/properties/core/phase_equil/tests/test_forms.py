@@ -13,7 +13,7 @@
 """
 Library of common forms for phase equilibrium constraints
 """
-from pyomo.environ import ConcreteModel, Var
+from pyomo.environ import ConcreteModel, Var, units as pyunits
 
 from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
@@ -56,7 +56,12 @@ def test_fugacity():
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,
         "pressure_ref": 1e5,
-        "temperature_ref": 300})
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
 
     assert str(fugacity(m, "Vap", "Liq", "H2O")) == str(
         m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
@@ -80,7 +85,12 @@ def test_log_fugacity():
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,
         "pressure_ref": 1e5,
-        "temperature_ref": 300})
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
 
     assert str(log_fugacity(m, "Vap", "Liq", "H2O")) == str(
         42*m.x["Vap", "H2O"] == 42*m.x["Liq", "H2O"])

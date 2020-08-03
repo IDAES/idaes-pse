@@ -86,9 +86,56 @@ def test_inerts():
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
 
     assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
     assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_multi_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_single_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Set phase list to only have 1 phase
+    m.fs.properties.phase_list = ["p1"]
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 0
+    assert (0, "p1", "c1") not in m.fs.unit.inert_species_balance
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 1
 
 
 @pytest.mark.unit
@@ -120,6 +167,21 @@ class TestMethane(object):
                 "has_heat_transfer": True,
                 "has_pressure_change": True})
 
+        m.fs.unit.inlet.flow_mol[0].fix(230.0)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
+        m.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
+        m.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
+        m.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
+        m.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
+        m.fs.unit.inlet.temperature[0].fix(1500.0)
+        m.fs.unit.inlet.pressure[0].fix(101325.0)
+
+        m.fs.unit.outlet.temperature[0].fix(2844.38)
+        m.fs.unit.deltaP.fix(0)
+
         return m
 
     @pytest.mark.build
@@ -149,27 +211,11 @@ class TestMethane(object):
 
     @pytest.mark.unit
     def test_dof(self, methane):
-        methane.fs.unit.inlet.flow_mol[0].fix(230.0)
-        methane.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
-        methane.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
-        methane.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
-        methane.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
-        methane.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
-        methane.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
-        methane.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
-        methane.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
-        methane.fs.unit.inlet.temperature[0].fix(1500.0)
-        methane.fs.unit.inlet.pressure[0].fix(101325.0)
-
-        methane.fs.unit.outlet.temperature[0].fix(2844.38)
-        methane.fs.unit.deltaP.fix(0)
-
         assert degrees_of_freedom(methane) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize_temperature(self, methane):
         initialization_tester(methane,
                               optarg={'tol': 1e-6},
@@ -187,7 +233,7 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve_temperature(self, methane):
         results = solver.solve(methane)
 
@@ -196,10 +242,9 @@ class TestMethane(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution_temperature(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -224,10 +269,9 @@ class TestMethane(object):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(methane.fs.unit.outlet.pressure[0]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation_temperature(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *
@@ -238,10 +282,9 @@ class TestMethane(object):
                     .enth_mol_phase["Vap"] +
                 methane.fs.unit.heat_duty[0])) <= 1e-6
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize_duty(self, methane):
         methane.fs.unit.outlet.temperature[0].unfix()
         methane.fs.unit.heat_duty.fix(-7454077)
@@ -279,7 +322,7 @@ class TestMethane(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve_heat_duty(self, methane):
         results = solver.solve(methane)
 
@@ -288,10 +331,9 @@ class TestMethane(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution_duty(self, methane):
         assert (pytest.approx(250.06, abs=1e-2) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
@@ -316,10 +358,9 @@ class TestMethane(object):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(methane.fs.unit.outlet.pressure[0]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation_duty(self, methane):
         assert abs(value(
                 methane.fs.unit.inlet.flow_mol[0] *

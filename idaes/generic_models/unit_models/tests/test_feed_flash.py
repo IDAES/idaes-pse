@@ -76,6 +76,12 @@ class TestBTXIdeal(object):
 
         m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_mol.fix(1)
+        m.fs.unit.temperature.fix(368)
+        m.fs.unit.pressure.fix(101325)
+        m.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.build
@@ -101,24 +107,17 @@ class TestBTXIdeal(object):
 
     @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.flow_mol.fix(1)
-        btx.fs.unit.temperature.fix(368)
-        btx.fs.unit.pressure.fix(101325)
-        btx.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -127,10 +126,9 @@ class TestBTXIdeal(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(btx.fs.unit.outlet.pressure[0]))
@@ -164,9 +162,12 @@ class TestIAPWS(object):
         m.fs.unit = FeedFlash(default={"property_package": m.fs.properties,
                                        "flash_type": FlashType.isenthalpic})
 
+        m.fs.unit.flow_mol.fix(100)
+        m.fs.unit.enth_mol.fix(24000)
+        m.fs.unit.pressure.fix(101325)
+
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iapws):
         assert hasattr(iapws.fs.unit, "flow_mol")
@@ -187,22 +188,17 @@ class TestIAPWS(object):
 
     @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.flow_mol.fix(100)
-        iapws.fs.unit.enth_mol.fix(24000)
-        iapws.fs.unit.pressure.fix(101325)
-
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -211,10 +207,9 @@ class TestIAPWS(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, iapws):
         assert (pytest.approx(101325.0, abs=1e3) ==
                 value(iapws.fs.unit.outlet.pressure[0]))

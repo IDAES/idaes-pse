@@ -18,5 +18,7 @@ from idaes.commands.base import command_base as cb
 for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
     if module_name == "base":
         pass
+    elif module_name.startswith("test"):
+        pass
     else:
         loader.find_module(module_name).load_module(module_name)

@@ -1,5 +1,5 @@
-Ideal Gases and Liquids
-=======================
+Ideal Gases and Liquids (``Ideal``)
+===================================
 
 .. contents:: Contents 
     :depth: 2

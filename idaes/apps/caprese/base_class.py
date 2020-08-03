@@ -26,7 +26,6 @@ from idaes.apps.caprese.common.config import (VariableCategory,
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
-# Don't think base class should need to import from util
 
 __author__ = "Robert Parker"
 
