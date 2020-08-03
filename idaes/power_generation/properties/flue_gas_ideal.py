@@ -742,15 +742,6 @@ class FlueGasStateBlockData(StateBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # Grab default scale factors for anything not explicitly specified.
-        t = (Constraint, Var, Expression)
-        for v in self.component_data_objects(t, descend_into=False):
-            if iscale.get_scaling_factor(v) is None: # don't replace if set
-                name = v.getname().split("[")[0]
-                index = v.index()
-                sf = self.config.parameters.get_default_scaling(name, index)
-                if sf is not None:
-                    iscale.set_scaling_factor(v, sf)
 
         # Get some scale factors that are frequently used to calculate others
         sf_flow = iscale.get_scaling_factor(self.flow_mol)

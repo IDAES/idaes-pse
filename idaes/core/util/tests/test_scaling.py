@@ -49,7 +49,7 @@ def test_map_scaling_factor(caplog):
 
     assert sc.map_scaling_factor(m.x.values(), func=max) == 13
     assert sc.map_scaling_factor(m.x.values(), default=20) == 11
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError):
         sc.map_scaling_factor(m.x.values(), default=None)
 
     # test min_scaling_factor with just calls map_scaling_factor
@@ -110,7 +110,7 @@ def test_propogate_indexed_scaling():
 def test_calculate_scaling_factors():
     r"""This tests the method to find and execute calculate_scaling_factors
     methods, here we make sure they are found and run in a right order.  The
-    contnets of specific calculate_scaling_factors methods will have to be
+    contents of specific calculate_scaling_factors methods will have to be
     tested in the models they belong to.
 
         m          To be correct:
@@ -121,11 +121,17 @@ def test_calculate_scaling_factors():
            / \
           f   g
     """
-    o = []
+    o = [] # list of compoent names in the order their calculate_scaling_factors
+           # method is called
     def rule(blk):
+        # This rule for building a block just adds a calculate scaling factor
+        # function to the block, which adds the block name to the list o.  Then
+        # by looking at the order of entries in o, we can see the order in which
+        # the calculate_scaling_factors methods where called.
         def ca():
             o.append(blk.name)
         blk.calculate_scaling_factors = ca
+    # Create blocks with the tree structure shown in the docstring
     m = pyo.ConcreteModel(name="m", rule=rule)
     m.a = pyo.Block(rule=rule)
     m.b = pyo.Block(rule=rule)
@@ -134,11 +140,12 @@ def test_calculate_scaling_factors():
     m.b.e = pyo.Block(rule=rule)
     m.b.e.f = pyo.Block(rule=rule)
     m.b.e.g = pyo.Block(rule=rule)
+    # Execute the calculate scaling factors methods.
     sc.calculate_scaling_factors(m)
-    # We should iterate through the blocks in construction order where there is
-    # no specific correct order, so we can depend on the order the
-    # calculate_scaling_factors() are called being deterministic, so we just
-    # need to check the specific expected order.
+    # We should iterate through the blocks in construction order so we can
+    # depend on the order that the calculate_scaling_factors() are called
+    # being deterministic, so we just need to check the specific expected order,
+    # even though there are additional "correct" orders. 
     assert tuple(o) == ("a.c", "a.d", "a", "b.e.f", "b.e.g", "b.e", "b", "m")
 
 
@@ -198,7 +205,7 @@ def test_set_get_unset(caplog):
     assert sc.get_scaling_factor(m.z[1], exception=True, default=1) == 1
 
     caplog.clear()
-    with pytest.raises(KeyError) as excinfo:
+    with pytest.raises(KeyError):
         sc.get_scaling_factor(m.z[1], exception=True)
     logrec = caplog.records[0]
     assert logrec.levelno == logging.ERROR
@@ -273,11 +280,13 @@ def test_find_unscaled_vars_and_constraints():
     m.b.w = pyo.Var([1,2,3], initialize=1e10)
     m.b.c1 = pyo.Constraint(expr=m.b.w[1]==0)
     m.b.c2 = pyo.Constraint(expr=m.b.w[2]==0)
+    m.c3 = pyo.Constraint(expr=m.z==0)
 
     sc.set_scaling_factor(m.x, 1)
     sc.set_scaling_factor(m.b.w[1], 2)
     sc.set_scaling_factor(m.c1, 1)
     sc.set_scaling_factor(m.b.c1, 1)
+    sc.constraint_scaling_transform(m.c3, 1)
 
     a = [id(v) for v in sc.unscaled_variables_generator(m)]
     # Make sure we pick up the right variales
@@ -294,6 +303,7 @@ def test_find_unscaled_vars_and_constraints():
     assert id(m.b.c1) not in a
     assert id(m.c2) in a
     assert id(m.b.c2) in a
+    assert id(m.c3) not in a
     assert len(a) == 2 #make sure we didn't pick up any other random stuff
 
 
@@ -345,9 +355,9 @@ class TestSingleConstraintScalingTransform():
         assert model.c2.lower.value == pytest.approx(1)
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
-        assert sc.get_constarint_tranform_applied_scaling_factor(model.c2) is 1e-3
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
         sc.constraint_scaling_transform_undo(model.c2)
-        assert sc.get_constarint_tranform_applied_scaling_factor(model.c2) is None
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is None
         assert model.c2.lower.value == pytest.approx(1e3)
         assert model.c2.body() == pytest.approx(model.x.value)
         assert model.c2.upper.value == pytest.approx(1e3)

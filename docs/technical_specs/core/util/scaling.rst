@@ -8,8 +8,8 @@ This section describes scaling utility functions and methods.
 Context
 -------
 Creating well scaled models is important for increasing the efficiency and
-reliability of solvers. Since the standard units for IDAES are SI, oftentimes
-variables and constraints are considered badly scaled.
+reliability of solvers. Depending on property package units of measure and
+process scale, variables and constraints are often badly scaled.
 
 Scaling factors can be specified for any variable or constraint. Pyomo and many
 solvers support the ``scaling_factor`` suffix. To eliminate the possibility of
@@ -25,13 +25,13 @@ a magnitude of around :math:`10^6` for a specific process.  To scale the
 variable to a more reasonable magnitude, the scale factor for the variable could
 be defined to be :math:`1 \times 10^{-5}`.
 
-While many scaling factors are given good default values in the property packages,
-some (e.g. flow rates or material holdups) must be given scale factors by the
-user for a specific process model. Still other scale factors can be calculated
-from supplied scale factors, for example, mass balance scale factors could be
-determined from flow rate scale factors. To calculate scale factors, models may
-have a standard ``calculate_scaling_factors()`` method.  For more specific scaling
-information, see the model documentation.
+While many scaling factors should be give good default values in the property
+packages, some (e.g. flow rates or material holdups) must be given scale factors
+by the user for a specific process model. Still other scale factors can be
+calculated from supplied scale factors, for example, mass balance scale factors
+could be determined from flow rate scale factors. To calculate scale factors,
+models may have a standard ``calculate_scaling_factors()`` method.  For more
+specific scaling information, see the model documentation.
 
 For much of the core IDAES framework, model constraints are automatically scaled
 via a simple transformation where both sides of the constraint are multiplied by
@@ -75,7 +75,7 @@ transformation.
 
 .. autofunction:: constraint_scaling_transform_undo
 
-.. autofunction:: get_constarint_tranform_applied_scaling_factor
+.. autofunction:: get_constraint_transform_applied_scaling_factor
 
 
 Calculation in Model
@@ -127,6 +127,6 @@ Scale factor suffixes can be passed directly to a solver.  How the scale factors
 are used may vary by solver. Pyomo also contains tools to transform a problem to
 a scaled version.
 
-Ipopt is the standard solver in IDAES.  To use scale factors the
+Ipopt is the standard solver in IDAES.  To use scale factors with Ipopt, the
 ``nlp_scaling_method`` option should be set to ``user-scaling``.  Be aware that
 this deactivates any NLP automatic scaling.

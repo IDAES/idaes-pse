@@ -43,16 +43,16 @@ _log = idaeslog.getLogger(__name__)
 
 
 def __none_mult(x, y):
-    """PRIVATE FUNCTION, Multiply x by y and if x is None return None"""
+    """PRIVATE FUNCTION, If x or y is None return None, else return x * y"""
     if x is not None and y is not None:
         return x * y
     return None
 
 
 def map_scaling_factor(iter, default=1, warning=False, func=min):
-    """Map get_scaling_factor to an iterable of Pyomo compoents, and call func
+    """Map get_scaling_factor to an iterable of Pyomo components, and call func
     on the result.  This could be use, for example, to get the minimum or
-    maximum scaling factor of a set of compoents.
+    maximum scaling factor of a set of components.
 
     Args:
         iter: Iterable yeilding Pyomo componentes
@@ -74,7 +74,7 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
 
 
 def min_scaling_factor(iter, default=1, warning=True):
-    """Map get_scaling_factor to an iterable of Pyomo compoents, and get the
+    """Map get_scaling_factor to an iterable of Pyomo components, and get the
     minimum caling factor.
 
     Args:
@@ -85,7 +85,7 @@ def min_scaling_factor(iter, default=1, warning=True):
         warning: Log a warning for missing scaling factors
 
     Returns:
-        Minimum scaling factor of the compoents in iter
+        Minimum scaling factor of the components in iter
     """
     return map_scaling_factor(iter, default=default, warning=warning, func=min)
 
@@ -95,7 +95,7 @@ def propagate_indexed_component_scaling_factors(
     typ=(pyo.Var, pyo.Constraint, pyo.Expression),
     overwrite=False,
     descend_into=True):
-    """Use the parent compoent scaling factor to set all component data object
+    """Use the parent component scaling factor to set all component data object
     scaling factors.
 
     Args:
@@ -138,8 +138,8 @@ def set_scaling_factor(c, v, data_objects=True):
         None
     """
     if isinstance(c, (float, int)):
-        # property packages can return 0 for material balance terms on compoents
-        # doesn't exist.  This handels the case where you get a constant 0 and
+        # property packages can return 0 for material balance terms on components
+        # doesn't exist.  This handles the case where you get a constant 0 and
         # need it's scale factor to scale the mass balance.
         return 1
     try:
@@ -158,7 +158,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     """Get a component scale factor.
 
     Args:
-        c: compoent
+        c: component
         default: value to return if no scale factor exists (default=None)
     """
     try:
@@ -194,7 +194,7 @@ def unset_scaling_factor(c, data_objects=True):
         pass # no scaling factor suffix, is fine
 
 
-def __set_constarint_tranform_applied_scaling_factor(c, v):
+def __set_constraint_transform_applied_scaling_factor(c, v):
     """PRIVATE FUNCTION Set the scaling factor used to transform a constraint.
     This is used to keep track of scaling tranformations that have been applied
     to constraints.
@@ -213,7 +213,7 @@ def __set_constarint_tranform_applied_scaling_factor(c, v):
         c.parent_block().constaint_transformed_scaling_factor[c] = v
 
 
-def get_constarint_tranform_applied_scaling_factor(c, default=None):
+def get_constraint_transform_applied_scaling_factor(c, default=None):
     """Get a the scale factor that was used to transform a
     constraint.
 
@@ -222,7 +222,7 @@ def get_constarint_tranform_applied_scaling_factor(c, default=None):
         default: value to return if no scaling factor exisits (default=None)
 
     Returns:
-        The scaling factor that has been used to transform the constrain or the
+        The scaling factor that has been used to transform the constraint or the
         default.
     """
     try:
@@ -232,9 +232,9 @@ def get_constarint_tranform_applied_scaling_factor(c, default=None):
     return sf
 
 
-def __unset_constarint_tranform_applied_scaling_factor(c):
-    """PRIVATE FUNCTION: Delete the recored scale factor that has been used
-    to transofrm constraint c.  This is used when undoing a constraint
+def __unset_constraint_transform_applied_scaling_factor(c):
+    """PRIVATE FUNCTION: Delete the recorded scale factor that has been used
+    to transform constraint c.  This is used when undoing a constraint
     transformation.
     """
     try:
@@ -253,22 +253,22 @@ def constraint_scaling_transform(c, s):
 
     Args:
         c: Pyomo constraint
-        s: scale factor applied to the constraint as origianlly written
+        s: scale factor applied to the constraint as originally written
 
     Returns:
         None
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    st = get_constarint_tranform_applied_scaling_factor(c, default=1)
+    st = get_constraint_transform_applied_scaling_factor(c, default=1)
     v = s/st
     c.set_value(
         (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
-    __set_constarint_tranform_applied_scaling_factor(c, s)
+    __set_constraint_transform_applied_scaling_factor(c, s)
 
 
 def constraint_scaling_transform_undo(c):
-    """The undoes the scaling transforms previously applied to a constaint.
+    """The undoes the scaling transforms previously applied to a constraint.
 
     Args:
         c: Pyomo constraint
@@ -278,12 +278,12 @@ def constraint_scaling_transform_undo(c):
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    v = get_constarint_tranform_applied_scaling_factor(c)
+    v = get_constraint_transform_applied_scaling_factor(c)
     if v is None:
         return # hasn't been transformed, so nothing to do.
     c.set_value(
         (__none_mult(c.lower, 1/v), __none_mult(c.body, 1/v), __none_mult(c.upper, 1/v)))
-    __unset_constarint_tranform_applied_scaling_factor(c)
+    __unset_constraint_transform_applied_scaling_factor(c)
 
 
 def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):
@@ -295,7 +295,6 @@ def unscaled_variables_generator(blk, descend_into=True, include_fixed=False):
     Yields:
         variables with no scale factor
     """
-
     for v in blk.component_data_objects(pyo.Var, descend_into=descend_into):
         if v.fixed and not include_fixed:
             continue
@@ -314,7 +313,8 @@ def unscaled_constraints_generator(blk, descend_into=True):
     """
     for c in blk.component_data_objects(
         pyo.Constraint, active=True, descend_into=descend_into):
-        if get_scaling_factor(c) is None:
+        if get_scaling_factor(c) is None and \
+            get_constraint_transform_applied_scaling_factor(c) is None:
             yield c
 
 

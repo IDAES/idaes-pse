@@ -1590,7 +1590,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             try:
                 c = getattr(self, name)
             except AttributeError:
-                return # it's okay if the attribute doesn't exist, spell careful
+                return # it's okay if the attribute doesn't exist, spell carefully
             if iscale.get_scaling_factor(c) is None:
                 for ci in c.values():
                     if iscale.get_scaling_factor(ci) is None:

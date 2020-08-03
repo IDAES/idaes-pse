@@ -497,7 +497,7 @@ class HeatExchangerData(UnitModelBlockData):
         super().calculate_scaling_factors()
 
         # We have a pretty good idea that the delta Ts will be beteen about
-        # 1 and 100 regaurdless of process of temperature units, so a default
+        # 1 and 100 regardless of process of temperature units, so a default
         # should be fine, so don't warn.  Guessing a typical delta t around 10
         # the default scaling factor is set to 0.1
         sf_dT1 = dict(zip(

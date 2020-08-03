@@ -889,8 +889,6 @@ should be constructed in this state block,
             (Constraint, Var, Expression),
             descend_into=False):
             if iscale.get_scaling_factor(v) is None: # don't replace if set
-                #print(v)
-                #print(type(v))
                 name = v.getname().split("[")[0]
                 index = v.index()
                 sf = self.config.parameters.get_default_scaling(name, index)
