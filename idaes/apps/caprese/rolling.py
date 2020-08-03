@@ -6,6 +6,9 @@ class TimeList(list):
     Maintains a list of time points in sorted order, ensures time points
     are unique, and implements a binary search method.
     """
+    # TODO: This class could inherit from ContinuousSet.
+    # That would be convenient for a lot of reasons, one of which is that
+    # I could use the find_nearest_index method
     def __init__(self, time=None, tolerance=0.0):
         """
         A tolerance is required because I want to ensure time points
@@ -70,7 +73,6 @@ class TimeList(list):
                 'than current values.')
         super().append(t)
 
-
     def validate_extend(self, tpoints):
         """
         """
@@ -128,6 +130,9 @@ class VectorSeries(OrderedDict):
     """
     A time-indexed vector.
     """
+    # This class's purpose is suspiciously similar to that of IndexedComponent.
+    # Could have an OrderedDict of time-indexed variables/Parameters that I
+    # continually update along with the underlying time set.
     def __init__(self, data=None, time=None, name=None):
         """
         Args:
@@ -188,13 +193,39 @@ class VectorSeries(OrderedDict):
         if len(self) == 0:
             return True
         last = [series[-1] for series in self.values()]
-        for new, old in zip(target, last):
         return all(new == old for new, old in zip(target, last))
 
     def append(self, t, data):
         self.time.append(t)
+        self.append(data)
 
-
+    def extend(self, tpoints, data):
+        """
+        data is a matrix.
+        """
+        # TODO: how should I infer whether to check for consistency?
+        try:
+            data = list(data.values())
+        except AttributeError as ae:
+            if 'values' not in str(ae):
+                raise ae
+        tolerance = self.time.tolerance
+        if len(self) != 0:
+            tlast = self.time[-1]
+            t0 = tpoints[0]
+            if t_last-tolerance <= t0 and t0 <= tlast+tolerance:
+                data0 = [series[0] for series in data]
+                if not consistent(data0):
+                    raise ValueError(
+                        'Tried to extend with series that overlapped at time '
+                        'point %s, but the series data was not consistent '
+                        'with pre-existing data.' 
+                        % t0)
+            tpoints = tpoints[1:]
+            data = [series[1:] for series in data]
+        self.time.extend(tpoints)
+        for series, new_data in zip(self.values(), data):
+            series.extend(new_data)
 
 
 class Series(list):
