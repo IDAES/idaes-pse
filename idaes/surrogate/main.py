@@ -391,7 +391,7 @@ class Pysmo_rbf(Surrogate):
         self.rbf_setup = {k: self.config[k] for k in set(self.config) - set(self.pyomo_vars)}
         prob_init = radial_basis_function.RadialBasisFunctions(training_data, **self.rbf_setup)
         feature_vec = prob_init.get_feature_vector()
-        self.pysmo_rbf_results = prob_init.rbf_training()
+        self.pysmo_rbf_results = prob_init.training()
         self._results[Metrics.Time] = time.time() - start_time
 
         self.handle_results(feature_vec)
@@ -408,7 +408,7 @@ class Pysmo_rbf(Surrogate):
         self._results[Metrics.R2] = self.pysmo_rbf_results.R2
         # Generate Pyomo expression
         if self.pyomo_vars:
-            self._model = self.pysmo_rbf_results.rbf_generate_expression(self.pyomo_vars['pyomo_vars'])
+            self._model = self.pysmo_rbf_results.generate_expression(self.pyomo_vars['pyomo_vars'])
         else:
             list_vars = []
             for i in feature_vec.keys():
@@ -438,7 +438,7 @@ class Pysmo_kriging(Surrogate):
         self.krg_setup = {k: self.config[k] for k in set(self.config) - set(self.pyomo_vars)}
         prob_init = kriging.KrigingModel(training_data, **self.krg_setup)
         feature_vec = prob_init.get_feature_vector()
-        self.pysmo_kriging_results = prob_init.kriging_training()
+        self.pysmo_kriging_results = prob_init.training()
         self._results[Metrics.Time] = time.time() - start_time
 
         self.handle_results(feature_vec)
@@ -459,7 +459,7 @@ class Pysmo_kriging(Surrogate):
         for i in feature_vec.keys():
             list_vars.append(feature_vec[i])
         if self.pyomo_vars:
-            self._model = self.pysmo_kriging_results.kriging_generate_expression(self.pyomo_vars['pyomo_vars'])
+            self._model = self.pysmo_kriging_results.generate_expression(self.pyomo_vars['pyomo_vars'])
         else:
             list_vars = []
             for i in feature_vec.keys():
@@ -504,7 +504,7 @@ class Pysmo_polyregression(Surrogate):
             except:
                 raise ValueError('The additional terms could not be evaluated.')
 
-        self.pysmo_polyregression_results = prob_init.poly_training()
+        self.pysmo_polyregression_results = prob_init.training()
         self._results[Metrics.Time] = time.time() - start_time
 
         self.handle_results(feature_vec)

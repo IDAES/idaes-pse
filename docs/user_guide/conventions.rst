@@ -164,6 +164,7 @@ Henry's Constant                henry
 Internal Energy                 energy_internal
 Mass Fraction                   mass_frac
 Material Flow                   flow
+Molality                        molality
 Molecular Weight                mw
 Mole Fraction                   mole_frac
 pH                              pH

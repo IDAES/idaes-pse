@@ -43,11 +43,7 @@ def wspath():
 @pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
-    try:
-        commands.workspace_init(wspath, {"some": "metadata"})
-        assert False, "Duplicate workspace init succeeded"
-    except errors.CommandError:
-        pass
+    commands.workspace_init(wspath, {"some": "metadata"})
 
 
 @pytest.mark.unit
