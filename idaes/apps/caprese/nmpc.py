@@ -242,10 +242,11 @@ class NMPCSim(DynamicBase):
                 )
             )
 
+    namespace_name = '_NMPC_NAMESPACE'
 
     @classmethod
     def get_namespace_name(cls):
-        return '_NMPC_NAMESPACE'
+        return cls.namespace_name
     
 
     def __init__(self, plant_model=None, plant_time_set=None, 
