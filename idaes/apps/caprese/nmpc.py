@@ -473,8 +473,8 @@ class NMPCSim(DynamicBase):
         sample_time = self.sample_time
         t0 = plant_time.first()
         ts = t0 + sample_time
-        ts_plant = find_point_in_continuousset(ts, plant_time,
-                tolerance=continuous_set_tolerance)
+        s_index = plant_time.find_nearest_index(ts, continuous_set_tolerance)
+        ts_plant = plant_time[s_index]
         if ts_plant is None:
             raise RuntimeError(
                 'Could not find sample point %s in the plant' % ts)
@@ -1688,7 +1688,7 @@ class NMPCSim(DynamicBase):
         """
         # By default, copy fixed variables
         config = self.config(kwargs)
-        continuous_set_tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         plant = self.plant
         plant_time = self.plant_time
         namespace = getattr(plant, self.get_namespace_name())
@@ -1700,8 +1700,8 @@ class NMPCSim(DynamicBase):
             t_start = plant_time.first()
         if t_end is None:
             t_end = t_start + sample_time
-            t_end = find_point_in_continuousset(t_end, plant_time,
-                    tolerance=continuous_set_tolerance)
+            end_idx = plant_time.find_nearest_index(t_end, cs_tolerance)
+            t_end = plant_time[end_idx]
         for t in [t_start, t_end]:
             if t not in sample_set:
                 raise ValueError(
@@ -1716,7 +1716,7 @@ class NMPCSim(DynamicBase):
             **kwargs):
         config = self.config(kwargs)
         plant_type = config.plant_horizon_type
-        continuous_set_tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         t_start = self.validate_plant_start_time(t_start,
                 plant_horizon_type=plant_type)
         plant = self.plant
@@ -1729,8 +1729,8 @@ class NMPCSim(DynamicBase):
             t_start = plant_time.first()
         if t_end is None:
             t_end = t_start + sample_time
-            t_end = find_point_in_continuousset(t_end, plant_time,
-                    tolerance=continuous_set_tolerance)
+            end_idx = plant_time.find_nearest_index(t_end, cs_tolerance)
+            t_end = plant_time[end_idx]
         time_list = [t for t in plant_time if t_start <= t and t <= t_end]
 
         data_list = []
