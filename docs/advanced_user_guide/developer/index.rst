@@ -11,7 +11,6 @@ Developer Contents
     :maxdepth: 1
 
     howto    
-    devintro
     repos
     devsw
     standards

@@ -80,6 +80,13 @@ class TestTranslate(object):
                 default={"inlet_property_package": m.fs.properties1,
                          "outlet_property_package": m.fs.properties2})
 
+        m.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
         return m
 
     @pytest.mark.build
@@ -108,19 +115,11 @@ class TestTranslate(object):
 
     @pytest.mark.unit
     def test_dof(self, trans):
-        trans.fs.unit.inlet.flow_vol.fix(1.0e-03)
-        trans.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        trans.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
         assert degrees_of_freedom(trans) == 5
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, trans):
         initialization_tester(trans, dof=5)
 

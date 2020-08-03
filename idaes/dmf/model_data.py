@@ -315,23 +315,26 @@ def read_data(
     measure should be something that is recognized by pint, or in the aliases
     defined in this file. Any tags not listed in the metadata will be dropped.
 
+    The function returns two items a pandas.DataFrame containing process data,
+    and a dictionary with tag metadata.  The metadata dictionary keys are tag name,
+    and the values are dictionaries with the keys: "reference_string", "description",
+    "units", and "reference".
+
+
     Args:
         csv_file (str): Path of file to read
         csv_file_metadata (str): Path of csv file to read column metadata from
-        model (ConcreteModel): Optional model to map tags to
-        rename_mapper (function): Optional function to rename tags
+        model (pyomo.environ.ConcreteModel): Optional model to map tags to
+        rename_mapper (Callable): Optional function to rename tags
         unit_system (str): Optional system of units to atempt convert to
         ambient_pressure (float, numpy.array, pandas.series, str): Optional
-            pressure to use to convert gauge pressure to absolute if a string is
-            supplied the corresponding data tag is assumed to be ambient pressure
+            pressure to use to convert gauge pressure to absolute. If a string is
+            supplied, the corresponding data tag is assumed to be ambient pressure.
         ambient_pressure_unit (str): Optional ambient pressure unit, should be a
             unit recognized by pint.
 
     Returns:
-        (DataFrame): A Pandas data frame with tags in columns and rows indexed
-            by time.
-        (dict): Column metadata, units of measure, description, and model
-            mapping information.
+        (pandas.DataFrame, dict)
     """
     # read file
     df = pd.read_csv(csv_file, parse_dates=True, index_col=0)
@@ -411,7 +414,7 @@ def bin_data(
         bin_by (str): A column for values to bin by
         bin_no (str): A new column for bin number
         bin_nom (str): A new column for the mid-point value of bin_by
-        bin_size (float): size of a bin, spceify only n or size
+        bin_size (float): size of a bin
         min_value (in {float, None}): Smallest value to keep or None for no lower
         max_value (in (float, None}): Largest value to keep or None for no upper
 
@@ -494,8 +497,10 @@ def data_rec_plot_book(
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
-            "Install the required packages before using the data_book() function."
+            "Install the required packages before using the data_book() function. "
+            "Plot terminated."
         )
+        return
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
@@ -546,6 +551,7 @@ def data_rec_plot_book(
     for pdf in pdfs:
         writer.append(pdf)
     writer.write(file)
+    _log.info(f"Plot written to {file}.")
 
 
 def data_plot_book(
@@ -576,8 +582,10 @@ def data_plot_book(
     if sns is None:
         _log.error(
             "Plotting data requires the 'seaborn' and 'PyPDF2' packages. "
-            "Install the required packages before using the data_book() function."
+            "Install the required packages before using the data_book() function. "
+            "Plot terminated."
         )
+        return
 
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
@@ -624,3 +632,4 @@ def data_plot_book(
     for pdf in pdfs:
         writer.append(pdf)
     writer.write(file)
+    _log.info(f"Plot written to {file}.")

@@ -11,7 +11,7 @@ After installing and testing IDAES, it is strongly recommended to do the IDAES t
 located on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/tutorials/index.html>`_.
 
 If you expect to develop custom models, we recommend following the
-:ref:`advanced user installation<advanced_user_guide/advanced_install:Advanced User Installation>`.
+:ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
 
 The OS specific instructions provide information about optionally installing
 Miniconda. If you already have a Python installation you prefer, you can skip
@@ -124,7 +124,12 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 ..
 
-   .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX
+   .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
+
+                As fallback (assuming you are uisng a conda env) you can install
+                the generic ipopt solver with the command ``conda install -c
+                conda-forge ipopt`` though this will not have all the features
+                of our extentions package.
 
    .. note:: If you are installing on Linux, you can specify a specific platform.
              While most Linux builds are interchangeable, specifying a build can

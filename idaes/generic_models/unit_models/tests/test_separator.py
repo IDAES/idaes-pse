@@ -738,6 +738,19 @@ class TestSaponification(object):
                 "ideal_separation": False,
                 "has_phase_equilibrium": False})
 
+        m.fs.unit.inlet.flow_vol.fix(1)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.split_fraction[0, "a"].fix(0.3)
+        m.fs.unit.split_fraction[0, "B"].fix(0.5)
+
         return m
 
     @pytest.mark.build
@@ -780,31 +793,17 @@ class TestSaponification(object):
 
     @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.inlet.flow_vol.fix(1)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.inlet.temperature.fix(303.15)
-        sapon.fs.unit.inlet.pressure.fix(101325.0)
-
-        sapon.fs.unit.split_fraction[0, "a"].fix(0.3)
-        sapon.fs.unit.split_fraction[0, "B"].fix(0.5)
-
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -813,10 +812,9 @@ class TestSaponification(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, sapon):
         assert (pytest.approx(0.3, abs=1e-5) ==
                 value(sapon.fs.unit.a.flow_vol[0]))
@@ -869,10 +867,9 @@ class TestSaponification(object):
         assert (pytest.approx(0.0, abs=1e-3) ==
                 value(sapon.fs.unit.c.conc_mol_comp[0, "Ethanol"]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation(self, sapon):
         assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
                          sapon.fs.unit.a.flow_vol[0] -
@@ -940,6 +937,15 @@ class TestBTXIdeal(object):
             "ideal_separation": False,
             "has_phase_equilibrium": True})
 
+        m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(368)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
+        m.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
+
         return m
 
     @pytest.mark.build
@@ -974,26 +980,16 @@ class TestBTXIdeal(object):
 
     @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
-        btx.fs.unit.inlet.temperature[0].fix(368)  # K
-        btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
-        btx.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
-
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialiszation(self, btx):
         # Default initialization will fail as it cannot handle total
         # flow with a phase split.
         # However, this should do enough that the problem can be solved
-        with pytest.raises(KeyError):
-            btx.fs.unit.initialize()
+        btx.fs.unit.initialize()
 
         assert (pytest.approx(1, abs=1e-4) ==
                 value(btx.fs.unit.mixed_state[0].flow_mol))
@@ -1018,20 +1014,6 @@ class TestBTXIdeal(object):
                 value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                       "Vap", "toluene"]))
 
-        # Also need to initialize outlet states
-        btx.fs.unit.outlet_1_state.initialize(state_args={
-                "flow_mol": 1,
-                "pressure": 101325,
-                "temperature": 368,
-                "mole_frac_comp": {"benzene": 0.5, "toluene": 0.5}})
-        btx.fs.unit.outlet_2_state.initialize(state_args={
-                "flow_mol": 1,
-                "pressure": 101325,
-                "temperature": 368,
-                "mole_frac_comp": {"benzene": 0.5, "toluene": 0.5}})
-
-        assert degrees_of_freedom(btx) == 0
-
         # Also trigger build of phase enthalpy vars.
         btx.fs.unit.mixed_state[0].enth_mol_phase["Vap"] = 0.5
         btx.fs.unit.outlet_1_state[0].enth_mol_phase["Vap"] = 0.5
@@ -1039,7 +1021,7 @@ class TestBTXIdeal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -1048,10 +1030,9 @@ class TestBTXIdeal(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx):
         assert (pytest.approx(0.438, abs=1e-3) ==
                 value(btx.fs.unit.outlet_1.flow_mol[0]))
@@ -1075,10 +1056,9 @@ class TestBTXIdeal(object):
         assert (pytest.approx(0.557, abs=1e-3) ==
                 value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet_1.flow_mol[0] -
@@ -1140,6 +1120,13 @@ class TestIAPWS(object):
                 "ideal_separation": False,
                 "has_phase_equilibrium": False})
 
+        m.fs.unit.inlet.flow_mol[0].fix(100)
+        m.fs.unit.inlet.enth_mol[0].fix(4000)
+        m.fs.unit.inlet.pressure[0].fix(101325)
+
+        m.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
+        m.fs.unit.split_fraction[0, "outlet_2", "H2O"].fix(0.5)
+
         return m
 
     @pytest.mark.build
@@ -1176,20 +1163,13 @@ class TestIAPWS(object):
 
     @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.inlet.enth_mol[0].fix(4000)
-        iapws.fs.unit.inlet.pressure[0].fix(101325)
-
-        iapws.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
-        iapws.fs.unit.split_fraction[0, "outlet_2", "H2O"].fix(0.5)
-
         assert degrees_of_freedom(iapws) == 0
 
     # No initilaization test, as the default method doesn't support this yet
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
 
@@ -1198,10 +1178,9 @@ class TestIAPWS(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, iapws):
         assert pytest.approx(40, abs=1e-3) == \
             value(iapws.fs.unit.outlet_1.flow_mol[0])
@@ -1224,10 +1203,9 @@ class TestIAPWS(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(iapws.fs.unit.outlet_3.pressure[0])
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation(self, iapws):
         assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
                          iapws.fs.unit.outlet_1.flow_mol[0] -
@@ -2747,6 +2725,13 @@ class TestBTX_Ideal(object):
                                     "Liq": "outlet_2"},
                 "has_phase_equilibrium": False})
 
+        m.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(368)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.build
@@ -2779,18 +2764,11 @@ class TestBTX_Ideal(object):
 
     @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
-        btx.fs.unit.inlet.temperature[0].fix(368)  # K
-        btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-
-        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialiszation(self, btx):
         btx.fs.unit.initialize()
 
@@ -2821,7 +2799,7 @@ class TestBTX_Ideal(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -2830,10 +2808,9 @@ class TestBTX_Ideal(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx):
         assert (pytest.approx(0.396, abs=1e-3) ==
                 value(btx.fs.unit.outlet_1.flow_mol[0]))
@@ -2857,10 +2834,9 @@ class TestBTX_Ideal(object):
         assert (pytest.approx(0.588, abs=1e-3) ==
                 value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet_1.flow_mol[0] -

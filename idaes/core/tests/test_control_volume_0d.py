@@ -32,6 +32,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         PropertyNotSupportedError)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock)
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -465,10 +466,10 @@ def test_rxn_rate_conv_mole_mass():
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = {"c1": 2, "c2": 3}
+        m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
             assert (m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) ==
-                    1/m.fs.cv.properties_out[t].mw[j])
+                    1/m.fs.cv.properties_out[t].mw_comp[j])
 
 
 @pytest.mark.unit
@@ -488,10 +489,10 @@ def test_rxn_rate_conv_mass_mole():
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = {"c1": 2, "c2": 3}
+        m.fs.cv.properties_out[t].mw_comp = {"c1": 2, "c2": 3}
         for j in m.fs.pp.component_list:
             assert (m.fs.cv._rxn_rate_conv(t, j, has_rate_reactions=True) ==
-                    m.fs.cv.properties_out[t].mw[j])
+                    m.fs.cv.properties_out[t].mw_comp[j])
 
 
 # -----------------------------------------------------------------------------
@@ -904,7 +905,7 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
         return m.fs.cv.test_var[t, p, j]*units.mol/units.s
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = Var(
+        m.fs.cv.properties_out[t].mw_comp = Var(
                 m.fs.cv.properties_out[t].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -1021,7 +1022,7 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
         return m.fs.cv.test_var[t, p, j]*units.kg/units.s
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = Var(
+        m.fs.cv.properties_out[t].mw_comp = Var(
                 m.fs.cv.properties_out[t].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -1380,7 +1381,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
         return m.fs.cv.test_var[t, j]*units.mol/units.s
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = Var(
+        m.fs.cv.properties_out[t].mw_comp = Var(
                 m.fs.cv.properties_out[t].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -1493,7 +1494,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
         return m.fs.cv.test_var[t, j]*units.kg/units.s
 
     for t in m.fs.time:
-        m.fs.cv.properties_out[t].mw = Var(
+        m.fs.cv.properties_out[t].mw_comp = Var(
                 m.fs.cv.properties_out[t].config.parameters.component_list,
                 units=units.kg/units.mol)
 
@@ -1718,6 +1719,39 @@ def test_add_total_element_balances_custom_term():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_total_element_balances_lineraly_dependent(caplog):
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Change elemental composition to introduce dependency
+    m.fs.pp.element_comp = {"c1": {"H": 0, "He": 0, "Li": 1},
+                            "c2": {"H": 1, "He": 2, "Li": 0}}
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    mb = m.fs.cv.add_total_element_balances()
+    # Check that logger message was recorded and has the right level
+    msg = ("fs.cv detected linearly dependent element balance equations. "
+           "Element balances will NOT be written for the following elements: "
+           "['He']")
+    assert msg in caplog.text
+    for record in caplog.records:
+        assert record.levelno == idaeslog.INFO_LOW
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+    for e in mb:
+        # H and Li are not lineraly dependent and should have constraints
+        assert e in [(0, "H"), (0, "Li")]
+        # He is lineraly dependent on H and should be skipped
 
     assert_units_consistent(m)
 

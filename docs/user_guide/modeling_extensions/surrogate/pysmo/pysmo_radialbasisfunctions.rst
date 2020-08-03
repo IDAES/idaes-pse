@@ -48,7 +48,7 @@ parameter (:math:`\sigma`)to be estimated.
 Basic Usage
 ------------
 To generate an RBF model with PySMO, the  *pysmo.radial_basis_function* class is first initialized,
-and then the function *rbf_training* is called on the initialized object:
+and then the function *training* is called on the initialized object:
 
 .. code:: python
 
@@ -62,7 +62,7 @@ and then the function *rbf_training* is called on the initialized object:
    # Initialize the RadialBasisFunctions class, extract the list of features and train the model
    >>> rbf_init = radial_basis_function.RadialBasisFunctions(xy_data, *kwargs)
    >>> features = rbf_init.get_feature_vector()
-   >>> rbf_fit = rbf_init.rbf_training()
+   >>> rbf_fit = rbf_init.training()
 
 * *xy_data* is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
 
@@ -78,9 +78,9 @@ and then the function *rbf_training* is called on the initialized object:
 *pysmo.radial_basis_function* Output
 ---------------------------------------
 The result of *pysmo.radial_basis_function* (*rbf_fit* in above example) is a python object containing information
-about the optimal radial basis function weights :math:`w_{j}` and different error and quality-of-fit metrics such as
+about the problem set-up, the optimal radial basis function weights :math:`w_{j}` and different error and quality-of-fit metrics such as
 the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
-object simply passing a list of variables into the function *rbf_generate_expression*:
+object simply passing a list of variables into the function *generate_expression*:
 
 .. code:: python
 
@@ -90,20 +90,20 @@ object simply passing a list of variables into the function *rbf_generate_expres
    >>>     list_vars.append(features[i])
 
    # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(rbf_fit.rbf_generate_expression(list_vars))
+   >>> print(rbf_init.generate_expression(list_vars))
 
-Similar to the *pysmo.polynomial_regression* module, the output of the *rbf_generate_expression* function can be passed
+Similar to the *pysmo.polynomial_regression* module, the output of the *generate_expression* function can be passed
 into an IDAES or Pyomo module as a constraint, objective or expression.
 
 Prediction with *pysmo.radial_basis_function* models
 -----------------------------------------------------
 Once an RBF model has been trained, predictions for values at previously unsampled points *x_unsampled* can be evaluated by calling the
-*rbf_predict_output()* function on the resulting Python object and the unsampled points:
+*predict_output()* function on the unsampled points:
 
 .. code:: python
 
    # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = rbf_init.rbf_predict_output(rbf_fit, x_unsampled)
+   >>> y_unsampled = rbf_init.predict_output(x_unsampled)
 
 
 
@@ -118,10 +118,7 @@ Available Methods
     :members:
 
 .. autoclass:: idaes.surrogate.pysmo.radial_basis_function.RadialBasisFunctions
-    :members: __init__, get_feature_vector, rbf_training, rbf_predict_output, r2_calculation
-
-.. autoclass:: idaes.surrogate.pysmo.radial_basis_function.ResultReport
-    :members: rbf_generate_expression	
+    :members: __init__, get_feature_vector, training, predict_output, r2_calculation, generate_expression
 
 References:
 ----------------

@@ -4,6 +4,8 @@ import idaes.core
 from idaes.power_generation.unit_models.helm import HelmMixer, MomentumMixingType
 from idaes.generic_models.properties import iapws95
 
+
+@pytest.mark.component
 def test_mixer():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
@@ -44,6 +46,8 @@ def test_mixer():
     assert pyo.value(m.fs.unit.outlet.enth_mol[0]) == pytest.approx(hout, rel=1e-7)
     assert pyo.value(m.fs.unit.outlet.pressure[0]) == pytest.approx(Pin1, rel=1e-7)
 
+
+@pytest.mark.component
 def test_mixer2():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})

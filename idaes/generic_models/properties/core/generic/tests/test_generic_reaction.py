@@ -19,24 +19,25 @@ import pytest
 from sys import modules
 
 from pyomo.environ import (
-    Block, ConcreteModel, Constraint, Expression, exp, Set, Var, value)
+    Block, ConcreteModel, Constraint, Expression,
+    exp, Set, Var, value, units as pyunits)
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
-        GenericReactionParameterBlock)
+        GenericReactionParameterBlock, ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.rate_constant import \
     arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import \
-    mole_frac_power_law_rate
+    power_law_rate
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
-    mole_frac_power_law_equil
+    power_law_equil
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
@@ -57,6 +58,14 @@ def define_state(b):
                                  initialize=0.5)
 
 
+# Declare a base units dict to save code later
+base_units = {"time": pyunits.s,
+              "length": pyunits.m,
+              "mass": pyunits.kg,
+              "amount": pyunits.mol,
+              "temperature": pyunits.K}
+
+
 # -----------------------------------------------------------------------------
 class TestGenericReactionParameterBlock(object):
     @pytest.fixture
@@ -71,10 +80,12 @@ class TestGenericReactionParameterBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         return m
 
+    @pytest.mark.unit
     def test_rate_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
@@ -82,9 +93,19 @@ class TestGenericReactionParameterBlock(object):
                 "r1": {"stoichiometry": {("p1", "c1"): -1,
                                          ("p1", "c2"): 2},
                        "heat_of_reaction": "foo",
-                       "rate_form": "foo"}}})
+                       "rate_form": "foo"}},
+            "base_units": base_units})
 
         rxn_config = m.rxn_params.config.rate_reactions
+
+        assert m.rxn_params.get_metadata().default_units == {
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+            "current": None,
+            "luminous intensity": None}
 
         assert isinstance(m.rxn_params.rate_reaction_idx, Set)
         assert len(m.rxn_params.rate_reaction_idx) == 1
@@ -106,7 +127,45 @@ class TestGenericReactionParameterBlock(object):
         assert m.rxn_params.reaction_idx == m.rxn_params.rate_reaction_idx
 
         assert isinstance(m.rxn_params.reaction_r1, Block)
-        
+
+    @pytest.mark.unit
+    def test_invalid_unit(self, m):
+        with pytest.raises(
+                ConfigurationError,
+                match="rxn_params recieved unexpected units for quantity time:"
+                " foo. Units must be instances of a Pyomo unit object."):
+            m.rxn_params = GenericReactionParameterBlock(default={
+                "property_package": m.params,
+                "rate_reactions": {
+                    "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                             ("p1", "c2"): 2},
+                           "heat_of_reaction": "foo",
+                           "rate_form": "foo"}},
+                "base_units": {"time": "foo",
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
+
+    @pytest.mark.unit
+    def test_missing_required_quantity(self, m):
+        with pytest.raises(
+                ConfigurationError,
+                match="rxn_params units for quantity time were not assigned. "
+                "Please make sure to provide units for all base units "
+                "when configuring the reaction package."):
+            m.rxn_params = GenericReactionParameterBlock(default={
+                "property_package": m.params,
+                "rate_reactions": {
+                    "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                             ("p1", "c2"): 2},
+                           "heat_of_reaction": "foo",
+                           "rate_form": "foo"}},
+                "base_units": {"length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
+
     @pytest.mark.unit
     def test_rate_build_no_stoichiometry(self, m):
         with pytest.raises(ConfigurationError,
@@ -115,6 +174,7 @@ class TestGenericReactionParameterBlock(object):
                            "argument."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "rate_reactions": {
                     "r1": {"heat_of_reaction": "foo",
                            "rate_form": "foo"}}})
@@ -126,6 +186,7 @@ class TestGenericReactionParameterBlock(object):
                            "r1 included unrecognised phase p7."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "rate_reactions": {
                     "r1": {"stoichiometry": {("p7", "c1"): -1,
                                              ("p1", "c2"): 2},
@@ -139,6 +200,7 @@ class TestGenericReactionParameterBlock(object):
                            "r1 included unrecognised component c7."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "rate_reactions": {
                     "r1": {"stoichiometry": {("p1", "c7"): -1,
                                              ("p1", "c2"): 2},
@@ -153,6 +215,7 @@ class TestGenericReactionParameterBlock(object):
                            "argument."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "rate_reactions": {
                     "r1": {"stoichiometry": {("p1", "c1"): -1,
                                              ("p1", "c2"): 2},
@@ -162,6 +225,7 @@ class TestGenericReactionParameterBlock(object):
     def test_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
+            "base_units": base_units,
             "equilibrium_reactions": {
                 "e1": {"stoichiometry": {("p2", "c1"): -3,
                                          ("p2", "c2"): 4},
@@ -201,6 +265,7 @@ class TestGenericReactionParameterBlock(object):
                            "argument."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "equilibrium_reactions": {
                     "e1": {"heat_of_reaction": "foo",
                            "equilibrium_form": "foo"}}})
@@ -212,6 +277,7 @@ class TestGenericReactionParameterBlock(object):
                            "reaction e1 included unrecognised phase p7."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "equilibrium_reactions": {
                     "e1": {"stoichiometry": {("p7", "c1"): -3,
                                              ("p2", "c2"): 4},
@@ -225,6 +291,7 @@ class TestGenericReactionParameterBlock(object):
                            "reaction e1 included unrecognised component c7."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "equilibrium_reactions": {
                     "e1": {"stoichiometry": {("p2", "c7"): -3,
                                              ("p2", "c2"): 4},
@@ -239,6 +306,7 @@ class TestGenericReactionParameterBlock(object):
                            "argument."):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
+                "base_units": base_units,
                 "equilibrium_reactions": {
                     "e1": {"stoichiometry": {("p2", "c1"): -3,
                                              ("p2", "c2"): 4},
@@ -248,6 +316,7 @@ class TestGenericReactionParameterBlock(object):
     def test_rate_and_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
+            "base_units": base_units,
             "rate_reactions": {
                 "r1": {"stoichiometry": {("p1", "c1"): -1,
                                          ("p1", "c2"): 2},
@@ -309,6 +378,7 @@ class TestGenericReactionParameterBlock(object):
     def test_build_parameters(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
+            "base_units": base_units,
             "rate_reactions": {
                 "r1": {"stoichiometry": {("p1", "c1"): -1,
                                          ("p1", "c2"): 2},
@@ -347,18 +417,21 @@ class TestGenericReactionBlock(object):
                     "p2": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": base_units})
 
         m.sblock = m.params.build_state_block([1])
 
         m.rxn_params = GenericReactionParameterBlock(default={
             "property_package": m.params,
+            "base_units": base_units,
             "rate_reactions": {
                 "r1": {"stoichiometry": {("p1", "c1"): -1,
                                          ("p1", "c2"): 2},
                        "heat_of_reaction": constant_dh_rxn,
                        "rate_constant": arrhenius,
-                       "rate_form": mole_frac_power_law_rate,
+                       "rate_form": power_law_rate,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -10000,
                            "arrhenius_const": 1,
@@ -368,7 +441,8 @@ class TestGenericReactionBlock(object):
                                          ("p2", "c2"): 4},
                        "heat_of_reaction": constant_dh_rxn,
                        "equilibrium_constant": van_t_hoff,
-                       "equilibrium_form": mole_frac_power_law_equil,
+                       "equilibrium_form": power_law_equil,
+                       "concentration_form": ConcentrationForm.moleFraction,
                        "parameter_data": {
                            "dh_rxn_ref": -20000,
                            "k_eq_ref": 100,

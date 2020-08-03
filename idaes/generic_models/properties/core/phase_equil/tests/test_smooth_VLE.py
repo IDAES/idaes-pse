@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            Param,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
@@ -58,7 +59,12 @@ def frame():
                    "Vap": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,
         "pressure_ref": 1e5,
-        "temperature_ref": 300})
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
 
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
@@ -129,7 +135,12 @@ def test_non_VLE_pair():
                    "Liq": {"equation_of_state": DummyEoS}},
         "state_definition": FTPx,
         "pressure_ref": 1e5,
-        "temperature_ref": 300})
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
 
     # Create a dummy state block
     m.props = m.params.state_block_class([1], default={"parameters": m.params})
