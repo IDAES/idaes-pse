@@ -68,14 +68,19 @@ from idaes.apps.caprese.util import (
         validate_solver,
         get_violated_bounds_at_time,
         PlantHistory,
+        cuid_from_timeslice,
         )
+from idaes.apps.caprese.rolling import TimeList, VectorSeries
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
+
+from collections import OrderedDict
 
 __author__ = "Robert Parker and David Thierry"
 
 
 class NMPCSim(DynamicBase):
+    # TODO: A better name might be NMPCManager
     """
     Main class for NMPC simulations of Pyomo models.
     """
@@ -1712,7 +1717,7 @@ class NMPCSim(DynamicBase):
             copy_values_at_time(varlist, varlist, t_start, t_end)
             
 
-    def extend_history_from_plant(self, history=None, t_start=None, t_end=None,
+    def extend_history_from_plant(self, history, t_start=None, t_end=None,
             **kwargs):
         config = self.config(kwargs)
         plant_type = config.plant_horizon_type
@@ -1721,63 +1726,99 @@ class NMPCSim(DynamicBase):
                 plant_horizon_type=plant_type)
         plant = self.plant
         plant_time = self.plant_time
-        namespace = getattr(plant, self.get_namespace_name())
-        var_locator = namespace.var_locator
+#        namespace = getattr(plant, self.get_namespace_name())
+#        var_locator = namespace.var_locator
         sample_time = self.sample_time
 
-        if t_start is None:
-            t_start = plant_time.first()
-        if t_end is None:
-            t_end = t_start + sample_time
-            end_idx = plant_time.find_nearest_index(t_end, cs_tolerance)
-            t_end = plant_time[end_idx]
+        t_start, t_end = self.validate_time_bounds(plant_time, t_start, t_end)
         time_list = [t for t in plant_time if t_start <= t and t <= t_end]
 
         data_list = []
         for cuid in history:
             for comp in cuid.list_components(plant.model()):
                 break
-            info = var_locator[comp]
-            group = info.group
-            location = info.location
-            _slice = group.varlist[location]
-            data_list.append(_slice)
+#            info = var_locator[comp]
+#            group = info.group
+#            location = info.location
+#            _slice = group.varlist[location]
+            _slice = self.get_slice(plant, comp)
+            data = [_slice[t].value for t in time_list]
+            data_list.append(data)
 
-        history.extend(time_list, data_list, require_consistency=True)
+        history.extend(time_list, data_list) #, require_consistency=True)
         # Is consistency getting violated because of noise?
         # -> Take this opportunity to make sure noise isn't applied to plant model
 
         return history
 
 
+    def validate_time_bounds(self, time, t_start, t_end):
+        cs_tolerance = self.config.continuous_set_tolerance
+        sample_time = self.config.sample_time
+        if t_start is None:
+            t_start = time.first()
+        else:
+            start_idx = time.find_nearest_index(t_start, cs_tolerance)
+            t_start = time[start_idx]
+        if t_end is None:
+            t_end = t_start + sample_time
+        end_idx = time.find_nearest_index(t_end, cs_tolerance)
+        t_end = time[end_idx]
+        return t_start, t_end
+
+
+    def get_slice(self, model, vardata):
+        namespace = getattr(model, self.namespace_name)
+        info = var_locator[var]
+        group = info.group
+        location = info.location
+        _slice = group[location]
+        return _slice
+
+
     def initialize_history_from_plant(self, t_start=None, t_end=None, 
             variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
+            name = None,
             **kwargs):
         # TODO: case for None
         config = self.config(kwargs)
         tolerance = config.tolerance
+        cs_tolerance = config.continuous_set_tolerance
         time = self.plant_time
+        t0 = time.first()
         namespace = getattr(self.plant, self.get_namespace_name())
-        var_locator = namespace.var_locator
+#        var_locator = namespace.var_locator
         category_dict = namespace.category_dict
 
-        slices = []
+        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
+        time_list = [t for t in time if t_start <= t and t <= t_end]
+
+        data = OrderedDict()
         for var in variables:
             if var in VariableCategory:
                 category = var
-                slices.extend(category_dict[category].varlist)
+                group = category_dict[category]
+                # Extend the queue
+                variables.extend(var[t0] for var in group)
                 continue
-            info = var_locator[var]
-            group = info.group
-            location = info.location
-            slices.append(group.varlist[location])
-        # Should I pass in the plant here so I can construct CUIDs with
-        # context=plant?
-        # Or, probably better, create CUIDs here then pass to history
-        # Then history could be created with any names for each variable,
-        # which could be a good and bad thing.
-        history = PlantHistory(time, slices, t_start=t_start, t_end=t_end,
-                tolerance=tolerance)
+            # The following block of code is repeated everywhere.
+            # TODO: Add method for this. Complication is that I need
+            # to know what model to search on.
+            # => It should be a method of my still-hypothetical model class
+#            info = var_locator[var]
+#            group = info.group
+#            location = info.location
+#            _slice = group[location]
+            _slice = self.get_slice(self.plant, var)
+            cuid = cuid_from_timeslice(_slice, time)
+            data[cuid] = [_slice[t].value for t in time_list]
+
+        history = VectorSeries(
+                data=data,
+                time=time_list,
+                name=name,
+                tolerance=cs_tolerance,
+                )
         return history
 
 
