@@ -12,3 +12,4 @@ from .common.config import (
         VariableCategory,
         )
 from .util import NMPCVarGroup
+from .rolling import TimeList, VectorSeries
