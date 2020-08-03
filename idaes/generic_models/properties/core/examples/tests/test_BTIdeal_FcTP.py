@@ -48,6 +48,7 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.NIST as NIST
 
 
 # -----------------------------------------------------------------------------
@@ -61,7 +62,7 @@ config_dict = {
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
             "enth_mol_ig_comp": RPP,
-            "pressure_sat_comp": RPP,
+            "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
                 "mw": 78.1136E-3,  # [1]
@@ -82,16 +83,15 @@ config_dict = {
                                           '5': 0},
                 "enth_mol_form_liq_comp_ref": 49.0e3,  # [3]
                 "enth_mol_form_vap_comp_ref": 82.9e3,  # [3]
-                "pressure_sat_comp_coeff": {'A': -6.98273,  # [1]
-                                            'B': 1.33213,
-                                            'C': -2.62863,
-                                            'D': -3.33399}}},
+                "pressure_sat_comp_coeff": {'A': 4.72583,  # [NIST]
+                                            'B': 1660.652,
+                                            'C': -1.461}}},
         'toluene': {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
             "enth_mol_ig_comp": RPP,
-            "pressure_sat_comp": RPP,
+            "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
                 "mw": 92.1405E-3,  # [1]
@@ -112,10 +112,9 @@ config_dict = {
                                           '5': 0},
                 "enth_mol_form_liq_comp_ref": 12.0e3,  # [3]
                 "enth_mol_form_vap_comp_ref": 50.1e3,  # [3]
-                "pressure_sat_comp_coeff": {'A': -7.28607,  # [1]
-                                            'B': 1.38091,
-                                            'C': -2.83433,
-                                            'D': -2.79168}}}},
+                "pressure_sat_comp_coeff": {'A': 4.07827,  # [NIST]
+                                            'B': 1343.943,
+                                            'C': -53.773}}}},
     "phases":  {'Liq': {"type": LiquidPhase,
                         "equation_of_state": Ideal},
                 'Vap': {"type": VaporPhase,
@@ -376,13 +375,13 @@ class TestStateBlock(object):
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
-            pytest.approx(0.4121, abs=1e-4)
+            pytest.approx(0.4070, abs=1e-4)
         assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
-            pytest.approx(0.6339, abs=1e-4)
+            pytest.approx(0.6296, abs=1e-4)
         assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.3961, abs=1e-4)
+            pytest.approx(0.4177, abs=1e-4)
 
-        assert value(model.props[1].enth_mol) == pytest.approx(47297, 1e-5)
+        assert value(model.props[1].enth_mol) == pytest.approx(48220.5, 1e-5)
 
     @pytest.mark.ui
     @pytest.mark.unit
