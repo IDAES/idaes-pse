@@ -315,16 +315,6 @@ def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
     return violated
 
 
-def find_point_in_continuousset(point, cset, tolerance=1e-8):
-    for t in cset:
-        diff = abs(point-t)
-        if diff < tolerance:
-            return t
-        if t > point:
-            break
-    return None
-
-
 def copy_weights(tgt_group, src_group):
     assert tgt_group.n_vars == src_group.n_vars
     for i in range(tgt_group.n_vars):

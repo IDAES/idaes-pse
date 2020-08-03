@@ -63,7 +63,6 @@ from idaes.apps.caprese.util import (
         validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, 
         validate_solver,
-        find_point_in_continuousset,
         get_violated_bounds_at_time)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
@@ -680,18 +679,19 @@ class NMPCSim(DynamicBase):
         config = self.config(kwargs)
         tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
+        controller_time = self.controller_time
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        t_controller = find_point_in_continuousset(
-                self.controller_time.first() + sample_time, 
-                self.controller_time, tolerance)
+        c_target = controller_time.first() + sample_time
+        c_index = controller_time.find_nearest_index(c_target, tolerance)
+        t_controller = controller_time[c_index]
         assert t_controller in self.controller_time
 
         time = self.plant_time
-        plant_sample_end = find_point_in_continuousset(
-                t_plant + sample_time, 
-                time, tolerance)
+        p_target = t_plant + sample_time
+        p_index = time.find_nearest_index(p_target, tolerance)
+        plant_sample_end = time[p_index]
         assert plant_sample_end in time
         plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
         assert plant_sample_end in plant_sample
@@ -1508,9 +1508,9 @@ class NMPCSim(DynamicBase):
                 for t in time:
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
-                        t_next = find_point_in_continuousset(
-                                t + sample_time,
-                                time, tolerance=tolerance)
+                        target = t + sample_time
+                        next_idx = time.find_nearest_index(target, tolerance)
+                        t_next = time[next_idx]
                         _slice[t].set_value(_slice[t_next].value)
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
@@ -1594,10 +1594,12 @@ class NMPCSim(DynamicBase):
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         tol = config.continuous_set_tolerance
+        plant_time = self.plant_time
 
         t_end = t_start + sample_time 
         assert t_start in self.plant_time
-        t_end = find_point_in_continuousset(t_end, self.plant_time, tol)
+        end_idx = self.plant_time.find_nearest_index(t_end, tol)
+        t_end = plant_time[end_idx]
         assert t_end in self.plant_time
 
         initialize_by_element_in_range(self.plant, self.plant_time, t_start, t_end, 
