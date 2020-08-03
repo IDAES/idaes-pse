@@ -216,9 +216,9 @@ class VectorSeries(OrderedDict):
         if len(self) != 0:
             tlast = self.time[-1]
             t0 = tpoints[0]
-            if t_last-tolerance <= t0 and t0 <= tlast+tolerance:
+            if tlast-tolerance <= t0 and t0 <= tlast+tolerance:
                 data0 = [series[0] for series in data]
-                if not consistent(data0):
+                if not self.consistent(data0):
                     raise ValueError(
                         'Tried to extend with series that overlapped at time '
                         'point %s, but the series data was not consistent '
