@@ -173,6 +173,17 @@ def main(plot_switch=False):
         nmpc.extend_history_from_plant(plant_history)
     import pdb; pdb.set_trace()
 
+    # get outlet temperature series from plant history
+    # utility function: 
+    #   temperature_series = data_series_from_var(
+    #               plant_history, 
+    #               time,
+    #               plant.cstr.outlet.temperature[0],
+    #               )
+    #   nmpc.get_series(history, temperature[0])
+    #   history.from_var(plant.cstr.outlet.temperature[0], time)
+    # plot it.
+
 
     if plot_switch:
         temp_info = plant._NMPC_NAMESPACE.var_locator[
