@@ -123,7 +123,13 @@ def main(plot_switch=False):
     
     nmpc.solve_control_problem()
 
+    planned_input_history = nmpc.initialize_input_history_from(controller, 
+            t_real=0)
+
     nmpc.inject_control_inputs_into_plant(add_input_noise=True)
+    # FIXME: Input noise is added to controller variables because of
+    #        the silly way I generate noisy values. This is fixed in the
+    #        MHE branch. Should port over to this one.
 
     nmpc.simulate_plant(time_plant.first())
 
@@ -135,6 +141,10 @@ def main(plot_switch=False):
 
     plant_history = nmpc.initialize_history_from_plant(0, 0.5,
             variables=variables_of_interest)
+
+    actual_input_history = nmpc.initialize_input_history_from(plant, t_real=0)
+    # FIXME: Addition of input noise appears to be broken.
+    #        Not true, my implementation is just wonky.
 
     for i in range(samples_to_simulate):
 
@@ -148,12 +158,20 @@ def main(plot_switch=False):
 
         nmpc.solve_control_problem()
 
+        nmpc.extend_input_history_from(planned_input_history, controller)
+        # FIXME: This breaks due to inconsistent inputs. Do I enforce a 
+        #        pwc constraint at t == 0? No. Breaks due to my bad noise
+        #        implementation. I apply noise, then back-shift.
+
         nmpc.inject_control_inputs_into_plant(time_plant.first(),
                                       add_input_noise=True)
         
         nmpc.simulate_plant(time_plant.first())
 
+        nmpc.extend_input_history_from(actual_input_history, plant)
+
         nmpc.extend_history_from_plant(plant_history)
+    import pdb; pdb.set_trace()
 
 
     if plot_switch:
