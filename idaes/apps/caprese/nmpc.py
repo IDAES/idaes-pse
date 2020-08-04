@@ -688,6 +688,8 @@ class NMPCSim(DynamicBase):
             group = info.group
             location = info.location
             bounds = (group.lb[location], group.ub[location])
+            # TODO: This leaves no option for the user to override weights
+            # with their own variance.
             weight = group.weights[location]
             noise_params = (base_noise_param/weight,)
             newval, = apply_noise_at_time_points(
@@ -760,7 +762,9 @@ class NMPCSim(DynamicBase):
         # TODO: Next: use this function in inject_control_inputs_into_plant
 
 
-    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
+    def inject_control_inputs_into_plant(self, t_plant, 
+            base_noise_param=0.05,
+            **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time, adding noise if desired.
@@ -777,6 +781,7 @@ class NMPCSim(DynamicBase):
         controller_namespace = getattr(self.controller, 
                 self.get_namespace_name())
         plant_namespace = getattr(self.plant, self.get_namespace_name())
+        add_noise = config.add_input_noise
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
@@ -785,11 +790,27 @@ class NMPCSim(DynamicBase):
                 self.controller_time, tolerance)
         assert t_controller in self.controller_time
 
-        add_noise = config.add_input_noise
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
+        self.inject_inputs_into(controller_namespace.plant_input_vars, 
+                self.plant, 
+                t_controller, 
+                t_plant, 
+                **kwargs)
+
+        if not add_noise:
+            return
+
+        noise_function = config.input_noise_function
+        noise_bound_option = config.noise_bound_option
+        max_number_discards = config.max_noise_bound_violations
+        noise_bound_push = config.noise_bound_push
+        # NOTE: here I have no option for user to override "noise weight"
+        # with a variance. User should be able to provide an absolute
+        # variance for each variable. These should /probably/ override the
+        # objective weights
+
+        # Apply noise to plant model's input_vars, using weights and bounds from
+        # controller's plant_input_vars.
+        # TODO
 
         # Need to get proper weights for plant's input vars
         locator = self.controller._NMPC_NAMESPACE.var_locator
@@ -830,12 +851,6 @@ class NMPCSim(DynamicBase):
             # Not a problem as the first sample of controller vars gets back-
             # shifted into oblivion.
             # TODO: replace with new noise function
-
-        self.inject_inputs_into(controller_namespace.plant_input_vars, 
-                self.plant, 
-                t_controller, 
-                t_plant, 
-                **kwargs)
 
 
     def has_consistent_initial_conditions(self, model, **kwargs):
