@@ -37,6 +37,8 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import from_json, to_json, StoreSpec
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.core.util.scaling as iscale
+
 
 __author__ = "John Eslick"
 
@@ -324,3 +326,18 @@ from 1 to num_outlets).}""",
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
 
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        for (t, i), c in self.pressure_eqn.items():
+            o_block = getattr(self, "{}_state".format(i))
+            s = iscale.get_scaling_factor(o_block[t].pressure)
+            iscale.constraint_scaling_transform(c, s)
+        for (t, i), c in self.enthalpy_eqn.items():
+            o_block = getattr(self, "{}_state".format(i))
+            s = iscale.get_scaling_factor(o_block[t].enth_mol)
+            iscale.constraint_scaling_transform(c, s)
+        for (t, i), c in self.flow_eqn.items():
+            o_block = getattr(self, "{}_state".format(i))
+            s = iscale.get_scaling_factor(o_block[t].flow_mol)
+            iscale.constraint_scaling_transform(c, s)

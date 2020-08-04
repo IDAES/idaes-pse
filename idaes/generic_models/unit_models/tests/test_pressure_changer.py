@@ -55,6 +55,7 @@ from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
+from idaes.core.util import scaling as iscale
 
 
 # -----------------------------------------------------------------------------
@@ -103,6 +104,7 @@ class TestPressureChanger(object):
 
         m.fs.unit = PressureChanger(default={
                 "property_package": m.fs.properties})
+        iscale.calculate_scaling_factors(m)
 
         assert hasattr(m.fs.unit, "volume")
 
@@ -116,6 +118,8 @@ class TestPressureChanger(object):
         m.fs.unit = PressureChanger(default={
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.pump})
+        iscale.calculate_scaling_factors(m)
+
 
         assert isinstance(m.fs.unit.fluid_work_calculation, Constraint)
 
@@ -129,6 +133,7 @@ class TestPressureChanger(object):
         m.fs.unit = PressureChanger(default={
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit.adiabatic, Constraint)
 
@@ -143,6 +148,7 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentPhase})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit.state_material_balances, Constraint)
         assert len(m.fs.unit.state_material_balances) == 4
@@ -158,6 +164,7 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "material_balance_type": MaterialBalanceType.componentTotal})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit.state_material_balances, Constraint)
         assert len(m.fs.unit.state_material_balances) == 2
@@ -222,6 +229,7 @@ class TestBTX_isothermal(object):
         m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         m.fs.unit.deltaP.fix(50000)
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -327,6 +335,7 @@ class TestIAPWS(object):
 
         m.fs.unit.deltaP.fix(50000)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -341,7 +350,7 @@ class TestIAPWS(object):
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
                 "compressor": False})
-
+        iscale.calculate_scaling_factors(m)
         return m
 
     @pytest.mark.build
@@ -537,6 +546,7 @@ class TestSaponification(object):
 
         m.fs.unit.deltaP.fix(-20000)
         m.fs.unit.efficiency_pump.fix(0.9)
+        iscale.calculate_scaling_factors(m)
 
         return m
 
@@ -646,6 +656,7 @@ class TestTurbine(object):
 
         m.fs.unit = Turbine(default={
                 "property_package": m.fs.properties})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
@@ -674,6 +685,7 @@ class TestCompressor(object):
 
         m.fs.unit = Compressor(default={
                 "property_package": m.fs.properties})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
@@ -702,6 +714,7 @@ class TestPump(object):
 
         m.fs.unit = Pump(default={
                 "property_package": m.fs.properties})
+        iscale.calculate_scaling_factors(m)
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
@@ -739,8 +752,8 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(50000)
         m.fs.unit.efficiency_pump.fix(0.9)
+        iscale.calculate_scaling_factors(m)        
         m.fs.unit.initialize()
-        m.fs.unit.work_fluid.display()
 
         assert degrees_of_freedom(m) == 0
 
@@ -779,8 +792,10 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(500000)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        iscale.calculate_scaling_factors(m)
+
         m.fs.unit.initialize()
-        m.fs.unit.work_mechanical.display()
+
         assert degrees_of_freedom(m) == 0
         m.fs.unit.get_costing(mover_type="compressor")
         calculate_variable_from_constraint(
@@ -811,6 +826,8 @@ class Test_costing(object):
 
         m.fs.unit.deltaP.fix(Pout - Pin)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        m.fs.unit.work_mechanical.display()
+
         m.fs.unit.initialize()
 
         m.fs.unit.get_costing()
