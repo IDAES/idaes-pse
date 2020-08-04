@@ -38,7 +38,7 @@ from idaes.power_generation.unit_models.helm import (
     HelmTurbineMultistage,
     HelmMixer,
     HelmIsentropicCompressor,
-    HelmIsentropicTurbine,
+    HelmTurbineStage,
 )
 from idaes.power_generation.unit_models import FWH0D
 from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
@@ -354,7 +354,7 @@ def create_model():
     m.fs.bfp = HelmIsentropicCompressor(
         default={"property_package": m.fs.prop_water})
 
-    m.fs.bfpt = HelmIsentropicTurbine(
+    m.fs.bfpt = HelmTurbineStage(
         default={"property_package": m.fs.prop_water})
 
     # The boiler feed pump outlet pressure is the same as the condenser
