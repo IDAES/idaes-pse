@@ -13,6 +13,8 @@
 import pytest
 from operator import itemgetter
 
+import re
+
 from idaes.generic_models.flowsheets.demo_flowsheet import (
     build_flowsheet, set_dof, initialize_flowsheet, solve_flowsheet)
 from idaes.generic_models.unit_models.pressure_changer import \
@@ -155,6 +157,42 @@ def test_serialize_flowsheet():
 
     assert named_edges_results == named_edges_truth
 
+@pytest.mark.unit
+def test_in_out_regex_matching():
+    inlet_matches = [  # TODO just generate all cases
+        'inlet',
+        'feed',
+        'in',
+        'in_EtOH',
+        'eth_inlet',
+        'feed_outlet',  # NOTE: this might be considered pathological input
+    ]
+    outlet_matches = [
+        'outlet',
+        'out',
+        'prod',
+        'liq_outlet',
+        'out_vap'
+    ]
+    unmatches = [
+        '',
+        'penicillin',
+        'internal',
+        'benzoin_vap',
+        'somerandomtext',
+        'raining'
+    ]
+    pattern = FlowsheetSerializer.INLET_REGEX
+    for name in inlet_matches:
+        assert pattern.search(name)
+    for name in unmatches:
+        assert pattern.search(name) is None
+
+    pattern = FlowsheetSerializer.OUTLET_REGEX
+    for name in outlet_matches:
+        assert pattern.search(name)
+    for name in unmatches:
+        assert pattern.search(name) is None
 
 @pytest.mark.unit
 def test_create_image_jointjs_json():

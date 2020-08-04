@@ -13,6 +13,7 @@
 from collections import defaultdict
 import json
 import os
+import re
 
 from idaes.core import UnitModelBlockData
 from idaes.core.util.tables import stream_states_dict
@@ -31,11 +32,16 @@ class FileBaseNameExistsError(Exception):
 
 
 class FlowsheetSerializer:
+    #: Regular expression identifying inlets by last component of ports' name
+    INLET_REGEX = re.compile(r'^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$') # TODO case insensitivity
+    r''
+    #: Regular expression identifying outlets by last component of ports' name
+    OUTLET_REGEX = re.compile(r'^out_|^prod_|^outlet_|^out$|^prod$|^outlet$|_out$|_prod$|_outlet$')
     def __init__(self):
-        self.unit_models = {}
-        self.arcs = {}
-        self.ports = {}
-        self.edges = defaultdict(list)
+        self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
+        self.arcs = {}  # {Arc.getname(): Arc}
+        self.ports = {}  # {Port: parent_unit}
+        self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
         self.out_json = {"model": {}}
@@ -87,7 +93,7 @@ class FlowsheetSerializer:
         self.name = name
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
-
+        # print(self.out_json)
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
@@ -109,7 +115,6 @@ class FlowsheetSerializer:
   
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
-
             for var, var_value in stream_value.define_display_vars().items():
                 var = var.capitalize()
 
@@ -121,13 +126,69 @@ class FlowsheetSerializer:
 
             self.labels[stream_name] = label[:-2]
 
-        self.edges = {}
+        used_ports = set()
+        self.edges = {}  # TODO: necessary? do the attributes need clearing?
         for name, arc in self.arcs.items():
-            try:
+            try:  # this is currently(?) necessary because for internally-nested arcs we may not record ports?
                 self.edges[name] = {"source": self.ports[arc.source], 
                                     "dest": self.ports[arc.dest]}
+                print(f'source: {arc.source}; val: {self.ports[arc.source]}')
+                used_ports.add(arc.source)
+                used_ports.add(arc.dest)
             except KeyError as error:
                 print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
+
+        #?? note we're only using the keys from self.ports, {port: parentcomponent}
+        untouched_ports = set(self.ports) - used_ports
+        # print(untouched_ports)
+        print(len(untouched_ports))
+        self._identify_implicit_inlets_and_outlets(untouched_ports)
+
+    def _identify_implicit_inlets_and_outlets(self, untouched_ports):
+        inlet_count = 0
+        outlet_count = 0
+        for port in untouched_ports:
+            portname = str(port).split('.')[-1]
+            print(f'\t{str(port)}\t\t({portname})')  # TODO portnames are not necessarily unique ugh
+
+            # identify ports per INLET_REGEX/OUTLET_REGEX
+            # then pretend they're unit models
+            # then add their edges
+            inlet_match = self.INLET_REGEX.search(portname)
+            if inlet_match:
+                # TODO: _add_feed_block()
+                print(f"  ^ inlet found; parent: {str(self.ports[port])}")
+                # name the feed "unit model" and its connecting edge with the name of the port itself
+                feedport = self._PseudoUnit('Feed', f'Inlet_{inlet_count}')
+                inlet_count += 1
+                self.unit_models[feedport] = {
+                    "name": feedport.getname(), # TODO: this name must be uniqueified
+                    "type": "feed"
+                }
+                self.edges[portname] = {
+                    "source": feedport, # TODO: this is the name that gets used in the jointjs serialization
+                    "dest": self.ports[port]  # TODO needs to be the parent unit model...
+                }
+                self.labels[portname] = "inlet info"  # TODO - fetch the actual information
+                continue
+
+            outlet_match = self.OUTLET_REGEX.search(portname)
+            if outlet_match:
+                print(f"  ^ outlet found; parent: {str(self.ports[port])}")
+                prodport = self._PseudoUnit('Product', f'Outlet_{outlet_count}')
+                outlet_count += 1
+                self.unit_models[prodport] = {
+                    "name": prodport.getname(),
+                    "type": "product"
+                }
+                self.edges[portname] = {
+                    "source": self.ports[port],
+                    "dest": prodport
+                }
+                self.labels[portname] = "outlet info"  # TODO - fetch the actual information
+                continue
+
+            # TODO: deal with remaining loose ports here?
 
     def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
@@ -185,6 +246,7 @@ class FlowsheetSerializer:
             "z": 2
         }
         out_json["cells"].append(entry)
+        print(f'\t\t{entry}\n\n')
 
     def get_unit_models(self):
         return self.unit_models
@@ -210,10 +272,10 @@ class FlowsheetSerializer:
                 "image": "/images/icons/" + icon_mapping(unit_model["type"])
             }
 
-        for edge in self.edges:
+        for edge, edge_info in self.edges.items():
             self.out_json["model"]["arcs"][edge] = \
-                {"source": self.edges[edge]["source"].getname(),
-                 "dest": self.edges[edge]["dest"].getname(),
+                {"source": edge_info["source"].getname(),
+                 "dest": edge_info["dest"].getname(),
                  "label": self.labels[edge]}
 
     def _construct_jointjs_json(self):
@@ -233,7 +295,7 @@ class FlowsheetSerializer:
                     unit_attrs["type"],
                     link_position_mapping[unit_attrs["type"]]
                 )
-            except KeyError:
+            except KeyError as e:
                 print(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
@@ -250,11 +312,12 @@ class FlowsheetSerializer:
                 x_pos += 100
                 y_pos += 100
 
+        print('looping through edges')
         id_counter = 0
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
-
+            print(f'{name}: {ports_dict}')
             if hasattr(ports_dict["source"], "vap_outlet"):
                 # TODO Figure out how to denote different outlet types. Need to
                 #  deal with multiple input/output offsets
@@ -279,8 +342,17 @@ class FlowsheetSerializer:
     def _add_unit_model_with_ports(self, unit):
         self.unit_models[unit] = {
                 "name": unit.getname(),
-                "type": unit._orig_module.split(".")[-1]
+                "type": unit._orig_module.split(".")[-1]  #TODO look for or create equivalent getter, as getname() above
             }
         for subcomponent in unit.component_objects(Port, descend_into=True):
             self.ports[subcomponent] = unit
 
+    # unit-like object in order to emulate missing unit models for implicit inlets/outlets
+    # eventually may need to actually implement/subclass
+    class _PseudoUnit:
+        def __init__(self, typename, id):
+            self.name = typename
+            self.id = id
+
+        def getname(self):
+            return self.id
