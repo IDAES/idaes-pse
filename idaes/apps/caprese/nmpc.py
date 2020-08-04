@@ -803,7 +803,7 @@ class NMPCSim(DynamicBase):
         tolerance. Returns True if any are found.
         """
         # This will raise an error if any constraints at t0 cannot be
-        # evaluated, i.e. conatain a variable of value None.
+        # evaluated, i.e. contain a variable of value None.
         namespace = getattr(model, self.get_namespace_name())
         time = namespace.get_time()
         config = self.config(kwargs)
