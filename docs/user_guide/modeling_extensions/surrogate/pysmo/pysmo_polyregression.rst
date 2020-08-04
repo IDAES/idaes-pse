@@ -22,7 +22,7 @@ Thus, for a problem with :math:`m` sample points and :math:`n` input variables, 
 Basic Usage
 ------------
 To generate a polynomial model with PySMO, the  *pysmo.polynomial_regression* class is first initialized,
-and then the method ``poly_training`` is called on the initialized object:
+and then the method ``training`` is called on the initialized object:
 
 .. code:: python
 
@@ -36,7 +36,7 @@ and then the method ``poly_training`` is called on the initialized object:
    # Initialize the PolynomialRegression class, extract the list of features and train the model
    >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3, *kwargs)
    >>> features = pr_init.get_feature_vector()
-   >>> polyfit = pr_init.poly_training()
+   >>> pr_init.training()
 
 * **xy_data** is a two-dimensional python data structure containing the input and output training data. The output values **MUST** be in the last column.
 * **maximum_polynomial_order** refers to the maximum polynomial order to be considered when training the surrogate.
@@ -49,8 +49,8 @@ and then the method ``poly_training`` is called on the initialized object:
 
 *pysmo.polynomial_regression* Output
 ---------------------------------------
-The result of the ``pysmo.polynomial_regression`` method (polyfit in above example) is a python object containing information
-about the optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as
+The result of the ``pysmo.polynomial_regression`` method is a python object containing information
+about the problem set-up, the final optimal polynomial order, the polynomial coefficients and different error and quality-of-fit metrics such as
 the mean-squared-error (MSE) and the :math:`R^{2}` coefficient-of-fit. A Pyomo expression can be generated from the
 object simply passing a list of variables into the function *generate_expression*:
 
@@ -61,17 +61,19 @@ object simply passing a list of variables into the function *generate_expression
    >>> for i in features.keys():
    >>>     list_vars.append(features[i])
    # Pass list to generate_expression function to obtain a Pyomo expression as output
-   >>> print(polyfit.generate_expression(list_vars))
+   >>> print(pr_init.generate_expression(list_vars))
 
 Prediction with *pysmo.polynomial_regression* models
 -----------------------------------------------------
 Once a polynomial model has been trained, predictions for values at previously unsampled points :math:*x_unsampled* can be evaluated by calling the
-``poly_predict_output()`` method on the resulting model object and the unsampled points:
+``predict_output()`` method on the unsampled points:
 
 .. code:: python
 
    # Create a python list from the headers of the dataset supplied for training
-   >>> y_unsampled = pr_init.poly_predict_output(rbf_fit, x_unsampled)
+   >>> y_unsampled = pr_init.predict_output(x_unsampled)
+   
+The confidence intervals for the regression paramaters may be viewed using the method ``confint_regression``.
 
 Flowsheet Integration
 ----------------------
@@ -101,7 +103,7 @@ an objective:
    >>> xy_data = pd.read_csv('data.csv', header=None, index_col=0)
    >>> pr_init = polynomial_regression.PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=3)
    >>> features = pr_init.get_feature_vector()
-   >>> polyfit = pr_init.poly_training()
+   >>> polyfit = pr_init.training()
 
    # Use the resulting polynomial as an objective, passing in the Pyomo variable x
    >>> m.obj = pyo.Objective(expr=polyfit.generate_expression([m.x[1], m.x[2]]))
@@ -122,11 +124,8 @@ Available Methods
     :members:
 
 .. autoclass:: idaes.surrogate.pysmo.polynomial_regression.PolynomialRegression
-    :members: __init__, get_feature_vector, set_additional_terms, poly_training, poly_predict_output
+    :members: __init__, get_feature_vector, set_additional_terms, training, predict_output, generate_expression, confint_regression 
 	
-.. autoclass:: idaes.surrogate.pysmo.polynomial_regression.ResultReport
-    :members: generate_expression
-
 References:
 ----------------
 [1] Forrester et al.'s book "Engineering Design via Surrogate Modelling: A Practical Guide", https://onlinelibrary.wiley.com/doi/pdf/10.1002/9780470770801

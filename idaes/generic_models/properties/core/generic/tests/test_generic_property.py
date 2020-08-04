@@ -137,34 +137,6 @@ class TestGenericParameterBlock(object):
                                "temperature": pyunits.K}})
 
     @pytest.mark.unit
-    def test_invalid_quantity(self):
-        m = ConcreteModel()
-
-        with pytest.raises(
-                ConfigurationError,
-                match="params defined units for an unexpected quantity foo. "
-                "Generic property packages only support units for the 7 "
-                "base SI quantities."):
-            m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}},
-                "phases": {
-                    "p1": {"type": LiquidPhase,
-                           "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
-                "state_definition": modules[__name__],
-                "pressure_ref": 1e5,
-                "temperature_ref": 300,
-                "base_units": {"time": pyunits.s,
-                               "length": pyunits.m,
-                               "mass": pyunits.kg,
-                               "amount": pyunits.mol,
-                               "temperature": pyunits.K,
-                               "current": pyunits.A,
-                               "luminous intensity": pyunits.candela,
-                               "foo": "bar"}})
-
-    @pytest.mark.unit
     def test_missing_required_quantity(self):
         m = ConcreteModel()
 

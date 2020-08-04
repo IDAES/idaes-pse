@@ -18,12 +18,18 @@ from idaes.surrogate import alamopy
 
 # Import additional python modules for creating the synthetic data
 import math
-import examples
 import numpy as np
 import pytest
 
 
-
+def sixcamel(*x):
+    x1, x2 = x
+    t1 = np.multiply(
+        4.0 - 2.1 * np.power(x1, 2) + np.divide(np.power(x1, 4), 3.0), np.power(x1, 2)
+    )
+    t2 = np.multiply(4 * np.power(x2, 2) - 4, np.power(x2, 2))
+    z = t1 + np.multiply(x1, x2) + t2
+    return z
 
 @pytest.mark.unit
 def test_multiple_input():
@@ -37,7 +43,7 @@ def test_multiple_input():
     x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
     z = np.zeros((ndata, 2))
     # specify simulator as examples.sixcamel
-    sim = examples.sixcamel
+    sim = sixcamel
     for i in range(ndata):
         z[i,0] = sim(x[i][0], x[i][1])
         z[i,1] = sim(x[i][0], x[i][1])
@@ -67,7 +73,7 @@ def test_single_input_CV():
     x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
     z = np.zeros((ndata, 1))
     # specify simulator as examples.sixcamel
-    sim = examples.sixcamel
+    sim = sixcamel
     for i in range(ndata):
         z[i,0] = sim(x[i][0], x[i][1])
         # z[i,1] = sim(x[i][0], x[i][1])
