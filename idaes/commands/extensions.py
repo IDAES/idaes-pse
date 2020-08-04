@@ -59,7 +59,7 @@ def get_extensions_platforms():
     default=None)
 @click.option(
     "--url",
-    help="URL to download solvers/libraries from, release must be 'none'",
+    help="URL to download solvers/libraries from, release must not be specified",
     default=None)
 @click.option(
     "--platform",
