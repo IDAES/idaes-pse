@@ -1738,7 +1738,9 @@ class NMPCSim(DynamicBase):
 
         t_start, t_end = self.validate_time_bounds(plant_time, t_start, t_end)
         time_list = [t for t in plant_time if t_start <= t and t <= t_end]
-        real_time = [t_prev + (t - t0) for t in time_list]
+        real_time = [t_prev + (t - t_start) for t in time_list]
+        # TODO: real time should probably just be offset from last time point
+        # in the history, unless somebody really needs a "gap"
 
         data_list = []
         for cuid in history:
@@ -1782,11 +1784,10 @@ class NMPCSim(DynamicBase):
 
     def initialize_history_from_plant(self, t_start=None, t_end=None, 
             variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
-            name = None,
+            name=None,
             **kwargs):
         # TODO: case for None
         config = self.config(kwargs)
-        tolerance = config.tolerance
         cs_tolerance = config.continuous_set_tolerance
         time = self.plant_time
         t_prev = self.previous_plant_time
@@ -1800,7 +1801,7 @@ class NMPCSim(DynamicBase):
         # If this were a method of some model container, that container would
         # need to know the model's current_time.
         time_list = [t for t in time if t_start <= t and t <= t_end]
-        real_time = [t_prev + (t - t0) for t in time_list]
+        real_time = [t_prev + (t - t_start) for t in time_list]
 
         data = OrderedDict()
         for var in variables:
@@ -1822,6 +1823,75 @@ class NMPCSim(DynamicBase):
                 )
         return history
 
+
+    def initialize_input_history_from(self, model, t_start=None, t_end=None, 
+            t_real=None,
+            name=None,
+            **kwargs):
+        config = self.config(kwargs)
+        cs_tolerance = config.continuous_set_tolerance
+        namespace = getattr(model, self.namespace_name)
+        time = namespace.get_time()
+        t0 = time.first()
+        sample_points = namespace.sample_points
+
+        if t_real is None:
+            t_real = self.previous_plant_time
+
+        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
+        if t0 not in sample_points:
+            # TODO: Need to decide whether I want to include t0 in sample points.
+            #       Probably should, but this is not the current behavior.
+            sample_points = [t0] + sample_points
+        time_list = [t for t in sample_points if t_start <= t and t <= t_end]
+        real_time = [t_real + (t - t_start) for t in time_list]
+
+        data = OrderedDict()
+        # TODO: What if "input_vars" in plant and controller are not the same?
+        for _slice in namespace.input_vars:
+            cuid = cuid_from_timeslice(_slice, time)
+            data[cuid] = [_slice[t].value for t in time_list]
+
+        history = VectorSeries(
+                data=data,
+                time=real_time,
+                name=name,
+                tolerance=cs_tolerance,
+                )
+        return history
+
+
+    def extend_input_history_from(self, history, model, t_start=None, 
+            t_end=None,
+            name=None,
+            **kwargs):
+        config = self.config(kwargs)
+        cs_tolerance = config.continuous_set_tolerance
+        namespace = getattr(model, self.namespace_name)
+        time = namespace.get_time()
+        t0 = time.first()
+        sample_points = namespace.sample_points
+
+        # Just offset from last existing time point.
+        # Can relax this (allowing gaps) if there is demand.
+        t_real = history.time[-1]
+
+        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
+        if t0 not in sample_points:
+            sample_points = [t0] + sample_points
+        time_list = [t for t in sample_points if t_start <= t and t <= t_end]
+        real_time = [t_real + (t - t_start) for t in time_list]
+
+        data_list = []
+        for cuid in history:
+            for comp in cuid.list_components(model.model()):
+                break
+            _slice = self.get_slice(model, comp)
+            data = [_slice[t].value for t in time_list]
+            data_list.append(data)
+        history.extend(real_time, data_list)
+        return history
+        
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, 
             Q_matrix=[],
