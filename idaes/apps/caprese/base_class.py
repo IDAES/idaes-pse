@@ -80,6 +80,14 @@ class DynamicBase(object):
                 )
             )
     CONFIG.declare(
+            'input_noise_function',
+            ConfigValue(
+                default=random.gauss,
+                doc=('Function to generate a random input value around '
+                    'some nominal value')
+                )
+            )
+    CONFIG.declare(
             'noise_bound_option',
             ConfigValue(
                 default=NoiseBoundOption.DISCARD,
