@@ -482,12 +482,14 @@ class TestBT_Generic(object):
         # Unused vars are density parameters
         assert number_unused_variables(btg) == 10
 
-    # @pytest.mark.component
-    # def test_units(self, btg):
-        # assert_units_equivalent(btg.fs.unit.control_volume.heat, pyunits.J/pyunits.s)
+    @pytest.mark.integration
+    def test_units(self, btg):
+        assert_units_equivalent(btg.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        # Referecnes don;t have units at the moment, so these tests fail
         # assert_units_equivalent(btg.fs.unit.heat_duty, pyunits.J/pyunits.s)
         # assert_units_equivalent(btg.fs.unit.deltaP, pyunits.Pa)
-        # assert_units_consistent(btg)
+        assert_units_consistent(btg)
 
     @pytest.mark.unit
     def test_dof(self, btg):

@@ -16,7 +16,6 @@ Tests for 0D heat exchanger models.
 Author: John Eslick
 """
 import pytest
-import copy
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
@@ -139,6 +138,7 @@ def test_config():
     assert not m.fs.unit.config.tube.has_pressure_change
     assert m.fs.unit.config.tube.property_package is m.fs.properties
 
+
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -179,8 +179,13 @@ def test_costing():
                 m.fs.unit.costing.cp_cost_eq)
 
     results = solver.solve(m)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
     assert m.fs.unit.costing.purchase_cost.value == \
-                                            pytest.approx(529738.6793, 1e-5)
+        pytest.approx(529738.6793, 1e-5)
 
 
 @pytest.mark.unit
@@ -982,9 +987,15 @@ class TestBT_Generic_cocurrent(object):
         assert number_total_constraints(btx) == 78
         assert number_unused_variables(btx) == 20
 
-    # @pytest.mark.component
-    # def test_units(self, btx):
-    #     assert_units_consistent(btx)
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.overall_heat_transfer_coefficient,
+                                pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
+
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
