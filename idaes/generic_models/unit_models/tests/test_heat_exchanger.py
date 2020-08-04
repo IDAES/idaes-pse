@@ -57,7 +57,7 @@ from idaes.core.util.testing import (get_default_solver,
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
-# Imports to assemble BT-PR with differnt units
+# Imports to assemble BT-PR with different units
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
