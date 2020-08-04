@@ -168,7 +168,7 @@ class VectorSeries(OrderedDict):
             # Treat i as an index into the list of ordered keys
             # This will be very confusing if anybody ever starts using
             # ints as keys in this class.
-            return list(self).__getitem__(i)
+            return list(self.values()).__getitem__(i)
         # Expected types: ComponentUIDs, strings
         return super().__getitem__(i)
 
