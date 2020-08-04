@@ -781,7 +781,6 @@ class NMPCSim(DynamicBase):
         """
         Args:
             source: Inputs to copy. Should be a list of time-indexed Vars
-                    or an InputHistory object
             model: Model into which to copy inputs
             t_source: Time point at which to access inputs to copy
             t_target: Time point in model where inputs will be copied
@@ -801,8 +800,6 @@ class NMPCSim(DynamicBase):
                 source,
                 sample,
                 t_source)
-        # If source is an InputHistory...
-        # TODO: Next: use this function in inject_control_inputs_into_plant
 
 
     def inject_control_inputs_into_plant(self, t_plant=None,
