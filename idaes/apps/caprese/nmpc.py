@@ -59,7 +59,6 @@ from idaes.apps.caprese.util import (
         NMPCVarGroup, 
         NMPCVarLocator, 
         copy_values_at_time, 
-        add_noise_at_time,
         validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, 
         validate_solver,
