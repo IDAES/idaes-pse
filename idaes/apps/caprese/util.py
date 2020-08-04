@@ -741,133 +741,133 @@ def apply_noise_at_time_points(var, points, params, noise_function,
         result.append(newval)
     return result
 
-InputRecord = namedtuple('InputRecord', ['start', 'end', 'value'])
-
-class InputHistory(list):
-    def __init__(self, sample_time=0, tolerance=1e-8):
-        self.sample_time = sample_time
-        self.tolerance = tolerance
-        super().__init__()
-
-    def append(self, record):
-        if not isinstance(record, InputRecord):
-            raise TypeError(
-                'Items of InputHistory must be instances of InputRecord')
-
-        if len(self) == 0:
-            super().append(record)
-        else:
-            last = self[-1]
-            if abs(record.start - last.end) > self.tolerance:
-                raise ValueError(
-                    'Appended record must start where the last '
-                    'record left off')
-            super().append(record)
-
-def search_history(history, low, high, val, tolerance=1e-8):
-    """
-    Binary search of an InputHistory array for a time value
-    """
-    if high >= low:
-        mid = (high + low) // 2
-        record = history[mid]
-        if (record.start + tolerance < val and val < record.end + tolerance):
-            # Want sample points to be included in their preceding interval
-            return mid
-
-        elif record.start + tolerance > val:
-            return search_history(history, low, mid-1, val, tolerance)
-
-        else:
-            return search_history(history, mid+1, high, val, tolerance)
-
-    else:
-        return None
-
-MeasurementRecord = namedtuple('MeasurementRecord', ['time_point', 'value'])
-
-class MeasurementHistory(list):
-    def __init__(self, name=None, tolerance=1e-8):
-        self.name = name
-        self.tolerance = tolerance
-        self.empty = True
-        super().__init__()
-
-    def last(self):
-        return self[-1]
-
-    def append(self, record):
-        if not isinstance(record, MeasurementRecord):
-            raise TypeError(
-                'Items of MeasurementHistory must be instances of '
-                'MeasurementRecord')
-
-        if self.empty:
-            super().append(record)
-            self.empty = False
-        else:
-            if (record.time_point < self.last().time_point + self.tolerance):
-                raise ValueError(
-                'Appended record must come after the last existing record. '
-                'Expected a time point after %s, got %s.'
-                % (self.last().time_point, record.time_point))
-            super().append(record)
-
-    def binary_search(self, low, high, t):
-        """
-        Binary search of a MeasurementHistory array for a time value
-        """
-        if high >= low:
-            mid = (high + low) // 2
-            record = self[mid]
-            if abs(record.time_point - t) <= self.tolerance:
-                return mid
-
-            elif t < record.time_point - self.tolerance:
-                return self.binary_search(low, mid-1, t)
-
-            else:
-                return self.binary_search(mid+1, high, t)
-
-        else:
-            return None
-
-    def find(self, t, low=0, high=None):
-        """
-        Returns the record at time point t, if one exists.
-        """
-        if high is None:
-            high = len(self)
-        index = self.binary_search(low, high, t)
-        if index is None:
-            return None
-        record = self[index]
-        return record
-
-
-def histories_from_json(filename):
-    with open(filename, 'r') as f:
-        obj = json.load(f)
-    histories = []
-    for meas_list in obj:
-        history = MeasurementHistory()
-        for data in meas_list:
-            record = MeasurementRecord(*data)
-            history.append(record)
-        histories.append(history)
-    return histories
-
-
-def cuid_from_timeslice(_slice, time):
-    """
-    Args:
-        _slice: A Reference to time-only slice whose CUID, with a wildcard
-                in the time index's location, will be generated.
-        time: Set that indexes _slice
-
-    Returns:
-        The ComponentUID constructed from the string described above
-    """
-    t0 = time.first()
-    compdata = _slice[t0]
-    return ComponentUID(compdata, wildcard_set=time)
+#InputRecord = namedtuple('InputRecord', ['start', 'end', 'value'])
+#
+#class InputHistory(list):
+#    def __init__(self, sample_time=0, tolerance=1e-8):
+#        self.sample_time = sample_time
+#        self.tolerance = tolerance
+#        super().__init__()
+#
+#    def append(self, record):
+#        if not isinstance(record, InputRecord):
+#            raise TypeError(
+#                'Items of InputHistory must be instances of InputRecord')
+#
+#        if len(self) == 0:
+#            super().append(record)
+#        else:
+#            last = self[-1]
+#            if abs(record.start - last.end) > self.tolerance:
+#                raise ValueError(
+#                    'Appended record must start where the last '
+#                    'record left off')
+#            super().append(record)
+#
+#def search_history(history, low, high, val, tolerance=1e-8):
+#    """
+#    Binary search of an InputHistory array for a time value
+#    """
+#    if high >= low:
+#        mid = (high + low) // 2
+#        record = history[mid]
+#        if (record.start + tolerance < val and val < record.end + tolerance):
+#            # Want sample points to be included in their preceding interval
+#            return mid
+#
+#        elif record.start + tolerance > val:
+#            return search_history(history, low, mid-1, val, tolerance)
+#
+#        else:
+#            return search_history(history, mid+1, high, val, tolerance)
+#
+#    else:
+#        return None
+#
+#MeasurementRecord = namedtuple('MeasurementRecord', ['time_point', 'value'])
+#
+#class MeasurementHistory(list):
+#    def __init__(self, name=None, tolerance=1e-8):
+#        self.name = name
+#        self.tolerance = tolerance
+#        self.empty = True
+#        super().__init__()
+#
+#    def last(self):
+#        return self[-1]
+#
+#    def append(self, record):
+#        if not isinstance(record, MeasurementRecord):
+#            raise TypeError(
+#                'Items of MeasurementHistory must be instances of '
+#                'MeasurementRecord')
+#
+#        if self.empty:
+#            super().append(record)
+#            self.empty = False
+#        else:
+#            if (record.time_point < self.last().time_point + self.tolerance):
+#                raise ValueError(
+#                'Appended record must come after the last existing record. '
+#                'Expected a time point after %s, got %s.'
+#                % (self.last().time_point, record.time_point))
+#            super().append(record)
+#
+#    def binary_search(self, low, high, t):
+#        """
+#        Binary search of a MeasurementHistory array for a time value
+#        """
+#        if high >= low:
+#            mid = (high + low) // 2
+#            record = self[mid]
+#            if abs(record.time_point - t) <= self.tolerance:
+#                return mid
+#
+#            elif t < record.time_point - self.tolerance:
+#                return self.binary_search(low, mid-1, t)
+#
+#            else:
+#                return self.binary_search(mid+1, high, t)
+#
+#        else:
+#            return None
+#
+#    def find(self, t, low=0, high=None):
+#        """
+#        Returns the record at time point t, if one exists.
+#        """
+#        if high is None:
+#            high = len(self)
+#        index = self.binary_search(low, high, t)
+#        if index is None:
+#            return None
+#        record = self[index]
+#        return record
+#
+#
+#def histories_from_json(filename):
+#    with open(filename, 'r') as f:
+#        obj = json.load(f)
+#    histories = []
+#    for meas_list in obj:
+#        history = MeasurementHistory()
+#        for data in meas_list:
+#            record = MeasurementRecord(*data)
+#            history.append(record)
+#        histories.append(history)
+#    return histories
+#
+#
+#def cuid_from_timeslice(_slice, time):
+#    """
+#    Args:
+#        _slice: A Reference to time-only slice whose CUID, with a wildcard
+#                in the time index's location, will be generated.
+#        time: Set that indexes _slice
+#
+#    Returns:
+#        The ComponentUID constructed from the string described above
+#    """
+#    t0 = time.first()
+#    compdata = _slice[t0]
+#    return ComponentUID(compdata, wildcard_set=time)
