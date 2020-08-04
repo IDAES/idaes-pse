@@ -774,21 +774,25 @@ class NMPCSim(DynamicBase):
                       applied.
             
         """
-        # config args for control_input_noise
         config = self.config(kwargs)
-        tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
         controller_namespace = getattr(self.controller, 
                 self.get_namespace_name())
+        c_time = controller_namespace.get_time()
+        tc0 = c_time.first()
+        c_locator = controller_namespace.var_locator
         plant_namespace = getattr(self.plant, self.get_namespace_name())
+        p_time = plant_namespace.get_time()
         add_noise = config.add_input_noise
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
         t_controller = find_point_in_continuousset(
-                self.controller_time.first() + sample_time, 
-                self.controller_time, tolerance)
-        assert t_controller in self.controller_time
+                tc0 + sample_time, 
+                c_time, 
+                cs_tolerance)
+        assert t_controller in c_time
 
         self.inject_inputs_into(controller_namespace.plant_input_vars, 
                 self.plant, 
@@ -808,49 +812,35 @@ class NMPCSim(DynamicBase):
         # variance for each variable. These should /probably/ override the
         # objective weights
 
-        # Apply noise to plant model's input_vars, using weights and bounds from
-        # controller's plant_input_vars.
-        # TODO
+        # NOTE: This repeats some work done in inject_inputs_into
+        #       I'll let it slide for now.
+        sample_end = find_point_in_continuousset(
+                t_plant + sample_time,
+                p_time,
+                cs_tolerance)
+        sample = [t for t in p_time if t > t_plant and t <= sample_end]
 
-        # Need to get proper weights for plant's input vars
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.plant_input_vars:
-                    info = locator[var[t_controller]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, max_noise_weight))
-                    else:
-                        # By default, if state is not penalized in objective,
-                        # noise will not be applied to it here.
-                        # This may be incorrect, but user will have to override,
-                        # by providing their own weights, as I don't see a good
-                        # way of calculating a weight
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.plant_input_vars,
-                              t_controller,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
-            #add_noise_at_time(self.plant.input_vars,
-            #                  t_plant+sample_time,
-            #                  weights=noise_weights,
-            #                  sigma_0=noise_sig_0,
-            #                  **noise_args)
-            # Slight bug in logic here: noise is applied to plant variables,
-            # but only controller variables have bounds.
-            # Alternatives: add bounds to plant variables (undesirable)  
-            #               apply noise to controller variables (maybe okay...)
-            #                ^ can always record nominal values, then revert
-            #                  noise after it's copied into plant...
-            # Right now I apply noise to controller model, and don't revert.
-            # Not a problem as the first sample of controller vars gets back-
-            # shifted into oblivion.
-            # TODO: replace with new noise function
+        for p_var, c_var in zip(plant_namespace.input_vars,
+                controller_namespace.plant_input_vars):
+            # Access the controller var's group and location
+            c_vardata = c_var[t_controller]
+            info = c_locator[c_vardata]
+            group = info.group
+            location = info.location
+            bounds = (group.lb[location], group.ub[location])
+            weight = group.weights[location]
+            noise_params = (base_noise_param/weight,)
+            newval, = apply_noise_at_time_points(
+                    p_var,
+                    t_plant,
+                    noise_params,
+                    noise_function,
+                    bound_option=noise_bound_option,
+                    max_number_discards=max_number_discards,
+                    bound_push=noise_bound_push,
+                    )
+            for t in sample:
+                p_var[t].set_value(newval)
 
 
     def has_consistent_initial_conditions(self, model, **kwargs):
