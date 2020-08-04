@@ -64,6 +64,7 @@ class PlantHorizonType(ConfigEnum):
     FULL = 71
     ROLLING = 72
 
+
 # This function is used as the domain for the user-provided
 # list of inputs at time.first().
 def validate_list_of_vardata(varlist):

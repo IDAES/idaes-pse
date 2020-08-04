@@ -21,11 +21,15 @@ from pyomo.dae.flatten import flatten_dae_variables
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.core.kernel.component_map import ComponentMap
 from idaes.apps.caprese.common import config as dyn_config
-from idaes.apps.caprese.common.config import (VariableCategory,
-        PlantHorizonType)
+from idaes.apps.caprese.common.config import (
+        VariableCategory,
+        PlantHorizonType,
+        NoiseBoundOption,
+        )
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
+import random
 
 __author__ = "Robert Parker"
 
@@ -75,6 +79,48 @@ class DynamicBase(object):
                 default=PlantHorizonType.FULL,
                 domain=PlantHorizonType.from_enum_or_string,
                 doc='What type of plant time horizon to check for',
+                )
+            )
+    CONFIG.declare(
+            'measurement_noise_function',
+            ConfigValue(
+                default=random.gauss,
+                doc=('Function to generate a random value around some '
+                    'nominal value')
+                )
+            )
+    CONFIG.declare(
+            'input_noise_function',
+            ConfigValue(
+                default=random.gauss,
+                doc=('Function to generate a random input value around '
+                    'some nominal value')
+                )
+            )
+    CONFIG.declare(
+            'noise_bound_option',
+            ConfigValue(
+                default=NoiseBoundOption.DISCARD,
+                domain=NoiseBoundOption.from_enum_or_string,
+                doc=('Strategy to take when a random value violates a bound')
+                )
+            )
+    CONFIG.declare(
+            'max_noise_bound_violations',
+            ConfigValue(
+                default=5,
+                domain=int,
+                doc=('The maximum number of bound violations a noisy value '
+                    'can take before an exception is thrown.')
+                )
+            )
+    CONFIG.declare(
+            'noise_bound_push',
+            ConfigValue(
+                default=1e-8,
+                domain=float,
+                doc=('Bound push for noisy values when they are to be pushed '
+                    'rather than regenerated')
                 )
             )
 

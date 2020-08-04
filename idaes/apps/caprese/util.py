@@ -467,7 +467,8 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
 
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
-    assert degrees_of_freedom(model) == 0
+    #assert degrees_of_freedom(model) == 0
+    # No need to check dof here as we will check right before each solve
 
     #dae_vars = kwargs.pop('dae_vars', [])
     if not dae_vars:
@@ -606,138 +607,6 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
             if was_originally_active[id(comp)]:
                 comp.activate()
 
-    assert degrees_of_freedom(model) == 0
-
-
-def add_noise_at_time(varlist, t_list, **kwargs):
-    """Function to add random noise to the values of variables at a particular
-    point in time.
-
-    Args:
-        varlist : List of (only) time-indexed variables (or References) to
-                  which to add noise
-        t_list : Point in time, or list of points in time, at which to add noise
-
-    Kwargs:
-        random_function : Function that will be called to get the random noise 
-                          added to each variable
-        args_function : Function that maps index (location) of a variable in
-                      varlist to a list of arguments that can be passed to the
-                      random function
-        weights : List of weights for random distribution arguments such as 
-                  standard deviation (Gaussian), radius (uniform), or lambda
-                  (Laplacian)
-        sigma_0 : Value of standard deviation for a variable with unit weight.
-                  Default is 0.05.
-        random_arg_dict : Dictionary containing other values users may want
-                          to use in their argument function
-        bound_strategy : String describing strategy for case in which a bound
-                         is violated. Options are 'discard' (default) or 'push'.
-        discard_limit : Number of discarded random values after which an
-                        exception will be raised. Default is 5
-        bound_push : Distance from bound if a push strategy is used for bound
-                     violate. Default is 0
-
-    Returns:
-        A dictionary mapping each t in t_list to the 
-    """
-    n = len(varlist)
-    rand_fcn = kwargs.pop('random_function', random.gauss)
-    weights = kwargs.pop('weights', [1 for i in range(n)])
-    random_arg_dict = kwargs.pop('random_arg_dict', {})
-    assert len(weights) == n
-    sig_0 = kwargs.pop('sigma_0', 0.05)
-    sig = [w*sig_0 if w is not None else None for w in weights]
-
-    args_fcn = kwargs.pop('args_function',
-                          lambda i, val, **kwargs: [val, sig[i]] 
-                                 if sig[i] is not None else None)
-
-    bound_strategy = kwargs.pop('bound_strategy', 'discard')
-    discard_limit = kwargs.pop('discard_limit', 5)
-    bound_push = kwargs.pop('bound_push', 0)
-    assert bound_push >= 0
-    assert discard_limit >= 0
-
-    if type(t_list) is not list:
-        t_list = [t_list]
-
-    nom_values = {t: [var[t].value for var in varlist] for t in t_list}
-    for t in t_list:
-        if any([val is None for val in nom_values[t]]):
-            raise ValueError(
-                    'Cannot apply noise to an uninitialized variable')
-
-    def violated_bounds(var, t, val):
-        if var[t].ub is not None:
-            if val > var[t].ub:
-                return ('upper', var[t].ub)
-        if var[t].lb is not None:
-            if val < var[t].lb:
-                return ('lower', var[t].lb)
-        return None
-
-    for i, var in enumerate(varlist):
-        for t in t_list:
-            rand_args = args_fcn(i, var[t].value, **random_arg_dict)
-            if not rand_args:
-                # If a certain value is to be skipped,
-                # args_fcn should return None
-                continue
-            newval = rand_fcn(*rand_args)
-
-            violated = violated_bounds(var, t, newval)
-            if not violated:
-                var[t].set_value(newval)
-                continue
-            if bound_strategy == 'discard':
-                for count in range(0, discard_limit):
-                    newval = rand_fcn(*rand_args) 
-                    if not violated_bounds(var, t, newval):
-                        break
-                if violated_bounds(var, t, newval):
-                    raise ValueError(
-                        'Discard limit exceeded when trying to apply noise to '
-                        + var[t].name + ' with arguments ' + str(rand_args) +
-                        '. Please adjust bounds or tighten distribution.')
-            elif bound_strategy == 'push':
-                if violated[0] == 'upper':
-                    newval = violated[1] - bound_push
-                elif violated[0] == 'lower':
-                    newval = violated[1] + bound_push
-                if violated_bounds(var, t, newval):
-                    raise ValueError(
-                            'Value after noise violates bounds even after '
-                            'push. Please use a smaller bound push.')
-            var[t].set_value(newval) 
-
-    return nom_values
-
-#def get_default_variance(val_list, sigma_factor=0.05):
-#    return [val*sigma_factor for val in val_list]
-#
-#def get_default_noise_function(variance):
-#    return lambda i, x: random.gauss(x, variance[i])
-#
-#def apply_noise(val_list, variance=None, noise_function=None, sigma_factor=0.05):
-#    """
-#    Applies noise to each value in a list of values and returns the result.
-#    Noise is generated by a user-provided function that maps an index and value
-#    from the list to a random value. 
-#    """
-#    result = []
-#
-#    if variance is None:
-#        variance = get_default_variance(var_list, sigma_factor)
-#
-#    if noise_function is None:
-#        noise_function = get_default_noise_function(variance)
-#
-#    for i, val in enumerate(val_list):
-#        result.append(noise_function(i, val))
-#
-#    return result
-
 def get_violated_bounds(val, bounds):
     lower = bounds[0]
     upper = bounds[1]
@@ -748,6 +617,9 @@ def get_violated_bounds(val, bounds):
         if val < lower:
             return (lower, 1)
     return (None, 0)
+
+class MaxDiscardError(Exception):
+    pass
 
 def apply_noise(val_list, noise_params, noise_function):
     """
@@ -763,9 +635,6 @@ def apply_noise(val_list, noise_params, noise_function):
         result.append(noise_function(val, *params))
     return result
 
-class MaxDiscardError(Exception):
-    pass
-
 def apply_bounded_noise_discard(val, params, noise_function, bounds, 
         max_number_discards):
     i = 0
@@ -773,7 +642,7 @@ def apply_bounded_noise_discard(val, params, noise_function, bounds,
         newval = noise_function(val, *params)
 
         violated_bound, direction = get_violated_bounds(newval, bounds)
-        if not violated_bound:
+        if violated_bound is None:
             return newval
 
     # NOTE: This is not the most useful place to raise such an error
@@ -803,6 +672,7 @@ def apply_noise_with_bounds(val_list, noise_params, noise_function, bound_list,
     for val, params, bounds in zip(val_list, noise_params, bound_list):
         if type(params) is not tuple:
             # better be a scalar
+            # better check: if type(params) not in {sequence_types}...
             params = (params,)
 
         if bound_option == NoiseBoundOption.DISCARD:
@@ -838,15 +708,38 @@ def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
             bound_push=bound_push)
     return result
 
-def apply_noise_at_time_points(var, points, noise_params, noise_function,
-        bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
+def apply_noise_at_time_points(var, points, params, noise_function,
+        bounds=(None, None), bound_option=NoiseBoundOption.DISCARD, 
+        max_number_discards=5, bound_push=1e-8):
     """
+    TODO
     """
-    # TODO: implement this so I don't have to generate lists of noise params and 
-    # bounds every time I call this function
-    pass
+    params_type = type(params)
+    points_type = type(points)
+    sequence_types = {tuple, list}
+    if params_type not in sequence_types:
+        # better be a scalar
+        params = (params,)
+    if points_type not in sequence_types:
+        points = [points]
 
+    result = []
+    for t in points:
+        val = var[t].value
+        if bound_option == NoiseBoundOption.DISCARD:
+            newval = apply_bounded_noise_discard(val, params, noise_function,
+                    bounds, max_number_discards)
+        elif bound_option == NoiseBoundOption.PUSH:
+            newval = apply_bounded_noise_push(val, params, noise_function,
+                    bounds, bound_push)
+        elif bound_option == NoiseBoundOption.FAIL:
+            newval = apply_bounded_noise_fail(val, params, noise_function, 
+                    bounds)
+        else:
+            raise RuntimeError(
+                'Bound violation option not recognized')
+        result.append(newval)
+    return result
 
 InputRecord = namedtuple('InputRecord', ['start', 'end', 'value'])
 

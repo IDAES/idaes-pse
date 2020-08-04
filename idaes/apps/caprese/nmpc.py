@@ -62,13 +62,12 @@ from idaes.apps.caprese.util import (
         NMPCVarGroup, 
         NMPCVarLocator, 
         copy_values_at_time, 
-        add_noise_at_time,
         validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, 
         validate_solver,
         get_violated_bounds_at_time,
-        PlantHistory,
         cuid_from_timeslice,
+        apply_noise_at_time_points,
         )
 from idaes.apps.caprese.rolling import TimeList, VectorSeries
 from idaes.apps.caprese.base_class import DynamicBase
@@ -663,43 +662,19 @@ class NMPCSim(DynamicBase):
         # probably be done with config blocks somehow.
         # TODO: allow specification of noise args
         config = self.config(kwargs)
+        noise_sigma_0 = config.noise_sigma_0
+        namespace = getattr(self.controller, self.get_namespace_name())
 
         time = self.controller_time
         t0 = time.first()
 
-        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
-                            t0,
-                            t_plant)
+        measured_state = self.get_measured_plant_state(
+                t_plant=t_plant, 
+                base_noise_param=noise_sigma_0,
+                **kwargs)
 
-        # Apply noise to new initial conditions
-        add_noise = config.add_plant_noise
-
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
-
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.ic_vars:
-                    info = locator[var[t0]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, 
-                                                 max_noise_weight))
-                    else:
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                              t0,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
+        for val, var in zip(measured_state, namespace.ic_vars):
+            var[t0].set_value(val)
 
     def validate_plant_start_time(self, t_plant, **kwargs):
         config = self.config(kwargs)
@@ -713,7 +688,126 @@ class NMPCSim(DynamicBase):
         return t_plant
 
 
-    def inject_control_inputs_into_plant(self, t_plant=None, **kwargs):
+    def get_measured_plant_state(self, t_plant=None, apply_noise=False,
+            base_noise_param=0.05,
+            **kwargs):
+        """
+        """
+        # grab values out of plant's controller_ic_vars at specified time
+        # ^ Could also access these values from a History-like data structure
+        #   Or could get them from an MHE model
+        # If specified, apply noise to these values
+        # Return list of these values
+        #
+        # Want to apply noise independent of any model.
+        config = self.config(kwargs)
+        sample_time = self.sample_time
+        noise_function = config.measurement_noise_function
+        noise_bound_option = config.noise_bound_option
+        max_number_discards = config.max_noise_bound_violations
+        noise_bound_push = config.noise_bound_push
+        cs_tolerance = config.continuous_set_tolerance
+        plant_namespace = getattr(self.plant, self.get_namespace_name())
+        controller_namespace = getattr(self.controller, 
+                self.get_namespace_name())
+        locator = controller_namespace.var_locator
+        plant_time = plant_namespace.get_time()
+        controller_time = controller_namespace.get_time()
+        if t_plant is None:
+            t_plant = plant_time.first() + sample_time
+            plant_idx = plant_time.find_nearest_index(t_plant, cs_tolerance)
+            t_plant = plant_time[plant_idx]
+
+        if not apply_noise:
+            return [var[t_plant].value for var in 
+                    plant_namespace.controller_ic_vars]
+
+        measured_state = []
+        t0 = controller_time.first()
+        for p_var, c_var in zip(plant_namespace.controller_ic_vars,
+                controller_namespace.ic_vars):
+            c_var0 = c_var[t0]
+            info = locator[c_var0]
+            group = info.group
+            location = info.location
+            bounds = (group.lb[location], group.ub[location])
+            # TODO: This leaves no option for the user to override weights
+            # with their own variance.
+            weight = group.weights[location]
+            noise_params = (base_noise_param/weight,)
+            newval, = apply_noise_at_time_points(
+                    p_var,
+                    t_plant,
+                    noise_params,
+                    noise_function,
+                    bounds=bounds,
+                    bound_option=noise_bound_option,
+                    max_number_discards=max_number_discards,
+                    bound_push=noise_bound_push,
+                    )
+            measured_state.append(newval)
+        return measured_state
+
+
+    def shift_controller_initial_conditions(self, t_target=None, shift=None, 
+            categories=[
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.DERIVATIVE,
+                ],
+            **kwargs):
+        """
+        """
+        config = self.config(kwargs)
+        cs_tolerance = config.continuous_set_tolerance
+        namespace = getattr(self.controller, self.get_namespace_name())
+        category_dict = namespace.category_dict
+        time = namespace.get_time()
+        sample_time = self.sample_time
+        if t_target is None:
+            t_target = time.first()
+        if shift is None:
+            shift = sample_time
+        t_source = t_target + shift
+        source_idx = time.find_nearest_index(t_source, cs_tolerance)
+        t_source = time[source_idx]
+
+        for categ in categories:
+            varlist = category_dict[categ].varlist
+            copy_values_at_time(varlist, varlist, t_target, t_source)
+
+
+    def inject_inputs_into(self, source, model, t_source, t_target, **kwargs):
+        """
+        Args:
+            source: Inputs to copy. Should be a list of time-indexed Vars
+                    or an InputHistory object
+            model: Model into which to copy inputs
+            t_source: Time point at which to access inputs to copy
+            t_target: Time point in model where inputs will be copied
+        """
+        # If source is a varlist:
+        config = self.config(kwargs)
+        cs_tolerance = config.continuous_set_tolerance
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
+        sample_time = self.sample_time
+        sample_end = t_target + sample_time
+        end_idx = time.find_nearest_index(sample_end, cs_tolerance)
+        sample_end = time[end_idx]
+        sample = [t for t in time if t > t_target and t <= sample_end]
+        
+        copy_values_at_time(namespace.input_vars.varlist,
+                source,
+                sample,
+                t_source)
+        # If source is an InputHistory...
+        # TODO: Next: use this function in inject_control_inputs_into_plant
+
+
+    def inject_control_inputs_into_plant(self, t_plant=None,
+            base_noise_param=0.05,
+            **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time, adding noise if desired.
@@ -723,79 +817,79 @@ class NMPCSim(DynamicBase):
                       applied.
             
         """
-        # config args for control_input_noise
         config = self.config(kwargs)
-        tolerance = config.continuous_set_tolerance
+        cs_tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
         plant_type = config.plant_horizon_type
-        t_plant = self.validate_plant_start_time(t_plant, 
+        t_plant = self.validate_plant_start_time(t_plant,
                 plant_horizon_type=plant_type)
-        controller_time = self.controller_time
+        controller_namespace = getattr(self.controller, 
+                self.get_namespace_name())
+        c_time = controller_namespace.get_time()
+        tc0 = c_time.first()
+        c_locator = controller_namespace.var_locator
+        plant_namespace = getattr(self.plant, self.get_namespace_name())
+        p_time = plant_namespace.get_time()
+        add_noise = config.add_input_noise
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        c_target = controller_time.first() + sample_time
-        c_index = controller_time.find_nearest_index(c_target, tolerance)
-        t_controller = controller_time[c_index]
-        assert t_controller in self.controller_time
+        c_target = tc0 + sample_time
+        c_index = c_time.find_nearest_index(c_target, cs_tolerance)
+        t_controller = c_time[c_index]
+        assert t_controller in c_time
 
-        time = self.plant_time
+        self.inject_inputs_into(controller_namespace.plant_input_vars, 
+                self.plant, 
+                t_controller, 
+                t_plant, 
+                **kwargs)
+
+        if not add_noise:
+            return
+
+        noise_function = config.input_noise_function
+        noise_bound_option = config.noise_bound_option
+        max_number_discards = config.max_noise_bound_violations
+        noise_bound_push = config.noise_bound_push
+        # NOTE: here I have no option for user to override "noise weight"
+        # with a variance. User should be able to provide an absolute
+        # variance for each variable. These should /probably/ override the
+        # objective weights
+
+        # NOTE: This repeats some work done in inject_inputs_into
+        #       I'll let it slide for now.
         p_target = t_plant + sample_time
-        p_index = time.find_nearest_index(p_target, tolerance)
-        plant_sample_end = time[p_index]
-        assert plant_sample_end in time
-        plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
-        assert plant_sample_end in plant_sample
+        p_index = p_time.find_nearest_index(p_target, cs_tolerance)
+        plant_sample_end = p_time[p_index]
+        sample = [t for t in p_time if t > t_plant and t <= plant_sample_end]
+        assert plant_sample_end in sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
 
-        add_noise = config.add_input_noise
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
+        for p_var, c_var in zip(plant_namespace.input_vars,
+                controller_namespace.plant_input_vars):
+            # Access the controller var's group and location
+            c_vardata = c_var[t_controller]
+            info = c_locator[c_vardata]
+            group = info.group
+            location = info.location
+            bounds = (group.lb[location], group.ub[location])
+            weight = group.weights[location]
+            noise_params = (base_noise_param/weight,)
+            newval, = apply_noise_at_time_points(
+                    p_var,
+                    t_plant,
+                    noise_params,
+                    noise_function,
+                    bounds=bounds,
+                    bound_option=noise_bound_option,
+                    max_number_discards=max_number_discards,
+                    bound_push=noise_bound_push,
+                    )
+            for t in sample:
+                p_var[t].set_value(newval)
 
-        # Need to get proper weights for plant's input vars
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.plant_input_vars:
-                    info = locator[var[t_controller]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, max_noise_weight))
-                    else:
-                        # By default, if state is not penalized in objective,
-                        # noise will not be applied to it here.
-                        # This may be incorrect, but user will have to override,
-                        # by providing their own weights, as I don't see a good
-                        # way of calculating a weight
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.plant_input_vars,
-                              t_controller,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
-            #add_noise_at_time(self.plant.input_vars,
-            #                  t_plant+sample_time,
-            #                  weights=noise_weights,
-            #                  sigma_0=noise_sig_0,
-            #                  **noise_args)
-            # Slight bug in logic here: noise is applied to plant variables,
-            # but only controller variables have bounds.
-            # Alternatives: add bounds to plant variables (undesirable)  
-            #               apply noise to controller variables (maybe okay...)
-            #                ^ can always record nominal values, then revert
-            #                  noise after it's copied into plant...
-            # Right now I apply noise to controller model, and don't revert
-
-        copy_values_at_time(self.plant._NMPC_NAMESPACE.input_vars.varlist,
-                            self.controller._NMPC_NAMESPACE.plant_input_vars,
-                            plant_sample,
-                            t_controller)
 
     def has_consistent_initial_conditions(self, model, **kwargs):
         """
@@ -1332,7 +1426,7 @@ class NMPCSim(DynamicBase):
             model : Model whose variables will be checked for bounds.
 
         """
-
+        # TODO: This should probably be a method of NMPCVarGroup
         varlist = vargroup.varlist
         if not vargroup.is_scalar:
             t0 = vargroup.index_set.first()
@@ -1403,6 +1497,8 @@ class NMPCSim(DynamicBase):
         pwc_constraint_list = [Reference(pwc_constraint[:, i])
                            for i in input_indices]
         model._NMPC_NAMESPACE.pwc_constraint_list = pwc_constraint_list
+        # TODO: at this point, make sure inputs are unfixed so that the model
+        # is not over-constrained
 
 
     def initialize_control_problem(self, **kwargs):
@@ -1551,8 +1647,6 @@ class NMPCSim(DynamicBase):
 
         time = model._NMPC_NAMESPACE.get_time()
         category_dict = model._NMPC_NAMESPACE.category_dict
-        # TODO: have some attribute for steady time 
-        # Or better yet, don't use a steady_model at all
 
         for categ in categories:
             varlist = category_dict[categ].varlist
@@ -1627,6 +1721,85 @@ class NMPCSim(DynamicBase):
             msg = 'Failed to solve optimal control problem'
             init_log.error(msg)
             raise ValueError(msg)
+
+
+    def simulate_controller_sample(self, t_start, **kwargs):
+        """
+        """
+        # get time points within sample
+        # fix inputs at those values
+        # apply strip bounds
+        # deactivate pwc constraints
+        # deactivate objective
+        # simulate_over_range
+        # activate objective
+        # reactivate pwc constraints
+        # revert strip bounds
+        # unfix inputs
+        # TODO: would be nice to have context managers for these things
+        config = self.config(kwargs)
+        sample_time = self.sample_time
+        tolerance = config.tolerance
+        cs_tolerance = config.continuous_set_tolerance
+        solver = config.solver
+        outlvl = config.outlvl
+        objective_name = config.full_state_objective_name
+        controller = self.controller
+        time = self.controller_time
+        namespace = getattr(controller, self.get_namespace_name())
+        # TODO: allow multiple objectives to exist, have mechanism for telling
+        # which should be active
+        objective = getattr(namespace, objective_name)
+        sample_points = namespace.sample_points
+        sample_point_set = set(sample_points)
+        sample_point_set.add(time.first())
+        # ^ Should sample_points include time.first()?
+
+        t_end = t_start + sample_time
+        end_idx = time.find_nearest_index(t_end, cs_tolerance)
+        t_end = time[end_idx]
+        if (t_start not in sample_point_set or 
+                t_end not in sample_point_set):
+            raise ValueError(
+                'Start and end of controller simulation must be sample points')
+        sample = [t for t in time if t_start <= t and t <= t_end]
+
+        for i, _slice in enumerate(namespace.input_vars):
+            for t in sample:
+                _slice[t].fix()
+                if t not in sample_point_set:
+                    namespace.pwc_constraint[t, i].deactivate()
+        objective.deactivate()
+        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
+        strip_bounds.apply_to(controller, reversible=True)
+
+        time_linking_vars = (namespace.diff_vars.varlist + 
+                             namespace.deriv_vars.varlist)
+        time_indexed_vars = namespace.dae_vars
+        initialize_by_element_in_range(
+                controller,
+                time,
+                t_start,
+                t_end,
+                time_linking_vars=time_linking_vars,
+                dae_vars=time_indexed_vars,
+                solver=solver,
+                outlvl=outlvl)
+
+        strip_bounds.revert(controller)
+        objective.activate()
+        for group in [namespace.diff_vars, namespace.alg_vars]:
+            violated = get_violated_bounds_at_time(group, sample, tolerance)
+            if violated:
+                raise ValueError(
+                    'Bounds violated after solving elements: %s'
+                    % str(violated))
+            
+        for i, _slice in enumerate(namespace.input_vars):
+            for t in sample:
+                _slice[t].unfix()
+                if t not in sample_point_set:
+                    namespace.pwc_constraint[t, i].activate()
 
 
     def simulate_plant(self, t_start=None, **kwargs):
