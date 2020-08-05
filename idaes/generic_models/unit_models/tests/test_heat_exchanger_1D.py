@@ -1222,8 +1222,8 @@ class TestBT_Generic_cocurrent(object):
         m.fs.unit.shell_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         m.fs.unit.tube_inlet.flow_mol[0].fix(1)  # mol/s
-        m.fs.unit.tube_inlet.temperature[0].fix(300)  # K
-        m.fs.unit.tube_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.tube_inlet.temperature[0].fix(540)  # degR
+        m.fs.unit.tube_inlet.pressure[0].fix(101.325)  # kPa
         m.fs.unit.tube_inlet.mole_frac_comp[0, "benzene"].fix(0.5)
         m.fs.unit.tube_inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
@@ -1277,19 +1277,30 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "area_calc_tube")
         assert hasattr(btx.fs.unit, "area_calc_shell")
 
-        assert number_variables(btx) == 911
-        assert number_total_constraints(btx) == 845
-        assert number_unused_variables(btx) == 8
+        assert number_variables(btx) == 1643
+        assert number_total_constraints(btx) == 1511
+        assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration
     def test_units(self, btx):
-        # assert_units_equivalent(btx.fs.unit.overall_heat_transfer_coefficient,
-        #                         pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
-        # assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
-        # assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
+        assert_units_equivalent(btx.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            btx.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            btx.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.kW/pyunits.m**2/pyunits.degR)
+        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
 
-        assert_units_consistent(btx)
+        # This takes a ridiculuous length of time ot run at the moment
+        # assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -1318,16 +1329,16 @@ class TestBT_Generic_cocurrent(object):
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.shell_outlet.flow_mol[0]))
-        assert (pytest.approx(322.669, abs=1e-3) ==
+        assert (pytest.approx(322.959, abs=1e-3) ==
                 value(btx.fs.unit.shell_outlet.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.shell_outlet.pressure[0]))
 
         assert (pytest.approx(1, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.flow_mol[0]))
-        assert (pytest.approx(322.463, abs=1e-3) ==
+        assert (pytest.approx(581.126, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.temperature[0]))
-        assert (pytest.approx(101325, abs=1e-3) ==
+        assert (pytest.approx(101.325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
     @pytest.mark.solver
@@ -1343,11 +1354,12 @@ class TestBT_Generic_cocurrent(object):
                 btx.fs.unit.shell_outlet.flow_mol[0] *
                 (btx.fs.unit.shell.properties[0, 0].enth_mol_phase['Liq'] -
                  btx.fs.unit.shell.properties[0, 1].enth_mol_phase['Liq']))
-        tube_side = value(
+        tube_side = value(pyunits.convert(
                 btx.fs.unit.tube_outlet.flow_mol[0]*btx.fs.unit.N_tubes *
                 (btx.fs.unit.tube.properties[0, 1].enth_mol_phase['Liq'] -
-                 btx.fs.unit.tube.properties[0, 0].enth_mol_phase['Liq']))
-        assert abs(shell_side - tube_side) <= 1e-6
+                 btx.fs.unit.tube.properties[0, 0].enth_mol_phase['Liq']),
+                to_units=pyunits.W))
+        assert abs((shell_side - tube_side)/shell_side) <= 1e-4
 
     @pytest.mark.ui
     @pytest.mark.unit

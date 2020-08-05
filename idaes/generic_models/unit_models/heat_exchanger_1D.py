@@ -653,6 +653,8 @@ thickness of the tube""",
         # Solve unit
         # Wall 0D
         if blk.config.has_wall_conduction == WallConductionType.zero_dimensional:
+            shell_units = \
+                blk.config.shell_side.property_package.get_metadata().get_derived_units
             for t in blk.flowsheet().config.time:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(
@@ -660,7 +662,9 @@ thickness of the tube""",
                             0.5
                             * (
                                 blk.shell.properties[t, 0].temperature
-                                + blk.tube.properties[t, 0].temperature
+                                + pyunits.convert(
+                                    blk.tube.properties[t, 0].temperature,
+                                    to_units=shell_units('temperature'))
                             )
                         )
                     )
