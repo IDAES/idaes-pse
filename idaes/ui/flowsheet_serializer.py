@@ -93,7 +93,7 @@ class FlowsheetSerializer:
         self.name = name
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
-        # print(self.out_json)
+        print(self.out_json)
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
@@ -145,50 +145,56 @@ class FlowsheetSerializer:
         self._identify_implicit_inlets_and_outlets(untouched_ports)
 
     def _identify_implicit_inlets_and_outlets(self, untouched_ports):
-        inlet_count = 0
-        outlet_count = 0
         for port in untouched_ports:
             portname = str(port).split('.')[-1]
             print(f'\t{str(port)}\t\t({portname})')  # TODO portnames are not necessarily unique ugh
-
+            unitname = self._unique_unit_name(portname)
+            edgename = f's_{unitname}'
             # identify ports per INLET_REGEX/OUTLET_REGEX
             # then pretend they're unit models
             # then add their edges
             inlet_match = self.INLET_REGEX.search(portname)
             if inlet_match:
-                # TODO: _add_feed_block()
                 print(f"  ^ inlet found; parent: {str(self.ports[port])}")
                 # name the feed "unit model" and its connecting edge with the name of the port itself
-                feedport = self._PseudoUnit('Feed', f'Inlet_{inlet_count}')
-                inlet_count += 1
+                feedport = self._PseudoUnit('Feed', unitname)
                 self.unit_models[feedport] = {
-                    "name": feedport.getname(), # TODO: this name must be uniqueified
+                    "name": feedport.getname(),  # TODO: this name must be uniqueified
                     "type": "feed"
                 }
-                self.edges[portname] = {
+                self.edges[edgename] = {
                     "source": feedport, # TODO: this is the name that gets used in the jointjs serialization
-                    "dest": self.ports[port]  # TODO needs to be the parent unit model...
-                }
-                self.labels[portname] = "inlet info"  # TODO - fetch the actual information
+                    "dest": self.ports[port]  # TODO needs to be the parent unit model... can be messed up if parent is nested or something
+                }                              # TODO or maybe collisions actually just cause one to be disconnected actually??? maybe notfd
+                self.labels[edgename] = "inlet info"  # TODO - fetch the actual information
                 continue
 
             outlet_match = self.OUTLET_REGEX.search(portname)
             if outlet_match:
                 print(f"  ^ outlet found; parent: {str(self.ports[port])}")
-                prodport = self._PseudoUnit('Product', f'Outlet_{outlet_count}')
-                outlet_count += 1
+                prodport = self._PseudoUnit('Product', unitname)
                 self.unit_models[prodport] = {
                     "name": prodport.getname(),
                     "type": "product"
                 }
-                self.edges[portname] = {
+                self.edges[edgename] = {
                     "source": self.ports[port],
                     "dest": prodport
                 }
-                self.labels[portname] = "outlet info"  # TODO - fetch the actual information
+                self.labels[edgename] = "outlet info"  # TODO - fetch the actual information
                 continue
 
             # TODO: deal with remaining loose ports here?
+
+    def _unique_unit_name(self, base_name):
+        '''Prevent name collisions by simply appending a number'''
+        name = base_name
+        existing_names = {unit['name'] for unit in self.unit_models.values()}
+        increment = 0
+        while (name in existing_names):
+            increment += 1
+            name = f'{name}_{increment}'
+        return name
 
     def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
