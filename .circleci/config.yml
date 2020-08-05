@@ -80,16 +80,17 @@ commands:
       - run:
           name: Run examples-dev tests
           command: |
-            printf "Looking for PR #${CIRCLE_PR_NUMBER}..\n";
-            grep ${CIRCLE_PR_NUMBER} .circleci/approved_pr.txt
+            export PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
+            printf "Looking for PR #${PR}..\n"
+            grep ${PR} .circleci/approved_pr.txt
             if [ $? -eq 0 ]; \
             then \
-              printf "PR ${CIRCLE_PR_NUMBER} marked as approved. Running examples tests...\n"; \
+              printf "PR ${PR} marked as approved. Running examples tests...\n"; \
               source activate idaes; \
               cd examples-dev; \
               pytest -m "not integration"; \
             else \
-              printf "Not running tests, PR ${CIRCLE_PR_NUMBER} not marked as approved\n"; \
+              printf "Not running tests, PR #${PR} not marked as approved\n"; \
             fi
   pylint:
     description: Run pylint
