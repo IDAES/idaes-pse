@@ -28,11 +28,9 @@ from idaes.generic_models.unit_models.distillation.condenser import CondenserTyp
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+    number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util.exceptions import PropertyPackageError
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -45,7 +43,6 @@ def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
-
 
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
@@ -189,7 +186,8 @@ class TestBTXIdeal(object):
         btx_fctp.fs.unit.deltaP.fix(0)
         btx_fctp.fs.unit.distillate.temperature.fix(369)
 
-        # Fix the inputs (typically this will be the outlet vapor from the top tray)
+        # Fix the inputs (typically this will be
+        # the outlet vapor from the top tray)
         btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
         btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
         btx_fctp.fs.unit.inlet.temperature.fix(375)
