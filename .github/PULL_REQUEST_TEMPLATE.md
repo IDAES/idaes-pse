@@ -1,4 +1,12 @@
-## Fixes # .
+**NOTE:** When this PR is approved, you *must* do the following to
+run all integration tests, so it can be merged:
+* Add, on its own line, the number of this PR to the file: `.circleci/approved_pr.txt`
+* Commit and push the change
+
+At this point, you should see the tests named "integration" are running.
+
+----
+## Fixes
 
 
 ## Summary/Motivation:
