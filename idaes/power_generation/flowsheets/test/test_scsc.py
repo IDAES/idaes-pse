@@ -46,7 +46,7 @@ def test_init(initialize_model):
     # check that the model solved properly and has 0 degrees of freedom
     assert(degrees_of_freedom(m)==0)
     for c in activated_equalities_generator(m):
-        assert(abs(c.body() - c.lower) < 1e-4)
+        assert(abs(c.body() - c.lower) < 5e-4)
 
 
 @pytest.mark.integration

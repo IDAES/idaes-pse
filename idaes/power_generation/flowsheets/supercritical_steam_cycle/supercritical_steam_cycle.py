@@ -228,9 +228,6 @@ def create_model():
         )
 
     # Extra port on condenser to hook back up to pressure-enthalpy properties
-    m.fs.condenser._outlet_1_enth_mol_ref = pyo.Reference(
-        m.fs.condenser.shell.properties_out[:].enth_mol
-    )
     m.fs.condenser.outlet_1_ph = Port(
         initialize={
             "flow_mol": pyo.Reference(

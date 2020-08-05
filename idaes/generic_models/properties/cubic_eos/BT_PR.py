@@ -18,10 +18,6 @@ Unless otherwise noted, parameters are from:
 "The Properties of Gases and Liquids, 4th Edition", Reid, Prausnitz and Poling,
 McGraw-Hill, 1987
 """
-
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import Reals, Param, NonNegativeReals, Set
 
