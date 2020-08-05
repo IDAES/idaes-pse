@@ -85,7 +85,7 @@ commands:
             grep -q ${PR} .circleci/approved_pr.txt
             if [ $? -eq 0 ]; \
             then \
-              printf "PR ${PR} marked as approved. Running examples tests...\n"; \
+              printf "PR #${PR} marked as approved. Running examples tests...\n"; \
               source activate idaes; \
               cd examples-dev; \
               pytest -m "not integration"; \
