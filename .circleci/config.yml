@@ -197,13 +197,14 @@ jobs:
 ## Workflows
 
 workflows:
-  version: 2
-  build:
+  version: 2.1
+  pull_request:
     jobs:
 #        - idaes_dev:
 #            name: "python3.6"
 #            python: "3.6"
         - idaes_dev:
+            context: IDAES
             name: "python3.7"
             python: "3.7"
 #        - idaes_dev:
@@ -218,6 +219,7 @@ workflows:
 #            name: "examples3.6"
 #            python: "3.6"
         - examples_dev:
+            context: IDAES
             name: "examples3.7"
             python: "3.7"
   nightly:
