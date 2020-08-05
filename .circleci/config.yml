@@ -76,7 +76,7 @@ commands:
     steps:
       - run:
           name: Clone examples-dev
-          command: git clone "https://idaes-build:${IDAESBUILDPASS}@github.com:IDAES/examples-dev.git"
+          command: git clone "https://idaes-build:${IDAESBUILDPASS}@github.com/IDAES/examples-dev.git"
       - run:
           name: Run examples-dev tests
           command: |
