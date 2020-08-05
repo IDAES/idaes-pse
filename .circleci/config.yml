@@ -85,12 +85,16 @@ commands:
             grep -q ${PR} .circleci/approved_pr.txt
             if [ $? -eq 0 ]; \
             then \
-              printf "PR #${PR} marked as approved. Running examples tests...\n"; \
+              printf "*********************************************************************\n"; \
+              printf "* PR #${PR} is marked as approved. Running examples tests...\n"; \
+              printf "*********************************************************************\n"; \
               source activate idaes; \
               cd examples-dev; \
               pytest -m "not integration"; \
             else \
-              printf "Not running tests, PR #${PR} not marked as approved\n"; \
+              printf "*********************************************************************\n"; \
+              printf "* Not running examples tests as PR #${PR} is not marked as approved\n"; \
+              printf "*********************************************************************\n"; \
             fi
   pylint:
     description: Run pylint
