@@ -83,7 +83,7 @@ commands:
             printf "Looking for PR #${CIRCLE_PR_NUMBER}..\n";
             grep ${CIRCLE_PR_NUMBER} .circleci/approved_pr.txt
             if [ $? -eq 0 ]; \
-            then
+            then \
               printf "PR ${CIRCLE_PR_NUMBER} marked as approved. Running examples tests...\n"; \
               source activate idaes; \
               cd examples-dev; \
