@@ -209,28 +209,33 @@ workflows:
   version: 2.1
   pull_request:
     jobs:
-#        - idaes_dev:
-#            name: "python3.6"
-#            python: "3.6"
+        - idaes_dev:
+            name: "python3.6"
+            python: "3.6"
         - idaes_dev:
             context: IDAES
             name: "python3.7"
             python: "3.7"
-#        - idaes_dev:
-#            name: "python3.8"
-#            python: "3.8"
-#        - idaes_dev:
-#            name: "python3.7 dev"
-#            python: "3.7"
-#            pip_target: ".[dev]"
-#            devmode: true
-#        - examples_dev:
-#            name: "examples3.6"
-#            python: "3.6"
+        - idaes_dev:
+            name: "python3.8"
+            python: "3.8"
+        - idaes_dev:
+            name: "python3.7 dev"
+            python: "3.7"
+            pip_target: ".[dev]"
+            devmode: true
+        - examples_dev:
+            context: IDAES
+            name: "examples3.6"
+            python: "3.6"
         - examples_dev:
             context: IDAES
             name: "examples3.7"
             python: "3.7"
+        - examples_dev:
+            context: IDAES
+            name: "examples3.8"
+            python: "3.8"
   nightly:
     triggers:
       - schedule:
