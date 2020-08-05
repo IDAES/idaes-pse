@@ -856,18 +856,18 @@ def apply_noise_at_time_points(var, points, params, noise_function,
 #            history.append(record)
 #        histories.append(history)
 #    return histories
-#
-#
-#def cuid_from_timeslice(_slice, time):
-#    """
-#    Args:
-#        _slice: A Reference to time-only slice whose CUID, with a wildcard
-#                in the time index's location, will be generated.
-#        time: Set that indexes _slice
-#
-#    Returns:
-#        The ComponentUID constructed from the string described above
-#    """
-#    t0 = time.first()
-#    compdata = _slice[t0]
-#    return ComponentUID(compdata, wildcard_set=time)
+
+
+def cuid_from_timeslice(_slice, time):
+    """
+    Args:
+        _slice: A Reference to time-only slice whose CUID, with a wildcard
+                in the time index's location, will be generated.
+        time: Set that indexes _slice
+
+    Returns:
+        The ComponentUID constructed from the string described above
+    """
+    t0 = time.first()
+    compdata = _slice[t0]
+    return ComponentUID(compdata, wildcard_set=time)
