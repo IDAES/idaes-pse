@@ -80,7 +80,9 @@ commands:
       - run:
           name: Run examples-dev tests
           command: |
-            if [ grep ${CIRCLE_PR_NUMBER} .circleci/approved_pr.txt ]; then \
+            grep ${CIRCLE_PR_NUMBER} .circleci/approved_pr.txt
+            if [ $? -eq 0 ]; then \
+              printf "PR ${CIRCLE_PR_NUMBER} marked as approved. Running examples tests...\n"; \
               source activate idaes; \
               cd examples-dev; \
               pytest -m "not integration"; \
