@@ -101,17 +101,15 @@ def download_binaries(release=None, url=None, verbose=False, platform="auto"):
 
     if checksum:
         # if you are downloading a release and not a specific URL verify checksum
-        fn_s = os.path.basename(solvers_tar)
-        fn_l = os.path.basename(libs_tar)
-        fn_s2 = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
-        fn_l2 = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
+        fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
+        fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
         hash_s = _hash(solvers_tar)
         hash_l = _hash(libs_tar)
         _log.debug("Solvers Hash {}".format(hash_s))
         _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(fn_s2, "") != hash_s:
+        if checksum.get(fn_s, "") != hash_s:
             raise Exception("Solver files hash does not match expected")
-        if checksum.get(fn_l2, "") != hash_l:
+        if checksum.get(fn_l, "") != hash_l:
             raise Exception("Library files hash does not match expected")
 
     _log.debug("Extracting files in {}".format(idaes.bin_directory))
