@@ -86,14 +86,15 @@ commands:
             if [ $? -eq 0 ]; \
             then \
               printf "*********************************************************************\n"; \
-              printf "* PR #${PR} is marked as approved. Running examples tests...\n"; \
+              printf "* PR #${PR} is marked as approved. Running integration tests...\n"; \
               printf "*********************************************************************\n"; \
               source activate idaes; \
+              pytest -c pytest.ini -m integration; \
               cd examples-dev; \
-              pytest -m "not integration"; \
+              pytest;  \
             else \
               printf "*********************************************************************\n"; \
-              printf "* Not running examples tests as PR #${PR} is not marked as approved\n"; \
+              printf "* Not running integration tests as PR #${PR} is not marked as approved\n"; \
               printf "*********************************************************************\n"; \
             fi
   pylint:
