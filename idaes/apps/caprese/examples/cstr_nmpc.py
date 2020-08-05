@@ -28,7 +28,8 @@ if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6,
                       'bound_push': 1e-8,
-                      'halt_on_ampl_error': 'yes'}
+                      'halt_on_ampl_error': 'yes',
+                      }
 else:
     solver = None
 
@@ -113,7 +114,9 @@ def main(plot_switch=False):
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
             objective_weight_tolerance=weight_tolerance,
-            outlvl=idaeslog.DEBUG)
+            outlvl=idaeslog.DEBUG,
+            allow_inconsistent=False,
+            tolerance=1e-6)
 
     nmpc.add_setpoint_to_controller()
     
