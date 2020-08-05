@@ -312,78 +312,78 @@ def test_cuid_from_timeslice():
     for comp in comps4:
         assert comp in slices4
 
-
-def test_PlantHistory():
-    m = ConcreteModel()
-    m.time = Set(initialize=[1,2,3])
-    m.space = Set(initialize=[4,5,6])
-
-    m.u = Var(m.time, m.space, initialize=lambda m, t, x: t*x)
-    m.v = Var(m.time, m.space, initialize=lambda m, t, x: t+x)
-    
-    @m.Block(m.time)
-    def b(b, t):
-        b.x = Var(initialize=1)
-        b.y = Var(initialize=2)
-        b.z = Var(initialize=3)
-
-    u_ref = {x: Reference(m.u[:,x]) for x in m.space}
-    x_ref = Reference(m.b[:].x)
-
-    ref_list = list(u_ref.values())
-    ref_list.append(x_ref)
-
-    ph = PlantHistory(m.time, ref_list)
-
-    timeset = set(ph.time)
-    assert len(timeset) == len(m.time)
-    for t in m.time:
-        assert t in timeset
-
-    u_cuid = {x: cuid_from_timeslice(u_ref[x], m.time)
-            for x in m.space}
-    x_cuid = cuid_from_timeslice(x_ref, m.time)
-
-    for x, cuid in u_cuid.items():
-        assert cuid in ph
-        for i, t in enumerate(m.time):
-            assert ph[cuid][i] == u_ref[x][t].value
-
-    assert x_cuid in ph
-    for i, t in enumerate(m.time):
-        assert ph[x_cuid][i] == x_ref[t]
-
-    for t, x in m.time*m.space:
-        if t == m.time[1]:
-            m.u[t,x].set_value(m.u[m.time.last(),x].value)
-            continue
-        m.u[t,x].set_value(t*x+5)
-    
-    for t in m.time:
-        if t == m.time[1]:
-            continue
-        m.b[t].x.set_value(10)
-
-    time_list = list(m.time)
-    ph.extend(time_list, ref_list)
-    new_time = [1,2,3,4,5]
-    timeset = set(ph.time)
-    assert len(new_time) == len(timeset)
-    for t in new_time:
-        assert t in timeset
-
-    for x, cuid in u_cuid.items():
-        assert len(ph[cuid]) == len(new_time)
-        for i, t in enumerate(m.time):
-            assert ph[cuid][i] == x*t
-        for i, t in enumerate([4,5]):
-            assert ph[cuid][i+3] == x*(t-2)+5
-    assert len(ph[x_cuid]) == len(new_time)
-    for i, t in enumerate(new_time):
-        if t <= 3:
-            assert ph[x_cuid][i] == 1
-        else:
-            assert ph[x_cuid][i] == 10
+# PlantHistory is deprecated, but this code is kept as it may be useful
+#def test_PlantHistory():
+#    m = ConcreteModel()
+#    m.time = Set(initialize=[1,2,3])
+#    m.space = Set(initialize=[4,5,6])
+#
+#    m.u = Var(m.time, m.space, initialize=lambda m, t, x: t*x)
+#    m.v = Var(m.time, m.space, initialize=lambda m, t, x: t+x)
+#    
+#    @m.Block(m.time)
+#    def b(b, t):
+#        b.x = Var(initialize=1)
+#        b.y = Var(initialize=2)
+#        b.z = Var(initialize=3)
+#
+#    u_ref = {x: Reference(m.u[:,x]) for x in m.space}
+#    x_ref = Reference(m.b[:].x)
+#
+#    ref_list = list(u_ref.values())
+#    ref_list.append(x_ref)
+#
+#    ph = PlantHistory(m.time, ref_list)
+#
+#    timeset = set(ph.time)
+#    assert len(timeset) == len(m.time)
+#    for t in m.time:
+#        assert t in timeset
+#
+#    u_cuid = {x: cuid_from_timeslice(u_ref[x], m.time)
+#            for x in m.space}
+#    x_cuid = cuid_from_timeslice(x_ref, m.time)
+#
+#    for x, cuid in u_cuid.items():
+#        assert cuid in ph
+#        for i, t in enumerate(m.time):
+#            assert ph[cuid][i] == u_ref[x][t].value
+#
+#    assert x_cuid in ph
+#    for i, t in enumerate(m.time):
+#        assert ph[x_cuid][i] == x_ref[t]
+#
+#    for t, x in m.time*m.space:
+#        if t == m.time[1]:
+#            m.u[t,x].set_value(m.u[m.time.last(),x].value)
+#            continue
+#        m.u[t,x].set_value(t*x+5)
+#    
+#    for t in m.time:
+#        if t == m.time[1]:
+#            continue
+#        m.b[t].x.set_value(10)
+#
+#    time_list = list(m.time)
+#    ph.extend(time_list, ref_list)
+#    new_time = [1,2,3,4,5]
+#    timeset = set(ph.time)
+#    assert len(new_time) == len(timeset)
+#    for t in new_time:
+#        assert t in timeset
+#
+#    for x, cuid in u_cuid.items():
+#        assert len(ph[cuid]) == len(new_time)
+#        for i, t in enumerate(m.time):
+#            assert ph[cuid][i] == x*t
+#        for i, t in enumerate([4,5]):
+#            assert ph[cuid][i+3] == x*(t-2)+5
+#    assert len(ph[x_cuid]) == len(new_time)
+#    for i, t in enumerate(new_time):
+#        if t <= 3:
+#            assert ph[x_cuid][i] == 1
+#        else:
+#            assert ph[x_cuid][i] == 10
 
 # DEPRECATED
 # code is kept because it will be useful for testing new functions
