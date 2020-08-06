@@ -177,7 +177,7 @@ jobs:
               - coverage
 
   # Clone and test examples
-  examples_dev:
+  integration_tests:
     docker:
       - image: *ubuntu-image
     working_directory: ~/repo
@@ -192,7 +192,7 @@ jobs:
             python_version: << parameters.python >>
         - install:
             target: "."
-        - examples
+        - integration
 
   # pip install-based
   idaes_pse:
@@ -233,15 +233,15 @@ workflows:
             python: "3.7"
             pip_target: ".[dev]"
             devmode: true
-        - integration:
+        - integration_tests:
             context: IDAES
             name: "integration3.6"
             python: "3.6"
-        - integration:
+        - integration_tests:
             context: IDAES
             name: "integration3.7"
             python: "3.7"
-        - integration:
+        - integration_tests:
             context: IDAES
             name: "integration3.8"
             python: "3.8"
