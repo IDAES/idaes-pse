@@ -80,28 +80,23 @@ commands:
       - run:
           name: Run integration tests, maybe
           command: |
-            export PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
+            PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
             printf "Looking for PR #${PR}..\n"
-            export found=yes
+            found=yes
             grep -q ${PR} .circleci/approved_pr.txt || found=no
-            if [ ${found} = yes ]; \
+            if [ $found = yes ]; \
             then \
-              printf "*********************************************************************\n"; \
-              printf "* PR #${PR} is marked as approved. Running integration tests...\n"; \
-              printf "*********************************************************************\n"; \
+              printf "\n> PR #${PR} is marked as approved. Running integration tests...\n\n"; \
               source activate idaes; \
               pytest -m integration idaes; \
               cd examples-dev; \
               pytest;  \
             else \
-              printf "*********************************************************************\n"; \
-              printf "* Not running integration tests as PR #${PR} is not marked as approved\n"; \
-              printf "*\n"; \
-              printf "*   If you want to run them, add a line \"$PR\" (no quotes)\n"; \
-              printf "*   to the file '.circleci/approved_pr.txt'\n"; \
-              printf "*   and commit and push the result to your PR\n"; \
-              printf "*\n"; \
-              printf "*********************************************************************\n"; \
+              printf "\n> Not running integration tests as PR #${PR} is not marked as approved\n"; \
+              printf ">\n"; \
+              printf ">   If you want to run them, add a line \"$PR\" (no quotes)\n"; \
+              printf ">   to the file '.circleci/approved_pr.txt'\n"; \
+              printf ">   and commit and push the result to your PR\n\n"; \
             fi
   pylint:
     description: Run pylint
