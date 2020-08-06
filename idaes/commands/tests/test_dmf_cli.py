@@ -15,8 +15,12 @@ Tests for DMF CLI
 """
 # stdlib
 import json
+import logging
 import os
 from pathlib import Path
+import sys
+import time
+from typing import Union
 
 # third-party
 from click.testing import CliRunner
@@ -27,7 +31,12 @@ from idaes.dmf.cli import init, register, info, ls, related, rm, status
 from idaes.dmf.dmfbase import DMFConfig, DMF
 from idaes.dmf.workspace import Workspace
 from idaes.dmf import resource
-from . import random_tempdir
+
+from . import create_module_scratch, rmtree_scratch
+
+__author__ = "Dan Gunter"
+
+_log = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
@@ -35,28 +44,55 @@ def runner():
     return CliRunner()
 
 
+scratch_path: Union[Path, None] = None
+dmf_context_num = 1
+# on_windows = sys.platform == "win32"  -- maybe needed later
+
+
+def setup_module(module):
+    global scratch_path
+    scratch_path = create_module_scratch(module.__name__)
+
+
+def teardown_module(module):
+    rmtree_scratch(scratch_path)
+
+
 DATAFILE = "foo.txt"
 
 
 @pytest.fixture()
-def dmf_context(random_tempdir):
+def dmf_context():
     """Switch DMF context to a random subdir, then switch back when done.
     """
-    path = (random_tempdir / ".dmf").absolute()
-    DMFConfig._filename = str(path)
+    global dmf_context_num
+    os.chdir(os.path.expanduser("~"))  # make sure we start in HOME
+    path = scratch_path / str(dmf_context_num)
+    try:
+        path.mkdir()
+    except:
+        pass
+    dmf_path = (path / ".dmf").absolute()
+    DMFConfig._filename = str(dmf_path)
     origdir = os.getcwd()
-    os.chdir(random_tempdir)
+    os.chdir(str(path))
     with open(DATAFILE, "w") as fp:
         fp.write("This is some sample data")
+    fp.close()
     yield path
     os.unlink(DATAFILE)
     DMFConfig._filename = str(Path("~/.dmf").expanduser())
     os.chdir(origdir)
+    dmf_context_num += 1
 
 
 def create_foo_workspace(runner):
+    if (Path("ws") / Workspace.WORKSPACE_CONFIG).exists():
+        create_flag = ""
+    else:
+        create_flag = "--create"
     result = runner.invoke(
-        init, ["ws", "--create", "--name", "foo", "--desc", "foo workspace description"]
+        init, ["ws", create_flag, "--name", "foo", "--desc", "foo workspace description"]
     )
     assert result.exit_code == 0
     return result
