@@ -16,6 +16,8 @@ This module contains tests for scaling.
 
 import pytest
 import pyomo.environ as pyo
+import pyomo.kernel as pyk
+import pyomo.dae as dae
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.scaling import (
     ScalingBasis,
@@ -24,7 +26,9 @@ from idaes.core.util.scaling import (
     grad_fd,
     constraint_fd_autoscale,
     scale_single_constraint,
-    scale_constraints
+    scale_constraints,
+    CacheVars,
+    FlattenedScalingAssignment,
 )
 
 __author__ = "John Eslick, Tim Bartholomew"
@@ -377,3 +381,158 @@ class TestScaleConstraints():
         assert model.c1.upper.value == pytest.approx(1)
         assert model.b1.c1.upper.value == pytest.approx(1)
         assert model.b1.b2.c1.upper.value == pytest.approx(1)
+
+
+class TestCacheVars():
+    @pytest.mark.unit
+    def test_cache_vars(self):
+        m = pyo.ConcreteModel()
+        val1 = 1
+        val2 = 2
+        m.v1 = pyo.Var(initialize=val1)
+        m.v2 = pyo.Var(initialize=val2)
+
+        varlist = [m.v1, m.v2]
+        varset = pyk.ComponentSet(varlist)
+
+        with CacheVars(varlist) as cache:
+            assert cache.cache == [1,2]
+            for var in cache.vars:
+                assert var in varset
+            m.v1.set_value(11)
+            m.v2.set_value(12)
+
+        assert m.v1.value == val1
+        assert m.v2.value == val2
+
+
+class TestFlattenedScalingAssignment():
+    def set_initial_scaling_factors(self, m):
+        scaling_factor = m.scaling_factor
+        for var in m.z.values():
+            scaling_factor[var] = 0.1
+        for var in m.u.values():
+            scaling_factor[var] = 0.5
+
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = pyo.ConcreteModel()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.time = dae.ContinuousSet(bounds=(0,1))
+        m.space = dae.ContinuousSet(bounds=(0,1))
+        m.z = pyo.Var(m.time, m.space)
+        m.dz = dae.DerivativeVar(m.z, wrt=m.time)
+        m.y = pyo.Var(m.time, m.space)
+        m.u = pyo.Var(m.time)
+        m.s = pyo.Var()
+
+        def de_rule(m, t, x):
+            return m.dz[t,x] == 5*m.y[t,x] - 10*m.z[t,x] 
+        m.de = pyo.Constraint(m.time, m.space, rule=de_rule)
+
+        def ae_rule(m, t, x):
+            return m.y[t,x] == 4 + m.z[t,x]**3
+        m.ae = pyo.Constraint(m.time, m.space, rule=ae_rule)
+
+        x0 = m.space.first()
+        def ue_rule(m, t):
+            return m.z[t,x0] == 2*m.u[t]
+        m.ue = pyo.Constraint(m.time, rule=ue_rule)
+
+        tf, xf = m.time.last(), m.space.last()
+        def se_rule(m):
+            return m.z[tf, xf] == m.s
+        m.se = pyo.Constraint(rule=se_rule)
+
+        return m
+
+    @pytest.mark.unit
+    def test_scale_2d(self, model):
+        m = model
+        scaling_factor = m.scaling_factor
+        self.set_initial_scaling_factors(m)
+
+        assignment = [
+                (m.y, m.ae),
+                (m.dz, m.de),
+                ]
+        scaler = FlattenedScalingAssignment(scaling_factor, assignment, (0,0))
+
+        y = scaler.get_representative_data_object(m.y)
+        assert y is m.y[0,0]
+
+        for var in scaler.varlist:
+            scaler.calculate_variable_scaling_factor(var)
+
+        for var in m.y.values():
+            assert scaling_factor[var] == pytest.approx(1/(4+10**3))
+        nominal_y = 1/scaling_factor[y]
+
+        for var in m.dz.values():
+            assert scaling_factor[var] == pytest.approx(1/(5*nominal_y - 100))
+
+        for con in scaler.conlist:
+            scaler.set_constraint_scaling_factor(con)
+
+        for index, con in m.ae.items():
+            var = m.y[index]
+            assert scaling_factor[con] == scaling_factor[var]
+
+        for index, con in m.de.items():
+            var = m.dz[index]
+            assert scaling_factor[con] == scaling_factor[var]
+
+        scaler.set_derivative_factor_from_state(m.dz)
+        for index, dvar in m.dz.items():
+            z = m.z[index]
+            assert scaling_factor[z] == scaling_factor[dvar]
+
+    @pytest.mark.unit
+    def test_scale_1d(self, model):
+        m = model
+        scaling_factor = m.scaling_factor
+        self.set_initial_scaling_factors(m)
+
+        assignment = [
+                (m.u, m.ue),
+                ]
+        scaler = FlattenedScalingAssignment(scaling_factor, assignment, 0)
+
+        u = scaler.get_representative_data_object(m.u)
+        assert u is m.u[0]
+
+        for var in scaler.varlist:
+            scaler.calculate_variable_scaling_factor(var)
+        for index, var in m.u.items():
+            z = m.z[index, 0]
+            assert scaling_factor[var] == pytest.approx(2*scaling_factor[z])
+
+        for con in scaler.conlist:
+            scaler.set_constraint_scaling_factor(con)
+        for index, con in m.ue.items():
+            u = m.u[index]
+            assert scaling_factor[con] == scaling_factor[u]
+
+    @pytest.mark.unit
+    def test_scale_0d(self, model):
+        m = model
+        scaling_factor = m.scaling_factor
+        self.set_initial_scaling_factors(m)
+
+        assignment = [
+                (m.s, m.se),
+                (m.y[0,0], m.ae[0,0]),
+                ]
+        scaler = FlattenedScalingAssignment(scaling_factor, assignment, None)
+
+        s = scaler.get_representative_data_object(m.s)
+        y = scaler.get_representative_data_object(m.y[0,0])
+        assert s is m.s
+        assert y is m.y[0,0]
+
+        for var in scaler.varlist:
+            scaler.calculate_variable_scaling_factor(var)
+        tf, xf = m.time.last(), m.space.last()
+        assert scaling_factor[s] == scaling_factor[m.z[tf,xf]]
+
+        assert scaling_factor[y] == pytest.approx(1/(4+10**3))

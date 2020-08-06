@@ -172,7 +172,8 @@ class DMF(workspace.Workspace, HasTraits):
     }
 
     def __init__(
-        self, path: Union[pathlib.Path, str] = "", name=None, desc=None, create=False, save_path=False, **ws_kwargs
+        self, path: Union[pathlib.Path, str] = "", name=None, desc=None, create=False,
+            existing_ok=True, save_path=False, **ws_kwargs
     ):
         """Create or load DMF workspace.
 
@@ -187,6 +188,7 @@ class DMF(workspace.Workspace, HasTraits):
             create (bool): If the path to the workspace does not exist,
                            this controls whether to create it or raise
                            an error.
+            existing_ok (bool): See :class:`workspace.Workspace` constructor
             save_path: If True, save provided path globally
             **ws_kwargs: Keyword arguments for :meth:`workspace.Workspace()`
                          constructor.
@@ -205,6 +207,7 @@ class DMF(workspace.Workspace, HasTraits):
             conf.c[DMFConfig.WORKSPACE] = os.path.abspath(path)
         # set up workspace
         ws_kwargs["create"] = create
+        ws_kwargs["existing_ok"] = existing_ok
         try:
             super(DMF, self).__init__(path, **ws_kwargs)
         except (errors.ParseError, ValueError) as err:
