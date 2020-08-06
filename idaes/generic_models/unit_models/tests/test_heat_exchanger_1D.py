@@ -1232,7 +1232,7 @@ class TestBT_Generic_cocurrent(object):
 
         return m
 
-    @pytest.mark.unit
+    @pytest.mark.component
     @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "shell_inlet")
@@ -1280,8 +1280,8 @@ class TestBT_Generic_cocurrent(object):
         assert hasattr(btx.fs.unit, "area_calc_tube")
         assert hasattr(btx.fs.unit, "area_calc_shell")
 
-        assert number_variables(btx) == 1643
-        assert number_total_constraints(btx) == 1511
+        assert number_variables(btx) == 1601
+        assert number_total_constraints(btx) == 1469
         assert number_unused_variables(btx) == 34
 
     @pytest.mark.integration
@@ -1305,19 +1305,19 @@ class TestBT_Generic_cocurrent(object):
         # This takes a ridiculuous length of time ot run at the moment
         # assert_units_consistent(btx)
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -1328,7 +1328,7 @@ class TestBT_Generic_cocurrent(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.shell_outlet.flow_mol[0]))
@@ -1346,7 +1346,7 @@ class TestBT_Generic_cocurrent(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_conservation(self, btx):
         assert abs(value(btx.fs.unit.shell_inlet.flow_mol[0] -
                          btx.fs.unit.shell_outlet.flow_mol[0])) <= 1e-6
@@ -1365,6 +1365,6 @@ class TestBT_Generic_cocurrent(object):
         assert abs((shell_side - tube_side)/shell_side) <= 1e-4
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self, btx):
         btx.fs.unit.report()
