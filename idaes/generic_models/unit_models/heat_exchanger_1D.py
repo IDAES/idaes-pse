@@ -45,6 +45,8 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as c
+from idaes.core.util import scaling as iscale
+
 import idaes.logger as idaeslog
 
 
@@ -725,3 +727,14 @@ thickness of the tube""",
             },
             time_point=time_point,
         )
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for i, c in self.shell_heat_transfer_eq.items():
+            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                self.shell.heat[i], default=1, warning=True))
+
+        for i, c in self.tube_heat_transfer_eq.items():
+            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                self.tube.heat[i], default=1, warning=True))
