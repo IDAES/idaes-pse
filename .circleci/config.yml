@@ -81,9 +81,11 @@ commands:
           name: Run integration tests, maybe
           command: |
             PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
+            TOK=${IDAESBUILDTOKEN}
             printf "Looking for PR #${PR}..\n"
-            found=yes
-            grep -q ${PR} .circleci/approved_pr.txt || found=no
+            curl -s -H "Authorization: token $TOK" "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" | \
+              grep '"url":\s*"https://api.github.com/repos/IDAES/idaes-dev/labels/approved"' && found=yes || found=no
+            #grep -q ${PR} .circleci/approved_pr.txt || found=no
             if [ $found = yes ]; \
             then \
               printf "\n> PR #${PR} is marked as approved. Running integration tests...\n\n"; \
