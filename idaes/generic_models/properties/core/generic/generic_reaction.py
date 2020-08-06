@@ -179,6 +179,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         super(ReactionParameterBlock, self).build()
 
         # Validate and set base units of measurement
+        self.get_metadata().add_default_units(self.config.base_units)
         units_meta = self.get_metadata().default_units
 
         for key, unit in self.config.base_units.items():
@@ -189,7 +190,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
                         "{} recieved unexpected units for quantity {}: {}. "
                         "Units must be instances of a Pyomo unit object."
                         .format(self.name, key, unit))
-                units_meta[key] = unit
             else:
                 raise ConfigurationError(
                     "{} defined units for an unexpected quantity {}. "
@@ -443,11 +443,6 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 'k_rxn': {'method': '_k_rxn'},
                 'reaction_rate': {'method': "_reaction_rate"}
                 })
-        obj.add_default_units({'time': None,
-                               'length': None,
-                               'mass': None,
-                               'amount': None,
-                               'temperature': None})
 
 
 class _GenericReactionBlock(ReactionBlockBase):

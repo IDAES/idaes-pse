@@ -66,8 +66,6 @@ def test_serialize_flowsheet():
 
     m.fs.turbine.ratioP.fix(1/3.68)
     m.fs.turbine.efficiency_isentropic.fix(0.927)
-    m.fs.turbine.control_volume.scaling_factor_energy.value = 1e-6
-    m.fs.turbine.control_volume.scaling_factor_pressure.value = 1e-6
     m.fs.turbine.initialize()
 
     m.gross_cycle_power_output = \
@@ -98,51 +96,51 @@ def test_serialize_flowsheet():
     for unit_model in unit_models:
         unit_model_names_types.append(unit_models[unit_model])
 
-    unit_models_names_type_truth = [{'name': 'M01', 'type': 'mixer'}, 
-                                    {'name': 'H02', 'type': 'heater'}, 
-                                    {'name': 'F03', 'type': 'flash'}, 
-                                    {'name': 'main_compressor', 'type': 'pressure_changer'}, 
-                                    {'name': 'bypass_compressor', 'type': 'pressure_changer'}, 
-                                    {'name': 'turbine', 'type': 'pressure_changer'}, 
-                                    {'name': 'boiler', 'type': 'heater'}, 
-                                    {'name': 'FG_cooler', 'type': 'heater'}, 
-                                    {'name': 'pre_boiler', 'type': 'heater'}, 
-                                    {'name': 'HTR_pseudo_tube', 'type': 'heater'}, 
-                                    {'name': 'LTR_pseudo_tube', 'type': 'heater'}, 
+    unit_models_names_type_truth = [{'name': 'M01', 'type': 'mixer'},
+                                    {'name': 'H02', 'type': 'heater'},
+                                    {'name': 'F03', 'type': 'flash'},
+                                    {'name': 'main_compressor', 'type': 'pressure_changer'},
+                                    {'name': 'bypass_compressor', 'type': 'pressure_changer'},
+                                    {'name': 'turbine', 'type': 'pressure_changer'},
+                                    {'name': 'boiler', 'type': 'heater'},
+                                    {'name': 'FG_cooler', 'type': 'heater'},
+                                    {'name': 'pre_boiler', 'type': 'heater'},
+                                    {'name': 'HTR_pseudo_tube', 'type': 'heater'},
+                                    {'name': 'LTR_pseudo_tube', 'type': 'heater'},
                                     {'name': 'split', 'type': 'separator'}]
-  
+
     set_result = set(tuple(sorted(d.items())) for d in unit_model_names_types)
-    set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
+    set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)
     difference = list(set_truth.symmetric_difference(set_result))
 
     assert len(difference) == 0
-  
+
     # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
     # ports = fss.get_ports()
-    # assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d793c8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d797b8>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79828>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79a58>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79ac8>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41128>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41198>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79f98>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41048>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e410b8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41278>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41588>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e415f8>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41828>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41898>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41c88>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41f28>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41e48>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41dd8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    # assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d793c8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d797b8>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79828>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79a58>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79ac8>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41128>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41198>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79f98>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41048>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e410b8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41278>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41588>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e415f8>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41828>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41898>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41c88>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41f28>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41e48>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>",
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41dd8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>",
     #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41d68>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>"
     #                  }
 
@@ -152,7 +150,7 @@ def test_serialize_flowsheet():
     for name, end_points in edges.items():
       named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
 
-    named_edges_truth = {'s01': {'source': 'M01', 'dest': 'H02'}, 
+    named_edges_truth = {'s01': {'source': 'M01', 'dest': 'H02'},
                          's02': {'source': 'H02', 'dest': 'F03'}}
 
     assert named_edges_results == named_edges_truth
@@ -202,15 +200,15 @@ def test_create_image_jointjs_json():
 
   fss = FlowsheetSerializer()
   fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
-  assert out_json == {'cells': 
+  assert out_json == {'cells':
                         [{
-                            'type': 'standard.Image', 
-                            'position': {'x': 0, 'y': 0}, 
-                            'size': {'width': 50, 'height': 50}, 
-                            'angle': 0, 'id': 'M101', 'z': (1,), 
+                            'type': 'standard.Image',
+                            'position': {'x': 0, 'y': 0},
+                            'size': {'width': 50, 'height': 50},
+                            'angle': 0, 'id': 'M101', 'z': (1,),
                             'attrs': {
-                                'image': {'xlinkHref': '/images/icons/mixer.svg'}, 
-                                'label': {'text': 'M101'}, 
+                                'image': {'xlinkHref': '/images/icons/mixer.svg'},
+                                'label': {'text': 'M101'},
                                 'root': {'title': 'mixer'}
                             },
                             'ports': {
@@ -266,7 +264,7 @@ def test_create_link_jointjs_json():
     fss = FlowsheetSerializer()
     fss.create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
     assert out_json == {'cells': [{
-                            'type': 'standard.Link', 
+                            'type': 'standard.Link',
                             'source': {
                               'port': 'out',
                               'id': 'M101'
@@ -274,26 +272,26 @@ def test_create_link_jointjs_json():
                             'target': {
                               'port': 'in',
                               'id': 'F101'
-                            }, 
+                            },
                             'router': {
-                              'name': 'orthogonal', 
+                              'name': 'orthogonal',
                               'padding': 10
-                            }, 
+                            },
                             'connector': {
-                              'name': 'normal', 
+                              'name': 'normal',
                               'attrs': {
                                 'line': {
                                   'stroke': '#5c9adb'
                                 }
                               }
-                            }, 
-                            'id': 's03', 
+                            },
+                            'id': 's03',
                             'labels': [{
                               "attrs": {
                                   "rect": {
-                                    "fill": '#d7dce0', 
-                                    "stroke": 'white', 
-                                    'stroke-width': 0, 
+                                    "fill": '#d7dce0',
+                                    "stroke": 'white',
+                                    'stroke-width': 0,
                                     "fill-opacity": 0},
                                   "text": {
                                       "text": label,
@@ -310,7 +308,7 @@ def test_create_link_jointjs_json():
                                   "text": {
                                       "text": link_id
                                   }
-                              }}], 
+                              }}],
                             'z': 2
                           }],
                           "model": {}

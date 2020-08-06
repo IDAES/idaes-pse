@@ -380,7 +380,24 @@ def m():
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
 
+
+@pytest.mark.unit
+def test_lock_attributes(m):
+    with pytest.raises(AttributeError):
+        with m.p.lock_attribute_creation_context():
+            m.p.a.value == 1
+    # Make sure it unlocked
+    assert m.p.a.value == 1
+
+
+@pytest.mark.unit
+def test_is_property_constructed(m):
+    assert m.p.is_property_constructed("a") == False
+    assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
+    
 
 @pytest.mark.unit
 def test_getattr_protected(m):
