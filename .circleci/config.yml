@@ -97,6 +97,7 @@ commands:
               printf ">   If you want to run them, add a line \"$PR\" (no quotes)\n"; \
               printf ">   to the file '.circleci/approved_pr.txt'\n"; \
               printf ">   and commit and push the result to your PR\n\n"; \
+              exit 1; \
             fi
   pylint:
     description: Run pylint
