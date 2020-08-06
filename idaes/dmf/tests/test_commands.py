@@ -26,10 +26,7 @@ from idaes.dmf import dmfbase, commands, errors, workspace, util
 from idaes.util.system import mkdtemp
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -46,11 +43,7 @@ def wspath():
 @pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
-    try:
-        commands.workspace_init(wspath, {"some": "metadata"})
-        assert False, "Duplicate workspace init succeeded"
-    except errors.CommandError:
-        pass
+    commands.workspace_init(wspath, {"some": "metadata"})
 
 
 @pytest.mark.unit

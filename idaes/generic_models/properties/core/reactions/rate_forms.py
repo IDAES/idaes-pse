@@ -13,51 +13,25 @@
 """
 Methods for defining reaction rates
 """
-from pyomo.environ import Var
+from idaes.generic_models.properties.core.generic.generic_reaction import \
+    get_concentration_term
 
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
-class mole_frac_power_law_rate():
+class power_law_rate():
     def build_parameters(rblock, config):
-        order_init = {}
-        ppack = rblock.parent_block().config.property_package
-        for p in ppack.phase_list:
-            for j in ppack.component_list:
-                if "reaction_order" in config.parameter_data:
-                    try:
-                        order_init[p, j] = config.parameter_data[
-                            "reaction_order"][p, j]
-                    except KeyError:
-                        order_init[p, j] = 0
-                else:
-                    # Assume elementary reaction and use stoichiometry
-                    try:
-                        if config.stoichiometry[p, j] < 0:
-                            # These are reactants, but order is -ve stoic
-                            order_init[p, j] = -config.stoichiometry[p, j]
-                        else:
-                            # Anything else is a product, and not be included
-                            order_init[p, j] = 0
-                    except KeyError:
-                        order_init[p, j] = 0
-
-        rblock.reaction_order = Var(
-                ppack.phase_list,
-                ppack.component_list,
-                initialize=order_init,
-                doc="Reaction order")
+        pass
 
     def return_expression(b, rblock, r_idx, T):
         e = None
         # Get reaction orders and construct power law expression
-        for p in b.state_ref.params.phase_list:
-            for j in b.state_ref.params.component_list:
-                o = rblock.reaction_order[p, j]
+        for p, j in b.state_ref.params._phase_component_set:
+            o = rblock.reaction_order[p, j]
 
-                if e is None and o != 0:
-                    e = b.state_ref.mole_frac_phase_comp[p, j]**o
-                elif e is not None and o != 0:
-                    e = e*b.state_ref.mole_frac_phase_comp[p, j]**o
+            if e is None and o != 0:
+                e = get_concentration_term(b, r_idx)[p, j]**o
+            elif e is not None and o != 0:
+                e = e*get_concentration_term(b, r_idx)[p, j]**o
 
         return b.k_rxn[r_idx]*e

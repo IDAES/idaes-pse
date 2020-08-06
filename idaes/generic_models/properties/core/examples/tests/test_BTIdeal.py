@@ -20,7 +20,9 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
@@ -75,9 +77,9 @@ class TestParamBlock(object):
         assert model.params.config.state_definition == FTPx
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
-                "temperature": (273.15, 450),
-                "pressure": (5e4, 1e6)}
+            "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+            "temperature": (273.15, 300, 450, pyunits.K),
+            "pressure": (5e4, 1e5, 1e6, pyunits.Pa)}
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}
@@ -93,6 +95,16 @@ class TestParamBlock(object):
 
         assert model.params.pressure_ref.value == 1e5
         assert model.params.temperature_ref.value == 300
+
+        assert model.params.benzene.mw.value == 78.1136E-3
+        assert model.params.benzene.pressure_crit.value == 48.9e5
+        assert model.params.benzene.temperature_crit.value == 562.2
+
+        assert model.params.toluene.mw.value == 92.1405E-3
+        assert model.params.toluene.pressure_crit.value == 41e5
+        assert model.params.toluene.temperature_crit.value == 591.8
+
+        assert_units_consistent(model)
 
 
 class TestStateBlock(object):
@@ -111,17 +123,17 @@ class TestStateBlock(object):
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.props[1].flow_mol, Var)
-        assert value(model.props[1].flow_mol) == 500
+        assert value(model.props[1].flow_mol) == 100
         assert model.props[1].flow_mol.ub == 1000
         assert model.props[1].flow_mol.lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
-        assert value(model.props[1].pressure) == 5.25e5
+        assert value(model.props[1].pressure) == 1e5
         assert model.props[1].pressure.ub == 1e6
         assert model.props[1].pressure.lb == 5e4
 
         assert isinstance(model.props[1].temperature, Var)
-        assert value(model.props[1].temperature) == 361.575
+        assert value(model.props[1].temperature) == 300
         assert model.props[1].temperature.ub == 450
         assert model.props[1].temperature.lb == 273.15
 
@@ -153,6 +165,8 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
         assert len(model.props[1].phase_fraction_constraint) == 2
+
+        assert_units_consistent(model)
 
     @pytest.mark.unit
     def test_get_material_flow_terms(self, model):
