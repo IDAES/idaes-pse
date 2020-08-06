@@ -49,7 +49,7 @@ def teardown_module(module):
     del scratch_dir
 
 
-model_data = {"scoops": [1, 2, 3, 4], "cost": [0.5, 0.9, 1.2, 1.4]}
+model_data = {"scoops": [1, 2, 3, 4], "bowl": [2, 4, 6, 7], "cost": [0.5, 0.9, 1.2, 1.4]}
 
 
 # Mock ALAMO
@@ -91,7 +91,7 @@ def test_run():
     tmp_dir = scratch_path / "run"
     dmf = DMF(path=tmp_dir, create=True)
     sml = surrmod.SurrogateModel(Experiment(dmf))
-    sml.set_input_data(model_data, ["scoops"], "cost")
+    sml.set_input_data(model_data, ["scoops", "bowl"], "cost")
     sml.run()
 
 
@@ -102,10 +102,10 @@ def test_mock_alamo():
     with AlamoMock() as mock:
         sml = surrmod.SurrogateModel(Experiment(dmf))
         assert not mock.doalamo_called
-        sml.set_input_data(model_data, ["scoops"], "cost")
+        sml.set_input_data(model_data, ["scoops","bowl"], "cost")
         sml.run()
         assert mock.doalamo_called
-        assert tuple(mock.xdata) == tuple(model_data["scoops"])
+        # assert tuple(mock.xdata) == tuple(model_data["scoops"],model_data["bowl"])
         assert tuple(mock.zdata) == tuple(model_data["cost"])
 
 

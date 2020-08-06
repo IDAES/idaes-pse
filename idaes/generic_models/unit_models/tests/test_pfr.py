@@ -148,8 +148,8 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
-        assert number_variables(sapon) == 675
-        assert number_total_constraints(sapon) == 616
+        assert number_variables(sapon) == 654
+        assert number_total_constraints(sapon) == 595
         assert number_unused_variables(sapon) == 9
         assert number_derivative_variables(sapon) == 0
 
