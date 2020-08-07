@@ -103,7 +103,7 @@ commands:
                 }' pr > prl;\
               cat prl; \
               curl -s -X PATCH -H "Authorization: token $TOK" \
-                "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" @prl ; \
+                "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" --data @prl ; \
             else \
               printf "\n> Not running integration tests as PR #${PR} is not marked as approved\n\n"; \
               printf ">\n"; \
