@@ -9,8 +9,6 @@ function renderModel(model, paper) {
 $( document ).ready(function() {
     // Get the model from the div tag (see the html file for an explanation)
     var data_model = $("#model").data("model");
-    var model_id = data_model.model.id;
-    var url = "/fs?id=".concat(model_id);
 
     var paper = new Paper();
     
