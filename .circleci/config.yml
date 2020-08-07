@@ -275,6 +275,7 @@ workflows:
               - integration3.7
               - integration3.8
 
+ # Nightly tests
   nightly:
     triggers:
       - schedule:
