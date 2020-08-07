@@ -272,7 +272,7 @@ workflows:
             context: IDAES
             name: "after_integration"
             requires:
-              - integration3.6
+#              - integration3.6
               - integration3.7
               - integration3.8
 
