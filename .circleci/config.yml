@@ -92,24 +92,30 @@ commands:
               # pytest -m integration idaes; \
               # cd examples-dev; \
               # pytest;  \
-              # edit label list to not contain 'approved' \
-              awk -F'"' '\
-                BEGIN {s=0; print "{"} /"labels":/ { s=1 } \
-                /"name":/ {if (s > 0 && $4 != "approved") {labels[s]=$4; s++}} \
-                /\]/ {if (s > 0) {n=s - 1 ; s=0}} \
-                END {\
-                  print "\"labels\" : ["; i=1; while (i < n) {print "\"" labels[i] "\","; i++} \
-                  if (n > 0) print "\"" labels[n] "\" ] }" \
-                }' pr > prl;\
-              cat prl; \
-              curl -s -X PATCH -H "Authorization: token $TOK" \
-                "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" --data @prl ; \
             else \
               printf "\n> Not running integration tests as PR #${PR} is not marked as approved\n\n"; \
               printf ">\n"; \
               printf ">   If you want to run them, add the 'approved' label to your pull request\n\n";
               exit 1; \
             fi
+  clear_approved_tag:
+    description: Remove approved label, if present, from PR
+    steps:
+      - run:
+          command: |
+            PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
+            TOK=${IDAESBUILDTOKEN}
+            awk -F'"' '\
+              BEGIN {s=0; print "{"} /"labels":/ { s=1 } \
+              /"name":/ {if (s > 0 && $4 != "approved") {labels[s]=$4; s++}} \
+              /\]/ {if (s > 0) {n=s - 1 ; s=0}} \
+              END {\
+                print "\"labels\" : ["; i=1; while (i < n) {print "\"" labels[i] "\","; i++} \
+                if (n > 0) print "\"" labels[n] "\" ] }" \
+              }' pr > prl;\
+            cat prl; \
+            curl -s -X PATCH -H "Authorization: token $TOK" \
+              "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" --data @prl ; \
   pylint:
     description: Run pylint
     steps:
@@ -201,6 +207,7 @@ jobs:
         - install:
             target: "."
         - integration
+        - clear_approved_tag
 
   # pip install-based
   idaes_pse:
