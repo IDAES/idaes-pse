@@ -1,5 +1,5 @@
 export class Toolbar { 
-    constructor(graph, paper, paperScroller, model_id) {
+    constructor(graph, paper, paperScroller) {
         this._graph = graph;
         this._paper = paper;
         this._paperScroller = paperScroller;

@@ -34,7 +34,7 @@ export class Paper {
 
         self.setupEvents();
 
-        var toolbar = new Toolbar(self._graph, self._paper, self._paperScroller, model_id);
+        var toolbar = new Toolbar(self._graph, self._paper, self._paperScroller);
     }
 
     get graph() {
