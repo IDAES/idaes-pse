@@ -89,9 +89,9 @@ commands:
             then \
               printf "\n> PR #${PR} is marked as approved. Running integration tests...\n\n"; \
               source activate idaes; \
-              # pytest -m integration idaes; \
-              # cd examples-dev; \
-              # pytest;  \
+              pytest -m integration idaes; \
+              cd examples-dev; \
+              pytest;  \
             else \
               printf "\n> Not running integration tests as PR #${PR} is not marked as approved\n\n"; \
               printf ">\n"; \
