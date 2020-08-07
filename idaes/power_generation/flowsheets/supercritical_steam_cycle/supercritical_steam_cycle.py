@@ -180,26 +180,17 @@ def create_model():
     # variables, while the rest of the model uses PH state variables. To
     # translate between the two property calculations, an extra port is added to
     # the mixer which contains temperature, pressure, and vapor fraction
-    # quantities. The first step is to add references to the temperature and
-    # vapor fraction expressions in the IAPWS-95 property block. The references
-    # are used to handle time indexing in the ports by using the property blocks
-    # time index to create references that appear to be time indexed variables.
-    # These references mirror the references created by the framework automatically
-    # for the existing ports.
-    m.fs.condenser_mix._outlet_temperature_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].temperature
-    )
-    m.fs.condenser_mix._outlet_vapor_fraction_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].vapor_frac
-    )
-    # Add the new port with the state information that needs to go to the
-    # condenser
+    # quantities.
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
-            "flow_mol": m.fs.condenser_mix._outlet_flow_mol_ref,
-            "temperature": m.fs.condenser_mix._outlet_temperature_ref,
-            "pressure": m.fs.condenser_mix._outlet_pressure_ref,
-            "vapor_frac": m.fs.condenser_mix._outlet_vapor_fraction_ref,
+            "flow_mol": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].flow_mol),
+            "temperature": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].temperature),
+            "pressure": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].pressure),
+            "vapor_frac": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].vapor_frac),
         }
     )
 
@@ -237,14 +228,14 @@ def create_model():
         )
 
     # Extra port on condenser to hook back up to pressure-enthalpy properties
-    m.fs.condenser._outlet_1_enth_mol_ref = pyo.Reference(
-        m.fs.condenser.shell.properties_out[:].enth_mol
-    )
     m.fs.condenser.outlet_1_ph = Port(
         initialize={
-            "flow_mol": m.fs.condenser._outlet_1_flow_mol_ref,
-            "pressure": m.fs.condenser._outlet_1_pressure_ref,
-            "enth_mol": m.fs.condenser._outlet_1_enth_mol_ref,
+            "flow_mol": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].flow_mol),
+            "pressure": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].pressure),
+            "enth_mol": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].enth_mol),
         }
     )
 

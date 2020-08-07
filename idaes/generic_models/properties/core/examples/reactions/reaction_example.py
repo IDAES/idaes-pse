@@ -25,16 +25,18 @@ from idaes.core import LiquidPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+        ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.rate_constant import \
     arrhenius
 from idaes.generic_models.properties.core.reactions.rate_forms import \
-    mole_frac_power_law_rate
+    power_law_rate
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
-    mole_frac_power_law_equil
+    power_law_equil
 
 
 # First, create a thermophsyical property definition that will be used
@@ -77,19 +79,21 @@ rxn_configuration = {
                                  ("Liq", "C"): 2},
                "heat_of_reaction": constant_dh_rxn,
                "rate_constant": arrhenius,
-               "rate_form": mole_frac_power_law_rate,
+               "rate_form": power_law_rate,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   "dh_rxn_ref": -10000,
-                   "arrhenius_const": 1,
-                   "energy_activation": 1000}}},
+                   "dh_rxn_ref": (-10000, pyunits.J/pyunits.mol),
+                   "arrhenius_const": (1, pyunits.mol/pyunits.m**3/pyunits.s),
+                   "energy_activation": (1000, pyunits.J/pyunits.mol)}}},
     "equilibrium_reactions": {
         "R2": {"stoichiometry": {("Liq", "B"): -1,
                                  ("Liq", "C"): -1,
                                  ("Liq", "D"): 1},
                "heat_of_reaction": constant_dh_rxn,
                "equilibrium_constant": van_t_hoff,
-               "equilibrium_form": mole_frac_power_law_equil,
+               "equilibrium_form": power_law_equil,
+               "concentration_form": ConcentrationForm.moleFraction,
                "parameter_data": {
-                   "dh_rxn_ref": -20000,
-                   "k_eq_ref": 100,
-                   "T_eq_ref": 350}}}}
+                   "dh_rxn_ref": (-20000, pyunits.J/pyunits.mol),
+                   "k_eq_ref": (100, None),
+                   "T_eq_ref": (350, pyunits.K)}}}}
