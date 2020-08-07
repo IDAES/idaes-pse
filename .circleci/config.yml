@@ -207,6 +207,13 @@ jobs:
         - install:
             target: "."
         - integration
+
+  # After integration tests
+  integration_tests_post:
+    docker:
+      - image: *ubuntu-image
+    working_directory: ~/repo
+    steps:
         - clear_approved_tag
 
   # pip install-based
@@ -260,6 +267,14 @@ workflows:
             context: IDAES
             name: "integration3.8"
             python: "3.8"
+        - integration_tests_post:
+            context: IDAES
+            name: "integration_post"
+            requires:
+              - integration3.6
+              - integration3.7
+              - integration3.8
+
   nightly:
     triggers:
       - schedule:
