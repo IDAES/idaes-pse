@@ -102,6 +102,7 @@ commands:
     description: Remove approved label, if present, from PR
     steps:
       - run:
+          name: Remove approved label
           command: |
             PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
             TOK=${IDAESBUILDTOKEN}
