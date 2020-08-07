@@ -267,6 +267,8 @@ class NMPCSim(DynamicBase):
 
     namespace_name = '_NMPC_NAMESPACE'
 
+    namespace_name = '_NMPC_NAMESPACE'
+    
     @classmethod
     def get_namespace_name(cls):
         return cls.namespace_name
@@ -946,7 +948,10 @@ class NMPCSim(DynamicBase):
         return result
 
 
-    def calculate_full_state_setpoint(self, setpoint, require_steady=True, 
+    def calculate_full_state_setpoint(self, 
+            setpoint, 
+            require_steady=True, 
+            allow_inconsistent=True,
             **kwargs):
         """Given a user-defined setpoint, i.e. a list of VarData, value tuples,
         calculates a full-state setpoint to be used in the objective function
@@ -957,23 +962,16 @@ class NMPCSim(DynamicBase):
         The solve is performed in the first time point blocks/constraints of the
         controller model. The procedure is:
 
-            i. Populate controller setpoint attributes with user-defined values
-            ii. Record which constraints were originally active
-            iii. Deactivate constraints except at time.first()
-            iv. Check for consistent initial conditions. Attempt to solve for
-                constraint satisfaction if necessary
-            v. Populate reference attributes with (now consistent) initial
-               conditions
-            vi. Calculate objective weights for values provided by user
-            vii. Add objective function based on these weights and setpoint
-                 values
-            viii. Unfix initial conditions and fix inputs (and derivatives if
-                  steady-state is required)
-            ix. Solve "projected" optimization problem
-            x. Refix initial conditions (unfix derivatives if they were fixed)
-            xi. Deactivate just-created objective
-            xii. Transfer variable values to setpoint attributes
-            xiii. Reactivate model at non-initial time
+            i. Check for inconsistent initial conditions. Warn user if found.
+            ii. Populate controller setpoint attributes with user-defined 
+                values.
+            iii. Populate reference attributes with (now consistent) initial
+                 conditions.
+            iv. Calculate weights for variables specified.
+            v. Add objective function based on these weights and setpoint
+                 values.
+            vi. Solve for setpoint.
+            vii. Deactivate just-added objective function.
 
         Args:
             setpoint : List of VarData, value tuples to be used in the objective
@@ -987,15 +985,7 @@ class NMPCSim(DynamicBase):
         outlvl = config.outlvl
         tolerance = config.tolerance
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
-        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
         user_objective_name = config.user_objective_name
-
-        # Categories of variables whose set point values will be added to controller
-        categories = [VariableCategory.DIFFERENTIAL,
-                      VariableCategory.ALGEBRAIC,
-                      VariableCategory.DERIVATIVE,
-                      VariableCategory.INPUT,
-                      VariableCategory.SCALAR]
 
         controller = self.controller
         time = self.controller_time
@@ -1003,12 +993,37 @@ class NMPCSim(DynamicBase):
         category_dict = controller._NMPC_NAMESPACE.category_dict
         locator = controller._NMPC_NAMESPACE.var_locator
 
+        # User should have already solved for consistent initial conditions if
+        # they want them.
+        inconsistent = get_inconsistent_initial_conditions(
+                controller, 
+                time,
+                tol=tolerance,
+                suppress_warnings=True)
+        if inconsistent:
+            msg = ('Initial conditions are inconistent. Weights in the '
+            'setpoint optimization problem may not be reasonable. Use the '
+            'solve_consistent_initial_conditions before calling '
+            'calculate_full_state_setpoint to remedy')
+            if allow_inconsistent:
+                init_log.warning(msg)
+            else:
+                raise RuntimeError(msg)
+
+        # Categories of variables whose set point values will be added to controller
+        # TODO: maybe this should be an argument
+        categories = [VariableCategory.DIFFERENTIAL,
+                      VariableCategory.ALGEBRAIC,
+                      VariableCategory.DERIVATIVE,
+                      VariableCategory.INPUT,
+                      VariableCategory.SCALAR]
+    
         # Clear any previous existing setpoint values in these variables
         for categ in categories:
             group = category_dict[categ]
             for i in range(group.n_vars):
                 group.set_setpoint(i, None)
-                
+
         # Populate appropriate setpoint values from argument
         for vardata, val in setpoint:
             info = locator[vardata]
@@ -1017,50 +1032,7 @@ class NMPCSim(DynamicBase):
             group = category_dict[categ]
             group.set_setpoint(loc, val)
 
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-                controller.component_data_objects((Constraint, Block))])
-        non_initial_time = [t for t in time if t != time.first()]
-        deactivated = deactivate_model_at(controller, time, non_initial_time, 
-                suppress_warnings=True)
-
-        inconsistent = get_inconsistent_initial_conditions(
-                controller, 
-                time,
-                tol=tolerance,
-                suppress_warnings=True)
-        if inconsistent:
-            dof = degrees_of_freedom(controller)
-            if dof > 0:
-                idaeslog.warning(
-                        'Positive degrees of freedom in controller model with '
-                        'inconsistent initial conditions. '
-                        'Fixing inputs in an attempt to remedy.')
-                for var in controller._NMPC_NAMESPACE.input_vars:
-                    var[t0].fix()
-                dof = degrees_of_freedom(controller)
-                if dof != 0:
-                    msg = ('Nonzero degrees of freedom in initial conditions '
-                          'of controller model after fixing inputs.')
-                    idaeslog.error(msg)
-                    raise RuntimeError(msg)
-            elif dof < 0:
-                msg = ('Negative degrees of freedom in controller model with '
-                      'inconsistent initial conditions.')
-                idaeslog.error(msg)
-                raise RuntimeError(msg)
-
-            init_log.info('Initial conditions are inconsistent. Solving')
-            with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-                results = solver.solve(controller, tee=slc.tee)
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                init_log.info(
-                        'Successfully solved for consistent initial conditions')
-            else:
-                msg = 'Failed to solve for consistent initial conditions'
-                init_log.error(msg)
-                raise RuntimeError(msg)
-
-        # populate reference list from consistent values
+        # Calculate objective weights for all variables.
         for categ, vargroup in category_dict.items():
             if categ == VariableCategory.SCALAR:
                 for i, var in enumerate(vargroup):
@@ -1072,21 +1044,22 @@ class NMPCSim(DynamicBase):
         override = config.objective_weight_override
         tolerance = config.objective_weight_tolerance
 
-        self.construct_objective_weights(controller,
-            objective_weight_override=override,
-            objective_weight_tolerance=tolerance,
-            categories=[VariableCategory.DIFFERENTIAL,
-                        VariableCategory.ALGEBRAIC,
-                        VariableCategory.DERIVATIVE,
-                        VariableCategory.INPUT])
-
-        # Save user set-point and weights as attributes of namespace
+        self.construct_objective_weights(
+                controller,
+                objective_weight_override=override,
+                objective_weight_tolerance=tolerance,
+                categories=[VariableCategory.DIFFERENTIAL,
+                            VariableCategory.ALGEBRAIC,
+                            VariableCategory.DERIVATIVE,
+                            VariableCategory.INPUT])
+                
+        # Save user setpoint and weights as attributes of namespace
         # in case they are required later
         user_setpoint = []
         user_setpoint_vars = []
         user_sp_weights = []
-        for var, value in setpoint:
-            user_setpoint.append(value)
+        for var, val in setpoint:
+            user_setpoint.append(val)
             user_setpoint_vars.append(var)
             loc = locator[var].location
             user_sp_weights.append(locator[var].group.weights[loc])
@@ -1105,10 +1078,55 @@ class NMPCSim(DynamicBase):
                 time_resolution_option=TimeResolutionOption.INITIAL_POINT)
         temp_objective = getattr(controller._NMPC_NAMESPACE, user_objective_name)
 
+        self.solve_setpoint(
+                categories=categories,
+                require_steady=require_steady,
+                **kwargs)
+
+        # Deactivate objective that was just created
+        temp_objective.deactivate()
+
+        # Transfer setpoint values and reset initial values
+        for categ in categories:
+            vargroup = category_dict[categ]
+            if categ == VariableCategory.SCALAR:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_setpoint(i, var.value)
+                    var.set_value(vargroup.reference[i])
+            else:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_setpoint(i, var[t0].value)
+                    var[t0].set_value(vargroup.reference[i])
+
+
+    def solve_setpoint(self, 
+            categories = [VariableCategory.DIFFERENTIAL,
+                          VariableCategory.ALGEBRAIC,
+                          VariableCategory.DERIVATIVE,
+                          VariableCategory.INPUT,
+                          VariableCategory.SCALAR],
+            require_steady=True,    
+            **kwargs):
+        config = self.config(kwargs)
+        solver = config.solver
+        outlvl = config.outlvl
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
+        controller = self.controller
+        time = self.controller_time
+        t0 = time.first()
+        namespace = getattr(controller, self.namespace_name)
+        category_dict = namespace.category_dict
+
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+                controller.component_data_objects((Constraint, Block))])
+        non_initial_time = list(time)[1:]
+        deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
+
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
-        for var in controller._NMPC_NAMESPACE.ic_vars:
+        for var in namespace.ic_vars:
             var[t0].unfix()
         for var in category_dict[VariableCategory.INPUT]:
             var[t0].unfix()
@@ -1118,11 +1136,10 @@ class NMPCSim(DynamicBase):
 
         # Solve single-time point optimization problem
         dof = degrees_of_freedom(controller)
-        c_namespace = controller._NMPC_NAMESPACE 
         if require_steady:
-            assert dof == c_namespace.n_input_vars
+            assert dof == namespace.n_input_vars
         else:
-            assert dof == c_namespace.n_input_vars + c_namespace.n_diff_vars
+            assert dof == namespace.n_input_vars + namespace.n_diff_vars
         init_log.info('Solving for full-state setpoint values')
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(controller, tee=slc.tee)
@@ -1140,21 +1157,6 @@ class NMPCSim(DynamicBase):
                 var[t0].unfix()
         for var in controller._NMPC_NAMESPACE.ic_vars:
             var[t0].fix()
-
-        # Deactivate objective that was just created
-        temp_objective.deactivate()
-
-        # Transfer setpoint values and reset initial values
-        for categ in categories:
-            vargroup = category_dict[categ]
-            if categ == VariableCategory.SCALAR:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_setpoint(i, var.value)
-                    var.set_value(vargroup.reference[i])
-            else:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_setpoint(i, var[t0].value)
-                    var[t0].set_value(vargroup.reference[i])
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
