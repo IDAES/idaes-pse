@@ -209,7 +209,7 @@ jobs:
         - integration
 
   # After integration tests
-  integration_tests_post:
+  integration_tests_postprocess:
     docker:
       - image: *ubuntu-image
     working_directory: ~/repo
@@ -267,9 +267,9 @@ workflows:
             context: IDAES
             name: "integration3.8"
             python: "3.8"
-        - integration_tests_post:
+        - integration_tests_postprocess:
             context: IDAES
-            name: "integration_post"
+            name: "after_integration"
             requires:
               - integration3.6
               - integration3.7
