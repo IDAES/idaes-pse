@@ -95,13 +95,13 @@ commands:
               # edit label list to not contain 'approved' \
               awk -F'"' '\
                 BEGIN {s=0; print "{"} /"labels":/ { s=1 } \
-                /"name":/ {if (s > 0 && $4 != "approved") labels[s]=$4; s++} \
+                /"name":/ {if (s > 0 && $4 != "approved") {labels[s]=$4; s++}} \
                 /\]/ {if (s > 0) {n=s - 1 ; s=0}} \
                 END {\
-                  print "\"labels\" : ["; i=1; while (i < n-1){print "\"" labels[i] "\","; i++} \
-                  print "\"" labels[n-1] "\" ] }" \
+                  print "\"labels\" : ["; i=1; while (i < n) print "\"" labels[i] "\","; i++} \
+                  if (n > 0) print "\"" labels[n] "\" ] }" \
                 }' pr > prl;\
-              cat prl; # debug \
+              cat prl; \
               curl -s -X PATCH -H "Authorization: token $TOK" \
                 "https://api.github.com/repos/IDAES/idaes-dev/issues/$PR" @prl ; \
             else \
