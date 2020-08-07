@@ -78,7 +78,7 @@ commands:
           name: Clone examples-dev
           command: git clone "https://idaes-build:${IDAESBUILDPASS}@github.com/IDAES/examples-dev.git"
       - run:
-          name: Run integration tests, maybe
+          name: Run integration tests if PR has approved tag
           command: |
             PR=$(echo $CIRCLE_PULL_REQUEST | cut -f7 -d'/')
             TOK=${IDAESBUILDTOKEN}
@@ -239,28 +239,28 @@ workflows:
   version: 2.1
   pull_request:
     jobs:
-#        - idaes_dev:
-#            context: IDAES
-#            name: "python3.6"
-#            python: "3.6"
-#        - idaes_dev:
-#            context: IDAES
-#            name: "python3.7"
-#            python: "3.7"
-#        - idaes_dev:
-#            context: IDAES
-#            name: "python3.8"
-#            python: "3.8"
-#        - idaes_dev:
-#            context: IDAES
-#            name: "python3.7 dev"
-#            python: "3.7"
-#            pip_target: ".[dev]"
-#            devmode: true
-#        - integration_tests:
-#            context: IDAES
-#            name: "integration3.6"
-#            python: "3.6"
+        - idaes_dev:
+            context: IDAES
+            name: "python3.6"
+            python: "3.6"
+        - idaes_dev:
+            context: IDAES
+            name: "python3.7"
+            python: "3.7"
+        - idaes_dev:
+            context: IDAES
+            name: "python3.8"
+            python: "3.8"
+        - idaes_dev:
+            context: IDAES
+            name: "python3.7 dev"
+            python: "3.7"
+            pip_target: ".[dev]"
+            devmode: true
+        - integration_tests:
+            context: IDAES
+            name: "integration3.6"
+            python: "3.6"
         - integration_tests:
             context: IDAES
             name: "integration3.7"
@@ -273,7 +273,7 @@ workflows:
             context: IDAES
             name: "after_integration"
             requires:
-#              - integration3.6
+              - integration3.6
               - integration3.7
               - integration3.8
 
