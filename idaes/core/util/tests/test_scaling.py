@@ -18,6 +18,7 @@ import pytest
 import pyomo.environ as pyo
 import pyomo.kernel as pyk
 import pyomo.dae as dae
+from pyomo.network import Port, Arc
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
 import idaes.core.util.scaling as sc
@@ -32,6 +33,59 @@ def test_none_mult():
     assert sc.__none_mult(None, 4) is None
     assert sc.__none_mult(3, 4) == 12
 
+
+@pytest.mark.unit
+def test_scale_arcs():
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var([1, 2, 3, 4])
+    m.y = pyo.Var([1, 2, 3, 4])
+
+    m.p1 = Port()
+    m.p1.add(m.x[1], name="x")
+    m.p1.add(m.y[1], name="y")
+
+    m.p = Port([2,3,4])
+    m.p[2].add(m.x[2], name="x")
+    m.p[2].add(m.y[2], name="y")
+    m.p[3].add(m.x[3], name="x")
+    m.p[3].add(m.y[3], name="y")
+    m.p[4].add(m.x[4], name="x")
+    m.p[4].add(m.y[4], name="y")
+
+    def arc_rule(b, i):
+        if i == 1:
+            return (m.p1, m.p[2])
+        elif i == 2:
+            return (m.p[3], m.p[4])
+
+    m.arcs = Arc([1,2], rule=arc_rule)
+
+    sc.set_scaling_factor(m.x, 10)
+    sc.set_scaling_factor(m.y, 20)
+    sc.set_scaling_factor(m.x[1], 5)
+
+    # make sure there is no error if the scaling is done with unexpanded arcs
+    sc.scale_arc_constraints(m)
+
+    # expand and make sure it works
+    pyo.TransformationFactory('network.expand_arcs').apply_to(m)
+    sc.scale_arc_constraints(m)
+    m.x[1] = 1
+    m.x[2] = 2
+    m.x[3] = 3
+    m.x[4] = 4
+    m.y[1] = 11
+    m.y[2] = 12
+    m.y[3] = 13
+    m.y[4] = 14
+
+    # for all the arc constraints the differnce is 1 the scale factor is the
+    # smallest scale factor for variables in a constraint.  Make sure the
+    # constraints are scaled as expected.
+    assert abs(m.arcs_expanded[1].x_equality.body()) == 5
+    assert abs(m.arcs_expanded[2].x_equality.body()) == 10
+    assert abs(m.arcs_expanded[1].y_equality.body()) == 20
+    assert abs(m.arcs_expanded[2].y_equality.body()) == 20
 
 @pytest.mark.unit
 def test_map_scaling_factor(caplog):
@@ -145,7 +199,7 @@ def test_calculate_scaling_factors():
     # We should iterate through the blocks in construction order so we can
     # depend on the order that the calculate_scaling_factors() are called
     # being deterministic, so we just need to check the specific expected order,
-    # even though there are additional "correct" orders. 
+    # even though there are additional "correct" orders.
     assert tuple(o) == ("a.c", "a.d", "a", "b.e.f", "b.e.g", "b.e", "b", "m")
 
 

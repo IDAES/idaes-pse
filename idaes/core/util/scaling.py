@@ -30,6 +30,7 @@ __author__ = "John Eslick, Tim Bartholomew"
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.visitor import identify_variables
+from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
@@ -47,6 +48,16 @@ def __none_mult(x, y):
     if x is not None and y is not None:
         return x * y
     return None
+
+
+def scale_arc_constraints(blk):
+    for arc in blk.component_data_objects(Arc, descend_into=True):
+        arc_block = arc.expanded_block
+        if arc_block is None:
+            continue # arc not expanded or port empty?
+        for c in arc_block.component_data_objects(pyo.Constraint, descend_into=True):
+            sf = min_scaling_factor(identify_variables(c.body))
+            constraint_scaling_transform(c, sf)
 
 
 def map_scaling_factor(iter, default=1, warning=False, func=min):
@@ -123,8 +134,14 @@ def calculate_scaling_factors(blk):
             cs(b)
         if hasattr(blk2, "calculate_scaling_factors"):
             blk2.calculate_scaling_factors()
+    # Call recursive function to run calculate_scaling_factors on blocks from
+    # the bottom up.
     cs(blk)
+    # If a scale factor is set for an indexed component, propagate it to the
+    # compoent data if a scale factor hasen't already been explicitly set
     propagate_indexed_component_scaling_factors(blk)
+    # Use the variable scaling factors to scale the arc constraints.
+    scale_arc_constraints(blk)
 
 
 def set_scaling_factor(c, v, data_objects=True):
