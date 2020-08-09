@@ -959,6 +959,7 @@ class NMPCSim(DynamicBase):
                 if was_originally_active[comp]:
                     comp.activate()
 
+        # Fix inputs that were originally fixed
         for var in category_dict[VariableCategory.INPUT]:
             if was_fixed[var[t0]]:
                 var[t0].fix()
