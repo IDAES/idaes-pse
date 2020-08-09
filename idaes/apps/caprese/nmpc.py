@@ -551,29 +551,6 @@ class NMPCSim(DynamicBase):
                     assert var[t].fixed
                     
 
-    def validate_models(self, m1, m2):
-        """
-        Makes sure the two models are instances of Pyomo Blocks and do not
-        have the same top-level model.
-
-        Args:
-            m1 : First model (Pyomo Block)
-            m2 : Second model (Pyomo Block)
-
-        Returns:
-            True if models are valid
-        """
-        if not (isinstance(m1, Block) and
-                isinstance(m2, Block)):
-            raise ValueError(
-                    'Provided models must be Blocks')
-        if m1.model() is m2.model():
-            raise ValueError(
-                    'Provided models must not live in the same top-level'
-                    'ConcreteModel')
-        return True
-
-
     def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
         """Transfers values of the initial condition variables at a specified
         time in the plant model to the initial time point of the controller
