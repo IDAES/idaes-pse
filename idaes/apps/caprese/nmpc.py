@@ -709,7 +709,7 @@ class NMPCSim(DynamicBase):
         """
         namespace = getattr(model, self.get_namespace_name())
         time = namespace.get_time()
-        strip_bounds = kwargs.pop('strip_bounds', False)
+        strip_bounds = kwargs.pop('strip_bounds', True)
         config = self.config(kwargs)
         outlvl = config.outlvl
         solver = config.solver
