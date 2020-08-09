@@ -364,7 +364,8 @@ class NMPCSim(DynamicBase):
 
         self.current_plant_time = 0
 
-    def add_namespace_to(self, model, time):
+    @classmethod
+    def add_namespace_to(cls, model, time):
         """Adds the _NMPC_NAMESPACE block a model with a given time set.
         All necessary model-specific attributes, including constraints
         and objectives, will be added to this block.
@@ -381,7 +382,12 @@ class NMPCSim(DynamicBase):
             raise ValueError('%s already exists on model. Please fix this.'
                              % name)
         model.add_component(name, Block())
-        super(NMPCSim, self).add_namespace_to(model, time)
+        super(NMPCSim, cls).add_namespace_to(model, time)
+        # TODO: Should this method call _populate_namespace?
+        # Otherwise this namespace doesn't have access to the get_time function.
+        # Don't want to require that a model is categorized just to get_time,
+        # which is what I'm doing right now, unless I call get_time on the base
+        # namespace.
 
     def validate_sample_time(self, sample_time, *models, **kwargs):
         """Makes sure sample points, or integer multiple of sample time-offsets
@@ -429,7 +435,7 @@ class NMPCSim(DynamicBase):
 
             finite_elements = time.get_finite_elements()
 
-            sample_points = []
+            sample_points = [time.first()]
             sample_no = 1
             fe_per = 0
             fe_per_sample_dict = {}
@@ -449,8 +455,7 @@ class NMPCSim(DynamicBase):
                     raise ValueError(
                             'Could not find a time point for the %ith '
                             'sample point' % sample_no)
-            assert len(sample_points) == n_samples
-            # Here sample_points excludes time.first()
+            assert len(sample_points) == n_samples + 1
             model._NMPC_NAMESPACE.fe_per_sample = fe_per_sample_dict
             model._NMPC_NAMESPACE.sample_points = sample_points
 
@@ -475,9 +480,22 @@ class NMPCSim(DynamicBase):
         """
         t0 = src_time.first()
         tgt_slices = []
-        locator = tgt_model._NMPC_NAMESPACE.var_locator
+        namespace = getattr(tgt_model, self.namespace_name)
+        locator = namespace.var_locator
         for _slice in src_slices:
             init_vardata = _slice[t0]
+            # FIXME
+            # This assumes that t0 is a valid time point for the target
+            # model, even it is taken from the source.
+            # Should use find_comp_in_block_at_time, which essentially
+            # does the work of constructing a CUID with wildcard, but
+            # here is tied to the target model's time set.
+            # A better validation method might be:
+            #     src_comp -> cuid w/ wildcard -> target_comp...
+            # this would still be the same amount of work/code in this
+            # method. Would be nice to go straight from the source
+            # Reference to the CUID, and from the CUID to the/a ref-
+            # to-slice. cuid.to_reference() would be nice.
             tgt_vardata = find_comp_in_block(tgt_model, 
                                              src_model, 
                                              init_vardata)
@@ -532,66 +550,6 @@ class NMPCSim(DynamicBase):
                         continue
                     assert var[t].fixed
                     
-
-    # TODO: option to skip this step by user specification of input pairs
-    def validate_initial_inputs(self, tgt_model, src_model,
-            src_inputs=None, **kwargs):
-        """Uses initial inputs in the source model to find variables of the
-        same name in a target model.
-        
-        Args:
-           tgt_model : Flowsheet model to search for input variables
-           src_model : Flowsheet model containing inputs to search for
-           src_inputs : List of input variables at the initial time point
-                        to find in target model. If not provided, the
-                        initial_inputs attribute will be used.
-
-        Returns:
-            List of variables (time-only slices) in the target model 
-            corresponding to the inputs in the source model
-        """
-        config = self.config(kwargs)
-        outlvl = config.outlvl
-        
-        log = idaeslog.getInitLogger('nmpc', level=outlvl)
-
-        # src_time only necessary to find inputs if not provided?
-        src_time = src_model._NMPC_NAMESPACE.get_time()
-
-        if src_inputs is not None:
-            # If source inputs are not specified, assume they
-            # already exist in src_model
-            try:
-                t0 = src_time.first()
-                src_inputs = [v[t0] for v in 
-                        src_model._NMPC_NAMESPACE.input_vars]
-            except AttributeError:
-                msg = ('Error validating inputs. Either provide src_inputs '
-                      'or categorize_inputs in the source model first.')
-                idaeslog.error(msg)
-                raise
-
-        tgt_inputs = []
-        for inp in src_inputs:
-            local_parent = tgt_model
-            for r in path_from_block(inp, src_model, include_comp=True):
-                try:
-                    local_parent = getattr(local_parent, r[0])[r[1]]
-                except AttributeError:
-                    msg = (f'Error validating input {inp.name}.'
-                           'Could not find component {r[0]} in block '
-                           '{local_parent.name}.')
-                    log.error(msg)
-                    raise
-                except KeyError:
-                    msg = (f'Error validating {inp.name}.'
-                           'Could not find key {r[1]} in component '
-                           '{getattr(local_parent, r[0]).name}.')
-                    log.error(msg)
-                    raise
-            tgt_inputs.append(local_parent)
-        return tgt_inputs
-
 
     def validate_models(self, m1, m2):
         """
