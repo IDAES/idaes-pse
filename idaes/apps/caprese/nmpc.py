@@ -915,6 +915,7 @@ class NMPCSim(DynamicBase):
                 controller.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
         deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
+        was_fixed = ComponentMap()
 
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
@@ -922,6 +923,7 @@ class NMPCSim(DynamicBase):
         for var in namespace.ic_vars:
             var[t0].unfix()
         for var in category_dict[VariableCategory.INPUT]:
+            was_fixed[var[t0]] = var[t0].fixed
             var[t0].unfix()
         if require_steady == True:
             for var in category_dict[VariableCategory.DERIVATIVE]:
@@ -956,6 +958,10 @@ class NMPCSim(DynamicBase):
             for comp in complist:
                 if was_originally_active[comp]:
                     comp.activate()
+
+        for var in category_dict[VariableCategory.INPUT]:
+            if was_fixed[var[t0]]:
+                var[t0].fix()
 
 
     def add_setpoint_to_controller(self, objective_name='tracking_objective',
