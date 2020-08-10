@@ -1302,8 +1302,7 @@ class TestBT_Generic_cocurrent(object):
             pyunits.kW/pyunits.m**2/pyunits.degR)
         assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
 
-        # This takes a ridiculuous length of time ot run at the moment
-        # assert_units_consistent(btx)
+        assert_units_consistent(btx)
 
     @pytest.mark.component
     def test_dof(self, btx):
