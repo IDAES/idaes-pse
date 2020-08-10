@@ -1,54 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ model.model.id }}</title>
-    <link rel="icon" href="idaes-logo.ico" type="image/x-icon">
+  <meta charset="UTF-8">
+  <title>{{ model.model.id }}</title>
+  <link rel="icon" href="idaes-logo.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/b27a429048.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" type="text/css" href="/css/rappid.min.css">
+  <!-- The main.css needs to be after rappid.min.css because some 
+       css elements are overridded -->
+  <link rel="stylesheet" type="text/css" href="/css/main.css">
 </head>
 
 <body>
+  <div id="app">
+    <div class="idaes-page">
 
-<div id="app">
-  <div class="idaes-page">
+    <div class="idaes-titlebar">
+    <div id="idaes_logo"><img src="https://idaes.org/wp-content/uploads/sites/10/2020/02/idaes-logo-300x138.png"
+    alt="IDAES logo"/></div>
+    <div id="idaes-fs-name">Flowsheet name</div>
+    <div id="idaes-titlebar-right"></div>
+    </div>
 
-  <div class="idaes-titlebar">
-  <div id="idaes_logo"><img src="https://idaes.org/wp-content/uploads/sites/10/2020/02/idaes-logo-300x138.png"
-  alt="IDAES logo"/></div>
-  <div id="idaes-fs-name">Flowsheet name</div>
-  <div id="idaes-titlebar-right"></div>
+    <div id="toolbar-container">
+      <!-- <label class="joint-widget joint-theme-modern" data-tooltip="Enable/Disable Snaplines" data-tooltip-position="top" data-tooltip-position-selector=".toolbar-container" data-type="checkbox" data-name="snapline"><span>Show/:</span><input type="checkbox" class="input" id="snapline-switch"><span></span></label> -->
+    </div>
+
+    <div id="idaes-canvas"></div> 
+  </div>
+  <!-- end idaes-content -->
+
+  <!-- I (Makayla) couldn't figure out how to import the variables
+       from Flask's render_template directly into the seperate 
+       javascript file so I'm storing it in a div tag that the
+       javascript accesses -->
+  <div id="model" data-model='{{ model | tojson | safe }}'></div>
   </div>
 
-  <div id="toolbar-container">
-    <!-- <label class="joint-widget joint-theme-modern" data-tooltip="Enable/Disable Snaplines" data-tooltip-position="top" data-tooltip-position-selector=".toolbar-container" data-type="checkbox" data-name="snapline"><span>Show/:</span><input type="checkbox" class="input" id="snapline-switch"><span></span></label> -->
-  </div>
+  <!-- Rappid/JointJS dependencies: -->
+  <script src="/lib/jquery/dist/jquery.js" type="text/javascript"></script>
+  <script src="/lib/lodash/lodash.min.js" type="text/javascript"></script>
+  <script src="/lib/backbone/backbone.js" type="text/javascript"></script>
+  <script src="/lib/dist/rappid.min.js" type="text/javascript"></script>
+  <script src="/lib/dist/joint.format.svg.min.js" type="text/javascript"></script>
 
-  <div id="idaes-canvas"></div> 
-</div>
-<!-- end idaes-content -->
+  <!-- Application files:  -->
+  <script src="/js/paper.js" type="module" ></script>
+  <script src="/js/toolbar.js" type="module" ></script>
+  <script src="/js/main.js" type="module" ></script>
 
-<!-- I (Makayla) couldn't figure out how to import the variables
-     from Flask's render_template directly into the seperate 
-     javascript file so I'm storing it in a div tag that the
-     javascript accesses -->
-<div id="model" data-model='{{ model | tojson | safe }}'></div>
-</div>
-
-<!-- dependencies -->
-<link rel="stylesheet" type="text/css" href="/css/rappid.min.css">
-
-<!-- The main.css needs to be after rappid.min.css because some 
-     css elements are overridded -->
-<link rel="stylesheet" type="text/css" href="/css/main.css">
-
-<script src="/lib/jquery/dist/jquery.js" type="text/javascript"></script>
-<script src="/lib/lodash/lodash.min.js" type="text/javascript"></script>
-<script src="/lib/backbone/backbone.js" type="text/javascript"></script>
-<script src="/lib/dist/rappid.min.js" type="text/javascript"></script>
-<script src="/lib/dist/joint.format.svg.min.js" type="text/javascript"></script>
-<script src="/main.js" type="module" ></script>
+  <script>
+    joint.setTheme('modern');
+  </script>
 
 </body>
-
 </html>
