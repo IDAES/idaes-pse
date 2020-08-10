@@ -51,10 +51,22 @@ def __none_mult(x, y):
 
 
 def scale_arc_constraints(blk):
+    """Find Arc constraints in a block and its subblocks.  Then scale them based
+    on the minimum scaling factor of the variables in the constraint.
+
+    Args:
+        blk: Block in which to look for Arc constraints to scale.
+
+    Returns:
+        None
+    """
     for arc in blk.component_data_objects(Arc, descend_into=True):
         arc_block = arc.expanded_block
-        if arc_block is None:
-            continue # arc not expanded or port empty?
+        if arc_block is None: # arc not expanded or port empty?
+            _log.warning(
+                f"{arc} has no constraints. Has the Arc expansion transform "
+                "been appied?")
+            continue
         for c in arc_block.component_data_objects(pyo.Constraint, descend_into=True):
             sf = min_scaling_factor(identify_variables(c.body))
             constraint_scaling_transform(c, sf)
@@ -138,7 +150,7 @@ def calculate_scaling_factors(blk):
     # the bottom up.
     cs(blk)
     # If a scale factor is set for an indexed component, propagate it to the
-    # compoent data if a scale factor hasen't already been explicitly set
+    # component data if a scale factor hasn't already been explicitly set
     propagate_indexed_component_scaling_factors(blk)
     # Use the variable scaling factors to scale the arc constraints.
     scale_arc_constraints(blk)
