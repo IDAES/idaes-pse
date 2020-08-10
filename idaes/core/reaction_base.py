@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -39,6 +39,16 @@ __author__ = "Andrew Lee, John Eslick"
 __all__ = ['ReactionBlockData',
            'ReactionBlock',
            'ReactionParameterBlock']
+
+
+class _lock_attribute_creation_context(object):
+    """Context manager to lock creation of new attributes on a state block"""
+    def __init__(self, block):
+        self.block = block
+    def __enter__(self):
+        self.block._lock_attribute_creation = True
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.block._lock_attribute_creation = False
 
 
 class ReactionParameterBlock(ProcessBlockData,
@@ -132,7 +142,13 @@ class ReactionParameterBlock(ProcessBlockData,
         prop_units = self.config.property_package.get_metadata().default_units
         for u in r_units:
             try:
-                if prop_units[u] != r_units[u]:
+                # TODO: This check is for backwards compatability with
+                # pre-units property packages. It can be removed once these are
+                # fully deprecated.
+                if isinstance(prop_units[u], str) and (
+                        prop_units[u] != r_units[u]):
+                    raise KeyError()
+                elif prop_units[u] is not r_units[u]:
                     raise KeyError()
             except KeyError:
                 raise PropertyPackageError(
@@ -238,6 +254,30 @@ should be constructed in this reaction block,
 **True** - ReactionBlock should enforce equilibrium constraints,
 **False** - ReactionBlock should not enforce equilibrium constraints.}"""))
 
+    def __init__(self, *args, **kwargs):
+        self._lock_attribute_creation = False
+        super().__init__(*args, **kwargs)
+
+    def lock_attribute_creation_context(self):
+        """Returns a context manager that does not allow attributes to be created
+        while in the context and allows attributes to be created normally outside
+        the context.
+        """
+        return _lock_attribute_creation_context(self)
+
+    def is_property_constructed(self, attr):
+        """Returns True if the attribute ``attr`` already exists, or false if it
+        would be added in ``__getattr__``, or does not exist.
+
+        Args:
+            attr (str): Attribute name to check
+
+        Return:
+            True if the attribute is already constructed, False otherwise 
+        """
+        with self.lock_attribute_creation_context():
+            return hasattr(self, attr)
+
     def build(self):
         """
         General build method for PropertyBlockDatas. Inheriting models should
@@ -312,6 +352,9 @@ should be constructed in this reaction block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
+        if self._lock_attribute_creation:
+            raise AttributeError(
+                f"{attr} does not exist, and attribute creation is locked.")
 
         def clear_call_list(self, attr):
             """Local method for cleaning up call list when a call is handled.
@@ -354,6 +397,12 @@ should be constructed in this reaction block,
 
         # Check for recursive calls
         try:
+            # Check if __getattrcalls is initialized
+            self.__getattrcalls
+        except AttributeError:
+            # Initialize it
+            self.__getattrcalls = [attr]
+        else:
             # Check to see if attr already appears in call list
             if attr in self.__getattrcalls:
                 # If it does, indicates a recursive loop.
@@ -384,9 +433,6 @@ should be constructed in this reaction block,
                                     .format(self.name, attr))
             # If not, add call to list
             self.__getattrcalls.append(attr)
-        except AttributeError:
-            # A list of calls if one does not exist, so create one
-            self.__getattrcalls = [attr]
 
         # Get property information from get_supported_properties
         try:

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -62,7 +62,7 @@ class Experiment(resource.Resource):
         Returns:
             resource.Resource: Added (input) resource, for chaining calls.
         """
-        resource.create_relation_args(self, resource.PR_CONTAINS, rsrc)
+        resource.create_relation(self, resource.PR_CONTAINS, rsrc)
         self._dmf.update(rsrc, upsert=True)
         self._dmf.update(self)
 
@@ -116,7 +116,7 @@ class Experiment(resource.Resource):
         """
         if obj is None:
             obj = self
-        resource.create_relation_args(subj, predicate, obj)
+        resource.create_relation(subj, predicate, obj)
         self._dmf.update(subj)
         self._dmf.update(obj)
 

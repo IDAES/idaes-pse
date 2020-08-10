@@ -1,11 +1,11 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
@@ -250,7 +250,6 @@ constructed,
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-
         # Add state block
         self.side_2.add_state_blocks(has_phase_equilibrium=False)
 
@@ -285,7 +284,6 @@ constructed,
         self.add_outlet_port(name="side_1_outlet", block=self.side_1)
         self.add_outlet_port(name="side_2_outlet", block=self.side_2)
 
-
     def _set_geometry(self):
         """
         Define the geometry of the unit as necessary, and link to holdup volume
@@ -310,13 +308,13 @@ constructed,
                                    doc='Elevation increase used '
                                    'for static pressure calculation - m')
 
-        # Number of tube columns in the cross section plane 
+        # Number of tube columns in the cross section plane
         # perpendicular to shell side fluid flow (y direction)
         self.tube_ncol = Var(initialize=10.0,
                              within=PositiveReals,
                              doc='Number of tube columns')
 
-        # Number of tube rows in the direction of shell side 
+        # Number of tube rows in the direction of shell side
         # fluid flow (x direction)
         self.tube_nrow = Var(initialize=10.0,
                              within=PositiveReals,
@@ -342,13 +340,13 @@ constructed,
                                   within=PositiveReals,
                                   doc='Tube thickness - m')
 
-        # Pitch of tubes between two neighboring columns (in y direction). 
+        # Pitch of tubes between two neighboring columns (in y direction).
         # Always greater than tube outside diameter
         self.pitch_y = Var(initialize=0.1,
                            within=PositiveReals,
                            doc='Pitch between two neighboring columns - m')
 
-        # Pitch of tubes between two neighboring rows (in x direction). 
+        # Pitch of tubes between two neighboring rows (in x direction).
         # Always greater than tube outside diameter
         self.pitch_x = Var(initialize=0.1,
                            within=PositiveReals,
@@ -364,12 +362,12 @@ constructed,
             @self.Expression(doc="Mean beam length - m")
             def mbl(b):
                 return 3.6*(b.pitch_x*b.pitch_y/pi/b.do_tube - b.do_tube/4.0)
-    
+
             # Mean beam length for radiation divided by sqrt(2)
             @self.Expression(doc="Mean beam length - m")
             def mbl_div2(b):
                 return b.mbl/sqrt(2.0)
-    
+
             # Mean beam length for radiation multiplied by sqrt(2)
             @self.Expression(doc="Mean beam length - m")
             def mbl_mul2(b):
@@ -413,17 +411,19 @@ constructed,
             add_object_reference(self, "volume_side_2", self.side_2.volume)
             # Total tube side valume
             self.Constraint(doc="Total tube side volume")
+
             def volume_side_1_eqn(b):
-                return b.volumne_side_1 == ( 
-                    0.25 * pi * b.tube_di**2.0 * b.tube_length 
+                return b.volumne_side_1 == (
+                    0.25 * pi * b.tube_di**2.0 * b.tube_length
                     * b.tube_ncol * b.tube_nrow)
             # Total shell side valume
             self.Constraint(doc="Total shell side volume")
+
             def volume_side_2_eqn(b):
                 return b.volumne_side_2 == \
-            b.tube_ncol * b.pitch_y * b.tube_length \
-            * b.tube_nrow * b.pitch_x - 0.25 * pi * b.do_tube**2.0 \
-            * b.tube_length * b.tube_ncol * b.tube_nrow
+                    b.tube_ncol * b.pitch_y * b.tube_length \
+                    * b.tube_nrow * b.pitch_x - 0.25 * pi * b.do_tube**2.0 \
+                    * b.tube_length * b.tube_ncol * b.tube_nrow
 
     def _make_performance(self):
         """
@@ -437,7 +437,7 @@ constructed,
         """
         # Set references to balance terms at unit level
         add_object_reference(self, "heat_duty", self.side_1.heat)
-        if self.config.has_pressure_change is True:     
+        if self.config.has_pressure_change is True:
             add_object_reference(self, "deltaP_tube", self.side_1.deltaP)
             add_object_reference(self, "deltaP_shell", self.side_2.deltaP)
 
@@ -447,28 +447,28 @@ constructed,
                                      within=PositiveReals,
                                      doc="Thermal conductivity of "
                                      "the wall - W/(m K)")
-                                 
-        # Loss coefficient for a 180 degree bend (u-turn), 
+
+        # Loss coefficient for a 180 degree bend (u-turn),
         # usually related to radius to inside diameter ratio
         self.k_loss_uturn = Param(initialize=0.5,
-                                 within=PositiveReals,
-                                 mutable=True,
-                                 doc='Loss coefficient of a tube u-turn')
+                                  within=PositiveReals,
+                                  mutable=True,
+                                  doc='Loss coefficient of a tube u-turn')
 
-        # Heat transfer resistance due to the fouling on tube side 
-        #(typical boiler hx)
+        # Heat transfer resistance due to the fouling on tube side
+        # (typical boiler hx)
         self.tube_r_fouling = Param(initialize=0.00017,
-                                   within=NonNegativeReals,
-                                   mutable=True,
-                                   doc="Fouling resistance "
-                                   "on tube side - K m2 / W")
+                                    within=NonNegativeReals,
+                                    mutable=True,
+                                    doc="Fouling resistance "
+                                    "on tube side - K m2 / W")
 
         # Heat transfer resistance due to the fouling on shell side
         self.shell_r_fouling = Param(initialize=0.0008,
-                                    within=NonNegativeReals,
-                                    mutable=True,
-                                    doc="Fouling resistance on "
-                                    "tube side - K m2 / W")
+                                     within=NonNegativeReals,
+                                     mutable=True,
+                                     doc="Fouling resistance on "
+                                     "tube side - K m2 / W")
 
         # Correction factor for overall heat transfer coefficient
         self.fcorrection_htc = Var(initialize=1.0,
@@ -477,13 +477,13 @@ constructed,
 
         # Correction factor for tube side pressure drop due to friction
         self.fcorrection_dp_tube = Var(initialize=1.0,
-                                     doc="Correction factor "
-                                     "for tube side pressure drop")
+                                       doc="Correction factor "
+                                       "for tube side pressure drop")
 
         # Correction factor for shell side pressure drop due to friction
         self.fcorrection_dp_shell = Var(initialize=1.0,
-                                     doc="Correction factor for "
-                                     "shell side pressure drop")
+                                        doc="Correction factor for "
+                                        "shell side pressure drop")
 
         # Temperature driving force
         self.temperature_driving_force = Var(self.flowsheet().time,
@@ -493,55 +493,56 @@ constructed,
         if self.config.has_radiation is True:
             # Shell side wall emissivity, converted from parameter to variable
             self.emissivity_wall = Var(initialize=0.7,
-                                   doc='Shell side wall emissivity')
+                                       doc='Shell side wall emissivity')
             # Gas emissivity at mbl
             self.gas_emissivity = Var(self.flowsheet().time,
-                                       initialize=0.5,
-                                       doc="Emissivity at given "
-                                       "mean beam length")
-    
+                                      initialize=0.5,
+                                      doc="Emissivity at given "
+                                      "mean beam length")
+
             # Gas emissivity at mbl/sqrt(2)
             self.gas_emissivity_div2 = Var(self.flowsheet().time,
-                                       initialize=0.4,
-                                       doc="Emissivity at mean beam "
-                                       "length divided by sqrt of 2")
-            
+                                           initialize=0.4,
+                                           doc="Emissivity at mean beam "
+                                           "length divided by sqrt of 2")
+
             # Gas emissivity at mbl*sqrt(2)
             self.gas_emissivity_mul2 = Var(self.flowsheet().time,
-                                       initialize=0.6,
-                                       doc="Emissivity at mean beam "
-                                       "length multiplied by sqrt of 2")
-    
+                                           initialize=0.6,
+                                           doc="Emissivity at mean beam "
+                                           "length multiplied by sqrt of 2")
+
             # Gray fraction of gas in entire spectrum
             self.gas_gray_fraction = Var(self.flowsheet().time,
-                                       initialize=0.5,
-                                       doc="Gray fraction of gas "
-                                       "in entire spectrum")
-    
+                                         initialize=0.5,
+                                         doc="Gray fraction of gas "
+                                         "in entire spectrum")
+
             # Gas-surface radiation exchange factor for shell side wall
             self.frad_gas_shell = Var(self.flowsheet().time,
-                                       initialize=0.5,
-                                       doc="Gas-surface radiation exchange "
-                                       "factor for shell side wall")
-            
-            # Shell side equivalent convective heat transfer coefficient 
+                                      initialize=0.5,
+                                      doc="Gas-surface radiation exchange "
+                                      "factor for shell side wall")
+
+            # Shell side equivalent convective heat transfer coefficient
             # due to radiation
             self.hconv_shell_rad = Var(self.flowsheet().time,
-                                   initialize=100.0,
-                                   doc="Shell side convective heat transfer "
-                                   "coefficient due to radiation - W / (m2 K)")
+                                       initialize=100.0,
+                                       doc="Shell convective heat transfer"
+                                       "coefficient due to radiation "
+                                       "- W / (m2 K)")
 
         # Temperature difference at side 1 inlet
         self.deltaT_1 = Var(self.flowsheet().time,
-                                   initialize=1.0,
-                                   doc="Dt 1 Temperature difference "
-                                   "at  - K")
+                            initialize=1.0,
+                            doc="Dt 1 Temperature difference "
+                            "at  - K")
 
         # Temperature difference at side 1 outlet
         self.deltaT_2 = Var(self.flowsheet().time,
-                                    initialize=1.0,
-                                    doc="Temperature difference "
-                                    "at side 1 outlet - K")
+                            initialize=1.0,
+                            doc="Temperature difference "
+                            "at side 1 outlet - K")
 
         # Overall heat transfer coefficient
         self.overall_heat_transfer_coefficient = Var(self.flowsheet().time,
@@ -558,16 +559,17 @@ constructed,
 
         # Shell side convective heat transfer coefficient due to convection
         self.hconv_shell_conv = Var(self.flowsheet().time,
-                               initialize=100.0,
-                               doc="Shell side convective heat transfer "
-                               "coefficient due to convection - W / (m2 K)")
+                                    initialize=100.0,
+                                    doc="Shell side convective heat transfer "
+                                    "coefficient due to convection"
+                                    " - W / (m2 K)")
 
-        # Total shell side convective heat transfer coefficient 
+        # Total shell side convective heat transfer coefficient
         # including convection and radiation
         self.hconv_shell_total = Var(self.flowsheet().time,
-                               initialize=150.0,
-                               doc="Total shell side convective "
-                               "heat transfer coefficient - W / (m2 K)")
+                                     initialize=150.0,
+                                     doc="Total shell side convective "
+                                     "heat transfer coefficient - W / (m2 K)")
 
         # Heat conduction resistance of tube wall
         self.rcond_wall = Var(initialize=1.0,
@@ -578,7 +580,7 @@ constructed,
             # Constraints for gas emissivity
             @self.Constraint(self.flowsheet().time, doc="Gas emissivity")
             def gas_emissivity_eqn(b, t):
-                X1 = (b.side_2.properties_in[t].temperature 
+                X1 = (b.side_2.properties_in[t].temperature
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl
                 X3 = b.side_2.properties_in[t].pressure
@@ -586,45 +588,46 @@ constructed,
                 X5 = b.side_2.properties_in[t].mole_frac['H2O']
                 X6 = b.side_2.properties_in[t].mole_frac['O2']
 
-#           Surrogate model fitted using rigorous calculations 500 samples
-#           Wide operating range:
-#                X1: 700 – 1500    (Gas Temperature)
-#                X2: 0.2 – 1       (Mean beam length)
-#                X3: 79000-102000  (pressure in Pa)
-#                X4: 0.12-0.16     (mol frac CO2)
-#                X5: 0.075-0.15    (mol frac H2O)
-#                X6: 0.01-0.07     (mol frac O2)
+                # Surrogate model fitted using rigorous calc. - 500 samples
+                # Wide operating range:
+                #      X1: 700 – 1500    (Gas Temperature)
+                #      X2: 0.2 – 1       (Mean beam length)
+                #      X3: 79000-102000  (pressure in Pa)
+                #      X4: 0.12-0.16     (mol frac CO2)
+                #      X5: 0.075-0.15    (mol frac H2O)
+                #      X6: 0.01-0.07     (mol frac O2)
 
-                return b.gas_emissivity[t] == (- 0.116916606892E-003 * X1 
-                - 0.29111124038936179309056E-001 * X2 
-                + 0.50509651230704191577346E-006 * X3 
-                + 1.1844222822155641150488 * X4 
-                - 0.64720757767102773949652E-001 * X5 
-                - 0.35853593221454795048064E-001 * X6 
-                + 0.12227919099126832724878 * log(X1) 
-                + 0.45102118316418124410738E-001 * log(X2) 
-                + 0.33111863480179408447679E-001 * log(X3) 
-                + 0.17674928397780117345084E-001 * log(X5) 
-                - 0.12541139396423576016226E-001 * exp(X2) 
-                - 0.90251708836308952577099 * exp(X4) 
-                + 0.32447078857791738538963E-002 * X2**2 
-                - 0.31332075610864829615706E-004 * X1*X2 
-                - 0.54639645449809960433102E-009 * X1*X3 
-                - 0.19721467902854980460033E-003 * X1*X5 
-                + 0.45275517692290622763507E-004 * X1*X6 
-                + 0.75458754990630776904396E-006 * X2*X3 
-                + 0.39691751689931338564765E-001 * X2*X4 
-                + 0.73169514231974708273754 * X2*X5 
-                - 0.35852614507684822664491E-001 * X2*X6 
-                + 0.39743672195685803976177E-005 * X3*X5 
-                + 0.58802879141883679897383E-008 * (X1*X2)**2 
-                - 1.2994610452829884472692 * (X2*X5)**2)
-    
+                return b.gas_emissivity[t] == \
+                    (- 0.116916606892E-003 * X1
+                     - 0.29111124038936179309056E-001 * X2
+                     + 0.50509651230704191577346E-006 * X3
+                     + 1.1844222822155641150488 * X4
+                     - 0.64720757767102773949652E-001 * X5
+                     - 0.35853593221454795048064E-001 * X6
+                     + 0.12227919099126832724878 * log(X1)
+                     + 0.45102118316418124410738E-001 * log(X2)
+                     + 0.33111863480179408447679E-001 * log(X3)
+                     + 0.17674928397780117345084E-001 * log(X5)
+                     - 0.12541139396423576016226E-001 * exp(X2)
+                     - 0.90251708836308952577099 * exp(X4)
+                     + 0.32447078857791738538963E-002 * X2**2
+                     - 0.31332075610864829615706E-004 * X1*X2
+                     - 0.54639645449809960433102E-009 * X1*X3
+                     - 0.19721467902854980460033E-003 * X1*X5
+                     + 0.45275517692290622763507E-004 * X1*X6
+                     + 0.75458754990630776904396E-006 * X2*X3
+                     + 0.39691751689931338564765E-001 * X2*X4
+                     + 0.73169514231974708273754 * X2*X5
+                     - 0.35852614507684822664491E-001 * X2*X6
+                     + 0.39743672195685803976177E-005 * X3*X5
+                     + 0.58802879141883679897383E-008 * (X1*X2)**2
+                     - 1.2994610452829884472692 * (X2*X5)**2)
+
             # Constraints for gas emissivity at mbl/sqrt(2)
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Gas emissivity at a lower mean beam length")
             def gas_emissivity_div2_eqn(b, t):
-                X1 = (b.side_2.properties_in[t].temperature 
+                X1 = (b.side_2.properties_in[t].temperature
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl_div2
                 X3 = b.side_2.properties_in[t].pressure
@@ -632,44 +635,45 @@ constructed,
                 X5 = b.side_2.properties_in[t].mole_frac['H2O']
                 X6 = b.side_2.properties_in[t].mole_frac['O2']
 
-#           Surrogate model fitted using rigorous calculations 500 samples
-#           Wide operating range:
-#                X1: 700 – 1500    (Gas Temperature)
-#                X2: 0.2 – 1       (Mean beam length)
-#                X3: 79000-102000  (pressure in Pa)
-#                X4: 0.12-0.16     (mol frac CO2)
-#                X5: 0.075-0.15    (mol frac H2O)
-#                X6: 0.01-0.07     (mol frac O2)
-                return b.gas_emissivity_div2[t] == (- 0.116916606892E-003 * X1 
-                - 0.29111124038936179309056E-001 * X2 
-                + 0.50509651230704191577346E-006 * X3 
-                + 1.1844222822155641150488 * X4 
-                - 0.64720757767102773949652E-001 * X5 
-                - 0.35853593221454795048064E-001 * X6 
-                + 0.12227919099126832724878 * log(X1) 
-                + 0.45102118316418124410738E-001 * log(X2) 
-                + 0.33111863480179408447679E-001 * log(X3) 
-                + 0.17674928397780117345084E-001 * log(X5) 
-                - 0.12541139396423576016226E-001 * exp(X2) 
-                - 0.90251708836308952577099 * exp(X4) 
-                + 0.32447078857791738538963E-002 * X2**2 
-                - 0.31332075610864829615706E-004 * X1*X2 
-                - 0.54639645449809960433102E-009 * X1*X3 
-                - 0.19721467902854980460033E-003 * X1*X5 
-                + 0.45275517692290622763507E-004 * X1*X6 
-                + 0.75458754990630776904396E-006 * X2*X3 
-                + 0.39691751689931338564765E-001 * X2*X4 
-                + 0.73169514231974708273754 * X2*X5 
-                - 0.35852614507684822664491E-001 * X2*X6 
-                + 0.39743672195685803976177E-005 * X3*X5 
-                + 0.58802879141883679897383E-008 * (X1*X2)**2 
-                - 1.2994610452829884472692 * (X2*X5)**2)
-                
+                # Surrogate model fitted using rigorous calc. - 500 samples
+                # Wide operating range:
+                #       X1: 700 – 1500    (Gas Temperature)
+                #       X2: 0.2 – 1       (Mean beam length)
+                #       X3: 79000-102000  (pressure in Pa)
+                #       X4: 0.12-0.16     (mol frac CO2)
+                #       X5: 0.075-0.15    (mol frac H2O)
+                #       X6: 0.01-0.07     (mol frac O2)
+                return b.gas_emissivity_div2[t] == \
+                    (- 0.116916606892E-003 * X1
+                     - 0.29111124038936179309056E-001 * X2
+                     + 0.50509651230704191577346E-006 * X3
+                     + 1.1844222822155641150488 * X4
+                     - 0.64720757767102773949652E-001 * X5
+                     - 0.35853593221454795048064E-001 * X6
+                     + 0.12227919099126832724878 * log(X1)
+                     + 0.45102118316418124410738E-001 * log(X2)
+                     + 0.33111863480179408447679E-001 * log(X3)
+                     + 0.17674928397780117345084E-001 * log(X5)
+                     - 0.12541139396423576016226E-001 * exp(X2)
+                     - 0.90251708836308952577099 * exp(X4)
+                     + 0.32447078857791738538963E-002 * X2**2
+                     - 0.31332075610864829615706E-004 * X1*X2
+                     - 0.54639645449809960433102E-009 * X1*X3
+                     - 0.19721467902854980460033E-003 * X1*X5
+                     + 0.45275517692290622763507E-004 * X1*X6
+                     + 0.75458754990630776904396E-006 * X2*X3
+                     + 0.39691751689931338564765E-001 * X2*X4
+                     + 0.73169514231974708273754 * X2*X5
+                     - 0.35852614507684822664491E-001 * X2*X6
+                     + 0.39743672195685803976177E-005 * X3*X5
+                     + 0.58802879141883679897383E-008 * (X1*X2)**2
+                     - 1.2994610452829884472692 * (X2*X5)**2)
+
             # Constraints for gas emissivity at mbl*sqrt(2)
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Gas emissivity at a higher mean beam length")
             def gas_emissivity_mul2_eqn(b, t):
-                X1 = (b.side_2.properties_in[t].temperature 
+                X1 = (b.side_2.properties_in[t].temperature
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl_mul2
                 X3 = b.side_2.properties_in[t].pressure
@@ -677,182 +681,186 @@ constructed,
                 X5 = b.side_2.properties_in[t].mole_frac['H2O']
                 X6 = b.side_2.properties_in[t].mole_frac['O2']
 
-#           Surrogate model fitted using rigorous calculations 500 samples
-#           Wide operating range:
-#                X1: 700 – 1500    (Gas Temperature)
-#                X2: 0.2 – 1       (Mean beam length)
-#                X3: 79000-102000  (pressure in Pa)
-#                X4: 0.12-0.16     (mol frac CO2)
-#                X5: 0.075-0.15    (mol frac H2O)
-#                X6: 0.01-0.07     (mol frac O2)
-                return b.gas_emissivity_mul2[t] == (- 0.116916606892E-003 * X1 
-                - 0.29111124038936179309056E-001 * X2 
-                + 0.50509651230704191577346E-006 * X3 
-                + 1.1844222822155641150488 * X4 
-                - 0.64720757767102773949652E-001 * X5 
-                - 0.35853593221454795048064E-001 * X6 
-                + 0.12227919099126832724878 * log(X1) 
-                + 0.45102118316418124410738E-001 * log(X2) 
-                + 0.33111863480179408447679E-001 * log(X3) 
-                + 0.17674928397780117345084E-001 * log(X5) 
-                - 0.12541139396423576016226E-001 * exp(X2) 
-                - 0.90251708836308952577099 * exp(X4) 
-                + 0.32447078857791738538963E-002 * X2**2 
-                - 0.31332075610864829615706E-004 * X1*X2 
-                - 0.54639645449809960433102E-009 * X1*X3 
-                - 0.19721467902854980460033E-003 * X1*X5 
-                + 0.45275517692290622763507E-004 * X1*X6 
-                + 0.75458754990630776904396E-006 * X2*X3 
-                + 0.39691751689931338564765E-001 * X2*X4 
-                + 0.73169514231974708273754 * X2*X5 
-                - 0.35852614507684822664491E-001 * X2*X6 
-                + 0.39743672195685803976177E-005 * X3*X5 
-                + 0.58802879141883679897383E-008 * (X1*X2)**2 
-                - 1.2994610452829884472692 * (X2*X5)**2)
-    
+                # Surrogate model fitted using rigorous calc. 500 samples
+                # Wide operating range:
+                #       X1: 700 – 1500    (Gas Temperature)
+                #       X2: 0.2 – 1       (Mean beam length)
+                #       X3: 79000-102000  (pressure in Pa)
+                #       X4: 0.12-0.16     (mol frac CO2)
+                #       X5: 0.075-0.15    (mol frac H2O)
+                #       X6: 0.01-0.07     (mol frac O2)
+                return b.gas_emissivity_mul2[t] == \
+                    (- 0.116916606892E-003 * X1
+                     - 0.29111124038936179309056E-001 * X2
+                     + 0.50509651230704191577346E-006 * X3
+                     + 1.1844222822155641150488 * X4
+                     - 0.64720757767102773949652E-001 * X5
+                     - 0.35853593221454795048064E-001 * X6
+                     + 0.12227919099126832724878 * log(X1)
+                     + 0.45102118316418124410738E-001 * log(X2)
+                     + 0.33111863480179408447679E-001 * log(X3)
+                     + 0.17674928397780117345084E-001 * log(X5)
+                     - 0.12541139396423576016226E-001 * exp(X2)
+                     - 0.90251708836308952577099 * exp(X4)
+                     + 0.32447078857791738538963E-002 * X2**2
+                     - 0.31332075610864829615706E-004 * X1*X2
+                     - 0.54639645449809960433102E-009 * X1*X3
+                     - 0.19721467902854980460033E-003 * X1*X5
+                     + 0.45275517692290622763507E-004 * X1*X6
+                     + 0.75458754990630776904396E-006 * X2*X3
+                     + 0.39691751689931338564765E-001 * X2*X4
+                     + 0.73169514231974708273754 * X2*X5
+                     - 0.35852614507684822664491E-001 * X2*X6
+                     + 0.39743672195685803976177E-005 * X3*X5
+                     + 0.58802879141883679897383E-008 * (X1*X2)**2
+                     - 1.2994610452829884472692 * (X2*X5)**2)
+
             # fraction of gray gas spectrum
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Fraction of gray gas spectrum")
             def gas_gray_fraction_eqn(b, t):
-                return b.gas_gray_fraction[t]*(2*b.gas_emissivity_div2[t] 
+                return b.gas_gray_fraction[t]*(2*b.gas_emissivity_div2[t]
                                           - b.gas_emissivity_mul2[t]) == \
                                               b.gas_emissivity_div2[t]**2
-    
-            # gas-surface radiation exchange factor between gas and shell side wall
-            @self.Constraint(self.flowsheet().time, 
+
+            # gas-surface radiation exchange factor
+            # between gas and shell side wall
+            @self.Constraint(self.flowsheet().time,
                              doc="Gas-surface radiation exchange "
                              "factor between gas and shell side wall")
             def frad_gas_shell_eqn(b, t):
                 return b.frad_gas_shell[t] * \
-                    ((1/b.emissivity_wall-1)*b.gas_emissivity[t] 
-                    + b.gas_gray_fraction[t]) \
+                    ((1/b.emissivity_wall-1)*b.gas_emissivity[t]
+                     + b.gas_gray_fraction[t]) \
                     == b.gas_gray_fraction[t]*b.gas_emissivity[t]
-    
+
             # equivalent convective heat transfer coefficent due to radiation
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Equivalent convective heat transfer "
                              "coefficent due to radiation")
             def hconv_shell_rad_eqn(b, t):
-                return b.hconv_shell_rad[t] == b.k_boltzmann*b.frad_gas_shell[t]* \
-                    ((b.side_2.properties_in[t].temperature + \
-                       b.side_2.properties_out[t].temperature)/2 \
-                        + b.side_1.properties_in[t].temperature) * \
-                       (((b.side_2.properties_in[t].temperature 
-                          + b.side_2.properties_out[t].temperature)/2)**2 + \
-                            b.side_1.properties_in[t].temperature**2)
+                return b.hconv_shell_rad[t] == \
+                    b.k_boltzmann * b.frad_gas_shell[t] * \
+                    ((b.side_2.properties_in[t].temperature +
+                      b.side_2.properties_out[t].temperature)/2
+                     + b.side_1.properties_in[t].temperature) * \
+                    (((b.side_2.properties_in[t].temperature
+                       + b.side_2.properties_out[t].temperature)/2)**2 +
+                     b.side_1.properties_in[t].temperature**2)
 
         # Energy balance equation
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Energy balance between two sides")
         def energy_balance(b, t):
-            return b.side_1.heat[t] /1e6 == -b.side_2.heat[t] /1e6
+            return b.side_1.heat[t] / 1e6 == -b.side_2.heat[t] / 1e6
 
         # Heat transfer correlation
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Heat transfer correlation")
         def heat_transfer_correlation(b, t):
-            return b.heat_duty[t] / 1e6 == (b.overall_heat_transfer_coefficient[t] *
-                                  b.area_heat_transfer *
-                                  b.temperature_driving_force[t]) / 1e6
+            return b.heat_duty[t] / 1e6 == \
+                (b.overall_heat_transfer_coefficient[t] *
+                 b.area_heat_transfer *
+                 b.temperature_driving_force[t]) / 1e6
 
-            
         # Driving force
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Simplified Log mean temperature "
                          "difference calculation")
         def LMTD(b, t):
             return b.temperature_driving_force[t] == \
-            ((b.deltaT_1[t]**0.3241 +
-                   b.deltaT_2[t]**0.3241)/1.99996)**(1/0.3241)
+                ((b.deltaT_1[t]**0.3241 +
+                  b.deltaT_2[t]**0.3241)/1.99996)**(1/0.3241)
 
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
         # Velocity on tube side
-        self.v_tube = Var(self.flowsheet().time, initialize=1.0, 
+        self.v_tube = Var(self.flowsheet().time, initialize=1.0,
                           doc="Velocity on tube side - m/s")
 
         # Reynalds number on tube side
-        self.N_Re_tube = Var(self.flowsheet().time, initialize=10000.0, 
+        self.N_Re_tube = Var(self.flowsheet().time, initialize=10000.0,
                              doc="Reynolds number on tube side")
         if self.config.has_pressure_change is True:
             # Friction factor on tube side
-            self.friction_factor_tube = Var(self.flowsheet().time, 
-                                            initialize=1.0, 
+            self.friction_factor_tube = Var(self.flowsheet().time,
+                                            initialize=1.0,
                                             doc='Friction factor on tube side')
-    
+
             # Pressure drop due to friction on tube side
             self.deltaP_tube_friction = Var(self.flowsheet().time,
-                                            initialize=-10.0, 
-                                            doc="Pressure drop due to friction "
+                                            initialize=-10.0,
+                                            doc="Pressure drop due to friction"
                                             "on tube side - Pa")
-    
+
             # Pressure drop due to 180 degree turn on tube side
-            self.deltaP_tube_uturn = Var(self.flowsheet().time, initialize= -10.0, 
-                                         doc="Pressure drop due to u-turn on "
+            self.deltaP_tube_uturn = Var(self.flowsheet().time,
+                                         initialize=-10.0,
+                                         doc="Pressure drop due to u-turn on"
                                          "tube side - Pa")
 
         # Prandtl number on tube side
-        self.N_Pr_tube = Var(self.flowsheet().time, initialize=1, 
+        self.N_Pr_tube = Var(self.flowsheet().time, initialize=1,
                              doc="Prandtl number on tube side")
 
         # Nusselt number on tube side
-        self.N_Nu_tube = Var(self.flowsheet().time, initialize=1, 
+        self.N_Nu_tube = Var(self.flowsheet().time, initialize=1,
                              doc="Nusselts number on tube side")
 
         # Velocity equation
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Tube side velocity equation - m/s")
-
         def v_tube_eqn(b, t):
-            return b.v_tube[t]* b.area_flow_tube * \
+            return b.v_tube[t] * b.area_flow_tube * \
                    b.side_1.properties_in[t].dens_mol_phase[self.side_1_fluid_phase] == \
                    b.side_1.properties_in[t].flow_mol
 
         # Reynolds number
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Reynolds number equation on tube side")
         def N_Re_tube_eqn(b, t):
             return b.N_Re_tube[t] * \
-            b.side_1.properties_in[t].visc_d_phase[self.side_1_fluid_phase] == \
-            b.tube_di * b.v_tube[t] * \
-            b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase]
+                b.side_1.properties_in[t].visc_d_phase[self.side_1_fluid_phase] == \
+                b.tube_di * b.v_tube[t] * \
+                b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase]
 
         if self.config.has_pressure_change is True:
             # Friction factor
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Darcy friction factor on tube side")
             def friction_factor_tube_eqn(b, t):
                 return b.friction_factor_tube[t]*b.N_Re_tube[t]**0.25 == \
                     0.3164*b.fcorrection_dp_tube
-    
+
             # Pressure drop due to friction
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Pressure drop due to friction on tube side")
             def deltaP_tube_friction_eqn(b, t):
-                return b.deltaP_tube_friction[t] * b.tube_di * b.nrow_inlet == \
-                -0.5 * b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase] * \
-                b.v_tube[t]**2 * b.friction_factor_tube[t] * b.tube_length * \
-                b.tube_nrow
-    
+                return b.deltaP_tube_friction[t] * b.tube_di * b.nrow_inlet ==\
+                    -0.5 * b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase] * \
+                    b.v_tube[t]**2 * b.friction_factor_tube[t]\
+                    * b.tube_length * b.tube_nrow
+
             # Pressure drop due to u-turn
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Pressure drop due to u-turn on tube side")
             def deltaP_tube_uturn_eqn(b, t):
                 return b.deltaP_tube_uturn[t] == -0.5 *\
                     b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase] * \
                     b.v_tube[t]**2 * b.k_loss_uturn
-    
+
             # Total pressure drop on tube side
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Total pressure drop on tube side")
             def deltaP_tube_eqn(b, t):
                 return b.deltaP_tube[t] == b.deltaP_tube_friction[t] \
                     + b.deltaP_tube_uturn[t] - b.delta_elevation * \
-            b.accel_gravity*(b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase] \
-            + b.side_1.properties_out[t].dens_mass_phase[self.side_1_fluid_phase])/2.0
+                    b.accel_gravity \
+                    *(b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase]
+                      + b.side_1.properties_out[t].dens_mass_phase[self.side_1_fluid_phase]) / 2.0
 
         # Prandtl number
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Prandtl number equation on tube side")
         def N_Pr_tube_eqn(b, t):
             return b.N_Pr_tube[t] *\
@@ -862,50 +870,49 @@ constructed,
                    b.side_1.properties_in[t].visc_d_phase[self.side_1_fluid_phase]
 
         # Nusselts number
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Nusselts number equation on tube side")
         def N_Nu_tube_eqn(b, t):
             return b.N_Nu_tube[t] == \
                 0.023 * b.N_Re_tube[t]**0.8 * b.N_Pr_tube[t]**0.4
 
         # Heat transfer coefficient
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Convective heat transfer "
                          "coefficient equation on tube side")
         def hconv_tube_eqn(b, t):
             return b.hconv_tube[t]*self.tube_di/1000 == b.N_Nu_tube[t] * \
-                  b.side_1.properties_in[t].therm_cond_phase[self.side_1_fluid_phase]/1000
-
+                b.side_1.properties_in[t].therm_cond_phase[self.side_1_fluid_phase]/1000
 
         # Pressure drop and heat transfer coefficient on shell side
         # ----------------------------------------------------------
         # Tube arrangement factor
         if self.config.tube_arrangement == TubeArrangement.inLine:
-            self.f_arrangement = Param(initialize=0.788, 
+            self.f_arrangement = Param(initialize=0.788,
                                        doc="In-line tube arrangement factor")
         elif self.config.tube_arrangement == TubeArrangement.staggered:
-            self.f_arrangement = Param(initialize=1.0, 
+            self.f_arrangement = Param(initialize=1.0,
                                        doc="Staggered tube arrangement factor")
         else:
             raise Exception('tube arrangement type not supported')
         # Velocity on shell side
-        self.v_shell = Var(self.flowsheet().time, initialize=1.0, 
+        self.v_shell = Var(self.flowsheet().time, initialize=1.0,
                            doc="Velocity on shell side - m/s")
 
         # Reynalds number on shell side
-        self.N_Re_shell = Var(self.flowsheet().time, initialize=10000.0, 
+        self.N_Re_shell = Var(self.flowsheet().time, initialize=10000.0,
                               doc="Reynolds number on shell side")
 
         # Friction factor on shell side
-        self.friction_factor_shell = Var(self.flowsheet().time, initialize=1.0, 
+        self.friction_factor_shell = Var(self.flowsheet().time, initialize=1.0,
                                          doc='Friction factor on shell side')
 
         # Prandtl number on shell side
-        self.N_Pr_shell = Var(self.flowsheet().time, initialize=1, 
+        self.N_Pr_shell = Var(self.flowsheet().time, initialize=1,
                               doc="Prandtl number on shell side")
 
         # Nusselt number on shell side
-        self.N_Nu_shell = Var(self.flowsheet().time, initialize=1, 
+        self.N_Nu_shell = Var(self.flowsheet().time, initialize=1,
                               doc="Nusselts number on shell side")
 
         # Velocity equation on shell side
@@ -914,80 +921,89 @@ constructed,
             return b.v_shell[t] * \
                 b.side_2.properties_in[t].dens_mol_phase["Vap"] * \
                 b.area_flow_shell == \
-                sum(b.side_2.properties_in[t].flow_component[j] 
+                sum(b.side_2.properties_in[t].flow_component[j]
                     for j in b.side_2.properties_in[t].params.component_list)
 
         # Reynolds number
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Reynolds number equation on shell side")
         def N_Re_shell_eqn(b, t):
             return b.N_Re_shell[t] * b.side_2.properties_in[t].visc_d_mix == \
                 b.do_tube * b.v_shell[t] \
                 * b.side_2.properties_in[t].dens_mol_phase["Vap"] / 1000.0 *\
-                   sum(b.side_2.properties_in[t].params.mw[c] 
-                   *b.side_2.properties_in[t].mole_frac[c] 
-                   for c in b.side_2.properties_in[t].params.component_list)
+                   sum(b.side_2.properties_in[t].params.mw[c]
+                       * b.side_2.properties_in[t].mole_frac[c]
+                       for c in b.side_2.properties_in[t].
+                       params.component_list)
 
         if self.config.has_pressure_change is True:
             # Friction factor on shell side
             if self.config.tube_arrangement == TubeArrangement.inLine:
-                @self.Constraint(self.flowsheet().time, 
+                @self.Constraint(self.flowsheet().time,
                                  doc="In-line friction factor on shell side")
                 def friction_factor_shell_eqn(b, t):
-                    return b.friction_factor_shell[t] * b.N_Re_shell[t]**0.15 == \
-                        (0.044 + 0.08 * b.pitch_x_to_do /(b.pitch_y_to_do - 1.0)**\
-                         (0.43 + 1.13 / b.pitch_x_to_do))*b.fcorrection_dp_shell
-    
+                    return b.friction_factor_shell[t] \
+                        * b.N_Re_shell[t]**0.15 == \
+                        (0.044 + 0.08 * b.pitch_x_to_do
+                         / (b.pitch_y_to_do - 1.0)**(0.43 + 1.13
+                                                     / b.pitch_x_to_do)
+                         ) * b.fcorrection_dp_shell
+
             elif self.config.tube_arrangement == TubeArrangement.staggered:
-                @self.Constraint(self.flowsheet().time, 
+                @self.Constraint(self.flowsheet().time,
                                  doc="Staggered friction factor on shell side")
                 def friction_factor_shell_eqn(b, t):
-                    return b.friction_factor_shell[t] * b.N_Re_shell[t]**0.16 == \
+                    return b.friction_factor_shell[t] \
+                        * b.N_Re_shell[t]**0.16 == \
                         (0.25 + 0.118 / (b.pitch_y_to_do - 1.0)**1.08) \
                         * b.fcorrection_dp_shell
             else:
                 raise Exception('tube arrangement type not supported')
 
             # Pressure drop on shell side
-            @self.Constraint(self.flowsheet().time, 
+            @self.Constraint(self.flowsheet().time,
                              doc="Pressure change on shell side")
             def deltaP_shell_eqn(b, t):
                 return b.deltaP_shell[t] == -1.4 * b.friction_factor_shell[t] \
-                    *b.tube_nrow * b.side_2.properties_in[t].dens_mol_phase["Vap"]\
-                    / 1000.0 * sum(b.side_2.properties_in[t].params.mw[c]\
-                        * b.side_2.properties_in[t].mole_frac[c] 
-                        for c in b.side_2.properties_in[t].params.component_list) * \
-                       b.v_shell[t]**2
+                    * b.tube_nrow \
+                    * b.side_2.properties_in[t].dens_mol_phase["Vap"] \
+                    / 1000.0 * sum(b.side_2.properties_in[t].params.mw[c]
+                                   * b.side_2.properties_in[t].mole_frac[c]
+                                   for c in b.side_2.properties_in[t].
+                                   params.component_list) \
+                    * b.v_shell[t]**2
 
         # Prandtl number
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Prandtl number equation on shell side")
         def N_Pr_shell_eqn(b, t):
-            return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond_mix * \
-                sum(b.side_2.properties_in[t].params.mw[c]\
-                    *b.side_2.properties_in[t].mole_frac[c] 
-                    for c in b.side_2.properties_in[t].params.component_list) == \
-                       b.side_2.properties_in[t].heat_cap *1000 * \
-                       b.side_2.properties_in[t].visc_d_mix
+            return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond_mix \
+                * sum(b.side_2.properties_in[t].params.mw[c]
+                      * b.side_2.properties_in[t].mole_frac[c]
+                      for c in b.side_2.properties_in[t].
+                      params.component_list) == \
+                b.side_2.properties_in[t].heat_cap * 1000 * \
+                b.side_2.properties_in[t].visc_d_mix
 
         # Nusselt number, currently assume Re>300
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Nusselts number equation on shell side")
         def N_Nu_shell_eqn(b, t):
             return b.N_Nu_shell[t] == b.f_arrangement * 0.33 \
                 * b.N_Re_shell[t]**0.6 * b.N_Pr_shell[t]**0.333333
 
         # Convective heat transfer coefficient on shell side due to convection
-        @self.Constraint(self.flowsheet().time, 
-                         doc = "Convective heat transfer coefficient equation "
+        @self.Constraint(self.flowsheet().time,
+                         doc="Convective heat transfer coefficient equation"
                          "on shell side due to convection")
         def hconv_shell_conv_eqn(b, t):
             return b.hconv_shell_conv[t] * b.do_tube / 1000 == \
-            b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond_mix / 1000
+                b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond_mix\
+                / 1000
 
         # Total convective heat transfer coefficient on shell side
-        @self.Constraint(self.flowsheet().time, 
-                         doc = "Total convective heat transfer "
+        @self.Constraint(self.flowsheet().time,
+                         doc="Total convective heat transfer "
                          "coefficient equation on shell side")
         def hconv_shell_total_eqn(b, t):
             if self.config.has_radiation is True:
@@ -996,20 +1012,22 @@ constructed,
             else:
                 return b.hconv_shell_total[t] == b.hconv_shell_conv[t]
 
-        # Wall conduction heat transfer resistance based on outside surface area
+        # Wall conduction heat transfer resistance
+        # based on outside surface area
         @self.Constraint(doc="Wall conduction heat transfer resistance")
         def rcond_wall_eqn(b):
             return b.rcond_wall * b.therm_cond_wall == \
                 0.5 * b.do_tube * log(b.do_tube / b.tube_di)
 
         # Overall heat transfer coefficient
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Wall conduction heat transfer resistance")
         def overall_heat_transfer_coefficient_eqn(b, t):
-            return b.overall_heat_transfer_coefficient[t] * (b.rcond_wall + \
-                b.tube_r_fouling + b.shell_r_fouling + 
-                1.0 / b.hconv_shell_total[t] 
-                + b.do_tube / b.hconv_tube[t] / b.tube_di) == b.fcorrection_htc
+            return b.overall_heat_transfer_coefficient[t] \
+                * (b.rcond_wall + b.tube_r_fouling + b.shell_r_fouling +
+                   1.0 / b.hconv_shell_total[t]
+                   + b.do_tube / b.hconv_tube[t] / b.tube_di) == \
+                b.fcorrection_htc
 
     def _make_co_current(self):
         """
@@ -1022,14 +1040,14 @@ constructed,
             None
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 1 inlet temperature difference")
         def temperature_difference_1(b, t):
             return b.deltaT_1[t] == (
                        b.side_2.properties_in[t].temperature -
                        b.side_1.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 1 outlet temperature difference")
         def temperature_difference_2(b, t):
             return b.deltaT_2[t] == (
@@ -1047,14 +1065,14 @@ constructed,
             None
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 1 inlet temperature difference")
         def temperature_difference_1(b, t):
             return b.deltaT_1[t] == (
                        b.side_2.properties_out[t].temperature -
                        b.side_1.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().time, 
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 1 outlet temperature difference")
         def temperature_difference_2(b, t):
             return b.deltaT_2[t] == (
@@ -1077,7 +1095,8 @@ constructed,
         blk.side_2.model_check()
 
     def initialize(blk, state_args_1={}, state_args_2={},
-                   outlvl=0, solver='ipopt', optarg={'tol': 1e-6, 'max_iter':100}):
+                   outlvl=0, solver='ipopt', optarg={'tol': 1e-6,
+                                                     'max_iter': 100}):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -1154,24 +1173,25 @@ constructed,
             t2_flags[t] = blk.side_2.properties_out[t].temperature.fixed
             if not blk.side_2.properties_out[t].temperature.fixed:
                 blk.side_2.properties_out[t].temperature.fix(
-                        value(blk.side_2.properties_in[t].temperature)-5.0) # assuming Delta T min approach
+                        value(blk.side_2.properties_in[t].temperature)-5.0)
+                #                                assuming Delta T min approach
         # Deactivate Constraints
         blk.heat_transfer_correlation.deactivate()
         blk.LMTD.deactivate()
-        blk.energy_balance.deactivate()       
+        blk.energy_balance.deactivate()
         blk.deltaP_tube_eqn.deactivate()
         blk.deltaP_shell_eqn.deactivate()
-        
+
         results = opt.solve(blk, tee=stee)
 
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
                 _log.info('{} Initialisation Step 2 Complete.'
-                            .format(blk.name))
+                          .format(blk.name))
             else:
                 _log.warning('{} Initialisation Step 2 Failed.'
-                               .format(blk.name))
+                             .format(blk.name))
         # Activate energy balance and driving force
         for t in blk.flowsheet().time:
             if not p1_flags[t]:
@@ -1194,10 +1214,10 @@ constructed,
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
                 _log.info('{} Initialisation Step 3 Complete.'
-                            .format(blk.name))
+                          .format(blk.name))
             else:
                 _log.warning('{} Initialisation Step 3 Failed.'
-                               .format(blk.name))
+                             .format(blk.name))
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.side_1.release_state(flags1, outlvl-1)
@@ -1205,4 +1225,3 @@ constructed,
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
-

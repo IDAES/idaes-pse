@@ -59,10 +59,11 @@ kwargs = dict(
         "pint",
         "psutil",
         "pyutilib",
-        "pyomo>=5.6.9",
+        "pyomo>=5.7.0",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
+        "python-slugify", # for ui/fsvis
         "sympy",
         "tinydb",
         "rbfopt",
@@ -77,6 +78,8 @@ kwargs = dict(
         # For developers. Only installed if [dev] is added to package name
         "dev": [
             "alabaster>=0.7.7",
+            # temporarily hold coverage version due to avoid bug in coveralls
+            # -alee 12/20/2019
             "coverage==4.5.4",
             "flake8",
             "flask>=1.0",
@@ -110,6 +113,9 @@ kwargs = dict(
             "*.csv",
             "*.ipynb",
             "*.txt",
+            "*.js",
+            "*.css",
+            "*.html",
         ]
     },
     include_package_data=True,

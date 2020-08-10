@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -15,14 +15,22 @@ IDAES Component objects
 
 @author: alee
 """
-from pyomo.environ import Set, Param, Var
+from pyomo.environ import Set, Param, Var, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
+from idaes.generic_models.properties.core.generic.utility import \
+    set_param_value
+import idaes.logger as idaeslog
+
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Component")
@@ -32,6 +40,18 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("valid_phase_types", ConfigValue(
             domain=list_of_phase_types,
             doc="List of valid PhaseTypes (Enums) for this Component."))
+
+    CONFIG.declare("elemental_composition", ConfigValue(
+            domain=dict,
+            description="Elemental composition of component",
+            doc="Dict containing elemental composition in the form element "
+                ": stoichiometry"))
+
+    CONFIG.declare("henry_component", ConfigValue(
+            domain=dict,
+            description="Phases in which component follows Henry's Law",
+            doc="Dict indicating phases in which component follows Herny's "
+                "Law (keys) with values indicating form of law."))
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
@@ -71,15 +91,38 @@ class ComponentData(ProcessBlockData):
         if not self.config._component_list_exists:
             self.__add_to_component_list()
 
+        base_units = self.parent_block().get_metadata().default_units
+        if isinstance(base_units["mass"], _PyomoUnit):
+            # Backwards compatability check
+            p_units = (base_units["mass"] /
+                       base_units["length"] /
+                       base_units["time"]**2)
+        else:
+            # Backwards compatability check
+            p_units = None
+
         # Create Param for molecular weight if provided
         if "mw" in self.config.parameter_data:
-            self.mw = Param(initialize=self.config.parameter_data["mw"])
+            if isinstance(self.config.parameter_data["mw"], tuple):
+                mw_init = pyunits.convert_value(
+                    self.config.parameter_data["mw"][0],
+                    from_units=self.config.parameter_data["mw"][1],
+                    to_units=base_units["mass"]/base_units["amount"])
+            else:
+                _log.debug("{} no units provided for parameter mw - assuming "
+                           "default units".format(self.name))
+                mw_init = self.config.parameter_data["mw"]
+            self.mw = Param(initialize=mw_init,
+                            units=base_units["mass"]/base_units["amount"])
 
         # Create Vars for common parameters
-        for p in ["pressure_crit", "temperature_crit", "omega"]:
+        param_dict = {"pressure_crit": p_units,
+                      "temperature_crit": base_units["temperature"],
+                      "omega": None}
+        for p, u in param_dict.items():
             if p in self.config.parameter_data:
-                self.add_component(p, Var(
-                    initialize=self.config.parameter_data[p]))
+                self.add_component(p, Var(units=u))
+                set_param_value(self, p, u)
 
     def is_solute(self):
         raise TypeError(

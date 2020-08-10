@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -69,10 +69,11 @@ class ProgLangExt:
 
 
 #: Constants for relation predicates
-PR_DERIVED = "derived"  # derivedFrom
-PR_CONTAINS = "contains"
-PR_USES = "uses"
-PR_VERSION = "version"
+PR_DERIVED = "derived"    #: object is derived from the subject
+PR_CONTAINS = "contains"  #: object contains the subject
+PR_USES = "uses"          #: object uses the subject
+PR_VERSION = "version"    #: object is a (new) version of the subject
+
 RELATION_PREDICATES = {PR_DERIVED, PR_CONTAINS, PR_USES, PR_VERSION}
 
 
@@ -110,6 +111,7 @@ RR_OBJ = "object"
 RR_ID = "identifier"
 RR_ROLE = "role"
 
+#: Schema for a resource
 RESOURCE_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "id": "http://idaes.org",
@@ -269,8 +271,7 @@ class Resource(object):
     def __init__(self, value: dict = None, type_: str = None):
         self._set_defaults()
         if value:
-            _log.debug(f"update resource with values: {value}")
-            self.v.update(value)
+            self.set_values(value)
         if type_ is not None:
             self.v[self.TYPE_FIELD] = type_
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)
@@ -429,7 +430,7 @@ class Resource(object):
         if type_ == TY_CODE:
             language = ProgLangExt.guess(path.suffix, default="unknown")
             return CodeImporter(path, language, **kwargs)
-        if type == TY_JSON:
+        if type_ == TY_JSON:
             return JsonFileImporter(path, **kwargs)
         if type_ == TY_RESOURCE_JSON:
             return SerializedResourceImporter(path, parsed, **kwargs)
@@ -443,6 +444,29 @@ class Resource(object):
 
     def set_id(self, value=None):
         self.v[self.ID_FIELD] = identifier_str(value)
+
+    def set_field(self, key: str, value):
+        """Set field/value pairs with some special shortcuts.
+
+        Args:
+            key: Field name. Special values:
+                * "name": Set as first in the list of aliases
+                * "author": Set as first in the list of collaborators
+            value: Field value.
+
+        Returns:
+            None
+        """
+        if key == "name":
+            self.v["aliases"].insert(0, value)
+        elif key == "author":
+            self.v["collaborators"].insert(0, value)
+        else:
+            self.v[key] = value
+
+    def set_values(self, values):
+        for k, v in values.items():
+            self.set_field(k, v)
 
     @property
     def name(self):
@@ -513,7 +537,7 @@ class Resource(object):
 Triple = namedtuple("Triple", "subject predicate object")
 
 
-def create_relation(rel):
+def create_relation(*args):
     """Create a relationship between two Resource instances.
 
     Relations are stored in both the `subject` and `object` resources, in
@@ -525,9 +549,9 @@ def create_relation(rel):
           In O.relations: {predicate: P, identifier:S.id, role:object}
 
     Args:
-        rel (Triple): Relation triple. The 'subject' and 'object' parts
-                    should be :class:`Resource`, and the 'predicate' should
-                    be a simple string.
+        args: Either a `Triple`, or three arguments that can be made into one.
+              The 'subject' and 'object' parts should be :class:`Resource`, and
+              the 'predicate' should be a simple string.
     Returns:
         None
     Raises:
@@ -535,12 +559,28 @@ def create_relation(rel):
                     object resource, or the predicate is not in the list
                     of valid ones in RELATION_PREDICATES
     """
+    if len(args) == 1:
+        triple = args[0]
+    elif len(args) == 3:
+        triple = Triple(*args)
+    else:
+        raise ValueError("Wrong number of arguments. Must be one argument (Triple) or "
+                         "three arguments (subject:Resource, predicate, object:resource)")
+    return _create_relation(triple)
+
+
+def _create_relation(rel):
     if rel.predicate not in RELATION_PREDICATES:
         raise ValueError(
             'Bad predicate: "{}" not in: {}'.format(
                 rel.predicate, ", ".join(list(RELATION_PREDICATES))
             )
         )
+    try:
+        _ = rel.subject.v[Resource.ID_FIELD], rel.object.v[Resource.ID_FIELD]
+    except AttributeError:
+        raise TypeError("Relation subject and object must be Resources")
+
     rel_d = {
         RR_PRED: rel.predicate,
         RR_ID: rel.object.v[Resource.ID_FIELD],
@@ -558,12 +598,6 @@ def create_relation(rel):
     if rel_d in rel.object.v["relations"]:
         raise ValueError("Duplicate relation for object: {}".format(rel))
     rel.object.v["relations"].append(rel_d)
-
-
-def create_relation_args(*args):
-    """Syntactic sugar to take 3 args instead of a Triple.
-    """
-    return create_relation(Triple(*args))
 
 
 def triple_from_resource_relations(id_, rrel):

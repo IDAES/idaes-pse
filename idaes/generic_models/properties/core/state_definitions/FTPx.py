@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -14,11 +14,13 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var
+from pyomo.environ import Constraint, NonNegativeReals, Var, value
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
+from idaes.generic_models.properties.core.generic.utility import \
+    get_bounds_from_config
 
 
 def set_metadata(b):
@@ -32,106 +34,79 @@ def define_state(b):
     # TODO: should have some checking to make sure developers implement this properly
     b.always_flash = True
 
-    # Get bounds if provided
-    try:
-        f_bounds = b.params.config.state_bounds["flow_mol"]
-    except (KeyError, TypeError):
-        f_bounds = (None, None)
+    base_units = b.params.get_metadata().default_units
+    # Get bounds and initial values from config args
+    f_bounds, f_init = get_bounds_from_config(
+        b, "flow_mol", base_units["amount"]/base_units["time"])
+    t_bounds, t_init = get_bounds_from_config(
+        b, "temperature", base_units["temperature"])
+    p_bounds, p_init = get_bounds_from_config(
+        b,
+        "pressure",
+        base_units["mass"]/base_units["length"]/base_units["time"]**2)
 
-    try:
-        t_bounds = b.params.config.state_bounds["temperature"]
-    except (KeyError, TypeError):
-        t_bounds = (None, None)
-
-    try:
-        p_bounds = b.params.config.state_bounds["pressure"]
-    except (KeyError, TypeError):
-        p_bounds = (None, None)
-
-    # Set an initial value for each state var
-    if f_bounds == (None, None):
-        # No bounds, default to 1
-        f_init = 1
-    elif f_bounds[1] is None and f_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        f_init = f_bounds[0] + 10
-    elif f_bounds[1] is not None and f_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        f_init = f_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        f_init = (f_bounds[0] + f_bounds[1])/2
-
-    if t_bounds == (None, None):
-        # No bounds, default to 298.15
-        t_init = 298.15
-    elif t_bounds[1] is None and t_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        t_init = t_bounds[0] + 10
-    elif t_bounds[1] is not None and t_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        t_init = t_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        t_init = (t_bounds[0] + t_bounds[1])/2
-
-    if p_bounds == (None, None):
-        # No bounds, default to 101325
-        p_init = 101325
-    elif p_bounds[1] is None and p_bounds[0] is not None:
-        # Only lower bound, use lower bound + 10
-        p_init = p_bounds[0] + 10
-    elif p_bounds[1] is not None and p_bounds[0] is None:
-        # Only upper bound, use half upper bound
-        p_init = p_bounds[1]/2
-    else:
-        # Both bounds, use mid point
-        p_init = (p_bounds[0] + p_bounds[1])/2
+    # Get units metadata
+    units_meta = b.params.get_metadata().default_units
+    flow_units = units_meta["amount"]/units_meta["time"]
+    press_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
 
     # Add state variables
     b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
                      bounds=f_bounds,
-                     doc=' Total molar flowrate')
+                     doc=' Total molar flowrate',
+                     units=flow_units)
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
-                           doc='Mixture mole fractions')
+                           doc='Mixture mole fractions',
+                           units=None)
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
-                     doc='State pressure')
+                     doc='State pressure',
+                     units=press_units)
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
-                        doc='State temperature')
+                        doc='State temperature',
+                        units=units_meta["temperature"])
 
     # Add supporting variables
+    if f_init is None:
+        fp_init = None
+    else:
+        fp_init = f_init / len(b.params.phase_list)
+
     b.flow_mol_phase = Var(b.params.phase_list,
-                           initialize=f_init / len(b.params.phase_list),
+                           initialize=fp_init,
                            domain=NonNegativeReals,
                            bounds=f_bounds,
-                           doc='Phase molar flow rates')
+                           doc='Phase molar flow rates',
+                           units=flow_units)
 
     b.mole_frac_phase_comp = Var(
-        b.params.phase_list,
-        b.params.component_list,
+        b.params._phase_component_set,
         initialize=1/len(b.params.component_list),
         bounds=(0, None),
-        doc='Phase mole fractions')
+        doc='Phase mole fractions',
+        units=None)
 
     b.phase_frac = Var(
         b.params.phase_list,
         initialize=1/len(b.params.phase_list),
         bounds=(0, None),
-        doc='Phase fractions')
+        doc='Phase fractions',
+        units=None)
 
     # Add supporting constraints
     if b.config.defined_state is False:
         # applied at outlet only
         b.sum_mole_frac_out = Constraint(
-            expr=1 == sum(b.mole_frac_comp[i]
-                          for i in b.params.component_list))
+            expr=1e3 == 1e3*sum(b.mole_frac_comp[i]
+                                for i in b.params.component_list))
 
     if len(b.params.phase_list) == 1:
         def rule_total_mass_balance(b):
@@ -139,8 +114,8 @@ def define_state(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.mole_frac_comp[i] == \
-                b.mole_frac_phase_comp[b.params.phase_list[1], i]
+            return 1e3*b.mole_frac_comp[i] == \
+                1e3*b.mole_frac_phase_comp[b.params.phase_list[1], i]
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
@@ -159,15 +134,20 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
-                       for i in b.params.component_list) -\
-                sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
-                    for i in b.params.component_list) == 0
+            return 1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
+                           for i in b.params.component_list
+                           if (b.params.phase_list[1], i)
+                           in b.params._phase_component_set) -\
+                1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
+                        for i in b.params.component_list
+                        if (b.params.phase_list[2], i)
+                        in b.params._phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
@@ -180,13 +160,15 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol*b.mole_frac_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list)
+                for p in b.params.phase_list
+                if (p, i) in b.params._phase_component_set)
         b.component_flow_balances = Constraint(b.params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
-            return sum(b.mole_frac_phase_comp[p, i]
-                       for i in b.params.component_list) == 1
+            return 1e3*sum(b.mole_frac_phase_comp[p, i]
+                           for i in b.params.component_list
+                           if (p, i) in b.params._phase_component_set) == 1e3
         b.sum_mole_frac = Constraint(b.params.phase_list,
                                      rule=rule_mole_frac)
 
@@ -243,26 +225,127 @@ def define_state(b):
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FTPx
 
+    def define_display_vars_FTPx():
+        """Define display vars."""
+        return {"Total Molar Flowrate": b.flow_mol,
+                "Total Mole Fraction": b.mole_frac_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
+    b.define_display_vars = define_display_vars_FTPx
+
 
 def state_initialization(b):
-    if len(b.params.phase_list) == 1:
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value
+    for p in b.params.phase_list:
+        # Start with phase mole fractions equal to total mole fractions
+        for j in b.components_in_phase(p):
+            b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
 
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+        b.flow_mol_phase[p].value = value(
+                        b.flow_mol / len(b.params.phase_list))
 
-    else:
-        # TODO : Try to find some better guesses than this
-        for p in b.params.phase_list:
-            b.flow_mol_phase[p].value = \
-                b.flow_mol.value / len(b.params.phase_list)
+        # Try to refine guesses - Check phase type
+        pobj = b.params.get_phase(p)
 
-            for j in b.components_in_phase(p):
-                b.mole_frac_phase_comp[p, j].value = \
-                    b.mole_frac_comp[j].value
+        if not hasattr(b.params, "_pe_pairs"):
+            return
+
+        if pobj.is_liquid_phase():
+            tbub = None
+            tdew = None
+            for pp in b.params._pe_pairs:
+                # Look for a VLE pair with this phase - should only be 1
+                if ((pp[0] == p and
+                     b.params.get_phase(pp[1]).is_vapor_phase()) or
+                    (pp[1] == p and
+                     b.params.get_phase(pp[0]).is_vapor_phase())):
+                    # Get bubble and dew points
+                    if hasattr(b, "eq_temperature_bubble"):
+                        try:
+                            tbub = b.temperature_bubble[pp].value
+                        except KeyError:
+                            pass
+                    if hasattr(b, "eq_temperature_dew"):
+                        try:
+                            tdew = b.temperature_dew[pp].value
+                        except KeyError:
+                            pass
+                    break
+
+            if tbub is None and tdew is None:
+                # No VLE pair found, or no bubble and dew point
+                # Do nothing
+                pass
+            elif tdew is not None and b.temperature.value > tdew:
+                # Pure vapour
+                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b._mole_frac_tdew[pp, j].value
+            elif tbub is not None and b.temperature.value < tbub:
+                # Pure liquid
+                b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+            else:
+                # Two-phase
+                # TODO : Try to find some better guesses than default
+                pass
+
+        elif pobj.is_vapor_phase():
+            # Look for a VLE pair with this phase - will go with 1st found
+            tbub = None
+            tdew = None
+            for pp in b.params._pe_pairs:
+                if ((pp[0] == p and
+                     b.params.get_phase(pp[1]).is_liquid_phase()) or
+                    (pp[1] == p and
+                     b.params.get_phase(pp[0]).is_liquid_phase())):
+                    # Get bubble and dew points
+                    if hasattr(b, "eq_temperature_bubble"):
+                        try:
+                            tbub = b.temperature_bubble[pp].value
+                        except KeyError:
+                            pass
+                    if hasattr(b, "eq_temperature_dew"):
+                        try:
+                            tdew = b.temperature_dew[pp].value
+                        except KeyError:
+                            pass
+                    break
+
+            if tbub is None and tdew is None:
+                # No VLE pair found, or no bubble and dew point
+                # Do nothing
+                pass
+            elif tdew is not None and b.temperature.value > tdew:
+                # Pure vapour
+                b.flow_mol_phase[p].value = value(b.flow_mol)
+                b.phase_frac[p].value = 1
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b.mole_frac_comp[j].value
+            elif tbub is not None and b.temperature.value < tbub:
+                # Pure liquid
+                b.flow_mol_phase[p].value = value(1e-5*b.flow_mol)
+                b.phase_frac[p].value = 1e-5
+
+                for j in b.params.component_list:
+                    if (p, j) in b.params._phase_component_set:
+                        b.mole_frac_phase_comp[p, j].value = \
+                            b._mole_frac_tbub[pp, j].value
+            else:
+                # Two-phase
+                # TODO : Try to find some better guesses than default
+                pass
 
 
 do_not_initialize = ["sum_mole_frac_out"]

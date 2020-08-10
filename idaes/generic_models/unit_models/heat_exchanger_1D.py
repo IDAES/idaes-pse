@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -46,6 +46,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util import scaling as iscale
+
 import idaes.logger as idaeslog
 
 
@@ -696,3 +698,14 @@ thickness of the tube""",
             },
             time_point=time_point,
         )
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for i, c in self.shell_heat_transfer_eq.items():
+            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                self.shell.heat[i], default=1, warning=True))
+
+        for i, c in self.tube_heat_transfer_eq.items():
+            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
+                self.tube.heat[i], default=1, warning=True))

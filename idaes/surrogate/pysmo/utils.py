@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -67,7 +67,7 @@ class NumpyEvaluator(EXPR.StreamBasedExpressionVisitor):
             return numpy.abs(values[0])
         return node._apply_operation(values)
 
-    def beforeChild(self, node, child):
+    def beforeChild(self, node, child, child_idx):
         #
         # Don't replace native types
         #

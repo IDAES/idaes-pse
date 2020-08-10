@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -35,7 +35,7 @@ from .errors import (
 )
 from .util import yaml_load
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
 
 _log = logging.getLogger(__name__)
 
@@ -67,8 +67,8 @@ class Fields(object):
     """Workspace configuration fields.
     """
 
-    DOC_HTML_PATH = 'htmldocs'  # path to documentation html dir
-    LOG_CONF = 'logging'  # logging config
+    DOC_HTML_PATH = "htmldocs"  # path to documentation html dir
+    LOG_CONF = "logging"  # logging config
 
 
 class Workspace(object):
@@ -147,21 +147,24 @@ class Workspace(object):
     """
 
     #: Name of configuration file placed in WORKSPACE_DIR
-    WORKSPACE_CONFIG = 'config.yaml'
+    WORKSPACE_CONFIG = "config.yaml"
     #: Name of ID field
-    ID_FIELD = '_id'
+    ID_FIELD = "_id"
 
-    CONF_NAME = 'name'  #: Configuration field for name
-    CONF_DESC = 'description'  #: Configuration field for description
-    CONF_CREATED = 'created'  #: Configuration field for created date
-    CONF_MODIFIED = 'modified'  #: Configuration field for modified date
+    CONF_NAME = "name"  #: Configuration field for name
+    CONF_DESC = "description"  #: Configuration field for description
+    CONF_CREATED = "created"  #: Configuration field for created date
+    CONF_MODIFIED = "modified"  #: Configuration field for modified date
 
-    def __init__(self, path, create=False, add_defaults=False, html_paths=None):
+    def __init__(
+        self, path, create=False, existing_ok=True, add_defaults=False, html_paths=None
+    ):
         """Load or create a workspace rooted at `path`
 
         Args:
             (str) path: Path for root of workspace
             (bool) create: Create the workspace if it does not exist.
+            (bool) existing_ok: If create is True, and the workspace exists, just continue
             (bool) add_defaults: Add default values to new config
             html_paths: One or more paths to HTML docs (or None)
         Raises:
@@ -175,6 +178,7 @@ class Workspace(object):
         self._conf = os.path.join(self._wsdir, self.WORKSPACE_CONFIG)
         self._cached_conf = None
         if create:
+            skip_config = False
             # note: these raise OSError on failure
             try:
                 os.mkdir(self._wsdir, 0o770)
@@ -182,19 +186,24 @@ class Workspace(object):
                 if not os.path.exists(self._wsdir):
                     raise WorkspaceCannotCreateError(self._wsdir)
                 if os.path.exists(self._conf):
+                    if existing_ok:
+                        _log.info(f"Using existing DMF workspace: {self._conf}")
+                        skip_config = True
+                    else:
+                        raise WorkspaceError(
+                            "existing configuration would be "
+                            "overwritten: {}".format(self._conf)
+                        )
+                _log.info(
+                    "Using existing path for new DMF workspace: {}".format(self._wsdir)
+                )
+            if not skip_config:
+                try:
+                    self._create_new_config(add_defaults)
+                except OSError as err:
                     raise WorkspaceError(
-                        'existing configuration would be '
-                        'overwritten: {}'.format(self._conf)
+                        "while creating new workspace " "configuration: {}".format(err)
                     )
-                _log.warning(
-                    'Using existing path for new DMF workspace: {}'.format(self._wsdir)
-                )
-            try:
-                self._create_new_config(add_defaults)
-            except OSError as err:
-                raise WorkspaceError(
-                    'while creating new workspace ' 'configuration: {}'.format(err)
-                )
         else:
             # assert that the workspace exists
             try:
@@ -209,14 +218,15 @@ class Workspace(object):
         try:
             self._id = self.meta[self.ID_FIELD]
         except KeyError:
-            raise WorkspaceConfMissingField(path, self.ID_FIELD, 'ID field')
+            raise WorkspaceConfMissingField(path, self.ID_FIELD, "ID field")
         if html_paths:
             self.set_doc_paths(html_paths)
 
     def _create_new_config(self, add_defaults):
+        _log.info(f"Create new configuration at '{self._conf}'")
         conf = open(self._conf, 'w')  # create the file
         new_id = uuid.uuid4().hex  # create new unique ID
-        conf.write('{}: {}\n'.format(self.ID_FIELD, new_id))  # write ID
+        conf.write("{}: {}\n".format(self.ID_FIELD, new_id))  # write ID
         conf.close()  # flush and close
         if add_defaults:
             self._configure_defaults()
@@ -247,7 +257,7 @@ class Workspace(object):
     def _get_install_dir():
         fpath = os.path.realpath(__file__)
         fdir = os.path.dirname(fpath)
-        idir = os.path.join(fdir, '..', '..')
+        idir = os.path.join(fdir, "..", "..")
         return os.path.abspath(idir)
 
     def set_meta(self, values, remove=None):
@@ -301,7 +311,7 @@ class Workspace(object):
             stack = [(k, d) for k in d]
             while stack:
                 key, p = stack.pop()
-                if key == 'output':
+                if key == "output":
                     p[key] = self._expand_path(p[key])
                 elif isinstance(p[key], dict):
                     for key2 in p[key].keys():
@@ -316,7 +326,7 @@ class Workspace(object):
             (list) Paths or empty list if not found.
         """
         paths = self.meta.get(Fields.DOC_HTML_PATH, [])
-        if len(paths) and hasattr(paths, 'lower'):
+        if len(paths) and hasattr(paths, "lower"):
             paths = [paths]  # make a str into a list
         return paths
 
@@ -340,7 +350,7 @@ class Workspace(object):
         #: type (None) -> dict
         if self._cached_conf is None:
             _log.debug('Load workspace configuration from "{}"'.format(self._conf))
-            conf = open(self._conf, 'r')
+            conf = open(self._conf, "r")
             try:
                 contents = yaml_load(conf)
             except Exception as err:
@@ -353,13 +363,13 @@ class Workspace(object):
         else:
             contents = self._cached_conf
         if isinstance(contents, str):
-            raise ParseError('File contents cannot be simple str ({})'.format(contents))
+            raise ParseError("File contents cannot be simple str ({})".format(contents))
         else:
             return contents.copy()
 
     def _expand_path(self, path):
         # leave paths bracketed by _underscores_ alone
-        if len(path) > 2 and path[0] == '_' and path[-1] == '_':
+        if len(path) > 2 and path[0] == "_" and path[-1] == "_":
             return path
         return os.path.realpath(
             path.format(ws_root=self.root, dmf_root=self._install_dir)
@@ -367,7 +377,7 @@ class Workspace(object):
 
     def _write_conf(self, contents):
         #: type (dict) -> None
-        conf = open(self._conf, 'w')
+        conf = open(self._conf, "w")
         yaml.dump(contents, conf, default_flow_style=False)
         conf.close()
 
@@ -386,15 +396,15 @@ class Workspace(object):
 
     @property
     def name(self):
-        return self.meta.get(self.CONF_NAME, 'none')
+        return self.meta.get(self.CONF_NAME, "none")
 
     @property
     def description(self):
-        return self.meta.get(self.CONF_DESC, 'none')
+        return self.meta.get(self.CONF_DESC, "none")
 
 
 class WorkspaceConfig(object):
-    DEFAULTS = {'string': '', 'number': 0, 'boolean': False, 'array': []}
+    DEFAULTS = {"string": "", "number": 0, "boolean": False, "array": []}
 
     def __init__(self):
         self._schema = jsonschema.Draft4Validator(CONFIG_SCHEMA)
@@ -414,36 +424,36 @@ class WorkspaceConfig(object):
                   The 'value' gives a default value. Its type is either
                   a list, a number, bool, or a string; the list may be empty.
         """
-        prop = CONFIG_SCHEMA['properties']
+        prop = CONFIG_SCHEMA["properties"]
         result = {}
 
         for key, item in six.iteritems(prop):
-            if key.startswith('_'):
+            if key.startswith("_"):
                 continue
-            desc = item['description']
-            type_ = item['type']
+            desc = item["description"]
+            type_ = item["type"]
             # morph unknown types to string
             if type_ not in self.DEFAULTS:
                 _log.warning(
                     'Unknown schema type "{}".' 'Using "string" instead'.format(type_)
                 )
-                type_ = 'string'
+                type_ = "string"
             # figure out value type, look for default values
             default_value = None
-            if type_ == 'array':
-                itype = item['items']['type']
-                idesc = item['items']['description']
-                desc = '{}. Each item is a {}'.format(desc, idesc)
+            if type_ == "array":
+                itype = item["items"]["type"]
+                idesc = item["items"]["description"]
+                desc = "{}. Each item is a {}".format(desc, idesc)
                 type_ = itype
-                if 'default' in item['items']:
-                    default_value = [item['items']['default']]
-                elif 'default' in item:
+                if "default" in item["items"]:
+                    default_value = [item["items"]["default"]]
+                elif "default" in item:
                     # default is comma-separated list
-                    default_value = item['default'].split(',')
+                    default_value = item["default"].split(",")
                 else:
                     default_value = []
-            elif 'default' in item:
-                default_value = item['default']
+            elif "default" in item:
+                default_value = item["default"]
 
             if default_value is None and only_defaults:
                 continue

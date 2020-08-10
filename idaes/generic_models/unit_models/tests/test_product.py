@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -46,6 +46,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.unit
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -73,9 +74,20 @@ class TestSaponification(object):
 
         m.fs.unit = Product(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_vol.fix(1.0e-03)
+        m.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.temperature.fix(303.15)
+        m.fs.unit.pressure.fix(101325.0)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
 
         assert hasattr(sapon.fs.unit, "inlet")
@@ -94,28 +106,20 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 0
         assert number_unused_variables(sapon) == 8
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.flow_vol.fix(1.0e-03)
-        sapon.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.temperature.fix(303.15)
-        sapon.fs.unit.pressure.fix(101325.0)
-
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     # No solve tests, as Product block has nothing to solve
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
@@ -131,9 +135,16 @@ class TestBTX(object):
 
         m.fs.unit = Product(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.temperature[0].fix(365)  # K
+        m.fs.unit.pressure[0].fix(101325)  # Pa
+        m.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
@@ -151,23 +162,19 @@ class TestBTX(object):
         assert number_total_constraints(btx) == 3
         assert number_unused_variables(btx) == 2
 
+    @pytest.mark.unit
     def test_dof(self, btx):
-        btx.fs.unit.flow_mol[0].fix(5)  # mol/s
-        btx.fs.unit.temperature[0].fix(365)  # K
-        btx.fs.unit.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, btx):
         initialization_tester(btx)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solve(self, btx):
         results = solver.solve(btx)
 
@@ -176,9 +183,9 @@ class TestBTX(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.properties[0].flow_mol_phase["Liq"]))
@@ -190,6 +197,7 @@ class TestBTX(object):
                                                                 "toluene"]))
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, btx):
         btx.fs.unit.report()
 
@@ -208,9 +216,14 @@ class TestIAPWS(object):
 
         m.fs.unit = Product(default={"property_package": m.fs.properties})
 
+        m.fs.unit.flow_mol[0].fix(100)
+        m.fs.unit.enth_mol[0].fix(4000)
+        m.fs.unit.pressure[0].fix(101325)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, iapws):
         assert len(iapws.fs.unit.inlet.vars) == 3
         assert hasattr(iapws.fs.unit.inlet, "flow_mol")
@@ -225,21 +238,19 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 0
         assert number_unused_variables(iapws) == 3
 
+    @pytest.mark.unit
     def test_dof(self, iapws):
-        iapws.fs.unit.flow_mol[0].fix(100)
-        iapws.fs.unit.enth_mol[0].fix(4000)
-        iapws.fs.unit.pressure[0].fix(101325)
-
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
     # No solve as there is nothing to solve for
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, iapws):
         iapws.fs.unit.report()

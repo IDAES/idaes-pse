@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -261,6 +261,8 @@ class ResourceDB(object):
         # build adjacency list representing connections between resources
         relation_map = {}
         for rsrc in resource_list:
+            # print(f"@@ process resource: {rsrc[Resource.ID_FIELD]}")
+            # print(f"@@ resource relations: {rsrc['relations']}")
             for rrel in rsrc['relations']:
                 uuid = rsrc[Resource.ID_FIELD]
                 rel = triple_from_resource_relations(uuid, rrel)
@@ -268,9 +270,11 @@ class ResourceDB(object):
                 if (outgoing and rel.subject == uuid) or (
                     not outgoing and rel.object == uuid
                 ):
+                    # print(f"@@ do nothing for: {uuid}")
                     continue
                 # add entry in map
                 key = rel.subject if outgoing else rel.object
+                # print(f"@@ add to relation map, key={key}")
                 meta_info = {k: rsrc[k] for k in meta}
                 value = (rel.subject, rel.predicate, rel.object, meta_info)
                 value_list = relation_map.get(key, None)
@@ -392,7 +396,7 @@ class ResourceDB(object):
         id_cond = {Resource.ID_FIELD: id_}
         old = self.find_one(id_cond)
         if old is None:
-            raise KeyError('Cannot find resource id={}'.format(id_))
+            raise errors.NoSuchResourceError(id_=id_)
         T = Resource.TYPE_FIELD
         if old.v[T] != new_dict[T]:
             raise ValueError(

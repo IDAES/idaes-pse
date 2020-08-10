@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Set,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     IdealBubbleDew
@@ -72,7 +73,12 @@ def frame():
                            "Vap": {"equation_of_state": dummy_eos}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
-                "temperature_ref": 300})
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K}})
     m.params._pe_pairs = Set(initialize=[("Vap", "Liq")])
 
     m.props = m.params.build_state_block([1],
@@ -89,6 +95,7 @@ def frame():
 
 
 class TestBubbleTempIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].temperature_bubble = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_tbub = Var(frame.params._pe_pairs,
@@ -105,6 +112,7 @@ class TestBubbleTempIdeal(object):
         for k in frame.props[1].eq_mole_frac_tbub:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -129,6 +137,7 @@ class TestBubbleTempIdeal(object):
 
 
 class TestDewTempIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].temperature_dew = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_tdew = Var(frame.params._pe_pairs,
@@ -145,6 +154,7 @@ class TestDewTempIdeal(object):
         for k in frame.props[1].eq_mole_frac_tdew:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -168,6 +178,7 @@ class TestDewTempIdeal(object):
 
 
 class TestBubblePresIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].pressure_bubble = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_pbub = Var(frame.params._pe_pairs,
@@ -184,6 +195,7 @@ class TestBubblePresIdeal(object):
         for k in frame.props[1].eq_mole_frac_pbub:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10
@@ -207,6 +219,7 @@ class TestBubblePresIdeal(object):
 
 
 class TestDewPressureIdeal(object):
+    @pytest.mark.unit
     def test_build(self, frame):
         frame.props[1].pressure_dew = Var(frame.params._pe_pairs)
         frame.props[1]._mole_frac_pdew = Var(frame.params._pe_pairs,
@@ -223,6 +236,7 @@ class TestDewPressureIdeal(object):
         for k in frame.props[1].eq_mole_frac_pdew:
             assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "EtOH")]
 
+    @pytest.mark.unit
     def test_expressions(self, frame):
         for x1 in range(0, 11, 1):
             frame.props[1].mole_frac_comp["H2O"].value = x1/10

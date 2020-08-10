@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -421,6 +421,7 @@ have a config block which derives from CONFIG_Base,
                         "your property package to implement the necessary "
                         "default attributes.".format(self.name))
 
+        self._constructed_material_balance_type = balance_type
         if balance_type == MaterialBalanceType.none:
             mb = None
         elif balance_type == MaterialBalanceType.componentPhase:
@@ -476,6 +477,7 @@ have a config block which derives from CONFIG_Base,
                         "your property package to implement the necessary "
                         "default attributes.".format(self.name))
 
+        self._constructed_energy_balance_type = balance_type
         if balance_type == EnergyBalanceType.none:
             eb = None
         elif balance_type == EnergyBalanceType.enthalpyTotal:
@@ -514,6 +516,7 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        self._constructed_momentum_balance_type = balance_type
         if balance_type == MomentumBalanceType.none:
             mb = None
         elif balance_type == MomentumBalanceType.pressureTotal:
@@ -795,10 +798,10 @@ have a config block which derives from CONFIG_Base,
                 return 1
             elif (flow_basis == MaterialFlowBasis.mass and
                   rxn_basis == MaterialFlowBasis.molar):
-                return prop.mw[j]
+                return prop.mw_comp[j]
             elif (flow_basis == MaterialFlowBasis.molar and
                   rxn_basis == MaterialFlowBasis.mass):
-                return 1/prop.mw[j]
+                return 1/prop.mw_comp[j]
             else:
                 raise BurntToast(
                         "{} encountered unrecognsied combination of bases "

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -32,10 +32,7 @@ from idaes.util.system import mkdtemp
 # for testing
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -81,6 +78,7 @@ def default_resource():
     return resource.Resource()
 
 
+@pytest.mark.unit
 def test_resource_roundtrip(example_resource):
     """Build up a resource with all attributes,
     then make sure it serializes and deserializes.
@@ -120,6 +118,7 @@ _propm = {
 }
 
 
+@pytest.mark.unit
 def test_property_data_resource():
     r = resource.Resource()
     r.data = {"data": _propd, "meta": _propm}
@@ -130,14 +129,17 @@ def test_property_data_resource():
     assert tbl.metadata[0].title == _propm["title"]
 
 
+@pytest.mark.unit
 def test_validate_default(default_resource):
     default_resource.validate()
 
 
+@pytest.mark.unit
 def test_validate_example(example_resource):
     example_resource.validate()
 
 
+@pytest.mark.unit
 def test_validate_preprocess(default_resource):
     r = default_resource
     r.validate()
@@ -157,6 +159,7 @@ def tmpd():
     shutil.rmtree(d)
 
 
+@pytest.mark.unit
 def test_get_datafiles_relative(default_resource, tmpd):
     r = default_resource
     r.v["datafiles_dir"] = tmpd  # paths are now relative to this
@@ -174,6 +177,7 @@ def test_get_datafiles_relative(default_resource, tmpd):
     assert len(paths) == 0  # all were returned
 
 
+@pytest.mark.unit
 def test_get_datafiles_absolute(default_resource, tmpd):
     r = default_resource
     paths = set()
@@ -191,6 +195,7 @@ def test_get_datafiles_absolute(default_resource, tmpd):
     assert len(paths) == 0  # all were returned
 
 
+@pytest.mark.unit
 def test_create_relation(default_resource, example_resource):
     r1, r2 = default_resource, example_resource
     relation = resource.Triple(r1, resource.PR_USES, r2)
@@ -205,18 +210,20 @@ def test_create_relation(default_resource, example_resource):
     assert r2.v["relations"][0]["identifier"] == r1.v[r2.ID_FIELD]
     # some errors
     with pytest.raises(ValueError):
-        resource.create_relation_args("foo", "bad predicate", "bar")
+        resource.create_relation("foo", "bad predicate", "bar")
     # delete relation from subject to test duplicate check for object
     r1.v["relations"] = []
     with pytest.raises(ValueError):  # dup raises ValueError
         resource.create_relation(relation)
 
 
+@pytest.mark.unit
 def test_repr(example_resource):
     txt = example_resource._repr_text_()
     assert len(txt) > 0
 
 
+@pytest.mark.unit
 def test_date_float():
     now = datetime.now()
     now_float = now.timestamp()
@@ -244,6 +251,7 @@ def test_date_float():
         resource.date_float(None)
 
 
+@pytest.mark.unit
 def test_version_list():
     f = resource.version_list
     # any tuple prefix is fine
@@ -269,10 +277,12 @@ def test_version_list():
     assert f("1.2.3-RC3") == [1, 2, 3, "RC3"]  # stripped "-"
 
 
+@pytest.mark.unit
 def test_format_version():
     assert resource.format_version([1, 2, 3, "RC3"]) == "1.2.3-RC3"
 
 
+@pytest.mark.unit
 def test_identifier_str():
     assert len(resource.identifier_str()) > 1
     assert resource.identifier_str("0" * 32) == "0" * 32
@@ -282,6 +292,7 @@ def test_identifier_str():
         resource.identifier_str("0" * 31 + "X")
 
 
+@pytest.mark.unit
 def test_dirty_bit():
     dd = resource.Dict({"value": 1})
     assert dd.is_dirty()
@@ -293,6 +304,7 @@ def test_dirty_bit():
     assert not dd.is_dirty()
 
 
+@pytest.mark.unit
 def test_validate_onlywhendirty(default_resource):
     r = default_resource
     assert r._validations == 0
@@ -307,6 +319,7 @@ def test_validate_onlywhendirty(default_resource):
     assert r._validations == 2
 
 
+@pytest.mark.unit
 def test_triple_from_resource_relations():
     i = "cookie monster"
     j = "cookies"

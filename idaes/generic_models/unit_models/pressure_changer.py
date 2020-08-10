@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -39,6 +39,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
+from idaes.core.util import scaling as iscale
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -240,12 +241,6 @@ see property package for documentation.}""",
         # Add Momentum balance variable 'deltaP' as necessary
         add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
-        # Set reference to scaling factor for pressure in control volume
-        add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
-
-        # Set reference to scaling factor for energy in control volume
-        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
-
         # Performance Variables
         self.ratioP = Var(
             self.flowsheet().config.time, initialize=1.0, doc="Pressure Ratio"
@@ -255,8 +250,8 @@ see property package for documentation.}""",
         @self.Constraint(self.flowsheet().config.time, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
             return (
-                self.sfp * b.ratioP[t] * b.control_volume.properties_in[t].pressure
-                == self.sfp * b.control_volume.properties_out[t].pressure
+                b.ratioP[t] * b.control_volume.properties_in[t].pressure
+                == b.control_volume.properties_out[t].pressure
             )
 
         # Construct equations for thermodynamic assumption
@@ -305,11 +300,11 @@ see property package for documentation.}""",
         )
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe * b.work_fluid[t] == b.sfe * (
+                return b.work_fluid[t] == (
                     b.work_mechanical[t] * b.efficiency_pump[t]
                 )
             else:
-                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                return b.work_mechanical[t] == (
                     b.work_fluid[t] * b.efficiency_pump[t]
                 )
 
@@ -395,8 +390,8 @@ see property package for documentation.}""",
         )
         def isentropic_pressure(b, t):
             return (
-                b.sfp * b.properties_isentropic[t].pressure
-                == b.sfp * b.control_volume.properties_out[t].pressure
+                b.properties_isentropic[t].pressure
+                == b.control_volume.properties_out[t].pressure
             )
 
         # This assumes isentropic composition is the same as outlet
@@ -417,7 +412,7 @@ see property package for documentation.}""",
             self.flowsheet().config.time, doc="Calculate work of isentropic process"
         )
         def isentropic_energy_balance(b, t):
-            return b.sfe * b.work_isentropic[t] == b.sfe * (
+            return b.work_isentropic[t] == (
                 sum(
                     b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list
@@ -434,11 +429,11 @@ see property package for documentation.}""",
         )
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe * b.work_isentropic[t] == b.sfe * (
+                return b.work_isentropic[t] == (
                     b.work_mechanical[t] * b.efficiency_isentropic[t]
                 )
             else:
-                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                return b.work_mechanical[t] == (
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
@@ -745,6 +740,99 @@ see property package for documentation.}""",
                                         pump_type_factor=pump_type_factor,
                                         pump_motor_type_factor=pump_motor_type_factor)
 
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "work_fluid"):
+            for t, v in self.work_fluid.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "work_mechanical"):
+            for t, v in self.work_mechanical.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "work_isentropic"):
+            for t, v in self.work_isentropic.items():
+                iscale.set_scaling_factor(
+                    v,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "ratioP_calculation"):
+            for t, c in self.ratioP_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].pressure,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "fluid_work_calculation"):
+            for t, c in self.fluid_work_calculation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.deltaP[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "actual_work"):
+            for t, c in self.actual_work.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "adiabatic"):
+            for t, c in self.adiabatic.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].enth_mol,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic_pressure"):
+            for t, c in self.isentropic_pressure.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].pressure,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic"):
+            for t, c in self.isentropic.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.properties_in[t].entr_mol,
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "isentropic_energy_balance"):
+            for t, c in self.isentropic_energy_balance.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
 class TurbineData(PressureChangerData):
@@ -756,7 +844,7 @@ class TurbineData(PressureChangerData):
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
 
-@declare_process_block_class("Compressor", doc="Isentropic turbine model")
+@declare_process_block_class("Compressor", doc="Isentropic compressor model")
 class CompressorData(PressureChangerData):
     # Pressure changer with isentropic turbine options
     CONFIG = PressureChangerData.CONFIG()
@@ -766,7 +854,7 @@ class CompressorData(PressureChangerData):
     CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
     CONFIG.get("thermodynamic_assumption")._default = ThermodynamicAssumption.isentropic
 
-@declare_process_block_class("Pump", doc="Isentropic turbine model")
+@declare_process_block_class("Pump", doc="Pump model")
 class PumpData(PressureChangerData):
     # Pressure changer with isentropic turbine options
     CONFIG = PressureChangerData.CONFIG()

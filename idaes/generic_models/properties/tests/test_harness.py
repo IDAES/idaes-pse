@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -15,7 +15,9 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Expression,
                            Set,
-                           Var)
+                           Var,
+                           Param,
+                           Constraint)
 
 from idaes.core import (ControlVolume0DBlock,
                         FlowsheetBlock,
@@ -26,7 +28,14 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import get_default_solver
+import idaes.core.util.scaling as iscale
 
+
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.param import _ParamData
+from pyomo.core.base.expression import _ExpressionData
+
+_scalable = (_VarData, _ParamData, _ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -141,7 +150,9 @@ class PropertyTestHarness(object):
         try:
             for p in frame.fs.params.phase_list:
                 for j in frame.fs.params.component_list:
-                    frame.fs.props[1].get_material_flow_terms(p, j)
+                    term = frame.fs.props[1].get_material_flow_terms(p, j)
+                    # Assert that the term can be assigned a scale factor
+                    assert isinstance(term, _scalable)
         except KeyError:
             raise KeyError(
                 "get_material_flow_terms method is not indexed by phase and "
@@ -154,7 +165,9 @@ class PropertyTestHarness(object):
     def test_get_enthalpy_flow_terms(self, frame):
         try:
             for p in frame.fs.params.phase_list:
-                frame.fs.props[1].get_enthalpy_flow_terms(p)
+                term = frame.fs.props[1].get_enthalpy_flow_terms(p)
+                # Assert that the term can be assigned a scale factor
+                assert isinstance(term, _scalable)
         except KeyError:
             raise KeyError(
                 "get_enthalpy_flow_terms method is not indexed by phase.")
@@ -168,7 +181,9 @@ class PropertyTestHarness(object):
             try:
                 for p in frame.fs.params.phase_list:
                     for j in frame.fs.params.component_list:
-                        frame.fs.props[1].get_material_density_terms(p, j)
+                        term = frame.fs.props[1].get_material_density_terms(p, j)
+                        # Assert that the term can be assigned a scale factor
+                        assert isinstance(term, _scalable)
             except KeyError:
                 raise KeyError(
                     "get_material_density_terms method is not indexed by phase"
@@ -182,7 +197,8 @@ class PropertyTestHarness(object):
         if frame.has_density_terms:
             try:
                 for p in frame.fs.params.phase_list:
-                    frame.fs.props[1].get_energy_density_terms(p)
+                    term = frame.fs.props[1].get_energy_density_terms(p)
+                    assert isinstance(term, _scalable)
             except KeyError:
                 raise KeyError(
                     "get_enthalpy_density_terms method is not indexed by "
@@ -275,3 +291,18 @@ class PropertyTestHarness(object):
         frame.fs.cv.add_energy_balances()
 
         frame.fs.cv.add_momentum_balances()
+
+    def test_default_scaling_factors(self, frame):
+        # check that the calculate_scaling_factors method successfully copies
+        # the default scaling factors to the scaling suffixes.  If there are
+        # no default scaling factors, this should pass
+        iscale.calculate_scaling_factors(frame) #this also ensure, it doesn't except 
+        for v in frame.fs.props[1].component_data_objects(
+            (Constraint, Var, Expression),
+            descend_into=False):
+            name = v.getname().split("[")[0]
+            index = v.index()
+            print(v)
+            assert (iscale.get_scaling_factor(v) ==
+                frame.fs.props[1].config.parameters.get_default_scaling(name, index)) or (
+                frame.fs.props[1].config.parameters.get_default_scaling(name, index) is None)

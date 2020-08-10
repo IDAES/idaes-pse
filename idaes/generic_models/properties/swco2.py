@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -194,6 +194,12 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             },
             doc="residual viscosity parameters",
         )
+        self.set_default_scaling("therm_cond_phase", 1e2, index="Liq")
+        self.set_default_scaling("therm_cond_phase", 1e1, index="Vap")
+        self.set_default_scaling("visc_d_phase", 1e5, index="Liq")
+        self.set_default_scaling("visc_d_phase", 1e6, index="Vap")
+        self.set_default_scaling("visc_k_phase", 1e5, index="Liq")
+        self.set_default_scaling("visc_k_phase", 1e7, index="Vap")
 
 
 @declare_process_block_class(
@@ -219,10 +225,6 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
 
         # Phase Thermal conductiviy
         def rule_tc(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.therm_cond_phase[p]] = 1e1
-            else:
-                self.scaling_factor[self.therm_cond_phase[p]] = 1e2
             b = self.config.parameters.tc_b
             c = self.config.parameters.tc_c
             d = self.config.parameters.tc_d
@@ -244,10 +246,6 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
 
         # Phase dynamic viscosity
         def rule_mu(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.visc_d_phase[p]] = 1e5
-            else:
-                self.scaling_factor[self.visc_d_phase[p]] = 1e6
             a = self.config.parameters.visc_a
             d = self.config.parameters.visc_d
             Ts = T/251.196
@@ -266,10 +264,6 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
 
         # Phase kinimatic viscosity
         def rule_nu(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.visc_k_phase[p]] = 1e5
-            else:
-                self.scaling_factor[self.visc_k_phase[p]] = 1e7
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
         self.visc_k_phase = Expression(

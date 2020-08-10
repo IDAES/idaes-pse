@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -14,7 +14,7 @@
 Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Reals, Var
+from pyomo.environ import Constraint, Param, Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -24,8 +24,9 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jinliang Ma, Andrew Lee"
 
@@ -119,6 +120,11 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
+    CONFIG.declare("inert_species", ConfigValue(
+        default=[],
+        domain=list_of_strings,
+        description="List of inert species",
+        doc="List of species which do not take part in reactions."))
 
     def build(self):
         """
@@ -132,6 +138,14 @@ see property package for documentation.}"""))
         """
         # Call UnitModel.build to setup dynamics
         super(GibbsReactorData, self).build()
+
+        # Validate list of inert species
+        for i in self.config.inert_species:
+            if i not in self.config.property_package.component_list:
+                raise ConfigurationError(
+                    "{} invalid component in inert_species argument. {} is "
+                    "not in the property package component list."
+                    .format(self.name, i))
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(default={
@@ -163,23 +177,69 @@ see property package for documentation.}"""))
                                  initialize=100,
                                  doc="Lagrangian multipliers")
 
+        # TODO : Remove this once sacling is properly implemented
+        self.gibbs_scaling = Param(default=1, mutable=True)
+
         # Use Lagrangian multiple method to derive equations for Out_Fi
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
+                         self.config.property_package._phase_component_set,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
             # warnings of reaching infeasible point
-            return 0 == (
+            if j in self.config.inert_species:
+                return Constraint.Skip
+            return 0 == b.gibbs_scaling * (
                 b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j] +
                 sum(b.lagrange_mult[t, e] *
                     b.control_volume.properties_out[t].
                     config.parameters.element_comp[j][e]
                     for e in b.config.property_package.element_list))
+
+        if len(self.config.inert_species) > 0:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.property_package.phase_list,
+                             self.config.inert_species,
+                             doc="Inert species balances")
+            def inert_species_balance(b, t, p, j):
+                # Add species balances for inert components
+                cv = b.control_volume
+                e_comp = cv.properties_out[t].config.parameters.element_comp
+
+                # Check for linear dependence with element balances
+                # If an inert species is the only source of element e,
+                # the inert species balance would be linearly dependent on the
+                # element balance for e.
+                dependent = True
+
+                if len(self.config.property_package.phase_list) > 1:
+                    # Multiple phases avoid linear dependency
+                    dependent = False
+                else:
+                    for e in self.config.property_package.element_list:
+                        if e_comp[j][e] == 0:
+                            # Element e not in component j, no effect
+                            continue
+                        else:
+                            for i in self.config.property_package.component_list:
+                                if i == j:
+                                    continue
+                                else:
+                                    # If comp j shares element e with comp i
+                                    # cannot be linearly dependent
+                                    if e_comp[i][e] != 0:
+                                        dependent = False
+
+                if (not dependent and (p, j) in
+                        self.config.property_package._phase_component_set):
+                    return 0 == (
+                        cv.properties_in[t].get_material_flow_terms(p, j) -
+                        cv.properties_out[t].get_material_flow_terms(p, j))
+                else:
+                    return Constraint.Skip
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and

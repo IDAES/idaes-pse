@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -16,14 +16,18 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
+import types
+
 from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.common.config import ConfigBlock
+
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
 from idaes.core.phases import Phase
 from idaes.core.components import Component
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
+from idaes.core.property_meta import PropertyClassMetadata
 
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
@@ -32,6 +36,7 @@ class _ParameterBlock(PhysicalParameterBlock):
     pass
 
 
+@pytest.mark.unit
 def test_config_block():
     # Test that PhysicalParameterBlock gets module information
     m = ConcreteModel()
@@ -42,6 +47,7 @@ def test_config_block():
     assert len(m.p.config.default_arguments) == 0
 
 
+@pytest.mark.unit
 def test_PhysicalParameterBlock():
     # Test that PhysicalParameterBlock builds correctly
     m = ConcreteModel()
@@ -49,6 +55,7 @@ def test_PhysicalParameterBlock():
     super(_ParameterBlock, m.p).build()
 
 
+@pytest.mark.unit
 def test_PhysicalParameter_NotImplementedErrors():
     # Test that class methods return NotImplementedError
     m = ConcreteModel()
@@ -58,9 +65,10 @@ def test_PhysicalParameter_NotImplementedErrors():
         m.p.get_metadata()
 
 
+@pytest.mark.unit
 def test_get_phase_component_set():
     m = ConcreteModel()
-    m.p = ParameterBlock() 
+    m.p = ParameterBlock()
 
     m.p.phase_list = Set(initialize=["1", "2", "3"])
     m.p.component_list = Set(initialize=["a", "b", "c"])
@@ -85,9 +93,10 @@ def test_get_phase_component_set():
     assert m.p.get_phase_component_set() is m.p._phase_component_set
 
 
+@pytest.mark.unit
 def test_get_phase_component_set_subset():
     m = ConcreteModel()
-    m.p = ParameterBlock() 
+    m.p = ParameterBlock()
 
     m.p.phase_list = ["1", "2", "3"]
     m.p.phase_comp = {"1": ["a", "b", "c"],
@@ -108,9 +117,16 @@ def test_get_phase_component_set_subset():
     assert pc_set is m.p._phase_component_set
 
 
+@pytest.mark.unit
 def test_get_component():
     m = ConcreteModel()
     m.p = ParameterBlock()
+
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     with pytest.raises(AttributeError):
         m.p.get_component("foo")
@@ -128,6 +144,7 @@ def test_get_component():
         m.p.get_component("a")
 
 
+@pytest.mark.unit
 def test_get_phase():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -148,9 +165,16 @@ def test_get_phase():
         m.p.get_phase("a")
 
 
+@pytest.mark.unit
 def test_make_component_objects():
     m = ConcreteModel()
     m.p = ParameterBlock()
+
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["comp1", "comp2"])
 
@@ -160,6 +184,22 @@ def test_make_component_objects():
     assert isinstance(m.p.comp2, Component)
 
 
+@pytest.mark.unit
+def test_make_component_objects_already_exists():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.comp1 = object()
+
+    m.p.component_list = Set(initialize=["comp1", "comp2"])
+
+    with pytest.raises(PropertyPackageError,
+                       match="p could not add Component object comp1 - an "
+                       "object with that name already exists."):
+        m.p._make_component_objects()
+
+
+@pytest.mark.unit
 def test_make_phase_objects():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -177,6 +217,22 @@ def test_make_phase_objects():
     assert m.p.phase2.config.component_list == [4, 5, 6]
 
 
+@pytest.mark.unit
+def test_make_phase_objects_already_exists():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    m.p.phase1 = object()
+
+    m.p.phase_list = Set(initialize=["phase1", "phase2"])
+
+    with pytest.raises(PropertyPackageError,
+                       match="p could not add Phase object phase1 - an "
+                       "object with that name already exists."):
+        m.p._make_phase_objects()
+
+
+@pytest.mark.unit
 def test_validate_parameter_block_no_component_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -187,9 +243,16 @@ def test_validate_parameter_block_no_component_list():
         m.p._validate_parameter_block()
 
 
+@pytest.mark.unit
 def test_validate_parameter_block_no_phase_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
+    
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["c1", "c2"])
 
@@ -199,6 +262,7 @@ def test_validate_parameter_block_no_phase_list():
         m.p._validate_parameter_block()
 
 
+@pytest.mark.unit
 def test_validate_parameter_block_invalid_component_object():
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -212,9 +276,16 @@ def test_validate_parameter_block_invalid_component_object():
         m.p._validate_parameter_block()
 
 
+@pytest.mark.unit
 def test_validate_parameter_block_invalid_phase_object():
     m = ConcreteModel()
     m.p = ParameterBlock()
+    
+    m.meta_object = PropertyClassMetadata()
+
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
     m.p.component_list = Set(initialize=["c1", "c2"])
 
@@ -242,6 +313,7 @@ class _StateBlockData(StateBlockData):
         return {}
 
 
+@pytest.mark.unit
 def test_StateBlockBase_initialize():
     # Test that StateBlock initialize method raises NotImplementedError
     m = ConcreteModel()
@@ -253,6 +325,7 @@ def test_StateBlockBase_initialize():
         m.p.initialize()
 
 
+@pytest.mark.unit
 def test_StateBlockBase_report():
     # Test that StateBlock initialize method raises NotImplementedError
     m = ConcreteModel()
@@ -265,6 +338,7 @@ def test_StateBlockBase_report():
 
 # -----------------------------------------------------------------------------
 # Test StateBlockData
+@pytest.mark.unit
 def test_StateBlock_config():
     # Test that StateBlockData config has correct arguments
     m = ConcreteModel()
@@ -290,6 +364,7 @@ def test_StateBlock_config():
         m.p.config.defined_state = 10
 
 
+@pytest.mark.unit
 def test_StateBlock_NotImplementedErrors():
     # Test that placeholder methods return NotImplementedErrors
     m = ConcreteModel()
@@ -348,6 +423,7 @@ class _StateTest(StateBlockData):
         super(_StateTest, self).build()
 
 
+@pytest.mark.unit
 def test_param_ref():
     m = ConcreteModel()
     m.pb = Parameters()
@@ -356,6 +432,7 @@ def test_param_ref():
     assert m.p.params == m.p.config.parameters
 
 
+@pytest.mark.unit
 def test_validate_params():
     # Test that validate params has been triggered
     m = ConcreteModel()
@@ -401,44 +478,69 @@ def m():
     return m
 
 
+@pytest.mark.unit
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
 
 
+@pytest.mark.unit
+def test_lock_attributes(m):
+    with pytest.raises(AttributeError):
+        with m.p.lock_attribute_creation_context():
+            m.p.a.value == 1
+    # Make sure it unlocked
+    assert m.p.a.value == 1
+
+
+@pytest.mark.unit
+def test_is_property_constructed(m):
+    assert m.p.is_property_constructed("a") == False
+    assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
+
+
+@pytest.mark.unit
 def test_getattr_protected(m):
     with pytest.raises(PropertyPackageError):
         # Call a protected component that does not exist
         m.p.cons = Constraint(expr=m.p._foo == 1)
 
 
+@pytest.mark.unit
 def test_getattr_recursion(m):
     with pytest.raises(PropertyPackageError):
         # Call a component that triggers a recursive loop of calls
         m.p.cons = Constraint(expr=m.p.recursion1 == 1)
 
 
+@pytest.mark.unit
 def test_getattr_does_not_exist(m):
     with pytest.raises(PropertyNotSupportedError):
         m.p.cons = Constraint(expr=m.p.does_not_exist == 1)
 
 
+@pytest.mark.unit
 def test_getattr_not_callable(m):
     with pytest.raises(PropertyPackageError):
         m.p.cons = Constraint(expr=m.p.not_callable == 1)
 
 
+@pytest.mark.unit
 def test_getattr_not_supported(m):
     with pytest.raises(PropertyNotSupportedError):
         m.p.cons = Constraint(expr=m.p.not_supported == 1)
 
 
+@pytest.mark.unit
 def test_getattr_raise_exception(m):
     with pytest.raises(Exception):
         m.p.cons = Constraint(expr=m.p.raise_exception == 1)
 
 
 # TODO : Need a test for cases where method does not create property
+#@pytest.mark.unit
 #def test_getattr_does_not_create_component(m):
 #    with pytest.raises(PropertyPackageError):
 #        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)

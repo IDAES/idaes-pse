@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -20,6 +20,7 @@ import idaes.core.plugins
 
 __author__ = "John Eslick"
 
+@pytest.mark.unit
 def test_1():
     # Test scalar variables
     rp = pyo.TransformationFactory("replace_variables")
@@ -39,6 +40,7 @@ def test_1():
     assert(pyo.value(m.e1) == 4)
     assert(pyo.value(m.o1) == 0)
 
+@pytest.mark.unit
 def test_2():
     # Test vector variables and sums
     rp = pyo.TransformationFactory("replace_variables")
@@ -55,6 +57,7 @@ def test_2():
     assert(m.c1.body() == -7)
     assert(pyo.value(m.e1) == 7)
 
+@pytest.mark.unit
 def test_3():
     # Test expression in constraint
     rp = pyo.TransformationFactory("replace_variables")
@@ -69,6 +72,7 @@ def test_3():
     rp.apply_to(m, substitute=[(m.x["c"], m.y)])
     assert(m.c1.body() == -7)
 
+@pytest.mark.unit
 def test_4():
     # Test expression in objective
     rp = pyo.TransformationFactory("replace_variables")
@@ -84,6 +88,7 @@ def test_4():
     rp.apply_to(m, substitute=[(m.x["c"], m.y)])
     assert(pyo.value(m.o1) == 7)
 
+@pytest.mark.unit
 def test_4():
     # Test in a hierarchical model
     rp = pyo.TransformationFactory("replace_variables")
@@ -105,6 +110,7 @@ def test_4():
     assert(m.b1.c1.body() == -7)
     assert(pyo.value(m.e1) == 7)
 
+@pytest.mark.unit
 def test_5():
     # Test indexed var replace
     rp = pyo.TransformationFactory("replace_variables")
@@ -126,6 +132,7 @@ def test_5():
     assert(m.b1.c1.body() == -27)
     assert(pyo.value(m.e1) == 27)
 
+@pytest.mark.unit
 def test_6():
     # Test non-variable exception
     rp = pyo.TransformationFactory("replace_variables")
@@ -141,6 +148,7 @@ def test_6():
     with pytest.raises(TypeError):
         rp.apply_to(m, substitute=[(m.b1, x)])
 
+@pytest.mark.unit
 def test_7():
     # Test replace indexed by non-indexed
     rp = pyo.TransformationFactory("replace_variables")
@@ -156,6 +164,7 @@ def test_7():
     with pytest.raises(TypeError):
         rp.apply_to(m, substitute=[(x, m.z)])
 
+@pytest.mark.unit
 def test_8():
     # Test replace indexed by indexed var that doesn't have enough/right indexes
     rp = pyo.TransformationFactory("replace_variables")
@@ -168,6 +177,7 @@ def test_8():
     with pytest.raises(ValueError):
         rp.apply_to(m, substitute=[(x, m.y)])
 
+@pytest.mark.unit
 def test_9():
     # test with references the way we handle time indexing a lot in IDAES
     rp = pyo.TransformationFactory("replace_variables")
@@ -189,6 +199,7 @@ def test_9():
     assert(pyo.value(m.e1) == 9)
     assert(pyo.value(m.e2) == 9)
 
+@pytest.mark.unit
 def test_10():
     # test with more than one variable in the list
     rp = pyo.TransformationFactory("replace_variables")

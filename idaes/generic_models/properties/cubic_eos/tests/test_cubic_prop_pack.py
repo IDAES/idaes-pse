@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -35,6 +35,7 @@ pytestmark = pytest.mark.cubic_root
 prop_available = cubic_roots_available()
 
 
+@pytest.mark.unit
 def test_CubicEoS():
     assert len(CubicEoS) == 2
     assert CubicEoS.PR
@@ -42,6 +43,7 @@ def test_CubicEoS():
 
 
 class TestParameterBlock(object):
+    @pytest.mark.unit
     def test_build_default(self):
         m = ConcreteModel()
 
@@ -57,6 +59,7 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.unit
     def test_build_VL(self):
         m = ConcreteModel()
 
@@ -73,6 +76,7 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.unit
     def test_build_LV(self):
         m = ConcreteModel()
 
@@ -89,6 +93,7 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Vap", "Liq"]
 
+    @pytest.mark.unit
     def test_build_L(self):
         m = ConcreteModel()
 
@@ -105,6 +110,7 @@ class TestParameterBlock(object):
         for p in m.fs.params.phase_list:
             assert p in ["Liq"]
 
+    @pytest.mark.unit
     def test_build_V(self):
         m = ConcreteModel()
 
@@ -154,6 +160,7 @@ class TestStateBlock_LV_PR(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -263,6 +270,7 @@ class TestStateBlock_LV_PR(object):
                 str(model.fs.props[1]._log_equilibrium_cubic("Vap", j) -
                     model.fs.props[1]._log_equilibrium_cubic("Liq", j))
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -316,6 +324,7 @@ class TestStateBlock_L_PR(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -368,6 +377,7 @@ class TestStateBlock_L_PR(object):
         assert str(model.fs.props[1]._teq.expr) == str(
             model.fs.props[1].temperature)
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -421,6 +431,7 @@ class TestStateBlock_V_PR(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -473,6 +484,7 @@ class TestStateBlock_V_PR(object):
         assert str(model.fs.props[1]._teq.expr) == str(
             model.fs.props[1].temperature)
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -526,6 +538,7 @@ class TestStateBlock_LV_SRK(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -635,6 +648,7 @@ class TestStateBlock_LV_SRK(object):
                 str(model.fs.props[1]._log_equilibrium_cubic("Vap", j) -
                     model.fs.props[1]._log_equilibrium_cubic("Liq", j))
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -688,6 +702,7 @@ class TestStateBlock_L_SRK(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -740,6 +755,7 @@ class TestStateBlock_L_SRK(object):
         assert str(model.fs.props[1]._teq.expr) == str(
             model.fs.props[1].temperature)
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -793,6 +809,7 @@ class TestStateBlock_V_SRK(object):
 
         return m
 
+    @pytest.mark.unit
     def test_build_default(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 
@@ -845,6 +862,7 @@ class TestStateBlock_V_SRK(object):
         assert str(model.fs.props[1]._teq.expr) == str(
             model.fs.props[1].temperature)
 
+    @pytest.mark.unit
     def test_common_cubic(self, model):
         model.fs.props = model.fs.params.build_state_block([1])
 

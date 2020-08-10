@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -21,6 +21,7 @@ from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            Reals,
+                           units,
                            value,
                            Var)
 
@@ -77,22 +78,26 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # Heat capacity of water
         self.cp_mol = Param(mutable=False,
                             initialize=75.327,
-                            doc="Molar heat capacity of water [J/mol.K]")
+                            doc="Molar heat capacity of water [J/mol.K]",
+                            units=units.J/units.mol/units.K)
 
         # Density of water
         self.dens_mol = Param(mutable=False,
                               initialize=55388.0,
-                              doc="Molar density of water [mol/m^3]")
+                              doc="Molar density of water [mol/m^3]",
+                              units=units.mol/units.m**3)
 
         # Thermodynamic reference state
         self.pressure_ref = Param(within=PositiveReals,
                                   mutable=True,
                                   default=101325.0,
-                                  doc='Reference pressure [Pa]')
+                                  doc='Reference pressure [Pa]',
+                                  units=units.Pa)
         self.temperature_ref = Param(within=PositiveReals,
                                      mutable=True,
                                      default=298.15,
-                                     doc='Reference temperature [K]')
+                                     doc='Reference temperature [K]',
+                                     units=units.K)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -102,13 +107,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'temperature': {'method': None, 'units': 'K'},
                 'conc_mol_comp': {'method': None, 'units': 'mol/m^3'},
                 'dens_mol': {'method': None, 'units': 'mol/m^3'}})
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': units.s,
+                               'length': units.m,
+                               'mass': units.kg,
+                               'amount': units.mol,
+                               'temperature': units.K})
 
 
 class _StateBlock(StateBlock):
@@ -233,20 +236,24 @@ class SaponificationStateBlockData(StateBlockData):
         # Create state variables
         self.flow_vol = Var(initialize=1.0,
                             domain=NonNegativeReals,
-                            doc='Total volumentric flowrate [m^3/s]')
+                            doc='Total volumentric flowrate [m^3/s]',
+                            units=units.m**3/units.s)
         self.pressure = Var(domain=Reals,
                             initialize=101325.0,
                             bounds=(1e3, 1e6),
-                            doc='State pressure [Pa]')
+                            doc='State pressure [Pa]',
+                            units=units.Pa)
         self.temperature = Var(domain=Reals,
                                initialize=298.15,
                                bounds=(298.15, 323.15),
-                               doc='State temperature [K]')
+                               doc='State temperature [K]',
+                               units=units.K)
         self.conc_mol_comp = Var(self.params.component_list,
                                  domain=NonNegativeReals,
                                  initialize=100.0,
                                  doc='Component molar concentrations '
-                                     '[mol/m^3]')
+                                     '[mol/m^3]',
+                                 units=units.mol/units.m**3)
 
         if self.config.defined_state is False:
             self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==

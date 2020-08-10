@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -44,6 +44,8 @@ from idaes.core.util.exceptions import (
 )
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.core.util.scaling as iscale
+
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -553,8 +555,7 @@ objects linked to all inlet states and the mixed state,
             # Write phase-component balances
             @self.Constraint(
                 self.flowsheet().config.time,
-                self.config.property_package.phase_list,
-                self.config.property_package.component_list,
+                pc_set,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
@@ -585,6 +586,7 @@ objects linked to all inlet states and the mixed state,
                     )
                     - mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list
+                    if (p, j) in pc_set
                 )
 
         elif mb_type == MaterialBalanceType.total:
@@ -601,6 +603,7 @@ objects linked to all inlet states and the mixed state,
                         )
                         - mixed_block[t].get_material_flow_terms(p, j)
                         for j in b.config.property_package.component_list
+                        if (p, j) in pc_set
                     )
                     for p in b.config.property_package.phase_list
                 )
@@ -624,13 +627,10 @@ objects linked to all inlet states and the mixed state,
         """
         Add energy mixing equations (total enthalpy balance).
         """
-        self.scaling_factor_energy = Param(
-            default=1e-6, mutable=True, doc="Energy balance scaling parameter"
-        )
 
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
-            return 0 == self.scaling_factor_energy * (
+            return 0 == (
                 sum(
                     sum(
                         inlet_blocks[i][t].get_enthalpy_flow_terms(p)
@@ -968,3 +968,35 @@ objects linked to all inlet states and the mixed state,
         else:
             io_dict["Outlet"] = self.config.mixed_state_block
         return create_stream_table_dataframe(io_dict, time_point=time_point)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        mb_type = self.config.material_balance_type
+
+        if hasattr(self, "material_mixing_equations"):
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, p, j), c in self.material_mixing_equations.items():
+                    flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
+                    s = iscale.get_scaling_factor(flow_term, default=1)
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, j), c in self.material_mixing_equations.items():
+                    for i, p in enumerate(self.config.property_package.phase_list):
+                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.total:
+                pc_set = self.config.property_package.get_phase_component_set()
+                for t, c in self.material_mixing_equations.items():
+                    for i, (p, j) in enumerate(pc_set):
+                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)

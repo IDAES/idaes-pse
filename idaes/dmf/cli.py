@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -22,6 +22,7 @@ from enum import Enum
 import json
 import logging
 from operator import itemgetter
+import os
 import pathlib
 import sys
 from typing import List
@@ -32,7 +33,7 @@ import yaml
 import click
 
 # package
-from idaes.dmf import DMF, DMFConfig, resource
+from idaes.dmf import DMF, DMFConfig, resource, workspace
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
@@ -41,6 +42,7 @@ from idaes.dmf.util import ColorTerm, yaml_load, parse_datetime, size_prefix
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
+_dmf_log = logging.getLogger("idaes.dmf")
 
 
 class Code(Enum):
@@ -184,9 +186,9 @@ def base_command(verbose, quiet):
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
-        _log.setLevel(level_from_verbosity(verbose))
+        _dmf_log.setLevel(level_from_verbosity(verbose))
     else:
-        _log.setLevel(level_from_verbosity(-quiet))
+        _dmf_log.setLevel(level_from_verbosity(-quiet))
 
 
 @click.command(
@@ -211,13 +213,14 @@ def init(path, create, name, desc, html):
     """Initialize the current workspace used for the data management framework commands.
     Optionally, create a new workspace.
     """
-    _log.info(f"Initialize with workspace path={path}")
+    _log.info(f"Initialize with workspace path={path} cwd={os.path.abspath(os.curdir)}")
     if create:
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
         try:
-            if pathlib.Path(path).exists():
-                click.echo(f"Cannot create workspace: path '{path}' already exists")
+            wspath = pathlib.Path(path)
+            if wspath.exists() and (wspath / workspace.Workspace.WORKSPACE_CONFIG).exists():
+                click.echo(f"Cannot create workspace: '{path}/{workspace.Workspace.WORKSPACE_CONFIG}' already exists")
                 sys.exit(Code.DMF_OPER.value)
         except PermissionError:
             click.echo(f"Cannot create workspace: path '{path}' not accessible")
@@ -485,9 +488,9 @@ def register(
                 click.echo(f"Relation {rel_name} target not found: {rel_id}")
                 sys.exit(Code.DMF_OPER.value)
             if is_subject == "yes":
-                resource.create_relation_args(rsrc, rel_name, rel_subj)
+                resource.create_relation(rsrc, rel_name, rel_subj)
             else:
-                resource.create_relation_args(rel_subj, rel_name, rsrc)
+                resource.create_relation(rel_subj, rel_name, rsrc)
             _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
     _log.debug("update resource relations")
     for rel_rsrc in target_resources.values():
@@ -1082,7 +1085,7 @@ class _ShowInfo:
         width = min(term_width, self._longest_line(rval) + 3 + self.contents_indent)
         self._print_info_term_header(width)
         top_keys = sorted(rval.keys())
-        for rownum, tk in enumerate(top_keys):
+        for tk in top_keys:
             val = rval[tk]
             if self._has_values(val):
                 contents_str = yaml.dump(
@@ -1104,7 +1107,7 @@ class _ShowInfo:
 
     def _longest_line(self, formatted_resource):
         longest = 0
-        for k, v in formatted_resource.items():
+        for v in formatted_resource.values():
             v_longest = max(
                 (len(s) for s in json.dumps(v, indent=self.json_indent).split('\n'))
             )
@@ -1294,5 +1297,5 @@ base_command.add_command(info)
 base_command.add_command(related)
 base_command.add_command(rm)
 
-if __name__ == '__main__':
-    base_command()
+# if __name__ == '__main__':
+#     base_command()

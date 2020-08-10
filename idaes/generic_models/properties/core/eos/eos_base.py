@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -16,9 +16,23 @@ Base class for EoS modules.
 Raises NotImplementedErrors for all expected methods in case developer misses
 some. EoS developers should overload all these methods.
 """
+from pyomo.environ import units as pyunits
+from idaes.core.util.constants import Constants as const
 
 
 class EoSBase():
+    def gas_constant(b):
+        # Utility method to convert gas constant to base units
+        base_units = b.params.get_metadata().default_units
+
+        r_units = (base_units["mass"] *
+                   base_units["length"]**2 *
+                   base_units["temperature"]**-1 *
+                   base_units["amount"]**-1 *
+                   base_units["time"]**-2)
+
+        return pyunits.convert(const.gas_constant, to_units=r_units)
+
     def common(b, pobj):
         raise NotImplementedError(_msg(b, "common"))
 
@@ -48,6 +62,9 @@ class EoSBase():
 
     def fug_phase_comp_eq(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_eq"))
+
+    def log_fug_phase_comp_eq(b, p, j, pp):
+        raise NotImplementedError(_msg(b, "log_fug_phase_comp_eq"))
 
     def fug_coeff_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_coeff_phase_comp"))

@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -23,10 +23,6 @@ Symposium on Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego
 
 All results have been cross-referenced against other sources.
 """
-
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import math
 import os
@@ -66,6 +62,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 
 # Set up logger
@@ -133,6 +130,30 @@ conditions, and thus corresponding constraints  should be included,
                 self.config.valid_phase == ('Vap', 'Liq') or \
                 self.config.valid_phase == 'Vap':
             self.Vap = VaporPhase()
+
+        self.set_default_scaling("flow_mol", 1e-3)
+        self.set_default_scaling("mole_frac_comp", 10)
+        self.set_default_scaling("temperature", 1e-1)
+        self.set_default_scaling("temperature_dew", 1e-1)
+        self.set_default_scaling("temperature_bubble", 1e-1)
+        self.set_default_scaling("flow_mol_phase", 1e-2)
+        self.set_default_scaling("dens_mol_phase", 1)
+        self.set_default_scaling("dens_mass_phase", 1e-1)
+        self.set_default_scaling("pressure", 1e-6)
+        self.set_default_scaling("pressure_sat", 1e-6)
+        self.set_default_scaling("pressure_dew", 1e-6)
+        self.set_default_scaling("pressure_bubble", 1e-6)
+        self.set_default_scaling("mole_frac_phase_comp", 10)
+        self.set_default_scaling("enth_mol_phase", 1e-3, index="Liq")
+        self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
+        self.set_default_scaling("enth_mol", 1e-3)
+        self.set_default_scaling("entr_mol_phase", 1e-2)
+        self.set_default_scaling("entr_mol", 1e-2)
+        self.set_default_scaling("mw", 100)
+        self.set_default_scaling("mw_phase", 100)
+        self.set_default_scaling("fug_phase_comp", 1)
+        self.set_default_scaling("fug_coeff_phase_comp", 1)
+        self.set_default_scaling("gibbs_mol_phase", 1e-3)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -449,7 +470,7 @@ class _CubicStateBlock(StateBlock):
                 if blk[k].temperature.value > blk[k].temperature_dew.value:
                     # Pure vapour
                     blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         1e-5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -462,7 +483,7 @@ class _CubicStateBlock(StateBlock):
                     # Pure liquid
                     blk[k].flow_mol_phase["Vap"].value = \
                         1e-5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Liq"].value = blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
                         blk[k].mole_frac_phase_comp['Vap', j].value = \
@@ -474,7 +495,7 @@ class _CubicStateBlock(StateBlock):
                     # TODO : Try to find some better guesses than this
                     blk[k].flow_mol_phase["Vap"].value = \
                         0.5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Vap"].value = \
+                    blk[k].flow_mol_phase["Liq"].value = \
                         0.5*blk[k].flow_mol.value
 
                     for j in blk[k].params.component_list:
@@ -495,6 +516,7 @@ class _CubicStateBlock(StateBlock):
                                     "_t1_constraint",
                                     "_teq_constraint"):
                     c.activate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         init_log.info("Phase equilibrium init: {}.".format(
@@ -837,25 +859,69 @@ class CubicStateBlockData(StateBlockData):
 # General Methods
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
+        if not self.is_property_constructed("material_flow_terms"):
+            try:
+                def rule_material_flow_terms(b, p, j):
+                    return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                self.material_flow_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_flow_terms
+                )
+            except AttributeError:
+                self.del_component(material_flow_terms)
+
         if j in self.params.component_list:
-            return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+            return self.material_flow_terms[p, j]
         else:
             return 0
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
-        return self.flow_mol_phase[p] * self.enth_mol_phase[p]
+        if not self.is_property_constructed("enthalpy_flow_terms"):
+            try:
+                def rule_enthalpy_flow_terms(b, p):
+                    return self.flow_mol_phase[p] * self.enth_mol_phase[p]
+                self.enthalpy_flow_terms = Expression(
+                    self.params.phase_list,
+                    rule=rule_enthalpy_flow_terms
+                )
+            except AttributeError:
+                self.del_component(enthalpy_flow_terms)
+        return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
+        if not self.is_property_constructed("material_density_terms"):
+            try:
+                def rule_material_density_terms(b, p, j):
+                    return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                self.material_density_terms = Expression(
+                    self.params.phase_list,
+                    self.params.component_list,
+                    rule=rule_material_density_terms
+                )
+            except AttributeError:
+                self.del_component(material_density_terms)
+
         if j in self.params.component_list:
-            return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+            return self.material_density_terms[p, j]
         else:
             return 0
 
     def get_energy_density_terms(self, p):
         """Create energy density terms."""
-        return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+        if not self.is_property_constructed("energy_density_terms"):
+            try:
+                def rule_energy_density_terms(b, p):
+                    return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+                self.energy_density_terms = Expression(
+                    self.params.phase_list,
+                    rule=rule_energy_density_terms
+                )
+            except AttributeError:
+                self.del_component(energy_density_terms)
+        return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
@@ -970,7 +1036,7 @@ class CubicStateBlockData(StateBlockData):
                 doc="Liquid mole fractions at dew point")
 
         self._sum_mole_frac_pdew = Constraint(
-                expr=1e3 == 1e3*sum(self._mole_frac_pdew[j]
+                expr=1 == sum(self._mole_frac_pdew[j]
                                     for j in self.params.component_list))
 
         def rule_dew_press(b, j):
@@ -1503,3 +1569,81 @@ class CubicStateBlockData(StateBlockData):
                 (b.temperature-b.params.temperature_ref) +
                 b.params.cp_ig[j, '1'] *
                 log(b.temperature/b.params.temperature_ref))
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do caclulations from base classes
+        super().calculate_scaling_factors()
+
+        phases = self.params.config.valid_phase
+        is_two_phase = len(phases)==2 # only possiblly {Liq}, {Vap}, or {Liq, Vap}
+        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+        sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
+        sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
+
+        if self.is_property_constructed("_teq"):
+            iscale.set_scaling_factor(self._teq, sf_T)
+        if self.is_property_constructed("_teq_constraint"):
+            iscale.constraint_scaling_transform(self._teq_constraint, sf_T)
+
+        if self.is_property_constructed("_t1"):
+            iscale.set_scaling_factor(self._t1, sf_T)
+        if self.is_property_constructed("_t1_constraint"):
+            iscale.constraint_scaling_transform(self._t1_constraint, sf_T)
+
+        if self.is_property_constructed("_mole_frac_pdew"):
+            iscale.set_scaling_factor(self._mole_frac_pdew, 1e3)
+            iscale.constraint_scaling_transform(_sum_mole_frac_pdew, 1e3)
+
+        if self.is_property_constructed("total_flow_balance"):
+            s = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+            iscale.constraint_scaling_transform(self.total_flow_balance, s)
+
+        if self.is_property_constructed("component_flow_balances"):
+            for i, c in self.component_flow_balances.items():
+                if is_two_phase:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True)
+                    s *= sf_flow
+                    iscale.constraint_scaling_transform(c, s)
+                else:
+                    s = iscale.get_scaling_factor(
+                        self.mole_frac_comp[i], default=1, warning=True)
+                    iscale.constraint_scaling_transform(c, s)
+
+        if self.is_property_constructed("dens_mol_phase"):
+            for c in self.eq_dens_mol_phase.values():
+                iscale.constraint_scaling_transform(c, sf_P)
+
+        if self.is_property_constructed("dens_mass_phase"):
+            for p, c in self.eq_dens_mass_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.dens_mass_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed("enth_mol_phase"):
+            for p, c in self.eq_enth_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.enth_mol_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed("enth_mol"):
+            sf = iscale.get_scaling_factor(self.enth_mol, default=1, warning=True)
+            sf *= sf_flow
+            iscale.constraint_scaling_transform(self.eq_enth_mol, sf)
+
+        if self.is_property_constructed("entr_mol_phase"):
+            for p, c in self.eq_entr_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.entr_mol_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf)
+
+        if self.is_property_constructed("entr_mol"):
+            sf = iscale.get_scaling_factor(self.entr_mol, default=1, warning=True)
+            sf *= sf_flow
+            iscale.constraint_scaling_transform(self.eq_entr_mol, sf)
+
+        if self.is_property_constructed("gibbs_mol_phase"):
+            for p, c in self.eq_gibbs_mol_phase.items():
+                sf = iscale.get_scaling_factor(
+                    self.gibbs_mol_phase[p], default=1, warning=True)
+                iscale.constraint_scaling_transform(c, sf)
