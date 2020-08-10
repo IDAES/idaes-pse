@@ -78,6 +78,7 @@ class DynamicBase(object):
         """
         """
         name = DynamicBase.get_namespace_name()
+        derived_name = cls.namespace_name
         if hasattr(model, name):
             # Return if namespace has already been added. Don't throw an error
             # as this is expected if the user, say wants to use the same model
@@ -88,10 +89,13 @@ class DynamicBase(object):
                 'time must belong to same top-level model as model')
         model.add_component(name, Block())
         namespace = getattr(model, name)
+        derived_namespace = getattr(model, derived_name)
 
         def get_time():
             return time
         namespace.get_time = get_time
+        derived_namespace.get_time = namespace.get_time
+
         # Validate discretization scheme and get ncp:
         namespace.ncp = dyn_config.get_ncp(time)
 
