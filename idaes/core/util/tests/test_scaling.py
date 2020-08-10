@@ -161,6 +161,7 @@ def test_propogate_indexed_scaling():
         assert sc.get_scaling_factor(m.c1[i]) is 14
         assert sc.get_scaling_factor(m.c2[i]) is None
 
+@pytest.mark.unit
 def test_calculate_scaling_factors():
     r"""This tests the method to find and execute calculate_scaling_factors
     methods, here we make sure they are found and run in a right order.  The
