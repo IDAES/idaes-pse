@@ -223,7 +223,8 @@ class Workspace(object):
             self.set_doc_paths(html_paths)
 
     def _create_new_config(self, add_defaults):
-        conf = open(self._conf, "w")  # create the file
+        _log.info(f"Create new configuration at '{self._conf}'")
+        conf = open(self._conf, 'w')  # create the file
         new_id = uuid.uuid4().hex  # create new unique ID
         conf.write("{}: {}\n".format(self.ID_FIELD, new_id))  # write ID
         conf.close()  # flush and close

@@ -43,6 +43,7 @@ def wspath():
 @pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
+    # try again. Should work, since it's OK to init twice
     commands.workspace_init(wspath, {"some": "metadata"})
 
 

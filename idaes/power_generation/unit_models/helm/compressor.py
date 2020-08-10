@@ -141,6 +141,10 @@ class HelmIsentropicCompressorData(BalanceBlockData):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
 
+        @self.Expression(self.flowsheet().config.time)
+        def work_mechanical(b, t):
+            return b.control_volume.work[t]
+
 
     def initialize(
         self,
@@ -198,7 +202,7 @@ class HelmIsentropicCompressorData(BalanceBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)
