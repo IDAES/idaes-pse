@@ -233,18 +233,18 @@ def test_calculate_full_state_setpoint(nmpc):
     #controller._NMPC_NAMESPACE.tracking_objective.deactivate()
 
     set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
-                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
+#                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
+#                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+                 (controller.mixer.E_inlet.flow_vol[0], 0.2),
+                 (controller.mixer.S_inlet.flow_vol[0], 2.5)]
 
     weight_tolerance = 5e-7
     weight_override = [
             (controller.mixer.E_inlet.flow_vol[0.], 20.),
-#            (controller.mixer.S_inlet.flow_vol[0.], 2.),
-#            (controller.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
-#            (controller.cstr.outlet.conc_mol[0., 'P'], 1.),
-#            (controller.cstr.outlet.conc_mol[0., 'S'], 1.),
+            (controller.mixer.S_inlet.flow_vol[0.], 2.),
+            (controller.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
+            (controller.cstr.outlet.conc_mol[0., 'P'], 1.),
+            (controller.cstr.outlet.conc_mol[0., 'S'], 1.),
             ]
     # FIXME: This steady state setpoint solve is more sensitive than I 
     # would like.
@@ -397,7 +397,8 @@ def test_add_objective_function(nmpc):
     input_weights = input_vars.weights
     input_sp = input_vars.setpoint
 
-    time = controller._NMPC_NAMESPACE.sample_points
+    # Sample points now contains time.first()
+    time = controller._NMPC_NAMESPACE.sample_points[1:]
 
     obj_state_term = sum(sum(diff_weights[i]*(var[t] - diff_sp[i])**2
                         for i, var in enumerate(diff_vars))
@@ -431,8 +432,8 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
     # Test that constraints have the correct indexing set
     n_sample = int(controller.time.last()/sample_time)
     sample_points = [sample_time*i
-            for i in range(1, n_sample+1)]
-    # By convention, sample_points omits time.first()
+            for i in range(n_sample+1)]
+    # sample_points should include time.first()
 
     assert (sample_points == nmpc.controller._NMPC_NAMESPACE.sample_points)
 
@@ -469,7 +470,7 @@ def test_initialization_by_time_element(nmpc):
 
     nmpc.initialize_control_problem(
             control_init_option=ControlInitOption.BY_TIME_ELEMENT,
-            tolerance=1e-4)
+            tolerance=1e-3)
 
     controller = nmpc.controller
     time = controller.time
