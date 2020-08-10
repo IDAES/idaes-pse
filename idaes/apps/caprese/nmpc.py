@@ -1170,7 +1170,8 @@ class NMPCSim(DynamicBase):
                     if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.SAMPLE_POINTS:
             sample_time = self.sample_time
-            time = model._NMPC_NAMESPACE.sample_points
+            time = [t for t in model._NMPC_NAMESPACE.sample_points
+                    if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.INITIAL_POINT:
             time = [t0]
 
@@ -1190,19 +1191,21 @@ class NMPCSim(DynamicBase):
             # Override time list to be the list of sample points,
             # as these are the only points control action can be 
             # nonzero
-            action_time = model._NMPC_NAMESPACE.sample_points
+            action_time = model._NMPC_NAMESPACE.sample_points[1:]
             time_len = len(action_time)
             if time_len == 1:
                 init_log.warning(
                         'Warning: Control action penalty specfied '
                         'for a model with a single time point.'
                         'Control term in objective function will be empty.')
-            control_term = sum(R_entries[i]*
-                                  (controls[i][action_time[k]] - 
-                                      controls[i][action_time[k-1]])**2
-                for i in range(len(controls)) if (R_entries[i] is not None
-                                            and sp_controls[i] is not None)
-                                            for k in range(1, time_len))
+            control_term = sum(
+                    R_entries[i]*(controls[i][action_time[k]] - 
+                    controls[i][action_time[k-1]])**2
+                    for i in range(len(controls)) 
+                    if (R_entries[i] is not None
+                    and sp_controls[i] is not None)
+                    for k in range(1, time_len)
+                    )
         elif control_penalty_type == ControlPenaltyType.NONE:
             control_term = 0
             # Note: This term is only non-zero at the boundary between sampling
@@ -1366,7 +1369,7 @@ class NMPCSim(DynamicBase):
                         _slice[t].fix(input_vars.setpoint[i])
                     else:
                         _slice[t].fix()
-        elif input_type == ElementInitializationInputOption.INITIAL_CONDITIONS:
+        elif input_type == ElementInitializationInputOption.INITIAL:
             for i, _slice in enumerate(input_vars.varlist):
                 t0 = time.first()
                 for t in time:
@@ -1433,7 +1436,7 @@ class NMPCSim(DynamicBase):
         # Should only do this if controller is initialized
         # from a prior solve.
         if not self.controller_solved:
-            raise ValueError
+            raise RuntimeError
 
         config = self.config(kwargs)
         sample_time = config.sample_time
