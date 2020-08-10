@@ -107,6 +107,7 @@ def test_propogate_indexed_scaling():
         assert sc.get_scaling_factor(m.c1[i]) is 14
         assert sc.get_scaling_factor(m.c2[i]) is None
 
+@pytest.mark.unit
 def test_calculate_scaling_factors():
     r"""This tests the method to find and execute calculate_scaling_factors
     methods, here we make sure they are found and run in a right order.  The
@@ -145,7 +146,7 @@ def test_calculate_scaling_factors():
     # We should iterate through the blocks in construction order so we can
     # depend on the order that the calculate_scaling_factors() are called
     # being deterministic, so we just need to check the specific expected order,
-    # even though there are additional "correct" orders. 
+    # even though there are additional "correct" orders.
     assert tuple(o) == ("a.c", "a.d", "a", "b.e.f", "b.e.g", "b.e", "b", "m")
 
 
