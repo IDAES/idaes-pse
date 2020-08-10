@@ -1,8 +1,14 @@
+import logging
 import os
 from pathlib import Path
 import pytest
 import shutil
 import uuid
+
+
+_log = logging.getLogger(__name__)
+if os.environ.get("IDAES_TEST_DEBUG", False):
+    _log.setLevel(logging.DEBUG)
 
 
 @pytest.fixture(scope="function")
@@ -21,10 +27,9 @@ def random_tempdir():
     tempdir_name = str(tempdir)
     del tempdir
     try:
+        _log.debug(f"Removing temporary directory '{tempdir_name}'")
         shutil.rmtree(tempdir_name)
     except Exception as err:
         # this can happen on Windows due to permissions errors
-        print("*" * 40)
-        print(f"Failed to remove temporary directory: {tempdir_name}: {err}")
-        print("*" * 40)
+        _log.warning(f"Failed to remove temporary directory '{tempdir_name}': {err}")
 
