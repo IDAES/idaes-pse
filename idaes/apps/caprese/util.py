@@ -137,6 +137,9 @@ class NMPCVarGroup(object):
     def __len__(self):
         return self.n_vars
 
+    def __getitem__(self, i):
+        return self.varlist[i]
+
     def validate_index_set(self, index_set):
         for var in self.varlist:
             # Hack so this doesn't fail for dicts that act as wrappers around
