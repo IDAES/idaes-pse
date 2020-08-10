@@ -15,9 +15,9 @@ Tests for idaes.commands
 """
 # stdlib
 import json
+import logging
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import uuid
 
@@ -29,6 +29,12 @@ import pytest
 from idaes.commands import examples
 from idaes.util.system import TemporaryDirectory
 from . import random_tempdir
+
+
+_log = logging.getLogger(__name__)
+if os.environ.get("IDAES_TEST_DEBUG", False):
+    _log.setLevel(logging.DEBUG)
+
 
 @pytest.fixture(scope="module")
 def runner():
@@ -53,22 +59,46 @@ def test_examples_cli_list(runner):
     assert result.exit_code == 0
 
 
+def can_write(path):
+    """Test ability to write a file in 'path'.
+    Assume the path is a temporary directory, so don't bother cleaning up.
+    """
+    if not path.exists():
+        _log.debug(f"can_write: Creating parent directory '{path}'")
+        try:
+            path.mkdir()
+        except Exception as err:
+            _log.warning(f"Failed to create temporary directory '{path}': {err}")
+            return False
+    test_file = path / "test_file.txt"
+    _log.debug(f"can_write: Creating file '{test_file}'")
+    try:
+        fp = test_file.open("w")
+        fp.write("hello")
+        fp.close()
+    except Exception as err:
+        _log.warning(f"Failed to write sample file '{test_file}': {err}")
+        return False
+
+
 @pytest.mark.integration()
 def test_examples_cli_download(runner, random_tempdir):
     # failure with existing dir
     result = runner.invoke(examples.get_examples, ["-d", str(random_tempdir), "-I"])
     assert result.exit_code == -1
     # pick subdir, should be ok; use old version we know exists
-    dirname = str(random_tempdir / "examples")
-    result = runner.invoke(examples.get_examples, ["-d", dirname, "-I", "-V", "1.5.0"])
-    assert result.exit_code == 0
+    if can_write(random_tempdir):  # to avoid strange failures due to Windows drives
+        dirname = str(random_tempdir / "examples")
+        result = runner.invoke(examples.get_examples, ["-d", dirname, "-I", "-V", "1.5.0"])
+        assert result.exit_code == 0
 
 
 @pytest.mark.integration()
 def test_examples_cli_default_version(runner, random_tempdir):
-    dirname = str(random_tempdir / "examples")
-    result = runner.invoke(examples.get_examples, ["-d", dirname])
-    assert result.exit_code == -1
+    if can_write(random_tempdir):  # to avoid strange failures due to Windows drives
+        dirname = str(random_tempdir / "examples")
+        result = runner.invoke(examples.get_examples, ["-d", dirname])
+        assert result.exit_code == -1
 
 
 @pytest.mark.integration()
@@ -184,13 +214,14 @@ def test_examples_check_github_response():
     )
 
 
+@pytest.mark.nowin32
 @pytest.mark.integration
 def test_examples_install_src(random_tempdir):
     # monkey patch a random install package name so as not to have
     # any weird side-effects on other tests
     orig_install_pkg = examples.INSTALL_PKG
     examples.INSTALL_PKG = "i" + str(uuid.uuid4()).replace("-", "_")
-    # print(f"1. curdir={os.curdir}")
+    _log.debug(f"install_src: curdir={os.curdir}")
     # create fake package
     src_dir = random_tempdir / "src"
     src_dir.mkdir()
@@ -203,7 +234,7 @@ def test_examples_install_src(random_tempdir):
     # install it
     examples.install_src("0.0.0", src_dir)
     # make one of the directories unwritable
-    # print(f"2. curdir={os.curdir}")
+    _log.debug(f"install_src: curdir={os.curdir}")
     m1_dir.chmod(0o400)
     pytest.raises(examples.InstallError, examples.install_src, "0.0.0", src_dir)
     # change it back so we can remove this temp dir
