@@ -154,6 +154,7 @@ class GenericParameterData(PhysicalParameterBlock):
         super(GenericParameterData, self).build()
 
         # Validate and set base units of measurement
+        self.get_metadata().add_default_units(self.config.base_units)
         units_meta = self.get_metadata().default_units
 
         for key, unit in self.config.base_units.items():
@@ -164,7 +165,6 @@ class GenericParameterData(PhysicalParameterBlock):
                         "{} recieved unexpected units for quantity {}: {}. "
                         "Units must be instances of a Pyomo unit object."
                         .format(self.name, key, unit))
-                units_meta[key] = unit
             else:
                 raise ConfigurationError(
                     "{} defined units for an unexpected quantity {}. "
@@ -537,12 +537,6 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'}})
 
-        obj.add_default_units({'time': None,
-                               'length': None,
-                               'mass': None,
-                               'amount': None,
-                               'temperature': None})
-
 
 class _GenericStateBlock(StateBlock):
     """
@@ -635,6 +629,7 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
+            T_units = blk[k].params.get_metadata().default_units["temperature"]
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 for pp in blk[k].params._pe_pairs:
@@ -663,7 +658,7 @@ class _GenericStateBlock(StateBlock):
                             get_method(blk[k], "pressure_sat_comp", j)(
                                     blk[k],
                                     blk[k].params.get_component(j),
-                                    Tbub0) *
+                                    Tbub0*T_units) *
                             blk[k].mole_frac_comp[j]
                             for j in valid_comps) -
                             blk[k].pressure)
@@ -671,7 +666,7 @@ class _GenericStateBlock(StateBlock):
                                get_method(blk[k], "pressure_sat_comp", j)(
                                           blk[k],
                                           blk[k].params.get_component(j),
-                                          Tbub0,
+                                          Tbub0*T_units,
                                           dT=True)
                                for j in valid_comps))
 
@@ -695,7 +690,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tbub0))
+                                           Tbub0*T_units))
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
@@ -731,7 +726,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0)
+                                           Tdew0*T_units)
                                 for j in valid_comps) - 1)
                         df = -value(
                                 blk[k].pressure *
@@ -739,11 +734,11 @@ class _GenericStateBlock(StateBlock):
                                     get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0)**2 *
+                                           Tdew0*T_units)**2 *
                                     get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0,
+                                           Tdew0*T_units,
                                            dT=True)
                                     for j in valid_comps))
 
@@ -767,7 +762,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0))
+                                           Tdew0*T_units))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
@@ -781,7 +776,9 @@ class _GenericStateBlock(StateBlock):
                             sum(blk[k].mole_frac_comp[j] *
                                 blk[k].params.config.pressure_sat_comp
                                       .pressure_sat_comp(
-                                              blk[k], j, blk[k].temperature)
+                                              blk[k],
+                                              j,
+                                              blk[k].temperature*T_units)
                                 for j in valid_comps))
 
                     for j in valid_comps:
@@ -789,7 +786,9 @@ class _GenericStateBlock(StateBlock):
                             blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(
-                                          blk[k], j, blk[k].temperature) /
+                                          blk[k],
+                                          j,
+                                          blk[k].temperature*T_units) /
                             blk[k].pressure_bubble)
 
             # Dew pressure initialization
@@ -804,14 +803,18 @@ class _GenericStateBlock(StateBlock):
                             sum(1/(blk[k].mole_frac_comp[j] /
                                    blk[k].params.config.pressure_sat_comp
                                    .pressure_sat_comp(
-                                           blk[k], j, blk[k].temperature))
+                                           blk[k],
+                                           j,
+                                           blk[k].temperature*T_units))
                                 for j in valid_comps))
 
                     for j in valid_comps:
                         blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
-                            .pressure_sat_comp(blk[k], j, blk[k].temperature))
+                            .pressure_sat_comp(blk[k],
+                                               j,
+                                               blk[k].temperature*T_units))
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):

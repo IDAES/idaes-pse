@@ -50,6 +50,7 @@ from idaes.core import (
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 import idaes
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 # Logger
@@ -510,6 +511,56 @@ change.
             mutable=True, initialize=1e-4, doc="Smooth max parameter (pressure under)"
         )
 
+        # TODO<jce> leaving flow to not break things, but plan to remove
+        self.set_default_scaling("flow_mol", 1e-4)
+        self.set_default_scaling("flow_mol_comp", 1e-4)
+        self.set_default_scaling("flow_vol", 100)
+        self.set_default_scaling("flow_mass", 1)
+
+        # Set some scalings with reasonable a priori values
+        self.set_default_scaling("temperature_crit", 1e-2)
+        self.set_default_scaling("enth_mol", 1e-3)
+        self.set_default_scaling("temperature", 1e-1)
+        self.set_default_scaling("pressure", 1e-6)
+        self.set_default_scaling("vapor_frac", 1e1)
+        self.set_default_scaling("dens_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("dens_mass_phase", 1e1) # Not liq
+        self.set_default_scaling("pressure_crit", 1e-6)
+        self.set_default_scaling("dens_mass_crit", 1e-2)
+        self.set_default_scaling("mw", 1e3)
+        self.set_default_scaling("temperature_sat", 1e-2)
+        self.set_default_scaling("temperature_red", 1)
+        self.set_default_scaling("pressure_sat", 1e-5)
+        self.set_default_scaling("dens_mass_phase", 1e-2, index="Liq")
+        self.set_default_scaling("dens_mass_phase", 1e1)
+        self.set_default_scaling("dens_phase_red", 1)
+        self.set_default_scaling("enth_mol_sat_phase", 1e-2, index="Liq")
+        self.set_default_scaling("enth_mol_sat_phase", 1e-4, index="Vap")
+        self.set_default_scaling("dh_vap_mol", 1e-4)
+        self.set_default_scaling("energy_internal_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("energy_internal_mol_phase", 1e-4)
+        self.set_default_scaling("enth_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
+        self.set_default_scaling("entr_mol_phase", 1e-1, index="Liq")
+        self.set_default_scaling("entr_mol_phase", 1e-1, index="Vap")
+        self.set_default_scaling("cp_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("cp_mol_phase", 1e-2, index="Vap")
+        self.set_default_scaling("cv_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("cv_mol_phase", 1e-2, index="Vap")
+        self.set_default_scaling("dens_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("dens_mol_phase", 1e-4, index="Vap")
+        self.set_default_scaling("phase_frac", 10)
+        self.set_default_scaling("enth_mol", 1e-3)
+        self.set_default_scaling("energy_internal_mol", 1e-3)
+        self.set_default_scaling("entr_mol", 1e-1)
+        self.set_default_scaling("cp_mol", 1e-2)
+        self.set_default_scaling("cv_mol", 1e-2)
+        self.set_default_scaling("dens_mass", 1)
+        self.set_default_scaling("dens_mol", 1e-3)
+        self.set_default_scaling("heat_capacity_ratio", 1e1)
+        self.set_default_scaling("enth_mass", 1)
+
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties(
@@ -722,7 +773,6 @@ class HelmholtzStateBlockData(StateBlockData):
             initialize=1,
             doc="Total flow [mol/s]"
         )
-        self.scaling_factor[self.flow_mol] = 1e-3
 
         if self.state_vars == StateVars.PH:
             self.pressure = Var(
@@ -736,7 +786,6 @@ class HelmholtzStateBlockData(StateBlockData):
                 doc="Total molar enthalpy (J/mol)",
                 bounds=params.default_enthalpy_bounds,
             )
-            self.scaling_factor[self.enth_mol] = 1e-3
 
             P = self.pressure / 1000.0  # Pressure expr [kPA] (for external func)
             h_mass = self.enth_mol / self.mw / 1000  # enthalpy expr [kJ/kg]
@@ -794,9 +843,6 @@ class HelmholtzStateBlockData(StateBlockData):
             self.intensive_set = ComponentSet(
                 (self.temperature, self.pressure, self.vapor_frac)
             )
-        self.scaling_factor[self.temperature] = 1e-1
-        self.scaling_factor[self.pressure] = 1e-6
-        self.scaling_factor[self.vapor_frac] = 1e1
 
     def _tpx_phase_eq(self):
         # Saturation pressure
@@ -825,10 +871,8 @@ class HelmholtzStateBlockData(StateBlockData):
         # density will be calculated at the saturation or critical pressure
         def rule_dens_mass(b, p):
             if p == "Liq":
-                self.scaling_factor[self.dens_mass_phase[p]] = 1e-2
                 return rhoc * self.func_delta_liq(P + self.P_under_sat, tau)
             else:
-                self.scaling_factor[self.dens_mass_phase[p]] = 1e1
                 return rhoc * self.func_delta_vap(P - self.P_over_sat, tau)
 
         self.dens_mass_phase = Expression(priv_plist, rule=rule_dens_mass)
@@ -851,12 +895,10 @@ class HelmholtzStateBlockData(StateBlockData):
             self.eq_complementarity = Constraint(
                 expr=0 == (vf * self.P_over_sat - (1 - vf) * self.P_under_sat)
             )
-            self.scaling_expression[self.eq_complementarity] = 10 / self.pressure
 
         # eq_sat can activated to force the pressure to be the saturation
         # pressure, if you use this constraint deactivate eq_complementarity
         self.eq_sat = Constraint(expr=P / 1000.0 == Psat / 1000.0)
-        self.scaling_expression[self.eq_sat] = 1000 / self.pressure
         self.eq_sat.deactivate()
 
 
@@ -865,10 +907,6 @@ class HelmholtzStateBlockData(StateBlockData):
         Callable method for Block construction
         """
         super().build(*args)
-
-        # Create the scaling suffixes for the state block
-        self.scaling_factor = Suffix(direction=Suffix.EXPORT)
-        self.scaling_expression = Suffix()
 
         # Check if the library is available.
         self.available = self.config.parameters.available
@@ -902,15 +940,11 @@ class HelmholtzStateBlockData(StateBlockData):
         # are commonly needed, this lets you get the parameters with scale
         # factors directly from the state block
         self.temperature_crit = Expression(expr=self.config.parameters.temperature_crit)
-        self.scaling_factor[self.temperature_crit] = 1e-2
         self.pressure_crit = Expression(expr=self.config.parameters.pressure_crit)
-        self.scaling_factor[self.pressure_crit] = 1e-6
         self.dens_mass_crit = Expression(expr=self.config.parameters.dens_mass_crit)
-        self.scaling_factor[self.dens_mass_crit] = 1e-2
         self.mw = Expression(
             expr=self.config.parameters.mw, doc="molecular weight [kg/mol]"
         )
-        self.scaling_factor[self.mw] = 1e3
 
         # create the appropriate state variables
         self._state_vars()
@@ -928,7 +962,6 @@ class HelmholtzStateBlockData(StateBlockData):
         self.temperature_sat = Expression(
             expr=Tc / self.func_tau_sat(P), doc="Stauration temperature (K)"
         )
-        self.scaling_factor[self.temperature_sat] = 1e-2
 
         # Saturation tau (tau = Tc/T)
         self.tau_sat = Expression(expr=self.func_tau_sat(P))
@@ -937,7 +970,6 @@ class HelmholtzStateBlockData(StateBlockData):
         self.temperature_red = Expression(
             expr=T / Tc, doc="reduced temperature T/Tc (unitless)"
         )
-        self.scaling_factor[self.temperature_red] = 1
 
         self.tau = Expression(expr=Tc / T, doc="Tc/T (unitless)")
         tau = self.tau
@@ -946,7 +978,6 @@ class HelmholtzStateBlockData(StateBlockData):
         self.pressure_sat = Expression(
             expr=1000 * self.func_p_sat(tau), doc="Saturation pressure (Pa)"
         )
-        self.scaling_factor[self.pressure_sat] = 1e-5
 
         if self.state_vars == StateVars.PH:
             # If TPx state vars the expressions are given in _tpx_phase_eq
@@ -957,10 +988,8 @@ class HelmholtzStateBlockData(StateBlockData):
             # phase
             def rule_dens_mass(b, p):
                 if p == "Liq":
-                    self.scaling_factor[self.dens_mass_phase[p]] = 1e-2
                     return rhoc * self.func_delta_liq(P, tau)
                 else:
-                    self.scaling_factor[self.dens_mass_phase[p]] = 1e1
                     return rhoc * self.func_delta_vap(P, tau)
 
             self.dens_mass_phase = Expression(
@@ -969,7 +998,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
             # Reduced Density (no _mass_ identifier as mass or mol is same)
             def rule_dens_red(b, p):
-                self.scaling_factor[self.dens_phase_red[p]] = 1
                 return self.dens_mass_phase[p] / rhoc
 
             self.dens_phase_red = Expression(
@@ -985,10 +1013,8 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Enthalpy
         def rule_enth_mol_sat_phase(b, p):
             if p == "Liq":
-                self.scaling_factor[self.enth_mol_sat_phase[p]] = 1e-2
                 return 1000 * mw * self.func_hlpt(P, self.tau_sat)
             elif p == "Vap":
-                self.scaling_factor[self.enth_mol_sat_phase[p]] = 1e-4
                 return 1000 * mw * self.func_hvpt(P, self.tau_sat)
 
         self.enth_mol_sat_phase = Expression(
@@ -1001,14 +1027,9 @@ class HelmholtzStateBlockData(StateBlockData):
             expr=self.enth_mol_sat_phase["Vap"] - self.enth_mol_sat_phase["Liq"],
             doc="Enthaply of vaporization at pressure and saturation (J/mol)",
         )
-        self.scaling_factor[self.dh_vap_mol] = 1e-4
 
         # Phase Internal Energy
         def rule_energy_internal_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.energy_internal_mol_phase[p]] = 1e-2
-            else:
-                self.scaling_factor[self.energy_internal_mol_phase[p]] = 1e-4
             return 1000 * mw * self.func_u(delta[p], tau)
 
         self.energy_internal_mol_phase = Expression(
@@ -1019,10 +1040,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.enth_mol_phase[p]] = 1e-2
-            elif p == "Vap":
-                self.scaling_factor[self.enth_mol_phase[p]] = 1e-4
             return 1000 * mw * self.func_h(delta[p], tau)
 
         self.enth_mol_phase = Expression(
@@ -1033,10 +1050,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Entropy
         def rule_entr_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.entr_mol_phase[p]] = 1e-1
-            elif p == "Vap":
-                self.scaling_factor[self.entr_mol_phase[p]] = 1e-1
             return 1000 * mw * self.func_s(delta[p], tau)
 
         self.entr_mol_phase = Expression(
@@ -1047,10 +1060,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant pressure heat capacity, cp
         def rule_cp_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.cp_mol_phase[p]] = 1e-2
-            elif p == "Vap":
-                self.scaling_factor[self.cp_mol_phase[p]] = 1e-2
             return 1000 * mw * self.func_cp(delta[p], tau)
 
         self.cp_mol_phase = Expression(
@@ -1061,10 +1070,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant pressure heat capacity, cv
         def rule_cv_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.cv_mol_phase[p]] = 1e-2
-            elif p == "Vap":
-                self.scaling_factor[self.cv_mol_phase[p]] = 1e-2
             return 1000 * mw * self.func_cv(delta[p], tau)
 
         self.cv_mol_phase = Expression(
@@ -1075,10 +1080,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase speed of sound
         def rule_speed_sound_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.speed_sound_phase[p]] = 1e-2
-            elif p == "Vap":
-                self.scaling_factor[self.speed_sound_phase[p]] = 1e-2
             return self.func_w(delta[p], tau)
 
         self.speed_sound_phase = Expression(
@@ -1089,21 +1090,15 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Mole density
         def rule_dens_mol_phase(b, p):
-            if p == "Liq":
-                self.scaling_factor[self.dens_mol_phase[p]] = 1e-2
-            elif p == "Vap":
-                self.scaling_factor[self.dens_mol_phase[p]] = 1e-4
             return self.dens_mass_phase[p] / mw
 
         self.dens_mol_phase = Expression(
             phlist,
             rule=rule_dens_mol_phase,
-            doc="Phase mole density or saturated if phase doesn't exist [mol/m3]",
-        )
+            doc="Phase mole density or saturated if phase doesn't exist [mol/m3]")
 
         # Phase fraction
         def rule_phase_frac(b, p):
-            self.scaling_factor[self.phase_frac[p]] = 10
             if p == "Vap":
                 return vf
             elif p == "Liq":
@@ -1115,7 +1110,6 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Component flow (for units that need it)
         def component_flow(b, i):
-            self.scaling_factor[self.flow_mol_comp[i]] = 1e-3
             return self.flow_mol
 
         self.flow_mol_comp = Expression(
@@ -1131,56 +1125,46 @@ class HelmholtzStateBlockData(StateBlockData):
             self.enth_mol = Expression(
                 expr=sum(self.phase_frac[p] * self.enth_mol_phase[p] for p in phlist)
             )
-            self.scaling_factor[self.enth_mol] = 1e-3
         # Internal Energy
         self.energy_internal_mol = Expression(
             expr=sum(
                 self.phase_frac[p] * self.energy_internal_mol_phase[p] for p in phlist
             )
         )
-        self.scaling_factor[self.energy_internal_mol] = 1e-3
         # Entropy
         self.entr_mol = Expression(expr=te.s(h=self.enth_mol, p=self.pressure))
-        self.scaling_factor[self.entr_mol] = 1e-1
         # cp
         self.cp_mol = Expression(
             expr=sum(self.phase_frac[p] * self.cp_mol_phase[p] for p in phlist)
         )
-        self.scaling_factor[self.cp_mol] = 1e-2
         # cv
         self.cv_mol = Expression(
             expr=sum(self.phase_frac[p] * self.cv_mol_phase[p] for p in phlist)
         )
-        self.scaling_factor[self.cv_mol] = 1e-2
+
         # mass density
         self.dens_mass = Expression(
             expr=1.0
             / sum(self.phase_frac[p] * 1.0 / self.dens_mass_phase[p] for p in phlist)
         )
-        self.scaling_factor[self.dens_mass] = 1e0
         # mole density
         self.dens_mol = Expression(
             expr=1.0
             / sum(self.phase_frac[p] * 1.0 / self.dens_mol_phase[p] for p in phlist)
         )
-        self.scaling_factor[self.dens_mol] = 1e-3
         # heat capacity ratio
         self.heat_capacity_ratio = Expression(expr=self.cp_mol / self.cv_mol)
-        self.scaling_factor[self.heat_capacity_ratio] = 1e1
         # Flows
         self.flow_vol = Expression(
             expr=self.flow_mol / self.dens_mol,
             doc="Total liquid + vapor volumetric flow (m3/s)",
         )
-        self.scaling_factor[self.flow_vol] = 100
 
         self.flow_mass = Expression(
             expr=self.mw * self.flow_mol, doc="mass flow rate [kg/s]"
         )
-        self.scaling_factor[self.flow_mass] = 1
 
         self.enth_mass = Expression(expr=self.enth_mol / mw, doc="Mass enthalpy (J/kg)")
-        self.scaling_factor[self.enth_mass] = 1
 
         # Set the state vars dictionary
         if self.state_vars == StateVars.PH:
@@ -1209,13 +1193,24 @@ class HelmholtzStateBlockData(StateBlockData):
                 "pressure": self.pressure,
             }
 
+
+        def rule_mole_frac_phase_comp(b, p, j):
+            if p == "Mix":
+                return 1.0
+            else:
+                return self.phase_frac[p]
+        self.mole_frac_phase_comp = Expression(
+            pub_phlist,
+            component_list,
+            rule=rule_mole_frac_phase_comp
+        )
+
         # Define some expressions for the balance terms returned by functions
         # This is just to allow assigning scale factors to the expressions
         # returned
         #
         # Marterial flow term exprsssions
         def rule_material_flow_terms(b, p):
-            self.scaling_expression[b.material_flow_terms[p]] = 1 / self.flow_mol
             if p == "Mix":
                 return self.flow_mol
             else:
@@ -1226,14 +1221,8 @@ class HelmholtzStateBlockData(StateBlockData):
         # Enthaply flow term expressions
         def rule_enthalpy_flow_terms(b, p):
             if p == "Mix":
-                self.scaling_expression[b.enthalpy_flow_terms[p]] = 1 / (
-                    self.enth_mol * self.flow_mol
-                )
                 return self.enth_mol * self.flow_mol
             else:
-                self.scaling_expression[b.enthalpy_flow_terms[p]] = 1 / (
-                    self.enth_mol_phase[p] * self.phase_frac[p] * self.flow_mol
-                )
                 return self.enth_mol_phase[p] * self.phase_frac[p] * self.flow_mol
 
         self.enthalpy_flow_terms = Expression(pub_phlist, rule=rule_enthalpy_flow_terms)
@@ -1241,19 +1230,14 @@ class HelmholtzStateBlockData(StateBlockData):
         # Energy density term expressions
         def rule_energy_density_terms(b, p):
             if p == "Mix":
-                self.scaling_expression[b.energy_density_terms[p]] = 1 / (
-                    self.energy_internal_mol * self.flow_mol
-                )
                 return self.dens_mol * self.energy_internal_mol
             else:
-                self.scaling_expression[b.energy_density_terms[p]] = 1 / (
-                    self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
-                )
                 return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
 
         self.energy_density_terms = Expression(
             pub_phlist, rule=rule_energy_density_terms
         )
+
 
     def get_material_flow_terms(self, p, j):
         return self.material_flow_terms[p]
@@ -1297,3 +1281,33 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def model_check(self):
         pass
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1)
+        sf_enth = iscale.get_scaling_factor(self.enth_mol, default=1)
+        sf_inte = iscale.get_scaling_factor(self.energy_internal_mol, default=1)
+        sf_dens = iscale.get_scaling_factor(self.dens_mol, default=1)
+        sf_pres = iscale.get_scaling_factor(self.pressure, default=1)
+        for v in self.material_flow_terms.values():
+            iscale.set_scaling_factor(v, sf_flow)
+        for v in self.enthalpy_flow_terms.values():
+            iscale.set_scaling_factor(v, sf_enth*sf_flow)
+        for k, v in self.energy_density_terms.items():
+            if k == "Mix":
+                iscale.set_scaling_factor(v, sf_inte*sf_dens)
+            else:
+                sf_inte_p  = iscale.get_scaling_factor(
+                    self.energy_internal_mol_phase[k], default=1)
+                sf_dens_p = iscale.get_scaling_factor(
+                    self.dens_mol_phase[k], default=1)
+                iscale.set_scaling_factor(v, sf_inte_p*sf_dens_p)
+        try:
+            iscale.set_scaling_factor(self.eq_sat, sf_pres/1000.0)
+        except AttributeError:
+            pass # may not have eq_sat, and that's ok
+        try:
+            iscale.set_scaling_factor(self.eq_complementarity, sf_pres/10)
+        except AttributeError:
+            pass # may not have eq_complementarity which is fine

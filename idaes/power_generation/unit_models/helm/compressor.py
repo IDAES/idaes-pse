@@ -19,6 +19,7 @@ import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
 )
+import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -103,7 +104,6 @@ class HelmIsentropicCompressorData(BalanceBlockData):
             initialize=1.5,
             doc="Ratio of outlet to inlet pressure"
         )
-        pratio.fix()
 
         # Some shorter refernces to property blocks
         properties_in = self.control_volume.properties_in
@@ -140,6 +140,10 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         def eq_pressure_ratio(b, t):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
+
+        @self.Expression(self.flowsheet().config.time)
+        def work_mechanical(b, t):
+            return b.control_volume.work[t]
 
 
     def initialize(
@@ -195,3 +199,15 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t, c in self.eq_pressure_ratio.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].pressure)
+            iscale.constraint_scaling_transform(c, s)
+        for t, c in self.eq_work.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.work[t])
+            iscale.constraint_scaling_transform(c, s)

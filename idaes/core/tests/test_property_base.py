@@ -68,7 +68,7 @@ def test_PhysicalParameter_NotImplementedErrors():
 @pytest.mark.unit
 def test_get_phase_component_set():
     m = ConcreteModel()
-    m.p = ParameterBlock() 
+    m.p = ParameterBlock()
 
     m.p.phase_list = Set(initialize=["1", "2", "3"])
     m.p.component_list = Set(initialize=["a", "b", "c"])
@@ -96,7 +96,7 @@ def test_get_phase_component_set():
 @pytest.mark.unit
 def test_get_phase_component_set_subset():
     m = ConcreteModel()
-    m.p = ParameterBlock() 
+    m.p = ParameterBlock()
 
     m.p.phase_list = ["1", "2", "3"]
     m.p.phase_comp = {"1": ["a", "b", "c"],
@@ -188,7 +188,7 @@ def test_make_component_objects():
 def test_make_component_objects_already_exists():
     m = ConcreteModel()
     m.p = ParameterBlock()
-    
+
     m.p.comp1 = object()
 
     m.p.component_list = Set(initialize=["comp1", "comp2"])
@@ -482,6 +482,23 @@ def m():
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
+
+
+@pytest.mark.unit
+def test_lock_attributes(m):
+    with pytest.raises(AttributeError):
+        with m.p.lock_attribute_creation_context():
+            m.p.a.value == 1
+    # Make sure it unlocked
+    assert m.p.a.value == 1
+
+
+@pytest.mark.unit
+def test_is_property_constructed(m):
+    assert m.p.is_property_constructed("a") == False
+    assert m.p.a.value == 1
+    assert m.p.is_property_constructed("a") == True
 
 
 @pytest.mark.unit

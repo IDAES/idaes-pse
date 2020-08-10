@@ -158,6 +158,23 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         self._state_block_class = TestStateBlock
 
+        self.set_default_scaling("flow_mol", 101)
+        self.set_default_scaling("flow_mol_phase_comp", 102)
+        self.set_default_scaling("test_var", 103)
+        self.set_default_scaling("pressure", 104)
+        self.set_default_scaling("temperature", 105)
+        self.set_default_scaling("enth_mol", 106)
+        self.set_default_scaling("gibbs_mol_phase_comp", 107)
+        self.set_default_scaling("entr_mol", 108)
+        self.set_default_scaling("mole_frac_phase_comp", 109)
+        self.set_default_scaling("enthalpy_flow", 110)
+        self.set_default_scaling("energy_dens", 111)
+        self.set_default_scaling("material_flow_mol", 112)
+        self.set_default_scaling("material_dens_mol", 113)
+        self.set_default_scaling("material_flow_mass", 114)
+        self.set_default_scaling("material_dens_mass", 115)
+
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': units.s,
@@ -192,6 +209,12 @@ class StateTestBlockData(StateBlockData):
                                        initialize=2,
                                        units=units.mol/units.s)
         self.test_var = Var(initialize=1)
+        self.enthalpy_flow = Var(initialize=1, units=units.J/units.s)
+        self.energy_dens = Var(initialize=1, units=units.J/units.m**3)
+        self.material_flow_mol = Var(initialize=1, units=units.mol/units.s)
+        self.material_dens_mol = Var(initialize=1, units=units.mol/units.m**3)
+        self.material_flow_mass = Var(initialize=1, units=units.kg/units.s)
+        self.material_dens_mass = Var(initialize=1, units=units.kg/units.m**3)
         self.pressure = Var(initialize=1e5, units=units.Pa)
         self.temperature = Var(initialize=300, units=units.K)
 
@@ -209,23 +232,22 @@ class StateTestBlockData(StateBlockData):
 
     def get_material_flow_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:
-            u = units.kg/units.s
+            return b.material_flow_mass
         else:
-            u = units.mol/units.s
-        return b.test_var*u
+            return b.material_flow_mol
 
     def get_material_density_terms(b, p, j):
         if b.config.parameters.basis_switch == 2:
-            u = units.kg/units.m**3
+            return b.material_dens_mass
         else:
-            u = units.mol/units.m**3
-        return b.test_var*u
+            return b.material_dens_mol
+
 
     def get_enthalpy_flow_terms(b, p):
-        return b.test_var*units.J/units.s
+        return b.enthalpy_flow
 
     def get_energy_density_terms(b, p):
-        return b.test_var*units.J/units.m**3
+        return b.energy_dens
 
     def model_check(self):
         self.check = True

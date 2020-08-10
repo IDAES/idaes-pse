@@ -148,29 +148,6 @@ class TestGenericReactionParameterBlock(object):
                                "temperature": pyunits.K}})
 
     @pytest.mark.unit
-    def test_invalid_quantity(self, m):
-        with pytest.raises(
-                ConfigurationError,
-                match="rxn_params defined units for an unexpected quantity "
-                "foo. Generic reaction packages only support units for the 7 "
-                "base SI quantities."):
-            m.rxn_params = GenericReactionParameterBlock(default={
-                "property_package": m.params,
-                "rate_reactions": {
-                    "r1": {"stoichiometry": {("p1", "c1"): -1,
-                                             ("p1", "c2"): 2},
-                           "heat_of_reaction": "foo",
-                           "rate_form": "foo"}},
-                "base_units": {"time": pyunits.s,
-                               "length": pyunits.m,
-                               "mass": pyunits.kg,
-                               "amount": pyunits.mol,
-                               "temperature": pyunits.K,
-                               "current": pyunits.A,
-                               "luminous intensity": pyunits.candela,
-                               "foo": "bar"}})
-
-    @pytest.mark.unit
     def test_missing_required_quantity(self, m):
         with pytest.raises(
                 ConfigurationError,

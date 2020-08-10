@@ -507,3 +507,10 @@ class ProcessBlockData(_BlockData):
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                         self.config.reaction_package.config.default_arguments[k]
+
+    def calculate_scaling_factors(self):
+        # This lets you call super().calculate_scaling_factors() in a unit
+        # model's calculate_scaling_factors method without worrying about
+        # whether the parent class defines one.  This allows for a more standized
+        # form of calculate_scaling_factors() methods.
+        pass

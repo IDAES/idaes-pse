@@ -448,7 +448,7 @@ def clean_up_temporary_files():
         # remove directory, if now empty
         num_files = len(list(d.glob("*")))
         if num_files == 0:
-            _log.info(f"removing {d} directory")
+            _log.info(f"removing dist directory '{d.absolute()}'")
             try:
                 d.rmdir()
             except Exception as err:

@@ -20,6 +20,8 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
 )
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -147,6 +149,10 @@ class HelmIsentropicTurbineData(BalanceBlockData):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
 
+        @self.Expression(self.flowsheet().config.time)
+        def work_mechanical(b, t):
+            return b.control_volume.work[t]
+
     def _get_performance_contents(self, time_point=0):
         """This returns a dictionary of quntities to be used in IDAES unit model
         report generation routines.
@@ -208,3 +214,15 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t, c in self.eq_pressure_ratio.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].pressure)
+            iscale.constraint_scaling_transform(c, s)
+        for t, c in self.eq_work.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.work[t])
+            iscale.constraint_scaling_transform(c, s)
