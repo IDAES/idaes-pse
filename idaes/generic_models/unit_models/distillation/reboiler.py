@@ -20,14 +20,13 @@ different state variables and the associated splits.
 
 __author__ = "Jaffer Ghouse"
 
-import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition, value
+    value, Set
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -42,6 +41,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError
+from idaes.core.util.testing import get_default_solver
 
 _log = idaeslog.getIdaesLogger(__name__)
 
@@ -136,6 +136,9 @@ see property package for documentation.}"""))
         Returns:
             None
         """
+        # Setup model build logger
+        model_log = idaeslog.getModelLogger(self.name, tag="unit")
+
         # Call UnitModel.build to setup dynamics
         super(ReboilerData, self).build()
 
@@ -161,6 +164,27 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
+        # Get liquid and vapor phase objects from the property package
+        # to be used below. Avoids repition.
+        _liquid_list = []
+        _vapor_list = []
+        for p in self.config.property_package.phase_list:
+            pobj = self.config.property_package.get_phase(p)
+            if pobj.is_vapor_phase():
+                _vapor_list.append(p)
+            elif pobj.is_liquid_phase():
+                _liquid_list.append(p)
+            else:
+                _liquid_list.append(p)
+                model_log.warning(
+                    "A non-liquid/non-vapor phase was detected but will "
+                    "be treated as a liquid.")
+
+        # Create a pyomo set for indexing purposes. This set is appended to
+        # model otherwise results in an abstract set.
+        self._liquid_set = Set(initialize=_liquid_list)
+        self._vapor_set = Set(initialize=_vapor_list)
+
         if self.config.has_boilup_ratio is True:
 
             self.boilup_ratio = Var(initialize=0.5,
@@ -170,18 +194,22 @@ see property package for documentation.}"""))
                 if hasattr(self.control_volume.properties_out[t],
                            "flow_mol_phase"):
                     return self.boilup_ratio * \
-                        self.control_volume.properties_out[t].\
-                        flow_mol_phase["Liq"] == self.control_volume.\
-                        properties_out[t].flow_mol_phase["Vap"]
+                        sum(self.control_volume.properties_out[t].
+                            flow_mol_phase[p] for p in self._liquid_set) == \
+                        sum(self.control_volume.
+                            properties_out[t].flow_mol_phase["Vap"]
+                            for p in self._vapor_set)
                 elif hasattr(self.control_volume.properties_out[t],
                              "flow_mol_phase_comp"):
                     return self.boilup_ratio * \
                         sum(self.control_volume.properties_out[t].
-                            flow_mol_phase_comp["Liq", i]
+                            flow_mol_phase_comp[p, i]
+                            for p in self._liquid_set
                             for i in self.control_volume.properties_out[t].
                             params.component_list) == \
                         sum(self.control_volume.properties_out[t].
-                            flow_mol_phase_comp["Vap", i]
+                            flow_mol_phase_comp[p, i]
+                            for p in self._vapor_set
                             for i in self.control_volume.properties_out[t].
                             params.component_list)
                 else:
@@ -238,35 +266,116 @@ see property package for documentation.}"""))
                 # vapor outlet port
                 self.vapor_reboil.add(Reference(var), k)
 
-            elif "frac" in k and ("mole" in k or "mass" in k):
+            elif "frac" in k:
 
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
                 if "phase" not in k:
-                    # Assuming the state block has the var
-                    # "mole_frac_phase_comp". Valid if VLE is supported
-                    # Create a string "mole_frac_phase_comp" or
-                    # "mass_frac_phase_comp". Cannot directly append phase to
-                    # k as the naming convention is phase followed by comp
+                    if "mole" in k:  # check mole basis/mass basis
 
-                    str_split = k.split('_')
-                    local_name = '_'.join(str_split[0:2]) + \
-                        "_phase" + "_" + str_split[2]
+                        # The following conditionals are required when a
+                        # mole frac or mass frac is a state var i.e. will be
+                        # a port member. This gets a bit tricky when handling
+                        # non-conventional systems when you have more than one
+                        # liquid or vapor phase. Hence, the logic here is that
+                        # the mole frac that should be present in the liquid or
+                        # vapor port should be computed by accounting for
+                        # multiple liquid or vapor phases if present. For the
+                        # classical VLE system, this holds too.
+                        if hasattr(self.control_volume.properties_out[0],
+                                   "mole_frac_phase_comp") and \
+                            hasattr(self.control_volume.properties_out[0],
+                                    "flow_mol_phase"):
+                            flow_mol_phase_comp = False
+                            local_name_frac = "mole_frac_phase_comp"
+                            local_name_flow = "flow_mol_phase"
+                        elif hasattr(self.control_volum.properties_out[0],
+                                     "flow_mol_phase_comp"):
+                            flow_mol_phase_comp = True
+                            local_name_flow = "flow_mol_phase_comp"
+                        else:
+                            raise PropertyNotSupportedError(
+                                "No mole_frac_phase_comp or flow_mol_phase or"
+                                " flow_mol_phase_comp variables encountered "
+                                "while building ports for the reboiler. ")
+                    elif "mass" in k:
+                        if hasattr(self.control_volume.properties_out[0],
+                                   "mass_frac_phase_comp") and \
+                            hasattr(self.control_volume.properties_out[0],
+                                    "flow_mass_phase"):
 
-                    # Rule for liquid fraction
+                            local_name_frac = "mass_frac_phase_comp"
+                            local_name_flow = "flow_mass_phase"
+                        elif hasattr(self.control_volum.properties_out[0],
+                                     "flow_mass_phase_comp"):
+
+                            local_name_flow = "flow_mass_phase_comp"
+                        else:
+                            raise PropertyNotSupportedError(
+                                "No mass_frac_phase_comp or flow_mass_phase or"
+                                " flow_mass_phase_comp variables encountered "
+                                "while building ports for the reboiler.")
+                    else:
+                        raise PropertyNotSupportedError(
+                            "No mass frac or mole frac variables encountered "
+                            " while building ports for the reboiler. "
+                            "phase_frac as a state variable is not "
+                            "supported with distillation unit models."
+                        )
+
+                    # Rule for liquid phase mole fraction
                     def rule_liq_frac(self, t, i):
-                        return self.control_volume.properties_out[t].\
-                            component(local_name)["Liq", i]
+                        if not flow_mol_phase_comp:
+                            sum_flow_comp = sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_frac)[p, i] *
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._liquid_set)
+
+                            return sum_flow_comp / sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._liquid_set)
+                        else:
+                            sum_flow_comp = sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p, i]
+                                for p in self._liquid_set)
+
+                            return sum_flow_comp / sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._liquid_set)
                     self.e_liq_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_liq_frac)
 
-                    # Rule for vapor fraction
+                    # Rule for vapor phase mass/mole fraction
                     def rule_vap_frac(self, t, i):
-                        return self.control_volume.properties_out[t].\
-                            component(local_name)["Vap", i]
+                        if not flow_mol_phase_comp:
+                            sum_flow_comp = sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_frac)[p, i] *
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._vapor_set)
+                            return sum_flow_comp / sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._vapor_set)
+                        else:
+                            sum_flow_comp = sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p, i]
+                                for p in self._vapor_set)
+
+                            return sum_flow_comp / sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name_flow)[p]
+                                for p in self._vapor_set)
                     self.e_vap_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_vap_frac)
@@ -278,9 +387,7 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the
                     # vapor port
                     self.vapor_reboil.add(self.e_vap_frac, k)
-
                 else:
-
                     # Assumes mole_frac_phase or mass_frac_phase exist as
                     # state vars in the port and therefore access directly
                     # from the state block.
@@ -310,16 +417,20 @@ see property package for documentation.}"""))
 
                         # Rule for vap flow
                         def rule_vap_flow(self, t):
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)["Vap"]
+                            return sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name)[p]
+                                for p in self._vapor_set)
                         self.e_vap_flow = Expression(
                             self.flowsheet().time,
                             rule=rule_vap_flow)
 
                         # Rule to link the liq flow to the distillate
                         def rule_bottoms_flow(self, t):
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)["Liq"]
+                            return sum(
+                                self.control_volume.properties_out[t].
+                                component(local_name)[p]
+                                for p in self._liquid_set)
                         self.e_bottoms_flow = Expression(
                             self.flowsheet().time,
                             rule=rule_bottoms_flow)
@@ -335,18 +446,20 @@ see property package for documentation.}"""))
                         # Get the indexing set i.e. component list
                         index_set = member_list[k].index_set()
 
-                        # Rule for vap flow
+                        # Rule for vap phase flow to the vapor outlet
                         def rule_vap_flow(self, t, i):
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)["Vap", i]
+                            return sum(self.control_volume.properties_out[t].
+                                       component(local_name)[p, i]
+                                       for p in self._vapor_set)
                         self.e_vap_flow = Expression(
                             self.flowsheet().time, index_set,
                             rule=rule_vap_flow)
 
-                        # Rule to link the liq flow to the distillate
+                        # Rule for liq phase flow to the liquid outlet
                         def rule_bottoms_flow(self, t, i):
-                            return self.control_volume.properties_out[t].\
-                                component(local_name)["Liq", i]
+                            return sum(self.control_volume.properties_out[t].
+                                       component(local_name)[p, i]
+                                       for p in self._liquid_set)
                         self.e_bottoms_flow = Expression(
                             self.flowsheet().time, index_set,
                             rule=rule_bottoms_flow)
@@ -377,8 +490,9 @@ see property package for documentation.}"""))
                     # Rule for vap enthalpy. Setting the enthalpy to the
                     # enth_mol_phase['Vap'] value from the state block
                     def rule_vap_enth(self, t):
-                        return self.control_volume.properties_out[t].\
-                            component(local_name)["Vap"]
+                        return sum(self.control_volume.properties_out[t].
+                                   component(local_name)[p]
+                                   for p in self._vapor_set)
                     self.e_vap_enth = Expression(
                         self.flowsheet().time,
                         rule=rule_vap_enth)
@@ -387,8 +501,9 @@ see property package for documentation.}"""))
                     # Setting the enthalpy to the
                     # enth_mol_phase['Liq'] value from the state block
                     def rule_bottoms_enth(self, t):
-                        return self.control_volume.properties_out[t].\
-                            component(local_name)["Liq"]
+                        return sum(self.control_volume.properties_out[t].
+                                   component(local_name)[p]
+                                   for p in self._liquid_set)
                     self.e_bottoms_enth = Expression(
                         self.flowsheet().time,
                         rule=rule_bottoms_enth)
@@ -440,7 +555,16 @@ see property package for documentation.}"""))
         if solver is not None:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
-
+            init_log.info(
+                "Initialization Complete, {}.".format(idaeslog.condition(res))
+            )
+        else:
+            init_log.warning(
+                "Solver not provided during initialization, proceeding"
+                " with deafult solver in idaes.")
+            solver = get_default_solver()
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
