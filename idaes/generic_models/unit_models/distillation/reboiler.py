@@ -20,14 +20,13 @@ different state variables and the associated splits.
 
 __author__ = "Jaffer Ghouse"
 
-import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition, value
+    value, Set
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -136,6 +135,9 @@ see property package for documentation.}"""))
         Returns:
             None
         """
+        # Setup model build logger
+        model_log = idaeslog.getModelLogger(self.name, tag="unit")
+
         # Call UnitModel.build to setup dynamics
         super(ReboilerData, self).build()
 
@@ -191,6 +193,27 @@ see property package for documentation.}"""))
             self.eq_boilup_ratio = Constraint(self.flowsheet().time,
                                               rule=rule_boilup_ratio)
 
+        # Get liquid and vapor phase objects from the property package
+        # to be used below. Avoids repition.
+        _liquid_list = []
+        _vapor_list = []
+        for p in self.config.property_package.phase_list:
+            pobj = self.config.property_package.get_phase(p)
+            if pobj.is_vapor_phase():
+                _vapor_list.append(p)
+            elif pobj.is_liquid_phase():
+                _liquid_list.append(p)
+            else:
+                _liquid_list.append(p)
+                model_log.warning(
+                    "A non-liquid/non-vapor phase was detected but will "
+                    "be treated as a liquid.")
+
+        # Create a pyomo set for indexing purposes. This set is appended to
+        # model otherwise results in an abstract set.
+        self._liquid_set = Set(initialize=_liquid_list)
+        self._vapor_set = Set(initialize=_vapor_list)
+
         self._make_ports()
 
         self._make_splits_reboiler()
@@ -222,6 +245,8 @@ see property package for documentation.}"""))
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
+
+            raise Exception(type(k))
             # Create references and populate the intensive variables
             if "flow" not in k and "frac" not in k and "enth" not in k:
                 if not member_list[k].is_indexed():
