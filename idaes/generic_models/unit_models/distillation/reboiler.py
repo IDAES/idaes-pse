@@ -194,18 +194,22 @@ see property package for documentation.}"""))
                 if hasattr(self.control_volume.properties_out[t],
                            "flow_mol_phase"):
                     return self.boilup_ratio * \
-                        self.control_volume.properties_out[t].\
-                        flow_mol_phase["Liq"] == self.control_volume.\
-                        properties_out[t].flow_mol_phase["Vap"]
+                        sum(self.control_volume.properties_out[t].
+                            flow_mol_phase[p] for p in self._liquid_set) == \
+                        sum(self.control_volume.
+                            properties_out[t].flow_mol_phase["Vap"]
+                            for p in self._vapor_set)
                 elif hasattr(self.control_volume.properties_out[t],
                              "flow_mol_phase_comp"):
                     return self.boilup_ratio * \
                         sum(self.control_volume.properties_out[t].
-                            flow_mol_phase_comp["Liq", i]
+                            flow_mol_phase_comp[p, i]
+                            for p in self._liquid_set
                             for i in self.control_volume.properties_out[t].
                             params.component_list) == \
                         sum(self.control_volume.properties_out[t].
-                            flow_mol_phase_comp["Vap", i]
+                            flow_mol_phase_comp[p, i]
+                            for p in self._vapor_set
                             for i in self.control_volume.properties_out[t].
                             params.component_list)
                 else:
@@ -295,7 +299,7 @@ see property package for documentation.}"""))
                             raise PropertyNotSupportedError(
                                 "No mole_frac_phase_comp or flow_mol_phase or"
                                 " flow_mol_phase_comp variables encountered "
-                                "while building ports for the condenser. ")
+                                "while building ports for the reboiler. ")
                     elif "mass" in k:
                         if hasattr(self.control_volume.properties_out[0],
                                    "mass_frac_phase_comp") and \
@@ -312,11 +316,11 @@ see property package for documentation.}"""))
                             raise PropertyNotSupportedError(
                                 "No mass_frac_phase_comp or flow_mass_phase or"
                                 " flow_mass_phase_comp variables encountered "
-                                "while building ports for the condenser.")
+                                "while building ports for the reboiler.")
                     else:
                         raise PropertyNotSupportedError(
                             "No mass frac or mole frac variables encountered "
-                            " while building ports for the condenser. "
+                            " while building ports for the reboiler. "
                             "phase_frac as a state variable is not "
                             "supported with distillation unit models."
                         )
