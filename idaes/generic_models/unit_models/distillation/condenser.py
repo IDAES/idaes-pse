@@ -281,7 +281,7 @@ see property package for documentation.}"""))
         # Create references and populate the reflux, distillate ports
         for k in member_list:
             # Create references and populate the intensive variables
-            if "flow" not in member_list[k].local_name:
+            if "flow" not in k:
                 if not member_list[k].is_indexed():
                     var = self.control_volume.properties_out[:].\
                         component(member_list[k].local_name)
@@ -295,7 +295,7 @@ see property package for documentation.}"""))
                 # add the reference and variable name to the distillate port
                 self.distillate.add(Reference(var), k)
 
-            elif "flow" in member_list[k].local_name:
+            elif "flow" in k:
                 # Create references and populate the extensive variables
                 # This is for vars that are not indexed
                 if not member_list[k].is_indexed():
