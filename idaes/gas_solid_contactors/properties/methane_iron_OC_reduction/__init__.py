@@ -7,4 +7,3 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import (HeteroReactionParameterBlock,
                              ReactionBlock)
-
