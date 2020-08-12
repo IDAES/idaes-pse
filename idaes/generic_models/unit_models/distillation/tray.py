@@ -558,8 +558,9 @@ see property package for documentation.}"""))
 
                     # Rule to link the phase enthalpy to the port.
                     def rule_enth(self, t):
-                        return self.properties_out[t].\
-                            component(local_name)[phase]
+                        return sum(self.properties_out[t].
+                                   component(local_name)[p]
+                                   for p in phase)
 
                     expr = Expression(self.flowsheet().time,
                                       rule=rule_enth)
