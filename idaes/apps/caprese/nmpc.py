@@ -90,7 +90,7 @@ class NMPCSim(DynamicBase):
     CONFIG.declare(
             'element_initialization_input_option',
             ConfigValue(
-                default=ElementInitializationInputOption.SET_POINT,
+                default=ElementInitializationInputOption.SETPOINT,
                 domain=ElementInitializationInputOption.from_enum_or_string,
                 doc=('Option for how to fix inputs when initializing '
                     'by time element')
@@ -1329,14 +1329,53 @@ class NMPCSim(DynamicBase):
 
         elif strategy == ControlInitOption.FROM_INITIAL_CONDITIONS:
             self.initialize_from_initial_conditions(self.controller, **kwargs)
+
+        elif strategy == ControlInitOption.SETPOINT:
+            self.initialize_to_setpoint(self.controller, **kwargs)
         
         # Add check that initialization did not violate bounds/equalities?
 
         self.controller_solved = False
 
 
+    def initialize_to_setpoint(self, 
+            model, 
+            categories=[
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.DERIVATIVE,
+                VariableCategory.INPUT,
+                ],
+            **kwargs):
+        """ Initializes controller at non-initial time points to the 
+        setpoint values of the unfixed, time-indexed variables.
+
+        Args:
+            model : Model to initialize
+            categories : list of VariableCategory enum items that
+                         will be initialized.
+        """
+        # TODO: test
+        namespace = getattr(model, self.namespace_name)
+        time = namespace.get_time()
+        t0 = time.first()
+        cat_dict = namespace.category_dict
+        for cat in categories:
+            group = cat_dict[cat]
+            for _slice, sp in zip(group, group.setpoint):
+                for t in time:
+                    # This could be made more compact if I had slices
+                    # with start and stop values...
+                    if t == t0:
+                        continue
+                    # This will fail if sp is None.
+                    # ~Shouldn't~ be the case for any of these variables
+                    # though.
+                    _slice[t].set_value(sp)
+
+
     def initialize_by_solving_elements(self, model, time,
-            input_type=ElementInitializationInputOption.SET_POINT,
+            input_type=ElementInitializationInputOption.SETPOINT,
             objective_name='tracking_objective',
             **kwargs):
         """Initializes the controller model by solving (a square simulation
@@ -1362,7 +1401,7 @@ class NMPCSim(DynamicBase):
         strip_controller_bounds.apply_to(model, reversible=True)
 
         input_vars = model._NMPC_NAMESPACE.input_vars
-        if input_type == ElementInitializationInputOption.SET_POINT:
+        if input_type == ElementInitializationInputOption.SETPOINT:
             for i, _slice in enumerate(input_vars.varlist):
                 for t in time:
                     if t != time.first():
