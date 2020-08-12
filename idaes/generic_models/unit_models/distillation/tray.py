@@ -321,7 +321,7 @@ see property package for documentation.}"""))
             self.liq_side_draw = Port(noruleinit=True, doc="liquid side draw.")
             self._make_phase_split(
                 port=self.liq_side_draw,
-                phase="Liq",
+                phase=self._liquid_set,
                 has_liquid_side_draw=self.config.has_liquid_side_draw,
                 side_sf=self.liq_side_sf)
 
@@ -329,13 +329,13 @@ see property package for documentation.}"""))
             # after the side draw
             self._make_phase_split(
                 port=self.liq_out,
-                phase="Liq",
+                phase=self._liquid_set,
                 side_sf=1 - self.liq_side_sf)
         else:
             # Populate the liquid outlet port when no liquid side draw
             self._make_phase_split(
                 port=self.liq_out,
-                phase="Liq",
+                phase=self._liquid_set,
                 side_sf=1)
 
         # Add the vapor outlet port
@@ -349,20 +349,20 @@ see property package for documentation.}"""))
             self.vap_side_draw = Port(noruleinit=True, doc="vapor side draw.")
             self._make_phase_split(
                 port=self.vap_side_draw,
-                phase="Vap",
+                phase=self._vapor_set,
                 has_vapor_side_draw=self.config.has_vapor_side_draw,
                 side_sf=self.vap_side_sf)
             # Populate the vapor outlet port with the remaining vapor
             # after the vapor side draw
             self._make_phase_split(
                 port=self.vap_out,
-                phase="Vap",
+                phase=self._vapor_set,
                 side_sf=1 - self.vap_side_sf)
         else:
             # Populate the vapor outlet port when no vapor side draw
             self._make_phase_split(
                 port=self.vap_out,
-                phase="Vap",
+                phase=self._vapor_set,
                 side_sf=1)
 
     def _make_phase_split(self, port=None, phase=None,
@@ -409,12 +409,12 @@ see property package for documentation.}"""))
                                    "mole_frac_phase_comp") and \
                             hasattr(self.properties_out[0],
                                     "flow_mol_phase"):
-                            flow_mol_phase_comp = False
+                            flow_phase_comp = False
                             local_name_frac = "mole_frac_phase_comp"
                             local_name_flow = "flow_mol_phase"
                         elif hasattr(self.properties_out[0],
                                      "flow_mol_phase_comp"):
-                            flow_mol_phase_comp = True
+                            flow_phase_comp = True
                             local_name_flow = "flow_mol_phase_comp"
                         else:
                             raise PropertyNotSupportedError(
@@ -426,12 +426,12 @@ see property package for documentation.}"""))
                                    "mass_frac_phase_comp") and \
                             hasattr(self.properties_out[0],
                                     "flow_mass_phase"):
-
+                            flow_phase_comp = False
                             local_name_frac = "mass_frac_phase_comp"
                             local_name_flow = "flow_mass_phase"
                         elif hasattr(self.properties_out[0],
                                      "flow_mass_phase_comp"):
-
+                            flow_phase_comp = True
                             local_name_flow = "flow_mass_phase_comp"
                         else:
                             raise PropertyNotSupportedError(
@@ -448,7 +448,7 @@ see property package for documentation.}"""))
 
                     # Rule for mole fraction
                     def rule_mole_frac(self, t, i):
-                        if not flow_mol_phase_comp:
+                        if not flow_phase_comp:
                             sum_flow_comp = sum(
                                 self.properties_out[t].
                                 component(local_name_frac)[p, i] *
@@ -467,9 +467,11 @@ see property package for documentation.}"""))
                                 for p in phase)
 
                             return sum_flow_comp / sum(
-                                self.control_volume.properties_out[t].
-                                component(local_name_flow)[p]
-                                for p in phase)
+                                self.properties_out[t].
+                                component(local_name_flow)[p, i]
+                                for p in phase
+                                for i in self.config.property_package.
+                                component_list)
 
                     # add the reference and variable name to the port
                     expr = Expression(self.flowsheet().time,
@@ -506,9 +508,9 @@ see property package for documentation.}"""))
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t):
-                            return self.properties_out[t].\
-                                component(local_name)[phase] * \
-                                (side_sf)
+                            return sum(self.properties_out[t].
+                                       component(local_name)[p]
+                                       for p in phase) * (side_sf)
 
                         # add the reference and variable name to the port
                         expr = Expression(self.flowsheet().time,
@@ -529,9 +531,9 @@ see property package for documentation.}"""))
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t, i):
-                            return self.properties_out[t].\
-                                component(local_name)[phase, i] * \
-                                (side_sf)
+                            return sum(self.properties_out[t].
+                                       component(local_name)[p, i]
+                                       for p in phase) * (side_sf)
                         expr = Expression(self.flowsheet().time,
                                           index_set,
                                           rule=rule_flow)
