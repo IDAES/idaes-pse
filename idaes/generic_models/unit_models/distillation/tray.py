@@ -593,7 +593,7 @@ see property package for documentation.}"""))
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
 
-        #TODO:
+        # TODO:
         # 1. Check initialization for dynamic mode. Currently not supported.
         # 2. Handle unfixed side split fraction vars
         # 3. Better logic to handle and fix state vars.
