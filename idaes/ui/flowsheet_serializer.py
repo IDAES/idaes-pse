@@ -19,6 +19,7 @@ from idaes.core import UnitModelBlockData
 from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
+import idaes.logger
 
 from pyomo.environ import Block, value
 from pyomo.network.port import Port
@@ -46,6 +47,8 @@ class FlowsheetSerializer:
         self.labels = {}
         self.out_json = {"model": {}}
         self.name = ""
+        self._used_unit_names = set()
+        self._logger = idaes.logger.getLogger(__name__)
 
     def serialize(self, flowsheet, name):
         """
@@ -93,10 +96,10 @@ class FlowsheetSerializer:
         self.name = name
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
-        print(self.out_json)
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
+        """Stores information on the connectivity and components of the input flowsheet. """
         for component in flowsheet.component_objects(Arc, descend_into=False):
             self.arcs[component.getname()] = component
             
@@ -132,53 +135,52 @@ class FlowsheetSerializer:
             try:  # this is currently(?) necessary because for internally-nested arcs we may not record ports?
                 self.edges[name] = {"source": self.ports[arc.source], 
                                     "dest": self.ports[arc.dest]}
-                print(f'source: {arc.source}; val: {self.ports[arc.source]}')
+                self._logger.info(f'source: {arc.source}; val: {self.ports[arc.source]}')
                 used_ports.add(arc.source)
                 used_ports.add(arc.dest)
             except KeyError as error:
-                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
+                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")  # TODO convert to logging
 
-        #?? note we're only using the keys from self.ports, {port: parentcomponent}
+        # note we're only using the keys from self.ports, {port: parentcomponent}
         untouched_ports = set(self.ports) - used_ports
-        # print(untouched_ports)
-        print(len(untouched_ports))
         self._identify_implicit_inlets_and_outlets(untouched_ports)
 
     def _identify_implicit_inlets_and_outlets(self, untouched_ports):
-        for port in untouched_ports:
+        for port in sorted(untouched_ports, key=lambda port: str(port)):  # TODO: sorting required for determinism; better way?
             portname = str(port).split('.')[-1]
-            print(f'\t{str(port)}\t\t({portname})')  # TODO portnames are not necessarily unique ugh
-            unitname = self._unique_unit_name(portname)
+            unitname = self._unique_unit_name(portname)  # this becomes the I/O's ID and label
             edgename = f's_{unitname}'
             # identify ports per INLET_REGEX/OUTLET_REGEX
             # then pretend they're unit models
             # then add their edges
             inlet_match = self.INLET_REGEX.search(portname)
             if inlet_match:
-                print(f"  ^ inlet found; parent: {str(self.ports[port])}")
+                # print(f"  ^ inlet found; parent: {str(self.ports[port])}")
                 # name the feed "unit model" and its connecting edge with the name of the port itself
                 feedport = self._PseudoUnit('Feed', unitname)
+                self._used_unit_names.add(unitname)
                 self.unit_models[feedport] = {
-                    "name": feedport.getname(),  # TODO: this name must be uniqueified
+                    "name": feedport.getname(),
                     "type": "feed"
                 }
                 self.edges[edgename] = {
-                    "source": feedport, # TODO: this is the name that gets used in the jointjs serialization
-                    "dest": self.ports[port]  # TODO needs to be the parent unit model... can be messed up if parent is nested or something
-                }                              # TODO or maybe collisions actually just cause one to be disconnected actually??? maybe notfd
+                    "source": feedport,
+                    "dest": self.ports[port]  # TODO ensure this works on nested unit models
+                }
                 self.labels[edgename] = "inlet info"  # TODO - fetch the actual information
                 continue
 
             outlet_match = self.OUTLET_REGEX.search(portname)
             if outlet_match:
-                print(f"  ^ outlet found; parent: {str(self.ports[port])}")
+                # print(f"  ^ outlet found; parent: {str(self.ports[port])}")
                 prodport = self._PseudoUnit('Product', unitname)
+                self._used_unit_names.add(unitname)
                 self.unit_models[prodport] = {
                     "name": prodport.getname(),
                     "type": "product"
                 }
                 self.edges[edgename] = {
-                    "source": self.ports[port],
+                    "source": self.ports[port],  # TODO see above
                     "dest": prodport
                 }
                 self.labels[edgename] = "outlet info"  # TODO - fetch the actual information
@@ -189,11 +191,10 @@ class FlowsheetSerializer:
     def _unique_unit_name(self, base_name):
         '''Prevent name collisions by simply appending a number'''
         name = base_name
-        existing_names = {unit['name'] for unit in self.unit_models.values()}
         increment = 0
-        while (name in existing_names):
+        while name in self._used_unit_names:
             increment += 1
-            name = f'{name}_{increment}'
+            name = f'{base_name}_{increment}'
         return name
 
     def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
@@ -252,7 +253,6 @@ class FlowsheetSerializer:
             "z": 2
         }
         out_json["cells"].append(entry)
-        print(f'\t\t{entry}\n\n')
 
     def get_unit_models(self):
         return self.unit_models
@@ -318,12 +318,10 @@ class FlowsheetSerializer:
                 x_pos += 100
                 y_pos += 100
 
-        print('looping through edges')
         id_counter = 0
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
-            print(f'{name}: {ports_dict}')
             if hasattr(ports_dict["source"], "vap_outlet"):
                 # TODO Figure out how to denote different outlet types. Need to
                 #  deal with multiple input/output offsets
@@ -346,10 +344,12 @@ class FlowsheetSerializer:
             )
 
     def _add_unit_model_with_ports(self, unit):
+        unitname = unit.getname()
         self.unit_models[unit] = {
-                "name": unit.getname(),
-                "type": unit._orig_module.split(".")[-1]  #TODO look for or create equivalent getter, as getname() above
+                "name": unitname,
+                "type": unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
             }
+        self._used_unit_names.add(unitname)
         for subcomponent in unit.component_objects(Port, descend_into=True):
             self.ports[subcomponent] = unit
 
