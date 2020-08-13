@@ -34,6 +34,7 @@ from idaes.core.util.tables import (
     stream_table_dataframe_to_string,
     generate_table,
     tag_state_quantities,
+    stream_states_dict,
 )
 import idaes.generic_models.properties.examples.saponification_thermo as thermo_props
 import idaes.generic_models.properties.examples.saponification_reactions as rxn_props
@@ -52,9 +53,18 @@ def m():
                                "reaction_package": m.fs.reaction_params})
     m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
                                "reaction_package": m.fs.reaction_params})
+    m.fs.tank_array = CSTR(
+        range(3),
+        default={"property_package": m.fs.thermo_params,
+                 "reaction_package": m.fs.reaction_params})
 
     m.fs.stream = Arc(source=m.fs.tank1.outlet,
                       destination=m.fs.tank2.inlet)
+
+    def stream_array_rule(b, i):
+        return (b.tank_array[i].outlet, b.tank_array[i+1].inlet)
+    m.fs.stream_array = Arc(range(2), rule=stream_array_rule)
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     return m
@@ -64,22 +74,49 @@ def m():
 def test_create_stream_table_dataframe_from_StateBlock(m):
     d = arcs_to_stream_dict(m, descend_into=True)
     assert "stream" in d
+    assert "stream_array" in d
     assert d["stream"] == m.fs.stream
+    assert d["stream_array"] == m.fs.stream_array
 
+@pytest.mark.unit
+def test_stream_states_dict(m):
+    d = stream_states_dict(arcs_to_stream_dict(m, descend_into=True))
+    assert "stream" in d
+    assert "stream_array[0]" in d
+    assert "stream_array[1]" in d
+    assert d["stream_array[0]"] == m.fs.tank_array[1].control_volume.properties_in[0]
+    assert d["stream_array[1]"] == m.fs.tank_array[2].control_volume.properties_in[0]
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock_2(m):
-    df = create_stream_table_dataframe({
-            "state": m.fs.tank1.control_volume.properties_out})
+    df = create_stream_table_dataframe(arcs_to_stream_dict(m, descend_into=True))
 
-    assert df.loc["Pressure"]["state"] == 101325
-    assert df.loc["Temperature"]["state"] == 298.15
-    assert df.loc["Volumetric Flowrate"]["state"] == 1.0
-    assert df.loc["Molar Concentration H2O"]["state"] == 100.0
-    assert df.loc["Molar Concentration NaOH"]["state"] == 100.0
-    assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
-    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
-    assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+    assert df.loc["Pressure"]["stream"] == 101325
+    assert df.loc["Temperature"]["stream"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["stream"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["stream"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["stream"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["stream"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["stream"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["stream"] == 100.0
+
+    assert df.loc["Pressure"]["stream_array[0]"] == 101325
+    assert df.loc["Temperature"]["stream_array[0]"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["stream_array[0]"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["stream_array[0]"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["stream_array[0]"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["stream_array[0]"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["stream_array[0]"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["stream_array[0]"] == 100.0
+
+    assert df.loc["Pressure"]["stream_array[1]"] == 101325
+    assert df.loc["Temperature"]["stream_array[1]"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["stream_array[1]"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["stream_array[1]"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["stream_array[1]"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["stream_array[1]"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["stream_array[1]"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["stream_array[1]"] == 100.0
 
 
 @pytest.mark.unit
