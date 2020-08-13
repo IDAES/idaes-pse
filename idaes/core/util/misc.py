@@ -95,6 +95,8 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
+    tag_format={},
+    tag_format_default="{:.4e}"
 ):
     """
     Replace text in a SVG with tag values for the model. This works by looking
@@ -102,7 +104,7 @@ def svg_tag(
 
     Args:
         tags: A dictionary where the key is the tag and the value is a Pyomo
-            Refernce.  The refernce could be indexed. In yypical IDAES
+            Refernce.  The refernce could be indexed. In typical IDAES
             applications the references would be indexed by time.
         svg: a file pointer or a string continaing svg contents
         outfile: a file name to save the results, if None don't save
@@ -113,7 +115,9 @@ def svg_tag(
         show_tags: Put tag labels of the diagram instead of numbers
         byte_encoding: If svg is given as a byte-array, use this encoding to
             convert it to a string.
-
+        tag_format: A dictionary of formatting strings for numeric values
+        tag_format_default: The default formatting for numeric values if not
+            provided by tag format.
     Returns:
         String for SVG
     """
@@ -149,8 +153,9 @@ def svg_tag(
                     val = pyo.value(tags[tag_map[id]][idx], exception=False)
             except ZeroDivisionError:
                 val = "Divide_by_0"
+            tf = tag_format.get(tag_map[id], tag_format_default)
             try:
-                tspan.nodeValue = "{:.4e}".format(val)
+                tspan.nodeValue = tf.format(val)
             except ValueError:  # whatever it is can't be scientific notation
                 tspan.nodeValue = val
 
