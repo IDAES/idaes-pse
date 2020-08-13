@@ -81,14 +81,10 @@ def stream_states_dict(streams, time_point=0):
 
     for n in streams.keys():
         try:
-            if isinstance(streams[n], Arc) and not streams[n].is_indexed():
-                # Use destination of Arc, as inlets are more likely (?) to be
-                # fully-defined StateBlocks
-                sb = _get_state_from_port(streams[n].destination, time_point)
-                _stream_dict_add(sb, n)
-            elif isinstance(streams[n], Arc):
+            if isinstance(streams[n], Arc):
                 for i, a in streams[n].items():
-                    sb = _get_state_from_port(a.destination, time_point)
+                    dest = a.ports[1]
+                    sb = _get_state_from_port(dest, time_point)
                     _stream_dict_add(sb, n, i)
             elif isinstance(streams[n], Port):
                 sb = _get_state_from_port(streams[n], time_point)
@@ -98,9 +94,9 @@ def stream_states_dict(streams, time_point=0):
                 _stream_dict_add(sb, n)
         except (AttributeError, KeyError):
             raise TypeError(
-                f"Unrecognised component provided in stream argument "
-                f"{streams[n]}. get_stream_table_attributes only "
-                f"supports Arcs, Ports or StateBlocks."
+                f"Unrecognised component type for stream argument {streams[n]}."
+                f" The get_stream_table_attributes function only supports Ars, "
+                f"Ports or StateBlocks."
             )
     return stream_dict
 
