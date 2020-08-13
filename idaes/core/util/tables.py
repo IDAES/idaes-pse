@@ -305,7 +305,7 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 j = a[1:]
                 a = a[0]
             v = getattr(s, a, None)
-            if j is not None:
+            if j is not None and v is not None:
                 try:
                     v = v[j]
                 except KeyError:
