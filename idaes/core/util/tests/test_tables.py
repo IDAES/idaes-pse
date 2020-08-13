@@ -308,8 +308,8 @@ def test_generate_table(gtmodel):
         sd,
         attributes=["pressure", "temperature", "div0",
                     ("flow_mol", "CO2"), ("flow_mol", "H2O"),
-                    "not_there"],
-        heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss"])
+                    "not_there", ("not_there_array", "hi")],
+        heading=["P", "T", "ERR", "F_CO2", "F_H2O", "Miss", "Miss[hi]"])
 
     assert st.loc["a"]["P"] == 11000
     assert st.loc["a"]["F_CO2"] == 110
