@@ -94,7 +94,7 @@ def stream_states_dict(streams, time_point=0):
         except (AttributeError, KeyError):
             raise TypeError(
                 f"Unrecognised component type for stream argument {streams[n]}."
-                f" The get_stream_table_attributes function only supports Arcs, "
+                f" The stream_states_dict function only supports Arcs, "
                 f"Ports or StateBlocks."
             )
     return stream_dict
