@@ -83,8 +83,7 @@ def stream_states_dict(streams, time_point=0):
         try:
             if isinstance(streams[n], Arc):
                 for i, a in streams[n].items():
-                    dest = a.ports[1]
-                    sb = _get_state_from_port(dest, time_point)
+                    sb = _get_state_from_port(a.ports[1], time_point)
                     _stream_dict_add(sb, n, i)
             elif isinstance(streams[n], Port):
                 sb = _get_state_from_port(streams[n], time_point)
@@ -95,7 +94,7 @@ def stream_states_dict(streams, time_point=0):
         except (AttributeError, KeyError):
             raise TypeError(
                 f"Unrecognised component type for stream argument {streams[n]}."
-                f" The get_stream_table_attributes function only supports Ars, "
+                f" The get_stream_table_attributes function only supports Arcs, "
                 f"Ports or StateBlocks."
             )
     return stream_dict
