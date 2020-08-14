@@ -262,7 +262,9 @@ ValveFunctionType.custom}""",
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
+            
         from_json(self, sd=istate, wts=sp)
+
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -270,6 +272,5 @@ ValveFunctionType.custom}""",
         for t, c in self.pressure_flow_equation.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)
-            if self.config.phase == "Vap":
-                s = s ** 2
+            s = s ** 2
             iscale.constraint_scaling_transform(c, s)
