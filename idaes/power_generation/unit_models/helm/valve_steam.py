@@ -47,16 +47,24 @@ def _assert_properties(pb):
         raise
 
 
-def _linear_rule(b, t):
-    return b.valve_opening[t]
+def _linear_callback(blk):
+    @blk.Expression(blk.flowsheet().config.time)
+    def valve_function(b, t):
+        return b.valve_opening[t]
 
 
-def _quick_open_rule(b, t):
-    return sqrt(b.valve_opening[t])
+def _quick_open_callback(blk):
+    @blk.Expression(blk.flowsheet().config.time)
+    def valve_function(b, t):
+        return sqrt(b.valve_opening[t])
 
 
-def _equal_percentage_rule(b, t):
-    return b.alpha ** (b.valve_opening[t] - 1)
+def _equal_percentage_callback(blk):
+    blk.alpha = Var(initialize=1, doc="Valve function parameter")
+    blk.alpha.fix()
+    @blk.Expression(blk.flowsheet().config.time)
+    def valve_function(b, t):
+        return b.alpha ** (b.valve_opening[t] - 1)
 
 
 def _liquid_pressure_flow_rule(b, t):
@@ -136,12 +144,11 @@ ValveFunctionType.custom}""",
         ),
     )
     CONFIG.declare(
-        "valve_function_rule",
+        "valve_function_callback",
         ConfigValue(
             default=None,
-            description="This is a rule that returns a time indexed valve function expression.",
-            doc="""This is a rule that returns a time indexed valve function expression.
-This is required only if valve_function==ValveFunctionType.custom""",
+            description="This is a callback that adds a valve function.  The "
+                "callback function takes the valve bock data argument.",
         ),
     )
     CONFIG.declare(
@@ -181,20 +188,23 @@ This is required only if valve_function==ValveFunctionType.custom""",
 
         # set up the valve function rule.  I'm not sure these matter too much
         # for us, but the options are easy enough to provide.
-        if self.config.valve_function == ValveFunctionType.linear:
-            rule = _linear_rule
-        elif self.config.valve_function == ValveFunctionType.quick_opening:
-            rule = _quick_open_rule
-        elif self.config.valve_function == ValveFunctionType.equal_percentage:
-            self.alpha = Var(initialize=1, doc="Valve function parameter")
-            self.alpha.fix()
-            rule = equal_percentage_rule
-        else:
-            rule = self.config.valve_function_rule
+        vfcb = self.config.valve_function_callback
+        vfselect = self.config.valve_function
+        if vfselect is not ValveFunctionType.custom and vfcb is not None:
+            _log.warning(f"A valve function callback was provided but the valve "
+                "function type is not custom.")
 
-        self.valve_function = pyo.Expression(
-            self.flowsheet().config.time, rule=rule, doc="Valve function expression"
-        )
+        if vfselect == ValveFunctionType.linear:
+            _linear_callback(self)
+        elif vfselect == ValveFunctionType.quick_opening:
+            _quick_callback(self)
+        elif vfselect == ValveFunctionType.equal_percentage:
+            _equal_percentage_callback(self)
+        else:
+            if vfcb is None:
+                raise ConfigurationError(
+                    "No custom valve function callback provided")
+            vfcb(self)
 
         if self.config.phase == "Liq":
             rule = _liquid_pressure_flow_rule
@@ -256,7 +266,7 @@ This is required only if valve_function==ValveFunctionType.custom""",
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         for t, c in self.pressure_flow_equation.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)
