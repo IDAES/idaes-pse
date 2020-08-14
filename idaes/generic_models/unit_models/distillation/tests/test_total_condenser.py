@@ -32,7 +32,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom, \
     fixed_variables_set, activated_constraints_set
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
-
+from idaes.core.util.exceptions import PropertyPackageError
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -45,6 +45,8 @@ def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
+
+
 
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
@@ -61,6 +63,7 @@ def test_config():
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_pressure_change
     assert hasattr(m.fs.unit, "heat_duty")
+
 
 
 class TestBTXIdeal(object):
