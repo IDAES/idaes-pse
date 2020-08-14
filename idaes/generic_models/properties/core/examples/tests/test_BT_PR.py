@@ -23,6 +23,7 @@ from idaes.generic_models.properties.core.eos.ceos import \
 from idaes.generic_models.properties.core.examples.BT_PR import configuration
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
+from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.environ import (ConcreteModel,
                            Objective,
@@ -69,6 +70,8 @@ class TestBTExample(object):
 
     @pytest.mark.integration
     def test_T_sweep(self, m):
+        assert_units_consistent(m)
+
         m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510)**2)
 
         for logP in range(8, 13, 1):

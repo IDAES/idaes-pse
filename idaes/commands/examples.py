@@ -29,9 +29,9 @@ from io import StringIO
 import logging
 from operator import attrgetter
 import os
-from pathlib import Path
 import re
 from setuptools import setup, find_packages
+from pathlib import Path
 import shutil
 import sys
 from typing import List
@@ -448,7 +448,7 @@ def clean_up_temporary_files():
         # remove directory, if now empty
         num_files = len(list(d.glob("*")))
         if num_files == 0:
-            _log.info(f"removing {d} directory")
+            _log.info(f"removing dist directory '{d.absolute()}'")
             try:
                 d.rmdir()
             except Exception as err:
@@ -749,5 +749,3 @@ def has_tagged_cells(nb: Path):
             return True  # can stop now, one is enough
     # no tagged cells
     return False
-
-

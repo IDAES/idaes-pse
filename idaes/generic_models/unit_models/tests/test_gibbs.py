@@ -86,9 +86,56 @@ def test_inerts():
 
     assert isinstance(m.fs.unit.inert_species_balance, Constraint)
     assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
 
     assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
     assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_multi_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 2
+    assert m.fs.unit.inert_species_balance[0, "p1", "c1"] != Constraint.Skip
+    assert m.fs.unit.inert_species_balance[0, "p2", "c1"] != Constraint.Skip
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 2
+
+
+@pytest.mark.unit
+def test_inerts_dependent_w_single_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    # Set phase list to only have 1 phase
+    m.fs.properties.phase_list = ["p1"]
+    # Change elemental composition to introduce dependency
+    m.fs.properties.element_comp = {"c1": {"H": 0, "He": 0, "Li": 3},
+                                    "c2": {"H": 4, "He": 5, "Li": 0}}
+
+    m.fs.unit = GibbsReactor(default={"property_package": m.fs.properties,
+                                      "inert_species": ["c1"]})
+
+    assert isinstance(m.fs.unit.inert_species_balance, Constraint)
+    assert len(m.fs.unit.inert_species_balance) == 0
+    assert (0, "p1", "c1") not in m.fs.unit.inert_species_balance
+
+    assert isinstance(m.fs.unit.gibbs_minimization, Constraint)
+    assert len(m.fs.unit.gibbs_minimization) == 1
 
 
 @pytest.mark.unit
@@ -277,7 +324,10 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve_heat_duty(self, methane):
-        results = solver.solve(methane)
+        solver.options["tol"] = 1e-9
+        solver.options["nlp_scaling_method"] = "user-scaling"
+
+        results = solver.solve(methane, tee=True)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -288,23 +338,23 @@ class TestMethane(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution_duty(self, methane):
-        assert (pytest.approx(250.06, abs=1e-2) ==
+        assert (pytest.approx(250.06, abs=1e-1) ==
                 value(methane.fs.unit.outlet.flow_mol[0]))
         assert (pytest.approx(0.0, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
-        assert (pytest.approx(0.0974, abs=1e-4) ==
+        assert (pytest.approx(0.103863, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
-        assert (pytest.approx(0.0226, abs=1e-4) ==
+        assert (pytest.approx(0.016123, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
-        assert (pytest.approx(0.1030, abs=1e-4) ==
+        assert (pytest.approx(0.096080, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
-        assert (pytest.approx(0.1769, abs=1e-4) ==
+        assert (pytest.approx(0.183897, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
-        assert (pytest.approx(0.5999, abs=1e-4) ==
+        assert (pytest.approx(0.600030, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
         assert (pytest.approx(0.0, abs=1e-5) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
-        assert (pytest.approx(0.0002, abs=1e-4) ==
+        assert (pytest.approx(2.86950e-06, abs=1e-4) ==
                 value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
         assert (pytest.approx(-7454077, abs=1e2) ==
                 value(methane.fs.unit.heat_duty[0]))
@@ -322,7 +372,7 @@ class TestMethane(object):
                 methane.fs.unit.outlet.flow_mol[0] *
                 methane.fs.unit.control_volume.properties_out[0]
                     .enth_mol_phase["Vap"] +
-                methane.fs.unit.heat_duty[0])) <= 1e-6
+                methane.fs.unit.heat_duty[0])) <= 1e-4
 
     @pytest.mark.ui
     @pytest.mark.unit

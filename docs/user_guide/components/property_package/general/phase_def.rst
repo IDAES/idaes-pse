@@ -1,7 +1,7 @@
 Defining Phases
 ===============
 
-The second step in defining a property package using the Generic Property Package Framework is to define the phases of interest in the system. Due to the equation-oriented nature of the IDAES modeling framework, it is necessary to define any phases the user believes may be important *a priori* as it is not possible to determine what phases should be included on-the-fly. Phases are defined using `IDAES Phase objects<core/phase:Phase Objects>`, and are automatically constructed using the `phases` configuration argument from the `GenericParameterBlock`.
+The second step in defining a property package using the Generic Property Package Framework is to define the phases of interest in the system. Due to the equation-oriented nature of the IDAES modeling framework, it is necessary to define any phases the user believes may be important *a priori* as it is not possible to determine what phases should be included on-the-fly. Phases are defined using `IDAES Phase objects<user_guide/components/property_package/phase:Phase Object>`, and are automatically constructed using the `phases` configuration argument from the `GenericParameterBlock`.
 
 The `phases` Argument
 ---------------------
@@ -48,7 +48,7 @@ Equation of State Libraries
 Phase-Specific Parameter
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-In some cases, a property package may include parameters which are specific to a given phase. In these cases, these parameters are stored as part of the associated `Phase` object and the values of these set using the `parameter_data` argument when declaring the phase.
+In some cases, a property package may include parameters which are specific to a given phase. In these cases, these parameters are stored as part of the associated `Phase` object and the values of these set using the `parameter_data` argument when declaring the phase. This is done in the same fashion as for :ref:`component specific parameters<user_guide/components/property_package/general/component_def:Parameter Data>`.
 
 Phases with Partial Component Lists
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

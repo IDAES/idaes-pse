@@ -16,20 +16,28 @@ Tests for Component objects
 Author: Andrew Lee
 """
 import pytest
+import types
 
-from pyomo.environ import ConcreteModel, Set
+from pyomo.environ import ConcreteModel, Set, Param, Var, units as pyunits
 
 from idaes.core.components import (Component, Solute, Solvent,
                                    Ion, Anion, Cation)
 from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
                                PhaseType)
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.property_meta import PropertyClassMetadata
 
 
 class TestComponent():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Component()
         m.comp2 = Component()
@@ -116,11 +124,75 @@ class TestComponent():
         assert m.comp6._is_phase_valid(m.Vap)
         assert not m.comp6._is_phase_valid(m.Phase)
 
+    @pytest.mark.unit
+    def test_create_parameters(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+        m.get_metadata().default_units["amount"] = pyunits.mol
+        m.get_metadata().default_units["mass"] = pyunits.kg
+        m.get_metadata().default_units["time"] = pyunits.s
+        m.get_metadata().default_units["length"] = pyunits.m
+        m.get_metadata().default_units["temperature"] = pyunits.K
+
+        m.comp = Component(default={
+            "parameter_data": {"mw": 10,
+                               "pressure_crit": 1e5,
+                               "temperature_crit": 500}})
+
+        assert isinstance(m.comp.mw, Param)
+        assert m.comp.mw.value == 10
+
+        assert isinstance(m.comp.pressure_crit, Var)
+        assert m.comp.pressure_crit.value == 1e5
+
+        assert isinstance(m.comp.temperature_crit, Var)
+        assert m.comp.temperature_crit.value == 500
+
+    @pytest.mark.unit
+    def test_create_parameters_convert(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+        m.get_metadata().default_units["amount"] = pyunits.mol
+        m.get_metadata().default_units["mass"] = pyunits.kg
+        m.get_metadata().default_units["time"] = pyunits.s
+        m.get_metadata().default_units["length"] = pyunits.m
+        m.get_metadata().default_units["temperature"] = pyunits.K
+
+        m.comp = Component(default={
+            "parameter_data": {"mw": (10, pyunits.g/pyunits.mol),
+                               "pressure_crit": (1, pyunits.bar),
+                               "temperature_crit": (900, pyunits.degR)}})
+
+        assert isinstance(m.comp.mw, Param)
+        assert m.comp.mw.value == 1e-2
+
+        assert isinstance(m.comp.pressure_crit, Var)
+        assert m.comp.pressure_crit.value == 1e5
+
+        assert isinstance(m.comp.temperature_crit, Var)
+        assert m.comp.temperature_crit.value == 500
+
 
 class TestSolute():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Solute()
 
@@ -202,6 +274,12 @@ class TestSovent():
     def m(self):
         m = ConcreteModel()
 
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
         m.comp = Solvent()
 
         return m
@@ -282,6 +360,12 @@ class TestIon():
     def m(self):
         m = ConcreteModel()
 
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
         m.comp = Ion()
 
         return m
@@ -329,6 +413,12 @@ class TestAnion():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Anion(default={"charge": -1})
 
@@ -392,6 +482,12 @@ class TestCation():
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
 
         m.comp = Cation(default={"charge": +1})
 
