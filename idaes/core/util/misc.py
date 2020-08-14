@@ -115,11 +115,16 @@ def svg_tag(
         show_tags: Put tag labels of the diagram instead of numbers
         byte_encoding: If svg is given as a byte-array, use this encoding to
             convert it to a string.
-        tag_format: A dictionary of formatting strings for numeric values
-        tag_format_default: The default formatting for numeric values if not
-            provided by tag format.
+        tag_format: A dictionary of formatting strings.  If the formatting
+            string is a callable, it should be a function that takes the value
+            to display and returns a formatting string.
+        tag_format_default: The default formatting if not explicitly by
+            tag_format. If the formatting string is a callable, it should be a
+            function that takes the value to display and returns a formatting
+            string.
+
     Returns:
-        String for SVG
+        SVG String
     """
     if isinstance(svg, str):  # assume this is svg content string
         pass
@@ -155,7 +160,10 @@ def svg_tag(
                 val = "Divide_by_0"
             tf = tag_format.get(tag_map[id], tag_format_default)
             try:
-                tspan.nodeValue = tf.format(val)
+                if callable(tf): # conditional formatting
+                    tspan.nodeValue = tf(val).format(val)
+                else:
+                    tspan.nodeValue = tf.format(val)
             except ValueError:
                 # whatever it is, it doesn't match the format.  Usually this
                 # happens when a string is given, but it is using a default

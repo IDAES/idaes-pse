@@ -254,3 +254,27 @@ def test_tag_reference_tag_format():
     assert("2.2200e" in xml_str)
     assert("4.44000e" in xml_str)
     assert("6.6600e" in xml_str)
+
+
+@pytest.mark.unit
+def test_tag_reference_tag_format_conditional():
+    m = ConcreteModel()
+    m.x = Var([0,1], initialize={0:10000,1:3.33})
+    m.y = Var([0,1], initialize={0:1.1,1:5.55})
+    m.f = Var([0,1], initialize={0:4.5,1:7.77})
+    test_tag = {}
+    test_tag["TAGME@4.x"] = TagReference(m.x[:], description="x tag")
+    test_tag["TAGME@4.y"] = TagReference(m.y[:], description="y tag")
+    test_tag["TAGME@4.f"] = TagReference(m.f[:], description="z tag")
+    m.tag = test_tag
+
+
+    xml_str = svg_tag(
+        m.tag,
+        svg_test_str,
+        idx=0,
+        tag_format_default=lambda x: "{:,.0f} kPa" if x >= 100 else "{:.2f} kPa")
+    # lazy testing
+    assert("10,000 kPa" in xml_str)
+    assert("1.10 kPa" in xml_str)
+    assert("4.50 kPa" in xml_str)
