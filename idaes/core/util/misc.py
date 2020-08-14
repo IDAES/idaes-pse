@@ -104,7 +104,7 @@ def svg_tag(
 
     Args:
         tags: A dictionary where the key is the tag and the value is a Pyomo
-            Refernce.  The refernce could be indexed. In typical IDAES
+            Reference.  The reference could be indexed. In typical IDAES
             applications the references would be indexed by time.
         svg: a file pointer or a string continaing svg contents
         outfile: a file name to save the results, if None don't save
@@ -156,7 +156,10 @@ def svg_tag(
             tf = tag_format.get(tag_map[id], tag_format_default)
             try:
                 tspan.nodeValue = tf.format(val)
-            except ValueError:  # whatever it is can't be scientific notation
+            except ValueError:
+                # whatever it is, it doesn't match the format.  Usually this
+                # happens when a string is given, but it is using a default
+                # number format
                 tspan.nodeValue = val
 
     new_svg = doc.toxml()
@@ -164,6 +167,8 @@ def svg_tag(
     if outfile is not None:
         with open(outfile, "w") as f:
             f.write(new_svg)
+    # Return the SVG as a string.  This lets you take several passes at adding
+    # output without saving and loading files.
     return new_svg
 
 
