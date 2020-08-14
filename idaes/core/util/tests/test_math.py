@@ -34,6 +34,7 @@ def simple_model():
     return m
 
 
+@pytest.mark.unit
 def test_smooth_abs_maths():
     # Test basic smooth_abs functionalliy
     assert smooth_abs(4, 0) == 4.0
@@ -47,6 +48,7 @@ def test_smooth_abs_maths():
     assert smooth_abs(-10) == pytest.approx(10.0, abs=1e-4)
 
 
+@pytest.mark.unit
 def test_smooth_abs_expr(simple_model):
     # Test that smooth_abs works with Pyomo components
     assert value(smooth_abs(simple_model.a, 0)) == 4.0
@@ -58,6 +60,7 @@ def test_smooth_abs_expr(simple_model):
             pytest.approx(4.0, abs=1e-4))
 
 
+@pytest.mark.unit
 def test_smooth_abs_a_errors():
     # Test that smooth_abs returns meaningful errors when given invalid arg
     with pytest.raises(TypeError):
@@ -66,6 +69,7 @@ def test_smooth_abs_a_errors():
         smooth_abs([1, 2, 3])
 
 
+@pytest.mark.unit
 def test_smooth_abs_eps_errors():
     # Test that smooth_abs returns meaningful errors when given invalid eps
     with pytest.raises(TypeError):
@@ -74,6 +78,7 @@ def test_smooth_abs_eps_errors():
         smooth_abs(1.0, [1, 2, 3])
 
 
+@pytest.mark.unit
 def test_smooth_minmax_maths():
     # Test basic smooth_minmax functionality
     assert smooth_minmax(1, 2, 0, sense='max') == 2
@@ -91,11 +96,13 @@ def test_smooth_minmax_maths():
             pytest.approx(12.0, abs=1e-4))
 
 
+@pytest.mark.unit
 def test_smooth_minmax_default_sense():
     # Test that smooth_minmax defaults to maximise
     assert smooth_minmax(1, 2, 0,) == 2
 
 
+@pytest.mark.unit
 def test_smooth_minmax_expr(simple_model):
     # Test that smooth_minmax works with Pyomo components
     assert value(smooth_minmax(simple_model.a,
@@ -124,6 +131,7 @@ def test_smooth_minmax_expr(simple_model):
                                sense='min')) == pytest.approx(-4.0, abs=1e-4)
 
 
+@pytest.mark.unit
 def test_smooth_abs_ab_errors():
     # Test that smooth_abs returns meaningful errors when given invalid args
     with pytest.raises(TypeError):
@@ -132,6 +140,7 @@ def test_smooth_abs_ab_errors():
         smooth_abs(3, [1, 2, 3])
 
 
+@pytest.mark.unit
 def test_smooth_minmax_eps_errors():
     # Test that smooth_abs returns meaningful errors when given invalid eps
     with pytest.raises(TypeError):
@@ -140,6 +149,7 @@ def test_smooth_minmax_eps_errors():
         smooth_minmax(1.0, 1.0, [1, 2, 3])
 
 
+@pytest.mark.unit
 def test_smooth_minmax_sense_errors():
     # Test that smooth_abs returns meaningful errors when given invalid sense
     with pytest.raises(ValueError):
@@ -150,6 +160,7 @@ def test_smooth_minmax_sense_errors():
         smooth_minmax(1.0, 1.0, sense=[1.0])
 
 
+@pytest.mark.unit
 def test_smooth_max(simple_model):
     # Test that smooth_max gives correct values
     assert smooth_max(3.0, 12.0) == pytest.approx(12.0, abs=1e-4)
@@ -158,6 +169,7 @@ def test_smooth_max(simple_model):
                             simple_model.e)) == pytest.approx(4.0, abs=1e-4)
 
 
+@pytest.mark.unit
 def test_smooth_min(simple_model):
     # Test that smooth_min gives correct values
     assert smooth_min(3.0, 12.0) == pytest.approx(3.0, abs=1e-4)

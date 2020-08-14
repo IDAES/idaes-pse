@@ -54,6 +54,7 @@ else:
 
 
 # @ pytest something...?
+@pytest.mark.unit
 def test_find_comp_in_block():
     m1 = ConcreteModel()
 
@@ -85,6 +86,7 @@ def test_find_comp_in_block():
     assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
 
 
+@pytest.mark.unit
 def test_NMPCVarLocator():
     m = ConcreteModel()
     m.time = Set(initialize=[1,2,3])
@@ -104,6 +106,7 @@ def test_NMPCVarLocator():
     assert locator.is_ic == True
 
 
+@pytest.mark.unit
 def test_copy_values():
     # Define m1
     m1 = ConcreteModel()
@@ -144,6 +147,7 @@ def test_copy_values():
             assert m1.blk[t].v2.value == 5
 
 
+@pytest.mark.unit
 def test_find_slices_in_model():
     # Define m1
     m1 = ConcreteModel()
@@ -187,8 +191,8 @@ def test_find_slices_in_model():
         assert _slice in dae_var_set_1
 
 
-@pytest.mark.slow
 @pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
 def test_initialize_by_element_in_range():
     mod = make_model(horizon=2, ntfe=20)
     assert degrees_of_freedom(mod) == 0
@@ -227,6 +231,7 @@ def test_initialize_by_element_in_range():
     assert mod.fs.cstr.outlet.conc_mol[2, 'P'].value == approx(0.4372, abs=1e-4)
 
 
+@pytest.mark.component
 def test_add_noise_at_time():
     mod = make_model(horizon=2, ntfe=20)
     time = mod.fs.time
@@ -330,6 +335,7 @@ def test_add_noise_at_time():
                                      weights=[1,1,1,1,1],
                                      sig_0=0.05)
 
+    @pytest.mark.unit
     def test_get_violated_bounds_at_time():
         m = ConcreteModel()
         m.time = Set(initialize=[1,2,3])

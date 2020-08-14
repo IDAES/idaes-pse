@@ -31,6 +31,7 @@ def app():
     App().stop()
 
 
+@pytest.mark.component
 def test_app(app):
     App()  # should not run twice
     j = {"model": {
@@ -56,6 +57,7 @@ def test_app(app):
     assert resp.status_code == 200
 
 
+@pytest.mark.component
 def test_app_stop(app):
     # stop the app
     app.stop()

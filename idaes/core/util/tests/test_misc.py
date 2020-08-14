@@ -24,6 +24,7 @@ from idaes.core.util.misc import (add_object_reference, copy_port_values,
 
 
 # Author: Andrew Lee
+@pytest.mark.unit
 def test_add_object_reference():
     m = ConcreteModel()
 
@@ -36,6 +37,7 @@ def test_add_object_reference():
 
 
 # Author: Andrew Lee
+@pytest.mark.unit
 def test_add_object_reference_fail():
     m = ConcreteModel()
 
@@ -44,6 +46,7 @@ def test_add_object_reference_fail():
 
 
 # Author: John Eslick
+@pytest.mark.unit
 def test_port_copy():
     m = ConcreteModel()
     m.b1 = Block()
@@ -74,6 +77,7 @@ def test_port_copy():
 
 
 # Author: John Eslick
+@pytest.mark.unit
 def test_tag_reference():
     m = ConcreteModel()
     m.z = Var([0, 1], ["A", "B"], initialize={
@@ -93,6 +97,7 @@ def test_tag_reference():
     assert(test_tag.description == "y tag")
 
 
+@pytest.mark.unit
 def test_SimpleVarLikeExpression():
     m = ConcreteModel()
 
@@ -128,6 +133,7 @@ def test_SimpleVarLikeExpression():
         m.e.unfix()
 
 
+@pytest.mark.unit
 def test_IndexedVarLikeExpression():
     m = ConcreteModel()
 

@@ -34,14 +34,15 @@ from idaes.core import FlowsheetBlock  # Flowsheet class
 from idaes.core.util import model_serializer as ms  # load/save model state
 from idaes.core.util.misc import svg_tag  # place numbers/text in an SVG
 from idaes.generic_models.properties import iapws95  # steam properties
-from idaes.power_generation.unit_models import (  # power generation unit models
-    TurbineMultistage,
-    FWH0D,
+from idaes.power_generation.unit_models.helm import (
+    HelmTurbineMultistage,
+    HelmMixer,
+    HelmIsentropicCompressor,
+    HelmTurbineStage,
 )
+from idaes.power_generation.unit_models import FWH0D
 from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
-    Mixer,
     HeatExchanger,
-    PressureChanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
 from idaes.core.util import copy_port_values as _set_port  # for model intialization
@@ -54,6 +55,8 @@ from idaes.generic_models.unit_models.heat_exchanger import delta_temperature_un
 # Pressure changer type (e.g. adiabatic, pump, isentropic...)
 from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
 
 _log = idaeslog.getModelLogger(__name__, logging.INFO)
 
@@ -78,7 +81,7 @@ def create_model():
     # (PH) state variables.  Usually pressure and enthalpy state variables are
     # more robust especially when the phases are unknown.
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation": iapws95.PhaseType.LG}
+        default={"phase_presentation": iapws95.PhaseType.MIX}
     )
 
     # A physical property parameter block with temperature, pressure and vapor
@@ -98,7 +101,7 @@ def create_model():
     # providing several configuration options, including: throttle valves;
     # high-, intermediate-, and low-pressure sections; steam extractions; and
     # pressure driven flow.  See the IDAES documentation for details.
-    m.fs.turb = TurbineMultistage(
+    m.fs.turb = HelmTurbineMultistage(
         default={
             "property_package": m.fs.prop_water,
             "num_parallel_inlet_stages": 4,  # number of admission arcs
@@ -157,7 +160,7 @@ def create_model():
     ############################################################################
     # Add a mixer for all the streams coming into the condenser.  In this case the
     # main steam, and the boiler feed pump turbine outlet go to the condenser
-    m.fs.condenser_mix = Mixer(
+    m.fs.condenser_mix = HelmMixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
             "inlet_list": ["main", "bfpt"],
@@ -180,26 +183,17 @@ def create_model():
     # variables, while the rest of the model uses PH state variables. To
     # translate between the two property calculations, an extra port is added to
     # the mixer which contains temperature, pressure, and vapor fraction
-    # quantities. The first step is to add references to the temperature and
-    # vapor fraction expressions in the IAPWS-95 property block. The references
-    # are used to handle time indexing in the ports by using the property blocks
-    # time index to create references that appear to be time indexed variables.
-    # These references mirror the references created by the framework automatically
-    # for the existing ports.
-    m.fs.condenser_mix._outlet_temperature_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].temperature
-    )
-    m.fs.condenser_mix._outlet_vapor_fraction_ref = pyo.Reference(
-        m.fs.condenser_mix.mixed_state[:].vapor_frac
-    )
-    # Add the new port with the state information that needs to go to the
-    # condenser
+    # quantities.
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
-            "flow_mol": m.fs.condenser_mix._outlet_flow_mol_ref,
-            "temperature": m.fs.condenser_mix._outlet_temperature_ref,
-            "pressure": m.fs.condenser_mix._outlet_pressure_ref,
-            "vapor_frac": m.fs.condenser_mix._outlet_vapor_fraction_ref,
+            "flow_mol": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].flow_mol),
+            "temperature": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].temperature),
+            "pressure": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].pressure),
+            "vapor_frac": pyo.Reference(
+                m.fs.condenser_mix.mixed_state[:].vapor_frac),
         }
     )
 
@@ -237,20 +231,20 @@ def create_model():
         )
 
     # Extra port on condenser to hook back up to pressure-enthalpy properties
-    m.fs.condenser._outlet_1_enth_mol_ref = pyo.Reference(
-        m.fs.condenser.shell.properties_out[:].enth_mol
-    )
     m.fs.condenser.outlet_1_ph = Port(
         initialize={
-            "flow_mol": m.fs.condenser._outlet_1_flow_mol_ref,
-            "pressure": m.fs.condenser._outlet_1_pressure_ref,
-            "enth_mol": m.fs.condenser._outlet_1_enth_mol_ref,
+            "flow_mol": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].flow_mol),
+            "pressure": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].pressure),
+            "enth_mol": pyo.Reference(
+                m.fs.condenser.shell.properties_out[:].enth_mol),
         }
     )
 
     # Add the condenser hotwell.  In steady state a mixer will work.  This is
     # where makeup water is added if needed.
-    m.fs.hotwell = Mixer(
+    m.fs.hotwell = HelmMixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
             "inlet_list": ["condensate", "makeup"],
@@ -263,13 +257,9 @@ def create_model():
     def mixer_pressure_constraint(b, t):
         return b.condensate_state[t].pressure == b.mixed_state[t].pressure
 
-    # Condensate pump
-    m.fs.cond_pump = PressureChanger(
-        default={
-            "property_package": m.fs.prop_water,
-            "thermodynamic_assumption": ThermodynamicAssumption.pump,
-        }
-    )
+    # Condensate pump (Use compressor model, since it is more robust if vapor form)
+    m.fs.cond_pump = HelmIsentropicCompressor(
+        default={"property_package": m.fs.prop_water})
     ############################################################################
     #  Add low pressure feedwater heaters                                      #
     ############################################################################
@@ -292,14 +282,10 @@ def create_model():
         }
     )
     # pump for fwh1 condensate, to pump it ahead and mix with feedwater
-    m.fs.fwh1_pump = PressureChanger(
-        default={
-            "property_package": m.fs.prop_water,
-            "thermodynamic_assumption": ThermodynamicAssumption.pump,
-        }
-    )
+    m.fs.fwh1_pump = HelmIsentropicCompressor(
+        default={"property_package": m.fs.prop_water})
     # Mix the FWH1 drain back into the feedwater
-    m.fs.fwh1_return = Mixer(
+    m.fs.fwh1_return = HelmMixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
             "inlet_list": ["feedwater", "fwh1_drain"],
@@ -351,7 +337,7 @@ def create_model():
     ############################################################################
     # The deaerator is basically an open tank with multiple inlets.  For steady-
     # state, a mixer model is sufficient.
-    m.fs.fwh5_da = Mixer(
+    m.fs.fwh5_da = HelmMixer(
         default={
             "momentum_mixing_type": MomentumMixingType.none,
             "inlet_list": ["steam", "drain", "feedwater"],
@@ -365,19 +351,11 @@ def create_model():
         return b.feedwater_state[t].pressure == b.mixed_state[t].pressure
 
     # Add the boiler feed pump and boiler feed pump turbine
-    m.fs.bfp = PressureChanger(
-        default={
-            "property_package": m.fs.prop_water,
-            "thermodynamic_assumption": ThermodynamicAssumption.pump,
-        }
-    )
-    m.fs.bfpt = PressureChanger(
-        default={
-            "property_package": m.fs.prop_water,
-            "compressor": False,
-            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-        }
-    )
+    m.fs.bfp = HelmIsentropicCompressor(
+        default={"property_package": m.fs.prop_water})
+
+    m.fs.bfpt = HelmTurbineStage(
+        default={"property_package": m.fs.prop_water})
 
     # The boiler feed pump outlet pressure is the same as the condenser
     @m.fs.Constraint(m.fs.time)
@@ -713,7 +691,7 @@ def set_model_input(m):
     m.fs.hotwell.makeup.flow_mol[:].value = 1 # don't fix is calculated
     m.fs.hotwell.makeup.enth_mol.fix(2500)
     m.fs.hotwell.makeup.pressure.fix(101325)
-    m.fs.cond_pump.efficiency_pump.fix(0.80)
+    m.fs.cond_pump.efficiency_isentropic.fix(0.80)
     m.fs.cond_pump.deltaP.fix(1e6)
     ############################################################################
     #  Low-pressure FWH section inputs                                         #
@@ -725,7 +703,7 @@ def set_model_input(m):
     m.fs.fwh1.condense.area.fix(400)
     m.fs.fwh1.condense.overall_heat_transfer_coefficient.fix(2000)
     # fwh1 pump
-    m.fs.fwh1_pump.efficiency_pump.fix(0.80)
+    m.fs.fwh1_pump.efficiency_isentropic.fix(0.80)
     m.fs.fwh1_pump.deltaP.fix(1.2e6) # need pressure higher than feedwater
     # fwh2
     m.fs.fwh2.condense.area.fix(150)
@@ -751,7 +729,7 @@ def set_model_input(m):
     ############################################################################
     #  Deaerator and boiler feed pump (BFP) input                              #
     ############################################################################
-    m.fs.bfp.efficiency_pump.fix(0.80)
+    m.fs.bfp.efficiency_isentropic.fix(0.80)
     m.fs.bfp.outlet.pressure[:].value = main_steam_pressure * 1.1 # guess
     m.fs.bfpt.efficiency_isentropic.value = 0.80 #don't fix, just initial guess
     ############################################################################
@@ -796,6 +774,9 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     """
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
+
+    iscale.calculate_scaling_factors(m)
+
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "tol": 1e-7,
@@ -992,7 +973,7 @@ def pfd_result(m, df, svg):
     tags["steam_pressure"] = df.loc["STEAM_MAIN", "P (Pa)"] / 1000.0
     tags["cond_pressure"] = df.loc["EXHST_MAIN", "P (Pa)"] / 1000.0
     tags["bfp_power"] = pyo.value(m.fs.bfp.work_mechanical[0])
-    tags["bfp_eff"] = pyo.value(m.fs.bfp.efficiency_pump[0]) * 100
+    tags["bfp_eff"] = pyo.value(m.fs.bfp.efficiency_isentropic[0]) * 100
     tags["bfpt_power"] = pyo.value(m.fs.bfpt.work_mechanical[0])
     tags["bfpt_eff"] = pyo.value(m.fs.bfpt.efficiency_isentropic[0]) * 100
 

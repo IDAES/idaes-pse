@@ -23,12 +23,15 @@ Authors: Andrew Lee
 """
 
 import pytest
+import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var
+from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.generic_models.properties.core.pure.NIST import *
 from idaes.core.util.misc import add_object_reference
+from idaes.core.property_meta import PropertyClassMetadata
 
 
 @pytest.fixture()
@@ -48,26 +51,55 @@ def frame():
                                  'F': -250.8810,
                                  'G': 223.3967,
                                  'H': -241.8264},
-        "pressure_sat_comp_coeff": {'A': 8.55959,  # +5 for unit conversion
+        "pressure_sat_comp_coeff": {'A': 3.55959,  # units bar, K
                                     'B': 643.748,
                                     'C': -198.043}}
 
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.default_units["temperature"] = pyunits.K
+    m.meta_object.default_units["mass"] = pyunits.kg
+    m.meta_object.default_units["length"] = pyunits.m
+    m.meta_object.default_units["time"] = pyunits.s
+    m.meta_object.default_units["amount"] = pyunits.mol
+
+    def get_metadata(self):
+        return m.meta_object
+    m.params.get_metadata = types.MethodType(get_metadata, m.params)
+
     # Add necessary parameters to parameter block
-    m.params.temperature_ref = Var(initialize=298.15)
-    m.params.pressure_ref = Var(initialize=1e5)
+    m.params.temperature_ref = Var(initialize=298.15, units=pyunits.K)
+    m.params.pressure_ref = Var(initialize=1e5, units=pyunits.Pa)
 
     # Create a dummy state block
     m.props = Block([1])
     add_object_reference(m.props[1], "params", m.params)
 
-    m.props[1].temperature = Var(initialize=500)
-    m.props[1].pressure = Var(initialize=101325)
+    m.props[1].temperature = Var(initialize=500, units=pyunits.K)
+    m.props[1].pressure = Var(initialize=101325, units=pyunits.Pa)
 
     return m
 
 
+@pytest.mark.unit
 def test_cp_mol_ig_comp(frame):
     cp_mol_ig_comp.build_parameters(frame.params)
+
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_A, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_A) == 30.09200
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_B, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_B) == 6.832514
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_C, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_C) == 6.793435
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_D, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_D) == -2.534480
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_E, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_E) == 0.082139
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_F, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_F) == -250.8810
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_G, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_G) == 223.3967
+    assert isinstance(frame.params.cp_mol_ig_comp_coeff_H, Var)
+    assert value(frame.params.cp_mol_ig_comp_coeff_H) == -241.8264
 
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -76,7 +108,9 @@ def test_cp_mol_ig_comp(frame):
     frame.props[1].temperature.value = 600
     assert value(expr) == pytest.approx(36.32, abs=1e-2)
 
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
+@pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
 
@@ -87,7 +121,9 @@ def test_enth_mol_ig_comp(frame):
     frame.props[1].temperature.value = 600
     assert value(expr) == pytest.approx(1445, rel=1e-3)
 
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
+@pytest.mark.unit
 def test_entr_mol_ig_comp(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
 
@@ -98,9 +134,18 @@ def test_entr_mol_ig_comp(frame):
     frame.props[1].temperature.value = 600
     assert value(expr) == pytest.approx(213.1, rel=1e-3)
 
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
+@pytest.mark.unit
 def test_pressure_sat_comp(frame):
     pressure_sat_comp.build_parameters(frame.params)
+
+    assert isinstance(frame.params.pressure_sat_comp_coeff_A, Var)
+    assert value(frame.params.pressure_sat_comp_coeff_A) == 3.55959
+    assert isinstance(frame.params.pressure_sat_comp_coeff_B, Var)
+    assert value(frame.params.pressure_sat_comp_coeff_B) == 643.748
+    assert isinstance(frame.params.pressure_sat_comp_coeff_C, Var)
+    assert value(frame.params.pressure_sat_comp_coeff_C) == -198.043
 
     expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -109,14 +154,17 @@ def test_pressure_sat_comp(frame):
     frame.props[1].temperature.value = 379
     assert value(expr) == pytest.approx(100490, rel=1e-4)
 
+    assert_units_equivalent(expr, pyunits.Pa)
 
+
+@pytest.mark.unit
 def test_pressure_sat_comp_dT(frame):
     pressure_sat_comp.build_parameters(frame.params)
 
     expr = pressure_sat_comp.dT_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
 
-    delta = 1e-4
+    delta = 1e-4*pyunits.K
     val = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     val_p = pressure_sat_comp.return_expression(
@@ -136,3 +184,5 @@ def test_pressure_sat_comp_dT(frame):
     dPdT = value((val-val_p)/-delta)
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
+
+    assert_units_equivalent(expr, pyunits.Pa/pyunits.K)

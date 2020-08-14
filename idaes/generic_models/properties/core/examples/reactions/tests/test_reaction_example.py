@@ -20,6 +20,7 @@ from pyomo.environ import (Block,
                            SolverStatus,
                            TerminationCondition,
                            value)
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
@@ -41,6 +42,7 @@ solver = get_default_solver()
 
 
 class TestParamBlock(object):
+    @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
         model.thermo_params = GenericParameterBlock(
@@ -81,6 +83,8 @@ class TestParamBlock(object):
         assert isinstance(model.rxn_params.reaction_R1, Block)
         assert isinstance(model.rxn_params.reaction_R2, Block)
 
+        assert_units_equivalent(model)
+
 
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
@@ -102,8 +106,11 @@ class TestStateBlock(object):
                 default={"state_block": model.props,
                          "has_equilibrium": True})
 
+        assert_units_equivalent(model)
+
         return model
 
+    @pytest.mark.unit
     def test_dof(self, model):
         # Fix state
         # Note that flow of D cannot be specified due to equlibrium
@@ -118,6 +125,7 @@ class TestStateBlock(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -140,6 +148,7 @@ class TestStateBlock(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -151,6 +160,7 @@ class TestStateBlock(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.unit
     def test_solution(self, model):
         assert model.props[1].flow_mol_comp["D"].value == \
             pytest.approx(7.0849, rel=1e-4)
@@ -183,5 +193,6 @@ class TestStateBlock(object):
             rel=1e-6)
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, model):
         model.rxns[1].report()

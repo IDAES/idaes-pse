@@ -28,10 +28,7 @@ from idaes.dmf.propdata import PropertyData as PropData
 # for testing
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -88,6 +85,7 @@ def pd():
 # -----
 
 
+@pytest.mark.unit
 def test_same(pd):
     for chunk in test_data["same"]:
         n = pd.num_rows  # previous length
@@ -108,46 +106,54 @@ def test_same(pd):
                 assert value == multp * (i + n + 1)
 
 
+@pytest.mark.unit
 def test_extra_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
         pd.add_csv(StringIO(test_data["extra"]), strict=True)
     print("Extra columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
+@pytest.mark.unit
 def test_extra(pd):
     pd.add_csv(StringIO(test_data["extra"]))
     assert "PropB" in pd.names()
 
 
+@pytest.mark.unit
 def test_missing_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
         pd.add_csv(StringIO(test_data["missing"]), strict=True)
     print("Missing columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
+@pytest.mark.unit
 def test_missing(pd):
     n = pd.add_csv(StringIO(test_data["missing"]))
     assert n == 0, "Adding no new columns should have returned 0"
 
 
+@pytest.mark.unit
 def test_different_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
         pd.add_csv(StringIO(test_data["diff"]), strict=True)
     print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
+@pytest.mark.unit
 def test_different(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
         pd.add_csv(StringIO(test_data["diff"]))
     print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
+@pytest.mark.unit
 def test_alt_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
         pd.add_csv(StringIO(test_data["alt"]), strict=True)
     print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
+@pytest.mark.unit
 def test_alt(pd):
     assert "PropB" not in pd.names()
     n = pd.add_csv(StringIO(test_data["alt"]))
@@ -155,6 +161,7 @@ def test_alt(pd):
     assert "PropB" in pd.names()
 
 
+@pytest.mark.unit
 def test_more(pd):
     assert "PropB" not in pd.names()
     pd_rows = pd.num_rows

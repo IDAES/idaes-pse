@@ -29,9 +29,9 @@ from io import StringIO
 import logging
 from operator import attrgetter
 import os
-from pathlib import Path
 import re
 from setuptools import setup, find_packages
+from pathlib import Path
 import shutil
 import sys
 from typing import List
@@ -67,7 +67,11 @@ REPO_DIR = "src"
 PKG_VERSION = f"{V.major}.{V.minor}.{V.micro}"
 INSTALL_PKG = "idaes_examples"
 JUPYTER_NB_VERSION = 4  # for parsing
+
 REMOVE_CELL_TAG = "remove_cell"  # for stripping Jupyter notebook cells
+SOLUTION_CELL_TAG = "solution"  # ditto
+EXERCISE_CELL_TAG = "exercise"  # ditto
+
 STRIPPED_NOTEBOOK_SUFFIX = "_s"
 
 # Global vars
@@ -211,13 +215,13 @@ def get_examples(directory, no_install, list_releases, no_download, version,
             if ex_version not in [r.tag for r in releases]:
                 if version is None:
                     click.echo(f"Internal Error: Could not find an examples release\n"
-                               f"matching IDAES version == {PKG_VERSION}\n"
+                               f"matching IDAES version {PKG_VERSION}\n"
                                f"You can manually pick  version with '-V/--version'\n"
                                f"or install from a local directory with '--local'.\n"
                                f"Use '-l/--list-releases' to see all versions.\n"
                                f"{how_to_report_an_error()}\n")
                 else:
-                    click.echo(f"Could not find an examples release matching IDAES"
+                    click.echo(f"Could not find an examples release matching IDAES version "
                                f"{version}.\n Use -l/--list-releases to see all "
                                f"available versions.")
                 sys.exit(-1)
@@ -255,8 +259,8 @@ def get_examples(directory, no_install, list_releases, no_download, version,
 
     click.echo("Cleaning up...")
     # strip notebooks
-    _log.info("Stripping test cells from notebooks")
-    strip_test_cells(target_dir)
+    _log.info("Stripping test/solution cells from notebooks")
+    strip_special_cells(target_dir)
     # temporary files
     _log.info("Removing temporary files")
     clean_up_temporary_files()
@@ -444,7 +448,7 @@ def clean_up_temporary_files():
         # remove directory, if now empty
         num_files = len(list(d.glob("*")))
         if num_files == 0:
-            _log.info(f"removing {d} directory")
+            _log.info(f"removing dist directory '{d.absolute()}'")
             try:
                 d.rmdir()
             except Exception as err:
@@ -648,15 +652,82 @@ def find_notebook_files(target_dir: Path) -> List[Path]:
     return list(target_dir.rglob("*.ipynb"))
 
 
-def strip_test_cells(target_dir: Path):
-    """Strip test cells from notebooks below `target_dir`.
+def strip_special_cells(target_dir: Path):
+    """Strip 'special' cells from notebooks below `target_dir`.
     See `strip_tags()` for how that is done.
     """
     nb_files = find_notebook_files(target_dir)
     for nb_file in nb_files:
-        if has_tagged_cells(nb_file):
-            strip_tags(nb_file)
+        if strip_tags(nb_file):
+            _log.info(f"removing original file '{nb_file}'")
+            nb_file.unlink()
 
+
+def strip_tags(nb: Path) -> bool:
+    """Strip tags from notebook, if there are any.
+
+    Behavior depends on filename (case-insensitive).
+
+    - if the notebook file name ends with "_solution_testing", create two files:
+
+       1. chop off "_testing" from name, remove test and exercise cells
+       2. chop off "_solution_testing" from name & add "_exercise", remove solution and test cells
+
+    - if the file ends with "_testing" only, create one file:
+
+        1. chop off "_testing" from name, remove test cells
+
+    - otherwise: do nothing
+
+    Returns:
+        Was anything stripped (and new files created)?
+
+    Raises:
+        IOError: If the desired target for the stripped notebook already exists
+    """
+    _log.info(f"stripping tags from notebook {nb}")
+    nb_name = nb.stem
+
+    # Figure out which tags to strip:
+    # - check for case (1), solution_testing.ipynb
+    if nb_name.lower().endswith("_solution_testing"):
+        pre = nb_name[:-17]
+        names = [f"{pre}_solution.ipynb", f"{pre}_exercise.ipynb"]
+        tags_to_strip = [(REMOVE_CELL_TAG, EXERCISE_CELL_TAG), (REMOVE_CELL_TAG, SOLUTION_CELL_TAG)]
+    # - check for case (2), _testing.ipynb
+    elif nb_name.lower().endswith("_testing"):
+        pre = nb_name[:-8]
+        names = [f"{pre}.ipynb"]
+        tags_to_strip = [(REMOVE_CELL_TAG,)]
+    # - if neither, we are done here
+    else:
+        _log.debug(f"notebook '{nb}' does not need to have tags stripped")
+        return False
+
+    # Create all desired tag-stripped copies
+    for name, remove_tags in zip(names, tags_to_strip):
+        target_nb = nb.parent / name
+        _log.info(f"creating new notebook '{target_nb}'")
+        # Don't overwrite an existing file
+        if target_nb.exists():
+            _log.warning(f"cannot create new notebook '{target_nb}': file exists")
+            continue
+        # Set up configuration for removing specially tagged cells
+        conf = Config()
+        conf.TagRemovePreprocessor.remove_cell_tags = remove_tags
+        conf.NotebookExporter.preprocessors = [
+            # this requires the full module path
+            "nbconvert.preprocessors.TagRemovePreprocessor"
+        ]
+        # Convert from Notebook format to Notebook format, stripping tags
+        (body, resources) = NotebookExporter(config=conf).from_filename(str(nb))
+        # Set up output destination
+        wrt = FilesWriter()
+        wrt.build_directory = str(target_nb.parent)
+        # Write stripped notebook to output file
+        wrt.write(body, resources, notebook_name=target_nb.stem)
+
+    return True
 
 def has_tagged_cells(nb: Path):
     """Quickly check whether this notebook has any cells with the "special" tag.
@@ -678,44 +749,3 @@ def has_tagged_cells(nb: Path):
             return True  # can stop now, one is enough
     # no tagged cells
     return False
-
-
-def strip_tags(nb: Path):
-    """Strip tags from notebook, if there are any.
-
-    Behavior depends on filename:
-
-    - ends with "_test.ipynb" or "_testing.ipynb" -> make a stripped file
-      with the suffix removed.
-    - otherwise -> make a stripped file with "_s.ipynb" at the end.
-
-    Raises:
-        IOError: If the desired target for the stripped notebook already exists
-    """
-    _log.info(f"stripping tags from notebook {nb}")
-    # Set up configuration for removing specially tagged cells
-    conf = Config()
-    conf.TagRemovePreprocessor.remove_cell_tags = (REMOVE_CELL_TAG,)
-    conf.NotebookExporter.preprocessors = [
-        "nbconvert.preprocessors.TagRemovePreprocessor"
-    ]  # for some reason, this only works with the full module path
-    # Convert from Notebook format to Notebook format, stripping tags
-    (body, resources) = NotebookExporter(config=conf).from_filename(str(nb))
-    # Set up output destination
-    wrt = FilesWriter()
-    wrt.build_directory = str(nb.parent)
-    nb_name = nb.stem
-    # Logic: (1) ends in _test.ipynb or _testing.ipynb? -> remove _test/_testing
-    # (2) otherwise -> add "_s" (for stripped) before .ipynb extension
-    if nb_name.endswith("_test"):
-        stripped_name = nb_name[:-5]
-    elif nb_name.endswith("_testing"):
-        stripped_name = nb_name[:-8]
-    else:
-        stripped_name = nb_name + STRIPPED_NOTEBOOK_SUFFIX
-    new_nb = nb.parent / (stripped_name + ".ipynb")
-    # Don't overwrite an existing file
-    if new_nb.exists():
-        raise IOError(f"Cannot create stripped notebook '{new_nb}': file exists")
-    # Write stripped notebook to output file
-    wrt.write(body, resources, notebook_name=stripped_name)

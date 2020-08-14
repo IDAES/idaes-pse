@@ -14,29 +14,40 @@
 Tests for idaes.dmf.propdb.types
 """
 # stdlib
+from io import StringIO
 import json
 import logging
-import os
-import sys
-from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Union
 
 # third-party
 import pytest
 
 # local
 from idaes.dmf.propdata import PropertyTable, PropertyData, PropertyMetadata
-from idaes.dmf.util import TempDir
 
 # for testing
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
+
+scratch_dir: Union[str, None] = None
+scratch_path: Union[Path, None] = None
+
+
+def setup_module(module):
+    global scratch_dir, scratch_path
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_path = Path(scratch_dir.name)
+
+
+def teardown_module(module):
+    global scratch_dir
+    del scratch_dir
 
 
 # keep minimal example first for test_Property{Data,Metadata}Parsing
@@ -98,17 +109,20 @@ good_table_json = [
 dummy_data = [{"name": "dummy", "type": "state", "units": "none", "values": [1, 2, 3]}]
 
 
+@pytest.mark.unit
 def test_property_table_empty():
     with pytest.raises(ValueError):
         PropertyTable(data=[], metadata=[])
 
 
+@pytest.mark.unit
 def test_property_table():
     tbl = PropertyTable(data=dummy_data, metadata=[])
     assert tbl.data is not None
     assert tbl.metadata is not None
 
 
+@pytest.mark.unit
 def test_property_table_objinit():
     d = PropertyData(dummy_data)
     m = PropertyMetadata({"bar": "y"})
@@ -117,33 +131,31 @@ def test_property_table_objinit():
     assert tbl.metadata[0].as_dict()["bar"] == "y"
 
 
+@pytest.mark.unit
 def test_property_table_json():
     tbl = PropertyTable(data=dummy_data, metadata={"baz": "2"})
     s = tbl.dumps()
     parsed = json.loads(s)
     assert parsed["data"] == tbl.data.as_list()
-    with TempDir() as d:
-        fp = open(os.path.join(d, "tbl.json"), "w")
-        tbl.dump(fp)
-        fp.close()
-        fp = open(os.path.join(d, "tbl.json"), "r")
-        parsed = json.load(fp)
+    tmp_dir = scratch_path / "property_table_json"
+    tmp_dir.mkdir()
+    tbl.dump((tmp_dir / "tbl.json").open("w"))
+    parsed = json.load((tmp_dir / "tbl.json").open())
     assert parsed["data"] == tbl.data.as_list()
 
 
+@pytest.mark.unit
 def test_property_table_from_json():
-    with TempDir() as d:
-        filename = os.path.join(d, "prop.json")
-        for gj in good_table_json:
-            fp = open(filename, "w")
-            json.dump(gj, fp)
-            fp.close()
-            fp = open(filename, "r")
-            tbl = PropertyTable.load(fp)
-            assert tbl.data.num_columns == 2
-        os.unlink(filename)
+    tmp_dir = scratch_path / "property_table_from_json"
+    tmp_dir.mkdir()
+    prop_path = tmp_dir / "prop.json"
+    for gj in good_table_json:
+        json.dump(gj, prop_path.open("w"))
+        tbl = PropertyTable.load(prop_path.open())
+        assert tbl.data.num_columns == 2
 
 
+@pytest.mark.unit
 def test_property_data_good():
     inputs = map(StringIO, good_data_csv)
     states, total = [1], [2]
@@ -152,6 +164,7 @@ def test_property_data_good():
         assert obj.num_columns == ncol
 
 
+@pytest.mark.unit
 def test_property_data_column_type():
     csv_input = good_data_csv[0]
     obj = PropertyData.from_csv(StringIO(csv_input), 1)
@@ -168,6 +181,7 @@ def test_property_data_column_type():
             assert obj.is_property_column(index)
 
 
+@pytest.mark.unit
 def test_property_data_column_nonexistent():
     csv_input = good_data_csv[0]
     obj = PropertyData.from_csv(StringIO(csv_input), 1)
@@ -178,6 +192,7 @@ def test_property_data_column_nonexistent():
         pass
 
 
+@pytest.mark.unit
 def test_property_data_bad():
     inputs = map(StringIO, bad_data_csv)
     for inpfile in inputs:

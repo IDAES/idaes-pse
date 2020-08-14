@@ -15,56 +15,41 @@ Test surrogate modeling.
 """
 # stdlib
 import logging
-import sys
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Union
+
 
 # third-party
 import pytest
 
 # local
-from idaes.dmf import surrmod, errors
+from idaes.dmf import surrmod, errors, DMF
 from idaes.dmf.experiment import Experiment
 
 # for testing
-from .util import init_logging, tmp_dmf
+from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
+scratch_dir: Union[str, None] = None
+scratch_path: Union[Path, None] = None
 
 
-@pytest.fixture
-def model_data():
-    return {"scoops": [1, 2, 3, 4], "cost": [0.5, 0.9, 1.2, 1.4]}
+def setup_module(module):
+    global scratch_dir, scratch_path
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_path = Path(scratch_dir.name)
 
 
-# Real ALAMO
+def teardown_module(module):
+    global scratch_dir
+    del scratch_dir
 
 
-@pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
-def test_init(tmp_dmf):
-    _test_init(tmp_dmf)
-
-
-def _test_init(tmp_dmf):
-    _ = surrmod.SurrogateModel(Experiment(tmp_dmf))
-
-
-@pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
-def test_run(tmp_dmf, model_data):
-    _test_run(tmp_dmf, model_data)
-
-
-def _test_run(tmp_dmf, model_data):
-    sml = surrmod.SurrogateModel(Experiment(tmp_dmf))
-    sml.set_input_data(model_data, ["scoops"], "cost")
-    try:
-        _ = sml.run()
-    except errors.AlamoError:
-        raise
+model_data = {"scoops": [1, 2, 3, 4], "bowl": [2, 4, 6, 7], "cost": [0.5, 0.9, 1.2, 1.4]}
 
 
 # Mock ALAMO
@@ -92,25 +77,43 @@ class AlamoMock(object):
         surrmod.alamopy = None
 
 
-@pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
-def test_init_mock(tmp_dmf):
+@pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
+@pytest.mark.unit
+def test_init():
+    tmp_dir = scratch_path / "init"
+    dmf = DMF(path=tmp_dir, create=True)
+    surrmod.SurrogateModel(Experiment(DMF))
+
+
+@pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")
+@pytest.mark.unit
+def test_run():
+    tmp_dir = scratch_path / "run"
+    dmf = DMF(path=tmp_dir, create=True)
+    sml = surrmod.SurrogateModel(Experiment(dmf))
+    sml.set_input_data(model_data, ["scoops", "bowl"], "cost")
+    sml.run()
+
+
+@pytest.mark.unit
+def test_mock_alamo():
+    tmp_dir = scratch_path / "mock_alamo"
+    dmf = DMF(path=tmp_dir, create=True)
     with AlamoMock() as mock:
-        _test_init(tmp_dmf)
+        sml = surrmod.SurrogateModel(Experiment(dmf))
         assert not mock.doalamo_called
-
-
-@pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
-def test_run_mock(tmp_dmf, model_data):
-    with AlamoMock() as mock:
-        _test_run(tmp_dmf, model_data)
+        sml.set_input_data(model_data, ["scoops","bowl"], "cost")
+        sml.run()
         assert mock.doalamo_called
-        assert tuple(mock.xdata) == tuple(model_data["scoops"])
+        # assert tuple(mock.xdata) == tuple(model_data["scoops"],model_data["bowl"])
         assert tuple(mock.zdata) == tuple(model_data["cost"])
 
 
-@pytest.mark.skipif(surrmod.alamo_enabled, reason="ALAMO works, no mocking")
-def test_bad_columns_mock(tmp_dmf, model_data):
+@pytest.mark.unit
+def test_bad_columns_mock():
+    tmp_dir = scratch_path / "bad_columns_mock"
+    dmf = DMF(path=tmp_dir, create=True)
     with AlamoMock() as mock:
-        m = surrmod.SurrogateModel(Experiment(tmp_dmf))
+        m = surrmod.SurrogateModel(Experiment(dmf))
         with pytest.raises(KeyError):
             m.set_input_data(model_data, ["snork"], "cost")

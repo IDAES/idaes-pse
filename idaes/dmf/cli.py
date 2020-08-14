@@ -22,6 +22,7 @@ from enum import Enum
 import json
 import logging
 from operator import itemgetter
+import os
 import pathlib
 import sys
 from typing import List
@@ -32,7 +33,7 @@ import yaml
 import click
 
 # package
-from idaes.dmf import DMF, DMFConfig, resource
+from idaes.dmf import DMF, DMFConfig, resource, workspace
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
@@ -212,13 +213,14 @@ def init(path, create, name, desc, html):
     """Initialize the current workspace used for the data management framework commands.
     Optionally, create a new workspace.
     """
-    _log.info(f"Initialize with workspace path={path}")
+    _log.info(f"Initialize with workspace path={path} cwd={os.path.abspath(os.curdir)}")
     if create:
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
         try:
-            if pathlib.Path(path).exists():
-                click.echo(f"Cannot create workspace: path '{path}' already exists")
+            wspath = pathlib.Path(path)
+            if wspath.exists() and (wspath / workspace.Workspace.WORKSPACE_CONFIG).exists():
+                click.echo(f"Cannot create workspace: '{path}/{workspace.Workspace.WORKSPACE_CONFIG}' already exists")
                 sys.exit(Code.DMF_OPER.value)
         except PermissionError:
             click.echo(f"Cannot create workspace: path '{path}' not accessible")
@@ -486,9 +488,9 @@ def register(
                 click.echo(f"Relation {rel_name} target not found: {rel_id}")
                 sys.exit(Code.DMF_OPER.value)
             if is_subject == "yes":
-                resource.create_relation_args(rsrc, rel_name, rel_subj)
+                resource.create_relation(rsrc, rel_name, rel_subj)
             else:
-                resource.create_relation_args(rel_subj, rel_name, rsrc)
+                resource.create_relation(rel_subj, rel_name, rsrc)
             _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
     _log.debug("update resource relations")
     for rel_rsrc in target_resources.values():

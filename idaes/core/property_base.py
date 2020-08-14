@@ -17,7 +17,7 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value
+from pyomo.environ import Set, value, Var, Param, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -39,6 +39,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_activated_constraints,
                                               number_activated_blocks)
+from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -50,6 +51,16 @@ __all__ = ['StateBlockData',
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class _lock_attribute_creation_context(object):
+    """Context manager to lock creation of new attributes on a state block"""
+    def __init__(self, block):
+        self.block = block
+    def __enter__(self):
+        self.block._lock_attribute_creation = True
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.block._lock_attribute_creation = False
 
 
 class PhysicalParameterBlock(ProcessBlockData,
@@ -82,6 +93,66 @@ class PhysicalParameterBlock(ProcessBlockData,
         # Need this to work with the Helmholtz EoS package
         if not hasattr(self, "_state_block_class"):
             self._state_block_class = None
+
+        # This is a dict to store default property scaling factors. They are
+        # defined in the parameter block to provide a universal default for
+        # quantities in a particular kind of state block.  For example, you can
+        # set flow scaling once instead of for every state block. Some of these
+        # may be left for the user to set and some may be defined in a property
+        # module where reasonable defaults can be defined a priori. See
+        # set_default_scaling, get_default_scaling, and unset_default_scaling
+        self.default_scaling_factor = {}
+
+    def set_default_scaling(self, attrbute, value, index=None):
+        """Set a default scaling factor for a property.
+
+        Args:
+            attribute: property attribute name
+            value: default scaling factor
+            index: for indexed properties, if this is not provied the scaling
+                factor default applies to all indexed elements where specific
+                indexes are no specifcally specified.
+
+        Returns:
+            None
+        """
+        self.default_scaling_factor[(attrbute, index)] = value
+
+    def unset_default_scaling(self, attrbute, index=None):
+        """Remove a previously set default value
+
+        Args:
+            attribute: property attribute name
+            index: optional index for indexed properties
+
+        Returns:
+            None
+        """
+        try:
+            del self.default_scaling_factor[(attrbute, index)]
+        except KeyError:
+            pass
+
+    def get_default_scaling(self, attrbute, index=None):
+        """ Returns a default scale factor for a property
+
+        Args:
+            attribute: property attribute name
+            index: optional index for indexed properties
+
+        Returns:
+            None
+        """
+        try:
+            # If a specific component data index exists
+            return self.default_scaling_factor[(attrbute, index)]
+        except KeyError:
+            try:
+                # indexed, but no specifc index?
+                return self.default_scaling_factor[(attrbute, None)]
+            except KeyError:
+                # Can't find a default scale factor for what you asked for
+                return None
 
     @property
     def state_block_class(self):
@@ -239,6 +310,9 @@ class PhysicalParameterBlock(ProcessBlockData,
             # No phase list
             raise PropertyPackageError("Property package {} has not defined a "
                                        "phase list.".format(self.name))
+
+        # Also check that the phase-component set has been created.
+        self.get_phase_component_set()
 
     def _make_component_objects(self):
         _log.warning("DEPRECATED: {} appears to be an old-style property "
@@ -434,6 +508,30 @@ should be constructed in this state block,
 **True** - StateBlock should calculate phase equilibrium,
 **False** - StateBlock should not calculate phase equilibrium.}"""))
 
+    def __init__(self, *args, **kwargs):
+        self._lock_attribute_creation = False
+        super().__init__(*args, **kwargs)
+
+    def lock_attribute_creation_context(self):
+        """Returns a context manager that does not allow attributes to be created
+        while in the context and allows attributes to be created normally outside
+        the context.
+        """
+        return _lock_attribute_creation_context(self)
+
+    def is_property_constructed(self, attr):
+        """Returns True if the attribute ``attr`` already exists, or false if it
+        would be added in ``__getattr__``, or does not exist.
+
+        Args:
+            attr (str): Attribute name to check
+
+        Return:
+            True if the attribute is already constructed, False otherwise
+        """
+        with self.lock_attribute_creation_context():
+            return hasattr(self, attr)
+
     def build(self):
         """
         General build method for StateBlockDatas.
@@ -608,6 +706,9 @@ should be constructed in this state block,
             attr: an attribute to create and return. Should be a property
                   component.
         """
+        if self._lock_attribute_creation:
+            raise AttributeError(
+                f"{attr} does not exist, and attribute creation is locked.")
 
         def clear_call_list(self, attr):
             """Local method for cleaning up call list when a call is handled.
@@ -650,6 +751,12 @@ should be constructed in this state block,
 
         # Check for recursive calls
         try:
+            # Check if __getattrcalls is initialized
+            self.__getattrcalls
+        except AttributeError:
+            # Initialize it
+            self.__getattrcalls = [attr]
+        else:
             # Check to see if attr already appears in call list
             if attr in self.__getattrcalls:
                 # If it does, indicates a recursive loop.
@@ -680,9 +787,6 @@ should be constructed in this state block,
                                     .format(self.name, attr))
             # If not, add call to list
             self.__getattrcalls.append(attr)
-        except AttributeError:
-            # A list of calls if one does not exist, so create one
-            self.__getattrcalls = [attr]
 
         # Get property information from properties metadata
         try:
@@ -777,3 +881,16 @@ should be constructed in this state block,
         comp = getattr(self, attr)
         clear_call_list(self, attr)
         return comp
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        # Get scaling factor defaults, if no scaling factor set
+        for v in self.component_data_objects(
+            (Constraint, Var, Expression),
+            descend_into=False):
+            if iscale.get_scaling_factor(v) is None: # don't replace if set
+                name = v.getname().split("[")[0]
+                index = v.index()
+                sf = self.config.parameters.get_default_scaling(name, index)
+                if sf is not None:
+                    iscale.set_scaling_factor(v, sf)

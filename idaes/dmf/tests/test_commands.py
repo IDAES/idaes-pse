@@ -26,10 +26,7 @@ from idaes.dmf import dmfbase, commands, errors, workspace, util
 from idaes.util.system import mkdtemp
 from .util import init_logging
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -43,15 +40,14 @@ def wspath():
     shutil.rmtree(dirname)
 
 
+@pytest.mark.unit
 def test_workspace_init(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
-    try:
-        commands.workspace_init(wspath, {"some": "metadata"})
-        assert False, "Duplicate workspace init succeeded"
-    except errors.CommandError:
-        pass
+    # try again. Should work, since it's OK to init twice
+    commands.workspace_init(wspath, {"some": "metadata"})
 
 
+@pytest.mark.unit
 def test_workspace_info(wspath):
     commands.workspace_init(wspath, {"some": "metadata"})
     commands.workspace_info(wspath)
@@ -68,6 +64,7 @@ def test_workspace_info(wspath):
         pass
 
 
+@pytest.mark.unit
 def test_find_html_docs(wspath):
     filedir = os.path.dirname(__file__)
     docpath = os.path.join(filedir, "..", "docs", "build", "html")

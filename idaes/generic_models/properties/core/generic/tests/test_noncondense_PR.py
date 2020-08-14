@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            TerminationCondition,
-                           value)
+                           value,
+                           units as pyunits)
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component
@@ -123,11 +124,18 @@ configuration = {
 
     # Specifying state definition
     "state_definition": FTPx,
-    "state_bounds": {"flow_mol": (0, 1000),
-                     "temperature": (273.15, 450),
-                     "pressure": (5e4, 1e6)},
+    "state_bounds": {"flow_mol": (0, 100, 1000),
+                     "temperature": (273.15, 300, 450),
+                     "pressure": (5e4, 1e5, 1e6)},
     "pressure_ref": 1e5,
     "temperature_ref": 300,
+
+    # Declare a base units dict to save code later
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
@@ -145,6 +153,7 @@ configuration = {
 
 
 class TestParamBlock(object):
+    @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
         model.params = GenericParameterBlock(default=configuration)
@@ -172,9 +181,9 @@ class TestParamBlock(object):
         assert model.params.config.state_definition == FTPx
 
         assert model.params.config.state_bounds == {
-                "flow_mol": (0, 1000),
-                "temperature": (273.15, 450),
-                "pressure": (5e4, 1e6)}
+            "flow_mol": (0, 100, 1000),
+            "temperature": (273.15, 300, 450),
+            "pressure": (5e4, 1e5, 1e6)}
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}
@@ -202,9 +211,6 @@ class TestNonCondensable_Liquid(object):
                 [1],
                 default={"defined_state": True})
 
-        return model
-
-    def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(360)
@@ -213,9 +219,13 @@ class TestNonCondensable_Liquid(object):
         model.props[1].mole_frac_comp["toluene"].fix(0.4)
         model.props[1].mole_frac_comp["N2"].fix(0.2)
 
+        return model
+
+    @pytest.mark.unit
+    def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, model):
@@ -237,6 +247,7 @@ class TestNonCondensable_Liquid(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solve(self, model):
@@ -247,7 +258,7 @@ class TestNonCondensable_Liquid(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, model):
@@ -295,6 +306,7 @@ class TestNonCondensable_Liquid(object):
                 model.props[1].mole_frac_phase_comp["Vap", "N2"] *
                 model.props[1].phase_frac["Vap"])
 
+    @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):
         model.props[1].report()
@@ -310,9 +322,6 @@ class TestNonCondensable_Vapour(object):
                 [1],
                 default={"defined_state": True})
 
-        return model
-
-    def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(380)
@@ -321,9 +330,13 @@ class TestNonCondensable_Vapour(object):
         model.props[1].mole_frac_comp["toluene"].fix(0.4)
         model.props[1].mole_frac_comp["N2"].fix(0.2)
 
+        return model
+
+    @pytest.mark.unit
+    def test_dof(self, model):
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, model):
@@ -345,6 +358,7 @@ class TestNonCondensable_Vapour(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solve(self, model):
@@ -355,7 +369,7 @@ class TestNonCondensable_Vapour(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
+    @pytest.mark.component
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, model):
@@ -403,6 +417,7 @@ class TestNonCondensable_Vapour(object):
                 model.props[1].mole_frac_phase_comp["Vap", "N2"] *
                 model.props[1].phase_frac["Vap"])
 
+    @pytest.mark.unit
     @pytest.mark.ui
     def test_report(self, model):
         model.props[1].report()

@@ -21,7 +21,6 @@ configuration argument which is a reference to the time domain for that flowshee
 models contain a `flowsheet` method which returns the parent flowsheet object, thus a reference 
 to the time domain can always be found using the following code: `flowsheet().config.time`.
 
-Another important thing to note is that steady-state models do contain a time domain, however 
-this is generally a single point at time = 0.0. However, models still contain a reference to 
-the time domain, and components are still indexed by time even in a steady-state model 
-(e.g. PropertyBlocks).
+Another important thing to note is that steady-state models do contain a time domain. While the
+time domain for steady-stage models is a single point at time = 0.0, they still contain a 
+reference to the time domain and the components (e.g. PropertyBlocks) are indexed by time.

@@ -15,7 +15,9 @@
 Tests for update_workshop_materials
 """
 import idaes.util.update_workshop_materials as up
+import pytest
 
+@pytest.mark.unit
 def test_update_workshop_materials():
     # Note: This tests that the methods in update_workshop_materials.py
     # successfully download install_idaes_workshop_materials.py from Pyomo.org

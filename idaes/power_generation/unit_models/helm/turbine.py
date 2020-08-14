@@ -20,6 +20,8 @@ from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
 )
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
+
 
 _log = idaeslog.getLogger(__name__)
 
@@ -85,7 +87,9 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         super().build() # Basic unit model build/read config
         config = self.config # shorter config pointer
 
-        # Thermo dynamic expression writer
+        # The thermodynamic expression writer object, te, writes expressions
+        # including external function calls to calculate thermodynamic quantities
+        # from a set of state variables.
         _assert_properties(config.property_package)
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
@@ -103,32 +107,51 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         )
 
         # Some shorter refernces to property blocks
-        prp_i = self.control_volume.properties_in
-        prp_o = self.control_volume.properties_out
+        properties_in = self.control_volume.properties_in
+        properties_out = self.control_volume.properties_out
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Outlet isentropic enthalpy"
+        )
         def h_is(b, t):
-            return te.h(s=prp_i[t].entr_mol, p=prp_o[t].pressure)
+            return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Isentropic enthalpy change"
+        )
         def delta_enth_isentropic(b, t):
-            return self.h_is[t] - prp_i[t].enth_mol
+            return self.h_is[t] - properties_in[t].enth_mol
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Isentropic work"
+        )
         def work_isentropic(b, t):
-            return (prp_i[t].enth_mol - self.h_is[t])*prp_i[t].flow_mol
+            return properties_in[t].flow_mol*(
+                properties_in[t].enth_mol - self.h_is[t])
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Outlet enthalpy"
+        )
         def h_o(b, t): # Early access to the outlet enthalpy and work
-            return prp_i[t].enth_mol - eff[t]*(prp_i[t].enth_mol - self.h_is[t])
+            return properties_in[t].enth_mol - eff[t]*(
+                properties_in[t].enth_mol - self.h_is[t])
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_work(b, t): # Work from energy balance
-            return prp_o[t].enth_mol == self.h_o[t]
+            return properties_out[t].enth_mol == self.h_o[t]
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_pressure_ratio(b, t):
-            return pratio[t]*prp_i[t].pressure == prp_o[t].pressure
+            return (pratio[t]*properties_in[t].pressure ==
+                properties_out[t].pressure)
+
+        @self.Expression(self.flowsheet().config.time)
+        def work_mechanical(b, t):
+            return b.control_volume.work[t]
 
     def _get_performance_contents(self, time_point=0):
         """This returns a dictionary of quntities to be used in IDAES unit model
@@ -191,3 +214,15 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t, c in self.eq_pressure_ratio.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].pressure)
+            iscale.constraint_scaling_transform(c, s)
+        for t, c in self.eq_work.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.work[t])
+            iscale.constraint_scaling_transform(c, s)

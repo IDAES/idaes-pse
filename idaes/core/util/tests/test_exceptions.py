@@ -20,31 +20,37 @@ from idaes.core.util.exceptions import *
 __author__ = "Andrew Lee"
 
 
+@pytest.mark.unit
 def test_BalanceTypeNotSupportedError():
     with pytest.raises(NotImplementedError):
         raise BalanceTypeNotSupportedError()
 
 
+@pytest.mark.unit
 def test_ConfigurationError():
     with pytest.raises(ValueError):
         raise ConfigurationError()
 
 
+@pytest.mark.unit
 def test_DynamicError():
     with pytest.raises(ValueError):
         raise DynamicError()
 
 
+@pytest.mark.unit
 def test_BurntToast():
     with pytest.raises(Exception):
         raise BurntToast()
 
 
+@pytest.mark.unit
 def test_PropertyNotSupportedError():
     with pytest.raises(AttributeError):
         raise PropertyNotSupportedError()
 
 
+@pytest.mark.unit
 def test_PropertyPackageError():
     with pytest.raises(AttributeError):
         # This MUST be an AttributeError due to behaviour in Pyomo

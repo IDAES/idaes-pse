@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, log, Var
+from pyomo.environ import ConcreteModel, log, Var, units as pyunits
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -64,6 +64,11 @@ def m():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -95,6 +100,11 @@ def m_sol():
                             "equation_of_state": Ideal},
                     "Liq": {"type": LiquidPhase,
                             "equation_of_state": Ideal}},
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300})
@@ -113,23 +123,28 @@ def m_sol():
     return m
 
 
+@pytest.mark.unit
 def test_common(m):
     assert Ideal.common(m.props, "foo") is None
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_Liq(m):
     assert Ideal.compress_fact_phase(m.props[1], "Liq") == 1
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_Vap(m):
     assert Ideal.compress_fact_phase(m.props[1], "Vap") == 1
 
 
+@pytest.mark.unit
 def test_compress_fact_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.compress_fact_phase(m_sol.props[1], "Sol")
 
 
+@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
@@ -139,6 +154,7 @@ def test_dens_mass_phase(m):
                 m.props[1].dens_mol_phase[p]*m.props[1].mw_phase[p])
 
 
+@pytest.mark.unit
 def test_dens_mol_phase_liq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.dens_mol_liq_comp = dummy_call
@@ -148,17 +164,20 @@ def test_dens_mol_phase_liq(m):
             for j in m.params.component_list))
 
 
+@pytest.mark.unit
 def test_dens_mol_phase_vap(m):
     assert str(Ideal.dens_mol_phase(m.props[1], "Vap")) == (
-            str(m.props[1].pressure)+"/(8.314462618*J/mol/K*" +
-            str(m.props[1].temperature)+")")
+            'props[1].pressure/(kg * m ** 2 / K / mol / s ** 2/J / K / '
+            'mol*(8.314462618*J/mol/K)*props[1].temperature)')
 
 
+@pytest.mark.unit
 def test_dens_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.dens_mol_phase(m_sol.props[1], "Sol")
 
 
+@pytest.mark.unit
 def test_enth_mol_phase(m):
     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list)
@@ -170,6 +189,7 @@ def test_enth_mol_phase(m):
                 for j in m.params.component_list))
 
 
+@pytest.mark.unit
 def test_enth_mol_phase_comp(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
@@ -179,11 +199,13 @@ def test_enth_mol_phase_comp(m):
         assert str(Ideal.enth_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
 
 
+@pytest.mark.unit
 def test_enth_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_entr_mol_phase(m):
     m.props[1].entr_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list)
@@ -195,23 +217,26 @@ def test_entr_mol_phase(m):
                 for j in m.params.component_list))
 
 
+@pytest.mark.unit
 def test_entr_mol_phase_comp(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.entr_mol_liq_comp = dummy_call
         m.params.get_component(j).config.entr_mol_ig_comp = dummy_call
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
-        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == str(
-            42 - const.gas_constant*log(
-                m.props[1].mole_frac_phase_comp["Vap", j]*m.props[1].pressure /
-                m.props[1].params.pressure_ref))
+        assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == (
+            '42 - kg * m ** 2 / K / mol / s ** 2/J / K / '
+            'mol*(8.314462618*J/mol/K)*log(props[1].mole_frac_phase_comp'
+            '[Vap,{}]*props[1].pressure/params.pressure_ref)'.format(j))
 
 
+@pytest.mark.unit
 def test_entr_mol_phase_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_liq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
@@ -220,6 +245,7 @@ def test_fug_phase_comp_liq(m):
                 str(m.props[1].mole_frac_phase_comp["Liq", j] * 42))
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_vap(m):
     for j in m.params.component_list:
         assert (str(Ideal.fug_phase_comp(m.props[1], "Vap", j)) ==
@@ -227,11 +253,13 @@ def test_fug_phase_comp_vap(m):
                     m.props[1].pressure))
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_liq_eq(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.pressure_sat_comp = dummy_call
@@ -241,6 +269,7 @@ def test_fug_phase_comp_liq_eq(m):
                 str(m.props[1].mole_frac_phase_comp["Liq", j] * 42))
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_vap_eq(m):
     for j in m.params.component_list:
         assert (str(Ideal.fug_phase_comp_eq(
@@ -249,22 +278,26 @@ def test_fug_phase_comp_vap_eq(m):
                     m.props[1].pressure))
 
 
+@pytest.mark.unit
 def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp(m):
     for p in m.params.phase_list:
         for j in m.params.component_list:
             assert Ideal.fug_coeff_phase_comp(m.props[1], p, j) == 1
 
 
+@pytest.mark.unit
 def test_fug_coeff_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
         Ideal.fug_coeff_phase_comp(m_sol.props[1], "Sol", "foo")
 
 
+@pytest.mark.unit
 def test_gibbs_mol_phase(m):
     m.props[1].gibbs_mol_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list)
@@ -276,6 +309,7 @@ def test_gibbs_mol_phase(m):
                 for j in m.params.component_list))
 
 
+@pytest.mark.unit
 def test_gibbs_mol_phase_comp(m):
     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list)

@@ -23,8 +23,10 @@ from pyomo.environ import (Constraint,
                            Param,
                            SolverFactory,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.common.config import ConfigValue
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -50,6 +52,18 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+def set_param_value(b, param, units):
+    param_obj = getattr(b, param)
+    config = getattr(b.config, param)
+    if isinstance(config, tuple):
+        param_obj.value = pyunits.convert_value(
+            config[0], from_units=config[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = config
 
 
 # TODO: Set a default state definition
@@ -124,12 +138,47 @@ class GenericParameterData(PhysicalParameterBlock):
         domain=dict,
         description="Dict containing initialization data for parameters"))
 
+    # Base units of measurement
+    CONFIG.declare("base_units", ConfigValue(
+        default={},
+        domain=dict,
+        description="Base units for property package",
+        doc="Dict containing definition of base units of measurement to use "
+        "with property package."))
+
     def build(self):
         '''
         Callable method for Block construction.
         '''
         # Call super.build() to initialize Block
         super(GenericParameterData, self).build()
+
+        # Validate and set base units of measurement
+        self.get_metadata().add_default_units(self.config.base_units)
+        units_meta = self.get_metadata().default_units
+
+        for key, unit in self.config.base_units.items():
+            if key in ['time', 'length', 'mass', 'amount', 'temperature',
+                       "current", "luminous intensity"]:
+                if not isinstance(unit, _PyomoUnit):
+                    raise ConfigurationError(
+                        "{} recieved unexpected units for quantity {}: {}. "
+                        "Units must be instances of a Pyomo unit object."
+                        .format(self.name, key, unit))
+            else:
+                raise ConfigurationError(
+                    "{} defined units for an unexpected quantity {}. "
+                    "Generic property packages only support units for the 7 "
+                    "base SI quantities.".format(self.name, key))
+
+        # Check that main 5 base units are assigned
+        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
+            if not isinstance(units_meta[k], _PyomoUnit):
+                raise ConfigurationError(
+                    "{} units for quantity {} were not assigned. "
+                    "Please make sure to provide units for all base units "
+                    "when configuring the property package."
+                    .format(self.name, k))
 
         # Call configure method to set construction arguments
         self.configure()
@@ -269,6 +318,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "your property parameter definition to include this."
                     .format(self.name))
 
+        base_units = self.get_metadata().default_units
+        p_units = (base_units["mass"] *
+                   base_units["length"]**-1 *
+                   base_units["time"]**-2)
+
         # Validate reference state and create Params
         if self.config.pressure_ref is None:
             raise ConfigurationError(
@@ -278,8 +332,9 @@ class GenericParameterData(PhysicalParameterBlock):
                     .format(self.name))
         else:
             self.pressure_ref = Param(
-                initialize=self.config.pressure_ref,
-                mutable=True)
+                mutable=True,
+                units=p_units)
+            set_param_value(self, "pressure_ref", p_units)
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -289,8 +344,9 @@ class GenericParameterData(PhysicalParameterBlock):
                     .format(self.name))
         else:
             self.temperature_ref = Param(
-                initialize=self.config.temperature_ref,
-                mutable=True)
+                mutable=True,
+                units=base_units["temperature"])
+            set_param_value(self, "temperature_ref", base_units["temperature"])
 
         # Validate equations of state
         for p in self.phase_list:
@@ -450,6 +506,8 @@ class GenericParameterData(PhysicalParameterBlock):
         obj.add_properties(
             {'flow_mol': {'method': None},
              'flow_mol_phase': {'method': None},
+             'flow_mol_phase_comp': {'method': None},
+             'flow_mol_comp': {'method': None},
              'mole_frac_comp': {'method': None},
              'mole_frac_phase_comp': {'method': None},
              'phase_frac': {'method': None},
@@ -478,14 +536,6 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'}})
-
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
 
 
 class _GenericStateBlock(StateBlock):
@@ -548,12 +598,17 @@ class _GenericStateBlock(StateBlock):
             flag_dict = fix_state_vars(blk, state_args)
             # Confirm DoF for sanity
             for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
-                    raise BurntToast("Degrees of freedom were not zero "
-                                     "after trying to fix state variables. "
-                                     "Something broke in the generic property "
-                                     "package code - please inform the IDAES "
-                                     "developers.")
+                if blk[k].always_flash:
+                    # If not always flash, DoF is probably less than zero
+                    # We will handle this elsewhere
+                    dof = degrees_of_freedom(blk[k])
+                    if dof != 0:
+                        raise BurntToast(
+                            "Degrees of freedom were not zero [{}] "
+                            "after trying to fix state variables. "
+                            "Something broke in the generic property "
+                            "package code - please inform the IDAES "
+                            "developers.".format(dof))
         else:
             # When state vars are fixed, check that DoF is 0
             for k in blk.keys():
@@ -574,6 +629,7 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
+            T_units = blk[k].params.get_metadata().default_units["temperature"]
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 for pp in blk[k].params._pe_pairs:
@@ -602,7 +658,7 @@ class _GenericStateBlock(StateBlock):
                             get_method(blk[k], "pressure_sat_comp", j)(
                                     blk[k],
                                     blk[k].params.get_component(j),
-                                    Tbub0) *
+                                    Tbub0*T_units) *
                             blk[k].mole_frac_comp[j]
                             for j in valid_comps) -
                             blk[k].pressure)
@@ -610,7 +666,7 @@ class _GenericStateBlock(StateBlock):
                                get_method(blk[k], "pressure_sat_comp", j)(
                                           blk[k],
                                           blk[k].params.get_component(j),
-                                          Tbub0,
+                                          Tbub0*T_units,
                                           dT=True)
                                for j in valid_comps))
 
@@ -634,7 +690,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tbub0))
+                                           Tbub0*T_units))
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
@@ -670,7 +726,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0)
+                                           Tdew0*T_units)
                                 for j in valid_comps) - 1)
                         df = -value(
                                 blk[k].pressure *
@@ -678,11 +734,11 @@ class _GenericStateBlock(StateBlock):
                                     get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0)**2 *
+                                           Tdew0*T_units)**2 *
                                     get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0,
+                                           Tdew0*T_units,
                                            dT=True)
                                     for j in valid_comps))
 
@@ -706,7 +762,7 @@ class _GenericStateBlock(StateBlock):
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tdew0))
+                                           Tdew0*T_units))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
@@ -720,7 +776,9 @@ class _GenericStateBlock(StateBlock):
                             sum(blk[k].mole_frac_comp[j] *
                                 blk[k].params.config.pressure_sat_comp
                                       .pressure_sat_comp(
-                                              blk[k], j, blk[k].temperature)
+                                              blk[k],
+                                              j,
+                                              blk[k].temperature*T_units)
                                 for j in valid_comps))
 
                     for j in valid_comps:
@@ -728,7 +786,9 @@ class _GenericStateBlock(StateBlock):
                             blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
                                   .pressure_sat_comp(
-                                          blk[k], j, blk[k].temperature) /
+                                          blk[k],
+                                          j,
+                                          blk[k].temperature*T_units) /
                             blk[k].pressure_bubble)
 
             # Dew pressure initialization
@@ -743,14 +803,18 @@ class _GenericStateBlock(StateBlock):
                             sum(1/(blk[k].mole_frac_comp[j] /
                                    blk[k].params.config.pressure_sat_comp
                                    .pressure_sat_comp(
-                                           blk[k], j, blk[k].temperature))
+                                           blk[k],
+                                           j,
+                                           blk[k].temperature*T_units))
                                 for j in valid_comps))
 
                     for j in valid_comps:
                         blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
-                            .pressure_sat_comp(blk[k], j, blk[k].temperature))
+                            .pressure_sat_comp(blk[k],
+                                               j,
+                                               blk[k].temperature*T_units))
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
@@ -763,7 +827,8 @@ class _GenericStateBlock(StateBlock):
                                         "eq_mole_frac_tbub",
                                         "eq_mole_frac_tdew",
                                         "eq_mole_frac_pbub",
-                                        "eq_mole_frac_pdew"):
+                                        "eq_mole_frac_pdew",
+                                        "mole_frac_comp_eq"):
                     c.deactivate()
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
@@ -780,7 +845,8 @@ class _GenericStateBlock(StateBlock):
             )
         # ---------------------------------------------------------------------
         # Calculate _teq if required
-        if blk[k].params.config.phases_in_equilibrium is not None:
+        if (blk[k].params.config.phases_in_equilibrium is not None and
+                (not blk[k].config.defined_state or blk[k].always_flash)):
             for k in blk.keys():
                 for pp in blk[k].params._pe_pairs:
                     blk[k].params.config.phase_equilibrium_state[pp] \
@@ -806,20 +872,30 @@ class _GenericStateBlock(StateBlock):
             init_log.info("State variable initialization completed.")
 
         # ---------------------------------------------------------------------
-        if (blk[k].params.config.phase_equilibrium_state is not None and
-                (not blk[k].config.defined_state or blk[k].always_flash)):
-            for c in blk[k].component_objects(Constraint):
-                # Activate common constraints
-                if c.local_name in ("total_flow_balance",
-                                    "component_flow_balances",
-                                    "sum_mole_frac",
-                                    "equilibrium_constraint"):
-                    c.activate()
-            for pp in blk[k].params._pe_pairs:
-                # Activate formulation specific constraints
-                blk[k].params.config.phase_equilibrium_state[pp] \
-                    .phase_equil_initialization(blk[k], pp)
+        n_cons = 0
+        skip = False
+        for k in blk.keys():
+            if (blk[k].params.config.phase_equilibrium_state is not None and
+                    (not blk[k].config.defined_state or blk[k].always_flash)):
+                for c in blk[k].component_objects(Constraint):
+                    # Activate common constraints
+                    if c.local_name in ("total_flow_balance",
+                                        "component_flow_balances",
+                                        "sum_mole_frac",
+                                        "equilibrium_constraint"):
+                        c.activate()
+                for pp in blk[k].params._pe_pairs:
+                    # Activate formulation specific constraints
+                    blk[k].params.config.phase_equilibrium_state[pp] \
+                        .phase_equil_initialization(blk[k], pp)
 
+            n_cons += number_activated_constraints(blk[k])
+            if degrees_of_freedom(blk[k]) < 0:
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+                skip = True
+
+        if n_cons > 0 and not skip:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
             init_log.info(
@@ -837,11 +913,21 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-        init_log.info("Property initialization: {}.".format(
-            idaeslog.condition(res))
-        )
+
+        n_cons = 0
+        skip = False
+        for k in blk:
+            if degrees_of_freedom(blk[k]) < 0:
+                # Skip solve if DoF < 0 - this is probably due to a
+                # phase-component flow state with flash
+                skip = True
+            n_cons += number_activated_constraints(blk[k])
+        if n_cons > 0 and not skip:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
+            init_log.info("Property initialization: {}.".format(
+                idaeslog.condition(res))
+            )
 
         # ---------------------------------------------------------------------
         # Return constraints to initial state
@@ -890,10 +976,12 @@ class GenericStateBlockData(StateBlockData):
         if (self.params.config.phases_in_equilibrium is not None and
                 (not self.config.defined_state or self.always_flash)):
 
+            t_units = self.params.get_metadata().default_units["temperature"]
             self._teq = Var(
                 self.params._pe_pairs,
                 initialize=value(self.temperature),
-                doc='Temperature for calculating phase equilibrium')
+                doc='Temperature for calculating phase equilibrium',
+                units=t_units)
 
         # Create common components for each property package
         for p in self.params.phase_list:
@@ -946,18 +1034,21 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_bubble")
 
+        t_units = b.params.get_metadata().default_units["temperature"]
         try:
             b.temperature_bubble = Var(
                     b.params._pe_pairs,
                     doc="Bubble point temperature",
-                    bounds=(b.temperature.lb, b.temperature.ub))
+                    bounds=(b.temperature.lb, b.temperature.ub),
+                    units=t_units)
 
             b._mole_frac_tbub = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Vapor mole fractions at bubble temperature")
+                    doc="Vapor mole fractions at bubble temperature",
+                    units=None)
 
             b.params.config.bubble_dew_method.temperature_bubble(b)
         except AttributeError:
@@ -969,18 +1060,21 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "temperature_dew")
 
+        t_units = b.params.get_metadata().default_units["temperature"]
         try:
             b.temperature_dew = Var(
                     b.params._pe_pairs,
                     doc="Dew point temperature",
-                    bounds=(b.temperature.lb, b.temperature.ub))
+                    bounds=(b.temperature.lb, b.temperature.ub),
+                    units=t_units)
 
             b._mole_frac_tdew = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Liquid mole fractions at dew temperature")
+                    doc="Liquid mole fractions at dew temperature",
+                    units=None)
 
             b.params.config.bubble_dew_method.temperature_dew(b)
         except AttributeError:
@@ -992,18 +1086,24 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
+        units_meta = b.params.get_metadata().default_units["temperature"]
+        p_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
         try:
             b.pressure_bubble = Var(
                     b.params._pe_pairs,
                     doc="Bubble point pressure",
-                    bounds=(b.pressure.lb, b.pressure.ub))
+                    bounds=(b.pressure.lb, b.pressure.ub),
+                    units=p_units)
 
             b._mole_frac_pbub = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Vapor mole fractions at bubble pressure")
+                    doc="Vapor mole fractions at bubble pressure",
+                    units=None)
 
             b.params.config.bubble_dew_method.pressure_bubble(b)
         except AttributeError:
@@ -1015,18 +1115,24 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
+        units_meta = b.params.get_metadata().default_units["temperature"]
+        p_units = (units_meta["mass"] *
+                   units_meta["length"]**-1 *
+                   units_meta["time"]**-2)
         try:
             b.pressure_dew = Var(
                     b.params._pe_pairs,
                     doc="Dew point pressure",
-                    bounds=(b.pressure.lb, b.pressure.ub))
+                    bounds=(b.pressure.lb, b.pressure.ub),
+                    units=p_units)
 
             b._mole_frac_pdew = Var(
                     b.params._pe_pairs,
                     b.params.component_list,
                     initialize=1/len(b.params.component_list),
                     bounds=(0, None),
-                    doc="Liquid mole fractions at dew pressure")
+                    doc="Liquid mole fractions at dew pressure",
+                    units=None)
 
             b.params.config.bubble_dew_method.pressure_dew(b)
         except AttributeError:
@@ -1127,8 +1233,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
             self.enth_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_enth_mol_phase_comp)
         except AttributeError:
             self.del_component(self.enth_mol_phase_comp)
@@ -1162,8 +1267,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
             self.entr_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_entr_mol_phase_comp)
         except AttributeError:
             self.del_component(self.entr_mol_phase_comp)
@@ -1174,8 +1278,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_fug_phase_comp(b, p, j):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.fug_phase_comp(b, p, j)
-            self.fug_phase_comp = Expression(self.params.phase_list,
-                                             self.params.component_list,
+            self.fug_phase_comp = Expression(self.params._phase_component_set,
                                              rule=rule_fug_phase_comp)
         except AttributeError:
             self.del_component(self.fug_phase_comp)
@@ -1187,8 +1290,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.fug_coeff_phase_comp(b, p, j)
             self.fug_coeff_phase_comp = Expression(
-                    self.params.phase_list,
-                    self.params.component_list,
+                    self.params._phase_component_set,
                     rule=rule_fug_coeff_phase_comp)
         except AttributeError:
             self.del_component(self.fug_coeff_phase_comp)
@@ -1222,8 +1324,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.gibbs_mol_phase_comp(b, p, j)
             self.gibbs_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
+                self.params._phase_component_set,
                 rule=rule_gibbs_mol_phase_comp)
         except AttributeError:
             self.del_component(self.gibbs_mol_phase_comp)

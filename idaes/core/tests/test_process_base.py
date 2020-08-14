@@ -31,6 +31,7 @@ class _Flowsheet(FlowsheetBlockData):
         super(FlowsheetBlockData, self).build()
 
 
+@pytest.mark.unit
 def test_flowsheet():
     # Test flowsheet method
     m = ConcreteModel()
@@ -60,18 +61,21 @@ def test_flowsheet():
     assert m.a.i[1].j.flowsheet() is m.a
 
 
+@pytest.mark.unit
 def test_get_performance_contents():
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
     assert m.b._get_performance_contents(time_point=0) is None
 
 
+@pytest.mark.unit
 def test_get_stream_table_contents():
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
     assert m.b._get_stream_table_contents(time_point=0) is None
 
 
+@pytest.mark.unit
 def test_report():
     # Test that no exceptions occur
     m = ConcreteModel()

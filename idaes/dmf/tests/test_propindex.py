@@ -15,8 +15,9 @@ Tests for idaes.dmf.propindex module.
 """
 # stdlib
 import logging
-import shutil
-import sys
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Union
 
 # third-party
 import pytest
@@ -26,55 +27,60 @@ import idaes
 from idaes.dmf import propindex
 from idaes.dmf import DMF
 from idaes.dmf import resource
-from idaes.util.system import mkdtemp
 
 # for testing
 from .util import init_logging
 from . import for_propindex
 
-__author__ = "Dan Gunter <dkgunter@lbl.gov>"
-
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
+__author__ = "Dan Gunter"
 
 init_logging()
 _log = logging.getLogger(__name__)
 
+scratch_dir: Union[str, None] = None
+scratch_path: Union[Path, None] = None
 
+
+def setup_module(module):
+    global scratch_dir, scratch_path
+    scratch_dir = TemporaryDirectory(prefix="idaes_dmf_")  # easier to remove later
+    scratch_path = Path(scratch_dir.name)
+
+
+def teardown_module(module):
+    global scratch_dir
+    del scratch_dir
+
+
+@pytest.mark.unit
 def test_dmfvisitor():
     with pytest.raises(TypeError):
         propindex.DMFVisitor("o_O", "a")
     propindex.DMFVisitor("o_O")
 
 
-@pytest.fixture
-def tmpd():
-    d = mkdtemp(prefix="test_propindex_", suffix=".idaes")
-    yield d
-    shutil.rmtree(d)
-
-
-@pytest.fixture
-def testdmf(tmpd):
-    dmf = DMF(path=tmpd, create=True)
-    return dmf
-
-
-def test_index_property_metadata(testdmf):
+@pytest.mark.unit
+def test_index_property_metadata():
+    tmp_dir = scratch_path / "index_property_metadata"
+    dmf = DMF(path=tmp_dir, create=True)
     propindex.index_property_metadata(
-        testdmf, pkg=idaes.dmf, expr=".*IndexMePlease[0-9]", exclude_testdirs=False
+        dmf, pkg=idaes.dmf, expr=".*IndexMePlease[0-9]", exclude_testdirs=False
     )
     # Check the resource
-    for rsrc in testdmf.find():
+    for rsrc in dmf.find():
         assert rsrc.v[rsrc.TYPE_FIELD] == resource.TY_CODE
         # print('@@ GOT RESOURCE:\n{}'.format(rsrc.v))
 
 
-def test_index_multiple_versions(testdmf):
+@pytest.mark.unit
+def test_index_multiple_versions():
+    tmp_dir = scratch_path / "index_multiple_versions"
+    dmf = DMF(path=tmp_dir, create=True)
+
     v1, v2, v3 = "1.0.0", "6.6.6", "9.9.0"
     # index initial version
     propindex.index_property_metadata(
-        testdmf,
+        dmf,
         pkg=idaes.dmf,
         expr=".*IndexMePlease[0-9]",
         exclude_testdirs=False,
@@ -82,7 +88,7 @@ def test_index_multiple_versions(testdmf):
     )
     # index again
     propindex.index_property_metadata(
-        testdmf,
+        dmf,
         pkg=idaes.dmf,
         expr=".*IndexMePlease[0-9]",
         exclude_testdirs=False,
@@ -90,7 +96,7 @@ def test_index_multiple_versions(testdmf):
     )
     # check that we now have two resources, and
     # a relation between them
-    rlist = list(testdmf.find({}))
+    rlist = list(dmf.find({}))
     assert len(rlist) == 2
     rcodes = [r.v["codes"][0] for r in rlist]
     if rcodes[0]["version"][:3] == ("6", "6", "6"):
@@ -123,26 +129,26 @@ def test_index_multiple_versions(testdmf):
 
     # Add the same version
     propindex.index_property_metadata(
-        testdmf,
+        dmf,
         pkg=idaes.dmf,
         expr=".*IndexMePlease[0-9]",
         exclude_testdirs=False,
         default_version=v2,
     )
     # check that we still have two resources
-    rlist = list(testdmf.find({}))
+    rlist = list(dmf.find({}))
     assert len(rlist) == 2
 
     # Now add another version
     propindex.index_property_metadata(
-        testdmf,
+        dmf,
         pkg=idaes.dmf,
         expr=".*IndexMePlease[0-9]",
         exclude_testdirs=False,
         default_version=v3,
     )
     # check that we now have three resources
-    rlist = list(testdmf.find({}))
+    rlist = list(dmf.find({}))
     assert len(rlist) == 3
     # check that we have 0 <--> 1 <--> 2
     # first sort by version and save that in the 'indexes' array
@@ -165,6 +171,7 @@ def test_index_multiple_versions(testdmf):
             # 1 <-- 2
             assert rel[1][j][resource.RR_ID] == rlist[indexes[2][1]].id
             assert rel[1][j][resource.RR_ROLE] == resource.RR_OBJ
+    # check third resource's relations
     # check third resource's relations
     assert len(rel[2]) == 1
     # 2 --> 1

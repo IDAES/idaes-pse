@@ -51,6 +51,7 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.component
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -104,9 +105,26 @@ class TestSaponification(object):
                                  "has_heat_of_reaction": True,
                                  "has_pressure_change": True})
 
+        m.fs.unit.inlet.flow_vol.fix(1.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        m.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        m.fs.unit.inlet.temperature.fix(303.15)
+        m.fs.unit.inlet.pressure.fix(101325.0)
+
+        m.fs.unit.length.fix(0.5)
+        m.fs.unit.area.fix(0.1)
+
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.deltaP.fix(0)
+
         return m
 
     @pytest.mark.build
+    @pytest.mark.unit
     def test_build(self, sapon):
         assert hasattr(sapon.fs.unit, "inlet")
         assert len(sapon.fs.unit.inlet.vars) == 4
@@ -130,38 +148,24 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "heat_duty")
         assert hasattr(sapon.fs.unit, "deltaP")
 
-        assert number_variables(sapon) == 675
-        assert number_total_constraints(sapon) == 616
+        assert number_variables(sapon) == 654
+        assert number_total_constraints(sapon) == 595
         assert number_unused_variables(sapon) == 9
         assert number_derivative_variables(sapon) == 0
 
+    @pytest.mark.unit
     def test_dof(self, sapon):
-        sapon.fs.unit.inlet.flow_vol.fix(1.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-        sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-
-        sapon.fs.unit.inlet.temperature.fix(303.15)
-        sapon.fs.unit.inlet.pressure.fix(101325.0)
-
-        sapon.fs.unit.length.fix(0.5)
-        sapon.fs.unit.area.fix(0.1)
-
-        sapon.fs.unit.heat_duty.fix(0)
-        sapon.fs.unit.deltaP.fix(0)
-
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solve(self, sapon):
         results = solver.solve(sapon)
 
@@ -170,9 +174,9 @@ class TestSaponification(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 sapon.fs.unit.outlet.pressure[0].value)
@@ -181,9 +185,9 @@ class TestSaponification(object):
         assert (pytest.approx(62.29, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
-    @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
     def test_conservation(self, sapon):
         assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
                          sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
@@ -217,5 +221,6 @@ class TestSaponification(object):
                 hrxn)) <= 1e-6
 
     @pytest.mark.ui
+    @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()

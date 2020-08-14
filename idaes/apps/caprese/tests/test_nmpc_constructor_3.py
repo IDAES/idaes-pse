@@ -146,7 +146,7 @@ def assert_categorization(model):
         assert var.index_set() is model._NMPC_NAMESPACE.get_time()
 
 
-@pytest.mark.slow
+@pytest.mark.component
 def test_constructor_3():
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2)

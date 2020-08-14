@@ -18,12 +18,22 @@ from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import alamo, almconfidence, almplot, wrapwriter
 from idaes.surrogate.alamopy.multos import deletefile
 import numpy as np
-import examples
 
 has_alamo_flag = alamopy.multos.has_alamo()
 
 
+def sixcamel(*x):
+    x1, x2 = x
+    t1 = np.multiply(
+        4.0 - 2.1 * np.power(x1, 2) + np.divide(np.power(x1, 4), 3.0), np.power(x1, 2)
+    )
+    t2 = np.multiply(4 * np.power(x2, 2) - 4, np.power(x2, 2))
+    z = t1 + np.multiply(x1, x2) + t2
+    return z
+
+
 @pytest.mark.skipif(not has_alamo_flag, reason="alamo executable not found")
+@pytest.mark.unit
 def test_basic():
 
     if has_alamo_flag:
@@ -31,7 +41,7 @@ def test_basic():
         x = np.random.uniform([-2,-1],[2,1],(ndata,2))
         z = [0]*ndata
         # specify simulator as examples.sixcamel
-        sim = examples.sixcamel
+        sim = sixcamel
         for i in range(ndata):
             z[i]=sim(x[i][0],x[i][1])
 

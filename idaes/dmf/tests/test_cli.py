@@ -29,9 +29,6 @@ from idaes.dmf import cli
 __author__ = "Dan Gunter"
 
 
-if sys.platform.startswith("win"):
-    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
-
 
 @pytest.fixture
 def runner():
@@ -39,6 +36,7 @@ def runner():
     return CliRunner()
 
 
+@pytest.mark.unit
 def test_verbosity():
     assert cli.level_from_verbosity(10) == logging.DEBUG
     assert cli.level_from_verbosity(2) == logging.INFO
@@ -61,6 +59,7 @@ class MockContext:
         raise ContextFailed()
 
 
+@pytest.mark.unit
 def test_aliases():
     ag = cli.AliasedGroup(
         aliases={
@@ -81,6 +80,7 @@ def test_aliases():
     pytest.raises(ContextFailed, ag.get_command, context, "bat")
 
 
+@pytest.mark.unit
 def test_url():
     ut = cli.URLType()
     u = "http://other.org"

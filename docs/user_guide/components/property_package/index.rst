@@ -6,6 +6,13 @@
 Overview
 --------
 
+.. toctree::
+    :glob:
+    :hidden:
+    
+    *
+    */index
+
 Property packages provide the relationships and parameters necessary to determine the 
 properties of process streams. Property packages may be general in purpose, such as ideal gas 
 equations, or specific to a certain application. The IDAES modeling framework divides property 
@@ -17,12 +24,19 @@ packages into two parts:
 While the IDAES modeling framework provides several standard property packages, many process
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
-:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Property Model>`.
+:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`.
 Since the effort to develop a custom property package is substantial, the IDAES modeling
 framework provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
 and :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
+
+Units of Measurement
+--------------------
+
+One of the most important roles property packages play within the modeling framework is to define the units of measurement that will be used for those models which use the property packages. Any variable which is created in a unit model will derive its units of measurement from those defined in the associated property package in order to ensure consistency of units.
+
+Defining units of measurement in property packages is :ref:`discussed here<user_guide/components/property_package/uom:Defining Units of Measurement>`.
 
 Physical properties
 -------------------
@@ -124,11 +138,4 @@ The IDAES modeling framework provides a
 :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to help the user create reaction property packages for common systems, similar to the Generic 
 Property Package Framework.
-
-.. toctree::
-    :glob:
-    :hidden:
-    
-    *
-    */index
 

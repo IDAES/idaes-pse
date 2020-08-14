@@ -19,6 +19,8 @@ import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
 )
+import idaes.core.util.scaling as iscale
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -85,7 +87,9 @@ class HelmPumpData(BalanceBlockData):
         super().build() # Basic unit model build/read config
         config = self.config # shorter config pointer
 
-        # Thermo dynamic expression writer
+        # The thermodynamic expression writer object, te, writes expressions
+        # including external function calls to calculate thermodynamic quantities
+        # from a set of state variables.
         _assert_properties(config.property_package)
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
@@ -94,24 +98,29 @@ class HelmPumpData(BalanceBlockData):
             initialize=0.9,
             doc="Pump efficiency"
         )
-        eff.fix()
+        self.efficiency_isentropic = pyo.Reference(self.efficiency_pump[:])
 
         pratio = self.ratioP = pyo.Var(
             self.flowsheet().config.time,
             initialize=0.7,
             doc="Ratio of outlet to inlet pressure"
         )
-        pratio.fix()
 
         # Some shorter refernces to property blocks
-        prp_i = self.control_volume.properties_in
-        prp_o = self.control_volume.properties_out
+        properties_in = self.control_volume.properties_in
+        properties_out = self.control_volume.properties_out
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Thermodynamic work"
+        )
         def work_fluid(b, t):
-            return prp_o[t].flow_vol*(prp_o[t].pressure - prp_i[t].pressure)
+            return properties_out[t].flow_vol*(self.deltaP[t])
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(
+            self.flowsheet().config.time,
+            doc="Work required to drive the pump."
+        )
         def shaft_work(b, t): # Early access to the outlet enthalpy and work
             return self.work_fluid[t]/eff[t]
 
@@ -121,7 +130,8 @@ class HelmPumpData(BalanceBlockData):
 
         @self.Constraint(self.flowsheet().config.time)
         def eq_pressure_ratio(b, t):
-            return pratio[t]*prp_i[t].pressure == prp_o[t].pressure
+            return (pratio[t]*properties_in[t].pressure ==
+                properties_out[t].pressure)
 
 
     def initialize(
@@ -177,3 +187,15 @@ class HelmPumpData(BalanceBlockData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        for t, c in self.eq_pressure_ratio.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].pressure)
+            iscale.constraint_scaling_transform(c, s)
+        for t, c in self.eq_work.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.work[t])
+            iscale.constraint_scaling_transform(c, s)

@@ -20,12 +20,14 @@ import idaes.power_generation.unit_models.helm as hmodels
 
 from idaes.generic_models.properties import iapws95
 
+@pytest.mark.unit
 def test_convergence_test_class_import():
     import idaes.power_generation.unit_models.helm.convergence.heater
     import idaes.power_generation.unit_models.helm.convergence.turbine
     import idaes.power_generation.unit_models.helm.convergence.compressor
 
 
+@pytest.mark.component
 def test_pump():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
@@ -61,6 +63,7 @@ def test_pump():
         )
 
 
+@pytest.mark.component
 def test_turbine():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
@@ -98,6 +101,7 @@ def test_turbine():
         pyo.value(m.fs.unit2.control_volume.work[0]), rel=1e-7)
 
 
+@pytest.mark.component
 def test_compressor():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
@@ -134,6 +138,7 @@ def test_compressor():
     assert pyo.value(m.fs.unit1.control_volume.work[0]) == pytest.approx(
         pyo.value(m.fs.unit2.control_volume.work[0]), rel=1e-7)
 
+@pytest.mark.component
 def test_compressor_pump_compare():
     m = pyo.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock(default={"dynamic": False})
