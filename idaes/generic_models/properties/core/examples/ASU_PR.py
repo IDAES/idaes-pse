@@ -11,14 +11,14 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Air separation phase equilibrium package using Peng Robinson EoS.
+Air separation phase equilibrium package using Peng-Robinson EoS.
 
 Example property package using the Generic Property Package Framework.
 This example shows how to set up a property package to do air separation
 phase equilibrium in the generic framework using Peng-Robinson equation
- along with methods drawn from the pre-built IDAES property
-libraries.
+ along with methods drawn from the pre-built IDAES property libraries.
 """
+
 # Import Python libraries
 import logging
 
@@ -36,6 +36,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 import idaes.generic_models.properties.core.pure.RPP as RPP
 import idaes.generic_models.properties.core.pure.NIST as NIST
+
 # Set up logger
 _log = logging.getLogger(__name__)
 
@@ -54,78 +55,90 @@ _log = logging.getLogger(__name__)
 configuration = {
     # Specifying components
     "components": {
-        'nitrogen': {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": NIST,
-                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
-                    "parameter_data": {
-                        "mw": (28.0135E-3, pyunits.kg/pyunits.mol),  # [1]
-                        "pressure_crit": (34e5, pyunits.Pa),  # [1]
-                        "temperature_crit": (126.2, pyunits.K),  # [1]
-                        "omega": 0.037,  # [1]
-                        "cp_mol_ig_comp_coeff": {
-                            'A': (3.115E1, pyunits.J/pyunits.mol/pyunits.K),  # [1]
-                            'B': (-1.357E-2, pyunits.J/pyunits.mol/pyunits.K**2),
-                            'C': (2.680E-5, pyunits.J/pyunits.mol/pyunits.K**3),
-                            'D': (-1.168E-8, pyunits.J/pyunits.mol/pyunits.K**4)},
-                        "enth_mol_form_vap_comp_ref": (
-                            0.0, pyunits.J/pyunits.mol),  # [3]
-                        "entr_mol_form_vap_comp_ref": (
-                            191.61, pyunits.J/pyunits.mol/pyunits.K),  # [3]
-                        "pressure_sat_comp_coeff": {'A': (3.7362, None),  # [2]
-                                                    'B': (264.651, pyunits.K),
-                                                    'C': (-6.788, pyunits.K)}}},
-        'argon': {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": NIST,
-                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
-                    "parameter_data": {
-                        "mw": (39.948E-3, pyunits.kg/pyunits.mol),  # [1]
-                        "pressure_crit": (48.98e5, pyunits.Pa),  # [1]
-                        "temperature_crit": (150.86, pyunits.K),  # [1]
-                        "omega": 0.001,  # [1]
-                        "cp_mol_ig_comp_coeff": {
-                            'A': (2.050E1, pyunits.J/pyunits.mol/pyunits.K),  # [1]
-                            'B': (0.0, pyunits.J/pyunits.mol/pyunits.K**2),
-                            'C': (0.0, pyunits.J/pyunits.mol/pyunits.K**3),
-                            'D': (0.0, pyunits.J/pyunits.mol/pyunits.K**4)},
-                        "enth_mol_form_vap_comp_ref": (
-                            0.0, pyunits.J/pyunits.mol),  # [3]
-                        "entr_mol_form_vap_comp_ref": (
-                            154.8, pyunits.J/pyunits.mol/pyunits.K),  # [3]
-                        "pressure_sat_comp_coeff": {'A': (3.29555, None),  # [2]
-                                                    'B': (215.24, pyunits.K),
-                                                    'C': (-22.233, pyunits.K)}}},
-        'oxygen': {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": NIST,
-                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
-                    "parameter_data": {
-                        "mw": (31.999E-3, pyunits.kg/pyunits.mol),  # [1]
-                        "pressure_crit": (50.43e5, pyunits.Pa),  # [1]
-                        "temperature_crit": (154.58, pyunits.K),  # [1]
-                        "omega": 0.025,  # [1]
-                        "cp_mol_ig_comp_coeff": {
-                            'A': (2.811E1, pyunits.J/pyunits.mol/pyunits.K),
-                            'B': (-3.680E-6, pyunits.J/pyunits.mol/pyunits.K**2),
-                            'C': (1.746E-5, pyunits.J/pyunits.mol/pyunits.K**3),
-                            'D': (-1.065E-8, pyunits.J/pyunits.mol/pyunits.K**4)},
-                        "enth_mol_form_vap_comp_ref": (
-                            0.0, pyunits.J/pyunits.mol),  # [3]
-                        "entr_mol_form_vap_comp_ref": (
-                            205.152, pyunits.J/pyunits.mol/pyunits.K),  # [3]
-                        "pressure_sat_comp_coeff": {'A': (3.85845, None),  # [2]
-                                                    'B': (325.675, pyunits.K),
-                                                    'C': (-5.667, pyunits.K)}}}},
+        "nitrogen": {"type": Component,
+                     "enth_mol_ig_comp": RPP,
+                     "entr_mol_ig_comp": RPP,
+                     "pressure_sat_comp": NIST,
+                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+                     "parameter_data": {
+                         "mw": (28.0135E-3, pyunits.kg/pyunits.mol),  # [1]
+                         "pressure_crit": (34e5, pyunits.Pa),  # [1]
+                         "temperature_crit": (126.2, pyunits.K),  # [1]
+                         "omega": 0.037,  # [1]
+                         "cp_mol_ig_comp_coeff": {
+                             "A": (3.115E1,
+                                   pyunits.J/pyunits.mol/pyunits.K),  # [1]
+                             "B": (-1.357E-2,
+                                   pyunits.J/pyunits.mol/pyunits.K**2),
+                             "C": (2.680E-5,
+                                   pyunits.J/pyunits.mol/pyunits.K**3),
+                             "D": (-1.168E-8,
+                                   pyunits.J/pyunits.mol/pyunits.K**4)},
+                         "enth_mol_form_vap_comp_ref": (
+                             0.0, pyunits.J/pyunits.mol),  # [3]
+                         "entr_mol_form_vap_comp_ref": (
+                             191.61, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                         "pressure_sat_comp_coeff": {
+                             "A": (3.7362, None),  # [2]
+                             "B": (264.651, pyunits.K),
+                             "C": (-6.788, pyunits.K)}}},
+
+        "argon": {"type": Component,
+                  "enth_mol_ig_comp": RPP,
+                  "entr_mol_ig_comp": RPP,
+                  "pressure_sat_comp": NIST,
+                  "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+                  "parameter_data": {
+                      "mw": (39.948E-3, pyunits.kg/pyunits.mol),  # [1]
+                      "pressure_crit": (48.98e5, pyunits.Pa),  # [1]
+                      "temperature_crit": (150.86, pyunits.K),  # [1]
+                      "omega": 0.001,  # [1]
+                      "cp_mol_ig_comp_coeff": {
+                          "A": (2.050E1,
+                                pyunits.J/pyunits.mol/pyunits.K),  # [1]
+                          "B": (0.0, pyunits.J/pyunits.mol/pyunits.K**2),
+                          "C": (0.0, pyunits.J/pyunits.mol/pyunits.K**3),
+                          "D": (0.0, pyunits.J/pyunits.mol/pyunits.K**4)},
+                      "enth_mol_form_vap_comp_ref": (
+                          0.0, pyunits.J/pyunits.mol),  # [3]
+                      "entr_mol_form_vap_comp_ref": (
+                          154.8, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                      "pressure_sat_comp_coeff": {"A": (3.29555, None),  # [2]
+                                                  "B": (215.24, pyunits.K),
+                                                  "C": (-22.233, pyunits.K)}}},
+
+        "oxygen": {"type": Component,
+                   "enth_mol_ig_comp": RPP,
+                   "entr_mol_ig_comp": RPP,
+                   "pressure_sat_comp": NIST,
+                   "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
+                   "parameter_data": {
+                       "mw": (31.999E-3, pyunits.kg/pyunits.mol),  # [1]
+                       "pressure_crit": (50.43e5, pyunits.Pa),  # [1]
+                       "temperature_crit": (154.58, pyunits.K),  # [1]
+                       "omega": 0.025,  # [1]
+                       "cp_mol_ig_comp_coeff": {
+                           "A": (2.811E1, pyunits.J/pyunits.mol/pyunits.K),
+                           "B": (-3.680E-6,
+                                 pyunits.J/pyunits.mol/pyunits.K**2),
+                           "C": (1.746E-5, pyunits.J/pyunits.mol/pyunits.K**3),
+                           "D": (-1.065E-8,
+                                 pyunits.J/pyunits.mol/pyunits.K**4)},
+                       "enth_mol_form_vap_comp_ref": (
+                           0.0, pyunits.J/pyunits.mol),  # [3]
+                       "entr_mol_form_vap_comp_ref": (
+                           205.152, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                       "pressure_sat_comp_coeff": {
+                           "A": (3.85845, None),  # [2]
+                           "B": (325.675, pyunits.K),
+                           "C": (-5.667, pyunits.K)}}}},
+
     # Specifying phases
-    "phases":  {'Liq': {"type": LiquidPhase,
+    "phases":  {"Liq": {"type": LiquidPhase,
                         "equation_of_state": Cubic,
                         "equation_of_state_options": {
                             "type": CubicType.PR}},
-                'Vap': {"type": VaporPhase,
+                "Vap": {"type": VaporPhase,
                         "equation_of_state": Cubic,
                         "equation_of_state_options": {
                             "type": CubicType.PR}}},
