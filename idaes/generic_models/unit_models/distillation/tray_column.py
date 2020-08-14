@@ -139,11 +139,25 @@ see property package for documentation.}"""))
         super(TrayColumnData, self).build()
 
         # Create set for constructing indexed trays
-        tray_index = RangeSet(1, self.config.number_of_trays)
+        self.tray_index = RangeSet(1, self.config.number_of_trays)
 
         # Add trays
-        self.tray = Tray(tray_index, default={})
-        
+        self.tray = Tray(self.tray_index,
+                         default={"property_package":
+                                  self.config.property_package,
+                                  "has_heat_transfer":
+                                      self.config.has_heat_transfer,
+                                  "has_pressure_change":
+                                      self.config.has_pressure_change},
+                         initialize={self.config.feed_tray:
+                                     {"property_package":
+                                         self.config.property_package,
+                                      "is_feed_tray": True,
+                                      "has_heat_transfer":
+                                          self.config.has_heat_transfer,
+                                      "has_pressure_change":
+                                          self.config.has_pressure_change}})
+
         # Add condenser
         self.condenser = Condenser(
             default={"property_package": self.config.property_package,
@@ -162,7 +176,6 @@ see property package for documentation.}"""))
                      "has_pressure_change":
                      self.config.has_pressure_change})
 
-        raise Exception(tray_index)
 
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
