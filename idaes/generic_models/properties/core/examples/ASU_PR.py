@@ -16,7 +16,7 @@ Air separation phase equilibrium package using Peng-Robinson EoS.
 Example property package using the Generic Property Package Framework.
 This example shows how to set up a property package to do air separation
 phase equilibrium in the generic framework using Peng-Robinson equation
- along with methods drawn from the pre-built IDAES property libraries.
+along with methods drawn from the pre-built IDAES property libraries.
 """
 
 # Import Python libraries
@@ -42,15 +42,13 @@ _log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
-# Configuration dictionary for an ideal Benzene-Toluene system
+# Configuration dictionary for a Peng-Robinson Oxygen-Argon-Nitrogen system
 
 # Data Sources:
 # [1] The Properties of Gases and Liquids (1987)
 #     4th edition, Chemical Engineering Series - Robert C. Reid
-# [2] The Properties of Gases and Liquids (1987)
-#     5th edition, Chemical Engineering Series - Robert C. Reid
-# [3] Engineering Toolbox, https://www.engineeringtoolbox.com
-#     Retrieved 1st December, 2019
+# [2] NIST, https://webbook.nist.gov/
+#     Retrieved 16th August, 2020
 
 configuration = {
     # Specifying components
@@ -75,9 +73,9 @@ configuration = {
                              "D": (-1.168E-8,
                                    pyunits.J/pyunits.mol/pyunits.K**4)},
                          "enth_mol_form_vap_comp_ref": (
-                             0.0, pyunits.J/pyunits.mol),  # [3]
+                             0.0, pyunits.J/pyunits.mol),  # [2]
                          "entr_mol_form_vap_comp_ref": (
-                             191.61, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                             191.61, pyunits.J/pyunits.mol/pyunits.K),  # [2]
                          "pressure_sat_comp_coeff": {
                              "A": (3.7362, None),  # [2]
                              "B": (264.651, pyunits.K),
@@ -100,9 +98,9 @@ configuration = {
                           "C": (0.0, pyunits.J/pyunits.mol/pyunits.K**3),
                           "D": (0.0, pyunits.J/pyunits.mol/pyunits.K**4)},
                       "enth_mol_form_vap_comp_ref": (
-                          0.0, pyunits.J/pyunits.mol),  # [3]
+                          0.0, pyunits.J/pyunits.mol),  # [2]
                       "entr_mol_form_vap_comp_ref": (
-                          154.8, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                          154.8, pyunits.J/pyunits.mol/pyunits.K),  # [2]
                       "pressure_sat_comp_coeff": {"A": (3.29555, None),  # [2]
                                                   "B": (215.24, pyunits.K),
                                                   "C": (-22.233, pyunits.K)}}},
@@ -125,9 +123,9 @@ configuration = {
                            "D": (-1.065E-8,
                                  pyunits.J/pyunits.mol/pyunits.K**4)},
                        "enth_mol_form_vap_comp_ref": (
-                           0.0, pyunits.J/pyunits.mol),  # [3]
+                           0.0, pyunits.J/pyunits.mol),  # [2]
                        "entr_mol_form_vap_comp_ref": (
-                           205.152, pyunits.J/pyunits.mol/pyunits.K),  # [3]
+                           205.152, pyunits.J/pyunits.mol/pyunits.K),  # [2]
                        "pressure_sat_comp_coeff": {
                            "A": (3.85845, None),  # [2]
                            "B": (325.675, pyunits.K),
