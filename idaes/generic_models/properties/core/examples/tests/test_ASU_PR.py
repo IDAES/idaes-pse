@@ -135,25 +135,25 @@ class TestStateBlock(object):
 
         assert isinstance(model.props[1].pressure, Var)
         assert value(model.props[1].pressure) == 1e5
-        assert model.props[1].pressure.ub == 1e6
+        assert model.props[1].pressure.ub == 1e7
         assert model.props[1].pressure.lb == 5e4
 
         assert isinstance(model.props[1].temperature, Var)
         assert value(model.props[1].temperature) == 300
-        assert model.props[1].temperature.ub == 450
-        assert model.props[1].temperature.lb == 273.15
+        assert model.props[1].temperature.ub == 350
+        assert model.props[1].temperature.lb == 10
 
         assert isinstance(model.props[1].mole_frac_comp, Var)
-        assert len(model.props[1].mole_frac_comp) == 2
+        assert len(model.props[1].mole_frac_comp) == 3
         for i in model.props[1].mole_frac_comp:
-            assert value(model.props[1].mole_frac_comp[i]) == 0.5
+            assert value(model.props[1].mole_frac_comp[i]) == 1/3
 
         # Check supporting variables
         assert isinstance(model.props[1].flow_mol_phase, Var)
         assert len(model.props[1].flow_mol_phase) == 2
 
         assert isinstance(model.props[1].mole_frac_phase_comp, Var)
-        assert len(model.props[1].mole_frac_phase_comp) == 4
+        assert len(model.props[1].mole_frac_phase_comp) == 6
 
         assert isinstance(model.props[1].phase_frac, Var)
         assert len(model.props[1].phase_frac) == 2
@@ -162,7 +162,7 @@ class TestStateBlock(object):
         assert len(model.props[1].total_flow_balance) == 1
 
         assert isinstance(model.props[1].component_flow_balances, Constraint)
-        assert len(model.props[1].component_flow_balances) == 2
+        assert len(model.props[1].component_flow_balances) == 3
 
         assert isinstance(model.props[1].sum_mole_frac, Constraint)
         assert len(model.props[1].sum_mole_frac) == 1
@@ -258,9 +258,9 @@ class TestStateBlock(object):
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(85.00)
         model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["nitrogen"].fix(0.34)
-        model.props[1].mole_frac_comp["argon"].fix(0.33)
-        model.props[1].mole_frac_comp["oxygen"].fix(0.33)
+        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
+        model.props[1].mole_frac_comp["argon"].fix(1/3)
+        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
 
         assert degrees_of_freedom(model.props[1]) == 0
 
@@ -305,11 +305,11 @@ class TestStateBlock(object):
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
-            pytest.approx(0.3731, abs=1e-4)
+            pytest.approx(0.1739, abs=1e-4)
         assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
-            pytest.approx(0.4227, abs=1e-4)
+            pytest.approx(0.4221, abs=1e-4)
         assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.3328, abs=1e-4)
+            pytest.approx(0.6422, abs=1e-4)
 
     @pytest.mark.ui
     @pytest.mark.unit
