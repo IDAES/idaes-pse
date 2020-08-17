@@ -41,10 +41,10 @@ def arcs_to_stream_dict(
         descend_into (bool): If True, search subblocks for Arcs as well. The
             default is True.
         sort (bool): If True sort keys and return an OrderedDict
-        prepend (str): Prepend a string to the arc name joined with a  '.'.
+        prepend (str): Prepend a string to the arc name joined with a '.'.
             This can be useful to prevent conflicting names when sub blocks
-            containt Arcs that have the same names when used in compbination with.
-            descend_into=False.
+            constraint Arcs that have the same names when used in combination
+            with descend_into=False.
         s (dict): Add streams to an existing stream dict.
 
     Returns:
@@ -61,7 +61,7 @@ def arcs_to_stream_dict(
     if additional is not None:
         s.update(additional)
     if sort:
-        streams = OrderedDict(sorted(s.items()))
+        s = OrderedDict(sorted(s.items()))
     return s
 
 
