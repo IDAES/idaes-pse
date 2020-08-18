@@ -20,7 +20,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.network import Port
+from pyomo.network import Arc
 from pyomo.environ import Reference, Expression, Var, Constraint, \
     TerminationCondition, value, Integers, RangeSet
 
@@ -149,7 +149,7 @@ see property package for documentation.}"""))
                                       self.config.has_heat_transfer,
                                   "has_pressure_change":
                                       self.config.has_pressure_change},
-                         initialize={self.config.feed_tray:
+                         initialize={self.config.feed_tray_location:
                                      {"property_package":
                                          self.config.property_package,
                                       "is_feed_tray": True,
@@ -163,8 +163,8 @@ see property package for documentation.}"""))
             default={"property_package": self.config.property_package,
                      "property_package_args":
                      self.config.property_package_args,
-                     "condenser_type": CondenserType.totalCondenser,
-                     "temperature_spec": TemperatureSpec.atBubblePoint,
+                     "condenser_type": self.config.condenser_type,
+                     "temperature_spec": TemperatureSpec.customTemperature,
                      "has_pressure_change": self.config.has_pressure_change})
 
         # Add reboiler
@@ -172,11 +172,40 @@ see property package for documentation.}"""))
             default={"property_package": self.config.property_package,
                      "property_package_args":
                      self.config.property_package_args,
-                     "has_boilup_ratio": True,
                      "has_pressure_change":
                      self.config.has_pressure_change})
+        # make arcs
+
+        self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
+
+        def rule_liq_stream(self, i):
+            if i == 0:
+                return {"source": self.condenser.reflux,
+                        "destination": self.tray[i + 1].liq_in}
+            elif i == self.config.number_of_trays:
+                return {"source": self.tray[i].liq_out,
+                        "destination": self.reboiler.inlet}
+            else:
+                return {"source": self.tray[i].liq_out,
+                        "destination": self.tray[i + 1].liq_in}
+
+        def rule_vap_stream(self, i):
+            if i == 0:
+                return {"source": self.condenser.reflux,
+                        "destination": self.tray[i + 1].liq_in}
+            elif i == self.config.number_of_trays:
+                return {"source": self.tray[i].liq_out,
+                        "destination": self.reboiler.inlet}
+            else:
+                return {"source": self.tray[i].liq_out,
+                        "destination": self.tray[i + 1].liq_in}
 
 
+        self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
+        # self.vap_stream = Arc(self.tray_index, rule=rule_vap_stream)
+
+        self.liq_stream.display()
+        raise Exception()
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):

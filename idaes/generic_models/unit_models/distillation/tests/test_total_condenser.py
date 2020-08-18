@@ -46,8 +46,6 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-
-
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
                  "condenser_type": CondenserType.totalCondenser,
