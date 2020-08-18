@@ -40,7 +40,7 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.ASU_PR \
-    import configuration
+    import configuration, configuration_Dowling_2015
 
 
 # -----------------------------------------------------------------------------
@@ -48,12 +48,15 @@ from idaes.generic_models.properties.core.examples.ASU_PR \
 solver = get_default_solver()
 
 # Test for configuration dictionaries with parameters from Properties of Gases
-# and liquids 4th edition
+# and liquids 3rd edition and Dowling 2015
+# Stream values extracted from:
+# A framework for efficient large scale equation-oriented flowsheet optimization (2015)
+#     Computers and Chemical Engineering - Alexander W. Dowling
 class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(default=configuration_Dowling_2015)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -100,15 +103,15 @@ class TestParamBlock(object):
         assert model.params.temperature_ref.value == 298.15
 
         assert model.params.nitrogen.mw.value == 28.0135E-3
-        assert model.params.nitrogen.pressure_crit.value == 34e5
+        assert model.params.nitrogen.pressure_crit.value == 33.943875e5
         assert model.params.nitrogen.temperature_crit.value == 126.2
 
         assert model.params.argon.mw.value == 39.948E-3
-        assert model.params.argon.pressure_crit.value == 48.98e5
+        assert model.params.argon.pressure_crit.value == 48.737325e5
         assert model.params.argon.temperature_crit.value == 150.86
 
         assert model.params.oxygen.mw.value == 31.999E-3
-        assert model.params.oxygen.pressure_crit.value == 50.43e5
+        assert model.params.oxygen.pressure_crit.value == 50.45985e5
         assert model.params.oxygen.temperature_crit.value == 154.58
 
         assert_units_consistent(model)
@@ -118,7 +121,7 @@ class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration)
+        model.params = GenericParameterBlock(default=configuration_Dowling_2015)
 
         model.props = model.params.build_state_block(
                 [1],
@@ -257,11 +260,11 @@ class TestStateBlock(object):
     def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
-        model.props[1].temperature.fix(85.00)
-        model.props[1].pressure.fix(101325)
-        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
-        model.props[1].mole_frac_comp["argon"].fix(1/3)
-        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
+        model.props[1].temperature.fix(77.5295)
+        model.props[1].pressure.fix(101000)
+        model.props[1].mole_frac_comp["nitrogen"].fix(0.9823)
+        model.props[1].mole_frac_comp["argon"].fix(0.00803)
+        model.props[1].mole_frac_comp["oxygen"].fix(0.00967)
 
         assert degrees_of_freedom(model.props[1]) == 0
 
@@ -306,13 +309,70 @@ class TestStateBlock(object):
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
-            pytest.approx(0.1739, abs=1e-4)
+            pytest.approx(0.9663, abs=1e-3)
         assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
-            pytest.approx(0.4221, abs=1e-4)
+            pytest.approx(0.9890, abs=1e-3)
         assert model.props[1].phase_frac["Vap"].value == \
-            pytest.approx(0.6422, abs=1e-4)
-
+            pytest.approx(0.703, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Vap"]) == \
+            pytest.approx(-6567, abs=1e1)
     @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, model):
         model.props[1].report()
+
+    @pytest.mark.component
+    def test_SF0(self, model):
+        model.props[1].flow_mol.fix(1)
+        model.props[1].temperature.fix(300.00)
+        model.props[1].pressure.fix(353140)
+        model.props[1].mole_frac_comp["nitrogen"].fix(0.7800)
+        model.props[1].mole_frac_comp["argon"].fix(0.0100)
+        model.props[1].mole_frac_comp["oxygen"].fix(0.2100)
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.props.initialize(optarg={'tol': 1e-6})
+
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+
+        assert model.props[1].mole_frac_phase_comp["Vap", "nitrogen"].value == \
+            pytest.approx(0.7800, abs=1e-3)
+        assert model.props[1].phase_frac["Vap"].value == \
+            pytest.approx(1.0, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Vap"]) == \
+            pytest.approx(25.7, abs=1e1)
+
+    @pytest.mark.component
+    def test_SFIL3(self, model):
+        model.props[1].flow_mol.fix(1)
+        model.props[1].temperature.fix(92.88)
+        model.props[1].pressure.fix(353140)
+        model.props[1].mole_frac_comp["nitrogen"].fix(0.6653)
+        model.props[1].mole_frac_comp["argon"].fix(0.0140)
+        model.props[1].mole_frac_comp["oxygen"].fix(0.3207)
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
+
+        model.props.initialize(optarg={'tol': 1e-6})
+
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+
+        assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
+            pytest.approx(0.6653, abs=1e-3)
+        assert model.props[1].phase_frac["Vap"].value == \
+            pytest.approx(0.0, abs=1e-3)
+        assert value(model.props[1].enth_mol_phase["Liq"]) == \
+            pytest.approx(-11662.4, abs=1e1)
