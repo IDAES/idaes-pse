@@ -1703,13 +1703,13 @@ see reaction package for documentation.}"""))
         # Homogeneous reactions (gas phase rxns)
         if gas_phase.reaction_package is not None:
             for t in blk.flowsheet().config.time:
-                blk.bubble_rxn_gen = blk.bubble.rate_reaction_generation
+                bubble_rxn_gen = blk.bubble.rate_reaction_generation
                 gas_emulsion_rxn_gen = (
                     blk.gas_emulsion.rate_reaction_generation)
                 for x in blk.length_domain:
                     for j in gas_phase.property_package.component_list:
                         # Bubble region
-                        (blk.bubble_rxn_gen[t, x, 'Vap', j].fix(0.0))
+                        (bubble_rxn_gen[t, x, 'Vap', j].fix(0.0))
                         # Gas emulsion region
                         (gas_emulsion_rxn_gen[t, x, 'Vap', j].fix(0.0))
 
@@ -1800,6 +1800,7 @@ see reaction package for documentation.}"""))
             bubble_rxn_gen = blk.bubble.rate_reaction_generation
             bubble_stoichiometry_eqn = (
                 blk.bubble.rate_reaction_stoichiometry_constraint)
+            gas_emulsion_rxn_gen = blk.gas_emulsion.rate_reaction_generation
             gas_emulsion_stoichiometry_eqn = (
                 blk.gas_emulsion.rate_reaction_stoichiometry_constraint)
 
@@ -2050,7 +2051,7 @@ see reaction package for documentation.}"""))
             time_point=time_point,
             )
 
-    def results_plot_FR(blk):
+    def results_plot(blk):
         '''
         Plot method for common bubbling fluidized bed variables
 

@@ -38,6 +38,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
 # Get default solver for testing
 solver = get_default_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="class")
 def rxn_prop():
@@ -96,4 +97,3 @@ def test_setInputs_reaction_block(rxn_prop):
 def test_initialize(rxn_prop):
     initialization_tester(
             rxn_prop)
-

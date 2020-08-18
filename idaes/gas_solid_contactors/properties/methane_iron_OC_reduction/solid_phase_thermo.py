@@ -353,6 +353,7 @@ class _SolidPhaseThermoStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
+
 @declare_process_block_class("SolidPhaseThermoStateBlock",
                              block_class=_SolidPhaseThermoStateBlock)
 class SolidPhaseThermoStateBlockData(StateBlockData):
@@ -539,4 +540,3 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         if value(blk.temperature) > blk.temperature.ub:
             _log.error('{} Temperature set above upper bound.'
                        .format(blk.name))
-

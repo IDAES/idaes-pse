@@ -33,6 +33,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
 # Get default solver for testing
 solver = get_default_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="class")
 def solid_prop():
@@ -74,4 +75,3 @@ def test_setInputs_state_block(solid_prop):
 def test_initialize(solid_prop):
     initialization_tester(
             solid_prop)
-

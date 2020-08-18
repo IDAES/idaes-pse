@@ -331,6 +331,7 @@ class _ReactionBlock(ReactionBlockBase):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="reactions")
         init_log.info_high('States released.')
 
+
 @declare_process_block_class("ReactionBlock",
                              block_class=_ReactionBlock)
 class ReactionBlockData(ReactionBlockDataBase):
@@ -512,4 +513,3 @@ class ReactionBlockData(ReactionBlockDataBase):
         if value(blk.temperature) > blk.temperature.ub:
             _log.error('{} Temperature set above upper bound.'.format(blk.name)
                        )
-
