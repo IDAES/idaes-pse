@@ -72,11 +72,11 @@ def m():
 
 @pytest.mark.unit
 def test_create_stream_table_dataframe_from_StateBlock(m):
-    d = arcs_to_stream_dict(m, descend_into=True)
-    assert "stream" in d
-    assert "stream_array" in d
-    assert d["stream"] == m.fs.stream
-    assert d["stream_array"] == m.fs.stream_array
+    d = arcs_to_stream_dict(m, descend_into=True, prepend="model")
+    assert "model.stream" in d
+    assert "model.stream_array" in d
+    assert d["model.stream"] == m.fs.stream
+    assert d["model.stream_array"] == m.fs.stream_array
 
 @pytest.mark.unit
 def test_stream_states_dict(m):
