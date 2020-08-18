@@ -177,6 +177,7 @@ see property package for documentation.}"""))
         # make arcs
 
         self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
+        self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
 
         def rule_liq_stream(self, i):
             if i == 0:
@@ -190,22 +191,18 @@ see property package for documentation.}"""))
                         "destination": self.tray[i + 1].liq_in}
 
         def rule_vap_stream(self, i):
-            if i == 0:
-                return {"source": self.condenser.reflux,
-                        "destination": self.tray[i + 1].liq_in}
-            elif i == self.config.number_of_trays:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.reboiler.inlet}
+            if i == 1:
+                return {"source": self.tray[i].vap_out,
+                        "destination": self.condenser.inlet}
+            elif i == self.config.number_of_trays + 1:
+                return {"source": self.reboiler.vapor_reboil,
+                        "destination": self.tray[i - 1].vap_in}
             else:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.tray[i + 1].liq_in}
-
+                return {"source": self.tray[i].vap_out,
+                        "destination": self.tray[i - 1].vap_in}
 
         self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
-        # self.vap_stream = Arc(self.tray_index, rule=rule_vap_stream)
-
-        self.liq_stream.display()
-        raise Exception()
+        self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
