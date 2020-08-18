@@ -149,6 +149,10 @@ class HelmIsentropicTurbineData(BalanceBlockData):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
 
+        @self.Expression(self.flowsheet().config.time)
+        def work_mechanical(b, t):
+            return b.control_volume.work[t]
+
     def _get_performance_contents(self, time_point=0):
         """This returns a dictionary of quntities to be used in IDAES unit model
         report generation routines.
@@ -213,7 +217,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)
