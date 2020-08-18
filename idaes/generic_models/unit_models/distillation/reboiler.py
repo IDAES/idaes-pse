@@ -288,12 +288,12 @@ see property package for documentation.}"""))
                                    "mole_frac_phase_comp") and \
                             hasattr(self.control_volume.properties_out[0],
                                     "flow_mol_phase"):
-                            flow_mol_phase_comp = False
+                            flow_phase_comp = False
                             local_name_frac = "mole_frac_phase_comp"
                             local_name_flow = "flow_mol_phase"
                         elif hasattr(self.control_volum.properties_out[0],
                                      "flow_mol_phase_comp"):
-                            flow_mol_phase_comp = True
+                            flow_phase_comp = True
                             local_name_flow = "flow_mol_phase_comp"
                         else:
                             raise PropertyNotSupportedError(
@@ -305,12 +305,12 @@ see property package for documentation.}"""))
                                    "mass_frac_phase_comp") and \
                             hasattr(self.control_volume.properties_out[0],
                                     "flow_mass_phase"):
-
+                            flow_phase_comp = False
                             local_name_frac = "mass_frac_phase_comp"
                             local_name_flow = "flow_mass_phase"
                         elif hasattr(self.control_volum.properties_out[0],
                                      "flow_mass_phase_comp"):
-
+                            flow_phase_comp = True
                             local_name_flow = "flow_mass_phase_comp"
                         else:
                             raise PropertyNotSupportedError(
@@ -327,7 +327,7 @@ see property package for documentation.}"""))
 
                     # Rule for liquid phase mole fraction
                     def rule_liq_frac(self, t, i):
-                        if not flow_mol_phase_comp:
+                        if not flow_phase_comp:
                             sum_flow_comp = sum(
                                 self.control_volume.properties_out[t].
                                 component(local_name_frac)[p, i] *
@@ -347,15 +347,17 @@ see property package for documentation.}"""))
 
                             return sum_flow_comp / sum(
                                 self.control_volume.properties_out[t].
-                                component(local_name_flow)[p]
-                                for p in self._liquid_set)
+                                component(local_name_flow)[p, i]
+                                for p in self._liquid_set
+                                for i in self.config.property_package.
+                                component_list)
                     self.e_liq_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_liq_frac)
 
                     # Rule for vapor phase mass/mole fraction
                     def rule_vap_frac(self, t, i):
-                        if not flow_mol_phase_comp:
+                        if not flow_phase_comp:
                             sum_flow_comp = sum(
                                 self.control_volume.properties_out[t].
                                 component(local_name_frac)[p, i] *
@@ -374,8 +376,10 @@ see property package for documentation.}"""))
 
                             return sum_flow_comp / sum(
                                 self.control_volume.properties_out[t].
-                                component(local_name_flow)[p]
-                                for p in self._vapor_set)
+                                component(local_name_flow)[p, i]
+                                for p in self._vapor_set
+                                for i in self.config.property_package.
+                                component_list)
                     self.e_vap_frac = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_vap_frac)
