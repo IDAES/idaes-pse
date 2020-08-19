@@ -191,7 +191,6 @@ def test_tag_reference():
     m.tag = test_tag
 
     xml_str = svg_tag(m.tag, svg_test_str, idx=0)
-    print(xml_str)
     # lazy testing
     assert("2.2200e" in xml_str)
     assert("4.4400e" in xml_str)
