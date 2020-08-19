@@ -705,7 +705,7 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=idaeslog.NOTSET):
+    def initialize(self, state_args=None, solver=None, outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -726,7 +726,8 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.deactivate()
 
         # Initialize the inlet and outlet state blocks
-        self.control_volume.initialize(outlvl=outlvl)
+        flags = self.control_volume.initialize(state_args=state_args,
+                                               outlvl=outlvl)
 
         # Activate the total condenser spec
         if self.config.condenser_type == CondenserType.totalCondenser:
@@ -748,6 +749,7 @@ see property package for documentation.}"""))
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
+        self.control_volume.release_state(flags=flags)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
