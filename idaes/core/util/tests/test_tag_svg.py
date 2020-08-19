@@ -163,7 +163,7 @@ svg_test_str = \
          id="tspan2608-1"
          x="176.65611"
          y="171.99467"
-         style="stroke-width:0.26458332">1</tspan></text>
+         style="stroke-width:0.26458332"></tspan></text>
     <flowRoot
        xml:space="preserve"
        id="flowRoot2642"
@@ -191,6 +191,7 @@ def test_tag_reference():
     m.tag = test_tag
 
     xml_str = svg_tag(m.tag, svg_test_str, idx=0)
+    print(xml_str)
     # lazy testing
     assert("2.2200e" in xml_str)
     assert("4.4400e" in xml_str)
