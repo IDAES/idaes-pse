@@ -212,8 +212,6 @@ class TestNMPCSim(object):
             nmpc.has_consistent_initial_conditions(nmpc.plant)
 
         t0 = nmpc.plant_time.first()
-        # TODO: Really these should be calculated via
-        # calculate_variable_from_constraint.
         nmpc.plant.rate[t0,:].set_value(0.0)
         nmpc.plant.flow_out[t0].set_value(nmpc.plant.flow_in[t0].value)
         for j in nmpc.plant.components:
@@ -587,13 +585,10 @@ class TestNMPCSim(object):
 
     @pytest.mark.unit
     def test_initialize_by_solving_elements(self):
-        # TODO
         # Make nmpc
         # add setpoint to controller
         # add pwc_constraints
         # call initialize_by_solving_elements
-        #  ^TODO; does this require that ICs are consistent?
-        #   Won't matter here, as they will be...
         # assert that values are as expected.
         nmpc = self.make_nmpc()
         time = nmpc.controller_time
@@ -754,7 +749,6 @@ class TestNMPCSim(object):
 
     @pytest.mark.unit
     def test_solve_control_problem(self):
-        # TODO
         # make nmpc
         # add setpoint
         # initialize, from ICs probably
