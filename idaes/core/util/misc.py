@@ -23,6 +23,9 @@ from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
@@ -148,7 +151,18 @@ def svg_tag(
         id = t.attributes["id"].value
         if id in tag_map:
             # if it's multiline change last line
-            tspan = t.getElementsByTagName("tspan")[-1].childNodes[0]
+            try:
+                tspan = t.getElementsByTagName("tspan")[-1]
+            except IndexError:
+                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
+                _log.warning(f"Skipping output for {tag_map[id]}.")
+                continue
+            try:
+                tspan = tspan.childNodes[0]
+            except IndexError:
+                # No child node means there is a line with no text, so add some.
+                tspan.appendChild(doc.createTextNode(""))
+                tspan = tspan.childNodes[0]
             try:
                 if show_tags:
                     val = tag_map[id]
