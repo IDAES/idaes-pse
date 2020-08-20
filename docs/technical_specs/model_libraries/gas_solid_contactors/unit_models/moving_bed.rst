@@ -172,9 +172,9 @@ List of Variables
    ":math:`\mu_{g,t,x}`", "Dynamic viscosity of gas mixture", "``gas_phase.properties.visc_d``"
    ":math:`\xi_{g,t,x,r}`", "Gas phase reaction extent", "``gas_phase.rate_reaction_extent``"
    ":math:`\xi_{s,t,x,r}`", "Solid phase reaction extent", "``solid_phase.rate_reaction_extent``"
-   ":math:`\rho_{mass,g,t,inlet}`", "Density of gas mixture", "``gas_phase.properties.dens_mass_vap``"
+   ":math:`\rho_{mass,g,t,inlet}`", "Density of gas mixture", "``gas_phase.properties.dens_mass``"
    ":math:`\rho_{mass,s,t,inlet}`", "Density of solid particles", "``solid_phase.properties.dens_mass_sol``"
-   ":math:`\rho_{mol,g,t,x}`", "Molar density of the gas", "``gas_phase.properties.dens_mole_vap``"
+   ":math:`\rho_{mol,g,t,x}`", "Molar density of the gas", "``gas_phase.properties.dens_mole``"
 
 List of Parameters
 ------------------
