@@ -127,6 +127,16 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
+        # Fix state
+        model.props[1].flow_mol.fix(100)
+        model.props[1].temperature.fix(300)
+        model.props[1].pressure.fix(1e5)
+        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
+        model.props[1].mole_frac_comp["argon"].fix(1/3)
+        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
         return model
 
     @pytest.mark.unit
@@ -256,8 +266,11 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
-    @pytest.mark.unit
-    def test_dof(self, model):
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(77.5295)
@@ -266,13 +279,6 @@ class TestStateBlock(object):
         model.props[1].mole_frac_comp["argon"].fix(0.00803)
         model.props[1].mole_frac_comp["oxygen"].fix(0.00967)
 
-        assert degrees_of_freedom(model.props[1]) == 0
-
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
-    def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
@@ -293,7 +299,7 @@ class TestStateBlock(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -305,7 +311,7 @@ class TestStateBlock(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "nitrogen"].value == \
