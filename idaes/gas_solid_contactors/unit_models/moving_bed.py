@@ -44,7 +44,8 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
+from idaes.core import (ControlVolume1DBlock,
+                        UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -52,7 +53,8 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        BurntToast)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
@@ -85,8 +87,7 @@ domain (default=20)"""))
         description="Number of finite elements length domain",
         doc="""length_domain_set - (optional) list of point to use to
 initialize a new ContinuousSet if length_domain is not
-provided (default = [0.0, 1.0]).
-domain (default = [0.0, 1.0])"""))
+provided (default = [0.0, 1.0])"""))
     CONFIG.declare("transformation_method", ConfigValue(
         default="dae.finite_difference",
         description="Method to use for DAE transformation",
@@ -254,9 +255,10 @@ see reaction package for documentation.}"""))
                 self.config.transformation_scheme is None):
             self.config.transformation_scheme = "LAGRANGE-RADAU"
         elif (self.config.transformation_method == "dae.finite_difference" and
-              self.config.transformation_scheme == "LAGRANGE-RADAU"):
-            raise ConfigurationError("{} invalid value for"
-                                     "transformation_scheme argument."
+              self.config.transformation_scheme != "BACKWARD" and
+              self.config.transformation_scheme != "FORWARD"):
+            raise ConfigurationError("{} invalid value for "
+                                     "transformation_scheme argument. "
                                      "Must be ""BACKWARD"" or ""FORWARD"" "
                                      "if transformation_method is"
                                      " ""dae.finite_difference""."
@@ -272,9 +274,16 @@ see reaction package for documentation.}"""))
 
         # Set flow directions for the control volume blocks
         # Gas flows from 0 to 1, solid flows from 1 to 0
+        # An if statement is used here despite only one option to allow for
+        # future extensions to other flow configurations
         if self.config.flow_type == "counter_current":
             set_direction_gas = FlowDirection.forward
             set_direction_solid = FlowDirection.backward
+        else:
+            raise BurntToast(
+                    "{} encountered unrecognized argument "
+                    "for flow type. Please contact the IDAES"
+                    " developers with this bug.".format(self.name))
 
         # Set arguments for gas sides if homoogeneous reaction block
         if self.config.gas_phase_config.reaction_package is not None:
@@ -493,17 +502,17 @@ see reaction package for documentation.}"""))
         gas_phase = self.config.gas_phase_config
         solid_phase = self.config.solid_phase_config
 
-        # Declare Imutable Parameters
-        self.pi = constants.pi
         # Declare Mutable Parameters
         self.eps = Param(mutable=True,
                          default=1e-8,
                          doc='Smoothing Factor for Smooth IF Statements')
 
         # Unit Model variables
-        self.bed_diameter = Var(domain=Reals, initialize=1,
+        self.bed_diameter = Var(domain=Reals,
+                                initialize=1,
                                 doc='Reactor diameter [m]')
-        self.bed_area = Var(domain=Reals, initialize=1,
+        self.bed_area = Var(domain=Reals,
+                            initialize=1,
                             doc='Reactor cross-sectional area [m2]')
         self.bed_height = Var(domain=Reals, initialize=1,
                               doc='Bed length [m]')
@@ -556,7 +565,7 @@ see reaction package for documentation.}"""))
         @self.Constraint(doc="Bed area")
         def bed_area_eqn(b):
             return b.bed_area == (
-                    b.pi*(0.5*b.bed_diameter)**2)
+                    constants.pi*(0.5*b.bed_diameter)**2)
 
         # Area of gas side, and solid side
         @self.Constraint(self.flowsheet().config.time,
@@ -641,7 +650,11 @@ see reaction package for documentation.}"""))
                          b.bed_voidage**3)))
             # The above expression has no absolute values - assumes:
             # (velocity_superficial_gas + velocity_superficial_solid) > 0
-
+        else:
+            raise BurntToast(
+                    "{} encountered unrecognized argument for "
+                    "the pressure drop correlation. Please contact the IDAES"
+                    " developers with this bug.".format(self.name))
         # ---------------------------------------------------------------------
         # Reaction contraints
 

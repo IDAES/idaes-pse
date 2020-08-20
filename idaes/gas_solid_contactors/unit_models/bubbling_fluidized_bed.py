@@ -248,9 +248,10 @@ see reaction package for documentation.}"""))
                 self.config.transformation_scheme is None):
             self.config.transformation_scheme = "LAGRANGE-RADAU"
         elif (self.config.transformation_method == "dae.finite_difference" and
-              self.config.transformation_scheme == "LAGRANGE-RADAU"):
-            raise ConfigurationError("{} invalid value for"
-                                     "transformation_scheme argument."
+              self.config.transformation_scheme != "BACKWARD" and
+              self.config.transformation_scheme != "FORWARD"):
+            raise ConfigurationError("{} invalid value for "
+                                     "transformation_scheme argument. "
                                      "Must be ""BACKWARD"" or ""FORWARD"" "
                                      "if transformation_method is"
                                      " ""dae.finite_difference""."
@@ -538,7 +539,6 @@ see reaction package for documentation.}"""))
         """
 
         # Declare Imutable Parameters
-        self.pi = constants.pi
         self.gc = constants.acceleration_gravity  # units - m/s^2
 
         # Declare Mutable Parameters
@@ -785,7 +785,7 @@ see reaction package for documentation.}"""))
         @self.Constraint(doc="Bed Area")
         def bed_area_eqn(b):
             return b.bed_area == (
-                    b.pi*(0.5*b.bed_diameter)**2)
+                    constants.pi*(0.5*b.bed_diameter)**2)
 
         # Area of bubble, gas_emulsion, solid_emulsion
         @self.Constraint(self.flowsheet().config.time,
@@ -1613,7 +1613,7 @@ see reaction package for documentation.}"""))
                         2.59 * (blk.gc**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -
                           blk.velocity_emulsion_gas[t, x]) *
-                            ((blk.pi/4) * blk.bed_diameter**2))**0.4)
+                            ((constants.pi/4) * blk.bed_diameter**2))**0.4)
                 blk.bubble_growth_coeff[t, x] = value(
                         2.56e-2 * sqrt(blk.bed_diameter / blk.gc) /
                         blk.solid_inlet_block[t]._params.velocity_mf)
