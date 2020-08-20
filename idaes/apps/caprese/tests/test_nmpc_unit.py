@@ -163,7 +163,7 @@ class TestNMPCSim(object):
             nmpc.validate_fixedness(nmpc.plant)
 
     @pytest.mark.unit
-    def test_tranfser_current_plant_state_to_controller(self):
+    def test_transfer_current_plant_state_to_controller(self):
         nmpc = self.make_nmpc()
         ts = nmpc.plant_time.first() + nmpc.sample_time
         nmpc.plant.conc[ts,'A'].set_value(4)
