@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Test for Cappresse's module for NMPC.
+Test for Caprese's module for NMPC.
 """
 
 import pyomo.environ as aml
