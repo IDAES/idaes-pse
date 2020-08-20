@@ -251,7 +251,7 @@ class FWH0DData(UnitModelBlockData):
                 return b.steam_state[t].pressure == b.mixed_state[t].pressure
 
             # Connect the mixer to the condensing section inlet
-            self.mix_out_arc = Arc(
+            self.SMX = Arc(
                 source=self.drain_mix.outlet, destination=self.condense.inlet_1
             )
 
@@ -263,14 +263,14 @@ class FWH0DData(UnitModelBlockData):
             # almost always be overridden by the user fixing an area later
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
-                self.desuperheat_drain_arc = Arc(
+                self.SDS = Arc(
                     source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
                 )
             else:
-                self.desuperheat_drain_arc = Arc(
+                self.SDS = Arc(
                     source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
                 )
-            self.condense_out2_arc = Arc(
+            self.FW2 = Arc(
                 source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
             )
 
@@ -281,10 +281,10 @@ class FWH0DData(UnitModelBlockData):
             # set default area less than condensing section area, this will
             # almost always be overridden by the user fixing an area later
             self.cooling.area.value = 10
-            self.cooling_out2_arc = Arc(
+            self.FW1 = Arc(
                 source=self.cooling.outlet_2, destination=self.condense.inlet_2
             )
-            self.condense_out1_arc = Arc(
+            self.SC = Arc(
                 source=self.condense.outlet_1, destination=self.cooling.inlet_1
             )
 
