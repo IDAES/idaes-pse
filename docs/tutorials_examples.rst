@@ -1,7 +1,7 @@
 ﻿Tutorials and Examples
 ======================
 
-Tutorials and examples for IDAES are located at the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/>`_. 
+Tutorials and examples for IDAES are located on the |examples-site|.
 
 These tutorials and examples are maintained on the
 `IDAES examples repository <https://github.com/IDAES/examples-pse>`_. You can install the associated
@@ -15,4 +15,3 @@ If you want to develop custom unit and property models refer to the
 :ref:`advanced user guide <advanced_user_guide/index:Advanced User Guide>`.
 
 
-    
