@@ -561,6 +561,21 @@ see property package for documentation.}"""))
                              " being used for initialization.")
             solver = get_default_solver()
 
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                self.control_volume.properties_in[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
         # Initialize the inlet and outlet state blocks
         flags = self.control_volume.initialize(state_args=state_args,
                                                solver=solver,
