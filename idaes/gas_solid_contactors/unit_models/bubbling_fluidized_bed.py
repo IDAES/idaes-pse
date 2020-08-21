@@ -538,9 +538,6 @@ see reaction package for documentation.}"""))
             None
         """
 
-        # Declare Imutable Parameters
-        self.gc = constants.acceleration_gravity  # units - m/s^2
-
         # Declare Mutable Parameters
         self.eps = Param(mutable=True,
                          default=1e-8,
@@ -848,14 +845,16 @@ see reaction package for documentation.}"""))
             return (1e2*(b.bubble_growth_coeff[t, x] *
                          b.solid_emulsion.properties[t, x]._params.velocity_mf
                          )**2 == 1e2 *
-                    (2.56e-2**2) * (b.bed_diameter/b.gc))
+                    (2.56e-2**2) * (
+                        b.bed_diameter/constants.acceleration_gravity))
 
         # Maximum bubble diameter
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          doc="Maximum Bubble Diameter")
         def bubble_diameter_maximum(b, t, x):
-            return ((b.bubble_diameter_max[t, x]**5)*b.gc ==
+            return ((b.bubble_diameter_max[t, x]**5) *
+                    constants.acceleration_gravity ==
                     (2.59**5)*((b.velocity_superficial_gas[t, x] -
                                 b.velocity_emulsion_gas[t, x]) *
                                b.bed_area)**2)
@@ -874,7 +873,7 @@ see reaction package for documentation.}"""))
         def bubble_diameter_eqn(b, t, x):
             if x == b.length_domain.first():
                 return (1e3*b.bubble_diameter[t, x] ** 5 == 1e3 * (1.38 ** 5) *
-                        (b.gc ** -1) *
+                        (constants.acceleration_gravity ** -1) *
                         ((b.velocity_superficial_gas[t, x]
                             - b.velocity_emulsion_gas[t, x]) *
                         b.area_orifice) ** 2)
@@ -890,7 +889,8 @@ see reaction package for documentation.}"""))
                          self.length_domain,
                          doc="Bubble Rise Velocity")
         def bubble_velocity_rise(b, t, x):
-            return (b.velocity_bubble_rise[t, x]**2 == (0.711**2) * b.gc *
+            return (b.velocity_bubble_rise[t, x]**2 == (0.711**2) *
+                    constants.acceleration_gravity *
                     b.bubble_diameter[t, x])
 
         # Emulsion region voidage - Davidson model
@@ -941,7 +941,8 @@ see reaction package for documentation.}"""))
                 # 1e5 = pressure unit conversion factor from Pa to bar
                 return (1e-2*(b.gas_emulsion.deltaP[t, x] *
                               1e5) ==
-                        1e-2*(- b.gc * (1 - b.voidage_average[t, x]) *
+                        1e-2*(- constants.acceleration_gravity *
+                              (1 - b.voidage_average[t, x]) *
                         b.solid_emulsion.properties[t, x].dens_mass_particle)
                         )
 
@@ -968,7 +969,7 @@ see reaction package for documentation.}"""))
                     34.2225 * (
                     1e-4 *
                     b.gas_emulsion.properties[t, x].diffusion_comp[j]) *
-                    b.gc ** 0.5)
+                    constants.acceleration_gravity ** 0.5)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
@@ -1019,7 +1020,7 @@ see reaction package for documentation.}"""))
                         34.2225 * b.bubble.properties[t, x].therm_cond *
                         b.bubble.properties[t, x].enth_mol *
                         b.bubble.properties[t, x].dens_mol *
-                        (b.gc ** 0.5))
+                        (constants.acceleration_gravity ** 0.5))
 
             # Convective heat transfer coefficient
             @self.Constraint(self.flowsheet().config.time,
@@ -1605,20 +1606,21 @@ see reaction package for documentation.}"""))
                 blk.velocity_emulsion_gas[t, x] = value(
                         blk.solid_inlet_block[t]._params.velocity_mf)
                 blk.bubble_diameter[t, x] = value(
-                        1.38 * (blk.gc**(-0.2)) *
+                        1.38 * (constants.acceleration_gravity**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -
                           blk.velocity_emulsion_gas[t, x]) *
                             (1/blk.number_orifice))**0.4)
                 blk.bubble_diameter_max[t, x] = value(
-                        2.59 * (blk.gc**(-0.2)) *
+                        2.59 * (constants.acceleration_gravity**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -
                           blk.velocity_emulsion_gas[t, x]) *
                             ((constants.pi/4) * blk.bed_diameter**2))**0.4)
                 blk.bubble_growth_coeff[t, x] = value(
-                        2.56e-2 * sqrt(blk.bed_diameter / blk.gc) /
+                        2.56e-2 * sqrt(blk.bed_diameter /
+                                       constants.acceleration_gravity) /
                         blk.solid_inlet_block[t]._params.velocity_mf)
                 blk.velocity_bubble_rise[t, x] = value(
-                        0.711 * sqrt(blk.gc *
+                        0.711 * sqrt(constants.acceleration_gravity *
                                      blk.bubble_diameter[t, x]))
                 blk.velocity_bubble[t, x] = (
                         blk.velocity_superficial_gas[t, x].value +
