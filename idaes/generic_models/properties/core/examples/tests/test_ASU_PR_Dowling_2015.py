@@ -127,16 +127,6 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
-        # Fix state
-        model.props[1].flow_mol.fix(100)
-        model.props[1].temperature.fix(300)
-        model.props[1].pressure.fix(1e5)
-        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
-        model.props[1].mole_frac_comp["argon"].fix(1/3)
-        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
-
-        assert degrees_of_freedom(model.props[1]) == 0
-
         return model
 
     @pytest.mark.unit
@@ -279,6 +269,8 @@ class TestStateBlock(object):
         model.props[1].mole_frac_comp["argon"].fix(0.00803)
         model.props[1].mole_frac_comp["oxygen"].fix(0.00967)
 
+        assert degrees_of_freedom(model.props[1]) == 0
+
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
@@ -335,10 +327,15 @@ class TestStateBlock(object):
         model.props[1].mole_frac_comp["nitrogen"].fix(0.7800)
         model.props[1].mole_frac_comp["argon"].fix(0.0100)
         model.props[1].mole_frac_comp["oxygen"].fix(0.2100)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
         model.props.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(model) == 0
 
         results = solver.solve(model)
 
@@ -363,10 +360,15 @@ class TestStateBlock(object):
         model.props[1].mole_frac_comp["nitrogen"].fix(0.6653)
         model.props[1].mole_frac_comp["argon"].fix(0.0140)
         model.props[1].mole_frac_comp["oxygen"].fix(0.3207)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
 
         model.props.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(model) == 0
 
         results = solver.solve(model)
 

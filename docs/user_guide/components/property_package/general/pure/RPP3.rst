@@ -12,8 +12,6 @@ Methods for calculating pure component properties from:
 The Properties of Gases & Liquids, 3rd Edition
 Reid, Prausnitz and Polling, 1977, McGraw-Hill
 
-All methods use SI units.
-
 Ideal Gas Molar Heat Capacity (Constant Pressure)
 -------------------------------------------------
 
@@ -21,15 +19,17 @@ Properties of Gases and Liquids uses the following correlation for the ideal gas
 
 .. math:: c_{\text{p ig}} = A + B \times T + C \times T^2 + D \times T^3
 
+Units are calories per gram-mole kelvin and Kelvin.
+
 **Parameters**
 
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
-   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
-   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
-   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{cal/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{cal/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{cal/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{cal/mol}\cdotp\text{K}^4`", ""
 
 Ideal Gas Molar Enthalpy
 ------------------------
@@ -38,16 +38,18 @@ The correlation for the ideal gas molar enthalpy is derived from the correlation
 
 .. math:: h_{\text{ig}} - h_{\text{ig ref}} = A \times (T-T_{ref}) + \frac{B}{2} \times (T^2 - T_{ref}^2) + \frac{C}{3} \times (T^3 - T_{ref}^3) + \frac{D}{4} \times (T^4 - T_{ref}^4) + \Delta h_{\text{form, Vap}}
 
+Units are calories per gram-mole kelvin and Kelvin.
+
 **Parameters**
 
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
-   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
-   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
-   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
-   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", ":math:`\text{J/mol}`", "Molar heat of formation at reference state"
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{cal/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{cal/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{cal/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{cal/mol}\cdotp\text{K}^4`", ""
+   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", ":math:`\text{cal/mol}`", "Molar heat of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation.
@@ -59,16 +61,18 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
 
 .. math:: s_{\text{ig}} = A \times ln(T/T_{ref}) + B \times (T - T_{ref}) + \frac{C}{2} \times (T^2 - T_{ref}^2) + \frac{D}{3} \times (T^3 - T_{ref}^3) + s_{\text{form, Vap}}
 
+Units are calories per gram-mole kelvin and Kelvin.
+
 **Parameters**
 
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{J/mol}\cdotp\text{K}`", ""
-   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{J/mol}\cdotp\text{K}^2`", ""
-   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{J/mol}\cdotp\text{K}^3`", ""
-   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{J/mol}\cdotp\text{K}^4`", ""
-   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", ":math:`\text{J/mol}\cdotp\text{K}`", "Standard molar entropy of formation at reference state"
+   ":math:`A`", "cp_mol_ig_comp_coeff_A", ":math:`\text{cal/mol}\cdotp\text{K}`", ""
+   ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{cal/mol}\cdotp\text{K}^2`", ""
+   ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{cal/mol}\cdotp\text{K}^3`", ""
+   ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{cal/mol}\cdotp\text{K}^4`", ""
+   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", ":math:`\text{cal/mol}\cdotp\text{K}`", "Standard molar entropy of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation .
@@ -90,7 +94,4 @@ Units are mmHg and Kelvin.
    ":math:`A`", "pressure_sat_comp_coeff_A", "None", ""
    ":math:`B`", "pressure_sat_comp_coeff_B", ":math:`\text{K}`", ""
    ":math:`C`", "pressure_sat_comp_coeff_C", ":math:`\text{K}`", ""
-
-.. note::
-    This correlation is only valid at temperatures **below** the critical temperature. Above this point, there is no real solution to the equation.
 

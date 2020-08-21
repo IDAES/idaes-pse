@@ -18,10 +18,17 @@ This example shows how to set up a property package to do air separation
 phase equilibrium in the generic framework using Peng-Robinson equation
 along with methods drawn from the pre-built IDAES property libraries.
 
-The example includes two dictionaries. The dictionary named configuration
-contains parameters obtained from The Properties of Gases and Liquids (1987)
-4th edition and NIST. The dictionary named configuration_Dowling_2015 contains
-parameters from The Properties of Gases and Liquids (1987) 3rd edition.
+The example includes two dictionaries.
+
+1. The dictionary named configuration contains parameters obtained from
+The Properties of Gases and Liquids (1987) 4th edition and NIST.
+
+2. The dictionary named configuration_Dowling_2015 contains parameters used in
+A framework for efficient large scale equation-oriented flowsheet optimization
+(2015) Dowling. The parameters are extracted from Properties of Gases and
+Liquids (1977) 3rd edition for Antoine's vapor equation and acentric factors
+and converted values from the Properties of Gases and Liquids (1977)
+3rd edition to j.
 """
 
 # Import Python libraries
@@ -57,6 +64,7 @@ _log = logging.getLogger(__name__)
 #     Retrieved 16th August, 2020
 # [3] The Properties of Gases and Liquids (1987)
 #     3rd edition, Chemical Engineering Series - Robert C. Reid
+#     Cp parameters where converted to j in Dowling 2015
 # [4] A framework for efficient large scale equation-oriented flowsheet optimization (2015)
 #     Computers and Chemical Engineering - Alexander W. Dowling
 
@@ -184,8 +192,8 @@ configuration_Dowling_2015 = {
     # Specifying components
     "components": {
         "nitrogen": {"type": Component,
-                    "enth_mol_ig_comp": RPP3,
-                    "entr_mol_ig_comp": RPP3,
+                    "enth_mol_ig_comp": RPP,
+                    "entr_mol_ig_comp": RPP,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -208,8 +216,8 @@ configuration_Dowling_2015 = {
                             'C': (-6.60, pyunits.K)}}},
 
         "argon": {"type": Component,
-                    "enth_mol_ig_comp": RPP3,
-                    "entr_mol_ig_comp": RPP3,
+                    "enth_mol_ig_comp": RPP,
+                    "entr_mol_ig_comp": RPP,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -232,8 +240,8 @@ configuration_Dowling_2015 = {
                             'C': (-5.84, pyunits.K)}}},
 
         "oxygen": {"type": Component,
-                    "enth_mol_ig_comp": RPP3,
-                    "entr_mol_ig_comp": RPP3,
+                    "enth_mol_ig_comp": RPP,
+                    "entr_mol_ig_comp": RPP,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {

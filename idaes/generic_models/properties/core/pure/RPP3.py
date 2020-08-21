@@ -14,7 +14,7 @@
 Methods for calculating pure component properties from:
 
 The Properties of Gases & Liquids, 3rd Edition
-Reid, Prausnitz and Polling, 1987, McGraw-Hill
+Reid, Prausnitz and Polling, 1977, McGraw-Hill
 
 All parameter indicies based on conventions used by the source
 """
@@ -31,34 +31,34 @@ class cp_mol_ig_comp():
     def build_parameters(cobj):
         cobj.cp_mol_ig_comp_coeff_A = Var(
                 doc="Parameter A for ideal gas molar heat capacity",
-                units=pyunits.J/pyunits.mol/pyunits.K)
+                units=pyunits.cal/pyunits.mol/pyunits.K)
         set_param_value(cobj,
                         param="cp_mol_ig_comp_coeff",
-                        units=pyunits.J/pyunits.mol/pyunits.K,
+                        units=pyunits.cal/pyunits.mol/pyunits.K,
                         index="A")
 
         cobj.cp_mol_ig_comp_coeff_B = Var(
                 doc="Parameter B for ideal gas molar heat capacity",
-                units=pyunits.J/pyunits.mol/pyunits.K**2)
+                units=pyunits.cal/pyunits.mol/pyunits.K**2)
         set_param_value(cobj,
                         param="cp_mol_ig_comp_coeff",
-                        units=pyunits.J/pyunits.mol/pyunits.K**2,
+                        units=pyunits.cal/pyunits.mol/pyunits.K**2,
                         index="B")
 
         cobj.cp_mol_ig_comp_coeff_C = Var(
                 doc="Parameter C for ideal gas molar heat capacity",
-                units=pyunits.J/pyunits.mol/pyunits.K**3)
+                units=pyunits.cal/pyunits.mol/pyunits.K**3)
         set_param_value(cobj,
                         param="cp_mol_ig_comp_coeff",
-                        units=pyunits.J/pyunits.mol/pyunits.K**3,
+                        units=pyunits.cal/pyunits.mol/pyunits.K**3,
                         index="C")
 
         cobj.cp_mol_ig_comp_coeff_D = Var(
                 doc="Parameter D for ideal gas molar heat capacity",
-                units=pyunits.J/pyunits.mol/pyunits.K**4)
+                units=pyunits.cal/pyunits.mol/pyunits.K**4)
         set_param_value(cobj,
                         param="cp_mol_ig_comp_coeff",
-                        units=pyunits.J/pyunits.mol/pyunits.K**4,
+                        units=pyunits.cal/pyunits.mol/pyunits.K**4,
                         index="D")
 
     def return_expression(b, cobj, T):
@@ -92,10 +92,10 @@ class enth_mol_ig_comp():
 
         cobj.enth_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar heat of formation @ Tref",
-                units=h_units)
+                units=pyunits.cal/pyunits.mol)
         set_param_value(cobj,
                         param="enth_mol_form_vap_comp_ref",
-                        units=h_units)
+                        units=pyunits.cal/pyunits.mol)
 
     def return_expression(b, cobj, T):
         # Specific enthalpy
@@ -113,7 +113,7 @@ class enth_mol_ig_comp():
                 (cobj.cp_mol_ig_comp_coeff_C/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_B/2)*(T**2-Tr**2) +
                 cobj.cp_mol_ig_comp_coeff_A*(T-Tr), h_units) +
-             cobj.enth_mol_form_vap_comp_ref)
+             pyunits.convert(cobj.enth_mol_form_vap_comp_ref, h_units))
 
         return h
 
@@ -132,10 +132,10 @@ class entr_mol_ig_comp():
 
         cobj.entr_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar entropy of formation @ Tref",
-                units=s_units)
+                units=pyunits.cal/pyunits.mol/pyunits.K)
         set_param_value(cobj,
                         param="entr_mol_form_vap_comp_ref",
-                        units=s_units)
+                        units=pyunits.cal/pyunits.mol/pyunits.K)
 
     def return_expression(b, cobj, T):
         # Specific entropy
@@ -154,8 +154,8 @@ class entr_mol_ig_comp():
                 (cobj.cp_mol_ig_comp_coeff_C/2)*(T**2-Tr**2) +
                 cobj.cp_mol_ig_comp_coeff_B*(T-Tr) +
                 cobj.cp_mol_ig_comp_coeff_A*log(T/Tr), s_units) +
-             cobj.entr_mol_form_vap_comp_ref)
-
+                pyunits.convert(cobj.entr_mol_form_vap_comp_ref, s_units))
+             
         return s
 
 

@@ -124,16 +124,6 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
-        # Fix state
-        model.props[1].flow_mol.fix(100)
-        model.props[1].temperature.fix(300)
-        model.props[1].pressure.fix(1e5)
-        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
-        model.props[1].mole_frac_comp["argon"].fix(1/3)
-        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
-
-        assert degrees_of_freedom(model.props[1]) == 0
-
         return model
 
     @pytest.mark.unit
@@ -272,6 +262,11 @@ class TestStateBlock(object):
         model.props[1].flow_mol.fix(1)
         model.props[1].temperature.fix(85.00)
         model.props[1].pressure.fix(101325)
+        model.props[1].mole_frac_comp["nitrogen"].fix(1/3)
+        model.props[1].mole_frac_comp["argon"].fix(1/3)
+        model.props[1].mole_frac_comp["oxygen"].fix(1/3)
+
+        assert degrees_of_freedom(model.props[1]) == 0
 
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
