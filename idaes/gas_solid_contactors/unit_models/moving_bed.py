@@ -608,7 +608,7 @@ see reaction package for documentation.}"""))
                          doc="Solid superficial velocity")
         def solid_super_vel(b, t):
             return (b.velocity_superficial_solid[t] * b.bed_area *
-                    b.solid_phase.properties[t, 1].dens_mass_sol ==
+                    b.solid_phase.properties[t, 1].dens_mass_particle ==
                     b.solid_phase.properties[t, 1].flow_mass)
 
         # Gas side pressure drop calculation
@@ -623,7 +623,7 @@ see reaction package for documentation.}"""))
             def gas_phase_config_pressure_drop(b, t, x):
                 return b.gas_phase.deltaP[t, x]*1e5 == -0.2*(
                         b.velocity_superficial_gas[t, x] *
-                        (b.solid_phase.properties[t, x].dens_mass_sol -
+                        (b.solid_phase.properties[t, x].dens_mass_particle -
                          b.gas_phase.properties[t, x].dens_mass))
         elif (self.config.has_pressure_change and
               self.config.pressure_drop_type == "ergun_correlation"):

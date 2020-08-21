@@ -26,7 +26,7 @@ through reaction, mass and heat transfer.
 Degrees of Freedom
 ------------------
 
-BFBRs generally have at least 3 (or more) degrees of freedom. Typically fixed variables are reactor length, diameter 
+BFBRs generally have at least 3 (or more) degrees of freedom, consisting of design and operating variables. The design variables of reactor length, diameter and number of orifices are typically the minimum variables to be fixed. 
 and number of orifices in the distributor.
 
 Model Structure
@@ -455,7 +455,7 @@ Variable                    Name                                                
 :math:`A_{ge,t,x}`          gas_emulsion_region.area                          
 :math:`A_{se,t,x}`          solid_emulsion_region.area                          
 :math:`\Delta P_{ge,t,x}`   gas_emulsion_region.deltaP                            pressure drop across gas emulsion region
-:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_sol        solid mass density         
+:math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_particle   solid particle mass density         
 :math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
 :math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                 gas mole density in the bubble region 
 :math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap           gas mole density in the emulsion region       

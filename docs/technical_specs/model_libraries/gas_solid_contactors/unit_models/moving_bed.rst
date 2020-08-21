@@ -25,7 +25,7 @@ A. Ostace, A. Lee, C.O. Okoli, A.P. Burgard, D.C. Miller, D. Bhattacharyya, Math
 Degrees of Freedom
 ------------------
 
-MBRs generally have at least 2 (or more) degrees of freedom. Typically fixed variables are reactor length and diameter.
+MBRs generally have at least 2 (or more) degrees of freedom, consisting of design and operating variables. The design variables of reactor length and diameter are typically the minimum variables to be fixed.
 
 Model Structure
 ---------------
@@ -173,7 +173,7 @@ List of Variables
    ":math:`\xi_{g,t,x,r}`", "Gas phase reaction extent", "``gas_phase.rate_reaction_extent``"
    ":math:`\xi_{s,t,x,r}`", "Solid phase reaction extent", "``solid_phase.rate_reaction_extent``"
    ":math:`\rho_{mass,g,t,inlet}`", "Density of gas mixture", "``gas_phase.properties.dens_mass``"
-   ":math:`\rho_{mass,s,t,inlet}`", "Density of solid particles", "``solid_phase.properties.dens_mass_sol``"
+   ":math:`\rho_{mass,s,t,inlet}`", "Density of solid particles", "``solid_phase.properties.dens_mass_particle``"
    ":math:`\rho_{mol,g,t,x}`", "Molar density of the gas", "``gas_phase.properties.dens_mole``"
 
 List of Parameters

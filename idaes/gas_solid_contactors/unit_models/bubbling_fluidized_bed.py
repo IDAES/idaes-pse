@@ -942,7 +942,7 @@ see reaction package for documentation.}"""))
                 return (1e-2*(b.gas_emulsion.deltaP[t, x] *
                               1e5) ==
                         1e-2*(- b.gc * (1 - b.voidage_average[t, x]) *
-                        b.solid_emulsion.properties[t, x].dens_mass_sol)
+                        b.solid_emulsion.properties[t, x].dens_mass_particle)
                         )
 
         elif self.config.has_pressure_change is False:
