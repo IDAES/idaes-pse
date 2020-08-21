@@ -39,6 +39,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 _log = idaeslog.getLogger(__name__)
 
@@ -591,7 +592,8 @@ see property package for documentation.}"""))
                         "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
+                   state_args_vap=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         # TODO:
         # 1. Check initialization for dynamic mode. Currently not supported.
@@ -620,74 +622,124 @@ see property package for documentation.}"""))
                     "Vapor side draw split fraction not fixed but "
                     "has_vapor_side_draw set to True.")
 
-        # Initialize the inlet state blocks
+        # Create initial guess if not provided by using current values
+        if self.config.is_feed_tray and state_args_feed is None:
+            state_args_feed = {}
+            state_dict = (
+                self.properties_in_feed[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_feed[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_feed[k][m] = state_dict[k][m].value
+                else:
+                    state_args_feed[k] = state_dict[k].value
+
+        # Create initial guess if not provided by using current values
+        if state_args_liq is None:
+            state_args_liq = {}
+            state_dict = (
+                self.properties_in_liq[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_liq[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_liq[k][m] = state_dict[k][m].value
+                else:
+                    state_args_liq[k] = state_dict[k].value
+
+        # Create initial guess if not provided by using current values
+        if state_args_vap is None:
+            state_args_vap = {}
+            state_dict = (
+                self.properties_in_vap[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_vap[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_vap[k][m] = state_dict[k][m].value
+                else:
+                    state_args_vap[k] = state_dict[k].value
+
         if self.config.is_feed_tray:
-            self.properties_in_feed.initialize(state_args=state_args_feed,
+            self.properties_in_feed.initialize(outlvl=outlvl,
                                                solver=solver,
-                                               outlvl=outlvl)
-        self.properties_in_liq.initialize(state_args=state_args_liq,
-                                          solver=solver,
-                                          outlvl=outlvl)
-        self.properties_in_vap.initialize(state_args=state_args_vap,
-                                          solver=solver,
-                                          outlvl=outlvl)
+                                               optarg=optarg,
+                                               hold_state=False,
+                                               state_args=state_args_feed,
+                                               state_vars_fixed=True)
+
+        liq_in_flags = self.properties_in_liq. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=True,
+                       state_args=state_args_feed,
+                       state_vars_fixed=False)
+
+        vap_in_flags = self.properties_in_vap. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=True,
+                       state_args=state_args_feed,
+                       state_vars_fixed=False)
 
         # state args to initialize the mixed outlet state block
         state_args_mixed = {}
 
-        if self.config.is_feed_tray and state_args_feed is not None:
+        if self.config.is_feed_tray:
 
-            # if initial guess provided for the feed stream, initialize the
-            # mixed state block at the same condition.
+            # if feed tray, initialize the mixed state block at
+            # the same condition.
             state_args_mixed = state_args_feed
         else:
-            state_dict = \
-                self.properties_out[self.flowsheet().config.time.first()].\
-                define_state_vars()
-            if self.config.is_feed_tray:
-                for k in state_dict.keys():
-                    if state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                self.properties_in_feed[self.flowsheet().
-                                                        config.time.first()].\
-                                component(state_dict[k].local_name)[m].value
-                    else:
-                        state_args_mixed[k] = \
-                            self.properties_in_feed[self.flowsheet().
-                                                    config.time.first()].\
-                            component(state_dict[k].local_name).value
-
-            else:
-                # if not feed tray, initialize mixed state block at average of
-                # vap/liq inlets except pressure. While this is crude, it
-                # will work for most combination of state vars.
-                for k in state_dict.keys():
-                    if k == "pressure":
-                        # Take the lowest pressure and this is the liq inlet
-                        state_args_mixed[k] = self.properties_in_liq[0].\
-                            component(state_dict[k].local_name).value
-                    elif state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                0.5 * (self.properties_in_liq[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value + self.properties_in_vap[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value)
-                    else:
-                        state_args_mixed[k] = \
+            # if not feed tray, initialize mixed state block at average of
+            # vap/liq inlets except pressure. While this is crude, it
+            # will work for most combination of state vars.
+            state_dict = (
+                self.properties_in_liq[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+            for k in state_dict.keys():
+                if k == "pressure":
+                    # Take the lowest pressure and this is the liq inlet
+                    state_args_mixed[k] = self.properties_in_liq[0].\
+                        component(state_dict[k].local_name).value
+                elif state_dict[k].is_indexed():
+                    state_args_mixed[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_mixed[k][m] = \
                             0.5 * (self.properties_in_liq[0].
-                                   component(state_dict[k].local_name).value +
-                                   self.properties_in_vap[0].
-                                   component(state_dict[k].local_name).value)
+                                   component(state_dict[k].local_name)[m].
+                                   value + self.properties_in_vap[0].
+                                   component(state_dict[k].local_name)[m].
+                                   value)
+                else:
+                    state_args_mixed[k] = \
+                        0.5 * (self.properties_in_liq[0].
+                               component(state_dict[k].local_name).value +
+                               self.properties_in_vap[0].
+                               component(state_dict[k].local_name).value)
 
         # Initialize the mixed outlet state block
-        self.properties_out.initialize(state_args=state_args_mixed,
-                                       solver=solver,
-                                       outlvl=outlvl)
+        self.properties_out. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=False,
+                       state_args=state_args_mixed,
+                       state_vars_fixed=False)
+
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
 
@@ -718,7 +770,7 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
+        init_log.info(
             "Mass balance solve {}.".format(idaeslog.condition(res))
         )
 
@@ -731,7 +783,7 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
+        init_log.info(
             "Mass and energy balance solve {}.".format(idaeslog.condition(res))
         )
 
@@ -743,11 +795,21 @@ see property package for documentation.}"""))
         except AttributeError:
             pass
 
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
-            "Mass, energy and pressure balance solve {}.".
-            format(idaeslog.condition(res)))
+        if degrees_of_freedom(self) == 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
+            init_log.info(
+                "Mass, energy and pressure balance solve {}.".
+                format(idaeslog.condition(res)))
+        else:
+            raise Exception("State vars fixed but degrees of freedom "
+                            "for tray block is not zero during "
+                            "initialization.")
+
+        self.properties_in_liq.release_state(flags=liq_in_flags,
+                                             outlvl=outlvl)
+        self.properties_in_vap.release_state(flags=vap_in_flags,
+                                             outlvl=outlvl)
         init_log.info(
             "Initialization complete, status {}.".
             format(idaeslog.condition(res)))
