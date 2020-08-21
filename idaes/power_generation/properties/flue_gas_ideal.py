@@ -225,12 +225,15 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("temperature", 1e-1)
         self.set_default_scaling("pressure_red", 1e-3)
         self.set_default_scaling("temperature_red", 1)
+        self.set_default_scaling("enth_mol_phase", 1e-3)
         self.set_default_scaling("enth_mol", 1e-3)
-        self.set_default_scaling("entrolpy", 1e-2)
-        self.set_default_scaling("cp_mol", 1)
+        self.set_default_scaling("entr_mol", 1e-2)
+        self.set_default_scaling("entr_mol_phase", 1e-2)
+        self.set_default_scaling("cp_mol", 0.1)
+        self.set_default_scaling("cp_mol_phase", 0.1)
         self.set_default_scaling("compress_fact", 1)
         self.set_default_scaling("dens_mol_phase", 1)
-        self.set_default_scaling("vapor_pressure", 1e-4)
+        self.set_default_scaling("pressure_sat", 1e-4)
         self.set_default_scaling("visc_d_comp", 1e4)
         self.set_default_scaling("therm_cond_comp", 1e2)
         self.set_default_scaling("visc_d", 1e4)
@@ -248,12 +251,15 @@ class FlueGasParameterData(PhysicalParameterBlock):
             'temperature_crit': {'method': None, 'units': 'K'},
             'pressure_red': {'method': None, 'units': None},
             'temperature_red': {'method': None, 'units': None},
+            'enth_mol_phase': {'method': '_enthalpy_calc', 'units': 'J/mol'},
+            'entr_mol_phase': {'method': '_entropy_calc', 'units': 'J/mol/K'},
             'enth_mol': {'method': '_enthalpy_calc', 'units': 'J/mol'},
             'entr_mol': {'method': '_entropy_calc', 'units': 'J/mol.K'},
             'cp_mol': {'method': '_heat_cap_calc', 'units': 'J/mol.K'},
+            'cp_mol_phase': {'method': '_heat_cap_calc', 'units': 'J/mol/K'},
             'compress_fact': {'method': '_compress_fact', 'units': None},
             'dens_mol_phase': {'method': '_dens_mol_phase', 'units': 'mol/m^3'},
-            'vapor_pressure': {'method': '_vapor_pressure', 'units': 'Pa'},
+            'pressure_sat': {'method': '_vapor_pressure', 'units': 'Pa'},
             'flow_vol': {'method': '_flow_volume', 'units': 'm^3/s'},
             'visc_d': {'method': '_therm_cond', 'units': 'kg/m-s'},
             'therm_cond': {'method': '_therm_cond', 'units': 'W/m-K'},
@@ -342,8 +348,8 @@ class _FlueGasStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Solve 1st stage
         for k, b in self.items():
-            if b.is_property_constructed("vapor_pressure"):
-                b.vapor_pressure.value = value(exp(
+            if b.is_property_constructed("pressure_sat"):
+                b.pressure_sat.value = value(exp(
                     b.vapor_pressure_coeff[1]
                     + b.vapor_pressure_coeff[2] / b.temperature
                     + b.vapor_pressure_coeff[3] * blk.temperature
@@ -466,18 +472,18 @@ class FlueGasStateBlockData(StateBlockData):
             return sum(b.mw_comp[j] * b.mole_frac_comp[j] for j in comps)
         self.mw = Expression(rule=rule_mw)
 
-        self.critical_pressure = Expression(
+        self.pressure_crit = Expression(
             expr=sum(
                 self.params.pressure_crit[j] *
                 self.mole_frac_comp[j] for j in comps))
-        self.critical_temperature = Expression(
+        self.temperature_crit = Expression(
             expr=sum(
                 self.params.temperature_crit[j] *
                 self.mole_frac_comp[j] for j in comps))
         self.pressure_red = Expression(
-            expr=self.pressure / self.critical_pressure)
+            expr=self.pressure / self.pressure_crit)
         self.temperature_red = Expression(
-            expr=self.temperature / self.critical_temperature)
+            expr=self.temperature / self.temperature_crit)
 
         self.compress_fact = Expression(
             expr=1.0, doc='Vapor Compressibility Factor')
@@ -498,51 +504,52 @@ class FlueGasStateBlockData(StateBlockData):
         # heat capacity J/mol-K
         self.cp_mol = Var(initialize=1000, doc='heat capacity [J/mol-K]')
 
-        def rule_Cp(b):
-            comps = b.params.component_list
-            return (
-                b.cp_mol *
-                sum(b.flow_mol_comp[j] for j in comps)
-                == sum(b.flow_mol_comp[j] *
-                       (b.params.cp_mol_ig_comp_coeff['A', j] +
-                        b.params.cp_mol_ig_comp_coeff['B', j] *
-                        (b.temperature /
-                         1000) +
-                        b.params.cp_mol_ig_comp_coeff['C', j] *
-                        (b.temperature /
-                         1000)**2 +
-                        b.params.cp_mol_ig_comp_coeff['D', j] *
-                        (b.temperature /
-                         1000)**3 +
-                        b.params.cp_mol_ig_comp_coeff['E', j] /
-                        (b.temperature /
-                         1000)**2) for j in comps))
+        def rule_cp_phase(b, p):
+            # This property module only has one phase
+            return self.cp_mol
+        self.cp_mol_phase = Expression(self.params.phase_list, rule=rule_cp_phase)
+
         try:
-            self.heat_cap_correlation = Constraint(rule=rule_Cp)
+            coeff = self.params.cp_mol_ig_comp_coeff
+            ft = sum(self.flow_mol_comp[j] for j in self.params.component_list)
+            t = self.temperature / 1000
+            self.heat_cap_correlation = Constraint(expr=(
+                self.cp_mol * ft ==
+                sum(self.flow_mol_comp[j] * (
+                    coeff['A', j] +
+                    coeff['B', j] * t +
+                    coeff['C', j] * t**2 +
+                    coeff['D', j] * t**3 +
+                    coeff['E', j] / t**2) for j in self.params.component_list)))
         except AttributeError:
             self.del_component(self.cp_mol)
             self.del_component(self.heat_cap_correlation)
 
     def _enthalpy_calc(self):
-        self.enth_mol = Var(
-            self.params.phase_list,
-            doc='Specific Enthalpy [J/mol]')
-        # Specific Enthalpy
+        self.enth_mol = Var(doc='Specific Enthalpy [J/mol]')
 
-        def enthalpy_correlation(b, p):
-            return b.enth_mol[p] * sum(b.flow_mol_comp[j]
-                                       for j in b.params.component_list) == (
-                sum((b.params.cp_mol_ig_comp_coeff['A', j] * (b.temperature / 1000) +
-                     b.params.cp_mol_ig_comp_coeff['B', j] * (b.temperature / 1000)**2 / 2 +
-                     b.params.cp_mol_ig_comp_coeff['C', j] * (b.temperature / 1000)**3 / 3 +
-                     b.params.cp_mol_ig_comp_coeff['D', j] * (b.temperature / 1000)**4 / 4 -
-                     b.params.cp_mol_ig_comp_coeff['E', j] / (b.temperature / 1000) +
-                     b.params.cp_mol_ig_comp_coeff['F', j]) * b.flow_mol_comp[j] * 1000
-                    for j in b.params.component_list))
+        def rule_enth_phase(b, p):
+            # This property module only has one phase
+            return self.enth_mol
+        self.enth_mol_phase = Expression(
+            self.params.phase_list, rule=rule_enth_phase)
+
+        def enthalpy_correlation(b):
+            coeff = self.params.cp_mol_ig_comp_coeff
+            ft = sum(self.flow_mol_comp[j] for j in self.params.component_list)
+            t = self.temperature / 1000
+            kJ_to_J = 1000
+            return self.enth_mol * ft == (
+                sum(kJ_to_J * self.flow_mol_comp[j] * (
+                    coeff['A', j] * t +
+                    coeff['B', j] * t**2 / 2 +
+                    coeff['C', j] * t**3 / 3 +
+                    coeff['E', j] / t +
+                    coeff['F', j]) for j in self.params.component_list))
         try:
-            self.enthalpy_correlation = Constraint(
-                self.params.phase_list, rule=enthalpy_correlation)
+            self.enthalpy_correlation = Constraint(rule=enthalpy_correlation)
         except AttributeError:
+            self.del_component(self.enth_mol_phase)
             self.del_component(self.enth_mol)
             self.del_component(self.enthalpy_correlation)
 
@@ -550,29 +557,39 @@ class FlueGasStateBlockData(StateBlockData):
         self.entr_mol = Var(doc='Specific Entropy [J/mol/K]')
         # Specific Entropy
 
+        def rule_entr_phase(b, p):
+            # This property module only has one phase
+            return self.entr_mol
+        self.entr_mol_phase = Expression(
+            self.params.phase_list, rule=rule_entr_phase)
+
         def entropy_correlation(b):
-            return b.entr_mol * sum(b.flow_mol_comp[j]
-                                    for j in b.params.component_list) == \
-                sum((b.params.cp_mol_ig_comp_coeff['A', j] * log((b.temperature / 1000)) +
-                     b.params.cp_mol_ig_comp_coeff['B', j] * (b.temperature / 1000) +
-                     b.params.cp_mol_ig_comp_coeff['C', j] * (b.temperature / 1000)**2 / 2 +
-                     b.params.cp_mol_ig_comp_coeff['D', j] * (b.temperature / 1000)**3 / 3 -
-                     b.params.cp_mol_ig_comp_coeff['E', j] / (2 * (b.temperature / 1000)**2) +
-                     b.params.cp_mol_ig_comp_coeff['G', j] - constants.Constants.gas_constant
-                     * log(b.mole_frac_comp[j]))
-                    * b.flow_mol_comp[j] for j in b.params.component_list)
+            coeff = self.params.cp_mol_ig_comp_coeff
+            ft = sum(self.flow_mol_comp[j] for j in self.params.component_list)
+            t = self.temperature / 1000
+            n = self.flow_mol_comp
+            r_gas
+            return self.entr_mol * ft  == \
+                sum(n[j] * (
+                    coeff['A', j] * log(t) +
+                    coeff['B', j] * t +
+                    coeff['C', j] * t**2 / 2 +
+                    coeff['D', j] * t**3 / 3 -
+                    coeff['E', j] / t**2 +
+                    coeff['G', j] -
+                    r_gas * log(n[j])) for j in self.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
         except AttributeError:
-            self.del_component(self.entr_mol)
+            self.del_component(self.entr_mol_phase)
             self.del_component(self.entropy_correlation)
 
     def _vapor_pressure(self):
         # Vapour Pressure
-        self.vapor_pressure = Var(initialize=101325, doc="Vapour pressure [Pa]")
+        self.pressure_sat = Var(initialize=101325, doc="Vapour pressure [Pa]")
 
         def vapor_pressure_correlation(b):
-            return (log(b.vapor_pressure) *
+            return (log(b.pressure_sat) *
                     sum(b.flow_mol_comp[j] for j in b.params.component_list) ==
                     sum((b.params.vapor_pressure_coeff[j, 'A'] * b.temperature -
                          (b.params.vapor_pressure_coeff[j, 'B'] /
@@ -584,7 +601,7 @@ class FlueGasStateBlockData(StateBlockData):
             self.vapor_pressure_correlation = \
                 Constraint(rule=vapor_pressure_correlation)
         except AttributeError:
-            self.del_component(self.vapor_pressure)
+            self.del_component(self.pressure_sat)
             self.del_component(self.vapor_pressure_correlation)
 
     def _therm_cond(self):
@@ -719,7 +736,7 @@ class FlueGasStateBlockData(StateBlockData):
         if not self.is_property_constructed("enthalpy_flow_terms"):
             try:
                 def rule_enthalpy_flow_terms(b, p):
-                    return self.enth_mol[p] * self.flow_mol
+                    return self.enth_mol_phase[p] * self.flow_mol
                 self.enthalpy_flow_terms = Expression(
                     self.params.phase_list,
                     rule=rule_enthalpy_flow_terms
@@ -735,7 +752,7 @@ class FlueGasStateBlockData(StateBlockData):
         if not self.is_property_constructed("energy_density_terms"):
             try:
                 def rule_energy_density_terms(b, p):
-                    return self.enth_mol[p] * \
+                    return self.enth_mol_phase[p] * \
                         self.dens_mol_phase[p] - self.pressure
                 self.energy_density_terms = Expression(
                     self.params.phase_list,
@@ -778,38 +795,39 @@ class FlueGasStateBlockData(StateBlockData):
 
         if self.is_property_constructed("energy_density_terms"):
             for i, c in self.energy_density_terms.items():
-                sf1 = iscale.get_scaling_factor(self.enth_mol[i])
+                sf1 = iscale.get_scaling_factor(self.enth_mol_phase[i])
                 sf2 = iscale.get_scaling_factor(self.dens_mol_phase[i])
                 iscale.set_scaling_factor(c, sf1 * sf2)
 
         if self.is_property_constructed("enthalpy_flow_terms"):
             for i, c in self.enthalpy_flow_terms.items():
-                sf1 = iscale.get_scaling_factor(self.enth_mol[i])
+                sf1 = iscale.get_scaling_factor(self.enth_mol_phase[i])
                 sf2 = iscale.get_scaling_factor(self.flow_mol)
                 iscale.set_scaling_factor(c, sf1 * sf2)
 
         if self.is_property_constructed("heat_cap_correlation"):
             iscale.constraint_scaling_transform(
                 self.heat_cap_correlation,
-                iscale.get_scaling_factor(
-                    self.cp_mol) *
-                iscale.get_scaling_factor(
-                    self.flow_mol))
+                iscale.get_scaling_factor(self.cp_mol) *
+                iscale.get_scaling_factor(self.flow_mol)
+            )
         if self.is_property_constructed("enthalpy_correlation"):
             for p, c in self.enthalpy_correlation.items():
                 iscale.constraint_scaling_transform(
                     c,
-                    iscale.get_scaling_factor(self.enth_mol[p]) *
+                    iscale.get_scaling_factor(self.enth_mol) *
                     iscale.get_scaling_factor(self.flow_mol)
                 )
         if self.is_property_constructed("entropy_correlation"):
-            for p, c in self.entropy_correlation.items():
-                iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.entr_mol[p]))
+            iscale.constraint_scaling_transform(
+                self.entropy_correlation,
+                iscale.get_scaling_factor(self.entr_mol)*
+                iscale.get_scaling_factor(self.flow_mol)
+            )
         if self.is_property_constructed("vapor_pressure_correlation"):
             iscale.constraint_scaling_transform(
                 self.vapor_pressure_correlation,
-                log(iscale.get_scaling_factor(self.vapor_pressure)) *
+                log(iscale.get_scaling_factor(self.pressure_sat)) *
                 iscale.get_scaling_factor(self.flow_mol)
             )
         if self.is_property_constructed("therm_cond_con"):
