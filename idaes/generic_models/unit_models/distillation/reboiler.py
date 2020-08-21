@@ -42,6 +42,8 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 
 _log = idaeslog.getIdaesLogger(__name__)
 
@@ -545,7 +547,8 @@ see property package for documentation.}"""))
                         "while building ports for the reboiler. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, outlvl=0):
+    def initialize(self, state_args=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the reboiler to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -553,27 +556,30 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
+        if solver is None:
+            init_log.warning("Solver not provided. Default solver(ipopt) "
+                             " being used for initialization.")
+            solver = get_default_solver()
+
         # Initialize the inlet and outlet state blocks
         flags = self.control_volume.initialize(state_args=state_args,
-                                               outlvl=outlvl)
+                                               solver=solver,
+                                               optarg=optarg,
+                                               outlvl=outlvl,
+                                               hold_state=True)
 
-        if solver is not None:
+        if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
         else:
-            init_log.warning(
-                "Solver not provided during initialization, proceeding"
-                " with deafult solver in idaes.")
-            solver = get_default_solver()
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
-        self.control_volume.release_state(flags=flags)
+            raise Exception("State vars fixed but degrees of freedom "
+                            "for tray block is not zero during "
+                            "initialization.")
+
+        self.control_volume.release_state(flags=flags, outlvl=outlvl)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
