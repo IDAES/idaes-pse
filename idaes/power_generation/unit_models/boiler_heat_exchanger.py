@@ -921,7 +921,7 @@ constructed,
             return b.v_shell[t] * \
                 b.side_2.properties_in[t].dens_mol_phase["Vap"] * \
                 b.area_flow_shell == \
-                sum(b.side_2.properties_in[t].flow_component[j]
+                sum(b.side_2.properties_in[t].flow_mol_comp[j]
                     for j in b.side_2.properties_in[t].params.component_list)
 
         # Reynolds number

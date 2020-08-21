@@ -219,7 +219,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("mole_frac", 1e2, index="CO2")
         self.set_default_scaling("flow_volume", 1)
 
-        # For flow_component, will calculate from flow_mol and mole_frac
+        # For flow_mol_comp, will calculate from flow_mol and mole_frac
         # user should set a scale for both, and for each compoent of mole_frac
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("temperature", 1e-1)
@@ -241,7 +241,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
-            'flow_component': {'method': None, 'units': 'mol/s'},
+            'flow_mol_comp': {'method': None, 'units': 'mol/s'},
             'pressure': {'method': None, 'units': 'Pa'},
             'temperature': {'method': None, 'units': 'K'},
             'pressure_crit': {'method': None, 'units': 'Pa'},
@@ -279,7 +279,7 @@ class _FlueGasStateBlock(StateBlock):
     def initialize(
         self,
         state_args={
-            "flow_component": {
+            "flow_mol_comp": {
                 "N2": 1.0,
                 "CO2": 1.0,
                 "NO": 1.0,
@@ -298,7 +298,7 @@ class _FlueGasStateBlock(StateBlock):
         """Initialisation routine for property package.
 
         Key values for the state_args dict:
-            flow_component : value at which to initialize component flows
+            flow_mol_comp : value at which to initialize component flows
                 (default=27.5e3 mol/s)
             pressure : value at which to initialize pressure (default=2.97e7 Pa)
             temperature : value at which to initialize temperature
@@ -424,7 +424,7 @@ class FlueGasStateBlockData(StateBlockData):
         super(FlueGasStateBlockData, self).build()
         comps = self.params.component_list
         # Add state variables
-        self.flow_component = Var(
+        self.flow_mol_comp = Var(
             comps,
             domain=Reals,
             initialize=1.0,
@@ -446,10 +446,10 @@ class FlueGasStateBlockData(StateBlockData):
 
         # Add expressions for some basic oft-used quantiies
         self.flow_mol = Expression(
-            expr=sum(self.flow_component[j] for j in comps))
+            expr=sum(self.flow_mol_comp[j] for j in comps))
 
         def rule_mole_frac(b, c):
-            return b.flow_component[c] / b.flow_mol
+            return b.flow_mol_comp[c] / b.flow_mol
         self.mole_frac = Expression(
             comps,
             rule=rule_mole_frac,
@@ -457,7 +457,7 @@ class FlueGasStateBlockData(StateBlockData):
         )
 
         self.flow_mass = Expression(
-            expr=sum(self.flow_component[j] * self.params.mw[j] for j in comps),
+            expr=sum(self.flow_mol_comp[j] * self.params.mw[j] for j in comps),
             doc='total mass flow')
 
         def rule_mw_comp(b, j):
@@ -504,8 +504,8 @@ class FlueGasStateBlockData(StateBlockData):
             comps = b.params.component_list
             return (
                 b.cp *
-                sum(b.flow_component[j] for j in comps)
-                == sum(b.flow_component[j] *
+                sum(b.flow_mol_comp[j] for j in comps)
+                == sum(b.flow_mol_comp[j] *
                        (b.params.cp_ig['A', j] +
                         b.params.cp_ig['B', j] *
                         (b.temperature /
@@ -532,14 +532,14 @@ class FlueGasStateBlockData(StateBlockData):
         # Specific Enthalpy
 
         def enthalpy_correlation(b, p):
-            return b.enth_mol[p] * sum(b.flow_component[j]
+            return b.enth_mol[p] * sum(b.flow_mol_comp[j]
                                        for j in b.params.component_list) == (
                 sum((b.params.cp_ig['A', j] * (b.temperature / 1000) +
                      b.params.cp_ig['B', j] * (b.temperature / 1000)**2 / 2 +
                      b.params.cp_ig['C', j] * (b.temperature / 1000)**3 / 3 +
                      b.params.cp_ig['D', j] * (b.temperature / 1000)**4 / 4 -
                      b.params.cp_ig['E', j] / (b.temperature / 1000) +
-                     b.params.cp_ig['F', j]) * b.flow_component[j] * 1000
+                     b.params.cp_ig['F', j]) * b.flow_mol_comp[j] * 1000
                     for j in b.params.component_list))
         try:
             self.enthalpy_correlation = Constraint(
@@ -553,7 +553,7 @@ class FlueGasStateBlockData(StateBlockData):
         # Specific Entropy
 
         def entropy_correlation(b):
-            return b.entr_mol * sum(b.flow_component[j]
+            return b.entr_mol * sum(b.flow_mol_comp[j]
                                     for j in b.params.component_list) == \
                 sum((b.params.cp_ig['A', j] * log((b.temperature / 1000)) +
                      b.params.cp_ig['B', j] * (b.temperature / 1000) +
@@ -562,7 +562,7 @@ class FlueGasStateBlockData(StateBlockData):
                      b.params.cp_ig['E', j] / (2 * (b.temperature / 1000)**2) +
                      b.params.cp_ig['G', j] - constants.Constants.gas_constant
                      * log(b.mole_frac[j]))
-                    * b.flow_component[j] for j in b.params.component_list)
+                    * b.flow_mol_comp[j] for j in b.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
         except AttributeError:
@@ -575,11 +575,11 @@ class FlueGasStateBlockData(StateBlockData):
 
         def vapor_pressure_correlation(b):
             return (log(b.vapor_pressure) *
-                    sum(b.flow_component[j] for j in b.params.component_list) ==
+                    sum(b.flow_mol_comp[j] for j in b.params.component_list) ==
                     sum((b.params.vapor_pressure_coeff[j, 'A'] * b.temperature -
                          (b.params.vapor_pressure_coeff[j, 'B'] /
                           (b.temperature + b._param.vapor_pressure_coeff[j, 'C']))) *
-                        b.flow_component[j]
+                        b.flow_mol_comp[j]
                         for j in b.params.component_list))
 
         try:
@@ -712,7 +712,7 @@ class FlueGasStateBlockData(StateBlockData):
         return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_terms(self, p, j):
-        return self.flow_component[j]
+        return self.flow_mol_comp[j]
 
     def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
@@ -749,7 +749,7 @@ class FlueGasStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         return {
-            "flow_component": self.flow_component,
+            "flow_mol_comp": self.flow_mol_comp,
             "temperature": self.temperature,
             "pressure": self.pressure
         }
@@ -774,8 +774,8 @@ class FlueGasStateBlockData(StateBlockData):
         comps = self.params.component_list
         for i in comps:
             sf_mol_fraction[i] = iscale.get_scaling_factor(self.mole_frac[i])
-        # calculate flow_component scale factors
-        for i, c in self.flow_component.items():
+        # calculate flow_mol_comp scale factors
+        for i, c in self.flow_mol_comp.items():
             iscale.set_scaling_factor(c, sf_flow * sf_mol_fraction[i])
 
         if self.is_property_constructed("energy_density_terms"):
