@@ -5,7 +5,7 @@ While IDAES offers significant freedom in how users write their models, they
 are encouraged to follow this general workflow in order to make it easier for others to follow 
 their code.
 
-This workflow is used throughout the tutorials and examples on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/>`_.
+This workflow is used throughout the tutorials and examples on the |examples-site|.
 
 .. note::
 
