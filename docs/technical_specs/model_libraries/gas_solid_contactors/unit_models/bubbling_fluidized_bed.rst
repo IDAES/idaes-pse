@@ -26,8 +26,7 @@ through reaction, mass and heat transfer.
 Degrees of Freedom
 ------------------
 
-BFBRs generally have at least 3 (or more) degrees of freedom, consisting of design and operating variables. The design variables of reactor length, diameter and number of orifices are typically the minimum variables to be fixed. 
-and number of orifices in the distributor.
+BFBRs generally have at least 3 (or more) degrees of freedom, consisting of design and operating variables. The design variables of reactor length, diameter and number of orifices in the distributor are typically the minimum variables to be fixed.
 
 Model Structure
 ---------------
