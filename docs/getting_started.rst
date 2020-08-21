@@ -8,7 +8,7 @@ appropriate for your needs and operating system. If you get stuck, please contac
 `idaes-support@idaes.org <idaes-support@idaes.org>`_.
 
 After installing and testing IDAES, it is strongly recommended to do the IDAES tutorials
-located on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/tutorials/index.html>`_.
+located on the |examples-site|.
 
 If you expect to develop custom models, we recommend following the
 :ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
@@ -172,5 +172,5 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 5. You should see the tests run and all should pass to ensure the installation worked. You
    may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
-   output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
+   output. You can report problems on the |github-issues|
    (Please try to be specific about the command and the offending output.)

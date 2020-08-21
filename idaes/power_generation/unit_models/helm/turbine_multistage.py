@@ -31,8 +31,9 @@ from idaes.power_generation.unit_models.helm import (
     HelmTurbineInletStage,
     HelmTurbineStage,
     HelmTurbineOutletStage,
+    ValveFunctionType,
 )
-from idaes.power_generation.unit_models import SteamValve
+from idaes.power_generation.unit_models.helm import HelmValve as SteamValve
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -95,6 +96,32 @@ see property package for documentation.}""",
             domain=int,
             description="Number of parallel inlet stages to simulate partial arc "
                         "admission.  Default=4",
+        ),
+    )
+    config.declare(
+        "throttle_valve_function",
+        ConfigValue(
+            default=ValveFunctionType.linear,
+            domain=In(ValveFunctionType),
+            description="Valve function type, if custom provide an expression rule",
+            doc="""The type of valve function, if custom provide an expression rule
+with the valve_function_rule argument.
+**default** - ValveFunctionType.linear
+**Valid values** - {
+ValveFunctionType.linear,
+ValveFunctionType.quick_opening,
+ValveFunctionType.equal_percentage,
+ValveFunctionType.custom}""",
+        ),
+    )
+    config.declare(
+        "throttle_valve_function_callback",
+        ConfigValue(
+            default=None,
+            description="A callback to add a custom valve function to the "
+                "throttle valves or None.  If a callback is provided, it should "
+                "take the valve block data as an argument and add a "
+                "valve_function expressions to it. Default=None",
         ),
     )
     config.declare(
@@ -234,13 +261,18 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         ni = self.config.num_parallel_inlet_stages
         inlet_idx = self.inlet_stage_idx = pyo.RangeSet(ni)
 
+        thrtl_cfg = unit_cfg.copy()
+        thrtl_cfg["valve_function"] = self.config.throttle_valve_function
+        thrtl_cfg["valve_function_callback"] = \
+            self.config.throttle_valve_function_callback
+
         # Adding unit models
         # ------------------------
 
         # Splitter to inlet that splits main flow into parallel flows for
         # paritial arc admission to the turbine
         self.inlet_split = HelmSplitter(default=self._split_cfg(unit_cfg, ni))
-        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
+        self.throttle_valve = SteamValve(inlet_idx, default=thrtl_cfg)
         self.inlet_stage = HelmTurbineInletStage(inlet_idx, default=unit_cfg)
         # mixer to combine the parallel flows back together
         self.inlet_mix = HelmMixer(default=self._mix_cfg(unit_cfg, ni))

@@ -686,11 +686,12 @@ class _GenericStateBlock(StateBlock):
 
                     for j in valid_comps:
                         blk[k]._mole_frac_tbub[pp, j].value = value(
-                                blk[k].mole_frac_comp[j]*blk[k].pressure /
+                                blk[k].mole_frac_comp[j] *
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tbub0*T_units))
+                                           Tbub0*T_units) /
+                                blk[k].pressure)
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):

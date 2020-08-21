@@ -330,8 +330,9 @@ class _CubicStateBlock(StateBlock):
 
                 for j in blk[k].params.component_list:
                     blk[k]._mole_frac_tbub[j].value = value(
-                            blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            antoine_P(blk[k], j, Tbub0))
+                            blk[k].mole_frac_comp[j] *
+                            antoine_P(blk[k], j, Tbub0) /
+                            blk[k].pressure)
 
         # Dew temperature initialization
         for k in blk.keys():
