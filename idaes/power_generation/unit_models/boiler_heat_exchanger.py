@@ -584,9 +584,9 @@ constructed,
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl
                 X3 = b.side_2.properties_in[t].pressure
-                X4 = b.side_2.properties_in[t].mole_frac['CO2']
-                X5 = b.side_2.properties_in[t].mole_frac['H2O']
-                X6 = b.side_2.properties_in[t].mole_frac['O2']
+                X4 = b.side_2.properties_in[t].mole_frac_comp['CO2']
+                X5 = b.side_2.properties_in[t].mole_frac_comp['H2O']
+                X6 = b.side_2.properties_in[t].mole_frac_comp['O2']
 
                 # Surrogate model fitted using rigorous calc. - 500 samples
                 # Wide operating range:
@@ -631,9 +631,9 @@ constructed,
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl_div2
                 X3 = b.side_2.properties_in[t].pressure
-                X4 = b.side_2.properties_in[t].mole_frac['CO2']
-                X5 = b.side_2.properties_in[t].mole_frac['H2O']
-                X6 = b.side_2.properties_in[t].mole_frac['O2']
+                X4 = b.side_2.properties_in[t].mole_frac_comp['CO2']
+                X5 = b.side_2.properties_in[t].mole_frac_comp['H2O']
+                X6 = b.side_2.properties_in[t].mole_frac_comp['O2']
 
                 # Surrogate model fitted using rigorous calc. - 500 samples
                 # Wide operating range:
@@ -677,9 +677,9 @@ constructed,
                       + b.side_2.properties_out[t].temperature)/2
                 X2 = b.mbl_mul2
                 X3 = b.side_2.properties_in[t].pressure
-                X4 = b.side_2.properties_in[t].mole_frac['CO2']
-                X5 = b.side_2.properties_in[t].mole_frac['H2O']
-                X6 = b.side_2.properties_in[t].mole_frac['O2']
+                X4 = b.side_2.properties_in[t].mole_frac_comp['CO2']
+                X5 = b.side_2.properties_in[t].mole_frac_comp['H2O']
+                X6 = b.side_2.properties_in[t].mole_frac_comp['O2']
 
                 # Surrogate model fitted using rigorous calc. 500 samples
                 # Wide operating range:
@@ -932,7 +932,7 @@ constructed,
                 b.do_tube * b.v_shell[t] \
                 * b.side_2.properties_in[t].dens_mol_phase["Vap"] *\
                    sum(b.side_2.properties_in[t].mw_comp[c]
-                       * b.side_2.properties_in[t].mole_frac[c]
+                       * b.side_2.properties_in[t].mole_frac_comp[c]
                        for c in b.side_2.properties_in[t].
                        params.component_list)
 
@@ -968,7 +968,7 @@ constructed,
                     * b.tube_nrow \
                     * b.side_2.properties_in[t].dens_mol_phase["Vap"] \
                     * sum(b.side_2.properties_in[t].mw_comp[c]
-                                   * b.side_2.properties_in[t].mole_frac[c]
+                                   * b.side_2.properties_in[t].mole_frac_comp[c]
                                    for c in b.side_2.properties_in[t].
                                    params.component_list) \
                     * b.v_shell[t]**2
@@ -979,10 +979,10 @@ constructed,
         def N_Pr_shell_eqn(b, t):
             return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond \
                 * sum(b.side_2.properties_in[t].mw_comp[c]
-                      * b.side_2.properties_in[t].mole_frac[c]
+                      * b.side_2.properties_in[t].mole_frac_comp[c]
                       for c in b.side_2.properties_in[t].
                       params.component_list) == \
-                b.side_2.properties_in[t].cp * \
+                b.side_2.properties_in[t].cp_mol * \
                 b.side_2.properties_in[t].visc_d
 
         # Nusselt number, currently assume Re>300

@@ -77,7 +77,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.Vap = VaporPhase()
 
         # Molecular weight
-        self.mw = Param(self.component_list,
+        self.mw_comp = Param(self.component_list,
                         initialize={'O2': 0.031998,
                                     'N2': 0.0280134,
                                     'NO': 0.0300057,
@@ -121,7 +121,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
         # Constants for specific heat capacity, enthalpy, and entropy
         # calculations for ideal gas (from NIST 01/08/2020
         # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&Units=SI&Mask=1#Thermo-Gas)
-        cp_ig_parameter_table = {
+        cp_mol_ig_comp_coeff_parameter_table = {
             ('A', 'N2'): 19.50583,
             ('B', 'N2'): 19.88705,
             ('C', 'N2'): -8.598535,
@@ -171,10 +171,10 @@ class FlueGasParameterData(PhysicalParameterBlock):
             ('G', 'SO2'): 254.8872,
             ('H', 'SO2'): -296.8422}
 
-        # cp_ig units: J/(gmol-K)
-        self.cp_ig = Param(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+        # cp_mol_ig_comp_coeff units: J/(gmol-K)
+        self.cp_mol_ig_comp_coeff = Param(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
                            self.component_list,
-                           initialize=cp_ig_parameter_table,
+                           initialize=cp_mol_ig_comp_coeff_parameter_table,
                            doc='Constants for spec. heat capacity for ideal '
                            'gas J/(gmol-K)')
 
@@ -212,22 +212,22 @@ class FlueGasParameterData(PhysicalParameterBlock):
         self.set_default_scaling("flow_mass", 1e-3)
         self.set_default_scaling("flow_vol", 1e-3)
         # anything not explicitly listed
-        self.set_default_scaling("mole_frac", 1)
-        self.set_default_scaling("mole_frac", 1e3, index="NO")
-        self.set_default_scaling("mole_frac", 1e3, index="SO2")
-        self.set_default_scaling("mole_frac", 1e2, index="H2O")
-        self.set_default_scaling("mole_frac", 1e2, index="CO2")
-        self.set_default_scaling("flow_volume", 1)
+        self.set_default_scaling("mole_frac_comp", 1)
+        self.set_default_scaling("mole_frac_comp", 1e3, index="NO")
+        self.set_default_scaling("mole_frac_comp", 1e3, index="SO2")
+        self.set_default_scaling("mole_frac_comp", 1e2, index="H2O")
+        self.set_default_scaling("mole_frac_comp", 1e2, index="CO2")
+        self.set_default_scaling("flow_vol", 1)
 
-        # For flow_mol_comp, will calculate from flow_mol and mole_frac
-        # user should set a scale for both, and for each compoent of mole_frac
+        # For flow_mol_comp, will calculate from flow_mol and mole_frac_comp
+        # user should set a scale for both, and for each compoent of mole_frac_comp
         self.set_default_scaling("pressure", 1e-5)
         self.set_default_scaling("temperature", 1e-1)
         self.set_default_scaling("pressure_red", 1e-3)
         self.set_default_scaling("temperature_red", 1)
         self.set_default_scaling("enth_mol", 1e-3)
         self.set_default_scaling("entrolpy", 1e-2)
-        self.set_default_scaling("cp", 1)
+        self.set_default_scaling("cp_mol", 1)
         self.set_default_scaling("compress_fact", 1)
         self.set_default_scaling("dens_mol_phase", 1)
         self.set_default_scaling("vapor_pressure", 1e-4)
@@ -250,11 +250,11 @@ class FlueGasParameterData(PhysicalParameterBlock):
             'temperature_red': {'method': None, 'units': None},
             'enth_mol': {'method': '_enthalpy_calc', 'units': 'J/mol'},
             'entr_mol': {'method': '_entropy_calc', 'units': 'J/mol.K'},
-            'cp': {'method': '_heat_cap_calc', 'units': 'J/mol.K'},
+            'cp_mol': {'method': '_heat_cap_calc', 'units': 'J/mol.K'},
             'compress_fact': {'method': '_compress_fact', 'units': None},
             'dens_mol_phase': {'method': '_dens_mol_phase', 'units': 'mol/m^3'},
             'vapor_pressure': {'method': '_vapor_pressure', 'units': 'Pa'},
-            'flow_volume': {'method': '_flow_volume', 'units': 'm^3/s'},
+            'flow_vol': {'method': '_flow_volume', 'units': 'm^3/s'},
             'visc_d': {'method': '_therm_cond', 'units': 'kg/m-s'},
             'therm_cond': {'method': '_therm_cond', 'units': 'W/m-K'},
             'mw_comp': {'method': None, 'units': 'kg/mol'},
@@ -265,9 +265,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
                                'length': 'm',
                                'mass': 'kg',
                                'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+                               'temperature': 'K'})
 
 
 class _FlueGasStateBlock(StateBlock):
@@ -450,32 +448,32 @@ class FlueGasStateBlockData(StateBlockData):
 
         def rule_mole_frac(b, c):
             return b.flow_mol_comp[c] / b.flow_mol
-        self.mole_frac = Expression(
+        self.mole_frac_comp = Expression(
             comps,
             rule=rule_mole_frac,
             doc='mole fraction of component i'
         )
 
         self.flow_mass = Expression(
-            expr=sum(self.flow_mol_comp[j] * self.params.mw[j] for j in comps),
+            expr=sum(self.flow_mol_comp[j] * self.params.mw_comp[j] for j in comps),
             doc='total mass flow')
 
         def rule_mw_comp(b, j):
-            return b.params.mw[j]
+            return b.params.mw_comp[j]
         self.mw_comp = Expression(comps, rule=rule_mw_comp)
 
         def rule_mw(b):
-            return sum(b.mw_comp[j] * b.mole_frac[j] for j in comps)
+            return sum(b.mw_comp[j] * b.mole_frac_comp[j] for j in comps)
         self.mw = Expression(rule=rule_mw)
 
         self.critical_pressure = Expression(
             expr=sum(
                 self.params.pressure_crit[j] *
-                self.mole_frac[j] for j in comps))
+                self.mole_frac_comp[j] for j in comps))
         self.critical_temperature = Expression(
             expr=sum(
                 self.params.temperature_crit[j] *
-                self.mole_frac[j] for j in comps))
+                self.mole_frac_comp[j] for j in comps))
         self.pressure_red = Expression(
             expr=self.pressure / self.critical_pressure)
         self.temperature_red = Expression(
@@ -492,37 +490,37 @@ class FlueGasStateBlockData(StateBlockData):
             rule=rule_dens_mol_phase,
             doc='Molar Density')
 
-        self.flow_volume = Expression(
+        self.flow_vol = Expression(
             doc='Volumetric Flowrate',
             expr=self.flow_mol / self.dens_mol_phase["Vap"])
 
     def _heat_cap_calc(self):
         # heat capacity J/mol-K
-        self.cp = Var(initialize=1000, doc='heat capacity [J/mol-K]')
+        self.cp_mol = Var(initialize=1000, doc='heat capacity [J/mol-K]')
 
         def rule_Cp(b):
             comps = b.params.component_list
             return (
-                b.cp *
+                b.cp_mol *
                 sum(b.flow_mol_comp[j] for j in comps)
                 == sum(b.flow_mol_comp[j] *
-                       (b.params.cp_ig['A', j] +
-                        b.params.cp_ig['B', j] *
+                       (b.params.cp_mol_ig_comp_coeff['A', j] +
+                        b.params.cp_mol_ig_comp_coeff['B', j] *
                         (b.temperature /
                          1000) +
-                        b.params.cp_ig['C', j] *
+                        b.params.cp_mol_ig_comp_coeff['C', j] *
                         (b.temperature /
                          1000)**2 +
-                        b.params.cp_ig['D', j] *
+                        b.params.cp_mol_ig_comp_coeff['D', j] *
                         (b.temperature /
                          1000)**3 +
-                        b.params.cp_ig['E', j] /
+                        b.params.cp_mol_ig_comp_coeff['E', j] /
                         (b.temperature /
                          1000)**2) for j in comps))
         try:
             self.heat_cap_correlation = Constraint(rule=rule_Cp)
         except AttributeError:
-            self.del_component(self.cp)
+            self.del_component(self.cp_mol)
             self.del_component(self.heat_cap_correlation)
 
     def _enthalpy_calc(self):
@@ -534,12 +532,12 @@ class FlueGasStateBlockData(StateBlockData):
         def enthalpy_correlation(b, p):
             return b.enth_mol[p] * sum(b.flow_mol_comp[j]
                                        for j in b.params.component_list) == (
-                sum((b.params.cp_ig['A', j] * (b.temperature / 1000) +
-                     b.params.cp_ig['B', j] * (b.temperature / 1000)**2 / 2 +
-                     b.params.cp_ig['C', j] * (b.temperature / 1000)**3 / 3 +
-                     b.params.cp_ig['D', j] * (b.temperature / 1000)**4 / 4 -
-                     b.params.cp_ig['E', j] / (b.temperature / 1000) +
-                     b.params.cp_ig['F', j]) * b.flow_mol_comp[j] * 1000
+                sum((b.params.cp_mol_ig_comp_coeff['A', j] * (b.temperature / 1000) +
+                     b.params.cp_mol_ig_comp_coeff['B', j] * (b.temperature / 1000)**2 / 2 +
+                     b.params.cp_mol_ig_comp_coeff['C', j] * (b.temperature / 1000)**3 / 3 +
+                     b.params.cp_mol_ig_comp_coeff['D', j] * (b.temperature / 1000)**4 / 4 -
+                     b.params.cp_mol_ig_comp_coeff['E', j] / (b.temperature / 1000) +
+                     b.params.cp_mol_ig_comp_coeff['F', j]) * b.flow_mol_comp[j] * 1000
                     for j in b.params.component_list))
         try:
             self.enthalpy_correlation = Constraint(
@@ -555,13 +553,13 @@ class FlueGasStateBlockData(StateBlockData):
         def entropy_correlation(b):
             return b.entr_mol * sum(b.flow_mol_comp[j]
                                     for j in b.params.component_list) == \
-                sum((b.params.cp_ig['A', j] * log((b.temperature / 1000)) +
-                     b.params.cp_ig['B', j] * (b.temperature / 1000) +
-                     b.params.cp_ig['C', j] * (b.temperature / 1000)**2 / 2 +
-                     b.params.cp_ig['D', j] * (b.temperature / 1000)**3 / 3 -
-                     b.params.cp_ig['E', j] / (2 * (b.temperature / 1000)**2) +
-                     b.params.cp_ig['G', j] - constants.Constants.gas_constant
-                     * log(b.mole_frac[j]))
+                sum((b.params.cp_mol_ig_comp_coeff['A', j] * log((b.temperature / 1000)) +
+                     b.params.cp_mol_ig_comp_coeff['B', j] * (b.temperature / 1000) +
+                     b.params.cp_mol_ig_comp_coeff['C', j] * (b.temperature / 1000)**2 / 2 +
+                     b.params.cp_mol_ig_comp_coeff['D', j] * (b.temperature / 1000)**3 / 3 -
+                     b.params.cp_mol_ig_comp_coeff['E', j] / (2 * (b.temperature / 1000)**2) +
+                     b.params.cp_mol_ig_comp_coeff['G', j] - constants.Constants.gas_constant
+                     * log(b.mole_frac_comp[j]))
                     * b.flow_mol_comp[j] for j in b.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
@@ -624,23 +622,23 @@ class FlueGasStateBlockData(StateBlockData):
         try:
             def rule_therm_cond(b, c):
                 return b.therm_cond_comp[c] == (
-                    ((b.params.cp_ig['A', c] +
-                      b.params.cp_ig['B', c] *
+                    ((b.params.cp_mol_ig_comp_coeff['A', c] +
+                      b.params.cp_mol_ig_comp_coeff['B', c] *
                       (b.temperature /
                        1000) +
-                      b.params.cp_ig['C', c] *
+                      b.params.cp_mol_ig_comp_coeff['C', c] *
                       (b.temperature /
                        1000)**2 +
-                      b.params.cp_ig['D', c] *
+                      b.params.cp_mol_ig_comp_coeff['D', c] *
                       (b.temperature /
                        1000)**3 +
-                      b.params.cp_ig['E', c] /
+                      b.params.cp_mol_ig_comp_coeff['E', c] /
                       (b.temperature /
                        1000)**2) /
-                     b.params.mw[c]) +
+                     b.params.mw_comp[c]) +
                     1.25 *
                     (constants.Constants.gas_constant /
-                     b.params.mw[c])) * b.visc_d_comp[c]
+                     b.params.mw_comp[c])) * b.visc_d_comp[c]
             self.therm_cond_con = Constraint(comps, rule=rule_therm_cond)
 
             def rule_theta(b, c):
@@ -658,15 +656,15 @@ class FlueGasStateBlockData(StateBlockData):
             # Pure gas viscocity
             def rule_visc_d(b, c):
                 return (b.visc_d_comp[c] * b.sigma[c]**2 * b.omega[c] ==
-                        2.6693e-6 * sqrt(b.params.mw[c] * 1000 * b.temperature))
+                        2.6693e-6 * sqrt(b.params.mw_comp[c] * 1000 * b.temperature))
             self.visc_d_con = Constraint(comps, rule=rule_visc_d)
 
             # section to calculate viscosity of gas mixture
             def rule_phi(b, i, j):
                 return (1 / 2.8284
-                        * (1 + (b.params.mw[i] / b.params.mw[j]))**(-0.5)
+                        * (1 + (b.params.mw_comp[i] / b.params.mw_comp[j]))**(-0.5)
                         * (1 + sqrt(b.visc_d_comp[i] / b.visc_d_comp[j])
-                            * (b.params.mw[j] / b.params.mw[i])**0.25)**2)
+                            * (b.params.mw_comp[j] / b.params.mw_comp[i])**0.25)**2)
             self.phi_ij = Expression(
                 comps,
                 comps,
@@ -676,16 +674,16 @@ class FlueGasStateBlockData(StateBlockData):
             # viscosity of Gas mixture kg/m-s
             def rule_visc_d_mix(b):
                 return b.visc_d == sum(
-                    (b.mole_frac[i] * b.visc_d_comp[i])
-                    / sum(b.mole_frac[j] * b.phi_ij[i, j] for j in comps)
+                    (b.mole_frac_comp[i] * b.visc_d_comp[i])
+                    / sum(b.mole_frac_comp[j] * b.phi_ij[i, j] for j in comps)
                     for i in comps)
             self.vis_d_mix_con = Constraint(rule=rule_visc_d_mix)
 
             # thermal conductivity of gas mixture in kg/m-s
             def rule_therm_mix(b):
                 return b.therm_cond == sum(
-                    (b.mole_frac[i] * b.therm_cond_comp[i])
-                    / sum(b.mole_frac[j] * b.phi_ij[i, j] for j in comps)
+                    (b.mole_frac_comp[i] * b.therm_cond_comp[i])
+                    / sum(b.mole_frac_comp[j] * b.phi_ij[i, j] for j in comps)
                     for i in comps)
             self.therm_mix_con = Constraint(rule=rule_therm_mix)
 
@@ -773,7 +771,7 @@ class FlueGasStateBlockData(StateBlockData):
         sf_mol_fraction = {}
         comps = self.params.component_list
         for i in comps:
-            sf_mol_fraction[i] = iscale.get_scaling_factor(self.mole_frac[i])
+            sf_mol_fraction[i] = iscale.get_scaling_factor(self.mole_frac_comp[i])
         # calculate flow_mol_comp scale factors
         for i, c in self.flow_mol_comp.items():
             iscale.set_scaling_factor(c, sf_flow * sf_mol_fraction[i])
@@ -794,7 +792,7 @@ class FlueGasStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(
                 self.heat_cap_correlation,
                 iscale.get_scaling_factor(
-                    self.cp) *
+                    self.cp_mol) *
                 iscale.get_scaling_factor(
                     self.flow_mol))
         if self.is_property_constructed("enthalpy_correlation"):
