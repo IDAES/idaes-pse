@@ -928,10 +928,10 @@ constructed,
         @self.Constraint(self.flowsheet().time,
                          doc="Reynolds number equation on shell side")
         def N_Re_shell_eqn(b, t):
-            return b.N_Re_shell[t] * b.side_2.properties_in[t].visc_d_mix == \
+            return b.N_Re_shell[t] * b.side_2.properties_in[t].visc_d == \
                 b.do_tube * b.v_shell[t] \
-                * b.side_2.properties_in[t].dens_mol_phase["Vap"] / 1000.0 *\
-                   sum(b.side_2.properties_in[t].params.mw[c]
+                * b.side_2.properties_in[t].dens_mol_phase["Vap"] *\
+                   sum(b.side_2.properties_in[t].mw_comp[c]
                        * b.side_2.properties_in[t].mole_frac[c]
                        for c in b.side_2.properties_in[t].
                        params.component_list)
@@ -967,7 +967,7 @@ constructed,
                 return b.deltaP_shell[t] == -1.4 * b.friction_factor_shell[t] \
                     * b.tube_nrow \
                     * b.side_2.properties_in[t].dens_mol_phase["Vap"] \
-                    / 1000.0 * sum(b.side_2.properties_in[t].params.mw[c]
+                    * sum(b.side_2.properties_in[t].mw_comp[c]
                                    * b.side_2.properties_in[t].mole_frac[c]
                                    for c in b.side_2.properties_in[t].
                                    params.component_list) \
@@ -977,13 +977,13 @@ constructed,
         @self.Constraint(self.flowsheet().time,
                          doc="Prandtl number equation on shell side")
         def N_Pr_shell_eqn(b, t):
-            return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond_mix \
-                * sum(b.side_2.properties_in[t].params.mw[c]
+            return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond \
+                * sum(b.side_2.properties_in[t].mw_comp[c]
                       * b.side_2.properties_in[t].mole_frac[c]
                       for c in b.side_2.properties_in[t].
                       params.component_list) == \
-                b.side_2.properties_in[t].heat_cap * 1000 * \
-                b.side_2.properties_in[t].visc_d_mix
+                b.side_2.properties_in[t].cp * \
+                b.side_2.properties_in[t].visc_d
 
         # Nusselt number, currently assume Re>300
         @self.Constraint(self.flowsheet().time,
@@ -998,7 +998,7 @@ constructed,
                          "on shell side due to convection")
         def hconv_shell_conv_eqn(b, t):
             return b.hconv_shell_conv[t] * b.do_tube / 1000 == \
-                b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond_mix\
+                b.N_Nu_shell[t] * b.side_2.properties_in[t].therm_cond\
                 / 1000
 
         # Total convective heat transfer coefficient on shell side
