@@ -22,7 +22,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Arc
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition, value, Integers, RangeSet
+    TerminationCondition, value, Integers, RangeSet, TransformationFactory
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
@@ -40,6 +40,9 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.initialization import propagate_state, \
+    solve_indexed_blocks
 
 _log = idaeslog.getLogger(__name__)
 
@@ -164,7 +167,7 @@ see property package for documentation.}"""))
                      "property_package_args":
                      self.config.property_package_args,
                      "condenser_type": self.config.condenser_type,
-                     "temperature_spec": TemperatureSpec.customTemperature,
+                     "temperature_spec": TemperatureSpec.atBubblePoint,
                      "has_pressure_change": self.config.has_pressure_change})
 
         # Add reboiler
@@ -172,10 +175,16 @@ see property package for documentation.}"""))
             default={"property_package": self.config.property_package,
                      "property_package_args":
                      self.config.property_package_args,
+                     "has_boilup_ratio": True,
                      "has_pressure_change":
                      self.config.has_pressure_change})
-        # make arcs
 
+        self._make_arcs()
+
+        TransformationFactory("network.expand_arcs").apply_to(self)
+
+    def _make_arcs(self):
+        # make arcs
         self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
         self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
 
@@ -204,6 +213,22 @@ see property package for documentation.}"""))
         self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
         self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
 
+    def my_propagate_state(self, source=None,
+                           destination=None, direction="forward"):
+        """
+        This method propagates values between Ports along Arcs. Values can be
+        propagated in either direction using the direction argument.
+
+        Args:
+            stream : Arc object along which to propagate values
+            direction: direction in which to propagate values. Default = 'forward'
+                    Valid value: 'forward', 'backward'.
+        """
+        for v in source.vars:
+            for i in destination.vars[v]:
+                if not destination.vars[v][i].fixed:
+                    destination.vars[v][i].value = value(source.vars[v][i])
+
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
 
@@ -217,113 +242,45 @@ see property package for documentation.}"""))
                              " being used for initialization.")
             solver = get_default_solver()
 
-        if self.config.has_liquid_side_draw:
-            if not self.liq_side_sf.fixed:
-                raise ConfigurationError(
-                    "Liquid side draw split fraction not fixed but "
-                    "has_liquid_side_draw set to True.")
+        self.tray[self.config.feed_tray_location].initialize()
 
-        if self.config.has_vapor_side_draw:
-            if not self.vap_side_sf.fixed:
-                raise ConfigurationError(
-                    "Vapor side draw split fraction not fixed but "
-                    "has_vapor_side_draw set to True.")
+        self.my_propagate_state(
+            source=self.tray[self.config.feed_tray_location].vap_out,
+            destination=self.condenser.inlet)
 
-        # Initialize the inlet state blocks
-        if self.config.is_feed_tray:
-            self.properties_in_feed.initialize(state_args=state_args_feed,
-                                               solver=solver,
-                                               outlvl=outlvl)
-        self.properties_in_liq.initialize(state_args=state_args_liq,
-                                          solver=solver,
-                                          outlvl=outlvl)
-        self.properties_in_vap.initialize(state_args=state_args_vap,
-                                          solver=solver,
-                                          outlvl=outlvl)
+        self.condenser.initialize()
 
-        # Deactivate energy balance
-        self.enthalpy_mixing_equations.deactivate()
+        self.my_propagate_state(
+            source=self.tray[self.config.feed_tray_location].liq_out,
+            destination=self.reboiler.inlet)
 
-        # state args to initialize the mixed outlet state block
-        if self.config.is_feed_tray and state_args_feed is not None:
-            # if initial guess provided for the feed stream, initialize the
-            # mixed state block at the same condition.
-            self.properties_out.initialize(state_args=state_args_feed,
-                                           solver=solver,
-                                           outlvl=outlvl)
-        else:
-            state_args_mixed = {}
-            state_dict = \
-                self.properties_out[self.flowsheet().config.time.first()].\
-                define_port_members()
-            if self.config.is_feed_tray:
-                for k in state_dict.keys():
-                    if state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                self.properties_in_feed[0].\
-                                component(state_dict[k].local_name)[m].value
-                    else:
-                        state_args_mixed[k] = \
-                            self.properties_in_feed[0].\
-                            component(state_dict[k].local_name).value
+        self.reboiler.initialize()
 
-            else:
-                # if not feed tray, initialize mixed state block at average of
-                # vap/liq inlets except pressure. While this is crude, it
-                # will work for most combination of state vars.
-                for k in state_dict.keys():
-                    if "pressure" in k:
-                        # Take the lowest pressure and this is the liq inlet
-                        state_args_mixed[k] = self.properties_in_liq[0].\
-                            component(state_dict[k].local_name).value
-                    elif state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                0.5 * (self.properties_in_liq[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value + self.properties_in_vap[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value)
-                    else:
-                        state_args_mixed[k] = \
-                            0.5 * (self.properties_in_liq[0].
-                                   component(state_dict[k].local_name).value +
-                                   self.properties_in_vap[0].
-                                   component(state_dict[k].local_name).value)
+        for i in self.tray_index:
+            if i < self.config.feed_tray_location:
+                self.my_propagate_state(
+                    source=self.condenser.reflux,
+                    destination=self.tray[i].liq_in)
+                self.my_propagate_state(
+                    source=self.tray[self.config.feed_tray_location].vap_out,
+                    destination=self.tray[i].vap_in)
+                self.tray[i].initialize()
 
-        # Deactivate pressure balance
-        self.pressure_drop_equation.deactivate()
-
-        self.properties_out.initialize(state_args=state_args_mixed,
-                                       solver=solver,
-                                       outlvl=outlvl)
+            elif i > self.config.feed_tray_location:
+                self.my_propagate_state(
+                    source=self.tray[self.config.feed_tray_location].liq_out,
+                    destination=self.tray[i].liq_in)
+                self.my_propagate_state(
+                    source=self.reboiler.vapor_reboil,
+                    destination=self.tray[i].vap_in)
+                self.tray[i].initialize()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         init_log.info_high(
-            "Mass balance solve {}.".format(idaeslog.condition(res))
+            "Column initialization status {}.".format(idaeslog.condition(res))
         )
 
-        # Activate energy balance
-        self.enthalpy_mixing_equations.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
-            "Mass and energy balance solve {}.".format(idaeslog.condition(res))
-        )
-
-        # Activate pressure balance
-        self.pressure_drop_equation.activate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
-            "Mass, energy and pressure balance solve {}.".
-            format(idaeslog.condition(res)))
-        init_log.info(
-            "Initialization complete, status {}.".
-            format(idaeslog.condition(res)))
+        self.condenser.report()
+        self.reboiler.report()
+        raise Exception(res)
