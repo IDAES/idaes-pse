@@ -568,6 +568,7 @@ class FlueGasStateBlockData(StateBlockData):
             ft = sum(self.flow_mol_comp[j] for j in self.params.component_list)
             t = self.temperature / 1000
             n = self.flow_mol_comp
+            x = self.mole_frac
             r_gas
             return self.entr_mol * ft  == \
                 sum(n[j] * (
@@ -577,7 +578,7 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['D', j] * t**3 / 3 -
                     coeff['E', j] / t**2 +
                     coeff['G', j] -
-                    r_gas * log(n[j])) for j in self.params.component_list)
+                    r_gas * log(x[j])) for j in self.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
         except AttributeError:
