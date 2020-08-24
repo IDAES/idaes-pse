@@ -77,8 +77,13 @@ class TimeList(list):
 
     def validate_extend(self, tpoints):
         """
+        Checks whether new time points overlap with current time points
+        at more than a single point. If there is no overlap, the
+        separation between current and new points must be more than
+        twice the tolerance.
         """
         if not tpoints:
+            # May assume input tpoints is a list.
             return tpoints
         tolerance = self.tolerance
         t_last = self[-1]
