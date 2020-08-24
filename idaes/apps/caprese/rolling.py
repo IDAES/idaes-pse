@@ -112,6 +112,35 @@ class TimeList(list):
         tpoints = self.validate_extend(tpoints)
         super().extend(tpoints)
 
+    def find_nearest_index(self, target):
+        """
+        Returns the index of the nearest point in self.
+        """
+        # This is a copy of the same method of ContinuousSet.
+        # 
+        tol = self.tolerance
+        lo = 0
+        hi = len(self)
+        i = bisect.bisect_right(self, target, lo=lo, hi=hi)
+        # i is index at which target should be inserted if it is
+        # to be right of any equal components.
+
+        if i == lo:
+            # target is less than every entry of the set
+            nearest_index = i
+            delta = self[nearest_index] - target
+        elif i == hi:
+            nearest_index = i-1
+            delta = target - self[nearest_index]
+        else:
+            delta, nearest_index = min((abs(target - self[_]), _) 
+                    for _ in [i-1, i])
+
+        if delta > tol:
+            return None
+        return nearest_index
+
+
     def binary_search(self, t):
         """
         """
@@ -164,9 +193,11 @@ class VectorSeries(OrderedDict):
         super().__init__(data)
 
     def dim(self):
-        return len(self.data)
+        return len(self.keys())
 
     def __len__(self):
+        # Behavior of len/dim could be confusing. This needs to be
+        # well-documented.
         return len(self.time)
 
     def __getitem__(self, i):
