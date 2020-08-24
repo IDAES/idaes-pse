@@ -347,11 +347,14 @@ class FlowsheetSerializer:
         unitname = unit.getname()
         self.unit_models[unit] = {
                 "name": unitname,
-                "type": unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
+                "type": self._get_unit_model_type(unit)
             }
         self._used_unit_names.add(unitname)
         for subcomponent in unit.component_objects(Port, descend_into=True):
             self.ports[subcomponent] = unit
+
+    def _get_unit_model_type(self, unit):
+        return unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
 
     # unit-like object in order to emulate missing unit models for implicit inlets/outlets
     # eventually may need to actually implement/subclass
