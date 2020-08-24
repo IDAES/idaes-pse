@@ -5,29 +5,6 @@ from pyomo.environ import *
 from idaes.apps.caprese.util import cuid_from_timeslice
 from idaes.apps.caprese.rolling import *
 
-def make_model():
-    m = ConcreteModel()
-    m.time = Set(initialize=range(11))
-    m.space = Set(initialize=range(3))
-    m.comp = Set(initialize=['a','b'])
-
-    m.v1 = Var(m.time, m.space)
-    m.v2 = Var(m.time, m.space, m.comp)
-
-    @m.Block(m.time, m.space)
-    def b(b, t, x):
-        b.v3 = Var()
-        b.v4 = Var(m.comp)
-    
-    m.v1_refs = [Reference(m.v1[:,x]) for x in m.space]
-    m.v2a_refs = [Reference(m.v2[:,x,'a']) for x in m.space]
-    m.v2b_refs = [Reference(m.v2[:,x,'b']) for x in m.space]
-    m.v3_refs = [Reference(m.b[:,x].v3) for x in m.space]
-    m.v4a_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
-    m.v4b_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
-
-    return m
-
 class TestTimeList(object):
     
     @pytest.mark.unit
@@ -179,6 +156,232 @@ class TestTimeList(object):
         assert time_list.find_nearest_index(2.05) == 1
         assert time_list.find_nearest_index(1.) == 0
         assert time_list.find_nearest_index(5.05) == 4
+
+
+def make_model():
+    m = ConcreteModel()
+    m.time = Set(initialize=range(11))
+    m.space = Set(initialize=range(3))
+    m.comp = Set(initialize=['a','b'])
+
+    m.v1 = Var(m.time, m.space)
+    m.v2 = Var(m.time, m.space, m.comp)
+
+    @m.Block(m.time, m.space)
+    def b(b, t, x):
+        b.v3 = Var()
+        b.v4 = Var(m.comp)
+    
+    m.v1_refs = [Reference(m.v1[:,x]) for x in m.space]
+    m.v2a_refs = [Reference(m.v2[:,x,'a']) for x in m.space]
+    m.v2b_refs = [Reference(m.v2[:,x,'b']) for x in m.space]
+    m.v3_refs = [Reference(m.b[:,x].v3) for x in m.space]
+    m.v4a_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
+    m.v4b_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
+
+    for t in m.time:
+        for ref in m.v1_refs:
+            ref[t] = 1.0*t
+        for ref in m.v2a_refs + m.v2b_refs:
+            ref[t] = 2.0*t
+        for ref in m.v3_refs:
+            ref[t] = 3.0*t
+        for ref in m.v4a_refs + m.v4b_refs:
+            ref[t] = 4.0*t
+
+    return m
+
+
+class TestVectorSeries(object):
+
+    @pytest.mark.unit
+    def test_constructor(self):
+        # VectorSeries is constructed from an OrderedDict with data
+        # series (lists) as values. Keys are meant to be identifiers
+        # of Pyomo model components, but could technically be anything.
+        # To illustrate their indended use, tests use CUIDs as keys.
+        m = make_model()
+        data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in m.time])
+            for _slice in m.v1_refs])
+
+        name = 'v1'
+        tol = 0.1
+        history = VectorSeries(
+                data, 
+                time=list(m.time), 
+                name=name, 
+                tolerance=tol)
+        assert history.name == name
+        assert type(history.time) is TimeList
+        assert history.time == m.time
+        assert history.time.tolerance == tol
+
+        for _slice in m.v1_refs:
+            assert cuid_from_timeslice(_slice, m.time) in history
+
+        empty_series = VectorSeries()
+        assert empty_series == OrderedDict()
+
+    @pytest.mark.unit
+    def test_dim(self):
+        # This test also loosely covers consistent_dimension and 
+        # validate_dimension.
+        m = make_model()
+        data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in m.time])
+            for _slice in m.v2a_refs + m.v2b_refs])
+        name = 'v2'
+        tol = 0.1
+        history = VectorSeries(
+                data, 
+                time=list(m.time), 
+                name=name, 
+                tolerance=tol)
+        assert history.dim() == len(m.space*m.comp)
+        assert VectorSeries().dim() == 0
+
+        vals = [1 for _ in m.space*m.comp]
+        assert history.consistent_dimension(vals)
+        assert not history.consistent_dimension([1])
+        assert history.validate_dimension(vals) == vals
+        with pytest.raises(ValueError) as err:
+            history.validate_dimension([1])
+            assert 'inconsistent dimension' in str(err)
+
+
+    @pytest.mark.unit
+    def test_len(self):
+        m = make_model()
+        data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in m.time])
+            for _slice in m.v3_refs])
+        name = 'v3'
+        tol = 0.1
+        history = VectorSeries(
+                data, 
+                time=list(m.time), 
+                name=name, 
+                tolerance=tol)
+        assert len(history) == len(m.time)
+        assert len(VectorSeries()) == 0
+
+    @pytest.mark.unit
+    def test_consistent(self):
+        m = make_model()
+        data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in m.time])
+            for _slice in m.v3_refs])
+        name = 'v3'
+        tol = 0.1
+        history = VectorSeries(
+                data, 
+                time=list(m.time), 
+                name=name, 
+                tolerance=tol)
+
+        # These vals are consistent because this is how
+        # I happened to initialize m.v3
+        vals = [3.0*m.time.last() for _ in m.space]
+        bad_vals = [m.time.last() for _ in m.space]
+        assert not history.consistent([])
+        assert not history.consistent(bad_vals)
+        assert history.consistent(vals)
+
+        assert VectorSeries().consistent([])
+        assert not VectorSeries().consistent([1])
+
+        empty_data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time), [])
+                for _slice in m.v1_refs])
+        empty_series = VectorSeries(empty_data)
+        vals = [1 for _ in m.space]
+        assert not empty_series.consistent([])
+        assert empty_series.consistent(vals)
+
+    @pytest.mark.unit
+    def test_append(self):
+        m = make_model()
+        data = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in m.time])
+            for _slice in m.v3_refs])
+        name = 'v3'
+        tol = 0.1
+        history = VectorSeries(
+                data, 
+                time=list(m.time), 
+                name=name, 
+                tolerance=tol)
+        new_t = 11
+        with pytest.raises(ValueError) as err:
+            history.append(new_t, [1])
+            assert 'inconsistent dimension' in str(err)
+        new_vals = [3*new_t for _ in m.space]
+        history.append(new_t, new_vals)
+        last = [series[-1] for series in history.values()]
+        assert last == new_vals
+        assert history.time[-1] == new_t
+
+        with pytest.raises(ValueError) as err:
+            history.append(new_t, new_vals)
+            msg = 'Appended time values must be'
+            assert msg in str(err)
+
+    @pytest.mark.unit
+    def test_extend(self):
+        m = make_model()
+        midpoint = len(m.time)//2
+        tlist = list(m.time)
+        time_1 = tlist[0:midpoint]
+        time_2 = tlist[midpoint:]
+
+        data_1 = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in time_1])
+            for _slice in m.v1_refs])
+        data_2 = OrderedDict([
+            (cuid_from_timeslice(_slice, m.time),
+                [_slice[t].value for t in time_2])
+            for _slice in m.v1_refs])
+        tol = 0.1
+        history_1 = VectorSeries(data_1, time_1, tolerance=tol)
+        history_2 = VectorSeries(data_2, time_2, tolerance=tol)
+        history_1.extend(history_2.time, history_2)
+
+        vals = [1.0*t for t in m.time]
+        for series in history_1.values():
+            assert series == vals
+        assert history_1.time == m.time
+
+        new_time = [10, 11, 13]
+        new_vals = [1*t for t in new_time]
+        new_data = [new_vals for _ in history_1.values()]
+        history_1.extend(new_time, new_data)
+        
+        time = list(m.time) + new_time
+        time = list(OrderedDict.fromkeys(time)) # No duplicates
+        vals = [1*t for t in time]
+        for series in history_1.values():
+            assert series == vals
+        assert history_1.time == time
+
+        new_time = [13, 14, 15]
+        new_vals = [2*t for t in new_time]
+        new_data = [new_vals for _ in history_1.values()]
+        with pytest.raises(ValueError) as err:
+            history_1.extend(new_time, new_data)
+            msg = 'data was not consistent'
+            assert mst in str(err)
+
+        with pytest.raises(ValueError) as err:
+            # Assuming that history_2.dim() != 1 ...
+            history_2.extend([],[[]])
+            assert 'inconsistent dimension' in str(err)
 
 
 '''
