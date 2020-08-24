@@ -38,8 +38,8 @@ class TimeList(list):
         for t1 in time[1:]:
             if t1 - t0 <= 2*self.tolerance:
                 raise ValueError(
-                    'Time points must be increasing and separated by at '
-                    'least twice the tolerance')
+                    'Time points must be increasing and separated by more '
+                    'than twice the tolerance.')
         return time
 
     def is_within_bounds(self, t):
@@ -51,8 +51,8 @@ class TimeList(list):
             raise ValueError('List is empty. No bounds exist.')
         lower = self[0]
         upper = self[-1]
-        tolerance = self.tolerance
-        return lower - tolerance <= t and t <= upper + tolerance
+        tol = self.tolerance
+        return lower - tol <= t and t <= upper + tol
 
     def is_valid_append(self, t):
         """
@@ -62,7 +62,8 @@ class TimeList(list):
         if not self:
             return True
         t_last = self[-1]
-        return (t - t_last > 2*tolerance)
+        tol = self.tolerance
+        return (t - t_last > 2*tol)
 
     def append(self, t):
         """
