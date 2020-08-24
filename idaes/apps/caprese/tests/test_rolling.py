@@ -1,4 +1,5 @@
 import pytest
+import sys
 from collections import OrderedDict
 from pyomo.environ import *
 from idaes.apps.caprese.util import cuid_from_timeslice
@@ -64,6 +65,121 @@ class TestTimeList(object):
             time = time_list_2.validate_time(increasing_time)
             msg = ' and separated by more than twice the tolerance.'
             assert msg in str(err)
+
+    @pytest.mark.unit
+    def test_is_within_bounds(self):
+        empty_time_list = TimeList()
+
+        with pytest.raises(ValueError) as err:
+            empty_time_list.is_within_bounds(0.)
+            msg = 'List is empty'
+            assert msg in str(err)
+
+        time = [1,2,3]
+        t_last = time[-1]
+        tol = 0.1
+        eps = sys.float_info.epsilon
+        root_eps = eps**0.5
+        time_list = TimeList(time, tolerance=tol)
+        assert time_list.is_within_bounds(2.5)
+        assert time_list.is_within_bounds(t_last+tol/2)
+        assert time_list.is_within_bounds(t_last+tol)
+        assert not time_list.is_within_bounds(3.5)
+        
+        assert not time_list.is_within_bounds(3.1+root_eps)
+
+        # Of course, we may still violate our tolerance
+        # by less than machine precision.
+        assert time_list.is_within_bounds(3.1+eps/2)
+
+    @pytest.mark.unit
+    def test_is_valid_append(self):
+        time = [1,2,3]
+        t_last = time[-1]
+        tol = 0.1
+        root_eps = sys.float_info.epsilon**0.5
+        empty_time_list = TimeList()
+        time_list = TimeList(time, tolerance=tol)
+        assert empty_time_list.is_valid_append(-1)
+        assert not time_list.is_valid_append(0.)
+        assert not time_list.is_valid_append(t_last)
+        assert not time_list.is_valid_append(t_last + tol)
+        assert time_list.is_valid_append(t_last + 2*tol + root_eps)
+
+    @pytest.mark.unit
+    def test_append(self):
+        time = [1,2,3]
+        t_last = time[-1]
+        tol = 0.1
+        root_eps = sys.float_info.epsilon**0.5
+        time_list = TimeList(time, tolerance=tol)
+        
+        t_new = t_last + tol
+        with pytest.raises(ValueError) as err:
+            time_list.append(t_new)
+            msg = 'Appended time values must be'
+            assert msg in str(err)
+
+        t_new = t_last + 2*tol + root_eps
+        time_list.append(t_new)
+        assert time_list == time + [t_new]
+
+    @pytest.mark.unit
+    def test_validate_extend(self):
+        time = [1,2,3]
+        t_last = time[-1]
+        tol = 0.1
+        root_eps = sys.float_info.epsilon**0.5
+        time_list = TimeList(time, tolerance=tol)
+
+        assert time_list.validate_extend([]) == []
+
+        new_points = [2.5, 4]
+        with pytest.raises(ValueError) as err:
+            time_list.validate_extend(new_points)
+            msg = 'First new point must not be earlier'
+            assert msg in str(err)
+
+        new_points = [t_last, 4]
+        assert time_list.validate_extend(new_points) == [4]
+        new_points = [t_last+tol/2, 4]
+        assert time_list.validate_extend(new_points) == [4]
+
+        new_points = [t_last + 3*tol/2, 4]
+        with pytest.raises(ValueError) as err:
+            time_list.validate_extend(new_points)
+            msg = 'must be separated by more than twice the tolerance'
+            assert msg in str(err)
+
+        new_points = [3.5, 4]
+        assert time_list.validate_extend(new_points) == new_points
+
+    @pytest.mark.unit
+    def test_extend(self):
+        time = [1,2,3]
+        t_last = time[-1]
+        tol = 0.1
+        time_list = TimeList(time, tolerance=tol)
+
+        new_points = [4,5]
+        time_list.extend(new_points)
+        assert time_list == [1,2,3,4,5]
+
+        new_points=  [5,6,7]
+        time_list.extend(new_points)
+        assert time_list  == [1,2,3,4,5,6,7]
+
+    @pytest.mark.unit
+    def test_find_nearest_index(self):
+        time = [1,2,3,4,5]
+        tol = 0.1
+        time_list = TimeList(time, tolerance=tol)
+
+        assert time_list.find_nearest_index(2.5) is None
+        assert time_list.find_nearest_index(2.05) == 1
+        assert time_list.find_nearest_index(1.) == 0
+        assert time_list.find_nearest_index(5.05) == 4
+
 
 '''
 @pytest.mark.unit
