@@ -200,15 +200,6 @@ class VectorSeries(OrderedDict):
         # well-documented.
         return len(self.time)
 
-    def __getitem__(self, i):
-        if isinstance(i, int):
-            # Treat i as an index into the list of ordered keys
-            # This will be very confusing if anybody ever starts using
-            # ints as keys in this class.
-            return list(self.values()).__getitem__(i)
-        # Expected types: ComponentUIDs, strings
-        return super().__getitem__(i)
-
     def consistent(self, target):
         if len(self) == 0:
             return True
