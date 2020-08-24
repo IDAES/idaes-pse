@@ -46,7 +46,7 @@ def test_init(initialize_model):
     # check that the model solved properly and has 0 degrees of freedom
     assert(degrees_of_freedom(m)==0)
     for c in activated_equalities_generator(m):
-        assert(abs(c.body() - c.lower) < 1e-4)
+        assert(abs(c.body() - c.lower) < 5e-4)
 
 
 @pytest.mark.integration
@@ -55,7 +55,7 @@ def test_init(initialize_model):
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_init_value(initialize_model):
     m, solver = initialize_model
-    assert gross_power_mw(m) == pytest.approx(620.8100259113626, abs=1e-2)
+    assert gross_power_mw(m) == pytest.approx(633.56, abs=1e-2)
 
 
 @pytest.mark.integration
@@ -66,4 +66,4 @@ def test_valve_change(initialize_model):
     m, solver = initialize_model
     m.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
     solver.solve(m, tee=True)
-    assert gross_power_mw(m) == pytest.approx(580.9566851114142, abs=1e-2)
+    assert gross_power_mw(m) == pytest.approx(592.87, abs=1e-2)

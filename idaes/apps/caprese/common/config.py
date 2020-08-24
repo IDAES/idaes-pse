@@ -24,10 +24,11 @@ class ControlInitOption(ConfigEnum):
     FROM_PREVIOUS = 11
     BY_TIME_ELEMENT = 12
     FROM_INITIAL_CONDITIONS = 13
+    SETPOINT = 14
 
 
 class ElementInitializationInputOption(ConfigEnum):
-    SET_POINT = 21
+    SETPOINT = 21
     INITIAL = 22
     CURRENT_VALUES = 23
 

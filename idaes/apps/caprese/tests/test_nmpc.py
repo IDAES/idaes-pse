@@ -24,7 +24,7 @@ from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
+from idaes.core.util.model_statistics import (degrees_of_freedom,
         activated_equalities_generator, unfixed_variables_generator)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
@@ -83,7 +83,7 @@ def assert_categorization(model):
                 model.cstr.control_volume.material_accumulation[0, 'aq', j])
         init_diff_list.append(
                 model.cstr.control_volume.material_holdup[0, 'aq', j])
-        
+
         init_fixed_list.append(model.mixer.E_inlet.conc_mol[0, j])
         init_fixed_list.append(model.mixer.S_inlet.conc_mol[0, j])
 
@@ -166,9 +166,9 @@ def nmpc():
                             m_plant.fs.mixer.E_inlet.flow_vol[0]]
 
     nmpc = NMPCSim(m_plant.fs, m_plant.fs.time,
-            m_controller.fs, m_controller.fs.time, 
+            m_controller.fs, m_controller.fs.time,
             inputs_at_t0=initial_plant_inputs,
-            solver=solver, outlvl=idaeslog.DEBUG, 
+            solver=solver, outlvl=idaeslog.DEBUG,
             sample_time=sample_time)
     # IPOPT output looks a little weird solving for initial conditions here...
     # has non-zero dual infeasibility, iteration 1 has a non-zero
@@ -231,20 +231,20 @@ def test_calculate_full_state_setpoint(nmpc):
 
     # Deactivate tracking objective from previous tests
     #controller._NMPC_NAMESPACE.tracking_objective.deactivate()
-    
+
     set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
-                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
+#                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
+#                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+                 (controller.mixer.E_inlet.flow_vol[0], 0.2),
+                 (controller.mixer.S_inlet.flow_vol[0], 2.5)]
 
     weight_tolerance = 5e-7
     weight_override = [
             (controller.mixer.E_inlet.flow_vol[0.], 20.),
             (controller.mixer.S_inlet.flow_vol[0.], 2.),
-#            (controller.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
-#            (controller.cstr.outlet.conc_mol[0., 'P'], 1.),
-#            (controller.cstr.outlet.conc_mol[0., 'S'], 1.),
+            (controller.cstr.control_volume.energy_holdup[0., 'aq'], 0.1),
+            (controller.cstr.outlet.conc_mol[0., 'P'], 1.),
+            (controller.cstr.outlet.conc_mol[0., 'S'], 1.),
             ]
     # FIXME: This steady state setpoint solve is more sensitive than I 
     # would like.
@@ -269,7 +269,7 @@ def test_calculate_full_state_setpoint(nmpc):
             assert user_setpoint_weights[i] == 20.
         elif var.local_name.startswith('S_'):
             assert user_setpoint_weights[i] == 2.
-        
+
     alg_vars = controller._NMPC_NAMESPACE.alg_vars
     diff_vars = controller._NMPC_NAMESPACE.diff_vars
     input_vars = controller._NMPC_NAMESPACE.input_vars
@@ -284,12 +284,12 @@ def test_calculate_full_state_setpoint(nmpc):
         group = category_dict[categ]
         # Assert that setpoint has been populated with non-None values
         assert not any([sp is None for sp in group.setpoint])
-        # Assert that setpoint (target) and reference (initial) values are 
+        # Assert that setpoint (target) and reference (initial) values are
         # different in some way
-        assert not all([sp == ref for sp, ref in 
+        assert not all([sp == ref for sp, ref in
             zip(group.setpoint, group.reference)])
         # Assert that initial and reference values are the same
-        assert all([ref == var[0].value for ref, var in 
+        assert all([ref == var[0].value for ref, var in
             zip(group.reference, group.varlist)])
 
 
@@ -337,7 +337,7 @@ def test_add_setpoint_to_controller(nmpc):
                         for i, var in enumerate(diff_vars))
                         for t in time)
 
-    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] - 
+    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] -
                         var[time[k-1]])**2
                         for i, var in enumerate(input_vars))
                         for k in range(1, len(time)))
@@ -345,14 +345,14 @@ def test_add_setpoint_to_controller(nmpc):
     obj_expr = obj_state_term + obj_control_term
 
     assert hasattr(controller._NMPC_NAMESPACE, 'test_objective')
-    assert (value(obj_expr) == 
+    assert (value(obj_expr) ==
             approx(value(controller._NMPC_NAMESPACE.test_objective.expr), 1e-6))
 
     controller._NMPC_NAMESPACE.test_objective.deactivate()
 
 
 def test_construct_objective_weights(nmpc):
-    
+
     controller = nmpc.controller
     dynamic_weight_tol = 5e-7
     dynamic_weight_overwrite = \
@@ -397,20 +397,21 @@ def test_add_objective_function(nmpc):
     input_weights = input_vars.weights
     input_sp = input_vars.setpoint
 
-    time = controller._NMPC_NAMESPACE.sample_points
+    # Sample points now contains time.first()
+    time = controller._NMPC_NAMESPACE.sample_points[1:]
 
     obj_state_term = sum(sum(diff_weights[i]*(var[t] - diff_sp[i])**2
                         for i, var in enumerate(diff_vars))
                         for t in time)
 
-    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] - 
+    obj_control_term = sum(sum(input_weights[i]*(var[time[k]] -
                         var[time[k-1]])**2
                         for i, var in enumerate(input_vars))
                         for k in range(1, len(time)))
 
     obj_expr = obj_state_term + obj_control_term
 
-    assert (value(obj_expr) == 
+    assert (value(obj_expr) ==
             approx(value(controller._NMPC_NAMESPACE.tracking_objective.expr), 1e-6))
     # Controller model has not been initialized yet, so value of
     # objective function may not be meaningful
@@ -431,8 +432,8 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
     # Test that constraints have the correct indexing set
     n_sample = int(controller.time.last()/sample_time)
     sample_points = [sample_time*i
-            for i in range(1, n_sample+1)]
-    # By convention, sample_points omits time.first()
+            for i in range(n_sample+1)]
+    # sample_points should include time.first()
 
     assert (sample_points == nmpc.controller._NMPC_NAMESPACE.sample_points)
 
@@ -442,25 +443,25 @@ def test_constrain_control_inputs_piecewise_constant(nmpc):
             # ^ tuple because pwc_constraint is now indexed by time and the location
             # into the input list
 
-    # Rough test that the constraints are correct - contain the correct 
+    # Rough test that the constraints are correct - contain the correct
     # variables.
     time = controller._NMPC_NAMESPACE.get_time()
     for i, t in enumerate(controller._NMPC_NAMESPACE.get_time()):
         if t not in sample_points and t != time.first():
             t_next = time[i+2]
-            var_in_0 = [id(v) for v in 
+            var_in_0 = [id(v) for v in
                 identify_variables(controller._NMPC_NAMESPACE.pwc_constraint[t, 0].expr)]
-            var_in_1 = [id(v) for v in 
+            var_in_1 = [id(v) for v in
                 identify_variables(controller._NMPC_NAMESPACE.pwc_constraint[t, 1].expr)]
             assert len(var_in_0) == 2
             assert len(var_in_1) == 2
-            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[0][t]) 
+            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[0][t])
                     in var_in_0)
-            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[0][t_next]) 
+            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[0][t_next])
                     in var_in_0)
-            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[1][t]) 
+            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[1][t])
                     in var_in_1)
-            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[1][t_next]) 
+            assert (id(controller._NMPC_NAMESPACE.input_vars.varlist[1][t_next])
                     in var_in_1)
 
 
@@ -469,7 +470,7 @@ def test_initialization_by_time_element(nmpc):
 
     nmpc.initialize_control_problem(
             control_init_option=ControlInitOption.BY_TIME_ELEMENT,
-            tolerance=1e-4)
+            tolerance=1e-3)
 
     controller = nmpc.controller
     time = controller.time
@@ -485,7 +486,7 @@ def test_initialization_by_time_element(nmpc):
                 assert not _slice[t].fixed
 
     # Check for correct dof
-    assert (degrees_of_freedom(controller) == 
+    assert (degrees_of_freedom(controller) ==
             controller._NMPC_NAMESPACE.n_input_vars*
             controller._NMPC_NAMESPACE.samples_per_horizon)
 
@@ -529,7 +530,7 @@ def test_initialization_from_initial_conditions(nmpc):
         # If the equality does not contain any inputs, it should
         # only be violated if it is an accumulation equation
         if abs(value(con.body) - value(con.upper)) > 1e-6:
-            if not any([locator[v].category == VariableCategory.INPUT 
+            if not any([locator[v].category == VariableCategory.INPUT
                         for v in identify_variables(con.expr)]):
                 assert 'accumulation' in con.local_name
 
@@ -546,7 +547,7 @@ def test_solve_control_problem(nmpc):
     assert final_obj_value < init_obj_value
 
     for con in activated_equalities_generator(controller):
-        assert abs(value(con.body) - value(con.upper)) < 1e-6
+        assert abs(value(con.body) - value(con.upper)) < 1e-5
 
     for var in unfixed_variables_generator(controller):
         if var.lb is not None:
@@ -614,11 +615,11 @@ def test_initialize_by_element_in_range(nmpc):
     # Check that plant simulation matches controller simulation.
     # Only valid because there is no noise or plant-model-mismatch
     # and plant/controller have the same time discretizations
-    p_varlist = (plant._NMPC_NAMESPACE.diff_vars.varlist + 
-                 plant._NMPC_NAMESPACE.alg_vars.varlist + 
+    p_varlist = (plant._NMPC_NAMESPACE.diff_vars.varlist +
+                 plant._NMPC_NAMESPACE.alg_vars.varlist +
                  plant._NMPC_NAMESPACE.deriv_vars.varlist)
-    c_varlist = (controller._NMPC_NAMESPACE.diff_vars.varlist + 
-                 controller._NMPC_NAMESPACE.alg_vars.varlist + 
+    c_varlist = (controller._NMPC_NAMESPACE.diff_vars.varlist +
+                 controller._NMPC_NAMESPACE.alg_vars.varlist +
                  controller._NMPC_NAMESPACE.deriv_vars.varlist)
     for i, pvar in enumerate(p_varlist):
         for t in time:
@@ -646,8 +647,8 @@ def test_initialize_from_previous(nmpc):
 
     assert nmpc.controller_solved
 
-    c_varlist = (controller._NMPC_NAMESPACE.diff_vars.varlist + 
-                 controller._NMPC_NAMESPACE.alg_vars.varlist + 
+    c_varlist = (controller._NMPC_NAMESPACE.diff_vars.varlist +
+                 controller._NMPC_NAMESPACE.alg_vars.varlist +
                  controller._NMPC_NAMESPACE.deriv_vars.varlist)
 
     prev_values = [{t: _slice[t].value
@@ -687,5 +688,3 @@ def dynamic_cstr_model():
 @pytest.fixture
 def steady_cstr_model():
     return make_model(steady=True).fs
-
-
