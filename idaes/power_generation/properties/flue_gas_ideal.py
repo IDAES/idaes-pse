@@ -546,7 +546,8 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['C', j] * t**3 / 3 +
                     coeff['D', j] * t**4 / 4 -
                     coeff['E', j] / t +
-                    coeff['F', j]) for j in self.params.component_list))
+                    coeff['F', j] -
+                    coeff['H', j]) for j in self.params.component_list))
         try:
             self.enthalpy_correlation = Constraint(rule=enthalpy_correlation)
         except AttributeError:
@@ -577,8 +578,8 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['B', j] * t +
                     coeff['C', j] * t**2 / 2 +
                     coeff['D', j] * t**3 / 3 -
-                    coeff['E', j] / t**2 +
-                    coeff['G', j] -
+                    coeff['E', j] / t**2 / 2 +
+                    coeff['G', j] +
                     r_gas * log(x[j])) for j in self.params.component_list)
         try:
             self.entropy_correlation = Constraint(rule=entropy_correlation)
