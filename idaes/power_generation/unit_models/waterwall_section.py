@@ -44,7 +44,7 @@ import idaes.logger as idaeslog
 
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Param, \
-    asin, cos, sqrt, log10
+    asin, cos, sqrt, log10, PositiveReals
 from pyomo.dae import DerivativeVar
 from idaes.core.util.constants import Constants as const
 
@@ -134,26 +134,26 @@ constructed,
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
-    CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Equilibrium reaction construction flag",
-        doc="""Indicates whether terms for equilibrium controlled reactions
-should be constructed,
-**default** - True.
-**Valid values:** {
-**True** - include equilibrium reaction terms,
-**False** - exclude equilibrium reaction terms.}"""))
-    CONFIG.declare("has_heat_of_reaction", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Heat of reaction term construction flag",
-        doc="""Indicates whether terms for heat of reaction terms should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat of reaction terms,
-**False** - exclude heat of reaction terms.}"""))
+#     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
+#         default=True,
+#         domain=In([True, False]),
+#         description="Equilibrium reaction construction flag",
+#         doc="""Indicates whether terms for equilibrium controlled reactions
+# should be constructed,
+# **default** - True.
+# **Valid values:** {
+# **True** - include equilibrium reaction terms,
+# **False** - exclude equilibrium reaction terms.}"""))
+#     CONFIG.declare("has_heat_of_reaction", ConfigValue(
+#         default=False,
+#         domain=In([True, False]),
+#         description="Heat of reaction term construction flag",
+#         doc="""Indicates whether terms for heat of reaction terms should be
+# constructed,
+# **default** - False.
+# **Valid values:** {
+# **True** - include heat of reaction terms,
+# **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -171,23 +171,23 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
-    CONFIG.declare("reaction_package", ConfigValue(
-        default=None,
-        domain=is_reaction_parameter_block,
-        description="Reaction package to use for control volume",
-        doc="""Reaction parameter object used to define reaction calculations,
-**default** - None.
-**Valid values:** {
-**None** - no reaction package,
-**ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
-    CONFIG.declare("reaction_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing reaction packages",
-        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-and used when constructing these,
-**default** - None.
-**Valid values:** {
-see reaction package for documentation.}"""))
+#     CONFIG.declare("reaction_package", ConfigValue(
+#         default=None,
+#         domain=is_reaction_parameter_block,
+#         description="Reaction package to use for control volume",
+#         doc="""Reaction parameter object used to define reaction calculations,
+# **default** - None.
+# **Valid values:** {
+# **None** - no reaction package,
+# **ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
+#     CONFIG.declare("reaction_package_args", ConfigBlock(
+#         implicit=True,
+#         description="Arguments to use for constructing reaction packages",
+#         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+# and used when constructing these,
+# **default** - None.
+# **Valid values:** {
+# see reaction package for documentation.}"""))
     CONFIG.declare("rigorous_boiling", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -225,9 +225,7 @@ constructed,
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(
-            balance_type=self.config.material_balance_type,
-            has_rate_reactions=False,
-            has_equilibrium_reactions=False)
+            balance_type=self.config.material_balance_type)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -243,9 +241,7 @@ constructed,
         self.add_outlet_port()
 
         # Add object references
-        add_object_reference(self,
-                             "volume",
-                             self.control_volume.volume)
+        add_object_reference(self, "volume", self.control_volume.volume)
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
@@ -271,7 +267,7 @@ constructed,
                 initialize=10,
                 doc="Total projected wall area of waterwall section")
         # Number of waterwall tubes
-        self.count = Var(
+        self.number_tubes = Var(
                 initialize=4,
                 doc="Number of waterwall tubes")
         # Height of waterwall section, given by boiler model
@@ -294,7 +290,7 @@ constructed,
         # Total cross section area of fluid flow
         @self.Expression(doc="Cross section area of fluid")
         def area_cross_fluid_total(b):
-            return 0.25*const.pi*b.tube_di**2*b.count
+            return 0.25*const.pi*b.tube_di**2*b.number_tubes
         # Tube thickness
         self.tube_thickness = Var(
                 initialize=0.005,
@@ -329,7 +325,7 @@ constructed,
         # Equivalent tube length (not neccesarily equal to height)
         @self.Constraint(doc="Equivalent length of tube")
         def tube_length_eqn(b):
-            return b.tube_length * b.pitch * b.count == b.area_proj_total
+            return b.tube_length * b.pitch * b.number_tubes == b.area_proj_total
 
         @self.Expression(doc="Angle at joint of tube and fin")
         def alpha_tube(b):
@@ -376,16 +372,15 @@ constructed,
                          doc="waterwall fluid volume of all tubes")
         def volume_eqn(b, t):
             return b.volume[t] == 0.25 * const.pi * b.tube_di**2\
-                * b.tube_length * b.count
+                * b.tube_length * b.number_tubes
 
     def _make_performance(self):
         """
         Define constraints which describe the behaviour of the unit model.
         """
-        # Thermal conductivity of metal
-        self.fcorrection_dp = Param(
+        self.fcorrection_dp = Var(
                 initialize=1.2,
-                mutable=True,
+                within=PositiveReals,
                 doc='correction factor for pressure drop due to acceleration'
                 'and unsmooth tube applied to friction term')
         # Thermal conductivity of metal
@@ -842,7 +837,7 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="total heat added to fluid control_volume")
         def heat_eqn(b, t):
-            return b.heat_duty[t] == b.count * b.heat_flux_conv[t] \
+            return b.heat_duty[t] == b.number_tubes * b.heat_flux_conv[t] \
                 * b.tube_length * b.perimeter_ts
 
         # Reduced pressure
@@ -947,21 +942,19 @@ constructed,
                 * b.suppression_factor[t]
 
     def set_initial_condition(self):
-        ''' currently ignore hold up for convegence issue '''
+        ''' Initialization of dynamic accumulation terms '''
 
         if self.config.dynamic is True:
             self.control_volume.material_accumulation[:, :, :].value = 0
             self.control_volume.energy_accumulation[:, :].value = 0
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
-
-        if self.config.dynamic is True:
             self.energy_accumulation_slag[:].value = 0
             self.energy_accumulation_metal[:].value = 0
             self.energy_accumulation_slag[0].fix(0)
             self.energy_accumulation_metal[0].fix(0)
 
-    def initialize(blk, state_args=None, outlvl=0,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         Waterwall section initialization routine.

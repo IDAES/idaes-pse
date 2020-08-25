@@ -24,42 +24,52 @@ and an input (boundary condition) of the fire-side model. The heat conduction th
     
     Figure 1. Coupling of fire-side zones and fluid-side waterwall sections modeled in IDAES
 
-As shown in the figure, multiple waterwall sections in a form of indexed set block in IDAES are modeled and coupled with the multiple zones on the fire side.  
-A user must set the number of waterwall sections equal to the number of zones in the fire-side model.  
-The first (the lowest) section is either connected with the water liquid from a downcomer for a subcritical boiler or the water from the outlet of an economizer for a supercritical boiler. 
-Other sections are connected with their neighboring sections below them via Pyomo Arcs. 
-Finally, the last section is connected either to a drum for a subcritical boiler or a superheater for a supercritical boiler. 
+Figure 1 shows the schematic representation of the coupled fire-side and fluid-side waterwall model. 
+Since, the waterwall section is connected with a fire-side section of the boiler, the user must set the number of waterwall sections equal to the number of zones in the fire-side model. 
+The first (the lowest) section is generally connected with the water liquid from a downcomer for a subcritical boiler or the water from the outlet of an economizer for a supercritical boiler. 
+Other sections are generally connected with their neighboring sections below them via Pyomo Arcs. 
+Finally, the last section is generally connected either to a drum for a subcritical boiler or a superheater for a supercritical boiler. 
 
-Model inputs:
+Model inputs (variable name):
 
-* number of zones
-* number of tubes around the perimeter of the boiler
-* heat duty of individual zone from fire-side model (sum of net radiation and convection)
-* tube dimensions (length, inside diameter and thickness)
-* projected membrane wall area
-* fin dimension of membrane wall (width and thickness)
-* slag layer thickness
-* water/steam flow rate and states at inlet (F, T, h, P, x)
-* properties of slag and tube metal (thermal conductivity, heat capacity, density)
+* number of zones (ww_zones)
+* number of tubes around the perimeter of the boiler (number_tubes)
+* heat duty of individual zone from fire-side model (sum of net radiation and convection) (heat_fireside)
+* tube dimensions (length, inside diameter and thickness) (tube_length, tube_di, tube_thickness)
+* projected membrane wall area (area_proj_total)
+* fin dimension of membrane wall (width and thickness) (fin_length, fin_thickness)
+* slag layer thickness (slag_thickness)
+* water/steam flow rate and states at inlet (flow_mol, enth_mol, pressure)
+* properties of slag and tube metal (thermal conductivity, heat capacity, density) (therm_cond_slag, therm_cond_metal, dens_metal, dens_slag)
 
 Model Outputs:
 
-* temperatures of tube metal at inner wetted surface and at center of the tube thickness
-* temperatures of slag layer at outer surface and at the center of the slag layer
-* pressure drop through each section and heat added to each section
-* water/steam flow rate and states at outlet (F, T, h, P, x)
-
-Note that the number of zones required depends on the discretization of the boiler fire-side model. A simplified version of a boiler water wall could be obtained by using a simple IDAES heater model, modeling the waterwall as one section (without detailed heat transfer calculations and slag thickness).
-
-Figure 2 illustrates the physics and main variables in a single waterwall section model. This model assumes that the net radiation and convective heat fluxes are given from the fire-side model for the corresponding zone. The membrane wall geometry and slag layer thickness are the given input variables along with the fluid inlet flow rate and state conditions. In case of 2-phase flow, the volume fraction of the vapor phase is calculated based on an empirical correlation that calculates the slip velocity between the two phases due to their density difference. The pressure drop of the 2-phase flow is calculated based on the liquid-only velocity, Reynolds number and friction factors corrected for the volume fraction of vapor.  Likewise, the convective heat transfer coefficient h_conv on the fluid side is calculated from empirical correlations for nucleate boiling with forced convection enhancement factor and pool boiling suppression factor. The overall heat transfer coefficient is the reciprocal of the overall heat transfer resistance (:math:`r_{ht}` in Figure 2) obtained from a surrogate model generated from a rigorous 2-D model for the heat conduction through the complicated geometry of the slag and tube layers and heat convection between the inner tube wall and the fluid. The heat conduction submodel also solves the slag outer surface temperature :math:`T_{w,slag}`, slag layer center point temperature :math:`T_{c,slag}`, tube center point temperature :math:`T_{c,tube}`, and tube inner wall temperature :math:`T_{w,tube}`. The center point temperatures are used to calculate the energy stored in the slag and tube layers for dynamic simulations.
-The single waterwall section model eventually calculates the heat transfer rate to the fluid, pressure drop of the fluid in the waterwall section, and the slag outer wall temperature, which is required as the boundary condition input for the fire-side model. The material and energy balances of the fluid are handled by the IDAES framework.
-
+* temperatures of tube metal at inner wetted surface and at center of the tube thickness (temp_tube_boundary, temp_tube_center)
+* temperatures of slag layer at outer surface and at the center of the slag layer (temp_slag_boundary, temp_slag_center)
+* pressure drop through each section and heat added to each section (deltaP)
+* water/steam flow rate and states at outlet (flow_mol, enth_mol, pressure)
 
 .. figure:: waterwall_2.png
     :width: 800
     :align: center
     
     Figure 2. Ilustration of a waterwall section model and its main variables
+
+Figure 2 illustrates the physics and main variables in a single waterwall section model. This model assumes that the net radiation and convective heat fluxes are given from the fire-side model for the corresponding zone. 
+The membrane wall geometry and slag layer thickness are the given input variables along with the fluid inlet flow rate and state conditions. 
+In case of 2-phase flow, the volume fraction of the vapor phase is calculated based on an empirical correlation that calculates the slip velocity between the two phases due to their density difference. 
+The pressure drop of the 2-phase flow is calculated based on the liquid-only velocity, Reynolds number and friction factors corrected for the volume fraction of vapor.  
+Likewise, the convective heat transfer coefficient h_conv on the fluid side is calculated from empirical correlations for nucleate boiling with forced convection enhancement factor and pool boiling suppression factor. 
+The overall heat transfer coefficient is the reciprocal of the overall heat transfer resistance (:math:`r_{ht}` in Figure 2). 
+Finally, The heat duty from fire-side model is provided by the user, while the heat conduction model solves the slag outer surface temperature :math:`T_{w,slag}`, slag layer center point temperature :math:`T_{c,slag}`, 
+tube center point temperature :math:`T_{c,tube}`, and tube inner wall temperature :math:`T_{w,tube}`. 
+The center point temperatures are used to calculate the energy stored in the slag and tube layers for dynamic simulations.
+The single waterwall section model eventually calculates the heat transfer rate to the fluid, pressure drop of the fluid in the waterwall section, and the slag outer wall temperature, which is required as the boundary condition input for the fire-side model. 
+The heat duty from fire-side model is generally obtained from a surrogate model, the surrogate model must be trained using a rigorous 2-D model under different operating conditions. 
+The rigorous 2-D simulates the heat conduction through the complicated geometry of the slag and tube layers and heat convection between the inner tube wall and the fluid. [1]
+
+
+[1] Ma, J., Eason, J. P., Dowling, A. W., Biegler, L. T., Miller, D. C. (2016). Development of a first-principles hybrid boiler model for oxy-combustion power generation system. Int. J. of Greenhouse Gas Contr., 46, pp. 136-157.
 
 Degrees of Freedom
 ------------------
@@ -164,3 +174,9 @@ where:
 * MW: molecular weigth of water (kmol/kg)
 
 Note that at the flowsheet level first waterwall section is connected to the economizer, arcs connecting section 2 to n-1 have to be constructed by the user, and the outlet of section n is connected to the drum model or superheater (subcritical and supercritical plant, respectively)
+
+Dynamic Model
+-------------
+
+The dynamic model version of the waterwall section model can be constructed by selecting dynamic=True. 
+If dynamic = True, the energy accumulation of slag and metal, material accumulation holdups are constructed. Therefore, a dynamic initialization method has been developed `set_initial_conditions` to initialize the holdup terms.
