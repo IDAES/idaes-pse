@@ -192,7 +192,6 @@ constructed,
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            has_heat_of_reaction=False,
             has_heat_transfer=self.config.has_heat_transfer)
 
         self.control_volume.add_momentum_balances(
@@ -502,6 +501,7 @@ constructed,
         self.liquid_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=1.0,
+                bounds=(0, 1),
                 doc='Liquid fractoin of vapor-liquid mixture')
 
         # Density ratio of liquid to vapor
@@ -514,6 +514,7 @@ constructed,
         self.void_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=0.0,
+                bounds=(0, 1),
                 doc='void fraction at inlet')
 
         # Exponent n for gamma at inlet, typical range in (0.75,0.8294)
@@ -647,7 +648,7 @@ constructed,
             return b.heat_flux_conv[t] * b.half_resistance_metal \
                 * b.perimeter_ts == \
                 b.perimeter_interface * (b.temp_tube_center[t]
-                                  - b.temp_tube_boundary[t])
+                                         - b.temp_tube_boundary[t])
 
         # Equation to calculate energy holdup for slag layer per tube length
         @self.Constraint(self.flowsheet().config.time,
@@ -983,7 +984,6 @@ constructed,
 
         blk.control_volume.release_state(flags, outlvl+1)
         init_log.info("Initialization Complete.")
-
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
