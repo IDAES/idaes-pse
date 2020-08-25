@@ -70,6 +70,7 @@ from idaes.apps.caprese.util import (
         apply_noise_at_time_points,
         )
 from idaes.apps.caprese.rolling import TimeList, VectorSeries
+from idaes.apps.caprese.advanced_step import AdvancedStepManager
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
@@ -691,6 +692,8 @@ class NMPCSim(DynamicBase):
                 VariableCategory.DIFFERENTIAL,
                 VariableCategory.ALGEBRAIC,
                 VariableCategory.DERIVATIVE,
+                VariableCategory.FIXED,
+                VariableCategory.INPUT,
                 ],
             **kwargs):
         """
@@ -781,6 +784,8 @@ class NMPCSim(DynamicBase):
 
         if not add_noise:
             return
+        # TODO: The following could be moved into an apply_noise
+        # method that wraps apply_noise_at_time_points.
 
         noise_function = config.input_noise_function
         noise_bound_option = config.noise_bound_option
@@ -1705,6 +1710,31 @@ class NMPCSim(DynamicBase):
             init_log.error(msg)
             raise ValueError(msg)
 
+    def prepare_advanced_step_controller(self):
+        """
+        TODO
+        """
+        # What are the "dof vars?" They are the measurements.
+        # These should be defined and known by the controller,
+        # but for now I will use the controller_ic_vars.
+        block = getattr(self.controller, self.namespace_name)
+        time = block.get_time()
+        index = time.first()
+        dof_vars = block.ic_vars
+        self.advanced_step_manager = AdvancedStepManager(
+                block,
+                dof_vars,
+                index,
+                )
+
+    def solve_advanced_step_control_problem(self, **kwargs):
+        """
+        TODO
+        """
+        # Now: How to get derivatives wrt dof_vars via k_aug?
+        with self.advanced_step_manager as as_manager:
+            self.solve_control_problem(**kwargs)
+
 
     def simulate_controller_sample(self, t_start, **kwargs):
         """
@@ -2047,7 +2077,6 @@ class NMPCSim(DynamicBase):
             data_list.append(data)
         history.extend(real_time, data_list)
         return history
-        
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, 
             Q_matrix=[],
