@@ -145,7 +145,6 @@ def test_initialize_waterwall(build_waterwall):
     optarg = {"tol": 1e-7,
               "linear_solver": "ma27",
               "max_iter": 40}
-    solver = pyo.SolverFactory("ipopt")
     solver.options = optarg
 
     # Set inlet and operating conditions, and some initial conditions.
@@ -159,7 +158,6 @@ def test_initialize_waterwall(build_waterwall):
             "pressure": m.fs.Waterwalls[1].inlet.pressure[0].value,
             "enth_mol": m.fs.Waterwalls[1].inlet.enth_mol[0].value,
         },
-        outlvl=0,
         optarg=optarg,
     )
 
@@ -170,7 +168,6 @@ def test_initialize_waterwall(build_waterwall):
                 "pressure": m.fs.Waterwalls[i - 1].outlet.pressure[0].value,
                 "enth_mol": m.fs.Waterwalls[i - 1].outlet.enth_mol[0].value,
                 },
-            outlvl=0,
             optarg=optarg,
             )
 
@@ -185,13 +182,24 @@ def test_waterwall(build_waterwall):
     m = build_waterwall
 
     results = solver.solve(m, tee=True)
-
+    # test energy balance
+    heat_duty = []
+    for i in pyo.RangeSet(1,10):
+        heat_duty.append(pyo.value(m.fs.Waterwalls[i].heat_duty[0]))
+    Fhin = pyo.value(m.fs.Waterwalls[1].control_volume.properties_in[0].
+                     flow_mol * m.fs.Waterwalls[1].control_volume.
+                     properties_in[0].enth_mol)
+    Fhout = pyo.value(m.fs.Waterwalls[10].control_volume.properties_out[0].
+                      flow_mol * m.fs.Waterwalls[10].control_volume.
+                      properties_out[0].enth_mol)
+    assert(pytest.approx(sum(heat_duty), abs=1e-3) == Fhout - Fhin)
     assert (pytest.approx(0.08353, abs=1e-3) ==
             pyo.value(m.fs.Waterwalls[10].control_volume.
                       properties_out[0].vapor_frac))
     assert (pytest.approx(150055.0, abs=1e-3) ==
             pyo.value(m.fs.Waterwalls[10].control_volume.
                       properties_out[0].flow_mol))
+    # test mass conservation
     assert (pytest.approx(0, abs=1e-3) ==
             pyo.value(m.fs.Waterwalls[10].control_volume.
                       properties_out[0].flow_mol - m.fs.Waterwalls[1].
@@ -200,7 +208,7 @@ def test_waterwall(build_waterwall):
             pyo.value(m.fs.Waterwalls[10].control_volume.
                       properties_out[0].enth_mol))
     assert degrees_of_freedom(m) == 0
-            # Check for optimal solution
+    # Check for optimal solution
     assert results.solver.termination_condition == \
         pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok

@@ -37,11 +37,12 @@ Model inputs (variable name):
 * number of tubes around the perimeter of the boiler (number_tubes)
 * heat duty of individual zone from fire-side model (sum of net radiation and convection) (heat_fireside)
 * tube dimensions (length, inside diameter and thickness) (tube_length, tube_diameter, tube_thickness)
-* projected membrane wall area (area_proj_total)
+* projected membrane wall area (projected_area)
 * fin dimension of membrane wall (width and thickness) (fin_length, fin_thickness)
 * slag layer thickness (slag_thickness)
 * water/steam flow rate and states at inlet (flow_mol, enth_mol, pressure)
 * properties of slag and tube metal (thermal conductivity, heat capacity, density) (therm_cond_slag, therm_cond_metal, dens_metal, dens_slag)
+* pressure drop correction factor (fcorrection_dp)
 
 Model Outputs:
 
