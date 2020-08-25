@@ -24,7 +24,8 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "John Eslick, Andrew Lee"
 
 
-def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
+def arcs_to_stream_dict(
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s={}):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -40,17 +41,27 @@ def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
         descend_into (bool): If True, search subblocks for Arcs as well. The
             default is True.
         sort (bool): If True sort keys and return an OrderedDict
+        prepend (str): Prepend a string to the arc name joined with a '.'.
+            This can be useful to prevent conflicting names when sub blocks
+            contain Arcs that have the same names when used in combination
+            with descend_into=False.
+        s (dict): Add streams to an existing stream dict.
 
     Returns:
         Dictionary with Arc names as keys and the Arcs as values.
 
     """
-    s = dict((c.getname(), c) for c in blk.component_objects(
-        Arc, descend_into=descend_into))
+    if s is None:
+        s = {}
+    for c in blk.component_objects(Arc, descend_into=descend_into):
+        key = c.getname()
+        if prepend is not None:
+            key = ".".join([prepend, key])
+        s[key] = c
     if additional is not None:
         s.update(additional)
     if sort:
-        streams = OrderedDict(sorted(s.items()))
+        s = OrderedDict(sorted(s.items()))
     return s
 
 
