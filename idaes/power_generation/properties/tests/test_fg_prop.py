@@ -25,7 +25,7 @@ from math import log
 
 
 # Mark module as an integration test
-pytestmark = pytest.mark.unit
+pytest.mark.unit
 
 
 if pyo.SolverFactory('ipopt').available():
