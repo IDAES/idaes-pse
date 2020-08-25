@@ -16,6 +16,10 @@ General Cubic Equation of State
 -------------------------------
 All equations come from "The Properties of Gases and Liquids, 4th Edition" by Reid, Prausnitz and Poling. The general cubic equation of state is represented by the following equations:
 
+.. math:: P = \frac{RT}{V-b}-\frac{a}{V^2-ubV+wb^2}
+
+An equivalent form of the previous equation  is:
+
 .. math:: 0 = Z^3 - (1+B-uB)Z^2 + (A-uB-(u-w)B^2)Z - AB-wB^2-wB^3
 .. math:: A = \frac{a_mP}{R^2T^2}
 .. math:: B = \frac{b_mP}{RT}
@@ -23,19 +27,19 @@ All equations come from "The Properties of Gases and Liquids, 4th Edition" by Re
 where :math:`Z` is the compressibility factor of the mixture, :math:`a_m` and :math:`b_m` are properties of the mixture and :math:`u` and :math:`w` are parameters which depend on the specific equation of state being used as show in the table below.
 
 .. csv-table::
-   :header: "Equation", ":math:`u`", ":math:`w`", ":math:`\Omega_A`", ":math:`\Omega_B`", ":math:`\kappa_j`"
+   :header: "Equation", ":math:`u`", ":math:`w`", ":math:`\Omega_A`", ":math:`\Omega_B`", ":math:`\alpha_j`"
 
    "Peng-Robinson", "2", "-1", "0.45724", "0.07780", ":math:`(1+(1-T_r^2)(0.37464+1.54226\omega_j-0.26992\omega_j^2))^2`"
    "Soave-Redlich-Kwong", "1", "0", "0.42748", "0.08664", ":math:`(1+(1-T_r^2)(0.48+1.574\omega_j-0.176\omega_j^2))^2`"
 
 The properties :math:`a_m` and :math:`b_m` are calculated from component specific properties :math:`a_j` and :math:`b_j` as shown below:
 
-.. math:: a_j = \frac{\Omega_AR^2T_{c,j}^2}{P_{c, j}}\kappa_j
+.. math:: a_j = \frac{\Omega_AR^2T_{c,j}^2}{P_{c, j}}\alpha_j
 .. math:: b_j = \frac{\Omega_BRT_{c,j}}{P_{c,j}}
-.. math:: a_m = \sum_i{\sum_j{y_iy_j(a_ia_j)^{1/2}(1-k_{ij})}}
+.. math:: a_m = \sum_i{\sum_j{y_iy_j(a_ia_j)^{1/2}(1-\kappa_{ij})}}
 .. math:: b_m = \sum_i{y_ib_i}
 
-where :math:`P_{c,j}` and :math:`T_{c,j}` are the component critical pressures and temperatures, :math:`y_j` is the mole fraction of component :math`j`, :math:`k_{ij}` are a set of binary interaction parameters which are specific to the equation of state and :math:`\Omega_A`, :math:`\Omega_B` and :math:`\kappa_j` are taken from the table above. :math:`\omega_j` is the Pitzer acentric factor of each component.
+where :math:`P_{c,j}` and :math:`T_{c,j}` are the component critical pressures and temperatures, :math:`y_j` is the mole fraction of component :math:`j`, :math:`\kappa_{ij}` are a set of binary interaction parameters which are specific to the equation of state and :math:`\Omega_A`, :math:`\Omega_B` and :math:`\alpha_j` are taken from the table above. :math:`\omega_j` is the Pitzer acentric factor of each component.
 
 The cubic equation of state is solved for each phase via a call to an external function which automatically identifies the correct root of the cubic and returns the value of :math:`Z` as a function of :math:`A` and :math:`B` along with the first and second partial derivatives.
 
