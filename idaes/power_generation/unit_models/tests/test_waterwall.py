@@ -183,16 +183,12 @@ def test_waterwall(build_waterwall):
 
     results = solver.solve(m, tee=True)
     # test energy balance
-    heat_duty = []
-    for i in pyo.RangeSet(1,10):
-        heat_duty.append(pyo.value(m.fs.Waterwalls[i].heat_duty[0]))
-    Fhin = pyo.value(m.fs.Waterwalls[1].control_volume.properties_in[0].
-                     flow_mol * m.fs.Waterwalls[1].control_volume.
-                     properties_in[0].enth_mol)
-    Fhout = pyo.value(m.fs.Waterwalls[10].control_volume.properties_out[0].
-                      flow_mol * m.fs.Waterwalls[10].control_volume.
-                      properties_out[0].enth_mol)
-    assert(pytest.approx(sum(heat_duty), abs=1e-3) == Fhout - Fhin)
+    heat_duty = sum(pyo.value(m.fs.Waterwalls[i].heat_duty[0]) for i in range(1,11))
+    Fhin = m.fs.Waterwalls[1].control_volume.properties_in[0].\
+        flow_mol * m.fs.Waterwalls[1].control_volume.properties_in[0].enth_mol
+    Fhout = m.fs.Waterwalls[10].control_volume.properties_out[0].flow_mol \
+        * m.fs.Waterwalls[10].control_volume.properties_out[0].enth_mol
+    assert(pytest.approx(heat_duty, abs=1e-3) == pyo.value(Fhout - Fhin))
     assert (pytest.approx(0.08353, abs=1e-3) ==
             pyo.value(m.fs.Waterwalls[10].control_volume.
                       properties_out[0].vapor_frac))
