@@ -23,6 +23,9 @@ from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
@@ -95,6 +98,8 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
+    tag_format={},
+    tag_format_default="{:.4e}"
 ):
     """
     Replace text in a SVG with tag values for the model. This works by looking
@@ -102,7 +107,7 @@ def svg_tag(
 
     Args:
         tags: A dictionary where the key is the tag and the value is a Pyomo
-            Refernce.  The refernce could be indexed. In yypical IDAES
+            Reference.  The reference could be indexed. In typical IDAES
             applications the references would be indexed by time.
         svg: a file pointer or a string continaing svg contents
         outfile: a file name to save the results, if None don't save
@@ -113,9 +118,16 @@ def svg_tag(
         show_tags: Put tag labels of the diagram instead of numbers
         byte_encoding: If svg is given as a byte-array, use this encoding to
             convert it to a string.
+        tag_format: A dictionary of formatting strings.  If the formatting
+            string is a callable, it should be a function that takes the value
+            to display and returns a formatting string.
+        tag_format_default: The default formatting if not explicitly by
+            tag_format. If the formatting string is a callable, it should be a
+            function that takes the value to display and returns a formatting
+            string.
 
     Returns:
-        String for SVG
+        SVG String
     """
     if isinstance(svg, str):  # assume this is svg content string
         pass
@@ -139,7 +151,18 @@ def svg_tag(
         id = t.attributes["id"].value
         if id in tag_map:
             # if it's multiline change last line
-            tspan = t.getElementsByTagName("tspan")[-1].childNodes[0]
+            try:
+                tspan = t.getElementsByTagName("tspan")[-1]
+            except IndexError:
+                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
+                _log.warning(f"Skipping output for {tag_map[id]}.")
+                continue
+            try:
+                tspan = tspan.childNodes[0]
+            except IndexError:
+                # No child node means there is a line with no text, so add some.
+                tspan.appendChild(doc.createTextNode(""))
+                tspan = tspan.childNodes[0]
             try:
                 if show_tags:
                     val = tag_map[id]
@@ -149,9 +172,16 @@ def svg_tag(
                     val = pyo.value(tags[tag_map[id]][idx], exception=False)
             except ZeroDivisionError:
                 val = "Divide_by_0"
+            tf = tag_format.get(tag_map[id], tag_format_default)
             try:
-                tspan.nodeValue = "{:.4e}".format(val)
-            except ValueError:  # whatever it is can't be scientific notation
+                if callable(tf): # conditional formatting
+                    tspan.nodeValue = tf(val).format(val)
+                else:
+                    tspan.nodeValue = tf.format(val)
+            except ValueError:
+                # whatever it is, it doesn't match the format.  Usually this
+                # happens when a string is given, but it is using a default
+                # number format
                 tspan.nodeValue = val
 
     new_svg = doc.toxml()
@@ -159,6 +189,8 @@ def svg_tag(
     if outfile is not None:
         with open(outfile, "w") as f:
             f.write(new_svg)
+    # Return the SVG as a string.  This lets you take several passes at adding
+    # output without saving and loading files.
     return new_svg
 
 

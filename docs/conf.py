@@ -131,6 +131,17 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+# This block of text will be virtually present at the end of every file.
+# Used here to define substitutions for re-used URLs, e.g. just add "|examples-site|" to
+# any page and it will be replaced with the hyperlink and text shown below.
+rst_epilog = """
+.. |examples-site| replace:: `examples online documentation page`_
+.. _examples online documentation page: https://idaes.github.io/examples-pse/latest/index.html
+
+.. |github-issues| replace:: `Github issues page`_
+.. _Github issues page: https://github.com/IDAES/idaes-pse/issues
+"""
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
