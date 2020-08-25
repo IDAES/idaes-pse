@@ -134,26 +134,6 @@ constructed,
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
-#     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-#         default=True,
-#         domain=In([True, False]),
-#         description="Equilibrium reaction construction flag",
-#         doc="""Indicates whether terms for equilibrium controlled reactions
-# should be constructed,
-# **default** - True.
-# **Valid values:** {
-# **True** - include equilibrium reaction terms,
-# **False** - exclude equilibrium reaction terms.}"""))
-#     CONFIG.declare("has_heat_of_reaction", ConfigValue(
-#         default=False,
-#         domain=In([True, False]),
-#         description="Heat of reaction term construction flag",
-#         doc="""Indicates whether terms for heat of reaction terms should be
-# constructed,
-# **default** - False.
-# **Valid values:** {
-# **True** - include heat of reaction terms,
-# **False** - exclude heat of reaction terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -171,23 +151,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
-#     CONFIG.declare("reaction_package", ConfigValue(
-#         default=None,
-#         domain=is_reaction_parameter_block,
-#         description="Reaction package to use for control volume",
-#         doc="""Reaction parameter object used to define reaction calculations,
-# **default** - None.
-# **Valid values:** {
-# **None** - no reaction package,
-# **ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
-#     CONFIG.declare("reaction_package_args", ConfigBlock(
-#         implicit=True,
-#         description="Arguments to use for constructing reaction packages",
-#         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-# and used when constructing these,
-# **default** - None.
-# **Valid values:** {
-# see reaction package for documentation.}"""))
     CONFIG.declare("rigorous_boiling", ConfigValue(
         default=False,
         domain=In([True, False]),
