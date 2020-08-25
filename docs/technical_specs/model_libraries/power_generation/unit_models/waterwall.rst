@@ -17,6 +17,7 @@ is an output of the fire-side model and an input of the waterwall section model 
 and an input (boundary condition) of the fire-side model. The heat conduction through the slag and tube layers is a part of the fluid-side model. At a steady state, the amount of the heat transferred at the outer slag surface 
 (:math:`q_{rad}^{fire}` and :math:`q_{conv}^{fire}`) is equal to the heat conducted through the slag and tube layers, which is equal to the heat convected to the fluid :math:`q_{conv}^{fluid}`.
 
+Property package: This model requires the IAPWS95 property package with the mixed phase option, therefore, the phase equilibrium calculations are handled by the property package.
 
 .. figure:: waterwall_1.png
     :width: 800
@@ -35,7 +36,7 @@ Model inputs (variable name):
 * number of zones (ww_zones)
 * number of tubes around the perimeter of the boiler (number_tubes)
 * heat duty of individual zone from fire-side model (sum of net radiation and convection) (heat_fireside)
-* tube dimensions (length, inside diameter and thickness) (tube_length, tube_di, tube_thickness)
+* tube dimensions (length, inside diameter and thickness) (tube_length, tube_diameter, tube_thickness)
 * projected membrane wall area (area_proj_total)
 * fin dimension of membrane wall (width and thickness) (fin_length, fin_thickness)
 * slag layer thickness (slag_thickness)
@@ -89,8 +90,8 @@ Variables
 Variable                    Symbol             Index Sets  Doc
 =========================== ================== =========== =============================================================================
 heat_duty                   :math:`Q`          time        Heat transferred from flue gas to tube side fluid
-area_proj_total             :math:`A`          None        Heat transfer area (total projected area based on tube shape)
-hconv, hconv_lo             :math:`h_{conv}`   time        Overal convective heat transfer coefficient and hconv_lo for liquid only
+projected_area              :math:`A`          None        Heat transfer area (total projected area based on tube shape)
+hconv, hconv_liquid         :math:`h_{conv}`   time        Overal convective heat transfer coefficient and hconv_liquid for liquid only
 temp_slag_boundary          :math:`T_{w,slag}` time        Temperature of the slag
 =========================== ================== =========== =============================================================================
 
@@ -143,7 +144,7 @@ Pressure drop:
 
 Convective heat transfer liquid only:
 
-.. math:: h_{conv\_lo} = f (tube_{di}, N_Re, N_Pr, k)
+.. math:: h_{conv\_lo} = f (tube_{diameter}, N_Re, N_Pr, k)
 
 Enhancement factor:
 
@@ -165,7 +166,7 @@ Reynolds number:
 where:
 
 * hconv : convective heat transfer coefficient tube side (fluid water/steam) (W / m2 / K)
-* hconv_lo : convective heat transfer coefficient for liquid only
+* hconv_liquid : convective heat transfer coefficient for liquid only
 * projected_area : total projected wall area of waterwall section (m2)
 * Pr : Prandtl number (liquid only)
 * Re : Reynolds number (liquid only)

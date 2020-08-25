@@ -55,7 +55,8 @@ def build_waterwall():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.ww_zones = pyo.RangeSet(10)
+    n_waterwalls = 10
+    m.fs.ww_zones = pyo.RangeSet(n_waterwalls)
     m.fs.Waterwalls = WaterwallSection(m.fs.ww_zones,
                                        default={
                                            "dynamic": False,
@@ -66,36 +67,12 @@ def build_waterwall():
                                            },
                                        )
 
-
-    # build connections
-    m.fs.stream_ww1 = Arc(
-        source=m.fs.Waterwalls[1].outlet, destination=m.fs.Waterwalls[2].inlet
-    )
-    m.fs.stream_ww2 = Arc(
-        source=m.fs.Waterwalls[2].outlet, destination=m.fs.Waterwalls[3].inlet
-    )
-    m.fs.stream_ww3 = Arc(
-        source=m.fs.Waterwalls[3].outlet, destination=m.fs.Waterwalls[4].inlet
-    )
-    m.fs.stream_ww4 = Arc(
-        source=m.fs.Waterwalls[4].outlet, destination=m.fs.Waterwalls[5].inlet
-    )
-    m.fs.stream_ww5 = Arc(
-        source=m.fs.Waterwalls[5].outlet, destination=m.fs.Waterwalls[6].inlet
-    )
-    m.fs.stream_ww6 = Arc(
-        source=m.fs.Waterwalls[6].outlet, destination=m.fs.Waterwalls[7].inlet
-    )
-    m.fs.stream_ww7 = Arc(
-        source=m.fs.Waterwalls[7].outlet, destination=m.fs.Waterwalls[8].inlet
-    )
-    m.fs.stream_ww8 = Arc(
-        source=m.fs.Waterwalls[8].outlet, destination=m.fs.Waterwalls[9].inlet
-    )
-    m.fs.stream_ww9 = Arc(
-        source=m.fs.Waterwalls[9].outlet,
-        destination=m.fs.Waterwalls[10].inlet
-    )
+    def arc_rule(b, i):
+        return {
+            "source": m.fs.Waterwalls[i].outlet,
+            "destination": m.fs.Waterwalls[i + 1].inlet
+        }
+    m.arc = Arc(pyo.RangeSet(n_waterwalls-1), rule=arc_rule)
 
     # Pyomo expands arcs writing constraints outlet unit 1 = inlet unit 2
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
@@ -118,7 +95,7 @@ def test_initialize_waterwall(build_waterwall):
     # fix inputs
     # 10 waterwall sections
     for i in m.fs.ww_zones:
-        m.fs.Waterwalls[i].tube_di.fix(0.047)
+        m.fs.Waterwalls[i].tube_diameter.fix(0.047)
         m.fs.Waterwalls[i].tube_thickness.fix(0.00350)
         m.fs.Waterwalls[i].fin_thickness.fix(0.00455)
         m.fs.Waterwalls[i].slag_thickness[:].fix(0.001)
@@ -139,16 +116,16 @@ def test_initialize_waterwall(build_waterwall):
     m.fs.Waterwalls[10].height.fix(3.450)
 
     # water wall section projected area
-    m.fs.Waterwalls[1].area_proj_total.fix(320.0)
-    m.fs.Waterwalls[2].area_proj_total.fix(150.3)
-    m.fs.Waterwalls[3].area_proj_total.fix(70.8)
-    m.fs.Waterwalls[4].area_proj_total.fix(70.0)
-    m.fs.Waterwalls[5].area_proj_total.fix(58.6)
-    m.fs.Waterwalls[6].area_proj_total.fix(58.6)
-    m.fs.Waterwalls[7].area_proj_total.fix(50.1)
-    m.fs.Waterwalls[8].area_proj_total.fix(65.6)
-    m.fs.Waterwalls[9].area_proj_total.fix(145.6)
-    m.fs.Waterwalls[10].area_proj_total.fix(165.5)
+    m.fs.Waterwalls[1].projected_area.fix(320.0)
+    m.fs.Waterwalls[2].projected_area.fix(150.3)
+    m.fs.Waterwalls[3].projected_area.fix(70.8)
+    m.fs.Waterwalls[4].projected_area.fix(70.0)
+    m.fs.Waterwalls[5].projected_area.fix(58.6)
+    m.fs.Waterwalls[6].projected_area.fix(58.6)
+    m.fs.Waterwalls[7].projected_area.fix(50.1)
+    m.fs.Waterwalls[8].projected_area.fix(65.6)
+    m.fs.Waterwalls[9].projected_area.fix(145.6)
+    m.fs.Waterwalls[10].projected_area.fix(165.5)
 
     # Heat loss to waterwall Q in W
     m.fs.Waterwalls[1].heat_fireside[:].fix(2.3e7)
@@ -208,7 +185,6 @@ def test_initialize_waterwall(build_waterwall):
     assert degrees_of_freedom(m) == -27  # all inputs fixed at this point
 
 
-
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -218,7 +194,7 @@ def test_waterwall(build_waterwall):
     # fix inputs
     # 10 waterwall sections
     for i in m.fs.ww_zones:
-        m.fs.Waterwalls[i].tube_di.fix(0.047)
+        m.fs.Waterwalls[i].tube_diameter.fix(0.047)
         m.fs.Waterwalls[i].tube_thickness.fix(0.00350)
         m.fs.Waterwalls[i].fin_thickness.fix(0.00455)
         m.fs.Waterwalls[i].slag_thickness[:].fix(0.001)
@@ -239,16 +215,16 @@ def test_waterwall(build_waterwall):
     m.fs.Waterwalls[10].height.fix(3.450)
 
     # water wall section projected area
-    m.fs.Waterwalls[1].area_proj_total.fix(320.0)
-    m.fs.Waterwalls[2].area_proj_total.fix(150.3)
-    m.fs.Waterwalls[3].area_proj_total.fix(70.8)
-    m.fs.Waterwalls[4].area_proj_total.fix(70.0)
-    m.fs.Waterwalls[5].area_proj_total.fix(58.6)
-    m.fs.Waterwalls[6].area_proj_total.fix(58.6)
-    m.fs.Waterwalls[7].area_proj_total.fix(50.1)
-    m.fs.Waterwalls[8].area_proj_total.fix(65.6)
-    m.fs.Waterwalls[9].area_proj_total.fix(145.6)
-    m.fs.Waterwalls[10].area_proj_total.fix(165.5)
+    m.fs.Waterwalls[1].projected_area.fix(320.0)
+    m.fs.Waterwalls[2].projected_area.fix(150.3)
+    m.fs.Waterwalls[3].projected_area.fix(70.8)
+    m.fs.Waterwalls[4].projected_area.fix(70.0)
+    m.fs.Waterwalls[5].projected_area.fix(58.6)
+    m.fs.Waterwalls[6].projected_area.fix(58.6)
+    m.fs.Waterwalls[7].projected_area.fix(50.1)
+    m.fs.Waterwalls[8].projected_area.fix(65.6)
+    m.fs.Waterwalls[9].projected_area.fix(145.6)
+    m.fs.Waterwalls[10].projected_area.fix(165.5)
 
     # Heat loss to waterwall Q in W
     m.fs.Waterwalls[1].heat_fireside[:].fix(2.3e7)
@@ -304,7 +280,7 @@ def test_waterwall(build_waterwall):
             optarg=solver.options,
             )
 
-    #unfix inputs before solving the flowsheet
+    # unfix inputs before solving the flowsheet
     for i in m.fs.ww_zones:
         if i == 1:
             m.fs.Waterwalls[i].inlet.flow_mol[:].fix()

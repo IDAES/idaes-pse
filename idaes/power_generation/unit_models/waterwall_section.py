@@ -35,16 +35,14 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Param, \
-    asin, cos, sqrt, log10, PositiveReals
+    asin, cos, sqrt, log10, PositiveReals, Reference
 from pyomo.dae import DerivativeVar
 from idaes.core.util.constants import Constants as const
 
@@ -174,7 +172,7 @@ constructed,
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(WaterwallSectionData, self).build()
+        super().build()
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(default={
@@ -184,7 +182,9 @@ constructed,
                 "property_package_args": self.config.property_package_args})
 
         self.control_volume.add_geometry()
-
+        # This model requires the IAPWS95 property package with the mixed phase
+        # option, therefore, phase equilibrium calculations are handled by
+        # the property package.
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(
@@ -204,16 +204,16 @@ constructed,
         self.add_outlet_port()
 
         # Add object references
-        add_object_reference(self, "volume", self.control_volume.volume)
+        self.volume = Reference(self.control_volume.volume)
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != EnergyBalanceType.none):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+            self.heat_duty = Reference(self.control_volume.heat)
 
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP)
 
         # Set Unit Geometry and Holdup Volume
         self._set_geometry()
@@ -226,7 +226,7 @@ constructed,
         Define the geometry of the unit as necessary, and link to holdup volume
         """
         # Total projected wall area of waterwall section from fire-side model
-        self.area_proj_total = Var(
+        self.projected_area = Var(
                 initialize=10,
                 doc="Total projected wall area of waterwall section")
         # Number of waterwall tubes
@@ -243,25 +243,25 @@ constructed,
                 initialize=5.0,
                 doc="length waterwall tube")
         # Inner diameter of waterwall tubes
-        self.tube_di = Var(
+        self.tube_diameter = Var(
                 initialize=0.05,
                 doc="Inside diameter of waterwall tube")
         # Inside radius of waterwall tube
         @self.Expression(doc="Inside radius of waterwall tube")
-        def radius_in(b):
-            return 0.5*b.tube_di
+        def radius_inner(b):
+            return 0.5*b.tube_diameter
         # Total cross section area of fluid flow
         @self.Expression(doc="Cross section area of fluid")
         def area_cross_fluid_total(b):
-            return 0.25*const.pi*b.tube_di**2*b.number_tubes
+            return 0.25*const.pi*b.tube_diameter**2*b.number_tubes
         # Tube thickness
         self.tube_thickness = Var(
                 initialize=0.005,
                 doc="Thickness of waterwall tube")
         # Outside radius of waterwall tube
         @self.Expression(doc="Outside radius of waterwall tube")
-        def radius_out(b):
-            return b.radius_in + b.tube_thickness
+        def radius_outer(b):
+            return b.radius_inner + b.tube_thickness
         # Thickness of waterwall fin
         self.fin_thickness = Var(
                 initialize=0.004,
@@ -283,58 +283,59 @@ constructed,
 
         @self.Expression(doc="Pitch of two neighboring tubes")
         def pitch(b):
-            return b.fin_length + b.radius_out*2.0
+            return b.fin_length + b.radius_outer*2.0
 
         # Equivalent tube length (not neccesarily equal to height)
         @self.Constraint(doc="Equivalent length of tube")
         def tube_length_eqn(b):
-            return b.tube_length * b.pitch * b.number_tubes == b.area_proj_total
+            return b.tube_length * b.pitch * b.number_tubes == \
+                b.projected_area
 
         @self.Expression(doc="Angle at joint of tube and fin")
         def alpha_tube(b):
-            return asin(b.fin_thickness_half/b.radius_out)
+            return asin(b.fin_thickness_half/b.radius_outer)
 
         @self.Expression(self.flowsheet().config.time,
                          doc="Angle at joint of tube and "
                          "fin at outside slag layer")
         def alpha_slag(b, t):
             return asin((b.fin_thickness_half + b.slag_thickness[t]) /
-                        (b.radius_out + b.slag_thickness[t]))
+                        (b.radius_outer + b.slag_thickness[t]))
 
         @self.Expression(doc="Perimeter of interface between slag and tube")
-        def perimeter_if(b):
-            return (const.pi-2 * b.alpha_tube) * b.radius_out + b.pitch \
-                - 2 * b.radius_out * cos(b.alpha_tube)
+        def perimeter_interface(b):
+            return (const.pi-2 * b.alpha_tube) * b.radius_outer + b.pitch \
+                - 2 * b.radius_outer * cos(b.alpha_tube)
 
         @self.Expression(doc="Perimeter on the inner tube side")
         def perimeter_ts(b):
-            return const.pi*b.tube_di
+            return const.pi*b.tube_diameter
 
         @self.Expression(self.flowsheet().config.time,
                          doc="Perimeter on the outer slag side")
         def perimeter_ss(b, t):
-            return (const.pi - 2 * b.alpha_slag[t]) * (b.radius_out
+            return (const.pi - 2 * b.alpha_slag[t]) * (b.radius_outer
                                                        + b.slag_thickness[t]) \
-                + b.pitch - 2 * (b.radius_out
+                + b.pitch - 2 * (b.radius_outer
                                  + b.slag_thickness[t])*cos(b.alpha_slag[t])
 
         # Cross section area of tube and fin metal
         @self.Expression(doc="Cross section area of tube and fin metal")
         def area_cross_metal(b):
-            return const.pi*(b.radius_out**2-b.radius_in**2)\
+            return const.pi*(b.radius_outer**2-b.radius_inner**2)\
                 + b.fin_thickness*b.fin_length
 
         # Cross section area of slag layer
         @self.Expression(self.flowsheet().config.time,
                          doc="Cross section area of slag layer per tube")
         def area_cross_slag(b, t):
-            return b.perimeter_if*b.slag_thickness[t]
+            return b.perimeter_interface*b.slag_thickness[t]
 
         # Volume constraint
         @self.Constraint(self.flowsheet().config.time,
                          doc="waterwall fluid volume of all tubes")
         def volume_eqn(b, t):
-            return b.volume[t] == 0.25 * const.pi * b.tube_di**2\
+            return b.volume[t] == 0.25 * const.pi * b.tube_diameter**2\
                 * b.tube_length * b.number_tubes
 
     def _make_performance(self):
@@ -400,7 +401,7 @@ constructed,
         @self.Expression(doc="half metal layer conduction resistance")
         def half_resistance_metal(b):
             return b.tube_thickness/2/b.therm_cond_metal * b.fshape_metal\
-                * b.perimeter_if/b.pitch
+                * b.perimeter_interface/b.pitch
 
         # Heat conduction resistance of half of slag thickness
         # based on mid slag layer perimeter
@@ -408,7 +409,7 @@ constructed,
                          doc="half slag layer conduction resistance")
         def half_resistance_slag(b, t):
             return b.slag_thickness[t]/2/b.therm_cond_slag * b.fshape_slag \
-                * (b.perimeter_ss[t]+b.perimeter_if)/2/b.pitch
+                * (b.perimeter_ss[t]+b.perimeter_interface)/2/b.pitch
 
         # Add performance variables
         # Heat from fire side boiler model
@@ -467,7 +468,7 @@ constructed,
             return b.energy_accumulation_metal[t] if b.config.dynamic else 0
 
         # Velocity of liquid only
-        self.velocity_lo = Var(
+        self.velocity_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=3.0,
                 doc='Velocity of liquid only')
@@ -494,6 +495,7 @@ constructed,
         self.vapor_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=0.0,
+                bounds=(0, 1),
                 doc='Vapor fractoin of vapor-liquid mixture')
 
         # Liquid fraction at inlet
@@ -553,7 +555,7 @@ constructed,
 
         # Convective heat transfer coefficient for liquid only,
         # typically in range (1000.0, 1e5)
-        self.hconv_lo = Var(
+        self.hconv_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=20000.0,
                 doc='Convective heat transfer coefficient of liquid only')
@@ -612,7 +614,7 @@ constructed,
                          doc="heat flux at slag outer layer")
         def heat_flux_fireside(b, t):
             return (b.heat_fireside[t] * b.pitch /
-                    (b.area_proj_total * b.perimeter_ss[t]))
+                    (b.projected_area * b.perimeter_ss[t]))
 
         # Equation to calculate slag layer boundary temperature
         @self.Constraint(self.flowsheet().config.time,
@@ -644,7 +646,7 @@ constructed,
         def temperature_tube_boundary_eqn(b, t):
             return b.heat_flux_conv[t] * b.half_resistance_metal \
                 * b.perimeter_ts == \
-                b.perimeter_if * (b.temp_tube_center[t]
+                b.perimeter_interface * (b.temp_tube_center[t]
                                   - b.temp_tube_boundary[t])
 
         # Equation to calculate energy holdup for slag layer per tube length
@@ -669,14 +671,14 @@ constructed,
         def energy_balance_slag_eqn(b, t):
             return energy_accumulation_term_slag(b, t) == \
                 b.heat_flux_fireside[t]*b.perimeter_ss[t] - \
-                b.heat_flux_interface[t]*b.perimeter_if
+                b.heat_flux_interface[t]*b.perimeter_interface
 
         # Energy balance for metal
         @self.Constraint(self.flowsheet().config.time,
                          doc="energy balance for metal")
         def energy_balance_metal_eqn(b, t):
             return energy_accumulation_term_metal(b, t) == \
-                   b.heat_flux_interface[t]*b.perimeter_if - \
+                   b.heat_flux_interface[t]*b.perimeter_interface - \
                    b.heat_flux_conv[t]*b.perimeter_ts
 
         # Expression to calculate slag/tube metal interface wall temperature
@@ -700,7 +702,7 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="Vecolity of fluid if liquid only")
         def velocity_lo_eqn(b, t):
-            return 1e-4*b.velocity_lo[t]*b.area_cross_fluid_total * \
+            return 1e-4*b.velocity_liquid[t]*b.area_cross_fluid_total * \
                    b.control_volume.properties_in[t].dens_mol_phase["Liq"] \
                    == 1e-4*b.control_volume.properties_in[t].flow_mol
 
@@ -710,7 +712,7 @@ constructed,
         def Reynolds_number_eqn(b, t):
             return b.N_Re[t] * \
                    b.control_volume.properties_in[t].visc_d_phase["Liq"] == \
-                   b.tube_di * b.velocity_lo[t] * \
+                   b.tube_diameter * b.velocity_liquid[t] * \
                    b.control_volume.properties_in[t].dens_mass_phase["Liq"]
 
         # Friction factor depending on laminar or turbulent flow,
@@ -760,10 +762,10 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="pressure change due to friction")
         def pressure_change_friction_eqn(b, t):
-            return 0.01 * b.deltaP_friction[t] * b.tube_di == \
+            return 0.01 * b.deltaP_friction[t] * b.tube_diameter == \
                 -0.01 * b.fcorrection_dp * 0.5 \
                 * b.control_volume.properties_in[t].dens_mass_phase["Liq"] * \
-                b.velocity_lo[t]**2 * b.friction_factor_darcy[t] \
+                b.velocity_liquid[t]**2 * b.friction_factor_darcy[t] \
                 * b.tube_length * b.phi_correction[t]**2
 
         # Pressure change equation due to gravity,
@@ -825,8 +827,8 @@ constructed,
                          doc="forced convection heat transfer "
                          "coefficient for liquid only")
         def hconv_lo_eqn(b, t):
-            return b.hconv_lo[t] * b.tube_di == 0.023 * b.N_Re[t]**0.8 \
-                * b.N_Pr[t]**0.4 * \
+            return b.hconv_liquid[t] * b.tube_diameter == \
+                0.023 * b.N_Re[t]**0.8 * b.N_Pr[t]**0.4 * \
                 b.control_volume.properties_in[t].therm_cond_phase["Liq"]
 
         # Pool boiling heat transfer coefficient
@@ -883,8 +885,8 @@ constructed,
             if self.config.rigorous_boiling is True:
                 return b.enhancement_factor[t] == 1.0 + 24000.0 \
                     * (b.boiling_number_scaled[t]/1e6)**1.16 + \
-                        Expr_if(b.vapor_fraction[t] > 0,
-                                1.37*b.martinelli_reciprocal_p86[t], 0.0)
+                    Expr_if(b.vapor_fraction[t] > 0,
+                            1.37*b.martinelli_reciprocal_p86[t], 0.0)
             else:
                 return b.enhancement_factor[t] == 1.0 + 24000.0 \
                     * (b.boiling_number_scaled[t]/1e6)**1.16
@@ -900,7 +902,7 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="convective heat transfer coefficient")
         def hconv_eqn(b, t):
-            return 1e-3*b.hconv[t] == 1e-3 * b.hconv_lo[t] \
+            return 1e-3*b.hconv[t] == 1e-3 * b.hconv_liquid[t] \
                 * b.enhancement_factor[t] + 1e-3 * b.hpool[t] \
                 * b.suppression_factor[t]
 
@@ -982,22 +984,6 @@ constructed,
         blk.control_volume.release_state(flags, outlvl+1)
         init_log.info("Initialization Complete.")
 
-    def set_scaling_factor_energy(self, f):
-        """
-        This function sets scaling_factor_energy.
-        Args:
-            f: Energy balance scaling factor
-        """
-        self.control_volume.scaling_factor_energy.value = f
-
-    def set_scaling_factor_pressure(self, f):
-        """
-        This function sets scaling_factor_pressure.
-
-        Args:
-            f: pressure scaling factor
-        """
-        self.control_volume.scaling_factor_pressure.value = f
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -1017,7 +1003,7 @@ constructed,
             s = iscale.get_scaling_factor(
                 self.heat_flux_conv[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
-                self.tube_di, default=1, warning=True)
+                self.tube_diameter, default=1, warning=True)
             iscale.constraint_scaling_transform(c, s/10.0)
         for t, c in self.energy_holdup_slag_eqn.items():
             s = iscale.get_scaling_factor(
