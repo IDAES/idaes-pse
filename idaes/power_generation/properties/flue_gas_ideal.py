@@ -544,6 +544,7 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['A', j] * t +
                     coeff['B', j] * t**2 / 2 +
                     coeff['C', j] * t**3 / 3 +
+                    coeff['D', j] * t**4 / 4 -
                     coeff['E', j] / t +
                     coeff['F', j]) for j in self.params.component_list))
         try:
@@ -568,8 +569,8 @@ class FlueGasStateBlockData(StateBlockData):
             ft = sum(self.flow_mol_comp[j] for j in self.params.component_list)
             t = self.temperature / 1000
             n = self.flow_mol_comp
-            x = self.mole_frac
-            r_gas
+            x = self.mole_frac_comp
+            r_gas = constants.Constants.gas_constant
             return self.entr_mol * ft  == \
                 sum(n[j] * (
                     coeff['A', j] * log(t) +
