@@ -201,15 +201,31 @@ class VectorSeries(OrderedDict):
         return len(self.time)
 
     def consistent(self, target):
+        """
+        target is a vector
+        """
+        if len(target) != self.dim():
+            return False
         if len(self) == 0:
             return True
         last = [series[-1] for series in self.values()]
         return all(new == old for new, old in zip(target, last))
 
+    def consistent_dimension(self, target):
+        return len(target) == self.dim()
+
+    def validate_dimension(self, target):
+        if not self.consistent_dimension(target):
+            raise ValueError(
+                'Tried to validate a vector with inconsistent dimension. '
+                'Expected %s, got %s.' % (self.dim(), len(target)))
+        return target
+
     def append(self, t, data):
         """
         data is a vector.
         """
+        data = self.validate_dimension(data)
         self.time.append(t)
         for series, val in zip(self.values(), data):
             series.append(val)
@@ -223,10 +239,15 @@ class VectorSeries(OrderedDict):
         # TODO: Should I have an option that allows the user to violate 
         #       consistency?
         try:
+            # This allows data to be an OrderedDict
+            # or another VectorSeries.
             data = list(data.values())
         except AttributeError as ae:
             if 'values' not in str(ae):
+                # If this attribute error is caught, data should
+                # behave like a list of lists.
                 raise ae
+        data = self.validate_dimension(data)
         tolerance = self.time.tolerance
         if len(self) != 0:
             tlast = self.time[-1]
@@ -239,9 +260,8 @@ class VectorSeries(OrderedDict):
                         'point %s, but the series data was not consistent '
                         'with pre-existing data.' 
                         % t0)
-            tpoints = tpoints[1:]
-            data = [series[1:] for series in data]
+                tpoints = tpoints[1:]
+                data = [series[1:] for series in data]
         self.time.extend(tpoints)
         for series, new_data in zip(self.values(), data):
             series.extend(new_data)
-
