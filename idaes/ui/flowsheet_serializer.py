@@ -13,11 +13,13 @@
 from collections import defaultdict
 import json
 import os
+import re
 
 from idaes.core import UnitModelBlockData
 from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
+import idaes.logger
 
 from pyomo.environ import Block, value
 from pyomo.network.port import Port
@@ -31,15 +33,22 @@ class FileBaseNameExistsError(Exception):
 
 
 class FlowsheetSerializer:
+    #: Regular expression identifying inlets by last component of ports' name
+    INLET_REGEX = re.compile(r'^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$') # TODO case insensitivity
+    r''
+    #: Regular expression identifying outlets by last component of ports' name
+    OUTLET_REGEX = re.compile(r'^out_|^prod_|^outlet_|^out$|^prod$|^outlet$|_out$|_prod$|_outlet$')
     def __init__(self):
-        self.unit_models = {}
-        self.arcs = {}
-        self.ports = {}
-        self.edges = defaultdict(list)
+        self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
+        self.arcs = {}  # {Arc.getname(): Arc}
+        self.ports = {}  # {Port: parent_unit}
+        self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
         self.out_json = {"model": {}}
         self.name = ""
+        self._used_unit_names = set()
+        self._logger = idaes.logger.getLogger(__name__)
 
     def serialize(self, flowsheet, name):
         """
@@ -87,10 +96,10 @@ class FlowsheetSerializer:
         self.name = name
         self.serialize_flowsheet(flowsheet)
         self._construct_output_json()
-
         return self.out_json
 
     def serialize_flowsheet(self, flowsheet):
+        """Stores information on the connectivity and components of the input flowsheet. """
         for component in flowsheet.component_objects(Arc, descend_into=False):
             self.arcs[component.getname()] = component
             
@@ -109,7 +118,6 @@ class FlowsheetSerializer:
   
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
-
             for var, var_value in stream_value.define_display_vars().items():
                 var = var.capitalize()
 
@@ -121,13 +129,73 @@ class FlowsheetSerializer:
 
             self.labels[stream_name] = label[:-2]
 
-        self.edges = {}
+        used_ports = set()
+        self.edges = {}  # TODO: necessary? do the attributes need clearing?
         for name, arc in self.arcs.items():
-            try:
+            try:  # this is currently(?) necessary because for internally-nested arcs we may not record ports?
                 self.edges[name] = {"source": self.ports[arc.source], 
                                     "dest": self.ports[arc.dest]}
+                self._logger.info(f'source: {arc.source}; val: {self.ports[arc.source]}')
+                used_ports.add(arc.source)
+                used_ports.add(arc.dest)
             except KeyError as error:
-                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
+                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")  # TODO convert to logging
+
+        # note we're only using the keys from self.ports, {port: parentcomponent}
+        untouched_ports = set(self.ports) - used_ports
+        self._identify_implicit_inlets_and_outlets(untouched_ports)
+
+    def _identify_implicit_inlets_and_outlets(self, untouched_ports):
+        for port in sorted(untouched_ports, key=lambda port: str(port)):  # TODO: sorting required for determinism; better way?
+            portname = str(port).split('.')[-1]
+            unitname = self._unique_unit_name(portname)  # this becomes the I/O's ID and label
+            edgename = f's_{unitname}'
+            # identify ports per INLET_REGEX/OUTLET_REGEX
+            # then pretend they're unit models
+            # then add their edges
+            inlet_match = self.INLET_REGEX.search(portname)
+            if inlet_match:
+                # print(f"  ^ inlet found; parent: {str(self.ports[port])}")
+                # name the feed "unit model" and its connecting edge with the name of the port itself
+                feedport = self._PseudoUnit('Feed', unitname)
+                self._used_unit_names.add(unitname)
+                self.unit_models[feedport] = {
+                    "name": feedport.getname(),
+                    "type": "feed"
+                }
+                self.edges[edgename] = {
+                    "source": feedport,
+                    "dest": self.ports[port]  # TODO ensure this works on nested unit models
+                }
+                self.labels[edgename] = "inlet info"  # TODO - fetch the actual information
+                continue
+
+            outlet_match = self.OUTLET_REGEX.search(portname)
+            if outlet_match:
+                # print(f"  ^ outlet found; parent: {str(self.ports[port])}")
+                prodport = self._PseudoUnit('Product', unitname)
+                self._used_unit_names.add(unitname)
+                self.unit_models[prodport] = {
+                    "name": prodport.getname(),
+                    "type": "product"
+                }
+                self.edges[edgename] = {
+                    "source": self.ports[port],  # TODO see above
+                    "dest": prodport
+                }
+                self.labels[edgename] = "outlet info"  # TODO - fetch the actual information
+                continue
+
+            # TODO: deal with remaining loose ports here?
+
+    def _unique_unit_name(self, base_name):
+        '''Prevent name collisions by simply appending a number'''
+        name = base_name
+        increment = 0
+        while name in self._used_unit_names:
+            increment += 1
+            name = f'{base_name}_{increment}'
+        return name
 
     def create_image_jointjs_json(self, out_json, x_pos, y_pos, name, image, title, port_groups):
         entry = {}
@@ -210,10 +278,10 @@ class FlowsheetSerializer:
                 "image": "/images/icons/" + icon_mapping(unit_model["type"])
             }
 
-        for edge in self.edges:
+        for edge, edge_info in self.edges.items():
             self.out_json["model"]["arcs"][edge] = \
-                {"source": self.edges[edge]["source"].getname(),
-                 "dest": self.edges[edge]["dest"].getname(),
+                {"source": edge_info["source"].getname(),
+                 "dest": edge_info["dest"].getname(),
                  "label": self.labels[edge]}
 
     def _construct_jointjs_json(self):
@@ -233,7 +301,7 @@ class FlowsheetSerializer:
                     unit_attrs["type"],
                     link_position_mapping[unit_attrs["type"]]
                 )
-            except KeyError:
+            except KeyError as e:
                 print(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
@@ -254,7 +322,6 @@ class FlowsheetSerializer:
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
-
             if hasattr(ports_dict["source"], "vap_outlet"):
                 # TODO Figure out how to denote different outlet types. Need to
                 #  deal with multiple input/output offsets
@@ -277,10 +344,24 @@ class FlowsheetSerializer:
             )
 
     def _add_unit_model_with_ports(self, unit):
+        unitname = unit.getname()
         self.unit_models[unit] = {
-                "name": unit.getname(),
-                "type": unit._orig_module.split(".")[-1]
+                "name": unitname,
+                "type": self._get_unit_model_type(unit)
             }
+        self._used_unit_names.add(unitname)
         for subcomponent in unit.component_objects(Port, descend_into=True):
             self.ports[subcomponent] = unit
 
+    def _get_unit_model_type(self, unit):
+        return unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
+
+    # unit-like object in order to emulate missing unit models for implicit inlets/outlets
+    # eventually may need to actually implement/subclass
+    class _PseudoUnit:
+        def __init__(self, typename, id):
+            self.name = typename
+            self.id = id
+
+        def getname(self):
+            return self.id

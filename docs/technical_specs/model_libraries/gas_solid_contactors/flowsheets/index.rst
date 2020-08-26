@@ -1,4 +1,4 @@
-Gas Solid Contactors flowsheets
+Gas Solid Contactors Flowsheets
 ===============================
 
 Contents

@@ -1,4 +1,4 @@
-Gas Solid Contactors unit models
+Gas Solid Contactors Unit Models
 ================================
 
 Contents
@@ -8,3 +8,4 @@ Contents
     :maxdepth: 1
 
     bubbling_fluidized_bed
+    moving_bed
