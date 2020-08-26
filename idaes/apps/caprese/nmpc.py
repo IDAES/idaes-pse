@@ -27,6 +27,7 @@ from pyomo.environ import (
         TransformationFactory, 
         Reference, 
         value,
+        Suffix,
         )
 from pyomo.core.base.range import remainder
 from pyomo.kernel import ComponentMap
@@ -70,7 +71,10 @@ from idaes.apps.caprese.util import (
         apply_noise_at_time_points,
         )
 from idaes.apps.caprese.rolling import TimeList, VectorSeries
-from idaes.apps.caprese.advanced_step import AdvancedStepManager
+from idaes.apps.caprese.advanced_step import (
+        AdvancedStepManager,
+        K_AUG_SUFFIXES,
+        )
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
@@ -1710,6 +1714,13 @@ class NMPCSim(DynamicBase):
             init_log.error(msg)
             raise ValueError(msg)
 
+    def add_k_aug_suffixes(self):
+        controller = self.controller
+        for name, direction in K_AUG_SUFFIXES:
+            if not hasattr(controller, name):
+                suffix = Suffix(direction=direction)
+                controller.add_component(name, suffix)
+
     def prepare_advanced_step_controller(self):
         """
         TODO
@@ -1717,24 +1728,54 @@ class NMPCSim(DynamicBase):
         # What are the "dof vars?" They are the measurements.
         # These should be defined and known by the controller,
         # but for now I will use the controller_ic_vars.
-        block = getattr(self.controller, self.namespace_name)
+        controller = self.controller
+        block = getattr(controller, self.namespace_name)
         time = block.get_time()
         index = time.first()
-        dof_vars = block.ic_vars
+        wrt_vars = block.ic_vars
+        self.add_k_aug_suffixes()
         self.advanced_step_manager = AdvancedStepManager(
                 block,
-                dof_vars,
+                wrt_vars,
                 index,
                 )
+        for var in block.input_vars:
+            # Populate k_aug suffix for dof vars.
+            # (Which are actually the dependent vars from 
+            # the perspective of the advanced step update.)
+            controller.dof_v[var[index]] = 1
 
-    def solve_advanced_step_control_problem(self, **kwargs):
+    def get_measurement_offset(self, measured_state):
+        controller = self.controller
+        namespace = getattr(controller, self.namespace_name)
+        time = namespace.get_time()
+        t0 = time.first()
+        offset = [value(var[t0]) - measured_state[i] 
+                for i, var in enumerate(namespace.ic_vars)]
+        return offset
+
+    def solve_advanced_step_control_problem(self, measured_state, **kwargs):
         """
         TODO
         """
+        controller = self.controller
+        namespace = getattr(controller, self.namespace_name)
+        time = namespace.get_time()
+        t0 = time.first()
+        offset = self.get_measurement_offset(measured_state)
+        for i in self.advanced_step_manager.block.wrt_set:
+            # Populate k_aug suffix for measurement discrepancy.
+            con = self.advanced_step_manager.block.wrt_constraint[i]
+            controller.npdp[con] = offset[i]
         # Now: How to get derivatives wrt dof_vars via k_aug?
         with self.advanced_step_manager as as_manager:
             self.solve_control_problem(**kwargs)
-
+            k_aug = SolverFactory('k_aug', executable='k_aug')
+            results = k_aug.solve(
+                    controller,
+                    tee=True,
+                    symbolic_solver_labels=False,
+                    )
 
     def simulate_controller_sample(self, t_start, **kwargs):
         """
