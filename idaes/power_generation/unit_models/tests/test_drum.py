@@ -49,7 +49,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 from idaes.power_generation.unit_models.drum import Drum
 
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util.testing import get_default_solver, initialization_tester
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
@@ -65,7 +65,7 @@ def build_drum():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.aDrum = Drum(
+    m.fs.unit = Drum(
         default={
             "property_package": m.fs.prop_water,
             "has_holdup": False,
@@ -75,12 +75,12 @@ def build_drum():
     )
 
     # fix inputs
-    m.fs.aDrum.drum_diameter.fix(1.2)
-    m.fs.aDrum.drum_length.fix(15.3256)
-    m.fs.aDrum.number_downcomers.fix(6)
-    m.fs.aDrum.downcomer_diameter.fix(0.38)
-    m.fs.aDrum.drum_level[:].fix(0.6)  # drum level, set as drum radius
-    m.fs.aDrum.heat_duty[:].fix(0.0)  # assume no heat loss
+    m.fs.unit.drum_diameter.fix(1.2)
+    m.fs.unit.drum_length.fix(15.3256)
+    m.fs.unit.number_downcomers.fix(6)
+    m.fs.unit.downcomer_diameter.fix(0.38)
+    m.fs.unit.drum_level[:].fix(0.6)  # drum level, set as unit radius
+    m.fs.unit.heat_duty[:].fix(0.0)  # assume no heat loss
     return m
 
 
@@ -90,10 +90,10 @@ def test_basic_build(build_drum):
     m = build_drum
     assert degrees_of_freedom(m) == 5
     # Check unit config arguments
-    assert len(m.fs.aDrum.config) == 9
-    assert m.fs.aDrum.config.has_heat_transfer
-    assert m.fs.aDrum.config.has_pressure_change
-    assert m.fs.aDrum.config.property_package is m.fs.prop_water
+    assert len(m.fs.unit.config) == 9
+    assert m.fs.unit.config.has_heat_transfer
+    assert m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.property_package is m.fs.prop_water
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
@@ -101,9 +101,6 @@ def test_basic_build(build_drum):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_drum(build_drum):
-    m = build_drum
-    DoF1 = degrees_of_freedom(m)
-    # NETL baseline report
     state_args_water_steam = {'flow_mol': 103745/3600*1000,  # mol/s
                               'pressure': 12024201.99,  # Pa
                               'enth_mol': 28365.2608}  # j/mol
@@ -111,10 +108,10 @@ def test_initialize_drum(build_drum):
     state_args_feedwater = {'flow_mol': 83193/3600*1000,
                             'pressure': 12024201.99,
                             'enth_mol': 22723.907}
-    m.fs.aDrum.initialize(state_args_water_steam=state_args_water_steam,
+
+    initialization_tester(build_drum, dof=5,
+                          state_args_water_steam=state_args_water_steam,
                           state_args_feedwater=state_args_feedwater)
-    DoF2 = degrees_of_freedom(m)
-    assert (DoF2 - DoF1) == 0
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
@@ -124,12 +121,12 @@ def test_initialize_drum(build_drum):
 def test_run_drum(build_drum):
     m = build_drum
     # fix inlets
-    m.fs.aDrum.water_steam_inlet.flow_mol[:].fix()
-    m.fs.aDrum.water_steam_inlet.pressure[:].fix()
-    m.fs.aDrum.water_steam_inlet.enth_mol[:].fix()
-    m.fs.aDrum.feedwater_inlet.flow_mol[:].fix()
-    # m.fs.aDrum.feedwater_inlet.pressure[:].fix()
-    m.fs.aDrum.feedwater_inlet.enth_mol[:].fix()
+    m.fs.unit.water_steam_inlet.flow_mol[:].fix()
+    m.fs.unit.water_steam_inlet.pressure[:].fix()
+    m.fs.unit.water_steam_inlet.enth_mol[:].fix()
+    m.fs.unit.feedwater_inlet.flow_mol[:].fix()
+    # m.fs.unit.feedwater_inlet.pressure[:].fix()
+    m.fs.unit.feedwater_inlet.enth_mol[:].fix()
 
     optarg = {"tol": 1e-7,
               "linear_solver": "ma27",
@@ -143,28 +140,28 @@ def test_run_drum(build_drum):
     assert results.solver.status == pyo.SolverStatus.ok
     assert degrees_of_freedom(m) == 0
     assert (pytest.approx(0.6, abs=1e-3) ==
-            pyo.value(m.fs.aDrum.drum_level[0]))
+            pyo.value(m.fs.unit.drum_level[0]))
     # energy balance
     assert (pytest.approx(0, abs=1e-3) ==
-            pyo.value(m.fs.aDrum.water_steam_inlet.flow_mol[0]
-                      * m.fs.aDrum.water_steam_inlet.enth_mol[0]
-                      + m.fs.aDrum.feedwater_inlet.flow_mol[0]
-                      * + m.fs.aDrum.feedwater_inlet.enth_mol[0]
-                      - m.fs.aDrum.steam_outlet.flow_mol[0]
-                      * m.fs.aDrum.steam_outlet.enth_mol[0]
-                      - m.fs.aDrum.liquid_outlet.flow_mol[0]
-                      * m.fs.aDrum.liquid_outlet.enth_mol[0]))
+            pyo.value(m.fs.unit.water_steam_inlet.flow_mol[0]
+                      * m.fs.unit.water_steam_inlet.enth_mol[0]
+                      + m.fs.unit.feedwater_inlet.flow_mol[0]
+                      * + m.fs.unit.feedwater_inlet.enth_mol[0]
+                      - m.fs.unit.steam_outlet.flow_mol[0]
+                      * m.fs.unit.steam_outlet.enth_mol[0]
+                      - m.fs.unit.liquid_outlet.flow_mol[0]
+                      * m.fs.unit.liquid_outlet.enth_mol[0]))
     # pressure drop
     assert (pytest.approx(2293.3632, abs=1e-3) ==
-            pyo.value(m.fs.aDrum.deltaP[0]))
+            pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-3) ==
-            pyo.value(m.fs.aDrum.water_steam_inlet.flow_mol[0]
-                      + m.fs.aDrum.feedwater_inlet.flow_mol[0]
-                      - m.fs.aDrum.steam_outlet.flow_mol[0]
-                      - m.fs.aDrum.liquid_outlet.flow_mol[0]))
+            pyo.value(m.fs.unit.water_steam_inlet.flow_mol[0]
+                      + m.fs.unit.feedwater_inlet.flow_mol[0]
+                      - m.fs.unit.steam_outlet.flow_mol[0]
+                      - m.fs.unit.liquid_outlet.flow_mol[0]))
 
-    assert (pytest.approx(pyo.value(m.fs.aDrum.water_steam_inlet.
-                                    flow_mol[0] * m.fs.aDrum.aFlash.
+    assert (pytest.approx(pyo.value(m.fs.unit.water_steam_inlet.
+                                    flow_mol[0] * m.fs.unit.flash.
                                     mixed_state[0].vapor_frac), abs=1e-3)
-            == pyo.value(m.fs.aDrum.steam_outlet.flow_mol[0]))
+            == pyo.value(m.fs.unit.steam_outlet.flow_mol[0]))
