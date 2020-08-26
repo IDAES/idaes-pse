@@ -35,7 +35,7 @@ else:
     solver = None
 
 
-def read_data(fname):
+def read_data(fname, params):
     dfile = os.path.join(this_file_dir(), fname)
     # the data format is data[component][temperature][property]
     data = {
@@ -56,7 +56,8 @@ def read_data(fname):
             d = data[row[4]][int(row[0])]
             d["Cp"] = float(row[1])
             d["S"] = float(row[2])
-            d["H"] = float(row[3])
+            H = params.cp_mol_ig_comp_coeff[("H", row[4])]*1000
+            d["H"] = float(row[3]) + H # H = enthalpy of formation
             d["comp"] = {row[4]:1.0}
 
     # Add a mixture to test
@@ -74,13 +75,13 @@ def read_data(fname):
 
 def test_thermo():
     # Read in test data and add mixtures
-    data = read_data("pure-prop-nist-webbook.csv")
-
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.params = FlueGasParameterBlock()
     m.fs.state = FlueGasStateBlock(default={"parameters":m.fs.params})
     m.fs.state.pressure.fix(1e5) #ideal gas properties are pressure independent
+
+    data = read_data("pure-prop-nist-webbook.csv", m.fs.params)
 
     assert hasattr(m.fs.state, "cp_mol")
     assert hasattr(m.fs.state, "enth_mol")
@@ -108,6 +109,7 @@ def test_thermo():
                 m.fs.state.entropy_correlation.deactivate()
             m.fs.state.initialize()
             solver.solve(m)
+            print(data[i][T]["comp"])
             assert data[i][T]["H"] == pytest.approx(
                 pyo.value(m.fs.state.enth_mol), rel=1e-2)
             assert data[i][T]["Cp"] == pytest.approx(
