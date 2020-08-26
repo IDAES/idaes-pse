@@ -405,6 +405,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
+
 @declare_process_block_class("GasPhaseThermoStateBlock",
                              block_class=_GasPhaseThermoStateBlock)
 class GasPhaseThermoStateBlockData(StateBlockData):
