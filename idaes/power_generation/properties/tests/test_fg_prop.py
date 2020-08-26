@@ -109,7 +109,6 @@ def test_thermo():
                 m.fs.state.entropy_correlation.deactivate()
             m.fs.state.initialize()
             solver.solve(m)
-            print(data[i][T]["comp"])
             assert data[i][T]["H"] == pytest.approx(
                 pyo.value(m.fs.state.enth_mol), rel=1e-2)
             assert data[i][T]["Cp"] == pytest.approx(
