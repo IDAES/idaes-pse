@@ -94,7 +94,7 @@ class FlueGasParameterData(PhysicalParameterBlock):
 
         self.temperature_ref = Param(within=PositiveReals,
                                      mutable=True,
-                                     default=298.16,
+                                     default=298.15,
                                      doc='Reference temperature [K]')
 
         # Critical Properties
