@@ -544,8 +544,10 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['C', j] * t**3 / 3 +
                     coeff['D', j] * t**4 / 4 -
                     coeff['E', j] / t +
-                    coeff['F', j] -
-                    coeff['H', j]) for j in self.params.component_list))
+                    coeff['F', j]) for j in self.params.component_list))
+                    # NOTE: the H term (from the Shomate Equation) is not
+                    # included here so that the reference state enthalpy is the
+                    # enthalpy of formation (not 0).
         try:
             self.enthalpy_correlation = Constraint(rule=enthalpy_correlation)
         except AttributeError:
