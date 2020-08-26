@@ -1,4 +1,4 @@
-from pyomo.environ import Var, Constraint, Param, value, Suffix
+from pyomo.environ import Var, Constraint, Param, value, Suffix, Set
 
 K_AUG_SUFFIXES = [
         ("ipopt_zL_out", Suffix.IMPORT),
@@ -22,39 +22,43 @@ class AdvancedStepManager(object):
         # to have a "constructed" flag that __enter__ can check.
         self.make_wrt_constraints()
 
-    def make_param_constraints(self):
+    def make_wrt_constraints(self):
         block = self.block
-        param_vars = self.wrt_vars
+        wrt_vars = self.wrt_vars
         n_wrt_vars = self.n_wrt_vars
         index = self.index
 
         # TODO: There could be multiple "wrt" components depending
         # on perspective. User should provide a name, and we should
         # use unique_component_name.
-        block.wrt_set = Set(range(n_wrt_vars))
+        self.wrt_set = Set(initialize=range(n_wrt_vars))
+        block.wrt_set = self.wrt_set
 
         wrt_param_dict = {
                 i: value(wrt_vars[i][index])
                 for i in range(n_wrt_vars)
                 }
-        block.wrt_param = Param(
-                wrt_set,
+        self.wrt_param = Param(
+                block.wrt_set,
                 initialize=wrt_param_dict,
                 mutable=True,
                 )
+        block.wrt_param = self.wrt_param
 
         def wrt_constraint_rule(b, i):
             return wrt_vars[i][index] == b.wrt_param[i]
-        block.wrt_constraint = Constraint(
-                self.wrt_set, 
+        self.wrt_constraint = Constraint(
+                block.wrt_set, 
                 rule=wrt_constraint_rule,
                 )
+        block.wrt_constraint = self.wrt_constraint
         block.wrt_constraint.deactivate()
 
     def __enter__(self):
         index = self.index
-        wrt_set = self.block.wrt_set
-        self.block.wrt_constraints.activate()
+        wrt_vars = self.wrt_vars
+        wrt_set = self.wrt_set
+        self.block.wrt_constraint.activate()
         for i in wrt_set:
             # TODO: Should I check that wrt_vars were previously fixed?
             wrt_vars[i][index].unfix()
@@ -62,7 +66,8 @@ class AdvancedStepManager(object):
 
     def __exit__(self, e_type, e_val, e_tb):
         index = self.index
-        wrt_set = sself.block.wrt_set
-        self.block.wrt_constraints.deactivate()
+        wrt_vars = self.wrt_vars
+        wrt_set = self.wrt_set
+        self.wrt_constraint.deactivate()
         for i in wrt_set:
             wrt_vars[i][index].fix()
