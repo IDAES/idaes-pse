@@ -1,16 +1,16 @@
-WaterFlash Model
-================
+HelmPhaseSeparator Model
+========================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.waterflash;WaterFlash
+  pair: idaes.power_generation.unit_models.helm.phase_separator;HelmPhaseSeparator
 
 
-.. currentmodule:: idaes.power_generation.unit_models.helm.waterflash
+.. currentmodule:: idaes.power_generation.unit_models.helm.phase_separator
 
 Introduction
 ------------
 
-The waterflash model consist of a simple phase separator to be used only with the Helmholtz equation of state. 
+The HelmPhaseSeparator model consist of a simple phase separator to be used only with the Helmholtz equation of state. 
 The two-phase mixture at the inlet is separated into the vapor and liquid streams at the two corresponding outlets. This simple unit includes one state block (mixed_state) for the inlet, and two state blocks, one for liquid (liq_state) and the other for vapor (vap_state). 
 Note that this water-specific flash model replaces IDAES' generic flash unit operation model.
 
@@ -21,13 +21,13 @@ Model inputs:
 Model Outputs:
 
 * liq_state, variables (flow_mol, enth_mol, and pressure), port name = liq_outlet
-* liq_state, variables (flow_mol, enth_mol, and pressure), port name = vap_outlet
+* vap_state, variables (flow_mol, enth_mol, and pressure), port name = vap_outlet
 
 
 Degrees of Freedom
 ------------------
 
-The waterflash model consist of nine variables and six constraints. By fixing the inlet state (self.inlet.flow_mol,self.inlet.flow_mol, and self.inlet.flow_mol) or three degrees
+The HelmPhaseSeparator model consist of nine variables and six constraints. By fixing the inlet state (self.inlet.flow_mol,self.inlet.flow_mol, and self.inlet.flow_mol) or three degrees
 of freedom, the system will be fully specified.
 
 

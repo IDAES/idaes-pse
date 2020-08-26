@@ -9,7 +9,7 @@ Drum Model
 Introduction
 ------------
 
-The drum model consists of three main unit operations: 
+The drum model consists of three main sub-unit operations: 
 
 1) a flash model to separate the saturated steam from the saturated liquid water in the water/steam mixture, 
 2) a mixer model to mix saturated liquid water with feed water, and 
@@ -60,7 +60,7 @@ Model Outputs:
 Constraints
 -----------
 
-As mentioned above, the drum model imports a `waterflash` and mixer models, specific documentation for these models can be obtained in: 
+As mentioned above, the drum model imports a `HelmPhaseSeparator` and mixer models, specific documentation for these models can be obtained in: 
 Once the water enters the tank model the main equations calculate water velocity and pressure drop calculation due to gravity based on water level and contraction to downcomer. 
 Water level (drum_leve) is either fixed for steady state simulation or calculated for dynamic model (Dynamic = True)
 
@@ -75,7 +75,7 @@ Main assumptions:
 Pressure equality constraint:
 
 .. math::
-  P_{SatWater} = P_{FeedWater}
+  P_{SaturatedWater} = P_{FeedWater}
 
 Pressure drop in unit:
 
@@ -91,7 +91,7 @@ Pressure drop in unit:
 where:
 * V: fluid velocity (m/s, liquid only)
 
-Note that the model builds an Pyomo Arc to connect the Liquid_outlet from the self.aFlash unit to the SatWater inlet port of the mixer, and the mixed_state (Mixer outlet) is directly constructed as the Drum `control_volume.properties_in`. 
+Note that the model builds an Pyomo Arc to connect the Liquid_outlet from the self.aFlash unit to the SaturatedWater inlet port of the mixer, and the mixed_state (Mixer outlet) is directly constructed as the Drum `control_volume.properties_in`. 
 Once the Drum model is constructed, the mixer and flash blocks can be found as `self.aDrum.aMixer` and `self.aDrum.aFlash`
 
 Degrees of Freedom

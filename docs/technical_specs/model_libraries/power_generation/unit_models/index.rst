@@ -13,5 +13,5 @@ Unit Models
     steam_valve
     boiler_heat_exchanger
     waterwall
-    waterflash
+    phase_separator
     drum

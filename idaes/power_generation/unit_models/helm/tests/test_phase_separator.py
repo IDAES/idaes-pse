@@ -30,8 +30,9 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
 
-from idaes.power_generation.unit_models.helm.waterflash import WaterFlash
-from idaes.core.util.testing import get_default_solver
+from idaes.power_generation.unit_models.helm.phase_separator import \
+    HelmPhaseSeparator
+from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -41,30 +42,43 @@ solver = get_default_solver()
 
 
 @pytest.fixture
-def build_waterflash():
+def build_phase_separator():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = WaterFlash(default={'property_package': m.fs.properties})
+    m.fs.unit = HelmPhaseSeparator(default={'property_package':
+                                            m.fs.properties})
     return m
 
 
 @pytest.mark.unit
-def test_basic_build(build_waterflash):
+def test_basic_build(build_phase_separator):
     """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_waterflash
+    m = build_phase_separator
     assert degrees_of_freedom(m) == 3
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 5
+    assert len(m.fs.unit.config) == 4
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.unit
-def test_wflash(build_waterflash):
-    m = build_waterflash
+@pytest.mark.component
+def test_initialize(build_phase_separator):
+    state_args_water_steam = {'flow_mol': 1.5e5,  # mol/s
+                              'pressure': 1.2e7,  # Pa
+                              'enth_mol': 28365.2608}  # j/mol
+    initialization_tester(build_phase_separator, dof=3,
+                          state_args_water_steam=state_args_water_steam)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_wflash(build_phase_separator):
+    m = build_phase_separator
     state_args_water_steam = {'flow_mol': 1.5e5,  # mol/s
                               'pressure': 1.2e7,  # Pa
                               'enth_mol': 28365.2608}  # j/mol

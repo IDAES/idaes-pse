@@ -47,9 +47,6 @@ are mixed before entering drum
 
 Created: August 19 2020
 """
-from __future__ import division
-
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 import pyomo.environ as pyo
@@ -75,7 +72,8 @@ from pyomo.network import Port
 import idaes.core.util.scaling as iscale
 from pyomo.network import Arc
 
-from idaes.power_generation.unit_models.helm.waterflash import WaterFlash
+from idaes.power_generation.unit_models.helm.phase_separator import \
+    HelmPhaseSeparator
 from idaes.core.util.constants import Constants as const
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
@@ -214,47 +212,46 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=True)
 
-        self.aFlash = WaterFlash(
+        self.flash = HelmPhaseSeparator(
             default={
                 "dynamic": False,
                 "property_package": self.config.property_package,
             }
         )
 
-        self.aMixer = Mixer(
+        self.mixer = Mixer(
             default={
                 "dynamic": False,
                 "property_package": self.config.property_package,
-                "inlet_list": ["FeedWater", "SatWater"],
+                "inlet_list": ["FeedWater", "SaturatedWater"],
                 "mixed_state_block": self.control_volume.properties_in,
                 }
             )
         # instead of creating a new block use control volume to return solution
-        # mixed_state = self.control_volume.properties_in
 
         # Inlet Ports
         # FeedWater to Drum (from Pipe or Economizer)
-        self.feedwater_inlet = Port(extends=self.aMixer.FeedWater)
+        self.feedwater_inlet = Port(extends=self.mixer.FeedWater)
         # Sat water from water wall
-        self.water_steam_inlet = Port(extends=self.aFlash.inlet)
+        self.water_steam_inlet = Port(extends=self.flash.inlet)
         # Exit Ports
         # Liquid to Downcomer
-        # self.liquid_outlet = Port(extends=self.aMixer.outlet)
+        # self.liquid_outlet = Port(extends=self.mixer.outlet)
         self.add_outlet_port('liquid_outlet', self.control_volume)
         # Steam to superheaters
-        self.steam_outlet = Port(extends=self.aFlash.vap_outlet)
+        self.steam_outlet = Port(extends=self.flash.vap_outlet)
 
         # constraint to make pressures of two inlets of drum mixer the same
         @self.Constraint(self.flowsheet().config.time,
                          doc="Mixter pressure identical")
         def mixer_pressure_eqn(b, t):
-            return b.aMixer.SatWater.pressure[t] == \
-                b.aMixer.FeedWater.pressure[t]
+            return b.mixer.SaturatedWater.pressure[t] == \
+                b.mixer.FeedWater.pressure[t]
 
         self.stream_flash_out = Arc(
-            source=self.aFlash.liq_outlet, destination=self.aMixer.SatWater
+            source=self.flash.liq_outlet, destination=self.mixer.SaturatedWater
             )
-        # Pyomo arc connect aFlash liq_outlet with aMixer SatWater inlet
+        # Pyomo arc connect flash liq_outlet with mixer SaturatedWater inlet
         pyo.TransformationFactory("network.expand_arcs").apply_to(self)
 
         # Add object references
@@ -306,6 +303,7 @@ see property package for documentation.}"""))
         # Add performance variables
         self.drum_level = Var(
                 self.flowsheet().config.time,
+                within=pyo.PositiveReals,
                 initialize=1.0,
                 doc='Water level from the bottom of the drum')
 
@@ -351,7 +349,7 @@ see property package for documentation.}"""))
 
         # Equation for velocity at the entrance of downcomer
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Vecolity at entrance of downcomer")
+                         doc="Velocity at entrance of downcomer")
         def velocity_eqn(b, t):
             return b.downcomer_velocity[t] * 0.25 * const.pi \
                 * b.downcomer_diameter**2 * b.number_downcomers \
@@ -389,7 +387,7 @@ see property package for documentation.}"""))
             self.control_volume.energy_accumulation[0, :].fix(0)
 
     def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=0, solver='ipopt', optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6}):
         '''
         Drum initialization routine.
 
@@ -421,28 +419,28 @@ see property package for documentation.}"""))
 
         init_log.info_low("Starting initialization...")
         # fix FeedWater Inlet
-        flags_fw = fix_state_vars(blk.aMixer.FeedWater_state,
+        flags_fw = fix_state_vars(blk.mixer.FeedWater_state,
                                   state_args_feedwater)
 
         # expecting 2 DOF due to pressure driven constraint
         if degrees_of_freedom(blk) != 2:
             raise Exception(degrees_of_freedom(blk))
 
-        blk.aFlash.initialize(state_args_water_steam=state_args_water_steam,
-                              outlvl=outlvl,
-                              optarg=optarg,
-                              solver=solver)
+        blk.flash.initialize(state_args_water_steam=state_args_water_steam,
+                             outlvl=outlvl,
+                             optarg=optarg,
+                             solver=solver)
         init_log.info("Initialization Step 1 Complete.")
 
-        blk.aMixer.SatWater.flow_mol[:].fix(blk.aFlash.liq_outlet.
-                                            flow_mol[0].value)
-        blk.aMixer.SatWater.pressure[:].fix(blk.aFlash.liq_outlet.
-                                            pressure[0].value)
-        blk.aMixer.SatWater.enth_mol[:].fix(blk.aFlash.liq_outlet.
-                                            enth_mol[0].value)
-        blk.aMixer.initialize(outlvl=outlvl,
-                              optarg=optarg,
-                              solver=solver)
+        blk.mixer.SaturatedWater.flow_mol[:].fix(blk.flash.liq_outlet.
+                                                 flow_mol[0].value)
+        blk.mixer.SaturatedWater.pressure[:].fix(blk.flash.liq_outlet.
+                                                 pressure[0].value)
+        blk.mixer.SaturatedWater.enth_mol[:].fix(blk.flash.liq_outlet.
+                                                 enth_mol[0].value)
+        blk.mixer.initialize(outlvl=outlvl,
+                             optarg=optarg,
+                             solver=solver)
         init_log.info("Initialization Step 2 Complete.")
 
         blk.control_volume.initialize(outlvl=outlvl,
@@ -452,10 +450,10 @@ see property package for documentation.}"""))
         init_log.info("Initialization Step 3 Complete.")
 
         # unfix inlets
-        blk.aMixer.SatWater.flow_mol[:].unfix()
-        blk.aMixer.SatWater.enth_mol[:].unfix()
-        blk.aMixer.SatWater.pressure[:].unfix()
-        blk.aMixer.FeedWater.pressure[0].unfix()
+        blk.mixer.SaturatedWater.flow_mol[:].unfix()
+        blk.mixer.SaturatedWater.enth_mol[:].unfix()
+        blk.mixer.SaturatedWater.pressure[:].unfix()
+        blk.mixer.FeedWater.pressure[0].unfix()
 
         # solve model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -463,8 +461,7 @@ see property package for documentation.}"""))
         init_log.info_high(
                 "Initialization Step 4 {}.".format(idaeslog.condition(res))
             )
-        revert_state_vars(blk.aMixer.FeedWater_state, flags_fw)
-        # revert_state_vars(blk.aFlash.control_volume.properties_in, flags_wf)
+        revert_state_vars(blk.mixer.FeedWater_state, flags_fw)
         init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
