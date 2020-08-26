@@ -64,31 +64,29 @@ class PlotData(object):
 def main(plot_switch=False):
 
     # This tests the same model constructed in the test_nmpc_constructor_1 file
-    m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
+    m_plant = make_model(horizon=0.5, ntfe=5, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
     sample_time = 0.5
     time_plant = m_plant.fs.time
+    sim_horizon = 6.0
 
-    n_plant_samples = (time_plant.last()-time_plant.first())/sample_time
-    assert n_plant_samples == int(n_plant_samples)
-    n_plant_samples = int(n_plant_samples)
+    sim_samples = int(sim_horizon/sample_time)
 
-    plant_sample_points = [time_plant.first() + i*sample_time
-                           for i in range(1, n_plant_samples)]
-    for t in plant_sample_points:
-        assert t in time_plant
-    # Six samples per horizon, five elements per sample
-
-    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_vol[0],
-                            m_plant.fs.mixer.E_inlet.flow_vol[0]]
+    initial_plant_inputs = [
+            m_plant.fs.mixer.S_inlet.flow_vol[0],
+            m_plant.fs.mixer.E_inlet.flow_vol[0],
+            ]
     
-    nmpc = NMPCSim(plant_model=m_plant.fs, 
-                   plant_time_set=m_plant.fs.time,
-                   controller_model=m_controller.fs, 
-                   controller_time_set=m_controller.fs.time,
-                   inputs_at_t0=initial_plant_inputs,
-                   solver=solver, outlvl=idaeslog.DEBUG,
-                   sample_time=sample_time)
+    nmpc = NMPCSim(
+            plant_model=m_plant.fs,
+            plant_time_set=m_plant.fs.time,
+            controller_model=m_controller.fs,
+            controller_time_set=m_controller.fs.time,
+            inputs_at_t0=initial_plant_inputs,
+            solver=solver,
+            outlvl=idaeslog.DEBUG,
+            sample_time=sample_time,
+            )
     # input_calculation=ADVANCED_STEP
 
     plant = nmpc.plant
@@ -98,11 +96,13 @@ def main(plot_switch=False):
     nmpc.solve_consistent_initial_conditions(plant)
     nmpc.solve_consistent_initial_conditions(controller)
     
-    set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
-                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
+    set_point = [
+            (controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
+            (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
+            (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+            (controller.mixer.E_inlet.flow_vol[0], 0.1),
+            (controller.mixer.S_inlet.flow_vol[0], 2.0),
+            ]
     # Interestingly, this (st.st. set point) solve converges infeasible
     # if energy_holdup set point is not 300. (Needs higher weight?)
 
@@ -114,64 +114,57 @@ def main(plot_switch=False):
             (controller.cstr.control_volume.energy_holdup[0, 'aq'], 0.1),
             ]
 
-    nmpc.calculate_full_state_setpoint(set_point,
+    nmpc.calculate_full_state_setpoint(
+            set_point,
             objective_weight_override=weight_override,
             objective_weight_tolerance=weight_tolerance,
-            outlvl=idaeslog.DEBUG)
+            outlvl=idaeslog.DEBUG,
+            )
 
     nmpc.add_setpoint_to_controller()
     
     nmpc.constrain_control_inputs_piecewise_constant()
 
-    # Make sure (first sample of) plant contains control inputs for the 
-    # initial steady state
-    # inject_inputs_into_plant with argument for the inputs?
-    # These inputs should /probably/ come from an InputHistory
-#    plant_inputs = nmpc.plant._NMPC_NAMESPACE.input_vars.varlist
-#    nmpc.inject_inputs_into(plant_inputs, nmpc.plant, 0.0, 0.0)
+    # TODO: Set up data structures for inputs, measurements, etc.
 
     # Populate first sample of controller with inputs that will take place
     # for the sampling time just before the controller becomes active.
-    # These will usually be the inputs of the initial steady state
+    # These will usually be the inputs of the initial steady state.
     controller_inputs = nmpc.controller._NMPC_NAMESPACE.input_vars.varlist
+    # TODO: May also need to set values of disturbance variables in the
+    # first sample here
     nmpc.inject_inputs_into(controller_inputs,
             nmpc.controller, 0.0, 0.0)
+    # This is to generate a prediction of the initial conditions
     nmpc.simulate_controller_sample(time_controller.first())
-    # Just used the controller to simulate first step of plant;
-    # Need to use result to properly fix its initial conditions
-    #
-    # Input values have been overwritten when noise was applied to plant.
-    # Differential, algebraic, and derivative variables should not have been
-    # altered.
-    # If I only shift IC vars, I should re-solve for consistent initial
-    # conditions. If I shift all three of these categories, I shouldn't 
-    # need to.
-    nmpc.shift_controller_initial_conditions()
 
     # Send these control inputs to the plant.
     nmpc.inject_control_inputs_into_plant(time_plant.first(),
             add_input_noise=True)
-    # simulate plant (will be trivial up to noise on the inputs, assuming
-    # we start at a steady state)
+    # This simulation "happens" at the same time as the next
+    # control problem solve.
     nmpc.simulate_plant(time_plant.first())
 
+    nmpc.shift_controller_initial_conditions()
+
+    # Make "measurement" from simulated plant 
+    # Do not load into controller, however
+    measured_state = nmpc.get_measured_plant_state(apply_noise=True)
+
+    nmpc.prepare_advanced_step_controller()
 
     # Initial control problem will not need be altered
-    # initial conditions have been loaded from plant at this point, 
+    # initial conditions have been loaded from plant at this point,
     # but not updated since the simulation
     nmpc.initialize_control_problem(
             control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
-    nmpc.solve_control_problem()
+    nmpc.solve_advanced_step_control_problem(measured_state)
 
     # TODO: at what point should I step into NMPC loop?
 
     # As part of the solve, get du/dx_0 matrix
+    # Does this imply that I need a solve_as function?
 
-    # Make "measurement" from simulated plant 
-    # Do not load into controller, however
-    # get_measured_initial_conditions method?
-    measured_state = nmpc.get_measured_plant_state(apply_noise=True)
-    # Later, will need to 
     import pdb; pdb.set_trace()
 
     # update_control_inputs (where to store the updated control inputs?)
