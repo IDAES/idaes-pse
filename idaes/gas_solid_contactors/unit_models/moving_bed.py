@@ -525,6 +525,7 @@ see reaction package for documentation.}"""))
                 doc='Gas superficial velocity [m/s]')
         self.velocity_superficial_solid = Var(
                 self.flowsheet().config.time,
+                self.length_domain,
                 domain=Reals, initialize=0.005,
                 doc='Solid superficial velocity [m/s]')
 
@@ -605,11 +606,12 @@ see reaction package for documentation.}"""))
 
         # Solid superficial velocity
         @self.Constraint(self.flowsheet().config.time,
+                         self.length_domain,
                          doc="Solid superficial velocity")
-        def solid_super_vel(b, t):
-            return (b.velocity_superficial_solid[t] * b.bed_area *
-                    b.solid_phase.properties[t, 1].dens_mass_particle ==
-                    b.solid_phase.properties[t, 1].flow_mass)
+        def solid_super_vel(b, t, x):
+            return (b.velocity_superficial_solid[t, x] * b.bed_area *
+                    b.solid_phase.properties[t, x].dens_mass_particle ==
+                    b.solid_phase.properties[t, x].flow_mass)
 
         # Gas side pressure drop calculation
         if (self.config.has_pressure_change and
@@ -638,14 +640,14 @@ see reaction package for documentation.}"""))
                         150*(1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t]) /
+                         b.velocity_superficial_solid[t, x]) /
                         (b.solid_phase.properties[t, x].
                          _params.particle_dia ** 2 * b.bed_voidage ** 3)) +
                         1e2*(
                         1.75*b.gas_phase.properties[t, x].dens_mass *
                         (1 - b.bed_voidage) *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t]) ** 2 /
+                         b.velocity_superficial_solid[t, x]) ** 2 /
                         (b.solid_phase.properties[t, x]._params.particle_dia *
                          b.bed_voidage**3)))
             # The above expression has no absolute values - assumes:
@@ -872,13 +874,13 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize hydrodynamics (velocities)
         for t in blk.flowsheet().config.time:
-            calculate_variable_from_constraint(
-                blk.velocity_superficial_solid[t],
-                blk.solid_super_vel[t])
             for x in blk.length_domain:
                 calculate_variable_from_constraint(
                     blk.velocity_superficial_gas[t, x],
                     blk.gas_super_vel[t, x])
+                calculate_variable_from_constraint(
+                    blk.velocity_superficial_solid[t, x],
+                    blk.solid_super_vel[t, x])
 
         blk.gas_super_vel.activate()
         blk.solid_super_vel.activate()
