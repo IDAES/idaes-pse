@@ -1,0 +1,122 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+"""
+Downcomer model
+Main assumptions:
+* Heat is given (zero if adiabatic)
+* Calculate pressure change due to friction and gravity
+* Assume enthalpy_in == enthalpy_out + heat
+
+Created on Thu Aug 27 by Boiler Team (J. Ma, M. Zamarripa)
+"""
+import pytest
+# Import Pyomo libraries
+import pyomo.environ as pyo
+
+# Import IDAES core
+from idaes.core import FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
+
+# Import Unit Model Modules
+from idaes.generic_models.properties import iapws95
+
+from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.power_generation.unit_models.downcomer import Downcomer
+
+# -----------------------------------------------------------------------------
+# Get default solver for testing
+solver = get_default_solver()
+
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def build_downcomer():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.unit = Downcomer(
+        default={
+            "property_package": m.fs.properties,
+            "has_holdup": False,
+            "has_heat_transfer": True,
+            "has_pressure_change": True,
+        }
+    )
+    return m
+
+
+@pytest.mark.unit
+def test_basic_build(build_downcomer):
+    """Make a turbine model and make sure it doesn't throw exception"""
+    m = build_downcomer
+    assert degrees_of_freedom(m) == 7
+    # Check unit config arguments
+    assert len(m.fs.unit.config) == 9
+    assert m.fs.unit.config.has_heat_transfer
+    assert m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.property_package is m.fs.properties
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize_drum(build_downcomer):
+    m = build_downcomer
+    m.fs.unit.diameter.fix(0.3)
+    m.fs.unit.number_downcomers.fix(6)  # number of downcomers
+    m.fs.unit.height.fix(40.1)
+    m.fs.unit.heat_duty[:].fix(0.0)
+
+    # NETL Baseline values
+    state_args = {'flow_mol': 49552.8,
+                  'pressure': 12025072.9,
+                  'enth_mol': 24944.7}
+    initialization_tester(build_downcomer, dof=3, state_args=state_args)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_wflash(build_downcomer):
+    m = build_downcomer
+
+    m.fs.unit.inlet.enth_mol.fix()
+    m.fs.unit.inlet.flow_mol.fix()
+    m.fs.unit.inlet.pressure.fix()
+    assert degrees_of_freedom(m) == 0
+
+    results = solver.solve(m, tee=True)
+    # Check for optimal solution
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
+
+    # check material balance
+    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
+                                    flow_mol - m.fs.unit.control_volume.
+                                    properties_out[0].flow_mol),
+                          abs=1e-3) == 0)
+
+    # pressure drop
+    assert (pytest.approx(273583.120306, abs=1e-3) == pyo.value(m.fs.unit.
+                                                                deltaP[0]))
+    # check energy balance
+    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
+                                    enth_mol), abs=1e-3)
+            == pyo.value(m.fs.unit.control_volume.properties_out[0].enth_mol))
+
+    assert (pytest.approx(580.83299, abs=1e-3) ==
+            pyo.value(m.fs.unit.control_volume.properties_out[0].temperature))

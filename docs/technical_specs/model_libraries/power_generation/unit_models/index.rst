@@ -15,3 +15,4 @@ Unit Models
     waterwall
     phase_separator
     drum
+    downcomer
