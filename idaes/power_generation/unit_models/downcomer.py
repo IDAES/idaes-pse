@@ -19,12 +19,6 @@ Main assumptions:
 
 Created August 27
 """
-
-from __future__ import division
-
-# Import Python libraries
-import math
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -37,15 +31,12 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
+from idaes.core.util.config import (is_physical_parameter_block)
 from idaes.core.util.misc import add_object_reference
 
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, value, Var, Param, Reference
-from pyomo.opt import TerminationCondition
-from idaes.core.util.initialization import fix_state_vars, revert_state_vars
+from pyomo.environ import SolverFactory, value, Var, Reference
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -180,13 +171,10 @@ see property package for documentation.}"""))
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(
-            balance_type=self.config.material_balance_type,
-            has_rate_reactions=False,
-            has_equilibrium_reactions=False)
+            balance_type=self.config.material_balance_type)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            has_heat_of_reaction=False,
             has_heat_transfer=self.config.has_heat_transfer)
 
         self.control_volume.add_momentum_balances(
@@ -198,17 +186,14 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Add object references
-        # add_object_reference(self, "volume", self.control_volume.volume)
         self.volume = Reference(self.control_volume.volume)
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != EnergyBalanceType.none):
-            # add_object_reference(self, "heat_duty", self.control_volume.heat)
             self.heat_duty = Reference(self.control_volume.heat)
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
-            # add_object_reference(self, "deltaP", self.control_volume.deltaP)
             self.deltaP = Reference(self.control_volume.deltaP)
 
         # Set Unit Geometry and Volume
@@ -302,7 +287,7 @@ see property package for documentation.}"""))
         # Pressure change equation for friction,
         # -1/2*density*velocity^2*fD/diameter*height
         @self.Constraint(self.flowsheet().config.time,
-                         doc="pressure change due to friction")
+                         doc="Pressure change due to friction")
         def pressure_change_friction_eqn(b, t):
             return b.deltaP_friction[t] * b.diameter == -0.5 \
                 * b.control_volume.properties_in[t].dens_mass_phase["Liq"] * \
@@ -310,14 +295,14 @@ see property package for documentation.}"""))
 
         # Pressure change equation for gravity, density*gravity*height
         @self.Constraint(self.flowsheet().config.time,
-                         doc="pressure change due to gravity")
+                         doc="Pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return b.deltaP_gravity[t] == \
                 b.control_volume.properties_in[t].dens_mass_phase["Liq"] \
                 * const.acceleration_gravity * b.height
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time, doc="pressure drop")
+        @self.Constraint(self.flowsheet().config.time, doc="Pressure drop")
         def pressure_change_total_eqn(b, t):
             return b.deltaP[t] == (b.deltaP_friction[t] + b.deltaP_gravity[t])
 

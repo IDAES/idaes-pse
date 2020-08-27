@@ -84,5 +84,5 @@ where:
 Dynamic Model
 -------------
 
-The dynamic model version of the downcomer section model can be constructed by selecting dynamic=True. 
+The dynamic model version of the downcomer section model can be constructed by selecting dynamic=True and hold_up=True. 
 If dynamic = True, the energy accumulation and material accumulation holdups are constructed. Therefore, a dynamic initialization method has been developed `set_initial_conditions` to initialize the holdup terms.
