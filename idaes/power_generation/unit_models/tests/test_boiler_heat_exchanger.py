@@ -109,12 +109,12 @@ def test_boiler_hx():
     # FLUE GAS Inlet from Primary Superheater
     FGrate = 28.3876e3*0.18  # mol/s equivalent of ~1930.08 klb/hr
     # Use FG molar composition to set component flow rates (baseline report)
-    m.fs.unit.side_2_inlet.flow_component[0, "H2O"].fix(FGrate*8.69/100)
-    m.fs.unit.side_2_inlet.flow_component[0, "CO2"].fix(FGrate*14.49/100)
-    m.fs.unit.side_2_inlet.flow_component[0, "N2"].fix(FGrate*74.34/100)
-    m.fs.unit.side_2_inlet.flow_component[0, "O2"].fix(FGrate*2.47/100)
-    m.fs.unit.side_2_inlet.flow_component[0, "NO"].fix(FGrate*0.0006)
-    m.fs.unit.side_2_inlet.flow_component[0, "SO2"].fix(FGrate*0.002)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*8.69/100)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*14.49/100)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*74.34/100)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*2.47/100)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.0006)
+    m.fs.unit.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.002)
     m.fs.unit.side_2_inlet.temperature[0].fix(1102.335)
     m.fs.unit.side_2_inlet.pressure[0].fix(100145)
 
