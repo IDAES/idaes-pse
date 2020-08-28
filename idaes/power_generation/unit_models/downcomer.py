@@ -31,14 +31,14 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import (is_physical_parameter_block)
+from idaes.core.util.config import is_physical_parameter_block
 
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Reference
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
-
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
@@ -334,13 +334,10 @@ see property package for documentation.}"""))
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # make sure 0 DoF
-        dof = degrees_of_freedom(blk)
-        try:
-            assert dof == 0
-        except:
-            init_log.exception("degrees_of_freedom = {}".format(dof))
-            raise
-
+        if degrees_of_freedom(blk) != 0:
+            raise ConfigurationError(
+                "Incorrect degrees of freedom when initializing {}: dof = {}".format(
+                    blk.name, degrees_of_freedom(blk)))
         # Fix outlet pressure
         for t in blk.flowsheet().config.time:
             blk.control_volume.properties_out[t].pressure.fix(

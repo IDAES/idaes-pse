@@ -63,6 +63,8 @@ def test_basic_build(build_downcomer):
     # Check unit config arguments
     assert len(m.fs.unit.config) == 8
     assert m.fs.unit.config.has_heat_transfer
+    assert isinstance(m.fs.unit.heat_duty, pyo.Var)
+    assert isinstance(m.fs.unit.deltaP, pyo.Var)
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
@@ -78,10 +80,14 @@ def test_initialize_drum(build_downcomer):
     m.fs.unit.heat_duty[:].fix(0.0)
 
     # NETL Baseline values
+    m.fs.unit.inlet.enth_mol.fix(24944.7)
+    m.fs.unit.inlet.flow_mol.fix(49552.8)
+    m.fs.unit.inlet.pressure.fix(12025072.9)
+
     state_args = {'flow_mol': 49552.8,
                   'pressure': 12025072.9,
                   'enth_mol': 24944.7}
-    initialization_tester(build_downcomer, dof=3, state_args=state_args)
+    initialization_tester(build_downcomer, dof=0, state_args=state_args)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
