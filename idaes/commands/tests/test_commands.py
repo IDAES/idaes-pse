@@ -20,7 +20,6 @@ import os
 from pathlib import Path
 from shutil import rmtree
 import subprocess
-import time
 from typing import Union
 import uuid
 
@@ -35,7 +34,10 @@ from . import create_module_scratch, rmtree_scratch
 
 __author__ = "Dan Gunter"
 
+
 _log = logging.getLogger(__name__)
+if os.environ.get("IDAES_TEST_DEBUG", False):
+    _log.setLevel(logging.DEBUG)
 
 
 @pytest.fixture(scope="module")
@@ -86,12 +88,37 @@ def test_examples_cli_list(runner):
     assert result.exit_code == 0
 
 
+def can_write(path):
+    """Test ability to write a file in 'path'.
+    Assume the path is a temporary directory, so don't bother cleaning up.
+    """
+    if not path.exists():
+        _log.debug(f"can_write: Creating parent directory '{path}'")
+        try:
+            path.mkdir()
+        except Exception as err:
+            _log.warning(f"Failed to create temporary directory '{path}': {err}")
+            return False
+    test_file = path / "test_file.txt"
+    _log.debug(f"can_write: Creating file '{test_file}'")
+    try:
+        fp = test_file.open("w")
+        fp.write("hello")
+        fp.close()
+    except Exception as err:
+        _log.warning(f"Failed to write sample file '{test_file}': {err}")
+        return False
+
+
 @pytest.mark.integration()
 def test_examples_cli_download(runner, tempdir):
     # failure with existing dir
     result = runner.invoke(examples.get_examples, ["-d", str(tempdir), "-I"])
     assert result.exit_code == -1
-    # pick subdir, should be ok; use old version we know exists
+
+
+@pytest.mark.integration()
+def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname, "-I", "-V", "1.5.0"])
     assert result.exit_code == 0
@@ -106,10 +133,11 @@ def test_examples_cli_default_version(runner, tempdir):
 
 @pytest.mark.integration()
 def test_examples_cli_download_unstable(runner, tempdir):
-    dirname = str(tempdir / "examples")
-    # unstable version but no --unstable flag
-    result = runner.invoke(examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"])
-    assert result.exit_code == -1
+    if can_write(tempdir):
+        dirname = str(tempdir / "examples")
+        # unstable version but no --unstable flag
+        result = runner.invoke(examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"])
+        assert result.exit_code == -1
 
 
 @pytest.mark.integration()
@@ -215,6 +243,30 @@ def test_examples_check_github_response():
     pytest.raises(
         examples.GithubError, examples.check_github_response, 12, "hello",
     )
+
+
+@pytest.mark.nowin32
+@pytest.mark.integration
+def test_examples_install_src():
+    tempdir = create_module_scratch("examples_install_src")
+    # monkey patch a random install package name so as not to have
+    # any weird side-effects on other tests
+    orig_install_pkg = examples.INSTALL_PKG
+    examples.INSTALL_PKG = "i" + str(uuid.uuid4()).replace("-", "_")
+    _log.debug(f"install_src: curdir={os.curdir}")
+    # create fake package
+    src_dir = tempdir / "src"
+    src_dir.mkdir()
+    m1_dir = src_dir / "module1"
+    m1_dir.mkdir()
+    (m1_dir / "groot.py").open("w").write("print('I am groot')\n")
+    m2_dir = m1_dir / "module1_1"
+    m2_dir.mkdir()
+    (m2_dir / "groot.py").open("w").write("print('I am groot')\n")
+    # install it
+    examples.install_src("0.0.0", src_dir)
+    # patch back the proper install package name
+    examples.INSTALL_PKG = orig_install_pkg
 
 
 @pytest.mark.unit
