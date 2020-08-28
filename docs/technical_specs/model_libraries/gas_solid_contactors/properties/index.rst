@@ -1,5 +1,5 @@
-Gas Solid Contactors properties
-===============================
+Gas Solid Contactors Property Models
+====================================
 
 Contents
 --------
