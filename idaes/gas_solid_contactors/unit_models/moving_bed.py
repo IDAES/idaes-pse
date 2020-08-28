@@ -525,7 +525,6 @@ see reaction package for documentation.}"""))
                 doc='Gas superficial velocity [m/s]')
         self.velocity_superficial_solid = Var(
                 self.flowsheet().config.time,
-                self.length_domain,
                 domain=Reals, initialize=0.005,
                 doc='Solid superficial velocity [m/s]')
 
@@ -608,8 +607,11 @@ see reaction package for documentation.}"""))
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          doc="Solid superficial velocity")
+        # This equation uses inlet values to compute the constant solid
+        # superficial velocity, and then computes the solid particle density
+        # through the rest of the bed.
         def solid_super_vel(b, t, x):
-            return (b.velocity_superficial_solid[t, x] * b.bed_area *
+            return (b.velocity_superficial_solid[t] * b.bed_area *
                     b.solid_phase.properties[t, x].dens_mass_particle ==
                     b.solid_phase.properties[t, x].flow_mass)
 
@@ -640,14 +642,14 @@ see reaction package for documentation.}"""))
                         150*(1 - b.bed_voidage) ** 2 *
                         b.gas_phase.properties[t, x].visc_d *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t, x]) /
+                         b.velocity_superficial_solid[t]) /
                         (b.solid_phase.properties[t, x].
                          _params.particle_dia ** 2 * b.bed_voidage ** 3)) +
                         1e2*(
                         1.75*b.gas_phase.properties[t, x].dens_mass *
                         (1 - b.bed_voidage) *
                         (b.velocity_superficial_gas[t, x] +
-                         b.velocity_superficial_solid[t, x]) ** 2 /
+                         b.velocity_superficial_solid[t]) ** 2 /
                         (b.solid_phase.properties[t, x]._params.particle_dia *
                          b.bed_voidage**3)))
             # The above expression has no absolute values - assumes:
@@ -872,18 +874,14 @@ see reaction package for documentation.}"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
-        # Initialize hydrodynamics (velocities)
+        # Initialize hydrodynamics (gas velocity)
         for t in blk.flowsheet().config.time:
             for x in blk.length_domain:
                 calculate_variable_from_constraint(
                     blk.velocity_superficial_gas[t, x],
                     blk.gas_super_vel[t, x])
-                calculate_variable_from_constraint(
-                    blk.velocity_superficial_solid[t, x],
-                    blk.solid_super_vel[t, x])
 
         blk.gas_super_vel.activate()
-        blk.solid_super_vel.activate()
 
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -901,7 +899,8 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize mass balance - no reaction and no pressure drop
 
-        # Unfix material balance state variables but keep other states fixed
+        # Unfix material balance state variables (including particle porosity)
+        # but keep other states fixed
         blk.gas_phase.properties.release_state(
                 gas_phase_flags)
         blk.solid_phase.properties.release_state(
@@ -923,6 +922,7 @@ see reaction package for documentation.}"""))
                             (gas_rxn_gen[t, x, p, j].fix(0.0))
 
         blk.solid_phase.material_balances.activate()
+        blk.solid_super_vel.activate()
 
         if solid_phase.reaction_package is not None:
             for t in blk.flowsheet().config.time:
