@@ -217,28 +217,6 @@ def test_examples_check_github_response():
     )
 
 
-@pytest.mark.integration
-def test_examples_install_src(tempdir):
-    # monkey patch a random install package name so as not to have
-    # any weird side-effects on other tests
-    orig_install_pkg = examples.INSTALL_PKG
-    examples.INSTALL_PKG = "i" + str(uuid.uuid4()).replace("-", "_")
-    # print(f"1. curdir={os.curdir}")
-    # create fake package
-    src_dir = tempdir / "src"
-    src_dir.mkdir()
-    m1_dir = src_dir / "module1"
-    m1_dir.mkdir()
-    (m1_dir / "groot.py").open("w").write("print('I am groot')\n")
-    m2_dir = m1_dir / "module1_1"
-    m2_dir.mkdir()
-    (m2_dir / "groot.py").open("w").write("print('I am groot')\n")
-    # install it
-    examples.install_src("0.0.0", src_dir)
-    # patch back the proper install package name
-    examples.INSTALL_PKG = orig_install_pkg
-
-
 @pytest.mark.unit
 def test_examples_cleanup(tempdir):
     # put some crap in the temporary dir
@@ -324,35 +302,6 @@ def test_examples_cleanup_nodist_noegg(tempdir):
     examples.clean_up_temporary_files()
     # Check that everything is removed
     assert not tempsubdir.exists()
-
-
-@pytest.mark.unit
-def test_examples_cleanup_nothing(tempdir):
-    tempdir = tempdir
-    # nothing to remove, should still be ok
-    os.chdir(tempdir)
-    examples.clean_up_temporary_files()
-    # if we set some globals to bogus values, still OK
-    examples.g_egg = Path("no-such-file.egg-info")
-    examples.g_tempdir = Path("no-such-file-tempdir")
-    examples.clean_up_temporary_files()
-    # if we create files and set perms to 000, still OK
-    eggy = Path("egg")
-    eggy.mkdir()
-    eggy.chmod(0)
-    examples.g_egg = eggy
-    subdir = Path("subdirinho")
-    subdir.mkdir()
-    subdir.chmod(0)
-    examples.g_tempdir = subdir
-    dist = Path("dist")
-    dist.mkdir()
-    # dist.chmod(0) -- no, this messes up Windows
-    examples.clean_up_temporary_files()
-    # tempdir will clean up these files:
-    # dist.chmod(700) - removed with .rmdir() which works regardless!
-    eggy.chmod(0o777)
-    subdir.chmod(0o777)
 
 
 @pytest.mark.unit
