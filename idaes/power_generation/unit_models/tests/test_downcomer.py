@@ -17,7 +17,7 @@ Main assumptions:
 * Calculate pressure change due to friction and gravity
 * Assume enthalpy_in == enthalpy_out + heat
 
-Created on Thu Aug 27 by Boiler Team (J. Ma, M. Zamarripa)
+Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
 import pytest
 # Import Pyomo libraries
@@ -50,7 +50,6 @@ def build_downcomer():
             "property_package": m.fs.properties,
             "has_holdup": False,
             "has_heat_transfer": True,
-            "has_pressure_change": True,
         }
     )
     return m
@@ -62,9 +61,8 @@ def test_basic_build(build_downcomer):
     m = build_downcomer
     assert degrees_of_freedom(m) == 7
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 8
     assert m.fs.unit.config.has_heat_transfer
-    assert m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
 
 

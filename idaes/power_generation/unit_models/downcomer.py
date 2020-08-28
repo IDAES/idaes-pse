@@ -17,7 +17,7 @@ Main assumptions:
 * Calculate pressure change due to friction and gravity
 * Assume enthalpy_in == enthalpy_out + heat
 
-Created August 27
+Created August 27, 2020
 """
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -32,8 +32,6 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 
 from idaes.core.util.config import (is_physical_parameter_block)
-from idaes.core.util.misc import add_object_reference
-
 
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Reference
@@ -117,16 +115,6 @@ Must be True if dynamic = True,
 **Valid values:** {
 **True** - include heat transfer terms,
 **False** - exclude heat transfer terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -167,7 +155,7 @@ see property package for documentation.}"""))
                 "property_package_args": self.config.property_package_args})
 
         self.control_volume.add_geometry()
-
+        # no phase transitions in the unit - handeled by Helmholtz EoS
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_material_balances(
@@ -192,9 +180,8 @@ see property package for documentation.}"""))
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != EnergyBalanceType.none):
             self.heat_duty = Reference(self.control_volume.heat)
-        if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            self.deltaP = Reference(self.control_volume.deltaP)
+
+        self.deltaP = Reference(self.control_volume.deltaP)
 
         # Set Unit Geometry and Volume
         self._set_geometry()
@@ -242,10 +229,9 @@ see property package for documentation.}"""))
                 initialize=10000.0,
                 doc='Reynolds number')
 
-        # Darcy friction factor
+        # Darcy friction factor (turbulent flow)
         self.friction_factor_darcy = Var(
                 self.flowsheet().config.time,
-                bounds=(0.0001, 0.05),
                 initialize=0.005,
                 doc='Darcy friction factor')
 
