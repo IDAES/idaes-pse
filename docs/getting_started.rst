@@ -131,18 +131,6 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
                 conda-forge ipopt`` though this will not have all the features
                 of our extentions package.
 
-   .. note:: If you are installing on Linux, you can specify a specific platform.
-             While most Linux builds are interchangeable, specifying a build can
-             make managing dependencies considerably easier. By default Linux
-             will use the CentOS 7 build.  To specify a build use the command
-             ``idaes get-extensions --platform <platform>``.  Supported Linux
-             platforms are: rhel6, rhel7, rhel8, cetos6, centos7, centos8,
-             ubuntu1804, ubuntu1910, and ubuntu2004.  If you are not using a
-             supported platform, everything should still work, just choose the
-             platform that best matches your Linux distribution.  You can also
-             use the ``idaes get-extensions-platforms`` command to see a list of
-             supported platforms.
-
 3. Run the :doc:`idaes get-examples command <user_guide/commands/get_examples>` to download
    and install the example files::
 
