@@ -25,6 +25,8 @@ from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbin
 from idaes.core import declare_process_block_class
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
+import idaes.core.util.scaling as iscale
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -50,12 +52,6 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]"
         )
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
-        self.flow_scale = Param(
-            mutable=True,
-            default=1e-4,
-            doc="Scaling factor for pressure flow relation should be approximatly"
-            " the same order of magnitude as the expected flow.",
-        )
         self.efficiency_isentropic.unfix()
         self.eff_dry.fix()
         self.design_exhaust_flow_vol.fix()
@@ -82,9 +78,8 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return (b.flow_scale ** 2) * flow ** 2 * mw ** 2 * (Tin - 273.15) == (
-                b.flow_scale ** 2
-            ) * cf ** 2 * Pin ** 2 * (1 - Pr ** 2)
+            return flow ** 2 * mw ** 2 * (Tin - 273.15) == (
+                cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
 
         @self.Constraint(self.flowsheet().config.time, doc="Efficiency correlation")
         def efficiency_correlation(b, t):
@@ -174,7 +169,8 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Tin = self.control_volume.properties_in[0].temperature
             Pin = self.control_volume.properties_in[0].pressure
             Pr = self.ratioP[0]
-            self.flow_coeff.value = value(flow * mw*sqrt((Tin - 273.15)/(1 - Pr ** 2))/Pin)
+            self.flow_coeff.value = value(
+                flow * mw * sqrt((Tin - 273.15)/(1 - Pr ** 2))/Pin)
         else:
             self.inlet.flow_mol.unfix()
 
@@ -196,3 +192,10 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
             self.flow_coeff = cf
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        for t, c in self.stodola_equation.items():
+            s = iscale.get_scaling_factor(
+                self.control_volume.properties_in[t].flow_mol)**2
+            iscale.constraint_scaling_transform(c, s)

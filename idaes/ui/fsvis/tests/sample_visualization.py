@@ -10,6 +10,18 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-# this is just for compatability with the old name.
+"""
+This is a sample visualization script. This script builds a simple model and 
+calls visualize("sample_visualization") in order to pop up a webpage with 
+a sample visualization.
+"""
+from idaes.generic_models.flowsheets.demo_flowsheet import build_flowsheet
 
-from .flue_gas_ideal import *
+
+def main():
+    m = build_flowsheet()
+    m.fs.visualize("sample_visualization")
+
+
+if __name__ == "__main__":
+    main()
