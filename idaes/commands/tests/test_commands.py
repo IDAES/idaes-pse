@@ -357,35 +357,6 @@ def test_examples_cleanup_nodist_noegg(tempdir):
 
 
 @pytest.mark.unit
-def test_examples_cleanup_nothing(tempdir):
-    tempdir = tempdir
-    # nothing to remove, should still be ok
-    os.chdir(tempdir)
-    examples.clean_up_temporary_files()
-    # if we set some globals to bogus values, still OK
-    examples.g_egg = Path("no-such-file.egg-info")
-    examples.g_tempdir = Path("no-such-file-tempdir")
-    examples.clean_up_temporary_files()
-    # if we create files and set perms to 000, still OK
-    eggy = Path("egg")
-    eggy.mkdir()
-    eggy.chmod(0)
-    examples.g_egg = eggy
-    subdir = Path("subdirinho")
-    subdir.mkdir()
-    subdir.chmod(0)
-    examples.g_tempdir = subdir
-    dist = Path("dist")
-    dist.mkdir()
-    # dist.chmod(0) -- no, this messes up Windows
-    examples.clean_up_temporary_files()
-    # tempdir will clean up these files:
-    # dist.chmod(700) - removed with .rmdir() which works regardless!
-    eggy.chmod(0o777)
-    subdir.chmod(0o777)
-
-
-@pytest.mark.unit
 def test_examples_local(tempdir):
     d = tempdir
     tgt = d / "examples"

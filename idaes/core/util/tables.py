@@ -24,7 +24,8 @@ _log = idaeslog.getLogger(__name__)
 __author__ = "John Eslick, Andrew Lee"
 
 
-def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
+def arcs_to_stream_dict(
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s={}):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -40,17 +41,27 @@ def arcs_to_stream_dict(blk, additional=None, descend_into=True, sort=False):
         descend_into (bool): If True, search subblocks for Arcs as well. The
             default is True.
         sort (bool): If True sort keys and return an OrderedDict
+        prepend (str): Prepend a string to the arc name joined with a '.'.
+            This can be useful to prevent conflicting names when sub blocks
+            contain Arcs that have the same names when used in combination
+            with descend_into=False.
+        s (dict): Add streams to an existing stream dict.
 
     Returns:
         Dictionary with Arc names as keys and the Arcs as values.
 
     """
-    s = dict((c.getname(), c) for c in blk.component_objects(
-        Arc, descend_into=descend_into))
+    if s is None:
+        s = {}
+    for c in blk.component_objects(Arc, descend_into=descend_into):
+        key = c.getname()
+        if prepend is not None:
+            key = ".".join([prepend, key])
+        s[key] = c
     if additional is not None:
         s.update(additional)
     if sort:
-        streams = OrderedDict(sorted(s.items()))
+        s = OrderedDict(sorted(s.items()))
     return s
 
 
@@ -81,14 +92,9 @@ def stream_states_dict(streams, time_point=0):
 
     for n in streams.keys():
         try:
-            if isinstance(streams[n], Arc) and not streams[n].is_indexed():
-                # Use destination of Arc, as inlets are more likely (?) to be
-                # fully-defined StateBlocks
-                sb = _get_state_from_port(streams[n].destination, time_point)
-                _stream_dict_add(sb, n)
-            elif isinstance(streams[n], Arc):
+            if isinstance(streams[n], Arc):
                 for i, a in streams[n].items():
-                    sb = _get_state_from_port(a.destination, time_point)
+                    sb = _get_state_from_port(a.ports[1], time_point)
                     _stream_dict_add(sb, n, i)
             elif isinstance(streams[n], Port):
                 sb = _get_state_from_port(streams[n], time_point)
@@ -98,9 +104,9 @@ def stream_states_dict(streams, time_point=0):
                 _stream_dict_add(sb, n)
         except (AttributeError, KeyError):
             raise TypeError(
-                f"Unrecognised component provided in stream argument "
-                f"{streams[n]}. get_stream_table_attributes only "
-                f"supports Arcs, Ports or StateBlocks."
+                f"Unrecognised component type for stream argument {streams[n]}."
+                f" The stream_states_dict function only supports Arcs, "
+                f"Ports or StateBlocks."
             )
     return stream_dict
 
@@ -310,7 +316,7 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 j = a[1:]
                 a = a[0]
             v = getattr(s, a, None)
-            if j is not None:
+            if j is not None and v is not None:
                 try:
                     v = v[j]
                 except KeyError:
