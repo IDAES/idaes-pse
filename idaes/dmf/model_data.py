@@ -286,7 +286,7 @@ def upadate_metadata_model_references(model, metadata):
                 md["reference"] = pyo.Reference(
                     eval(md["reference_string"], {"m": model})
                 )
-            except KeyError:
+            except (KeyError, AttributeError, NameError):
                 warnings.warn(
                     "Tag reference {} not found".format(md["reference_string"]),
                     UserWarning,
