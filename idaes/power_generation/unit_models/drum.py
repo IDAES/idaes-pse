@@ -449,10 +449,10 @@ see property package for documentation.}"""))
                                       hold_state=False)
         init_log.info("Initialization Step 3 Complete.")
 
-        # unfix inlets
         # fix flash Inlet
         flags_steam = fix_state_vars(blk.flash.mixed_state,
-                                  state_args_water_steam)
+                                     state_args_water_steam)
+        # unfix inlets (connected with arc)
         blk.mixer.SaturatedWater.flow_mol[:].unfix()
         blk.mixer.SaturatedWater.enth_mol[:].unfix()
         blk.mixer.SaturatedWater.pressure[:].unfix()
