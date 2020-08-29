@@ -450,6 +450,9 @@ see property package for documentation.}"""))
         init_log.info("Initialization Step 3 Complete.")
 
         # unfix inlets
+        # fix flash Inlet
+        flags_steam = fix_state_vars(blk.flash.mixed_state,
+                                  state_args_water_steam)
         blk.mixer.SaturatedWater.flow_mol[:].unfix()
         blk.mixer.SaturatedWater.enth_mol[:].unfix()
         blk.mixer.SaturatedWater.pressure[:].unfix()
@@ -462,6 +465,7 @@ see property package for documentation.}"""))
                 "Initialization Step 4 {}.".format(idaeslog.condition(res))
             )
         revert_state_vars(blk.mixer.FeedWater_state, flags_fw)
+        revert_state_vars(blk.flash.mixed_state, flags_steam)
         init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
