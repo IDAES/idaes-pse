@@ -88,13 +88,11 @@ class FlueGasParameterData(PhysicalParameterBlock):
 
         # Thermodynamic reference state
         self.pressure_ref = Param(within=PositiveReals,
-                                  mutable=True,
                                   default=1.01325e5,
                                   doc='Reference pressure [Pa]')
 
         self.temperature_ref = Param(within=PositiveReals,
-                                     mutable=True,
-                                     default=298.16,
+                                     default=298.15,
                                      doc='Reference temperature [K]')
 
         # Critical Properties
@@ -546,8 +544,10 @@ class FlueGasStateBlockData(StateBlockData):
                     coeff['C', j] * t**3 / 3 +
                     coeff['D', j] * t**4 / 4 -
                     coeff['E', j] / t +
-                    coeff['F', j] -
-                    coeff['H', j]) for j in self.params.component_list))
+                    coeff['F', j]) for j in self.params.component_list))
+                    # NOTE: the H term (from the Shomate Equation) is not
+                    # included here so that the reference state enthalpy is the
+                    # enthalpy of formation (not 0).
         try:
             self.enthalpy_correlation = Constraint(rule=enthalpy_correlation)
         except AttributeError:

@@ -17,7 +17,7 @@ is an output of the fire-side model and an input of the waterwall section model 
 and an input (boundary condition) of the fire-side model. The heat conduction through the slag and tube layers is a part of the fluid-side model. At a steady state, the amount of the heat transferred at the outer slag surface 
 (:math:`q_{rad}^{fire}` and :math:`q_{conv}^{fire}`) is equal to the heat conducted through the slag and tube layers, which is equal to the heat convected to the fluid :math:`q_{conv}^{fluid}`.
 
-Property package: This model requires the IAPWS95 property package with the mixed phase option, therefore, the phase equilibrium calculations are handled by the property package.
+Property package: This model requires the Helmholtz EoS (IAPWS95) property package with the mixed phase option, therefore, the phase equilibrium calculations are handled by the property package.
 
 .. figure:: waterwall_1.png
     :width: 800
@@ -174,6 +174,7 @@ where:
 * V: fluid velocity (m/s, liquid only)
 * k : thermal conductivity of the fluid (W / m / K)
 * MW: molecular weigth of water (kmol/kg)
+* :math:`\mu` : viscocity (kg/m/s)
 
 Note that at the flowsheet level first waterwall section is connected to the economizer, arcs connecting section 2 to n-1 have to be constructed by the user, and the outlet of section n is connected to the drum model or superheater (subcritical and supercritical plant, respectively)
 
