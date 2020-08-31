@@ -123,7 +123,10 @@ commands:
     steps:
       - run:
           name: pylint
-          command: pylint -E --ignore-patterns="test_.*" idaes || true
+          command: |
+            source activate idaes
+            python -m pip --no-cache-dir install --progress-bar off pylint
+            pylint -E --ignore-patterns="test_.*" idaes || true
   coverage:
     description: Report code coverage
     steps:
