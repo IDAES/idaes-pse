@@ -274,7 +274,7 @@ def unit_convert(
     return (y.magnitude, str(y.units))
 
 
-def upadate_metadata_model_references(model, metadata):
+def update_metadata_model_references(model, metadata):
     """
     Create model references from refernce strings in the metadata. This updates
     the 'reference' field in the metadata.
@@ -297,6 +297,9 @@ def upadate_metadata_model_references(model, metadata):
                     "Tag reference {} not found".format(md["reference_string"]),
                     UserWarning,
                 )
+
+# This prevents breakage, can remove after example updates.
+upadate_metadata_model_references = update_metadata_model_references
 
 
 def read_data(
@@ -366,7 +369,7 @@ def read_data(
                 }
     # If a model was provided, map the tags with a reference string to the model
     if model:
-        upadate_metadata_model_references(model, metadata)
+        update_metadata_model_references(model, metadata)
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
         if tag not in metadata:
