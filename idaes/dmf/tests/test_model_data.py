@@ -76,7 +76,7 @@ def test_bin_data():
     assert r[0]["x1"] == pytest.approx(1.0)
     assert np.isnan(r[3]["x1"]) # only one point in bin 3, so can't calculate
 
-    
+
 @pytest.mark.component
 def test_map_data():
     data1 = os.path.join(_data_dir, "data1.csv")
@@ -122,6 +122,7 @@ def test_map_data():
 
 @pytest.mark.component
 def test_map_data_use_ambient_pressure():
+    # Try out PSIG and barometric pressure in PSIA.
     data1 = os.path.join(_data_dir, "data1.csv")
     data1_meta = os.path.join(_data_dir, "data1_meta.csv")
     m = pyo.ConcreteModel("Data Test Model")
@@ -144,6 +145,34 @@ def test_map_data_use_ambient_pressure():
     )
 
     # Check that the unit conversions are okay
+    assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
+
+@pytest.mark.component
+def test_map_data_use_ambient_pressure2():
+    # Try out inches of water column and barometric pressure in inHg.
+    data2 = os.path.join(_data_dir, "data2.csv")
+    data2_meta = os.path.join(_data_dir, "data2_meta.csv")
+    m = pyo.ConcreteModel("Data Test Model")
+    m.time = pyo.Set(initialize=[1, 2, 3])
+    m.pressure = pyo.Var(m.time, doc="pressure (Pa)", initialize=101325)
+    m.temperature = pyo.Var(m.time, doc="temperature (K)", initialize=300)
+    m.volume = pyo.Var(m.time, doc="volume (m^3)", initialize=10)
+
+    def retag(tag):
+        return tag.replace(".junk", "")
+
+    df, df_meta = da.read_data(
+        data2,
+        data2_meta,
+        model=m,
+        rename_mapper=retag,
+        unit_system="mks",
+        ambient_pressure="Pamb",
+        ambient_pressure_unit="inHg",
+    )
+
+    # Check that the unit conversions are okay, same pressures as data1
+    # differnt units, so the data read in should be the same
     assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
 
 
