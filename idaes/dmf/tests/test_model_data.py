@@ -173,7 +173,8 @@ def test_map_data_use_ambient_pressure2():
 
     # Check that the unit conversions are okay, same pressures as data1
     # differnt units, so the data read in should be the same
-    assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
+    assert df["P"]["1901-3-3 10:00"] == pytest.approx(96526.6, rel=1e-2)
+    assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-2)
 
 
 @pytest.mark.component

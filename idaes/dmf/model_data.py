@@ -55,10 +55,10 @@ _unit_strings = {
     "PSIA": "psi",
     "psia": "psi",
     "PSIG": "psig",
-    "INWC": "in water",
-    "IN WC": "in water",
-    "IN/WC": "in water",
-    '" H2O': "in water",
+    "INWC": "inH2O gauge",
+    "IN WC": "inH2O gauge",
+    "IN/WC": "inH2O gauge",
+    '" H2O': "inH2O gauge",
     "INHG": "inHg",
     "IN HG": "inHg",
     "IN/HG": "inHg",
@@ -179,7 +179,7 @@ _unit_strings = {
     "MVARS": "MVAR",
 }
 
-_gauge_pressures = {"psig": "psi", "in water gauge": "in water", "in hg gauge": "in hg"}
+_gauge_pressures = {"psig": "psi", "inH2O gauge": "inH2O"}
 
 _ignore_units = [
     "percent",
@@ -191,6 +191,10 @@ _ignore_units = [
     "H2O",
     "percent open",
     "percent closed",
+]
+
+_register_new_units = [
+    "in_H2O = 248.84 Pa = inH2O",
 ]
 
 
@@ -233,6 +237,8 @@ def unit_convert(
         (tuple): quantity and unit string
     """
     ureg = pint.UnitRegistry(system=system)
+    for u in _register_new_units:
+        ureg.define(u)
     if frm in unit_string_map:
         frm = unit_string_map[frm]
     elif frm in _unit_strings:
