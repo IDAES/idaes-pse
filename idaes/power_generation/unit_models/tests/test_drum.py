@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 Drum model
@@ -152,7 +152,7 @@ def test_run_drum(build_drum):
                       - m.fs.unit.liquid_outlet.flow_mol[0]
                       * m.fs.unit.liquid_outlet.enth_mol[0]))
     # pressure drop
-    assert (pytest.approx(2293.3632, abs=1e-3) ==
+    assert (pytest.approx(2261.2171, abs=1e-3) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-3) ==
