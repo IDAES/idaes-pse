@@ -588,6 +588,7 @@ def copy_non_time_indexed_values(
         fs_src : Flowsheet from which values will be copied.
         copy_fixed : Bool marking whether or not to copy over fixed variables
                      in the target flowsheet.
+        outlvl : Outlevel for the IDAES logger.
 
     Returns:
         None
