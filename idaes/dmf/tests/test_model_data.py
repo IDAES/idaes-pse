@@ -66,7 +66,7 @@ def test_bin_data():
     assert "pb no." in df
     assert "pb power" in df
 
-    r = da.bin_stdev(df, bin_no="pb no.")
+    r = da.bin_stdev(df, bin_no="pb no.", min_data=3)
 
     assert 0 in r
     assert 1 in r
