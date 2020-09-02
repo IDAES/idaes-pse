@@ -466,7 +466,7 @@ def bin_stdev(df, bin_no):
     res = {}
     for i in nos:
         idx = df.index[df[bin_no] == i]
-        df2 = df.iloc[idx]
+        df2 = df.loc[idx]
         res[i] = df2.std(axis=0)
     return res
 
