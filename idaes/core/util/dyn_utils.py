@@ -577,7 +577,7 @@ def copy_non_time_indexed_values(
         fs_tgt,
         fs_src,
         copy_fixed=True,
-        outlvl=idaeslog.WARNING,
+        outlvl=idaeslog.NOTSET,
         ):
     """
     Function to set the values of all variables that are not (implicitly
