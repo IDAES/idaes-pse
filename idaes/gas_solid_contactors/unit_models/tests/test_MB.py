@@ -200,8 +200,8 @@ class TestIronOC(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
 
-        assert number_variables(iron_oc) == 799
-        assert number_total_constraints(iron_oc) == 765
+        assert number_variables(iron_oc) == 809
+        assert number_total_constraints(iron_oc) == 775
         assert number_unused_variables(iron_oc) == 12
 
     @pytest.mark.unit
@@ -241,7 +241,7 @@ class TestIronOC(object):
         assert (pytest.approx(0.5675, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.0039, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_superficial_solid[0].value)
+                iron_oc.fs.unit.velocity_superficial_solid[0, 1].value)
         assert (pytest.approx(1.975, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
@@ -373,8 +373,8 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.isothermal_gas_phase, Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_solid_phase, Constraint)
 
-        assert number_variables(iron_oc) == 579
-        assert number_total_constraints(iron_oc) == 503
+        assert number_variables(iron_oc) == 589
+        assert number_total_constraints(iron_oc) == 513
         assert number_unused_variables(iron_oc) == 55
         print(unused_variables_set(iron_oc))
 
@@ -433,7 +433,7 @@ class TestIronOC_EnergyBalanceType(object):
         assert (pytest.approx(0.5675, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.0039, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_superficial_solid[0].value)
+                iron_oc.fs.unit.velocity_superficial_solid[0, 1].value)
         assert (pytest.approx(1.975, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
