@@ -1717,6 +1717,7 @@ class NMPCSim(DynamicBase):
     def add_k_aug_suffixes(self):
         controller = self.controller
         for name, direction in K_AUG_SUFFIXES:
+            # TODO: any reason not to add these to the namespace?
             if not hasattr(controller, name):
                 suffix = Suffix(direction=direction)
                 controller.add_component(name, suffix)
@@ -1739,6 +1740,8 @@ class NMPCSim(DynamicBase):
                 wrt_vars,
                 index,
                 )
+        self.k_aug = SolverFactory('k_aug', executable='k_aug')
+        self.k_aug.set_options({"dsdp_mode": ""})
         for var in block.input_vars:
             # Populate k_aug suffix for dof vars.
             # (Which are actually the dependent vars from 
@@ -1766,12 +1769,14 @@ class NMPCSim(DynamicBase):
         for i in self.advanced_step_manager.block.wrt_set:
             # Populate k_aug suffix for measurement discrepancy.
             con = self.advanced_step_manager.block.wrt_constraint[i]
-            controller.npdp[con] = offset[i]
+#            controller.npdp[con] = offset[i]
+            controller.dcdp[con] = offset[i]
         # Now: How to get derivatives wrt dof_vars via k_aug?
         with self.advanced_step_manager as as_manager:
             self.solve_control_problem(**kwargs)
-            k_aug = SolverFactory('k_aug', executable='k_aug')
-            results = k_aug.solve(
+            controller.ipopt_zL_in.update(controller.ipopt_zL_out)
+            controller.ipopt_zU_in.update(controller.ipopt_zU_out)
+            results = self.k_aug.solve(
                     controller,
                     tee=True,
                     symbolic_solver_labels=False,
