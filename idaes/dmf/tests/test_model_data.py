@@ -71,10 +71,9 @@ def test_bin_data():
     assert 0 in r
     assert 1 in r
     assert 2 in r
-    assert 3 in r
+    assert 3 not in r # not enough points
 
     assert r[0]["x1"] == pytest.approx(1.0)
-    assert np.isnan(r[3]["x1"]) # only one point in bin 3, so can't calculate
 
 
 @pytest.mark.component
