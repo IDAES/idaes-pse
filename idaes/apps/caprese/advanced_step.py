@@ -7,6 +7,8 @@ K_AUG_SUFFIXES = [
         ("ipopt_zU_in", Suffix.EXPORT),
         ("dual", Suffix.IMPORT_EXPORT),
         ("npdp", Suffix.EXPORT),
+        ("dcdp", Suffix.EXPORT), # ??? Is it npdp or dcdp?
+        # dcdp appears to be the correct suffix name
         ("dof_v", Suffix.EXPORT),
         ]
 
