@@ -450,13 +450,15 @@ def bin_data(
     return hist
 
 
-def bin_stdev(df, bin_no):
+def bin_stdev(df, bin_no, min_data=4):
     """
     Calculate the standard deviation for each column in each bin.
 
     Args:
         df (pandas.DataFrame): pandas data frame that is a bin number column
         bin_no (str): Column to group by, usually contains bin number
+        min_data (int): Minimum number of data points requitred to calculate
+            standard deviation for a bin (default=4)
 
     Returns:
         dict: key is the bin number and the value is a pandas.Serries with column
@@ -466,6 +468,8 @@ def bin_stdev(df, bin_no):
     res = {}
     for i in nos:
         idx = df.index[df[bin_no] == i]
+        if len(idx) < min_data:
+            continue
         df2 = df.loc[idx]
         res[i] = df2.std(axis=0)
     return res
