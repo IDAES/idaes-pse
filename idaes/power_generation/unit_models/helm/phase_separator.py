@@ -101,34 +101,34 @@ see property package for documentation.}"""))
         # vapor outlet state
         @self.Constraint(self.flowsheet().config.time)
         def vap_material_balance(b, t):
-            return b.mixed_state[t].flow_mol*b.mixed_state[t].vapor_frac == \
-                b.vap_state[t].flow_mol
+            return 1e-4*b.mixed_state[t].flow_mol*b.mixed_state[t].vapor_frac == \
+                b.vap_state[t].flow_mol*1e-4
 
         @self.Constraint(self.flowsheet().config.time)
         def vap_enthalpy_balance(b, t):
-            return b.mixed_state[t].enth_mol_phase["Vap"] == \
-                b.vap_state[t].enth_mol
+            return b.mixed_state[t].enth_mol_phase["Vap"]*1e-4 == \
+                b.vap_state[t].enth_mol*1e-4
 
         @self.Constraint(self.flowsheet().config.time)
         def vap_pressure_balance(b, t):
-            return b.mixed_state[t].pressure == \
-                b.vap_state[t].pressure
+            return b.mixed_state[t].pressure*1e-6 == \
+                b.vap_state[t].pressure*1e-6
 
         # liquid outlet state
         @self.Constraint(self.flowsheet().config.time)
         def liq_material_balance(b, t):
-            return b.mixed_state[t].flow_mol*(1 - b.mixed_state[t].vapor_frac)\
-                == b.liq_state[t].flow_mol
+            return 1e-4*b.mixed_state[t].flow_mol*(1 - b.mixed_state[t].vapor_frac)\
+                == b.liq_state[t].flow_mol*1e-4
 
         @self.Constraint(self.flowsheet().config.time)
         def liq_enthalpy_balance(b, t):
-            return b.mixed_state[t].enth_mol_phase["Liq"] == \
-                b.liq_state[t].enth_mol
+            return 1e-4*b.mixed_state[t].enth_mol_phase["Liq"] == \
+                b.liq_state[t].enth_mol*1e-4
 
         @self.Constraint(self.flowsheet().config.time)
         def liq_pressure_balance(b, t):
-            return b.mixed_state[t].pressure == \
-                b.liq_state[t].pressure
+            return b.mixed_state[t].pressure*1e-6 == \
+                b.liq_state[t].pressure*1e-6
 
     def initialize(blk, state_args_water_steam={},
                    outlvl=0, solver='ipopt', optarg={'tol': 1e-6}):
