@@ -48,6 +48,7 @@ def solid_prop():
                  "defined_state": True})
 
     m.fs.unit.flow_mass.fix(1)
+    m.fs.unit.particle_porosity.fix(0.27)
     m.fs.unit.temperature.fix(1183.15)
     m.fs.unit.mass_frac_comp["Fe2O3"].fix(0.45)
     m.fs.unit.mass_frac_comp["Fe3O4"].fix(1e-9)

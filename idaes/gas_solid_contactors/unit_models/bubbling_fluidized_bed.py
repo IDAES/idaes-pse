@@ -51,7 +51,8 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        BurntToast)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
@@ -169,6 +170,15 @@ constructed,
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("particle_porosity_correlation", ConfigValue(
+        default="constant",
+        domain=In(["constant"]),
+        description="Construction flag for type of particle porosity",
+        doc="""Indicates what type of particle porosity correlation should be
+used,
+**default** - "constant".
+**Valid values:** {
+**"constant"** - Use a constant particle porosity assumption}"""))
 
     # Create template for phase specific config arguments
     _PhaseTemplate = UnitModelBlockData.CONFIG()
@@ -954,6 +964,23 @@ see reaction package for documentation.}"""))
             def isobaric_gas_emulsion(b, t, x):
                 return (1e2*b.gas_emulsion.properties[t, x].pressure ==
                         1e2*b.gas_inlet.pressure[0])
+
+        # Particle porosity constraint
+        if self.config.particle_porosity_correlation == "constant":
+            # Constant particle porosity
+            @self.Constraint(
+                self.flowsheet().config.time,
+                self.length_domain,
+                doc="Constant particle porosity")
+            def particle_porosity_constraint(b, t, x):
+                return (
+                    b.solid_emulsion.properties[t, x].particle_porosity ==
+                    b.solid_inlet_block[t].particle_porosity)
+        else:
+            raise BurntToast(
+                    "{} encountered unrecognized argument for "
+                    "the particle porosity correlation. Please contact the"
+                    " IDAES developers with this bug.".format(self.name))
 
         # ---------------------------------------------------------------------
         # Mass transfer constraints
@@ -1744,6 +1771,7 @@ see reaction package for documentation.}"""))
         blk.gas_emulsion_mass_transfer.activate()
         blk.bubble_gas_flowrate.activate()
         blk.emulsion_gas_flowrate.activate()
+        blk.particle_porosity_constraint.activate()
 
         # Activate relevant boundary constraints
         blk.velocity_superficial_gas_inlet.activate()

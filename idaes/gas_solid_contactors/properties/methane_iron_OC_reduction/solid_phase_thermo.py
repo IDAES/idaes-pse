@@ -384,8 +384,8 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
                              domain=Reals,
                              doc='Component mass flowrate [kg/s]')
         self.particle_porosity = Var(domain=Reals,
-                                      initialize=0.27,
-                                      doc='Porosity of oxygen carrier [-]')
+                                     initialize=0.27,
+                                     doc='Porosity of oxygen carrier [-]')
         self.mass_frac_comp = Var(
             self._params.component_list,
             initialize=1 / len(self._params.component_list),
