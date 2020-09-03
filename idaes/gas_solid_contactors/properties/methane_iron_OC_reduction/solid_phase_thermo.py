@@ -92,12 +92,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                     doc="Molecular weights of solid components [kg/mol]")
 
         # Skeletal density of solid components - units = kg/m3. ref: NIST
-        dens_mass_comp_sol_dict = {'Fe2O3': 5250, 'Fe3O4': 5000, 'Al2O3': 3987}
-        self.dens_mass_comp_sol = Param(
+        dens_mass_comp_skeletal_dict = {
+            'Fe2O3': 5250, 'Fe3O4': 5000, 'Al2O3': 3987}
+        self.dens_mass_comp_skeletal = Param(
                                     self.component_list,
                                     mutable=False,
-                                    initialize=dens_mass_comp_sol_dict,
-                                    doc='Particle density of solid components'
+                                    initialize=dens_mass_comp_skeletal_dict,
+                                    doc='Skeletal density of solid components'
                                         '[kg/m3]')
 
         # Ideal gas spec. heat capacity parameters(Shomate) of
@@ -196,8 +197,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'flow_mass': {'method': None, 'units': 'kg/s'},
                 'temperature': {'method': None, 'units': 'K'},
                 'mass_frac_comp': {'method': None, 'units': None},
-                'dens_mass_sol': {'method': '_dens_mass_sol',
-                                  'units': 'kg/m3'},
+                'dens_mass_skeletal': {'method': '_dens_mass_skeletal',
+                                       'units': 'kg/m3'},
+                'dens_mass_particle': {'method': '_dens_mass_particle',
+                                       'units': 'kg/m3'},
                 'cp_mol_comp': {'method': '_cp_mol_comp',
                                 'units': 'kJ/mol.K'},
                 'cp_mass': {'method': '_cp_mass', 'units': 'kJ/kg.K'},
@@ -280,10 +283,10 @@ class _SolidPhaseThermoStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            if hasattr(blk[k], "density_constraint"):
+            if hasattr(blk[k], "density_skeletal_constraint"):
                 calculate_variable_from_constraint(
-                            blk[k].dens_mass_sol,
-                            blk[k].density_constraint)
+                            blk[k].dens_mass_skeletal,
+                            blk[k].density_skeletal_constraint)
 
             if hasattr(blk[k], "mixture_heat_capacity_eqn"):
                 calculate_variable_from_constraint(
@@ -353,6 +356,7 @@ class _SolidPhaseThermoStateBlock(StateBlock):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
+
 @declare_process_block_class("SolidPhaseThermoStateBlock",
                              block_class=_SolidPhaseThermoStateBlock)
 class SolidPhaseThermoStateBlockData(StateBlockData):
@@ -394,26 +398,47 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
                                         for j in b._params.component_list)
             self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
-    def _dens_mass_sol(self):
+    def _dens_mass_skeletal(self):
         # Skeletal density of OC solid particles
-        self.dens_mass_sol = Var(domain=Reals,
-                                 initialize=3251.75,
-                                 doc='Skeletal density of OC solid particles'
-                                 '[kg/m3]')
+        self.dens_mass_skeletal = Var(domain=Reals,
+                                      initialize=3251.75,
+                                      doc='Skeletal density of OC'
+                                      '[kg/m3]')
 
-        def density_constraint(b):
-            return (b.dens_mass_sol * sum(b.mass_frac_comp[j] /
-                                          b._params.dens_mass_comp_sol[j]
-                                          for j in b._params.component_list) ==
+        def density_skeletal_constraint(b):
+            return (b.dens_mass_skeletal * sum(
+                b.mass_frac_comp[j] /
+                b._params.dens_mass_comp_skeletal[j]
+                for j in b._params.component_list) ==
                     1)
         try:
             # Try to build constraint
-            self.density_constraint = Constraint(
-                                            rule=density_constraint)
+            self.density_skeletal_constraint = Constraint(
+                                            rule=density_skeletal_constraint)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.dens_mass_sol)
-            self.del_component(self.density_constraint)
+            self.del_component(self.dens_mass_skeletal)
+            self.del_component(self.density_skeletal_constraint)
+            raise
+
+    def _dens_mass_particle(self):
+        # Particle density of OC (includes the OC pores)
+        self.dens_mass_particle = Var(domain=Reals,
+                                      initialize=3251.75,
+                                      doc='Particle density of oxygen carrier '
+                                      '[kg/m3]')
+
+        def density_particle_constraint(b):
+            return (b.dens_mass_particle == (1 - b._params.particle_porosity) *
+                    b.dens_mass_skeletal)
+        try:
+            # Try to build constraint
+            self.density_particle_constraint = Constraint(
+                                            rule=density_particle_constraint)
+        except AttributeError:
+            # If constraint fails, clean up so that DAE can try again later
+            self.del_component(self.dens_mass_particle)
+            self.del_component(self.density_particle_constraint)
             raise
 
     def _cp_mol_comp(self):
@@ -514,11 +539,10 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         return b.flow_mass*b.enth_mass
 
     def get_material_density_terms(b, p, j):
-        return (1 - b._params.particle_porosity) * (
-            b.dens_mass_sol*b.mass_frac_comp[j])
+        return b.dens_mass_particle * b.mass_frac_comp[j]
 
     def get_energy_density_terms(b, p):
-        return (1 - b._params.particle_porosity)*b.dens_mass_sol*b.enth_mass
+        return b.dens_mass_particle * b.enth_mass
 
     def define_state_vars(b):
         return {"flow_mass": b.flow_mass,

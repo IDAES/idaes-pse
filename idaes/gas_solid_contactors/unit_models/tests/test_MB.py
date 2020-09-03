@@ -11,8 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Test for ControlVolumeBlockData, and for initializing the
-bubbling fluidized bed module
+Tests for ControlVolumeBlockData, and for initializing the moving bed module
 
 Author: Chinedu Okoli
 """
@@ -39,8 +38,10 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      initialization_tester)
 
-from idaes.gas_solid_contactors.unit_models. \
-    bubbling_fluidized_bed import BubblingFluidizedBed
+# Import MBR unit model
+from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
+
+# Import property packages
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseThermoParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
@@ -66,7 +67,7 @@ def test_config():
             default={"solid_property_package": m.fs.solid_properties,
                      "gas_property_package": m.fs.gas_properties})
 
-    m.fs.unit = BubblingFluidizedBed(
+    m.fs.unit = MBR(
             default={
                     "gas_phase_config":
                     {"property_package": m.fs.gas_properties},
@@ -76,7 +77,7 @@ def test_config():
                      }})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
+    assert len(m.fs.unit.config) == 15
     assert isinstance(m.fs.unit.config.gas_phase_config, ConfigBlock)
     assert isinstance(m.fs.unit.config.solid_phase_config, ConfigBlock)
 
@@ -85,7 +86,7 @@ def test_config():
     assert m.fs.unit.config.transformation_method == "dae.finite_difference"
     assert m.fs.unit.config.transformation_scheme == 'BACKWARD'
     assert m.fs.unit.config.collocation_points == 3
-    assert m.fs.unit.config.flow_type == "co_current"
+    assert m.fs.unit.config.flow_type == "counter_current"
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.componentTotal
     assert m.fs.unit.config.energy_balance_type == \
@@ -125,7 +126,7 @@ class TestIronOC(object):
                 default={"solid_property_package": m.fs.solid_properties,
                          "gas_property_package": m.fs.gas_properties})
 
-        m.fs.unit = BubblingFluidizedBed(
+        m.fs.unit = MBR(
                 default={
                         "gas_phase_config":
                         {"property_package": m.fs.gas_properties},
@@ -135,20 +136,19 @@ class TestIronOC(object):
                          }})
 
         # Fix geometry variables
-        m.fs.unit.number_orifice.fix(2500)  # [-]
         m.fs.unit.bed_diameter.fix(6.5)  # m
         m.fs.unit.bed_height.fix(5)  # m
 
         # Fix inlet port variables for gas and solid
-        m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
-        m.fs.unit.gas_inlet.temperature[0].fix(373)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
+        m.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
+        m.fs.unit.gas_inlet.temperature[0].fix(298.15)  # K
+        m.fs.unit.gas_inlet.pressure[0].fix(2.00)  # bar
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
 
-        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
-        m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
+        m.fs.unit.solid_inlet.flow_mass[0].fix(591.4)  # kg/s
+        m.fs.unit.solid_inlet.temperature[0].fix(1183.15)  # K
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
@@ -184,32 +184,25 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
-        assert isinstance(iron_oc.fs.unit.orifice_area, Constraint)
         assert isinstance(iron_oc.fs.unit.bed_area_eqn, Constraint)
-        assert isinstance(iron_oc.fs.unit.bubble_area, Constraint)
-        assert isinstance(iron_oc.fs.unit.gas_emulsion_area, Constraint)
-        assert isinstance(iron_oc.fs.unit.solid_emulsion_area, Constraint)
-        assert isinstance(iron_oc.fs.unit.bubble_cloud_heat_trans_coeff,
+        assert isinstance(iron_oc.fs.unit.gas_phase_area, Constraint)
+        assert isinstance(iron_oc.fs.unit.solid_phase_area, Constraint)
+        assert isinstance(iron_oc.fs.unit.gas_phase_length, Constraint)
+        assert isinstance(iron_oc.fs.unit.solid_phase_length, Constraint)
+        assert isinstance(iron_oc.fs.unit.gas_super_vel, Constraint)
+        assert isinstance(iron_oc.fs.unit.solid_super_vel, Constraint)
+        assert isinstance(iron_oc.fs.unit.gas_phase_config_pressure_drop,
                           Constraint)
-        assert isinstance(iron_oc.fs.unit.convective_heat_trans_coeff,
+        assert isinstance(iron_oc.fs.unit.gas_solid_htc_eqn, Constraint)
+        assert isinstance(iron_oc.fs.unit.gas_phase_heat_transfer,
                           Constraint)
-        assert isinstance(iron_oc.fs.unit.convective_heat_transfer,
+        assert isinstance(iron_oc.fs.unit.solid_phase_config_rxn_ext,
                           Constraint)
-        assert isinstance(iron_oc.fs.unit.bubble_cloud_bulk_heat_trans,
-                          Constraint)
-        assert isinstance(iron_oc.fs.unit.bubble_mass_transfer,
-                          Constraint)
-        assert isinstance(iron_oc.fs.unit.gas_emulsion_mass_transfer,
-                          Constraint)
-        assert isinstance(iron_oc.fs.unit.bubble_heat_transfer, Constraint)
-        assert isinstance(iron_oc.fs.unit.gas_emulsion_heat_transfer,
-                          Constraint)
-        assert isinstance(iron_oc.fs.unit.solid_emulsion_heat_transfer,
-                          Constraint)
+        assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
 
-        assert number_variables(iron_oc) == 1412
-        assert number_total_constraints(iron_oc) == 1371
-        assert number_unused_variables(iron_oc) == 15
+        assert number_variables(iron_oc) == 799
+        assert number_total_constraints(iron_oc) == 765
+        assert number_unused_variables(iron_oc) == 12
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -222,11 +215,11 @@ class TestIronOC(object):
         initialization_tester(
                 iron_oc,
                 optarg={'tol': 1e-6},
-                gas_phase_state_args={"flow_mol": 272.81,
-                                      "temperature": 1186,
-                                      "pressure": 1.86},
-                solid_phase_state_args={"flow_mass": 1230,
-                                        "temperature": 1186})
+                gas_phase_state_args={"flow_mol": 128.20513,
+                                      "temperature": 1183.15,
+                                      "pressure": 2.00},
+                solid_phase_state_args={"flow_mass": 591.4,
+                                        "temperature": 1183.15})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -243,23 +236,13 @@ class TestIronOC(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):
-        assert (pytest.approx(0.14, abs=1e-2) ==
+        assert (pytest.approx(0.0479, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.252, abs=1e-2) ==
+        assert (pytest.approx(0.5675, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
-        assert (pytest.approx(0.015, abs=1e-2) ==
-                iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.094, abs=1e-2) ==
-                iron_oc.fs.unit.bubble_diameter[0, 1].value)
-        assert (pytest.approx(0.375, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.541, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_bubble[0, 1].value)
-        assert (pytest.approx(0.267, abs=1e-2) ==
-                iron_oc.fs.unit.delta[0, 0].value)
-        assert (pytest.approx(0.342, abs=1e-2) ==
-                iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(1.048, abs=1e-2) ==
+        assert (pytest.approx(0.0039, abs=1e-2) ==
+                iron_oc.fs.unit.velocity_superficial_solid[0].value)
+        assert (pytest.approx(1.975, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
@@ -272,16 +255,16 @@ class TestIronOC(object):
     def test_conservation(self, iron_oc):
         # Conservation of material check
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_inlet_block[0].mw,
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_eqn)
+                    iron_oc.fs.unit.gas_phase.properties[0, 0].mw,
+                    iron_oc.fs.unit.gas_phase.properties[0, 0].mw_eqn)
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_outlet_block[0].mw,
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_eqn)
+                    iron_oc.fs.unit.gas_phase.properties[0, 1].mw,
+                    iron_oc.fs.unit.gas_phase.properties[0, 1].mw_eqn)
         mbal_gas = value(
                 (iron_oc.fs.unit.gas_inlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_inlet_block[0].mw) -
+                 iron_oc.fs.unit.gas_phase.properties[0, 0].mw) -
                 (iron_oc.fs.unit.gas_outlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_outlet_block[0].mw))
+                 iron_oc.fs.unit.gas_phase.properties[0, 1].mw))
         mbal_solid = value(
                 iron_oc.fs.unit.solid_inlet.flow_mass[0] -
                 iron_oc.fs.unit.solid_outlet.flow_mass[0])
@@ -299,27 +282,29 @@ class TestIronOC(object):
         mole_solid_reacted = value(
             (iron_oc.fs.unit.solid_inlet.flow_mass[0] *
              iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, 'Fe2O3'] /
-             iron_oc.fs.unit.solid_inlet_block[0]._params.mw_comp['Fe2O3']) -
+             iron_oc.fs.unit.solid_phase.properties[0, 1].
+             _params.mw_comp['Fe2O3']) -
             (iron_oc.fs.unit.solid_outlet.flow_mass[0] *
              iron_oc.fs.unit.solid_outlet.mass_frac_comp[0, 'Fe2O3'] /
-             iron_oc.fs.unit.solid_outlet_block[0]._params.mw_comp['Fe2O3']))
+             iron_oc.fs.unit.solid_phase.properties[0, 0].
+             _params.mw_comp['Fe2O3']))
         stoichiometric_ratio = mole_solid_reacted/mole_gas_reacted
         assert (pytest.approx(12, abs=1e-6) == stoichiometric_ratio)
 
         # Conservation of energy check
         ebal_gas = value(
             (iron_oc.fs.unit.gas_inlet.flow_mol[0] *
-             iron_oc.fs.unit.gas_inlet_block[0].enth_mol) -
+             iron_oc.fs.unit.gas_phase.properties[0, 0].enth_mol) -
             (iron_oc.fs.unit.gas_outlet.flow_mol[0] *
-             iron_oc.fs.unit.gas_outlet_block[0].enth_mol))
+             iron_oc.fs.unit.gas_phase.properties[0, 1].enth_mol))
         ebal_solid = value(
             (iron_oc.fs.unit.solid_inlet.flow_mass[0] *
-             iron_oc.fs.unit.solid_inlet_block[0].enth_mass) -
+             iron_oc.fs.unit.solid_phase.properties[0, 1].enth_mass) -
             (iron_oc.fs.unit.solid_outlet.flow_mass[0] *
-             iron_oc.fs.unit.solid_outlet_block[0].enth_mass))
+             iron_oc.fs.unit.solid_phase.properties[0, 0].enth_mass))
         e_reaction = value(
                 mole_gas_reacted *
-                iron_oc.fs.unit.solid_emulsion.reactions[0, 0].
+                iron_oc.fs.unit.solid_phase.reactions[0, 1].
                 _params.dh_rxn["R1"])
         ebal_tol = ebal_gas + ebal_solid - e_reaction
         assert abs(ebal_tol) <= 1e-2
@@ -344,7 +329,7 @@ class TestIronOC_EnergyBalanceType(object):
                 default={"solid_property_package": m.fs.solid_properties,
                          "gas_property_package": m.fs.gas_properties})
 
-        m.fs.unit = BubblingFluidizedBed(
+        m.fs.unit = MBR(
                 default={
                         "energy_balance_type": EnergyBalanceType.none,
                         "gas_phase_config":
@@ -353,25 +338,6 @@ class TestIronOC_EnergyBalanceType(object):
                         {"property_package": m.fs.solid_properties,
                          "reaction_package": m.fs.hetero_reactions
                          }})
-
-        # Fix geometry variables
-        m.fs.unit.number_orifice.fix(2500)  # [-]
-        m.fs.unit.bed_diameter.fix(6.5)  # m
-        m.fs.unit.bed_height.fix(5)  # m
-
-        # Fix inlet port variables for gas and solid
-        m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
-        m.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
-        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
-        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
-
-        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
-        m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
-        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
-        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
-        m.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
 
         return m
 
@@ -404,20 +370,34 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
-        assert isinstance(iron_oc.fs.unit.gas_energy_balance_out, Constraint)
-        assert isinstance(iron_oc.fs.unit.solid_energy_balance_out, Constraint)
-        assert isinstance(iron_oc.fs.unit.isothermal_gas_emulsion, Constraint)
-        assert isinstance(iron_oc.fs.unit.isothermal_solid_emulsion,
-                          Constraint)
-        assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
+        assert isinstance(iron_oc.fs.unit.isothermal_gas_phase, Constraint)
+        assert isinstance(iron_oc.fs.unit.isothermal_solid_phase, Constraint)
 
-        assert number_variables(iron_oc) == 1132
-        assert number_total_constraints(iron_oc) == 1028
-        assert number_unused_variables(iron_oc) == 79
+        assert number_variables(iron_oc) == 579
+        assert number_total_constraints(iron_oc) == 503
+        assert number_unused_variables(iron_oc) == 55
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
+        # Fix geometry variables
+        iron_oc.fs.unit.bed_diameter.fix(6.5)  # m
+        iron_oc.fs.unit.bed_height.fix(5)  # m
+
+        # Fix inlet port variables for gas and solid
+        iron_oc.fs.unit.gas_inlet.flow_mol[0].fix(128.20513)  # mol/s
+        iron_oc.fs.unit.gas_inlet.temperature[0].fix(1183.15)  # K
+        iron_oc.fs.unit.gas_inlet.pressure[0].fix(2.00)  # bar
+        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.02499)
+        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.00001)
+        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
+
+        iron_oc.fs.unit.solid_inlet.flow_mass[0].fix(591.4)  # kg/s
+        iron_oc.fs.unit.solid_inlet.temperature[0].fix(1183.15)  # K
+        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
+
         assert degrees_of_freedom(iron_oc) == 0
 
     @pytest.mark.solver
@@ -427,11 +407,11 @@ class TestIronOC_EnergyBalanceType(object):
         initialization_tester(
                 iron_oc,
                 optarg={'tol': 1e-6},
-                gas_phase_state_args={"flow_mol": 272.81,
-                                      "temperature": 1186,
-                                      "pressure": 1.86},
-                solid_phase_state_args={"flow_mass": 1422,
-                                        "temperature": 1186})
+                gas_phase_state_args={"flow_mol": 128.20513,
+                                      "temperature": 1183.15,
+                                      "pressure": 2.00},
+                solid_phase_state_args={"flow_mass": 591.4,
+                                        "temperature": 1183.15})
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -448,22 +428,18 @@ class TestIronOC_EnergyBalanceType(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iron_oc):
-        assert (pytest.approx(0.44, abs=1e-2) ==
+        assert (pytest.approx(0.1900, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.26, abs=1e-2) ==
+        assert (pytest.approx(0.5675, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
-        assert (pytest.approx(0.03, abs=1e-2) ==
-                iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.10, abs=1e-2) ==
-                iron_oc.fs.unit.bubble_diameter[0, 1].value)
-        assert (pytest.approx(0.77, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.55, abs=1e-2) ==
-                iron_oc.fs.unit.velocity_bubble[0, 1].value)
-        assert (pytest.approx(0.53, abs=1e-2) ==
-                iron_oc.fs.unit.delta[0, 0].value)
-        assert (pytest.approx(0.34, abs=1e-2) ==
-                iron_oc.fs.unit.delta[0, 1].value)
+        assert (pytest.approx(0.0039, abs=1e-2) ==
+                iron_oc.fs.unit.velocity_superficial_solid[0].value)
+        assert (pytest.approx(1.975, abs=1e-2) ==
+                iron_oc.fs.unit.gas_outlet.pressure[0].value)
+        # Check that pressure drop occurs across the bed
+        assert value(
+                iron_oc.fs.unit.gas_inlet.pressure[0] -
+                iron_oc.fs.unit.gas_outlet.pressure[0]) >= 0
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -471,16 +447,16 @@ class TestIronOC_EnergyBalanceType(object):
     def test_conservation(self, iron_oc):
         # Conservation of material check
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_inlet_block[0].mw,
-                    iron_oc.fs.unit.gas_inlet_block[0].mw_eqn)
+                    iron_oc.fs.unit.gas_phase.properties[0, 0].mw,
+                    iron_oc.fs.unit.gas_phase.properties[0, 0].mw_eqn)
         calculate_variable_from_constraint(
-                    iron_oc.fs.unit.gas_outlet_block[0].mw,
-                    iron_oc.fs.unit.gas_outlet_block[0].mw_eqn)
+                    iron_oc.fs.unit.gas_phase.properties[0, 1].mw,
+                    iron_oc.fs.unit.gas_phase.properties[0, 1].mw_eqn)
         mbal_gas = value(
                 (iron_oc.fs.unit.gas_inlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_inlet_block[0].mw) -
+                 iron_oc.fs.unit.gas_phase.properties[0, 0].mw) -
                 (iron_oc.fs.unit.gas_outlet.flow_mol[0] *
-                 iron_oc.fs.unit.gas_outlet_block[0].mw))
+                 iron_oc.fs.unit.gas_phase.properties[0, 1].mw))
         mbal_solid = value(
                 iron_oc.fs.unit.solid_inlet.flow_mass[0] -
                 iron_oc.fs.unit.solid_outlet.flow_mass[0])
@@ -498,10 +474,12 @@ class TestIronOC_EnergyBalanceType(object):
         mole_solid_reacted = value(
             (iron_oc.fs.unit.solid_inlet.flow_mass[0] *
              iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, 'Fe2O3'] /
-             iron_oc.fs.unit.solid_inlet_block[0]._params.mw_comp['Fe2O3']) -
+             iron_oc.fs.unit.solid_phase.properties[0, 1].
+             _params.mw_comp['Fe2O3']) -
             (iron_oc.fs.unit.solid_outlet.flow_mass[0] *
              iron_oc.fs.unit.solid_outlet.mass_frac_comp[0, 'Fe2O3'] /
-             iron_oc.fs.unit.solid_outlet_block[0]._params.mw_comp['Fe2O3']))
+             iron_oc.fs.unit.solid_phase.properties[0, 0].
+             _params.mw_comp['Fe2O3']))
         stoichiometric_ratio = mole_solid_reacted/mole_gas_reacted
         assert (pytest.approx(12, abs=1e-6) == stoichiometric_ratio)
 

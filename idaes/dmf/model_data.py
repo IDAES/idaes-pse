@@ -55,15 +55,15 @@ _unit_strings = {
     "PSIA": "psi",
     "psia": "psi",
     "PSIG": "psig",
-    "INWC": "in water",
-    "IN WC": "in water",
-    "IN/WC": "in water",
-    '" H2O': "in water",
-    "INHG": "in hg",
-    "IN HG": "in hg",
-    "IN/HG": "in hg",
-    "HGA": "in hg",
-    "IN HGA": "in hg",
+    "INWC": "inH2O gauge",
+    "IN WC": "inH2O gauge",
+    "IN/WC": "inH2O gauge",
+    '" H2O': "inH2O gauge",
+    "INHG": "inHg",
+    "IN HG": "inHg",
+    "IN/HG": "inHg",
+    "HGA": "inHg",
+    "IN HGA": "inHg",
     # Fraction
     "PCT": "percent",
     "pct": "percent",
@@ -179,7 +179,7 @@ _unit_strings = {
     "MVARS": "MVAR",
 }
 
-_gauge_pressures = {"psig": "psi", "in water gauge": "in water", "in hg gauge": "in hg"}
+_gauge_pressures = {"psig": "psi", "inH2O gauge": "inH2O"}
 
 _ignore_units = [
     "percent",
@@ -191,6 +191,10 @@ _ignore_units = [
     "H2O",
     "percent open",
     "percent closed",
+]
+
+_register_new_units = [
+    "in_H2O = 248.84 Pa = inH2O",
 ]
 
 
@@ -233,6 +237,8 @@ def unit_convert(
         (tuple): quantity and unit string
     """
     ureg = pint.UnitRegistry(system=system)
+    for u in _register_new_units:
+        ureg.define(u)
     if frm in unit_string_map:
         frm = unit_string_map[frm]
     elif frm in _unit_strings:
@@ -268,7 +274,7 @@ def unit_convert(
     return (y.magnitude, str(y.units))
 
 
-def upadate_metadata_model_references(model, metadata):
+def update_metadata_model_references(model, metadata):
     """
     Create model references from refernce strings in the metadata. This updates
     the 'reference' field in the metadata.
@@ -286,11 +292,14 @@ def upadate_metadata_model_references(model, metadata):
                 md["reference"] = pyo.Reference(
                     eval(md["reference_string"], {"m": model})
                 )
-            except KeyError:
+            except (KeyError, AttributeError, NameError):
                 warnings.warn(
                     "Tag reference {} not found".format(md["reference_string"]),
                     UserWarning,
                 )
+
+# This prevents breakage, can remove after example updates.
+upadate_metadata_model_references = update_metadata_model_references
 
 
 def read_data(
@@ -360,7 +369,7 @@ def read_data(
                 }
     # If a model was provided, map the tags with a reference string to the model
     if model:
-        upadate_metadata_model_references(model, metadata)
+        update_metadata_model_references(model, metadata)
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
         if tag not in metadata:
@@ -441,13 +450,15 @@ def bin_data(
     return hist
 
 
-def bin_stdev(df, bin_no):
+def bin_stdev(df, bin_no, min_data=4):
     """
     Calculate the standard deviation for each column in each bin.
 
     Args:
         df (pandas.DataFrame): pandas data frame that is a bin number column
         bin_no (str): Column to group by, usually contains bin number
+        min_data (int): Minimum number of data points requitred to calculate
+            standard deviation for a bin (default=4)
 
     Returns:
         dict: key is the bin number and the value is a pandas.Serries with column
@@ -457,7 +468,9 @@ def bin_stdev(df, bin_no):
     res = {}
     for i in nos:
         idx = df.index[df[bin_no] == i]
-        df2 = df.iloc[idx]
+        if len(idx) < min_data:
+            continue
+        df2 = df.loc[idx]
         res[i] = df2.std(axis=0)
     return res
 
