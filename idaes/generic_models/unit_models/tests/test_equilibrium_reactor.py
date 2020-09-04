@@ -19,7 +19,8 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units)
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -39,6 +40,8 @@ from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
 
 # -----------------------------------------------------------------------------
@@ -139,6 +142,12 @@ class TestSaponification(object):
         assert number_variables(sapon) == 26
         assert number_total_constraints(sapon) == 16
         assert number_unused_variables(sapon) == 0
+
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+        assert_units_equivalent(sapon.fs.unit.heat_duty, units.W)
+        assert_units_equivalent(sapon.fs.unit.deltaP, units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, sapon):

@@ -19,7 +19,7 @@ estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, Set
+from pyomo.environ import Param, Set, units as pyunits
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -103,10 +103,12 @@ class MethaneParameterData(ActivityCoeffParameterData):
         # Thermodynamic reference state
         self.pressure_reference = Param(mutable=True,
                                         default=101325,
-                                        doc='Reference pressure [Pa]')
+                                        doc='Reference pressure [Pa]',
+                                        units=pyunits.Pa)
         self.temperature_reference = Param(mutable=True,
                                            default=1500,
-                                           doc='Reference temperature [K]')
+                                           doc='Reference temperature [K]',
+                                           units=pyunits.K)
 
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
@@ -172,7 +174,8 @@ class MethaneParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(dh_form),
-                             doc="Heats of formation (J/mol)")
+                             doc="Heats of formation (J/mol)",
+                             units=pyunits.J/pyunits.mol)
 
         # Source: NIST Webbook, 9th October 2019
         ds_form = {("Vap", "CH4"): 186.25,
@@ -188,4 +191,5 @@ class MethaneParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(ds_form),
-                             doc="Entropies of formation (J/mol.K)")
+                             doc="Entropies of formation (J/mol.K)",
+                             units=pyunits.J/pyunits.mol/pyunits.K)

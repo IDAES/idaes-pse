@@ -942,7 +942,7 @@ class CubicStateBlockData(StateBlockData):
 
     def define_display_vars(b):
         return {"Molar Flowrate": b.flow_mol,
-                "Mole Fractions": b.cmole_frac_comp,
+                "Mole Fractions": b.mole_frac_comp,
                 "Temperature": b.temperature,
                 "Pressure": b.pressure}
 

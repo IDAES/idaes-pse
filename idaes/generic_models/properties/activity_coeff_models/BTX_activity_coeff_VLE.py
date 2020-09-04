@@ -19,7 +19,7 @@ estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.environ import Param, NonNegativeReals, Set, units as pyunits
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
@@ -74,10 +74,12 @@ class BTXParameterData(ActivityCoeffParameterData):
         # Thermodynamic reference state
         self.pressure_reference = Param(mutable=True,
                                         default=101325,
-                                        doc='Reference pressure [Pa]')
+                                        doc='Reference pressure [Pa]',
+                                        units=pyunits.Pa)
         self.temperature_reference = Param(mutable=True,
                                            default=298.15,
-                                           doc='Reference temperature [K]')
+                                           doc='Reference temperature [K]',
+                                           units=pyunits.K)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -91,7 +93,8 @@ class BTXParameterData(ActivityCoeffParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(pressure_critical_data),
-            doc='Critical pressure [Pa]')
+            doc='Critical pressure [Pa]',
+            units=pyunits.Pa)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -105,7 +108,8 @@ class BTXParameterData(ActivityCoeffParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(temperature_critical_data),
-            doc='Critical temperature [K]')
+            doc='Critical temperature [K]',
+            units=pyunits.K)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -116,7 +120,8 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=extract_data(mw_comp_data),
-                             doc="molecular weight Kg/mol")
+                             doc="molecular weight kg/mol",
+                             units=pyunits.kg/pyunits.mol)
 
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
@@ -180,7 +185,7 @@ class BTXParameterData(ActivityCoeffParameterData):
             ['A', 'B', 'C', 'D'],
             mutable=False,
             initialize=extract_data(pressure_sat_coeff_data),
-            doc="parameters to compute Cp_comp")
+            doc="parameters to compute P_sat")
 
         # Standard heats of formation
         # Source: NIST Webbook, https://webbook.nist.gov
@@ -196,7 +201,8 @@ class BTXParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(dh_form_data),
-                             doc="Standard heats of formation [J/mol]")
+                             doc="Standard heats of formation [J/mol]",
+                             units=pyunits.J/pyunits.mol)
 
         # Standard entropy of formation
         # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
@@ -213,4 +219,5 @@ class BTXParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(ds_form_data),
-                             doc="Standard entropy of formation [J/mol.K]")
+                             doc="Standard entropy of formation [J/mol.K]",
+                             units=pyunits.J/pyunits.mol/pyunits.K)
