@@ -33,6 +33,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
 # Get default solver for testing
 solver = get_default_solver()
 
+
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="class")
 def solid_prop():
@@ -57,6 +58,7 @@ def solid_prop():
 
 @pytest.mark.unit
 def test_build_inlet_state_block(solid_prop):
+    assert isinstance(solid_prop.fs.unit.dens_mass_skeletal, Var)
     assert isinstance(solid_prop.fs.unit.enth_mol_comp, Var)
     assert isinstance(solid_prop.fs.unit.enth_mass, Var)
     assert isinstance(solid_prop.fs.unit.cp_mol_comp, Var)

@@ -16,17 +16,15 @@ Basic IDAES 1D Heat Exchanger Model.
 1D Single pass shell and tube HX model with 0D wall conduction model
 """
 # Import Python libraries
-import math
 from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
     SolverFactory,
     Var,
-    Param,
     Constraint,
     value,
-    TerminationCondition,
+    units as pyunits
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -46,6 +44,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.constants import Constants as c
 from idaes.core.util import scaling as iscale
 
 import idaes.logger as idaeslog
@@ -487,15 +486,25 @@ thickness of the tube""",
         Returns:
             None
         """
-        # Unit model parameters
-        self.pi = Param(initialize=math.pi, doc="pi")
+        shell_units = \
+            self.config.shell_side.property_package.get_metadata().get_derived_units
+        tube_units = \
+            self.config.tube_side.property_package.get_metadata().get_derived_units
 
         # Unit model variables
         # HX dimensions
-        self.d_shell = Var(initialize=1, doc="Diameter of shell")
-        self.d_tube_outer = Var(initialize=0.011, doc="Outer diameter of tube")
-        self.d_tube_inner = Var(initialize=0.010, doc="Inner diameter of tube")
-        self.N_tubes = Var(initialize=1, doc="Number of tubes")
+        self.d_shell = Var(initialize=1,
+                           doc="Diameter of shell",
+                           units=shell_units("length"))
+        self.d_tube_outer = Var(initialize=0.011,
+                                doc="Outer diameter of tube",
+                           units=shell_units("length"))
+        self.d_tube_inner = Var(initialize=0.010,
+                                doc="Inner diameter of tube",
+                           units=shell_units("length"))
+        self.N_tubes = Var(initialize=1,
+                           doc="Number of tubes",
+                           units=pyunits.dimensionless)
 
         # Note: In addition to the above variables, "shell_length" and
         # "tube_length" need to be fixed at the flowsheet level
@@ -506,18 +515,23 @@ thickness of the tube""",
             self.shell.length_domain,
             initialize=50,
             doc="Heat transfer coefficient",
+            units=shell_units("heat_transfer_coefficient")
         )
         self.tube_heat_transfer_coefficient = Var(
             self.flowsheet().config.time,
             self.tube.length_domain,
             initialize=50,
-            doc="Heat transfer " "coefficient",
+            doc="Heat transfer coefficient",
+            units=tube_units("heat_transfer_coefficient")
         )
 
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
         if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
             self.temperature_wall = Var(
-                self.flowsheet().config.time, self.tube.length_domain, initialize=298.15
+                self.flowsheet().config.time,
+                self.tube.length_domain,
+                initialize=298.15,
+                units=shell_units("temperature")
             )
 
             # Performance equations
@@ -531,7 +545,7 @@ thickness of the tube""",
             def shell_heat_transfer_eq(self, t, x):
                 return self.shell.heat[t, x] == -self.N_tubes * (
                     self.shell_heat_transfer_coefficient[t, x]
-                    * self.pi
+                    * c.pi
                     * self.d_tube_outer
                     * (
                         self.shell.properties[t, x].temperature
@@ -548,10 +562,18 @@ thickness of the tube""",
             def tube_heat_transfer_eq(self, t, x):
                 return self.tube.heat[t, x] == self.tube_heat_transfer_coefficient[
                     t, x
-                ] * self.pi * self.d_tube_inner * (
-                    self.temperature_wall[t, x] - self.tube.properties[t, x].temperature
+                ] * c.pi * pyunits.convert(self.d_tube_inner,
+                                           to_units=tube_units("length")) * (
+                    pyunits.convert(self.temperature_wall[t, x],
+                                    to_units=tube_units('temperature')) -
+                    self.tube.properties[t, x].temperature
                 )
 
+            if shell_units("length") is None:
+                # Backwards compatability check
+                q_units = None
+            else:
+                q_units = shell_units("power")/shell_units("length")
             # Wall 0D model
             @self.Constraint(
                 self.flowsheet().config.time,
@@ -559,7 +581,9 @@ thickness of the tube""",
                 doc="wall 0D model",
             )
             def wall_0D_model(self, t, x):
-                return self.tube.heat[t, x] == -(self.shell.heat[t, x] / self.N_tubes)
+                return pyunits.convert(self.tube.heat[t, x],
+                                       to_units=q_units) == -(
+                            self.shell.heat[t, x] / self.N_tubes)
 
         else:
             raise NotImplementedError(
@@ -569,13 +593,14 @@ thickness of the tube""",
 
         # Define tube area in terms of tube diameter
         self.area_calc_tube = Constraint(
-            expr=4 * self.tube_area == self.pi * self.d_tube_inner ** 2
+            expr=4 * self.tube_area == c.pi * pyunits.convert(
+                self.d_tube_inner, to_units=tube_units("length"))**2
         )
 
         # Define shell area in terms of shell and tube diameter
         self.area_calc_shell = Constraint(
             expr=4 * self.shell_area
-            == self.pi * (self.d_shell ** 2 - self.N_tubes * self.d_tube_outer ** 2)
+            == c.pi * (self.d_shell**2 - self.N_tubes*self.d_tube_outer**2)
         )
 
     def initialize(
@@ -630,6 +655,8 @@ thickness of the tube""",
         # Solve unit
         # Wall 0D
         if blk.config.has_wall_conduction == WallConductionType.zero_dimensional:
+            shell_units = \
+                blk.config.shell_side.property_package.get_metadata().get_derived_units
             for t in blk.flowsheet().config.time:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(
@@ -637,7 +664,9 @@ thickness of the tube""",
                             0.5
                             * (
                                 blk.shell.properties[t, 0].temperature
-                                + blk.tube.properties[t, 0].temperature
+                                + pyunits.convert(
+                                    blk.tube.properties[t, 0].temperature,
+                                    to_units=shell_units('temperature'))
                             )
                         )
                     )

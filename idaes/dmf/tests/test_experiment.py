@@ -22,7 +22,8 @@ from typing import Union
 
 import pytest
 
-from idaes.dmf import experiment, errors, resource, DMF
+from idaes.dmf import experiment, errors, DMF
+from idaes.dmf.resource import Predicates
 from .util import init_logging
 
 __author__ = "Dan Gunter"
@@ -75,14 +76,14 @@ def test_remove_workflow():
     # make a new version of it
     e2 = e1.copy(version="0.0.2")
     # link the two together
-    e1.link(e2, predicate=resource.PR_VERSION)
+    e1.link(e2, predicate=Predicates.version)
     # remove the first one (what happens to the link?)
     e1.remove()
     # check that the first one can't be used any more
     with pytest.raises(errors.BadResourceError):
         e1.update()
     with pytest.raises(errors.BadResourceError):
-        e1.link(e2, predicate=resource.PR_VERSION)
+        e1.link(e2, predicate=Predicates.version)
     # check that the copy can still be modified
     e2.v["desc"] = "This is a copy of e1"
     e2.update()  # this fixes relations in the DB

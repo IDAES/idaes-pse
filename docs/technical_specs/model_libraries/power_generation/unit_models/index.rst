@@ -12,3 +12,7 @@ Unit Models
     turbine_multistage
     steam_valve
     boiler_heat_exchanger
+    waterwall
+    phase_separator
+    drum
+    downcomer
