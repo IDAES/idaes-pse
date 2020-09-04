@@ -1,7 +1,8 @@
 **NOTE:** When this PR is approved, you *must* do the following so it can be merged:
 * Add the "approved" tag to the pull-request
 * Trigger tests by pushing a commit or manually re-running in CircleCI
-* Wait for the full (integration) test suite to succeed
+
+See [this wiki page](https://github.com/IDAES/idaes-dev/wiki/Github-Pull-Request-Workflow-with-Approval-Tag) for details.
 
 ----
 ## Fixes
