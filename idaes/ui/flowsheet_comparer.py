@@ -24,7 +24,7 @@ class Action(Enum):
     CHANGE = 3
 
 
-def compare_models(existing_model, new_model):
+def compare_models(existing_model, new_model, keep_old_model=False):
     """
     Compares two models that are in this format
 
@@ -103,14 +103,16 @@ def compare_models(existing_model, new_model):
         msg = "Unable to find 'model' section of new model json"
         raise KeyError(msg)
 
-    validate(instance=existing_model["model"], schema=model_schema)
-    validate(instance=new_model["model"], schema=model_schema)
-
     try:
         existing_model = existing_model["model"]
     except KeyError as error:
         msg = "Unable to find 'model' section of existing model json"
         raise KeyError(msg)
+
+    validate(instance=existing_model, schema=model_schema)
+    validate(instance=new_model["model"], schema=model_schema)
+
+    
     # If the existing model is empty then return an empty diff_model 
     # and the full json from the new model
     if existing_model["unit_models"] == {} and \
@@ -119,9 +121,14 @@ def compare_models(existing_model, new_model):
 
     # If the models are the same return an empty diff_model and the full json from
     # the new model. This will happen when the user moves something in the 
-    # graph but doesn't change the actual idaes model
+    # graph but doesn't change the actual idaes model or when comparing a new
+    # model to the existing model via the refresh graph button and the model hasn't
+    # changed
     if existing_model == new_model["model"]:
-        return {}, new_model
+        if not keep_old_model:
+            return {}, new_model
+        else:
+            return {}, existing_model
 
     try:
         new_model = new_model["model"]
