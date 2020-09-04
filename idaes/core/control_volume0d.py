@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Base class for control volumes
+Base class for control volumes.
 """
 __author__ = "Andrew Lee"
 
