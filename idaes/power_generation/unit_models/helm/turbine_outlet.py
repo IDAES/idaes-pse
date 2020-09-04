@@ -78,7 +78,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return flow ** 2 * mw ** 2 * (Tin - 273.15) == (
+            return flow ** 2 * mw ** 2 * (Tin) == (
                 cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
 
         @self.Constraint(self.flowsheet().config.time, doc="Efficiency correlation")
@@ -153,7 +153,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             if not calculate_cf:
                 cf = self.flow_coeff
                 self.inlet.flow_mol[t].fix(
-                    value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin - 273.15))
+                    value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin))
                 )
 
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -170,7 +170,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pin = self.control_volume.properties_in[0].pressure
             Pr = self.ratioP[0]
             self.flow_coeff.value = value(
-                flow * mw * sqrt((Tin - 273.15)/(1 - Pr ** 2))/Pin)
+                flow * mw * sqrt(Tin/(1 - Pr ** 2))/Pin)
         else:
             self.inlet.flow_mol.unfix()
 
