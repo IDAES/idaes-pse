@@ -212,7 +212,7 @@ conditions, and thus corresponding constraints  should be included,
 
         obj.add_default_units({"time": pyunits.s,
                                "length": pyunits.m,
-                               "mass": pyunits.g,
+                               "mass": pyunits.kg,
                                "amount": pyunits.mol,
                                "temperature": pyunits.K})
 
@@ -478,7 +478,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                 doc="State pressure [Pa]")
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
-                                   doc="State temperature [K]")
+                                   doc="State temperature [K]",
+                                   units=pyunits.K)
         else:
             self.flow_mol_comp = Var(
                     self.params.component_list,
@@ -490,7 +491,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                 doc="State pressure [Pa]")
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
-                                   doc="State temperature [K]")
+                                   doc="State temperature [K]",
+                                   units=pyunits.K)
 
     def _make_vars(self):
 
