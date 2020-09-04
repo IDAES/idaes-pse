@@ -1,0 +1,4 @@
+T.junk, m.temperature[:], piston temperature, Deg C
+P.junk, m.pressure[:], piston pressure, IN WC
+V.junk, m.volume[:], piston volume, m^3
+Pamb, , ambient pressure, IN HG

@@ -245,8 +245,8 @@ see property package for documentation.}"""))
         @self.Constraint(self.flowsheet().config.time,
                          doc="Mixter pressure identical")
         def mixer_pressure_eqn(b, t):
-            return b.mixer.SaturatedWater.pressure[t] == \
-                b.mixer.FeedWater.pressure[t]
+            return b.mixer.SaturatedWater.pressure[t]*1e-6 == \
+                b.mixer.FeedWater.pressure[t]*1e-6
 
         self.stream_flash_out = Arc(
             source=self.flash.liq_outlet, destination=self.mixer.SaturatedWater
