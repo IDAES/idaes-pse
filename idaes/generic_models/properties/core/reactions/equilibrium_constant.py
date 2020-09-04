@@ -15,7 +15,6 @@ Methods for calculating equilibrium constants
 """
 from pyomo.environ import exp, Var, units as pyunits
 
-from idaes.core import MaterialFlowBasis
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     ConcentrationForm
 from idaes.generic_models.properties.core.generic.utility import \
@@ -29,7 +28,7 @@ from idaes.core.util.exceptions import BurntToast, ConfigurationError
 class van_t_hoff():
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
-        base_units = parent.get_metadata().default_units
+        units = parent.get_metadata().derived_units
 
         c_form = config.concentration_form
         if c_form is None:
@@ -47,13 +46,11 @@ class van_t_hoff():
 
             if (c_form == ConcentrationForm.molarity or
                     c_form == ConcentrationForm.activity):
-                c_units = base_units["amount"]*base_units["length"]**-3
+                c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
-                c_units = base_units["amount"]*base_units["mass"]**-1
+                c_units = units["amount"]*units["mass"]**-1
             elif c_form == ConcentrationForm.partialPressure:
-                c_units = (base_units["mass"] *
-                           base_units["length"]**-1 *
-                           base_units["time"]**-2)
+                c_units = units["pressure"]
             else:
                 raise BurntToast(
                     "{} get_concentration_term received unrecognised "
@@ -73,21 +70,17 @@ class van_t_hoff():
 
         rblock.T_eq_ref = Var(
                 doc="Reference temperature for equilibrium constant",
-                units=base_units["temperature"])
+                units=units["temperature"])
         set_param_value(rblock,
                         param="T_eq_ref",
-                        units=base_units["temperature"],
+                        units=units["temperature"],
                         config=config)
 
     def return_expression(b, rblock, r_idx, T):
-        base_units = rblock.parent_block().get_metadata().default_units
-        R_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["temperature"]**-1 *
-                   base_units["amount"]**-1 *
-                   base_units["time"]**-2)
+        units = rblock.parent_block().get_metadata().derived_units
 
         return rblock.k_eq_ref * exp(
             -(b.dh_rxn[r_idx] /
-              pyunits.convert(c.gas_constant, to_units=R_units)) *
+              pyunits.convert(c.gas_constant,
+                              to_units=units["gas_constant"])) *
             (1/T - 1/rblock.T_eq_ref))

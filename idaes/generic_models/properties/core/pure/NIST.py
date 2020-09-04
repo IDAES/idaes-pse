@@ -109,13 +109,8 @@ class cp_mol_ig_comp():
               cobj.cp_mol_ig_comp_coeff_D*t**3 +
               cobj.cp_mol_ig_comp_coeff_E*t**-2)
 
-        base_units = b.params.get_metadata().default_units
-        cp_units = (base_units["mass"] *
-                    base_units["length"]**2 *
-                    base_units["time"]**-2 *
-                    base_units["amount"]**-1 *
-                    base_units["temperature"]**-1)
-        return pyunits.convert(cp, cp_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(cp, units["heat_capacity_mole"])
 
 
 class enth_mol_ig_comp():
@@ -136,12 +131,8 @@ class enth_mol_ig_comp():
              cobj.cp_mol_ig_comp_coeff_F -
              cobj.cp_mol_ig_comp_coeff_H)
 
-        base_units = b.params.get_metadata().default_units
-        h_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
-        return pyunits.convert(h, h_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(h, units["energy_mole"])
 
 
 class entr_mol_ig_comp():
@@ -159,13 +150,8 @@ class entr_mol_ig_comp():
              (cobj.cp_mol_ig_comp_coeff_E/2)*t**-2 +
              cobj.cp_mol_ig_comp_coeff_G)
 
-        base_units = b.params.get_metadata().default_units
-        s_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1 *
-                   base_units["temperature"]**-1)
-        return pyunits.convert(s, s_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(s, units["entropy_mole"])
 
 
 # -----------------------------------------------------------------------------
@@ -205,11 +191,8 @@ class pressure_sat_comp():
                     (pyunits.convert(T, to_units=pyunits.K) +
                      cobj.pressure_sat_comp_coeff_C))*pyunits.bar
 
-        base_units = b.params.get_metadata().default_units
-        p_units = (base_units["mass"] *
-                   base_units["length"]**-1 *
-                   base_units["time"]**-2)
-        return pyunits.convert(psat, to_units=p_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(psat, to_units=units["pressure"])
 
     def dT_expression(b, cobj, T):
         p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
@@ -217,9 +200,6 @@ class pressure_sat_comp():
                     log(10)/(pyunits.convert(T, to_units=pyunits.K) +
                              cobj.pressure_sat_comp_coeff_C)**2)
 
-        base_units = b.params.get_metadata().default_units
-        dp_units = (base_units["mass"] *
-                    base_units["length"]**-1 *
-                    base_units["time"]**-2 *
-                    base_units["temperature"]**-1)
+        units = b.params.get_metadata().derived_units
+        dp_units = units["pressure"]/units["temperature"]
         return pyunits.convert(p_sat_dT, to_units=dp_units)

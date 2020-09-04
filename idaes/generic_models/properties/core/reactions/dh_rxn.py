@@ -24,24 +24,22 @@ from idaes.generic_models.properties.core.generic.utility import \
 # Constant dh_rxn
 class constant_dh_rxn():
     def build_parameters(rblock, config):
-        base_units = rblock.parent_block().get_metadata().default_units
+        units = rblock.parent_block().get_metadata().derived_units
 
         rbasis = rblock.parent_block().config.reaction_basis
         if rbasis == MaterialFlowBasis.molar:
-            basis = "amount"
+            basis = "mole"
         elif rbasis == MaterialFlowBasis.mass:
             basis = "mass"
 
-        e_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units[basis]**-1)
         rblock.dh_rxn_ref = Var(
                 doc="Specific heat of reaction at reference state",
-                units=e_units)
+
+                units=units["energy_"+basis])
+
         set_param_value(rblock,
                         param="dh_rxn_ref",
-                        units=e_units,
+                        units=units["energy_"+basis],
                         config=config)
 
     def return_expression(b, rblock, r_idx, T):

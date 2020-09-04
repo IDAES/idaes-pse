@@ -77,13 +77,8 @@ class cp_mol_liq_comp():
               cobj.cp_mol_liq_comp_coeff_2*T +
               cobj.cp_mol_liq_comp_coeff_1)
 
-        base_units = b.params.get_metadata().default_units
-        cp_units = (base_units["mass"] *
-                    base_units["length"]**2 *
-                    base_units["time"]**-2 *
-                    base_units["amount"]**-1 *
-                    base_units["temperature"]**-1)
-        return pyunits.convert(cp, cp_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(cp, units["heat_capacity_mole"])
 
 
 class enth_mol_liq_comp():
@@ -91,36 +86,28 @@ class enth_mol_liq_comp():
         if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
 
-        base_units = cobj.parent_block().get_metadata().default_units
-        h_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        units = cobj.parent_block().get_metadata().derived_units
 
         cobj.enth_mol_form_liq_comp_ref = Var(
                 doc="Liquid phase molar heat of formation @ Tref",
-                units=h_units)
+                units=units["energy_mole"])
         set_param_value(cobj,
                         param="enth_mol_form_liq_comp_ref",
-                        units=h_units)
+                        units=units["energy_mole"])
 
     def return_expression(b, cobj, T):
         # Specific enthalpy
         T = pyunits.convert(T, to_units=pyunits.K)
         Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
 
-        base_units = b.params.get_metadata().default_units
-        h_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        units = b.params.get_metadata().derived_units
 
         h = (pyunits.convert(
                 (cobj.cp_mol_liq_comp_coeff_5/5)*(T**5-Tr**5) +
                 (cobj.cp_mol_liq_comp_coeff_4/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_liq_comp_coeff_2/2)*(T**2-Tr**2) +
-                cobj.cp_mol_liq_comp_coeff_1*(T-Tr), h_units) +
+                cobj.cp_mol_liq_comp_coeff_1*(T-Tr), units["energy_mole"]) +
              cobj.enth_mol_form_liq_comp_ref)
 
         return h
@@ -131,38 +118,29 @@ class entr_mol_liq_comp():
         if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
 
-        base_units = cobj.parent_block().get_metadata().default_units
-        s_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1 *
-                   base_units["temperature"]**-1)
+        units = cobj.parent_block().get_metadata().derived_units
 
         cobj.entr_mol_form_liq_comp_ref = Var(
                 doc="Liquid phase molar entropy of formation @ Tref",
-                units=s_units)
+                units=units["entropy_mole"])
         set_param_value(cobj,
                         param="entr_mol_form_liq_comp_ref",
-                        units=s_units)
+                        units=units["entropy_mole"])
 
     def return_expression(b, cobj, T):
         # Specific entropy
         T = pyunits.convert(T, to_units=pyunits.K)
         Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
 
-        base_units = b.params.get_metadata().default_units
-        s_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1 *
-                   base_units["temperature"]**-1)
+        units = b.params.get_metadata().derived_units
 
         s = (pyunits.convert(
                 (cobj.cp_mol_liq_comp_coeff_5/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_liq_comp_coeff_4/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_liq_comp_coeff_3/2)*(T**2-Tr**2) +
                 cobj.cp_mol_liq_comp_coeff_2*(T-Tr) +
-                cobj.cp_mol_liq_comp_coeff_1*log(T/Tr), s_units) +
+                cobj.cp_mol_liq_comp_coeff_1*log(T/Tr),
+                units["entropy_mole"]) +
              cobj.entr_mol_form_liq_comp_ref)
 
         return s
@@ -213,8 +191,6 @@ class dens_mol_liq_comp():
                    1 + (1-T/cobj.dens_mol_liq_comp_coeff_3) **
                    cobj.dens_mol_liq_comp_coeff_4))
 
-        base_units = b.params.get_metadata().default_units
-        rho_units = (base_units["amount"] *
-                     base_units["length"]**-3)
+        units = b.params.get_metadata().derived_units
 
-        return pyunits.convert(rho, rho_units)
+        return pyunits.convert(rho, units["density_mole"])

@@ -15,39 +15,58 @@
 Class for performing NMPC simulations of IDAES flowsheets
 """
 
-from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory, Reference, value)
-from pyomo.core.base.var import _GeneralVarData
+from pyomo.environ import (
+        Block, 
+        Constraint, 
+        Var, 
+        TerminationCondition,
+        SolverFactory, 
+        Objective, 
+        NonNegativeReals, 
+        Reals, 
+        TransformationFactory, 
+        Reference, 
+        value,
+        )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentSet, ComponentMap
-from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.dae.set_utils import is_explicitly_indexed_by, get_index_set_except
-from pyomo.opt.solver import SystemCallSolver
+from pyomo.kernel import ComponentMap
+from pyomo.dae.initialization import (
+        solve_consistent_initial_conditions,
+        get_inconsistent_initial_conditions,
+        )
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.core.util.dyn_utils import (get_activity_dict, deactivate_model_at,
-        path_from_block, find_comp_in_block, find_comp_in_block_at_time)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.util import (initialize_by_element_in_range,
-        find_slices_in_model, NMPCVarLocator, copy_values_at_time, 
-        add_noise_at_time, ElementInitializationInputOption, 
-        TimeResolutionOption, ControlInitOption, ControlPenaltyType,
-        VariableCategory, validate_list_of_vardata, 
-        validate_list_of_vardata_value_tuples, validate_solver,
-        NMPCVarGroup, find_point_in_continuousset,
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
+from idaes.core.util.dyn_utils import (
+        deactivate_model_at,
+        path_from_block, 
+        find_comp_in_block, 
+        find_comp_in_block_at_time,
+        )
+from idaes.apps.caprese.common.config import (
+        ControlInitOption,
+        ElementInitializationInputOption,
+        TimeResolutionOption,
+        ControlPenaltyType,
+        VariableCategory)
+from idaes.apps.caprese.util import (
+        initialize_by_element_in_range,
+        find_slices_in_model, 
+        NMPCVarGroup, 
+        NMPCVarLocator, 
+        copy_values_at_time, 
+        add_noise_at_time,
+        validate_list_of_vardata, 
+        validate_list_of_vardata_value_tuples, 
+        validate_solver,
+        find_point_in_continuousset,
         get_violated_bounds_at_time)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
-
-from collections import OrderedDict
-import time as timemodule
-import enum
-import pdb
 
 __author__ = "Robert Parker and David Thierry"
 
@@ -238,9 +257,12 @@ class NMPCSim(DynamicBase):
                 )
             )
 
+
+    namespace_name = '_NMPC_NAMESPACE'
+    
     @classmethod
     def get_namespace_name(cls):
-        return '_NMPC_NAMESPACE'
+        return cls.namespace_name
     
 
     def __init__(self, plant_model=None, plant_time_set=None, 
@@ -272,7 +294,7 @@ class NMPCSim(DynamicBase):
                      conditions, will also be used as the default solver if
                      another is not provided for initializing or solving the 
                      optimal control problem.
-            outlvl : IDAES logger output level. Default is idaes.logger.NOTSET.
+            outlvl : IDAES logger output level. Default is idaes.logger.INFO.
                      To see solver output, use idaes.logger.DEBUG.
             sample_time : Length of time each control input will be held for.
                           This must be an integer multiple of the (finite
@@ -295,12 +317,6 @@ class NMPCSim(DynamicBase):
         # TODO: validate_time_set function
 
         init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
-
-        self.solve_initial_conditions(self.plant)
-        # TODO: move into own function
-        #       possibly a DAE utility
-        #       - check for consistency of initial conditions
-        #       - if not consistent, tell user to go run dae.solve_initial_conditions
 
         # Only need to manipulate bounds of controller model. Assume the 
         # bounds in the plant model should remain in place for simulation.
@@ -325,28 +341,6 @@ class NMPCSim(DynamicBase):
 
         self.validate_fixedness(self.plant, self.controller)
 
-# TODO: remove. Place in solve_initial_conditions method if it exists.
-#       If desired ('strict mode') check for consistency.
-#####################
-        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
-                            self.controller_time.first(),
-                            self.plant_time.first())
-
-        # Should strip bounds before this IC solve, since the controller
-        # model should have bounds
-        self.strip_controller_bounds = TransformationFactory(
-                                       'contrib.strip_var_bounds')
-        self.strip_controller_bounds.apply_to(self.controller, reversible=True)
-
-        # Controller model has already been categorized... No need 
-        # to provide init_controller_inputs
-        self.solve_initial_conditions(self.controller)
-        self.strip_controller_bounds.revert(self.controller)
-        # TODO: Should not be solving initial conditions of the controller
-        # They will be overridden by steady state solve
-#####################
-
         self.sample_time = self.config.sample_time
         self.validate_sample_time(self.sample_time, 
                 self.controller, self.plant)
@@ -368,8 +362,10 @@ class NMPCSim(DynamicBase):
         # instance some measurement noise. 
         # Remember: Need to calculate weight matrices before populating this. 
 
+        self.current_plant_time = 0
 
-    def add_namespace_to(self, model, time):
+    @classmethod
+    def add_namespace_to(cls, model, time):
         """Adds the _NMPC_NAMESPACE block a model with a given time set.
         All necessary model-specific attributes, including constraints
         and objectives, will be added to this block.
@@ -386,15 +382,20 @@ class NMPCSim(DynamicBase):
             raise ValueError('%s already exists on model. Please fix this.'
                              % name)
         model.add_component(name, Block())
-        super(NMPCSim, self).add_namespace_to(model, time)
+        super(NMPCSim, cls).add_namespace_to(model, time)
+        # TODO: Should this method call _populate_namespace?
+        # Otherwise this namespace doesn't have access to the get_time function.
+        # Don't want to require that a model is categorized just to get_time,
+        # which is what I'm doing right now, unless I call get_time on the base
+        # namespace.
 
     def validate_sample_time(self, sample_time, *models, **kwargs):
         """Makes sure sample points, or integer multiple of sample time-offsets
-        from time.first() lie on finite element boundaries, and that horizon of
-        each model is an integer multiple of sample time. Assembles a list of
-        sample points and a dictionary mapping sample points to the number of 
-        finite elements in the preceding sampling period, and adds them as
-        attributes to _NMPC_NAMESPACE.
+        from time.first(), lie on finite element boundaries, and that the 
+        horizon of each model is an integer multiple of sample time. Assembles 
+        a list of sample points and a dictionary mapping sample points to the 
+        number of finite elements in the preceding sampling period, and adds 
+        them as attributes to _NMPC_NAMESPACE.
 
         Args:
             sample_time: Sample time to check
@@ -434,7 +435,7 @@ class NMPCSim(DynamicBase):
 
             finite_elements = time.get_finite_elements()
 
-            sample_points = []
+            sample_points = [time.first()]
             sample_no = 1
             fe_per = 0
             fe_per_sample_dict = {}
@@ -454,8 +455,7 @@ class NMPCSim(DynamicBase):
                     raise ValueError(
                             'Could not find a time point for the %ith '
                             'sample point' % sample_no)
-            assert len(sample_points) == n_samples
-            # Here sample_points excludes time.first()
+            assert len(sample_points) == n_samples + 1
             model._NMPC_NAMESPACE.fe_per_sample = fe_per_sample_dict
             model._NMPC_NAMESPACE.sample_points = sample_points
 
@@ -480,9 +480,22 @@ class NMPCSim(DynamicBase):
         """
         t0 = src_time.first()
         tgt_slices = []
-        locator = tgt_model._NMPC_NAMESPACE.var_locator
+        namespace = getattr(tgt_model, self.namespace_name)
+        locator = namespace.var_locator
         for _slice in src_slices:
             init_vardata = _slice[t0]
+            # FIXME
+            # This assumes that t0 is a valid time point for the target
+            # model, even it is taken from the source.
+            # Should use find_comp_in_block_at_time, which essentially
+            # does the work of constructing a CUID with wildcard, but
+            # here is tied to the target model's time set.
+            # A better validation method might be:
+            #     src_comp -> cuid w/ wildcard -> target_comp...
+            # this would still be the same amount of work/code in this
+            # method. Would be nice to go straight from the source
+            # Reference to the CUID, and from the CUID to the/a ref-
+            # to-slice. cuid.to_reference() would be nice.
             tgt_vardata = find_comp_in_block(tgt_model, 
                                              src_model, 
                                              init_vardata)
@@ -537,89 +550,6 @@ class NMPCSim(DynamicBase):
                         continue
                     assert var[t].fixed
                     
-
-    # TODO: option to skip this step by user specification of input pairs
-    def validate_initial_inputs(self, tgt_model, src_model,
-            src_inputs=None, **kwargs):
-        """Uses initial inputs in the source model to find variables of the
-        same name in a target model.
-        
-        Args:
-           tgt_model : Flowsheet model to search for input variables
-           src_model : Flowsheet model containing inputs to search for
-           src_inputs : List of input variables at the initial time point
-                        to find in target model. If not provided, the
-                        initial_inputs attribute will be used.
-
-        Returns:
-            List of variables (time-only slices) in the target model 
-            corresponding to the inputs in the source model
-        """
-        config = self.config(kwargs)
-        outlvl = config.outlvl
-        
-        log = idaeslog.getInitLogger('nmpc', level=outlvl)
-
-        # src_time only necessary to find inputs if not provided?
-        src_time = src_model._NMPC_NAMESPACE.get_time()
-
-        if src_inputs is not None:
-            # If source inputs are not specified, assume they
-            # already exist in src_model
-            try:
-                t0 = src_time.first()
-                src_inputs = [v[t0] for v in 
-                        src_model._NMPC_NAMESPACE.input_vars]
-            except AttributeError:
-                msg = ('Error validating inputs. Either provide src_inputs '
-                      'or categorize_inputs in the source model first.')
-                idaeslog.error(msg)
-                raise
-
-        tgt_inputs = []
-        for inp in src_inputs:
-            local_parent = tgt_model
-            for r in path_from_block(inp, src_model, include_comp=True):
-                try:
-                    local_parent = getattr(local_parent, r[0])[r[1]]
-                except AttributeError:
-                    msg = (f'Error validating input {inp.name}.'
-                           'Could not find component {r[0]} in block '
-                           '{local_parent.name}.')
-                    log.error(msg)
-                    raise
-                except KeyError:
-                    msg = (f'Error validating {inp.name}.'
-                           'Could not find key {r[1]} in component '
-                           '{getattr(local_parent, r[0]).name}.')
-                    log.error(msg)
-                    raise
-            tgt_inputs.append(local_parent)
-        return tgt_inputs
-
-
-    def validate_models(self, m1, m2):
-        """
-        Makes sure the two models are instances of Pyomo Blocks and do not
-        have the same top-level model.
-
-        Args:
-            m1 : First model (Pyomo Block)
-            m2 : Second model (Pyomo Block)
-
-        Returns:
-            True if models are valid
-        """
-        if not (isinstance(m1, Block) and
-                isinstance(m2, Block)):
-            raise ValueError(
-                    'Provided models must be Blocks')
-        if m1.model() is m2.model():
-            raise ValueError(
-                    'Provided models must not live in the same top-level'
-                    'ConcreteModel')
-        return True
-
 
     def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
         """Transfers values of the initial condition variables at a specified
@@ -753,122 +683,68 @@ class NMPCSim(DynamicBase):
                             plant_sample,
                             t_controller)
 
-
-    def solve_initial_conditions(self, model, **kwargs):
-        """Function to solve for consistent initial conditions in
-        the provided flowsheet model.
-
-        Args:
-            model : Flowsheet model whose initial conditions are solved
-
+    def has_consistent_initial_conditions(self, model, **kwargs):
         """
-        # Later include option to skip solve for consistent initial conditions
-        #
-        # Will only work as written for "True" initial conditions since 
-        # it doesn't try to deactivate discretization equations or fix
-        # derivative/differential variables.
-
+        Finds constraints at time.first() that are violated by more than
+        tolerance. Returns True if any are found.
+        """
+        # This will raise an error if any constraints at t0 cannot be
+        # evaluated, i.e. contain a variable of value None.
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
         config = self.config(kwargs)
+        tolerance = config.tolerance
+        inconsistent = get_inconsistent_initial_conditions(
+                model, 
+                time, 
+                tol=tolerance,
+                suppress_warnings=True)
+        return not inconsistent
 
-        # TODO: activity_dict should be a ComponentMap
-        was_originally_active = get_activity_dict(model)
-        solver = config.solver
+    def solve_consistent_initial_conditions(self, model, **kwargs):
+        """
+        Uses pyomo.dae.initialization solve_consistent_initial_conditions
+        function to solve for consistent initial conditions. Inputs are
+        fixed at time.first() in attempt to eliminate degrees of freedom.
+        """
+        namespace = getattr(model, self.get_namespace_name())
+        time = namespace.get_time()
+        strip_bounds = kwargs.pop('strip_bounds', True)
+        config = self.config(kwargs)
         outlvl = config.outlvl
-        init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
+        solver = config.solver
         solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
-
-        toplevel = model.model()
-        time = model._NMPC_NAMESPACE.get_time()
         t0 = time.first()
 
-        non_initial_time = [t for t in time]
-        non_initial_time.remove(t0)
-        deactivated = deactivate_model_at(model, time, non_initial_time,
-                outlvl=idaeslog.ERROR)
+        previously_fixed = ComponentMap()
+        for var in namespace.input_vars:
+            var0 = var[t0]
+            previously_fixed[var0] = var0.fixed
+            var0.fix()
 
-        # Proper to specify input_vars here
-        for _slice in model._NMPC_NAMESPACE.input_vars.varlist:
-            vardata = _slice[t0]
-            if vardata.model() is not toplevel:
-                raise ValueError(
-                        f"Trying to fix an input that does not belong to model"
-                        " {toplevel.name}. Are 'initial_inputs' arguments"
-                        " contained in the proper model?")
-            if vardata.value == None:
-                raise ValueError(
-                        "Trying to solve for consistent initial conditions with "
-                        "an input of value None. Inputs must have valid values "
-                        "to solve for consistent initial conditions")
-            else:
-                vardata.fix()
-
-        if degrees_of_freedom(model) != 0:
-            raise ValueError(
-                    f"Non-zero degrees of freedom in model {toplevel.name}"
-                    " when solving for consistent initial conditions. Have the "
-                    "right number of initial conditions been fixed?")
+        if strip_bounds:
+            strip_var_bounds = TransformationFactory(
+                                           'contrib.strip_var_bounds')
+            strip_var_bounds.apply_to(model, reversible=True)
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-            results = solver.solve(model, tee=slc.tee)
+            result = solve_consistent_initial_conditions(model, time, solver,
+                    tee=slc.tee)
 
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            init_log.info(
-                    'Successfully solved for consistent initial conditions')
-        else:
-            init_log.error('Failed to solve for consistent initial conditions')
-            raise ValueError(
-            f'Falied to solve {toplevel.name} for consistent initial conditions')
+        if strip_bounds:
+            strip_var_bounds.revert(model)
 
-        if was_originally_active is not None:
-            for t in non_initial_time:
-                for comp in deactivated[t]:
-                    if was_originally_active[id(comp)]:
-                        comp.activate()
+        for var, was_fixed in previously_fixed.items():
+            if not was_fixed:
+                var.unfix()
+
+        return result
 
 
-    def get_inconsistent_initial_conditions(self, model, time, tol=1e-6, 
-            **kwargs):
-        """Finds equations of a model at the first time point (or in a block
-        that is at the first time point) that are not satisfied to within
-        a tolerance.
-
-        Args:
-            model : Pyomo model (or Block) to check for inconsistency
-            time : Set to treat as time
-            tol : Tolerance within which a constraint will be considered
-                  consistent
-
-        Returns:
-            List of constraint data objects found to be inconsistent
-
-        """
-        config = self.config(kwargs)
-        outlvl = config.outlvl
-        t0 = time.first()
-        inconsistent = []
-        init_log = idaeslog.getInitLogger('nmpc', outlvl)
-        for con in model.component_objects(Constraint, active=True):
-            if not is_explicitly_indexed_by(con, time):
-                continue
-            info = get_index_set_except(con, time)
-            non_time_set = info['set_except']
-            index_getter = info['index_getter']
-            for non_time_index in non_time_set:
-                index = index_getter(non_time_index, t0)
-                try:
-                    condata = con[index]
-                except KeyError:
-                    # To allow Constraint/Block.Skip
-                    msg = '%s has no index %s' % (con.name, str(index))
-                    init_log.warning(msg)
-                    continue
-                if (value(condata.body) - value(condata.upper) > tol or
-                    value(condata.lower) - value(condata.body) > tol):
-                    inconsistent.append(con[index])
-        return inconsistent
-
-
-    def calculate_full_state_setpoint(self, setpoint, require_steady=True, 
+    def calculate_full_state_setpoint(self, 
+            setpoint, 
+            require_steady=True, 
+            allow_inconsistent=True,
             **kwargs):
         """Given a user-defined setpoint, i.e. a list of VarData, value tuples,
         calculates a full-state setpoint to be used in the objective function
@@ -879,23 +755,16 @@ class NMPCSim(DynamicBase):
         The solve is performed in the first time point blocks/constraints of the
         controller model. The procedure is:
 
-            i. Populate controller setpoint attributes with user-defined values
-            ii. Record which constraints were originally active
-            iii. Deactivate constraints except at time.first()
-            iv. Check for consistent initial conditions. Attempt to solve for
-                constraint satisfaction if necessary
-            v. Populate reference attributes with (now consistent) initial
-               conditions
-            vi. Calculate objective weights for values provided by user
-            vii. Add objective function based on these weights and setpoint
-                 values
-            viii. Unfix initial conditions and fix inputs (and derivatives if
-                  steady-state is required)
-            ix. Solve "projected" optimization problem
-            x. Refix initial conditions (unfix derivatives if they were fixed)
-            xi. Deactivate just-created objective
-            xii. Transfer variable values to setpoint attributes
-            xiii. Reactivate model at non-initial time
+            i. Check for inconsistent initial conditions. Warn user if found.
+            ii. Populate controller setpoint attributes with user-defined 
+                values.
+            iii. Populate reference attributes with (now consistent) initial
+                 conditions.
+            iv. Calculate weights for variables specified.
+            v. Add objective function based on these weights and setpoint
+                 values.
+            vi. Solve for setpoint.
+            vii. Deactivate just-added objective function.
 
         Args:
             setpoint : List of VarData, value tuples to be used in the objective
@@ -907,16 +776,9 @@ class NMPCSim(DynamicBase):
         config = self.config(kwargs)
         solver = config.solver
         outlvl = config.outlvl
+        tolerance = config.tolerance
         init_log = idaeslog.getInitLogger('nmpc', outlvl)
-        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
         user_objective_name = config.user_objective_name
-
-        # Categories of variables whose set point values will be added to controller
-        categories = [VariableCategory.DIFFERENTIAL,
-                      VariableCategory.ALGEBRAIC,
-                      VariableCategory.DERIVATIVE,
-                      VariableCategory.INPUT,
-                      VariableCategory.SCALAR]
 
         controller = self.controller
         time = self.controller_time
@@ -924,60 +786,46 @@ class NMPCSim(DynamicBase):
         category_dict = controller._NMPC_NAMESPACE.category_dict
         locator = controller._NMPC_NAMESPACE.var_locator
 
+        # User should have already solved for consistent initial conditions if
+        # they want them.
+        inconsistent = get_inconsistent_initial_conditions(
+                controller, 
+                time,
+                tol=tolerance,
+                suppress_warnings=True)
+        if inconsistent:
+            msg = ('Initial conditions are inconistent. Weights in the '
+            'setpoint optimization problem may not be reasonable. Use the '
+            'solve_consistent_initial_conditions before calling '
+            'calculate_full_state_setpoint to remedy')
+            if allow_inconsistent:
+                init_log.warning(msg)
+            else:
+                raise RuntimeError(msg)
+
+        # Categories of variables whose set point values will be added to controller
+        # TODO: maybe this should be an argument
+        categories = [VariableCategory.DIFFERENTIAL,
+                      VariableCategory.ALGEBRAIC,
+                      VariableCategory.DERIVATIVE,
+                      VariableCategory.INPUT,
+                      VariableCategory.SCALAR]
+    
         # Clear any previous existing setpoint values in these variables
         for categ in categories:
             group = category_dict[categ]
             for i in range(group.n_vars):
                 group.set_setpoint(i, None)
-                
+
         # Populate appropriate setpoint values from argument
-        for vardata, value in setpoint:
+        for vardata, val in setpoint:
             info = locator[vardata]
             categ = info.category
             loc = info.location
             group = category_dict[categ]
-            group.set_setpoint(loc, value)
+            group.set_setpoint(loc, val)
 
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-                controller.component_data_objects((Constraint, Block))])
-        non_initial_time = [t for t in time if t != time.first()]
-        deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
-
-        inconsistent = self.get_inconsistent_initial_conditions(controller, time,
-                outlvl=idaeslog.ERROR)
-        if inconsistent:
-            dof = degrees_of_freedom(controller)
-            if dof > 0:
-                idaeslog.warning(
-                        'Positive degrees of freedom in controller model with '
-                        'inconsistent initial conditions. '
-                        'Fixing inputs in an attempt to remedy.')
-                for var in controller._NMPC_NAMESPACE.input_vars:
-                    var[t0].fix()
-                dof = degrees_of_freedom(controller)
-                if dof != 0:
-                    msg = ('Nonzero degrees of freedom in initial conditions '
-                          'of controller model after fixing inputs.')
-                    idaeslog.error(msg)
-                    raise RuntimeError(msg)
-            elif dof < 0:
-                msg = ('Negative degrees of freedom in controller model with '
-                      'inconsistent initial conditions.')
-                idaeslog.error(msg)
-                raise RuntimeError(msg)
-
-            init_log.info('Initial conditions are inconsistent. Solving')
-            with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-                results = solver.solve(controller, tee=slc.tee)
-            if results.solver.termination_condition == TerminationCondition.optimal:
-                init_log.info(
-                        'Successfully solved for consistent initial conditions')
-            else:
-                msg = 'Failed to solve for consistent initial conditions'
-                init_log.error(msg)
-                raise RuntimeError(msg)
-
-        # populate reference list from consistent values
+        # Calculate objective weights for all variables.
         for categ, vargroup in category_dict.items():
             if categ == VariableCategory.SCALAR:
                 for i, var in enumerate(vargroup):
@@ -989,21 +837,22 @@ class NMPCSim(DynamicBase):
         override = config.objective_weight_override
         tolerance = config.objective_weight_tolerance
 
-        self.construct_objective_weights(controller,
-            objective_weight_override=override,
-            objective_weight_tolerance=tolerance,
-            categories=[VariableCategory.DIFFERENTIAL,
-                        VariableCategory.ALGEBRAIC,
-                        VariableCategory.DERIVATIVE,
-                        VariableCategory.INPUT])
-
-        # Save user set-point and weights as attributes of namespace
+        self.construct_objective_weights(
+                controller,
+                objective_weight_override=override,
+                objective_weight_tolerance=tolerance,
+                categories=[VariableCategory.DIFFERENTIAL,
+                            VariableCategory.ALGEBRAIC,
+                            VariableCategory.DERIVATIVE,
+                            VariableCategory.INPUT])
+                
+        # Save user setpoint and weights as attributes of namespace
         # in case they are required later
         user_setpoint = []
         user_setpoint_vars = []
         user_sp_weights = []
-        for var, value in setpoint:
-            user_setpoint.append(value)
+        for var, val in setpoint:
+            user_setpoint.append(val)
             user_setpoint_vars.append(var)
             loc = locator[var].location
             user_sp_weights.append(locator[var].group.weights[loc])
@@ -1022,19 +871,70 @@ class NMPCSim(DynamicBase):
                 time_resolution_option=TimeResolutionOption.INITIAL_POINT)
         temp_objective = getattr(controller._NMPC_NAMESPACE, user_objective_name)
 
+        self.solve_setpoint(
+                categories=categories,
+                require_steady=require_steady,
+                **kwargs)
+
+        # Deactivate objective that was just created
+        temp_objective.deactivate()
+
+        # Transfer setpoint values and reset initial values
+        for categ in categories:
+            vargroup = category_dict[categ]
+            if categ == VariableCategory.SCALAR:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_setpoint(i, var.value)
+                    var.set_value(vargroup.reference[i])
+            else:
+                for i, var in enumerate(vargroup):
+                    vargroup.set_setpoint(i, var[t0].value)
+                    var[t0].set_value(vargroup.reference[i])
+
+
+    def solve_setpoint(self, 
+            categories = [VariableCategory.DIFFERENTIAL,
+                          VariableCategory.ALGEBRAIC,
+                          VariableCategory.DERIVATIVE,
+                          VariableCategory.INPUT,
+                          VariableCategory.SCALAR],
+            require_steady=True,    
+            **kwargs):
+        config = self.config(kwargs)
+        solver = config.solver
+        outlvl = config.outlvl
+        init_log = idaeslog.getInitLogger('nmpc', outlvl)
+        solver_log = idaeslog.getSolveLogger('nmpc', outlvl)
+        controller = self.controller
+        time = self.controller_time
+        t0 = time.first()
+        namespace = getattr(controller, self.namespace_name)
+        category_dict = namespace.category_dict
+
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+                controller.component_data_objects((Constraint, Block))])
+        non_initial_time = list(time)[1:]
+        deactivated = deactivate_model_at(controller, time, non_initial_time, outlvl)
+        was_fixed = ComponentMap()
+
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
-        for var in controller._NMPC_NAMESPACE.ic_vars:
+        for var in namespace.ic_vars:
             var[t0].unfix()
         for var in category_dict[VariableCategory.INPUT]:
+            was_fixed[var[t0]] = var[t0].fixed
             var[t0].unfix()
         if require_steady == True:
             for var in category_dict[VariableCategory.DERIVATIVE]:
                 var[t0].fix(0.0)
 
         # Solve single-time point optimization problem
-        assert degrees_of_freedom(controller) == controller._NMPC_NAMESPACE.n_input_vars
+        dof = degrees_of_freedom(controller)
+        if require_steady:
+            assert dof == namespace.n_input_vars
+        else:
+            assert dof == namespace.n_input_vars + namespace.n_diff_vars
         init_log.info('Solving for full-state setpoint values')
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
             results = solver.solve(controller, tee=slc.tee)
@@ -1053,26 +953,16 @@ class NMPCSim(DynamicBase):
         for var in controller._NMPC_NAMESPACE.ic_vars:
             var[t0].fix()
 
-        # Deactivate objective that was just created
-        temp_objective.deactivate()
-
-        # Transfer setpoint values and reset initial values
-        for categ in categories:
-            vargroup = category_dict[categ]
-            if categ == VariableCategory.SCALAR:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_setpoint(i, var.value)
-                    var.set_value(vargroup.reference[i])
-            else:
-                for i, var in enumerate(vargroup):
-                    vargroup.set_setpoint(i, var[t0].value)
-                    var[t0].set_value(vargroup.reference[i])
-
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
             for comp in complist:
                 if was_originally_active[comp]:
                     comp.activate()
+
+        # Fix inputs that were originally fixed
+        for var in category_dict[VariableCategory.INPUT]:
+            if was_fixed[var[t0]]:
+                var[t0].fix()
 
 
     def add_setpoint_to_controller(self, objective_name='tracking_objective',
@@ -1280,7 +1170,8 @@ class NMPCSim(DynamicBase):
                     if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.SAMPLE_POINTS:
             sample_time = self.sample_time
-            time = model._NMPC_NAMESPACE.sample_points
+            time = [t for t in model._NMPC_NAMESPACE.sample_points
+                    if t != mod_time.first()]
         if time_resolution == TimeResolutionOption.INITIAL_POINT:
             time = [t0]
 
@@ -1300,19 +1191,21 @@ class NMPCSim(DynamicBase):
             # Override time list to be the list of sample points,
             # as these are the only points control action can be 
             # nonzero
-            action_time = model._NMPC_NAMESPACE.sample_points
+            action_time = model._NMPC_NAMESPACE.sample_points[1:]
             time_len = len(action_time)
             if time_len == 1:
                 init_log.warning(
                         'Warning: Control action penalty specfied '
                         'for a model with a single time point.'
                         'Control term in objective function will be empty.')
-            control_term = sum(R_entries[i]*
-                                  (controls[i][action_time[k]] - 
-                                      controls[i][action_time[k-1]])**2
-                for i in range(len(controls)) if (R_entries[i] is not None
-                                            and sp_controls[i] is not None)
-                                            for k in range(1, time_len))
+            control_term = sum(
+                    R_entries[i]*(controls[i][action_time[k]] - 
+                    controls[i][action_time[k-1]])**2
+                    for i in range(len(controls)) 
+                    if (R_entries[i] is not None
+                    and sp_controls[i] is not None)
+                    for k in range(1, time_len)
+                    )
         elif control_penalty_type == ControlPenaltyType.NONE:
             control_term = 0
             # Note: This term is only non-zero at the boundary between sampling
@@ -1357,24 +1250,6 @@ class NMPCSim(DynamicBase):
             vargroup.set_ub(i, ub)
 
 
-    def transfer_bounds(self, tgt_group, src_group):
-        """
-        Transfers bounds from source model's bound lists
-        to target model's differential, algebraic, and input
-        variables, and sets domain to Reals.
-
-        Args:
-            tgt_model : Model whose variables bounds will be transferred to
-            src_model : Model whose bound lists will be used to set bounds.
-
-        """
-        n_vars = tgt_group.n_vars
-        for i in range(n_vars):
-            tgt_group.set_lb(i, src_group.lb[i])
-            tgt_group.set_ub(i, src_group.ub[i])
-            tgt_group.set_domain(i, Reals)
-
-
     def constrain_control_inputs_piecewise_constant(self,
             **kwargs):
         """Function to add piecewise constant (PWC) constraints to controller
@@ -1408,9 +1283,9 @@ class NMPCSim(DynamicBase):
         def pwc_rule(ns, t, i):
             # Unless t is at the boundary of a sample, require
             # input[t] == input[t_next]
-            if t in ns.sample_points:
+            time = ns.get_time()
+            if t in ns.sample_points or t == time.first():
                 return Constraint.Skip
-            # ^ Here, the constraint will be applied at t == 0
             t_next = time.next(t)
             inputs = ns.input_vars.varlist
             _slice = inputs[i]
@@ -1476,6 +1351,7 @@ class NMPCSim(DynamicBase):
         """
         config = self.config(kwargs)
         tol = config.tolerance
+        outlvl = config.outlvl
         objective = getattr(model._NMPC_NAMESPACE, 
                             objective_name)
         namespace = model._NMPC_NAMESPACE
@@ -1493,7 +1369,7 @@ class NMPCSim(DynamicBase):
                         _slice[t].fix(input_vars.setpoint[i])
                     else:
                         _slice[t].fix()
-        elif input_type == ElementInitializationInputOption.INITIAL_CONDITIONS:
+        elif input_type == ElementInitializationInputOption.INITIAL:
             for i, _slice in enumerate(input_vars.varlist):
                 t0 = time.first()
                 for t in time:
@@ -1510,7 +1386,9 @@ class NMPCSim(DynamicBase):
         model._NMPC_NAMESPACE.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(self.controller, self.controller_time, 
-                    time.first(), time.last(),
+                    time.first(), 
+                    time.last(),
+                    outlvl=outlvl,
                     dae_vars=self.controller._NMPC_NAMESPACE.dae_vars,
                     time_linking_variables=self.controller._NMPC_NAMESPACE.diff_vars)
 
@@ -1519,9 +1397,10 @@ class NMPCSim(DynamicBase):
 
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
+                if t != time.first():
+                    # Don't want to unfix inputs at time.first()
+                    _slice[t].unfix()
 
-        # TODO: Check that no bounds are violated after square solves
         strip_controller_bounds.revert(self.controller)
 
         timelist = list(time)
@@ -1557,7 +1436,7 @@ class NMPCSim(DynamicBase):
         # Should only do this if controller is initialized
         # from a prior solve.
         if not self.controller_solved:
-            raise ValueError
+            raise RuntimeError
 
         config = self.config(kwargs)
         sample_time = config.sample_time
@@ -1626,10 +1505,10 @@ class NMPCSim(DynamicBase):
         time = self.controller_time
         for _slice in self.controller._NMPC_NAMESPACE.input_vars:
             for t in time:
-                _slice[t].unfix()
-        # ^ Maybe should fix inputs at time.first()?
-        # Also, this should be redundant as inputs have been unfixed
-        # after initialization
+                if t == time.first():
+                    _slice[t].fix()
+                else:
+                    _slice[t].unfix()
 
         assert (degrees_of_freedom(self.controller) == 
                 self.controller._NMPC_NAMESPACE.n_input_vars*
@@ -1673,8 +1552,11 @@ class NMPCSim(DynamicBase):
                 dae_vars=self.plant._NMPC_NAMESPACE.dae_vars, 
                 time_linking_vars=self.plant._NMPC_NAMESPACE.diff_vars,
                 outlvl=outlvl)
+
+        self.current_plant_time = t_end
+
         msg = ('Successfully simulated plant over the sampling period '
-                'beginning at ' + str(t_start))
+                'through ' + str(self.current_plant_time))
         init_log.info(msg)
 
         tc1 = self.controller_time.first() + sample_time
