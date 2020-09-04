@@ -43,7 +43,7 @@ References:
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
-    Expression, Param, sqrt, SolverFactory
+    Expression, Param, sqrt, SolverFactory, units as pyunits
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -210,13 +210,11 @@ conditions, and thus corresponding constraints  should be included,
              "fug_liq": {"method": "_fug_liq", "units": "Pa"},
              'ds_form': {'method': '_ds_form', 'units': 'J/mol.K'}})
 
-        obj.add_default_units({"time": "s",
-                               "length": "m",
-                               "mass": "g",
-                               "amount": "mol",
-                               "temperature": "K",
-                               "energy": "J",
-                               "holdup": "mol"})
+        obj.add_default_units({"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.g,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K})
 
 
 class _ActivityCoeffStateBlock(StateBlock):
