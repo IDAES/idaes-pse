@@ -43,7 +43,7 @@ References:
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
-    Expression, Param, sqrt, SolverFactory
+    Expression, Param, sqrt, SolverFactory, units as pyunits
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -210,13 +210,11 @@ conditions, and thus corresponding constraints  should be included,
              "fug_liq": {"method": "_fug_liq", "units": "Pa"},
              'ds_form': {'method': '_ds_form', 'units': 'J/mol.K'}})
 
-        obj.add_default_units({"time": "s",
-                               "length": "m",
-                               "mass": "g",
-                               "amount": "mol",
-                               "temperature": "K",
-                               "energy": "J",
-                               "holdup": "mol"})
+        obj.add_default_units({"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K})
 
 
 class _ActivityCoeffStateBlock(StateBlock):
@@ -480,7 +478,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                 doc="State pressure [Pa]")
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
-                                   doc="State temperature [K]")
+                                   doc="State temperature [K]",
+                                   units=pyunits.K)
         else:
             self.flow_mol_comp = Var(
                     self.params.component_list,
@@ -492,7 +491,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                 doc="State pressure [Pa]")
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
-                                   doc="State temperature [K]")
+                                   doc="State temperature [K]",
+                                   units=pyunits.K)
 
     def _make_vars(self):
 
