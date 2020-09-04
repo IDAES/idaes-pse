@@ -756,5 +756,5 @@ def save_results_to_dmf(dmf, inputs, results, stats):
         'name': 'convergence_results',
         'desc': 'statistics returned from run_convergence_evaluation',
         'creator': {'name': getpass.getuser()},
-        'data': d}, type_=resource.TY_DATA)
+        'data': d}, type_=resource.ResourceTypes.data)
     dmf.add(rsrc)
