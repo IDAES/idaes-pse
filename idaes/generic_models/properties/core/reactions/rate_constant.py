@@ -29,17 +29,13 @@ from idaes.core.util.exceptions import BurntToast, ConfigurationError
 class arrhenius():
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
-        base_units = parent.get_metadata().default_units
-        e_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        units = parent.get_metadata().derived_units
 
         rbasis = parent.config.reaction_basis
         if rbasis == MaterialFlowBasis.molar:
-            r_base = base_units["amount"]
+            r_base = units["amount"]
         elif rbasis == MaterialFlowBasis.mass:
-            r_base = base_units["mass"]
+            r_base = units["mass"]
         else:
             raise BurntToast(
                 "{} for unexpected reaction basis {}. This should not happen "
@@ -54,7 +50,7 @@ class arrhenius():
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
               c_form == ConcentrationForm.massFraction):
-            r_units = r_base*base_units["length"]**-3*base_units["time"]**-1
+            r_units = r_base*units["volume"]**-1*units["time"]**-1
         else:
             order = 0
             for p, j in parent.config.property_package._phase_component_set:
@@ -62,13 +58,11 @@ class arrhenius():
 
             if (c_form == ConcentrationForm.molarity or
                     c_form == ConcentrationForm.activity):
-                c_units = base_units["amount"]*base_units["length"]**-3
+                c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
-                c_units = base_units["amount"]*base_units["mass"]**-1
+                c_units = units["amount"]*units["mass"]**-1
             elif c_form == ConcentrationForm.partialPressure:
-                c_units = (base_units["mass"] *
-                           base_units["length"]**-1 *
-                           base_units["time"]**-2)
+                c_units = units["pressure"]
             else:
                 raise BurntToast(
                     "{} get_concentration_term received unrecognised "
@@ -77,8 +71,8 @@ class arrhenius():
                     .format(rblock.name, c_form))
 
             r_units = (r_base *
-                       base_units["length"]**-3 *
-                       base_units["time"]**-1 *
+                       units["length"]**-3 *
+                       units["time"]**-1 *
                        c_units**order)
 
         rblock.arrhenius_const = Var(
@@ -91,20 +85,17 @@ class arrhenius():
 
         rblock.energy_activation = Var(
                 doc="Activation energy",
-                units=e_units)
+                units=units["energy_mole"])
+
         set_param_value(rblock,
                         param="energy_activation",
-                        units=e_units,
+                        units=units["energy_mole"],
                         config=config)
 
     def return_expression(b, rblock, r_idx, T):
-        base_units = rblock.parent_block().get_metadata().default_units
-        R_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["temperature"]**-1 *
-                   base_units["amount"]**-1 *
-                   base_units["time"]**-2)
+        units = rblock.parent_block().get_metadata().derived_units
 
         return rblock.arrhenius_const * exp(
             -rblock.energy_activation / (
-                pyunits.convert(c.gas_constant, to_units=R_units)*T))
+                pyunits.convert(c.gas_constant,
+                                to_units=units["gas_constant"])*T))
