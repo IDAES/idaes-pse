@@ -98,7 +98,8 @@ def test_initialize_dyn(build_turbine_dyn):
     m.fs.turb.inlet[:].pressure.fix(2.4233e7)
     m.fs.turb.flow_coeff[:].fix()
 
-    m.fs.turb.initialize(outlvl=4)
+    assert(degrees_of_freedom(m)==0)
+    m.fs.turb.initialize()
 
     eq_cons = activated_equalities_generator(m)
     for c in eq_cons:

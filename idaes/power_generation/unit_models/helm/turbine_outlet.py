@@ -164,6 +164,8 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         self.outlet.pressure.fix()
         if calculate_cf:
             self.flow_coeff.unfix()
+            self.inlet.flow_mol.unfix()
+            self.inlet.flow_mol[0].fix()
             flow = self.control_volume.properties_in[0].flow_mol
             mw = self.control_volume.properties_in[0].mw
             Tin = self.control_volume.properties_in[0].temperature
@@ -171,6 +173,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pr = self.ratioP[0]
             self.flow_coeff.value = value(
                 flow * mw * sqrt(Tin/(1 - Pr ** 2))/Pin)
+
         else:
             self.inlet.flow_mol.unfix()
 
@@ -178,6 +181,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         self.efficiency_correlation.activate()
         slvr = SolverFactory(solver)
         slvr.options = optarg
+        self.display()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
