@@ -47,6 +47,7 @@ kwargs = dict(
         "click",
         "colorama",
         "flask",  # for ui/fsvis
+        "flask-cors",
         "jupyter",
         "lxml",
         "matplotlib",

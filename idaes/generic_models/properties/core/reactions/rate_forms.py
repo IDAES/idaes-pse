@@ -18,7 +18,6 @@ from idaes.generic_models.properties.core.generic.generic_reaction import \
 
 
 # -----------------------------------------------------------------------------
-# Constant dh_rxn
 class power_law_rate():
     def build_parameters(rblock, config):
         pass

@@ -13,8 +13,8 @@
 """
 Example for Caprese's module for NMPC.
 """
-from idaes.apps.caprese import nmpc
-from idaes.apps.caprese.nmpc import *
+from idaes.apps.caprese import NMPCSim, ControlInitOption
+from pyomo.environ import SolverFactory
 import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
@@ -28,7 +28,8 @@ if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
     solver.options = {'tol': 1e-6,
                       'bound_push': 1e-8,
-                      'halt_on_ampl_error': 'yes'}
+                      'halt_on_ampl_error': 'yes',
+                      }
 else:
     solver = None
 
@@ -66,7 +67,6 @@ def main(plot_switch=False):
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
-    m_steady = make_model(steady=True)
     sample_time = 0.5
     time_plant = m_plant.fs.time
 
@@ -90,9 +90,12 @@ def main(plot_switch=False):
                    inputs_at_t0=initial_plant_inputs,
                    solver=solver, outlvl=idaeslog.DEBUG,
                    sample_time=sample_time)
-    
+
     plant = nmpc.plant
     controller = nmpc.controller
+
+    nmpc.solve_consistent_initial_conditions(plant)
+    nmpc.solve_consistent_initial_conditions(controller)
     
     set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
                  (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
@@ -111,7 +114,9 @@ def main(plot_switch=False):
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
             objective_weight_tolerance=weight_tolerance,
-            outlvl=idaeslog.DEBUG)
+            outlvl=idaeslog.DEBUG,
+            allow_inconsistent=False,
+            tolerance=1e-6)
 
     nmpc.add_setpoint_to_controller()
     

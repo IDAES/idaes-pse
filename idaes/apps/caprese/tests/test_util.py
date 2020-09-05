@@ -53,7 +53,6 @@ else:
     solver = None
 
 
-# @ pytest something...?
 @pytest.mark.unit
 def test_find_comp_in_block():
     m1 = ConcreteModel()

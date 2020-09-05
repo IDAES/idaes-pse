@@ -209,7 +209,7 @@ class DmfMagicsImpl(object):
                 lines.append(rowstr)
             listing = '\n'.join(lines)
             self._dmf_markdown(listing)
-            return '{:d} workspaces found\n'.format(len(listing))
+            return '{:d} workspace(s) found'.format(len(output_table))
 
     def dmf_list(self):
         """List resources in the current workspace. *Arguments*: none.
@@ -227,7 +227,7 @@ class DmfMagicsImpl(object):
         self._dmf_markdown(listing)
         return True
 
-    def dmf_info(self, *topics):
+    def dmf_status(self, *topics):
         """Provide information about DMF current state. *Arguments*: none
 
         Args:

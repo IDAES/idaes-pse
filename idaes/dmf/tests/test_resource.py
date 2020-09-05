@@ -19,6 +19,7 @@ import json
 import logging
 import math
 import os
+from pathlib import Path
 import shutil
 import sys
 
@@ -27,6 +28,7 @@ import pytest
 
 # local
 from idaes.dmf import resource, propdata
+from idaes.dmf.resource import Predicates
 from idaes.util.system import mkdtemp
 
 # for testing
@@ -48,23 +50,6 @@ def example_resource():
         {"name": "Clark Kent", "email": "ckent@dailyplanet.com"},
         {"name": "Superman", "email": "sman@fortress.solitude.org"},
     ]
-    r.v["sources"].append(
-        {
-            "isbn": "978-0201616224",
-            "source": 'Hunt, A. and Thomas, D., "The Pragmatic Programmer", '
-            "Addison-Wesley, 1999",
-            "date": "1999-01-01",
-        }
-    )
-    r.v["codes"].append(
-        {
-            "type": "function",
-            "name": "test_resource_full",
-            "desc": "The test function",
-            "location": __file__,
-            "version": test_version,
-        }
-    )
     r.v["datafiles"].append({"path": "/etc/passwd"})
     r.v["aliases"] = ["test_resource_full"]
     r.v["tags"] = ["test", "resource"]
@@ -92,7 +77,6 @@ def test_resource_roundtrip(example_resource):
     r2 = resource.Resource(value=r2_value)
     # compare them
     assert r2.v["version_info"] == r.v["version_info"]
-    assert r2.v["sources"][0]["date"] == r.v["sources"][0]["date"]
     assert r2.data["arbitrary"]["values"][0] == 1
 
 
@@ -172,8 +156,8 @@ def test_get_datafiles_relative(default_resource, tmpd):
         paths.add(path)
     # check that these, and only these, files are returned
     for f in r.get_datafiles():
-        assert f.name in paths
-        paths.remove(f.name)
+        assert str(f) in paths
+        paths.remove(str(f))
     assert len(paths) == 0  # all were returned
 
 
@@ -190,15 +174,15 @@ def test_get_datafiles_absolute(default_resource, tmpd):
         paths.add(path)
     # check that these, and only these, files are returned
     for f in r.get_datafiles():
-        assert f.name in paths
-        paths.remove(f.name)
+        assert str(f) in paths
+        paths.remove(str(f))
     assert len(paths) == 0  # all were returned
 
 
 @pytest.mark.unit
 def test_create_relation(default_resource, example_resource):
     r1, r2 = default_resource, example_resource
-    relation = resource.Triple(r1, resource.PR_USES, r2)
+    relation = resource.Triple(r1, Predicates.uses, r2)
     resource.create_relation(relation)
     with pytest.raises(ValueError):  # duplicate will raise ValueError
         resource.create_relation(relation)

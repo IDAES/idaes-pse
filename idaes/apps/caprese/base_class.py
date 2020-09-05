@@ -25,7 +25,6 @@ from idaes.apps.caprese.common.config import (VariableCategory)
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
 import idaes.core.util.dyn_utils as dyn_utils
 import  idaes.logger as idaeslog
-# Don't think base class should need to import from util
 
 __author__ = "Robert Parker"
 
@@ -79,6 +78,7 @@ class DynamicBase(object):
         """
         """
         name = DynamicBase.get_namespace_name()
+        derived_name = cls.namespace_name
         if hasattr(model, name):
             # Return if namespace has already been added. Don't throw an error
             # as this is expected if the user, say wants to use the same model
@@ -89,14 +89,17 @@ class DynamicBase(object):
                 'time must belong to same top-level model as model')
         model.add_component(name, Block())
         namespace = getattr(model, name)
+        derived_namespace = getattr(model, derived_name)
 
         def get_time():
             return time
         namespace.get_time = get_time
+        derived_namespace.get_time = namespace.get_time
+
         # Validate discretization scheme and get ncp:
         namespace.ncp = dyn_config.get_ncp(time)
 
-        namespace.variables_vategorized = False
+        namespace.variables_categorized = False
 
     @classmethod
     def remove_namespace_from(cls, model):
@@ -289,7 +292,6 @@ class DynamicBase(object):
                 namespace.scalar_vars.n_vars
         input_set = ComponentSet(initial_inputs)
         updated_input_set = ComponentSet(initial_inputs)
-        diff_set = ComponentSet()
 
         # Iterate over initial vardata, popping from dae map when an input,
         # derivative, or differential var is found.

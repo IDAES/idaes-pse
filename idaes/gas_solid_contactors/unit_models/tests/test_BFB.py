@@ -357,6 +357,25 @@ class TestIronOC_EnergyBalanceType(object):
                          "reaction_package": m.fs.hetero_reactions
                          }})
 
+        # Fix geometry variables
+        m.fs.unit.number_orifice.fix(2500)  # [-]
+        m.fs.unit.bed_diameter.fix(6.5)  # m
+        m.fs.unit.bed_height.fix(5)  # m
+
+        # Fix inlet port variables for gas and solid
+        m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
+        m.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
+        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
+
+        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
+        m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
+
         return m
 
     @pytest.mark.build
