@@ -47,7 +47,7 @@ class MPIInterface:
         self._rank = None
 
         if self.have_mpi:
-            self._comm = MPI.COMM_WORLD
+            self._comm = MPI.COMM_WORLD  # pylint: disable=undefined-variable
             self._size = self._comm.Get_size()
             self._rank = self._comm.Get_rank()
 
