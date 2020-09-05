@@ -44,9 +44,11 @@ _log = idaeslog.getLogger(__name__)
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['ReactionBlockData',
-           'ReactionBlock',
-           'ReactionParameterBlock']
+__all__ = [
+    'ReactionBlockData',
+    'ReactionBlock',  # pylint: disable=undefined-all-variable
+    'ReactionParameterBlock'  # pylint: disable=undefined-all-variable
+]
 
 
 class _lock_attribute_creation_context(object):
