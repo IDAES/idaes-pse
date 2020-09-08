@@ -201,5 +201,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         super().calculate_scaling_factors()
         for t, c in self.stodola_equation.items():
             s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].flow_mol)**2
+                self.control_volume.properties_in[t].flow_mol,
+                default=1,
+                warning=True)**2
             iscale.constraint_scaling_transform(c, s)

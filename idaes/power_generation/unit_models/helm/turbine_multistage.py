@@ -40,6 +40,8 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as copy_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
+import idaes.core.util.scaling as iscale
+
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -489,15 +491,26 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 source=self.inlet_mix.outlet, destination=self.hp_stages[1].inlet
             )
 
-        @self.Expression(self.flowsheet().config.time)
-        def power(b, t):
-            return (
-                sum(b.inlet_stage[i].power_shaft[t] for i in b.inlet_stage)
-                + b.outlet_stage.power_shaft[t]
-                + sum(b.hp_stages[i].power_shaft[t] for i in b.hp_stages)
-                + sum(b.ip_stages[i].power_shaft[t] for i in b.ip_stages)
-                + sum(b.lp_stages[i].power_shaft[t] for i in b.lp_stages)
+        self.power = pyo.Var(
+            self.flowsheet().config.time, initialize=-1e8, doc="power (W)")
+        @self.Constraint(self.flowsheet().config.time)
+        def power_eqn(b, t):
+            return (b.power[t] ==
+                b.outlet_stage.control_volume.work[t]*b.outlet_stage.efficiency_mech
+                + sum(
+                    b.inlet_stage[i].control_volume.work[t]*b.inlet_stage[i].efficiency_mech
+                    for i in b.inlet_stage)
+                + sum(
+                    b.hp_stages[i].control_volume.work[t]*b.hp_stages[i].efficiency_mech
+                    for i in b.hp_stages)
+                + sum(
+                    b.ip_stages[i].control_volume.work[t]*b.ip_stages[i].efficiency_mech
+                    for i in b.ip_stages)
+                + sum(
+                    b.lp_stages[i].control_volume.work[t]*b.lp_stages[i].efficiency_mech
+                    for i in b.lp_stages)
             )
+
 
         # Connect lp section to outlet stage, not allowing outlet stage to be
         # disconnected
@@ -763,3 +776,19 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                     self.inlet_stage[i].flow_coeff[t] = icf[i,t]
         if calculate_outlet_cf:
             self.outlet_stage.flow_coeff = ocf
+
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        # Add a default power scale
+        # pretty safe to say power is around 100 to 1000 MW
+
+        for t in self.power:
+            if iscale.get_scaling_factor(self.power[t]) is None:
+                iscale.set_scaling_factor(self.power[t], 1e-8)
+
+        for t, c in self.power_eqn.items():
+            power_scale = iscale.get_scaling_factor(
+                self.power[t], default=1, warning=True)
+            # Set power equation scale factor
+            iscale.constraint_scaling_transform(c, power_scale)
