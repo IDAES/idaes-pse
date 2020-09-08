@@ -143,9 +143,9 @@ class TestSaponification(object):
     @pytest.mark.component
     def test_units(self, sapon):
         assert_units_consistent(sapon)
-        assert_units_equivalent(sapon.fs.unit.volume, units.m**3)
-        assert_units_equivalent(sapon.fs.unit.heat_duty, units.W)
-        assert_units_equivalent(sapon.fs.unit.deltaP, units.Pa)
+        assert_units_equivalent(sapon.fs.unit.volume[0], units.m**3)
+        assert_units_equivalent(sapon.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, sapon):
