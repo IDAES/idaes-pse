@@ -179,9 +179,40 @@ see property package for documentation.}"""))
                      "has_pressure_change":
                      self.config.has_pressure_change})
 
-        self._make_arcs()
+        self._make_pressure_balance()
 
+        self._make_arcs()
         TransformationFactory("network.expand_arcs").apply_to(self)
+
+    def _make_pressure_balance(self):
+        if self.config.has_pressure_change:
+            self.deltaP = Var(self.flowsheet().config.time,
+                              self.tray_index,
+                              initialize=0,
+                              doc="pressure drop across tray")
+
+        @self.Constraint(self.flowsheet().config.time,
+                         self.tray_index,
+                         doc="pressure balance for tray")
+        def pressure_drop_equation(self, t, i):
+            if self.config.has_pressure_change:
+                if i == 1:
+                    return self.tray[i].properties_out[t].pressure == \
+                        self.condenser.control_volume.properties_out[t].\
+                        pressure + self.deltaP[t, i]
+                else:
+                    return self.tray[i].properties_out[t].pressure == \
+                        self.tray[i - 1].properties_out[t].\
+                        pressure + self.deltaP[t, i]
+            else:
+                if i == 1:
+                    return self.tray[i].properties_out[t].pressure == \
+                        self.condenser.control_volume.properties_out[t].\
+                        pressure
+                else:
+                    return self.tray[i].properties_out[t].pressure == \
+                        self.tray[i - 1].properties_out[t].\
+                        pressure            
 
     def _make_arcs(self):
         # make arcs
@@ -275,12 +306,73 @@ see property package for documentation.}"""))
                     destination=self.tray[i].vap_in)
                 self.tray[i].initialize()
 
+        # self.reboiler.control_volume.properties_in[0].flow_mol.fix(100)
+        # self.reboiler.control_volume.properties_in[0].temperature.fix(368)
+        # self.reboiler.control_volume.properties_in[0].pressure.fix(101325)
+        # self.reboiler.control_volume.properties_in[0].mole_frac_comp["benzene"].fix(0.5)
+        # self.reboiler.control_volume.properties_in[0].mole_frac_comp["toluene"].fix(0.5)
+
+        # self.vap_stream.display()
+        print(degrees_of_freedom(self))
+
+        self.vap_stream[self.config.number_of_trays + 1].deactivate()
+        # self.vap_stream[1].deactivate()
+
+        # self.liq_stream[0].deactivate()
+        self.liq_stream[3].deactivate()
+
+        self.reboiler.deactivate()
+        # self.condenser.deactivate()
+
+        # self.tray[1].properties_in_liq[0].flow_mol.fix()
+        # self.tray[1].properties_in_liq[0].temperature.fix()
+        # self.tray[1].properties_in_liq[0].pressure.fix()
+        # self.tray[1].properties_in_liq[0].mole_frac_comp["benzene"].fix()
+        # self.tray[1].properties_in_liq[0].mole_frac_comp["toluene"].fix()
+
+        self.tray[3].properties_in_vap[0].flow_mol.fix()
+        self.tray[3].properties_in_vap[0].temperature.fix()
+        self.tray[3].properties_in_vap[0].pressure.fix()
+        self.tray[3].properties_in_vap[0].mole_frac_comp["benzene"].fix()
+        self.tray[3].properties_in_vap[0].mole_frac_comp["toluene"].fix()
+
+
+        # raise Exception(degrees_of_freedom(self))
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         init_log.info_high(
             "Column initialization status {}.".format(idaeslog.condition(res))
         )
 
-        self.condenser.report()
+        print(res)
+
+        # self.tray[3].properties_in_vap[0].pressure.unfix()
+        # self.eq_pressure = Constraint(
+        #     expr=self.reboiler.control_volume.properties_out[0].pressure ==
+        #     self.tray[3].properties_in_vap[0].pressure)
+
+        # self.tray[3].properties_in_vap[0].temperature.unfix()
+        # self.eq_temperature = Constraint(
+        #     expr=self.reboiler.control_volume.properties_out[0].temperature ==
+        #     self.tray[3].properties_in_vap[0].temperature)
+
+
+        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+        #     res = solver.solve(self, tee=slc.tee)
+        # init_log.info_high(
+        #     "Column initialization status {}.".format(idaeslog.condition(res))
+        # )
+
+        for i in self.tray_index:
+            self.tray[i].liq_in.display()
+            self.tray[i].vap_in.display()
+
+            self.tray[i].liq_out.display()
+            self.tray[i].vap_out.display()
+
         self.reboiler.report()
+        self.condenser.report()
+        # self.tray[3].properties_in_vap[0].display()
+        # self.reboiler.control_volume.properties_out[0].display()
         raise Exception(res)
