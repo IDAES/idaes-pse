@@ -33,9 +33,10 @@
 
   <!-- I (Makayla) couldn't figure out how to import the variables
        from Flask's render_template directly into the seperate 
-       javascript file so I'm storing it in a div tag that the
+       javascript file so I'm storing it in div tags that the
        javascript accesses -->
   <div id="model" data-model='{{ model | tojson | safe }}'></div>
+  <div id="model-server-url" data-modelurl="{{ modelurl }}"></div>
   </div>
 
   <!-- Rappid/JointJS dependencies: -->

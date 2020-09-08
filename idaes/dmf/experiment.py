@@ -19,6 +19,7 @@ from copy import deepcopy
 import logging
 # local
 from idaes.dmf import resource, errors
+from idaes.dmf.resource import Predicates, ResourceTypes
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -40,7 +41,7 @@ class Experiment(resource.Resource):
             kwargs: Keyword arguments passed to parent class.
         """
         super(Experiment, self).__init__(value=kwargs)
-        self.v[self.TYPE_FIELD] = resource.TY_EXPERIMENT
+        self.v[self.TYPE_FIELD] = ResourceTypes.experiment
         dmf.add(self)
         self._dmf = dmf
 
@@ -62,7 +63,7 @@ class Experiment(resource.Resource):
         Returns:
             resource.Resource: Added (input) resource, for chaining calls.
         """
-        resource.create_relation(self, resource.PR_CONTAINS, rsrc)
+        resource.create_relation(self, Predicates.contains, rsrc)
         self._dmf.update(rsrc, upsert=True)
         self._dmf.update(self)
 
@@ -103,7 +104,7 @@ class Experiment(resource.Resource):
         for m in 'add', 'update', 'remove', 'link', 'copy':
             self.__dict__[m] = self._removed
 
-    def link(self, subj, predicate=resource.PR_CONTAINS, obj=None):
+    def link(self, subj, predicate=Predicates.contains, obj=None):
         """Add and update relation triple in DMF.
 
         Args:

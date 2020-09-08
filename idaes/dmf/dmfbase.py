@@ -742,6 +742,7 @@ class DMF(workspace.Workspace, HasTraits):
                 )
             )
             return
+        # TODO: Delete all associated data files!!
         self._db.delete(idlist=id_list, internal_ids=True)
         # delete any added during this session
         for rsrc_id in id_list:
