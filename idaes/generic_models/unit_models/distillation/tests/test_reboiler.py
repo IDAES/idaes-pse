@@ -228,7 +228,7 @@ class TestBTXIdeal():
         assert (pytest.approx(368.728, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.bottoms.pressure[0]))
+                value(btx_ftpz.fs.unit.vapor_reboil.pressure[0]))
 
         # Unit level
         assert (pytest.approx(16926.526, abs=1e-3) ==
@@ -254,7 +254,7 @@ class TestBTXIdeal():
         assert (pytest.approx(368.728, abs=1e-3) ==
                 value(btx_fctp.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
-                value(btx_fctp.fs.unit.bottoms.pressure[0]))
+                value(btx_fctp.fs.unit.vapor_reboil.pressure[0]))
 
         # Unit level
         assert (pytest.approx(16926.370, abs=1e-3) ==
