@@ -113,52 +113,76 @@ class MethaneParameterData(ActivityCoeffParameterData):
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
         #         4th edition, Chemical Engineering Series - Robert C. Reid
-        CpIG_data = {('Vap', 'CH4', 'A'): 1.925e1,
-                     ('Vap', 'CH4', 'B'): 5.213e-2,
-                     ('Vap', 'CH4', 'C'): 1.197e-5,
-                     ('Vap', 'CH4', 'D'): -1.132e-8,
-                     ('Vap', 'CH4', 'E'): 0,
-                     ('Vap', 'CO', 'A'): 3.087e1,
-                     ('Vap', 'CO', 'B'): -1.285e-2,
-                     ('Vap', 'CO', 'C'): 2.789e-5,
-                     ('Vap', 'CO', 'D'): -1.272e-8,
-                     ('Vap', 'CO', 'E'): 0,
-                     ('Vap', 'CO2', 'A'): 1.980e1,
-                     ('Vap', 'CO2', 'B'): 7.344e-2,
-                     ('Vap', 'CO2', 'C'): -5.602e-5,
-                     ('Vap', 'CO2', 'D'): 1.715e-8,
-                     ('Vap', 'CO2', 'E'): 0,
-                     ('Vap', 'H2', 'A'): 2.714e1,
-                     ('Vap', 'H2', 'B'): 9.274e-3,
-                     ('Vap', 'H2', 'C'): -1.381e-5,
-                     ('Vap', 'H2', 'D'): 7.645e-9,
-                     ('Vap', 'H2', 'E'): 0,
-                     ('Vap', 'H2O', 'A'): 3.224e1,
-                     ('Vap', 'H2O', 'B'): 1.924e-3,
-                     ('Vap', 'H2O', 'C'): 1.055e-5,
-                     ('Vap', 'H2O', 'D'): -3.596e-9,
-                     ('Vap', 'H2O', 'E'): 0,
-                     ('Vap', 'N2', 'A'): 3.115e1,
-                     ('Vap', 'N2', 'B'): -1.357e-2,
-                     ('Vap', 'N2', 'C'): 2.680e-5,
-                     ('Vap', 'N2', 'D'): -1.168e-8,
-                     ('Vap', 'N2', 'E'): 0,
-                     ('Vap', 'NH3', 'A'): 2.731e1,
-                     ('Vap', 'NH3', 'B'): 2.383e-2,
-                     ('Vap', 'NH3', 'C'): 1.707e-5,
-                     ('Vap', 'NH3', 'D'): -1.185e-8,
-                     ('Vap', 'NH3', 'E'): 0,
-                     ('Vap', 'O2', 'A'): 2.811e1,
-                     ('Vap', 'O2', 'B'): -3.680e-6,
-                     ('Vap', 'O2', 'C'): 1.746e-5,
-                     ('Vap', 'O2', 'D'): -1.065e-8,
-                     ('Vap', 'O2', 'E'): 0}
+        Cp_Vap_A_data = {('CH4'): 1.925e1,
+                         ('CO'): 3.087e1,
+                         ('CO2'): 1.980e1,
+                         ('H2'): 2.714e1,
+                         ('H2O'): 3.224e1,
+                         ('N2'): 3.115e1,
+                         ('NH3'): 2.731e1,
+                         ('O2'): 2.811e1}
+        Cp_Vap_B_data = {('CH4'): 5.213e-2,
+                         ('CO'): -1.285e-2,
+                         ('CO2'): 7.344e-2,
+                         ('H2'): 9.274e-3,
+                         ('H2O'): 1.924e-3,
+                         ('N2'): -1.357e-2,
+                         ('NH3'): 2.383e-2,
+                         ('O2'): -3.680e-6}
+        Cp_Vap_C_data = {('CH4'): 1.197e-5,
+                         ('CO'): 2.789e-5,
+                         ('CO2'): -5.602e-5,
+                         ('H2'): -1.381e-5,
+                         ('H2O'): 1.055e-5,
+                         ('N2'): 2.680e-5,
+                         ('NH3'): 1.707e-5,
+                         ('O2'): 1.746e-5}
+        Cp_Vap_D_data = {('CH4'): -1.132e-8,
+                         ('CO'): -1.272e-8,
+                         ('CO2'): 1.715e-8,
+                         ('H2'): 7.645e-9,
+                         ('H2O'): -3.596e-9,
+                         ('N2'): -1.168e-8,
+                         ('NH3'): -1.185e-8,
+                         ('O2'): -1.065e-8}
+        Cp_Vap_E_data = {('CH4'): 0,
+                         ('CO'): 0,
+                         ('CO2'): 0,
+                         ('H2'): 0,
+                         ('H2O'): 0,
+                         ('N2'): 0,
+                         ('NH3'): 0,
+                         ('O2'): 0}
 
-        self.CpIG = Param(self.phase_list, self.component_list,
-                          ['A', 'B', 'C', 'D', 'E'],
-                          mutable=False,
-                          initialize=extract_data(CpIG_data),
-                          doc="parameters to compute Cp_comp")
+        self.cp_mol_vap_comp_coeff_A = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K,
+            doc="Vapor phase Cp parameter A",
+            initialize=extract_data(Cp_Vap_A_data))
+
+        self.cp_mol_vap_comp_coeff_B = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**2,
+            doc="Vapor phase Cp parameter B",
+            initialize=extract_data(Cp_Vap_B_data))
+
+        self.cp_mol_vap_comp_coeff_C = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**3,
+            doc="Vapor phase Cp parameter C",
+            initialize=extract_data(Cp_Vap_C_data))
+
+        self.cp_mol_vap_comp_coeff_D = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**4,
+            doc="Vapor phase Cp parameter D",
+            initialize=extract_data(Cp_Vap_D_data))
+
+        self.cp_mol_vap_comp_coeff_E = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**5,
+            doc="Vapor phase Cp parameter E",
+            initialize=extract_data(Cp_Vap_E_data))
 
         # Source: NIST Webbook, 9th October 2019
         dh_form = {("Vap", "CH4"): -74600,

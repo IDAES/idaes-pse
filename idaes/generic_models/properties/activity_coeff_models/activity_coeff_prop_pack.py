@@ -963,41 +963,43 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _enth_mol_comp_liq(self, j):
         # Liquid phase comp enthalpy (J/mol)
         # 1E3 conversion factor to convert from J/kmol to J/mol
-        return self.enth_mol_phase_comp["Liq", j] * 1E3 == \
-            1e3*self.params.dh_form["Liq", j] + \
-            ((self.params.CpIG["Liq", j, "E"] / 5) *
+        return self.enth_mol_phase_comp["Liq", j] == \
+            self.params.dh_form["Liq", j] + \
+            pyunits.convert((
+                (self.params.cp_mol_liq_comp_coeff_E[j] / 5) *
                 (self.temperature**5 -
                  self.params.temperature_reference**5)
-                + (self.params.CpIG["Liq", j, "D"] / 4) *
+                + (self.params.cp_mol_liq_comp_coeff_D[j] / 4) *
                   (self.temperature**4 -
                    self.params.temperature_reference**4)
-                + (self.params.CpIG["Liq", j, "C"] / 3) *
+                + (self.params.cp_mol_liq_comp_coeff_C[j] / 3) *
                   (self.temperature**3 -
                    self.params.temperature_reference**3)
-                + (self.params.CpIG["Liq", j, "B"] / 2) *
+                + (self.params.cp_mol_liq_comp_coeff_B[j] / 2) *
                   (self.temperature**2 -
                    self.params.temperature_reference**2)
-                + self.params.CpIG["Liq", j, "A"] *
-                  (self.temperature - self.params.temperature_reference))
+                + self.params.cp_mol_liq_comp_coeff_A[j] *
+                  (self.temperature - self.params.temperature_reference)),
+                to_units=pyunits.J/pyunits.mol)
 
     def _enth_mol_comp_vap(self, j):
 
         # Vapor phase component enthalpy (J/mol)
         return self.enth_mol_phase_comp["Vap", j] == \
             self.params.dh_form["Vap", j] + \
-            ((self.params.CpIG["Vap", j, "E"] / 5) *
+            ((self.params.cp_mol_vap_comp_coeff_E[j] / 5) *
                 (self.temperature**5 -
                  self.params.temperature_reference**5)
-                + (self.params.CpIG["Vap", j, "D"] / 4) *
+                + (self.params.cp_mol_vap_comp_coeff_D[j] / 4) *
                   (self.temperature**4 -
                    self.params.temperature_reference**4)
-                + (self.params.CpIG["Vap", j, "C"] / 3) *
+                + (self.params.cp_mol_vap_comp_coeff_C[j] / 3) *
                   (self.temperature**3 -
                    self.params.temperature_reference**3)
-                + (self.params.CpIG["Vap", j, "B"] / 2) *
+                + (self.params.cp_mol_vap_comp_coeff_B[j] / 2) *
                   (self.temperature**2 -
                    self.params.temperature_reference**2)
-                + self.params.CpIG["Vap", j, "A"] *
+                + self.params.cp_mol_vap_comp_coeff_A[j] *
                   (self.temperature -
                    self.params.temperature_reference))
 
@@ -1033,32 +1035,34 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _entr_mol_comp_liq(self, j):
         # Liquid phase comp entropy (J/mol.K)
         # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
-        return self.entr_mol_phase_comp['Liq', j] * 1E3 == \
-            1E3*self.params.ds_form["Liq", j] + (
-            ((self.params.CpIG['Liq', j, 'E'] / 4) *
+        return self.entr_mol_phase_comp['Liq', j] == (
+            self.params.ds_form["Liq", j] +
+            pyunits.convert((
+                (self.params.cp_mol_liq_comp_coeff_E[j] / 4) *
                 (self.temperature**4 - self.params.temperature_reference**4)
-                + (self.params.CpIG['Liq', j, 'D'] / 3) *
+                + (self.params.cp_mol_liq_comp_coeff_D[j] / 3) *
                   (self.temperature**3 - self.params.temperature_reference**3)
-                + (self.params.CpIG['Liq', j, 'C'] / 2) *
+                + (self.params.cp_mol_liq_comp_coeff_C[j] / 2) *
                   (self.temperature**2 - self.params.temperature_reference**2)
-                + self.params.CpIG['Liq', j, 'B'] *
+                + self.params.cp_mol_liq_comp_coeff_B[j] *
                   (self.temperature - self.params.temperature_reference)
-                + self.params.CpIG['Liq', j, 'A'] *
-             log(self.temperature / self.params.temperature_reference)))
+                + self.params.cp_mol_liq_comp_coeff_A[j] *
+                log(self.temperature / self.params.temperature_reference)),
+                to_units=pyunits.J/pyunits.mol/pyunits.K))
 
     def _entr_mol_comp_vap(self, j):
         # component molar entropy of vapor phase
         return self.entr_mol_phase_comp["Vap", j] == (
             self.params.ds_form["Vap", j] +
-            ((self.params.CpIG['Vap', j, 'E'] / 4) *
+            ((self.params.cp_mol_vap_comp_coeff_E[j] / 4) *
              (self.temperature**4 - self.params.temperature_reference**4)
-             + (self.params.CpIG['Vap', j, 'D'] / 3) *
+             + (self.params.cp_mol_vap_comp_coeff_D[j] / 3) *
              (self.temperature**3 - self.params.temperature_reference**3)
-             + (self.params.CpIG['Vap', j, 'C'] / 2) *
+             + (self.params.cp_mol_vap_comp_coeff_C[j] / 2) *
                (self.temperature**2 - self.params.temperature_reference**2)
-                + self.params.CpIG['Vap', j, 'B'] *
+                + self.params.cp_mol_vap_comp_coeff_B[j] *
                (self.temperature - self.params.temperature_reference)
-                + self.params.CpIG['Vap', j, 'A'] *
+                + self.params.cp_mol_vap_comp_coeff_A[j] *
                 log(self.temperature / self.params.temperature_reference)) -
             const.gas_constant * log(self.mole_frac_phase_comp['Vap', j] *
                                      self.pressure /
