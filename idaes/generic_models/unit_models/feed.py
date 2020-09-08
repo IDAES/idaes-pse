@@ -32,6 +32,7 @@ __author__ = "Andrew Lee"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 @declare_process_block_class("Feed")
 class FeedData(UnitModelBlockData):
     """

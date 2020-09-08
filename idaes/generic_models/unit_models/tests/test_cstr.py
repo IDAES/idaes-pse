@@ -21,7 +21,6 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            units,
                            value)
-from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
