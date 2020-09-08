@@ -100,16 +100,16 @@ corresponding ports,
 **Valid values:** {
 **True** - include a heat duty term,
 **False** - exclude a heat duty term.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="pressure change term construction flag",
-        doc="""indicates whether terms for pressure change should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
+    # CONFIG.declare("has_pressure_change", ConfigValue(
+    #     default=False,
+    #     domain=In([True, False]),
+    #     description="pressure change term construction flag",
+    #     doc="""indicates whether terms for pressure change should be
+    # constructed,
+    # **default** - False.
+    # **Valid values:** {
+    # **True** - include pressure change terms,
+    # **False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -174,7 +174,7 @@ see property package for documentation.}"""))
         self._add_material_balance()
         self._add_energy_balance()
 
-        self._add_pressure_balance()
+        # self._add_pressure_balance()
 
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
@@ -284,21 +284,21 @@ see property package for documentation.}"""))
                             get_enthalpy_flow_terms(p)
                             for p in b.config.property_package.phase_list))
 
-    def _add_pressure_balance(self):
-        """Method to construct the pressure balance."""
-        if self.config.has_pressure_change:
-            self.deltaP = Var(self.flowsheet().config.time, initialize=0,
-                              doc="pressure drop across tray")
-
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="pressure balance for tray")
-        def pressure_drop_equation(self, t):
-            if self.config.has_pressure_change:
-                return self.properties_out[t].pressure == \
-                    self.properties_in_vap[t].pressure - self.deltaP[t]
-            else:
-                return self.properties_out[t].pressure == \
-                    self.properties_in_vap[t].pressure
+    # def _add_pressure_balance(self):
+    #     """Method to construct the pressure balance."""
+    #     if self.config.has_pressure_change:
+    #         self.deltaP = Var(self.flowsheet().config.time, initialize=0,
+    #                           doc="pressure drop across tray")
+    #
+    #     @self.Constraint(self.flowsheet().config.time,
+    #                      doc="pressure balance for tray")
+    #     def pressure_drop_equation(self, t):
+    #         if self.config.has_pressure_change:
+    #             return self.properties_out[t].pressure == \
+    #                 self.properties_in_vap[t].pressure - self.deltaP[t]
+    #         else:
+    #             return self.properties_out[t].pressure == \
+    #                 self.properties_in_vap[t].pressure
 
     def _add_ports(self):
         """Method to construct the ports for the tray."""
@@ -625,21 +625,51 @@ see property package for documentation.}"""))
         # Create initial guess if not provided by using current values
         if self.config.is_feed_tray and state_args_feed is None:
             state_args_feed = {}
+            state_args_liq = {}
+            state_args_vap = {}
             state_dict = (
                 self.properties_in_feed[
                     self.flowsheet().config.time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args_feed[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args_feed[k][m] = state_dict[k][m].value
+                if "flow" in k:
+                    if state_dict[k].is_indexed():
+                        state_args_feed[k] = {}
+                        state_args_liq[k] = {}
+                        state_args_vap[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_feed[k][m] = \
+                                state_dict[k][m].value
+                            state_args_liq[k][m] = \
+                                0.1 * state_dict[k][m].value
+                            state_args_vap[k][m] = \
+                                0.1 * state_dict[k][m].value
+
+                    else:
+                        state_args_feed[k] = state_dict[k].value
+                        state_args_liq[k] = 0.1 * state_dict[k].value
+                        state_args_vap[k] = 0.1 * state_dict[k].value
                 else:
-                    state_args_feed[k] = state_dict[k].value
+                    if state_dict[k].is_indexed():
+                        state_args_feed[k] = {}
+                        state_args_liq[k] = {}
+                        state_args_vap[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_feed[k][m] = \
+                                state_dict[k][m].value
+                            state_args_liq[k][m] = \
+                                state_dict[k][m].value
+                            state_args_vap[k][m] = \
+                                state_dict[k][m].value
+
+                    else:
+                        state_args_feed[k] = state_dict[k].value
+                        state_args_liq[k] = state_dict[k].value
+                        state_args_vap[k] = state_dict[k].value
 
         # Create initial guess if not provided by using current values
-        if state_args_liq is None:
+        if not self.config.is_feed_tray and state_args_liq is None:
             state_args_liq = {}
             state_dict = (
                 self.properties_in_liq[
@@ -655,7 +685,7 @@ see property package for documentation.}"""))
                     state_args_liq[k] = state_dict[k].value
 
         # Create initial guess if not provided by using current values
-        if state_args_vap is None:
+        if not self.config.is_feed_tray and state_args_vap is None:
             state_args_vap = {}
             state_dict = (
                 self.properties_in_vap[
@@ -683,7 +713,7 @@ see property package for documentation.}"""))
                        solver=solver,
                        optarg=optarg,
                        hold_state=True,
-                       state_args=state_args_feed,
+                       state_args=state_args_liq,
                        state_vars_fixed=False)
 
         vap_in_flags = self.properties_in_vap. \
@@ -691,7 +721,7 @@ see property package for documentation.}"""))
                        solver=solver,
                        optarg=optarg,
                        hold_state=True,
-                       state_args=state_args_feed,
+                       state_args=state_args_vap,
                        state_vars_fixed=False)
 
         # state args to initialize the mixed outlet state block
@@ -755,7 +785,7 @@ see property package for documentation.}"""))
                              "proceeding with a potential degree of freedom.")
 
         # Deactivate pressure balance
-        self.pressure_drop_equation.deactivate()
+        # self.pressure_drop_equation.deactivate()
 
         # Try fixing the outlet temperature if else pass
         # NOTE: if passed then there would probably be a degree of freedom
@@ -788,12 +818,12 @@ see property package for documentation.}"""))
         )
 
         # Activate pressure balance
-        self.pressure_drop_equation.activate()
+        # self.pressure_drop_equation.activate()
 
-        try:
-            self.properties_out[:].pressure.unfix()
-        except AttributeError:
-            pass
+        # try:
+        #     self.properties_out[:].pressure.unfix()
+        # except AttributeError:
+        #     pass
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
