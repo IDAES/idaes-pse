@@ -159,17 +159,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 doc='Diameter of solid particles [m]')
         self.particle_dia.fix()
 
-        # # Particle porosity:
-        # # The porosity of the OC particle is assumed to be a known parameter,
-        # # and it is calculated from the known bulk density of the fresh OC
-        # # particle (3251.75 kg/m3), and the known skeletal density of the
-        # # fresh OC particle (calculated from the known composition of the
-        # # fresh particle, and the skeletal density of its components)
-        # self.particle_porosity = Var(domain=Reals,
-        #                              initialize=0.27,
-        #                              doc='Porosity of oxygen carrier [-]')
-        # self.particle_porosity.fix()
-
         # TODO -provide reference
         # Minimum fluidization velocity - EPAT value used for Davidson model
         self.velocity_mf = Var(domain=Reals,
