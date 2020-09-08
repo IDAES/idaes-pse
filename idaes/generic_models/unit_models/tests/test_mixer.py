@@ -25,7 +25,10 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
@@ -52,8 +55,6 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -756,6 +757,10 @@ class TestBTX(object):
         assert number_total_constraints(btx) == 25
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -986,6 +991,10 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit.outlet, "enth_mol")
         assert hasattr(iapws.fs.unit.outlet, "pressure")
 
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
+
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
@@ -1096,6 +1105,10 @@ class TestSaponification(object):
         assert number_variables(sapon) == 26
         assert number_total_constraints(sapon) == 10
         assert number_unused_variables(sapon) == 0
+
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
 
     @pytest.mark.unit
     def test_dof(self, sapon):
