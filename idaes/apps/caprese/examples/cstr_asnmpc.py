@@ -159,6 +159,7 @@ def main(plot_switch=False):
     nmpc.initialize_control_problem(
             control_init_option=ControlInitOption.FROM_INITIAL_CONDITIONS)
     nmpc.solve_advanced_step_control_problem(measured_state)
+    # TODO: split into solve_control_problem and calculate_sensitivity_matrices
 
     # TODO: at what point should I step into NMPC loop?
 
