@@ -69,7 +69,7 @@ whether the model will be steady-state or dynamic, and to define the time domain
 
 .. note::
 
-    The IDAES Process Modeling Framework supports nested flowsheets to allow complex processes 
+    The IDAES platform supports nested flowsheets to allow complex processes 
     to be broken down into smaller sub-processes.
 
 2.3 Add Property Packages to Flowsheet
@@ -190,7 +190,7 @@ methods that can be called using ``model.initialize()`` which can be expected to
 from its initial state to a feasible solution for a set of initial guesses (within the models 
 expected operating range).
 
-The IDAES Process Modeling Framework generally uses a sequential-modular approach to 
+The IDAES platform generally uses a sequential-modular approach to 
 initializing flowsheets, where unit models are initialized sequentially, passing the outlet 
 state from one unit as the initial state for the next. An automated sequential-modular tool is 
 available through Pyomo and demonstrated in the tutorials.
@@ -247,7 +247,7 @@ of interest. This procedure will vary by application but generally involves the 
 8. Analyzing and Visualizing the Results
 ----------------------------------------
 
-One of the benefits of the IDAES modeling framework is that it operates in a fully featured 
+One of the benefits of the IDAES platform is that it operates in a fully featured 
 programming language, which provides users a high degree of flexibility in analyzing their 
 models. For example, users can automate the simulation of the model across multiple objectives 
 or a range of parameters, store and save results from one or multiple solutions. Users also have 
