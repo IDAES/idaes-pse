@@ -283,9 +283,12 @@ class _CubicStateBlock(StateBlock):
         # If present, initialize bubble and dew point calculations
         # Antoine equation
         def antoine_P(b, j, T):
-            return 1e5*10**(b.params.antoine_coeff_A[j] -
-                            b.params.antoine_coeff_B[j] /
-                            (T + b.params.antoine_coeff_C[j]))
+            return pyunits.convert_value(
+                value(10**(b.params.antoine_coeff_A[j] -
+                           b.params.antoine_coeff_B[j] /
+                           (T + b.params.antoine_coeff_C[j]))),
+                from_units=pyunits.bar,
+                to_units=pyunits.Pa)
 
         # Bubble temperature initialization
         for k in blk.keys():
@@ -296,7 +299,8 @@ class _CubicStateBlock(StateBlock):
                             blk[k].mole_frac_comp[j] *
                             (blk[k].params.antoine_coeff_B[j] /
                              (blk[k].params.antoine_coeff_A[j] -
-                              math.log10(value(blk[k].pressure*1e-5))) -
+                              math.log10(value(pyunits.convert(
+                                  blk[k].pressure, to_units=pyunits.bar)))) -
                              blk[k].params.antoine_coeff_C[j]))
 
                 err = 1
@@ -342,7 +346,8 @@ class _CubicStateBlock(StateBlock):
                             blk[k].mole_frac_comp[j] *
                             (blk[k].params.antoine_coeff_B[j] /
                              (blk[k].params.antoine_coeff_A[j] -
-                              math.log10(value(blk[k].pressure*1e-5))) -
+                              math.log10(value(pyunits.convert(
+                                  blk[k].pressure, to_units=pyunits.bar)))) -
                              blk[k].params.antoine_coeff_C[j]))
 
                 err = 1
