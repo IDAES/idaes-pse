@@ -160,7 +160,8 @@ conditions, and thus corresponding constraints  should be included,
                 # user or need to be estimated based on VLE data)
                 self.vol_mol_comp = Var(self.component_list,
                                         initialize=1.0,
-                                        doc="Molar volume of component")
+                                        doc="Molar volume of component",
+                                        units=pyunits.m**3/pyunits.mol)
 
                 self.tau = Var(self.component_list,
                                self.component_list,
@@ -467,7 +468,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if self.params.config.state_vars == "FTPz":
             self.flow_mol = Var(initialize=1.0,
                                 domain=NonNegativeReals,
-                                doc="Total molar flowrate [mol/s]")
+                                doc="Total molar flowrate [mol/s]",
+                                units=pyunits.mol/pyunits.s)
             self.mole_frac_comp = Var(
                     self.params.component_list,
                     bounds=(0, 1),
@@ -475,7 +477,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     doc="Mixture mole fraction")
             self.pressure = Var(initialize=101325,
                                 domain=NonNegativeReals,
-                                doc="State pressure [Pa]")
+                                doc="State pressure [Pa]",
+                                units=pyunits.Pa)
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
                                    doc="State temperature [K]",
@@ -485,10 +488,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     self.params.component_list,
                     initialize=1 / len(self.params.component_list),
                     domain=NonNegativeReals,
-                    doc="Component molar flowrate [mol/s]")
+                    doc="Component molar flowrate [mol/s]",
+                    units=pyunits.mol/pyunits.s)
             self.pressure = Var(initialize=101325,
                                 domain=NonNegativeReals,
-                                doc="State pressure [Pa]")
+                                doc="State pressure [Pa]",
+                                units=pyunits.Pa)
             self.temperature = Var(initialize=298.15,
                                    domain=NonNegativeReals,
                                    doc="State temperature [K]",
@@ -498,11 +503,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         if self.params.config.state_vars == "FTPz":
             self.flow_mol_phase = Var(self.params.phase_list,
-                                      initialize=0.5)
+                                      initialize=0.5,
+                                      units=pyunits.mol/pyunits.s)
         else:
-            self.flow_mol_phase_comp = Var(self.params.phase_list,
-                                           self.params.component_list,
-                                           initialize=0.5)
+            self.flow_mol_phase_comp = Var(self.params._phase_component_set,
+                                           initialize=0.5,
+                                           units=pyunits.mol/pyunits.s)
 
             def rule_mix_mole_frac(self, i):
                 return self.flow_mol_comp[i] / \
@@ -512,8 +518,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                              rule=rule_mix_mole_frac)
 
         self.mole_frac_phase_comp = \
-            Var(self.params.phase_list,
-                self.params.component_list,
+            Var(self.params._phase_component_set,
                 initialize=1 / len(self.params.component_list),
                 bounds=(0, 1))
 
@@ -631,8 +636,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     sum(self.flow_mol_phase_comp[p, i]
                         for i in self.params.component_list) == \
                     self.flow_mol_phase_comp[p, i]
-            self.eq_mole_frac = Constraint(self.params.phase_list,
-                                           self.params.component_list,
+            self.eq_mole_frac = Constraint(self.params._phase_component_set,
                                            rule=rule_mole_frac)
 
         # Smooth Flash Formulation
@@ -644,20 +648,24 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self._temperature_equilibrium = \
             Var(initialize=self.temperature.value,
                 doc="Temperature for calculating "
-                    "phase equilibrium")
+                    "phase equilibrium",
+                units=pyunits.K)
 
         self._t1 = Var(initialize=self.temperature.value,
                        doc="Intermediate temperature for calculating "
-                           "the equilibrium temperature")
+                           "the equilibrium temperature",
+                       units=pyunits.K)
 
         self.eps_1 = Param(default=0.01,
                            mutable=True,
                            doc="Smoothing parameter for equilibrium "
-                               "temperature")
+                               "temperature",
+                           units=pyunits.K)
         self.eps_2 = Param(default=0.0005,
                            mutable=True,
                            doc="Smoothing parameter for equilibrium "
-                               "temperature")
+                               "temperature",
+                           units=pyunits.K)
 
         # Equation #13 in reference cited above
         # Approximation for max(temperature, temperature_bubble)
@@ -819,7 +827,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _pressure_sat(self):
         self.pressure_sat = Var(self.params.component_list,
                                 initialize=101325,
-                                doc="vapor pressure ")
+                                doc="vapor pressure",
+                                units=pyunits.Pa)
 
         def rule_reduced_temp(self, i):
             # reduced temperature is variable "x" in the documentation
@@ -863,7 +872,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                   rule=rule_fug_liq)
 
     def _density_mol(self):
-        self.density_mol = Var(self.params.phase_list, doc="Molar density")
+        self.density_mol = Var(self.params.phase_list,
+                               doc="Molar density",
+                               units=pyunits.mol/pyunits.m**3)
 
         def density_mol_calculation(self, p):
             if p == "Vap":
@@ -889,7 +900,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _energy_internal_mol_phase(self):
         self.energy_internal_mol_phase = Var(
             self.params.phase_list,
-            doc="Phase molar specific internal energy [J/mol]")
+            doc="Phase molar specific internal energy [J/mol]",
+            units=pyunits.J/pyunits.mol)
 
         def rule_energy_internal_mol_phase(b, p):
             return b.energy_internal_mol_phase[p] == sum(
@@ -902,9 +914,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _energy_internal_mol_phase_comp(self):
         self.energy_internal_mol_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            doc="Phase-component molar specific internal energy [J/mol]")
+            self.params._phase_component_set,
+            doc="Phase-component molar specific internal energy [J/mol]",
+            units=pyunits.J/pyunits.mol)
 
         def rule_energy_internal_mol_phase_comp(b, p, j):
             if p == "Vap":
@@ -916,14 +928,14 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 return b.energy_internal_mol_phase_comp[p, j] == \
                     b.enth_mol_phase_comp[p, j]
         self.eq_energy_internal_mol_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
+            self.params._phase_component_set,
             rule=rule_energy_internal_mol_phase_comp)
 
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
             self.params.phase_list,
-            doc="Phase molar specific enthalpies [J/mol]")
+            doc="Phase molar specific enthalpies [J/mol]",
+            units=pyunits.J/pyunits.mol)
 
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
@@ -934,10 +946,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                             rule=rule_enth_mol_phase)
 
     def _enth_mol_phase_comp(self):
-        self.enth_mol_phase_comp = Var(self.params.phase_list,
-                                       self.params.component_list,
+        self.enth_mol_phase_comp = Var(self.params._phase_component_set,
                                        doc="Phase-component molar specific "
-                                           "enthalpies [J/mol]")
+                                           "enthalpies [J/mol]",
+                                       units=pyunits.J/pyunits.mol)
 
         def rule_enth_mol_phase_comp(b, p, j):
             if p == "Vap":
@@ -945,55 +957,57 @@ class ActivityCoeffStateBlockData(StateBlockData):
             else:
                 return b._enth_mol_comp_liq(j)
         self.eq_enth_mol_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
+            self.params._phase_component_set,
             rule=rule_enth_mol_phase_comp)
 
     def _enth_mol_comp_liq(self, j):
         # Liquid phase comp enthalpy (J/mol)
         # 1E3 conversion factor to convert from J/kmol to J/mol
-        return self.enth_mol_phase_comp["Liq", j] * 1E3 == \
-            1e3*self.params.dh_form["Liq", j] + \
-            ((self.params.CpIG["Liq", j, "E"] / 5) *
+        return self.enth_mol_phase_comp["Liq", j] == \
+            self.params.dh_form["Liq", j] + \
+            pyunits.convert((
+                (self.params.cp_mol_liq_comp_coeff_E[j] / 5) *
                 (self.temperature**5 -
                  self.params.temperature_reference**5)
-                + (self.params.CpIG["Liq", j, "D"] / 4) *
+                + (self.params.cp_mol_liq_comp_coeff_D[j] / 4) *
                   (self.temperature**4 -
                    self.params.temperature_reference**4)
-                + (self.params.CpIG["Liq", j, "C"] / 3) *
+                + (self.params.cp_mol_liq_comp_coeff_C[j] / 3) *
                   (self.temperature**3 -
                    self.params.temperature_reference**3)
-                + (self.params.CpIG["Liq", j, "B"] / 2) *
+                + (self.params.cp_mol_liq_comp_coeff_B[j] / 2) *
                   (self.temperature**2 -
                    self.params.temperature_reference**2)
-                + self.params.CpIG["Liq", j, "A"] *
-                  (self.temperature - self.params.temperature_reference))
+                + self.params.cp_mol_liq_comp_coeff_A[j] *
+                  (self.temperature - self.params.temperature_reference)),
+                to_units=pyunits.J/pyunits.mol)
 
     def _enth_mol_comp_vap(self, j):
 
         # Vapor phase component enthalpy (J/mol)
         return self.enth_mol_phase_comp["Vap", j] == \
             self.params.dh_form["Vap", j] + \
-            ((self.params.CpIG["Vap", j, "E"] / 5) *
+            ((self.params.cp_mol_vap_comp_coeff_E[j] / 5) *
                 (self.temperature**5 -
                  self.params.temperature_reference**5)
-                + (self.params.CpIG["Vap", j, "D"] / 4) *
+                + (self.params.cp_mol_vap_comp_coeff_D[j] / 4) *
                   (self.temperature**4 -
                    self.params.temperature_reference**4)
-                + (self.params.CpIG["Vap", j, "C"] / 3) *
+                + (self.params.cp_mol_vap_comp_coeff_C[j] / 3) *
                   (self.temperature**3 -
                    self.params.temperature_reference**3)
-                + (self.params.CpIG["Vap", j, "B"] / 2) *
+                + (self.params.cp_mol_vap_comp_coeff_B[j] / 2) *
                   (self.temperature**2 -
                    self.params.temperature_reference**2)
-                + self.params.CpIG["Vap", j, "A"] *
+                + self.params.cp_mol_vap_comp_coeff_A[j] *
                   (self.temperature -
                    self.params.temperature_reference))
 
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
             self.params.phase_list,
-            doc="Phase molar specific enthropies [J/mol.K]")
+            doc="Phase molar specific enthropies [J/mol.K]",
+            units=pyunits.J/pyunits.mol/pyunits.K)
 
         def rule_entr_mol_phase(self, p):
             return self.entr_mol_phase[p] == sum(
@@ -1005,9 +1019,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _entr_mol_phase_comp(self):
         self.entr_mol_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            doc="Phase-component molar specific entropies [J/mol.K]")
+            self.params._phase_component_set,
+            doc="Phase-component molar specific entropies [J/mol.K]",
+            units=pyunits.J/pyunits.mol/pyunits.K)
 
         def rule_entr_mol_phase_comp(self, p, j):
             if p == "Vap":
@@ -1015,39 +1029,40 @@ class ActivityCoeffStateBlockData(StateBlockData):
             else:
                 return self._entr_mol_comp_liq(j)
         self.eq_entr_mol_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
+            self.params._phase_component_set,
             rule=rule_entr_mol_phase_comp)
 
     def _entr_mol_comp_liq(self, j):
         # Liquid phase comp entropy (J/mol.K)
         # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
-        return self.entr_mol_phase_comp['Liq', j] * 1E3 == \
-            1E3*self.params.ds_form["Liq", j] + (
-            ((self.params.CpIG['Liq', j, 'E'] / 4) *
+        return self.entr_mol_phase_comp['Liq', j] == (
+            self.params.ds_form["Liq", j] +
+            pyunits.convert((
+                (self.params.cp_mol_liq_comp_coeff_E[j] / 4) *
                 (self.temperature**4 - self.params.temperature_reference**4)
-                + (self.params.CpIG['Liq', j, 'D'] / 3) *
+                + (self.params.cp_mol_liq_comp_coeff_D[j] / 3) *
                   (self.temperature**3 - self.params.temperature_reference**3)
-                + (self.params.CpIG['Liq', j, 'C'] / 2) *
+                + (self.params.cp_mol_liq_comp_coeff_C[j] / 2) *
                   (self.temperature**2 - self.params.temperature_reference**2)
-                + self.params.CpIG['Liq', j, 'B'] *
+                + self.params.cp_mol_liq_comp_coeff_B[j] *
                   (self.temperature - self.params.temperature_reference)
-                + self.params.CpIG['Liq', j, 'A'] *
-             log(self.temperature / self.params.temperature_reference)))
+                + self.params.cp_mol_liq_comp_coeff_A[j] *
+                log(self.temperature / self.params.temperature_reference)),
+                to_units=pyunits.J/pyunits.mol/pyunits.K))
 
     def _entr_mol_comp_vap(self, j):
         # component molar entropy of vapor phase
         return self.entr_mol_phase_comp["Vap", j] == (
             self.params.ds_form["Vap", j] +
-            ((self.params.CpIG['Vap', j, 'E'] / 4) *
+            ((self.params.cp_mol_vap_comp_coeff_E[j] / 4) *
              (self.temperature**4 - self.params.temperature_reference**4)
-             + (self.params.CpIG['Vap', j, 'D'] / 3) *
+             + (self.params.cp_mol_vap_comp_coeff_D[j] / 3) *
              (self.temperature**3 - self.params.temperature_reference**3)
-             + (self.params.CpIG['Vap', j, 'C'] / 2) *
+             + (self.params.cp_mol_vap_comp_coeff_C[j] / 2) *
                (self.temperature**2 - self.params.temperature_reference**2)
-                + self.params.CpIG['Vap', j, 'B'] *
+                + self.params.cp_mol_vap_comp_coeff_B[j] *
                (self.temperature - self.params.temperature_reference)
-                + self.params.CpIG['Vap', j, 'A'] *
+                + self.params.cp_mol_vap_comp_coeff_A[j] *
                 log(self.temperature / self.params.temperature_reference)) -
             const.gas_constant * log(self.mole_frac_phase_comp['Vap', j] *
                                      self.pressure /
@@ -1055,17 +1070,16 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _gibbs_mol_phase_comp(self):
         self.gibbs_mol_phase_comp = Var(
-            self.params.phase_list,
-            self.params.component_list,
-            doc="Phase-component molar specific Gibbs energies [J/mol]")
+            self.params._phase_component_set,
+            doc="Phase-component molar specific Gibbs energies [J/mol]",
+            units=pyunits.J/pyunits.mol)
 
         def rule_gibbs_mol_phase_comp(self, p, j):
             return self.gibbs_mol_phase_comp[p, j] == \
                     self.enth_mol_phase_comp[p, j] - \
                     self.temperature*self.entr_mol_phase_comp[p, j]
         self.eq_gibbs_mol_phase_comp = Constraint(
-            self.params.phase_list,
-            self.params.component_list,
+            self.params._phase_component_set,
             rule=rule_gibbs_mol_phase_comp)
 
     def get_material_flow_terms(self, p, j):
@@ -1159,7 +1173,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
 # Bubble and Dew Points
     def _temperature_bubble(self):
         self.temperature_bubble = Var(initialize=298.15,
-                                      doc="Bubble point temperature (K)")
+                                      doc="Bubble point temperature (K)",
+                                      units=pyunits.K)
 
         def rule_psat_bubble(m, j):
             return self.params.pressure_critical[j] * \
@@ -1305,7 +1320,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _temperature_dew(self):
 
         self.temperature_dew = Var(initialize=298.15,
-                                   doc="Dew point temperature (K)")
+                                   doc="Dew point temperature (K)",
+                                   units=pyunits.K)
 
         def rule_psat_dew(m, j):
             return self.params.pressure_critical[j] * \

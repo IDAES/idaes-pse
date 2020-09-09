@@ -258,7 +258,7 @@ def test_dmf_related(dmf_context, runner):
         for ltr in "ABCD"
     ]
     A_id = rlist[0].id  # root resource id, used in testcode
-    relation = resource.PR_USES
+    relation = resource.Predicates.uses
     for r in rlist:
         for r2 in rlist:
             if r is r2:
@@ -272,7 +272,7 @@ def test_dmf_related(dmf_context, runner):
     )
     assert result.exit_code == 0
     rlines = result.output.split("\n")
-    nrelations = sum(1 for _ in filter(lambda s: resource.PR_USES in s, rlines))
+    nrelations = sum(1 for _ in filter(lambda s: resource.Predicates.uses in s, rlines))
     assert nrelations == 12  # 3 blocks of (1 + 3)
 
 

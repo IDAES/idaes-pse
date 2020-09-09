@@ -17,7 +17,7 @@ Author: Jaffer Ghouse
 """
 import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
-                           SolverStatus, value, Var, units as pyunits)
+                           SolverStatus, value, units as pyunits)
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
@@ -236,6 +236,26 @@ class TestBTX_cocurrent(object):
         assert number_total_constraints(btx) == 803
         assert number_unused_variables(btx) == 8
 
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            btx.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            btx.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.degK)
+        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -388,6 +408,26 @@ class TestBTX_countercurrent(object):
         assert number_variables(btx) == 869
         assert number_total_constraints(btx) == 803
         assert number_unused_variables(btx) == 8
+
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(btx.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            btx.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            btx.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(btx.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -544,6 +584,27 @@ class TestIAPWS_cocurrent(object):
         assert number_total_constraints(iapws) == 553
         assert number_unused_variables(iapws) == 10
 
+    @pytest.mark.integration
+    def test_units(self, iapws):
+        # TODO: Add these checks in once the IAPWS package has units
+        # assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
+        # assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
+        # assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
+        # assert_units_equivalent(
+        #     iapws.fs.unit.shell_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(
+        #     iapws.fs.unit.tube_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(iapws)
+
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
@@ -692,6 +753,27 @@ class TestIAPWS_countercurrent(object):
         assert number_variables(iapws) == 617
         assert number_total_constraints(iapws) == 553
         assert number_unused_variables(iapws) == 10
+
+    @pytest.mark.integration
+    def test_units(self, iapws):
+        # TODO: Add these checks in once the IAPWS package has units
+        # assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
+        # assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
+        # assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
+        # assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
+        # assert_units_equivalent(
+        #     iapws.fs.unit.shell_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(
+        #     iapws.fs.unit.tube_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(iapws)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -849,6 +931,26 @@ class TestSaponification_cocurrent(object):
         assert number_variables(sapon) == 995
         assert number_total_constraints(sapon) == 917
         assert number_unused_variables(sapon) == 14
+
+    @pytest.mark.integration
+    def test_units(self, sapon):
+        assert_units_equivalent(sapon.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(sapon.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(sapon.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            sapon.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            sapon.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(sapon.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(sapon)
 
     @pytest.mark.unit
     def test_dof(self, sapon):
@@ -1025,6 +1127,26 @@ class TestSaponification_countercurrent(object):
         assert number_variables(sapon) == 995
         assert number_total_constraints(sapon) == 917
         assert number_unused_variables(sapon) == 14
+
+    @pytest.mark.integration
+    def test_units(self, sapon):
+        assert_units_equivalent(sapon.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(sapon.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(sapon.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(sapon.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            sapon.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            sapon.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(sapon.fs.unit.temperature_wall, pyunits.K)
+
+        assert_units_consistent(sapon)
 
     @pytest.mark.unit
     def test_dof(self, sapon):

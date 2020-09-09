@@ -25,6 +25,8 @@ import pytest
 
 # local
 from idaes.dmf import experiment, resource, DMF
+from idaes.dmf.resource import Predicates
+
 
 # for testing
 from .util import init_logging
@@ -112,12 +114,12 @@ def test_find_related():
     r = [resource.Resource({"name": "r{}".format(i)}) for i in range(5)]
     # r3 <-- derived <-- r2 <-- version <-- r1
     cr = resource.create_relation  # shortcut
-    cr(r[2], resource.PR_DERIVED, r[3])
-    cr(r[1], resource.PR_VERSION, r[2])
+    cr(r[2], Predicates.derived, r[3])
+    cr(r[1], Predicates.version, r[2])
     # r4 <-- derived <-- r2
-    cr(r[2], resource.PR_DERIVED, r[4])
+    cr(r[2], Predicates.derived, r[4])
     # r0 -- Uses --> r1
-    cr(r[0], resource.PR_USES, r[1])
+    cr(r[0], Predicates.uses, r[1])
     # add to dmf
     for i in range(5):
         dmf.add(r[i])
@@ -145,9 +147,9 @@ def test_circular():
     tmp_dir = scratch_path / "circular"
     dmf = DMF(path=tmp_dir, create=True)
     r = [resource.Resource({"name": "r{}".format(i)}) for i in range(3)]
-    resource.create_relation(r[0], resource.PR_DERIVED, r[1])
-    resource.create_relation(r[1], resource.PR_DERIVED, r[2])
-    resource.create_relation(r[2], resource.PR_USES, r[0])
+    resource.create_relation(r[0], Predicates.derived, r[1])
+    resource.create_relation(r[1], Predicates.derived, r[2])
+    resource.create_relation(r[2], Predicates.uses, r[0])
     for rr in r:
         dmf.add(rr)
     # outgoing from r0

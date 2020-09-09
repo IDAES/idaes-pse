@@ -103,7 +103,8 @@ def test_add_property_data():
     r.v["creator"] = {"name": "Dan Gunter"}
     m = prop["meta"]
     work = '{authors}, "{title}". {info}, {date}'.format(**m)
-    r.v["sources"].append({"source": work, "date": m["date"]})
+    # Only for type=publication, now
+    # r.v["sources"].append({"source": work, "date": m["date"]})
     r.data = {"notes": m["notes"]}
     r.v["tags"].append("MEA")
     r.v["datafiles"].append({"path": tmp_propdata_file.name})
@@ -141,10 +142,10 @@ def test_find_propertydata():
     pj = prop_json[0]
     n, resource_ids = 10, []
     for i in range(n):
-        pd = resource.Resource(value={"data": pj}, type_=resource.TY_PROPERTY)
+        pd = resource.Resource(value={"data": pj}, type_=resource.ResourceTypes.property)
         resource_ids.append(scratch_dmf.add(pd))
     # get them back again
-    filter_ = {"type": resource.TY_PROPERTY}
+    filter_ = {"type": resource.ResourceTypes.property}
     pdata = list(scratch_dmf.find(filter_dict=filter_))
     assert len(pdata) == n
     for rid in resource_ids:

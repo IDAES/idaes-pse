@@ -19,6 +19,7 @@ Author: Jaffer Ghouse
 import pytest
 from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
     SolverStatus, value
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
@@ -282,3 +283,9 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_ideal_v.pressure.fix(101325)
 
     assert degrees_of_freedom(m.fs1.state_block_ideal_v) == 0
+
+
+@pytest.mark.integration
+def test_units_consistent():
+    assert_units_consistent(m.fs)
+    assert_units_consistent(m.fs1)

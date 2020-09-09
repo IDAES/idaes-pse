@@ -306,6 +306,16 @@ class TestBTX_cocurrent(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.overall_heat_transfer_coefficient,
+                                pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
+
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -447,6 +457,16 @@ class TestBTX_cocurrent_alt_name(object):
         assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.overall_heat_transfer_coefficient,
+                                pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(btx.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(btx.fs.unit.delta_temperature_out, pyunits.K)
+
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -579,6 +599,18 @@ class TestIAPWS_countercurrent(object):
         assert number_variables(iapws) == 18
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
+
+    @pytest.mark.integration
+    def test_units(self, iapws):
+        # TODO: Add these checks in once the IAPWS package has units
+        # assert_units_equivalent(
+        #     iapws.fs.unit.overall_heat_transfer_coefficient,
+        #     pyunits.W/pyunits.m**2/pyunits.K)
+        # assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
+        # assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
+        # assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
+
+        assert_units_consistent(iapws)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -739,6 +771,17 @@ class TestSaponification_crossflow(object):
         assert number_variables(sapon) == 39
         assert number_total_constraints(sapon) == 20
         assert number_unused_variables(sapon) == 0
+
+    @pytest.mark.integration
+    def test_units(self, sapon):
+        assert_units_equivalent(
+            sapon.fs.unit.overall_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(sapon.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(sapon.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(sapon.fs.unit.delta_temperature_out, pyunits.K)
+
+        assert_units_consistent(sapon)
 
     @pytest.mark.unit
     def test_dof(self, sapon):
