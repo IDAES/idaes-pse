@@ -21,7 +21,10 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType, MomentumBalanceType
 from idaes.generic_models.unit_models.gibbs_reactor import GibbsReactor
@@ -208,6 +211,12 @@ class TestMethane(object):
         assert number_variables(methane) == 80
         assert number_total_constraints(methane) == 67
         assert number_unused_variables(methane) == 0
+
+    @pytest.mark.component
+    def test_units(self, methane):
+        assert_units_consistent(methane)
+        assert_units_equivalent(methane.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(methane.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, methane):

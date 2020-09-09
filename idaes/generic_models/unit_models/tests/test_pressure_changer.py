@@ -24,7 +24,8 @@ from pyomo.environ import (ConcreteModel,
                            units,
                            value,
                            Var)
-
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core import (FlowsheetBlock,
@@ -119,7 +120,6 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties,
                 "thermodynamic_assumption": ThermodynamicAssumption.pump})
         iscale.calculate_scaling_factors(m)
-
 
         assert isinstance(m.fs.unit.fluid_work_calculation, Constraint)
 
@@ -259,6 +259,12 @@ class TestBTX_isothermal(object):
         assert number_total_constraints(btx) == 19
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
+        assert_units_equivalent(btx.fs.unit.work_mechanical[0], units.W)
+        assert_units_equivalent(btx.fs.unit.deltaP[0], units.Pa)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -386,6 +392,13 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 9
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
+        # TODO: Add these checks once IAPWS has units
+        # assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
+        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
+
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
@@ -460,23 +473,23 @@ class TestIAPWS(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_verify(self, iapws_turb):
-        iapws=iapws_turb
+        iapws = iapws_turb
         # Verify the turbine results against 3 known test cases
 
         # Case Data (90% isentropic efficency)
         # Run with Aspen Plus v10 using iapws-95
         cases = {
-            "F": (1000,1000,1000), # mol/s
-            "Tin": (500, 800, 400), # K
-            "Pin": (1000, 10000, 200), # kPa
-            "W": (-1224.64, -1911.55, -1010.64), # kW
-            "Tout": (463.435, 742.992, 382.442), # K
-            "Pout": (700, 7000, 140), # kPa
-            "xout": (1.0, 1.0, 0.9886), # vapor fraction
+            "F": (1000, 1000, 1000),  # mol/s
+            "Tin": (500, 800, 400),  # K
+            "Pin": (1000, 10000, 200),  # kPa
+            "W": (-1224.64, -1911.55, -1010.64),  # kW
+            "Tout": (463.435, 742.992, 382.442),  # K
+            "Pout": (700, 7000, 140),  # kPa
+            "xout": (1.0, 1.0, 0.9886),  # vapor fraction
             "Tisen": (460.149, 738.224, 382.442),
         }
 
-        for i in [0,1,2]:
+        for i in [0, 1, 2]:
             F = cases["F"][i]
             Tin = cases["Tin"][i]
             Tout = cases["Tout"][i]
@@ -579,6 +592,12 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 11
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+        assert_units_equivalent(sapon.fs.unit.work_mechanical[0], units.W)
+        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
@@ -674,6 +693,8 @@ class TestTurbine(object):
             ThermodynamicAssumption.isentropic
         assert m.fs.unit.config.property_package is m.fs.properties
 
+        assert_units_consistent(m.fs.unit)
+
 
 class TestCompressor(object):
     @pytest.mark.unit
@@ -702,6 +723,8 @@ class TestCompressor(object):
         assert m.fs.unit.config.thermodynamic_assumption == \
             ThermodynamicAssumption.isentropic
         assert m.fs.unit.config.property_package is m.fs.properties
+
+        assert_units_consistent(m.fs.unit)
 
 
 class TestPump(object):
@@ -732,6 +755,8 @@ class TestPump(object):
             ThermodynamicAssumption.pump
         assert m.fs.unit.config.property_package is m.fs.properties
 
+        assert_units_consistent(m.fs.unit)
+
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
@@ -752,7 +777,7 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(50000)
         m.fs.unit.efficiency_pump.fix(0.9)
-        iscale.calculate_scaling_factors(m)        
+        iscale.calculate_scaling_factors(m)
         m.fs.unit.initialize()
 
         assert degrees_of_freedom(m) == 0
@@ -772,7 +797,7 @@ class Test_costing(object):
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.total_cost_eq)
 
-        results = solver.solve(m, tee=True)
+        solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(70141.395, 1e-5)
 
@@ -801,7 +826,7 @@ class Test_costing(object):
         calculate_variable_from_constraint(
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
-        results = solver.solve(m, tee=True)
+        solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(334540.7, 1e-5)
 
@@ -835,6 +860,6 @@ class Test_costing(object):
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
         assert degrees_of_freedom(m) == 0
-        results = solver.solve(m, tee=True)
+        solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
             pytest.approx(213129.6059, 1e-5)
