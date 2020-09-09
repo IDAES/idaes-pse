@@ -7,7 +7,7 @@ detail with a link in their description.
 
 .. note::
     IDAES is based on python-based algebraic modeling language, Pyomo. The documentation for 
-    its components (i.e. Sets, Parameters, Varirables, Objectives, Constraints, Expressions, and 
+    its components (i.e. Sets, Parameters, Variables, Objectives, Constraints, Expressions, and 
     Suffixes) are provided in the 
     `Pyomo documentation <https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/index.html>`_.
 

@@ -12,7 +12,7 @@ notably different to other types of Blocks within IDAES as they are always index
 State Blocks can be constructed directly from the associated Physical Parameter Block by calling 
 the `build_state_block()` method on the Physical Parameter Block. The `parameters` construction 
 argument will be automatically set, and any other arguments (including indexing sets) may be 
-provided to the `build_state_block` method as ususal.
+provided to the `build_state_block` method as usual.
 
 Additional details on :ref:`State Blocks<technical_specs/core/physical_property_class:State Blocks>`
 are located in the technical specifications.
