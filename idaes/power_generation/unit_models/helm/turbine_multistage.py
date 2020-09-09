@@ -632,6 +632,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         self,
         outlvl=idaeslog.NOTSET,
         solver="ipopt",
+        flow_iterate=2,
         optarg={"tol": 1e-6, "max_iter": 35},
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
@@ -645,6 +646,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             outlvl: logging level default is NOTSET, which inherits from the
                 parent logger
             solver: the NL solver, default is "ipopt"
+            flow_iterate: If not calculating flow coefficents, this is the
+                number of times to update the flow and repeat initializtion
+                (1 to 5 where 1 does not update the flow guess)
             optarg: solver arguments, default is {"tol": 1e-6, "max_iter": 35}
             copy_disconneted_flow: Copy the flow through the disconnected stages
                 default is True
@@ -671,7 +675,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         # initializtion
         flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
-        for it_count in range(2):
+        for it_count in range(flow_iterate):
             self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize valves
@@ -752,9 +756,33 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
             if calculate_outlet_cf:
                 break
-            for t in self.inlet_split.inlet.flow_mol:
-                self.inlet_split.inlet.flow_mol[t].value = \
-                    self.outlet_stage.inlet.flow_mol[t].value
+            if it_count < flow_iterate - 1:
+                for t in self.inlet_split.inlet.flow_mol:
+                    self.inlet_split.inlet.flow_mol[t].value = \
+                        self.outlet_stage.inlet.flow_mol[t].value
+
+                    for s in self.hp_split.values():
+                        for i, o in enumerate(s.outlet_list):
+                            if i == 0:
+                                continue
+                            o = getattr(s, o)
+                            self.inlet_split.inlet.flow_mol[t].value += \
+                                o.flow_mol[t].value
+                    for s in self.ip_split.values():
+                        for i, o in enumerate(s.outlet_list):
+                            if i == 0:
+                                continue
+                            o = getattr(s, o)
+                            self.inlet_split.inlet.flow_mol[t].value += \
+                                o.flow_mol[t].value
+                    for s in self.lp_split.values():
+                        for i, o in enumerate(s.outlet_list):
+                            if i == 0:
+                                continue
+                            o = getattr(s, o)
+                            self.inlet_split.inlet.flow_mol[t].value += \
+                                o.flow_mol[t].value
+
 
         if calculate_inlet_cf:
             # cf was probably fixed, so will have to set the value agian here
