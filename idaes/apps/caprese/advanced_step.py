@@ -9,6 +9,12 @@ K_AUG_SUFFIXES = [
         ("npdp", Suffix.EXPORT),
         ("dcdp", Suffix.EXPORT), # ??? Is it npdp or dcdp?
         # dcdp appears to be the correct suffix name
+        # npdp is defined in dot_driver, however
+        # npdp and dsdp seem to refer to the two methods of doing
+        # the dot product to avoid unnecessary backsolves
+        #
+        # dot_driver also declares the suffix DeltaP, which appears
+        # to contain the parameter offsets.
         ("dof_v", Suffix.EXPORT),
         ]
 
