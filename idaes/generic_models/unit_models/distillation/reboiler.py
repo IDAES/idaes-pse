@@ -38,7 +38,6 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
@@ -188,7 +187,7 @@ see property package for documentation.}"""))
         if self.config.has_boilup_ratio is True:
 
             self.boilup_ratio = Var(initialize=0.5,
-                                    doc="boilup ratio for reboiler")
+                                    doc="Boilup ratio for reboiler")
 
             def rule_boilup_ratio(self, t):
                 if hasattr(self.control_volume.properties_out[t],
@@ -225,10 +224,10 @@ see property package for documentation.}"""))
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
-        add_object_reference(self, "heat_duty", self.control_volume.heat)
+        self.heat_duty = Reference(self.control_volume.heat[:])
         # Reference to the pressure drop (if set to True)
         if self.config.has_pressure_change:
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _make_ports(self):
 
