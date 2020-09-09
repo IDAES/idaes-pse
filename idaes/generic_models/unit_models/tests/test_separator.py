@@ -27,6 +27,7 @@ from pyomo.environ import (ConcreteModel,
 
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
@@ -35,9 +36,9 @@ from idaes.core import (FlowsheetBlock,
                         StateBlockData,
                         PhysicalParameterBlock)
 from idaes.generic_models.unit_models.separator import (Separator,
-                                         SeparatorData,
-                                         SplittingType,
-                                         EnergySplittingType)
+                                                        SeparatorData,
+                                                        SplittingType,
+                                                        EnergySplittingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 
@@ -50,8 +51,6 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -791,6 +790,10 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 25
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
@@ -978,6 +981,10 @@ class TestBTXIdeal(object):
         assert number_total_constraints(btx) == 52
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -986,9 +993,6 @@ class TestBTXIdeal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialiszation(self, btx):
-        # Default initialization will fail as it cannot handle total
-        # flow with a phase split.
-        # However, this should do enough that the problem can be solved
         btx.fs.unit.initialize()
 
         assert (pytest.approx(1, abs=1e-4) ==
@@ -1161,11 +1165,19 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
+
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
 
-    # No initilaization test, as the default method doesn't support this yet
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialiszation(self, iapws):
+        iapws.fs.unit.initialize()
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -1372,31 +1384,47 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_3, Port)
         assert isinstance(m.fs.sep.outlet_4, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_3.component_flow_phase[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[
+            0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[
+            0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow_phase[
+            0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_3.component_flow_phase[
+            0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_3.temperature[0]) == 300
         assert value(m.fs.sep.outlet_3.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.component_flow_phase[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_4.component_flow_phase[
+            0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[
+            0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[
+            0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow_phase[
+            0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_4.temperature[0]) == 300
         assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
 
@@ -1426,17 +1454,25 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
@@ -1466,17 +1502,25 @@ class TestIdealConstruction(object):
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
 
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c1"]) == 2.0
-        assert value(m.fs.sep.outlet_1.component_flow_phase[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow_phase[
+            0, "p2", "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_1.temperature[0]) == 300
         assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
 
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p1", "c2"]) == 2.0
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.component_flow_phase[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow_phase[
+            0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
 
@@ -2761,6 +2805,10 @@ class TestBTX_Ideal(object):
         assert number_variables(btx) == 17
         assert number_total_constraints(btx) == 12
         assert number_unused_variables(btx) == 0
+
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):

@@ -36,6 +36,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialBalanceType,
+    MaterialFlowBasis
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -594,14 +595,16 @@ objects linked the mixed state and all outlet states,
         if mb_type == MaterialBalanceType.componentPhase:
             if self.config.has_phase_equilibrium is True:
                 # Get units from property package
-                units = {}
-                for u in ["holdup", "time"]:
-                    try:
-                        units[
-                            u
-                        ] = self.config.property_package.get_metadata().default_units[u]
-                    except KeyError:
-                        units[u] = "-"
+                units_meta = self.config.property_package.get_metadata()
+                flow_basis = mixed_block[
+                    self.flowsheet().config.time.first()].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    flow_units = units_meta.get_derived_units("flow_mole")
+                elif flow_basis == MaterialFlowBasis.mass:
+                    flow_units = units_meta.get_derived_units("flow_mass")
+                else:
+                    # Let this pass for now with no units
+                    flow_units = None
 
                 try:
                     self.phase_equilibrium_generation = Var(
@@ -609,9 +612,8 @@ objects linked the mixed state and all outlet states,
                         self.outlet_idx,
                         self.config.property_package.phase_equilibrium_idx,
                         domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                        "equilibria [{}/{}]".format(units["holdup"],
-                                                    units["time"]),
+                        doc="Amount of generation in unit by phase equilibria",
+                        units=flow_units
                     )
                 except AttributeError:
                     raise PropertyNotSupportedError(
@@ -890,8 +892,21 @@ objects linked the mixed state and all outlet states,
                 "chosen split_basis.".format(self.name)
             )
 
+        # Get units metadata
+        units_meta = self.config.property_package.get_metadata()
+
+        flow_basis = mb[
+            self.flowsheet().config.time.first()].get_material_flow_basis()
+        if flow_basis == MaterialFlowBasis.molar:
+            flow_units = units_meta.get_derived_units("flow_mole")
+        elif flow_basis == MaterialFlowBasis.mass:
+            flow_units = units_meta.get_derived_units("flow_mass")
+        else:
+            # Let this pass for now with no units
+            flow_units = None
+
         # Create tolerance Parameter for 0 flow outlets
-        self.eps = Param(default=1e-8, mutable=True)
+        self.eps = Param(default=1e-8, mutable=True, units=flow_units)
 
         # Get list of port members
         s_vars = mb[self.flowsheet().config.time.first()].define_port_members()
