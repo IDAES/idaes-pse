@@ -40,7 +40,8 @@ from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -193,13 +194,11 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_dew': {'method': '_pressure_dew',
                               'units': 'Pa'}})
 
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 class _CubicStateBlock(StateBlock):
@@ -284,9 +283,9 @@ class _CubicStateBlock(StateBlock):
         # If present, initialize bubble and dew point calculations
         # Antoine equation
         def antoine_P(b, j, T):
-            return 1e5*10**(b.params.antoine[j, '1'] -
-                            b.params.antoine[j, '2'] /
-                            (T + b.params.antoine[j, '3']))
+            return 1e5*10**(b.params.antoine_coeff_A[j] -
+                            b.params.antoine_coeff_B[j] /
+                            (T + b.params.antoine_coeff_C[j]))
 
         # Bubble temperature initialization
         for k in blk.keys():
@@ -295,10 +294,10 @@ class _CubicStateBlock(StateBlock):
                 for j in blk[k].params.component_list:
                     Tbub0 += value(
                             blk[k].mole_frac_comp[j] *
-                            (blk[k].params.antoine[j, '2'] /
-                             (blk[k].params.antoine[j, '1'] -
+                            (blk[k].params.antoine_coeff_B[j] /
+                             (blk[k].params.antoine_coeff_A[j] -
                               math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k].params.antoine[j, '3']))
+                             blk[k].params.antoine_coeff_C[j]))
 
                 err = 1
                 counter = 0
@@ -310,9 +309,9 @@ class _CubicStateBlock(StateBlock):
                               blk[k].pressure)
                     df = value(sum(
                             blk[k].mole_frac_comp[j] *
-                            blk[k].params.antoine[j, '2'] *
+                            blk[k].params.antoine_coeff_B[j] *
                             math.log(10)*antoine_P(blk[k], j, Tbub0) /
-                            (Tbub0 + blk[k].params.antoine[j, '3'])**2
+                            (Tbub0 + blk[k].params.antoine_coeff_C[j])**2
                             for j in blk[k].params.component_list))
 
                     if f/df > 20:
@@ -341,10 +340,10 @@ class _CubicStateBlock(StateBlock):
                 for j in blk[k].params.component_list:
                     Tdew0 += value(
                             blk[k].mole_frac_comp[j] *
-                            (blk[k].params.antoine[j, '2'] /
-                             (blk[k].params.antoine[j, '1'] -
+                            (blk[k].params.antoine_coeff_B[j] /
+                             (blk[k].params.antoine_coeff_A[j] -
                               math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k].params.antoine[j, '3']))
+                             blk[k].params.antoine_coeff_C[j]))
 
                 err = 1
                 counter = 0
@@ -356,9 +355,9 @@ class _CubicStateBlock(StateBlock):
                                   for j in blk[k].params.component_list) - 1)
                     df = -value(blk[k].pressure*math.log(10) *
                                 sum(blk[k].mole_frac_comp[j] *
-                                    blk[k].params.antoine[j, '2'] /
+                                    blk[k].params.antoine_coeff_B[j] /
                                     ((Tdew0 +
-                                      blk[k].params.antoine[j, '3'])**2 *
+                                      blk[k].params.antoine_coeff_C[j])**2 *
                                     antoine_P(blk[k], j, Tdew0))
                                     for j in blk[k].params.component_list))
 
@@ -583,7 +582,8 @@ class CubicStateBlockData(StateBlockData):
         # Add state variables
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
-                            doc='Component molar flowrate [mol/s]')
+                            doc='Component molar flowrate [mol/s]',
+                            units=pyunits.mol/pyunits.s)
         self.mole_frac_comp = Var(
                 self.params.component_list,
                 bounds=(0, None),
@@ -591,16 +591,19 @@ class CubicStateBlockData(StateBlockData):
                 doc='Mixture mole fractions [-]')
         self.pressure = Var(initialize=101325,
                             domain=NonNegativeReals,
-                            doc='State pressure [Pa]')
+                            doc='State pressure [Pa]',
+                            units=pyunits.Pa)
         self.temperature = Var(initialize=298.15,
                                domain=NonNegativeReals,
-                               doc='State temperature [K]')
+                               doc='State temperature [K]',
+                               units=pyunits.K)
 
         # Add supporting variables
         self.flow_mol_phase = Var(self.params.phase_list,
                                   initialize=0.5,
                                   domain=NonNegativeReals,
-                                  doc='Phase molar flow rates [mol/s]')
+                                  doc='Phase molar flow rates [mol/s]',
+                                  units=pyunits.mol/pyunits.s)
 
         self.mole_frac_phase_comp = Var(
             self.params.phase_list,
@@ -698,17 +701,20 @@ class CubicStateBlockData(StateBlockData):
 
         # Definition of equilibrium temperature for smooth VLE
         self._teq = Var(initialize=self.temperature.value,
-                        doc='Temperature for calculating '
-                            'phase equilibrium')
+                        doc='Temperature for calculating phase equilibrium',
+                        units=pyunits.K)
         self._t1 = Var(initialize=self.temperature.value,
-                       doc='Intermediate temperature for calculating Teq')
+                       doc='Intermediate temperature for calculating Teq',
+                       units=pyunits.K)
 
         self.eps_1 = Param(default=0.01,
                            mutable=True,
-                           doc='Smoothing parameter for Teq')
+                           doc='Smoothing parameter for Teq',
+                           units=pyunits.K)
         self.eps_2 = Param(default=0.0005,
                            mutable=True,
-                           doc='Smoothing parameter for Teq')
+                           doc='Smoothing parameter for Teq',
+                           units=pyunits.K)
 
         # Add supporting equations for Cubic EoS
         self.common_cubic()
@@ -745,7 +751,8 @@ class CubicStateBlockData(StateBlockData):
 # Property Methods
     def _dens_mol_phase(self):
         self.dens_mol_phase = Var(self.params.phase_list,
-                                  doc="Molar density [mol/m^3]")
+                                  doc="Molar density [mol/m^3]",
+                                  units=pyunits.mol/pyunits.m**3)
 
         def rule_dens_mol_phase(b, p):
             if p == 'Vap':
@@ -757,7 +764,8 @@ class CubicStateBlockData(StateBlockData):
 
     def _dens_mass_phase(self):
         self.dens_mass_phase = Var(self.params.phase_list,
-                                   doc="Mass density [kg/m^3]")
+                                   doc="Mass density [kg/m^3]",
+                                   units=pyunits.kg/pyunits.m**3)
 
         def rule_dens_mass_phase(b, p):
             if p == 'Vap':
@@ -770,7 +778,8 @@ class CubicStateBlockData(StateBlockData):
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
             self.params.phase_list,
-            doc='Phase molar specific enthalpies [J/mol]')
+            doc='Phase molar specific enthalpies [J/mol]',
+            units=pyunits.J/pyunits.mol)
 
         def rule_enth_mol_phase(b, p):
             if p == "Vap":
@@ -782,7 +791,8 @@ class CubicStateBlockData(StateBlockData):
 
     def _enth_mol(self):
         self.enth_mol = Var(
-            doc='Mixture molar specific enthalpies [J/mol]')
+            doc='Mixture molar specific enthalpies [J/mol]',
+            units=pyunits.J/pyunits.mol)
 
         def rule_enth_mol(b):
             return b.enth_mol*b.flow_mol == sum(
@@ -792,7 +802,8 @@ class CubicStateBlockData(StateBlockData):
 
     def _entr_mol(self):
         self.entr_mol = Var(
-            doc='Mixture molar specific entropies [J/mol.K]')
+            doc='Mixture molar specific entropies [J/mol.K]',
+            units=pyunits.J/pyunits.mol/pyunits.K)
 
         def rule_entr_mol(b):
             return b.entr_mol*b.flow_mol == sum(
@@ -803,7 +814,8 @@ class CubicStateBlockData(StateBlockData):
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
             self.params.phase_list,
-            doc='Phase molar specific entropies [J/mol.K]')
+            doc='Phase molar specific entropies [J/mol.K]',
+            units=pyunits.J/pyunits.mol/pyunits.K)
 
         def rule_entr_mol_phase(b, p):
             if p == "Vap":
@@ -836,7 +848,8 @@ class CubicStateBlockData(StateBlockData):
     def _gibbs_mol_phase(self):
         self.gibbs_mol_phase = Var(
             self.params.phase_list,
-            doc='Phase molar specific Gibbs energy [J/mol]')
+            doc='Phase molar specific Gibbs energy [J/mol]',
+            units=pyunits.J/pyunits.mol)
 
         def rule_gibbs_mol_phase(b, p):
             return b.gibbs_mol_phase[p] == (
@@ -863,14 +876,15 @@ class CubicStateBlockData(StateBlockData):
         if not self.is_property_constructed("material_flow_terms"):
             try:
                 def rule_material_flow_terms(b, p, j):
-                    return self.flow_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                    return self.flow_mol_phase[p] * \
+                        self.mole_frac_phase_comp[p, j]
                 self.material_flow_terms = Expression(
                     self.params.phase_list,
                     self.params.component_list,
                     rule=rule_material_flow_terms
                 )
             except AttributeError:
-                self.del_component(material_flow_terms)
+                self.del_component(self.material_flow_terms)
 
         if j in self.params.component_list:
             return self.material_flow_terms[p, j]
@@ -888,7 +902,7 @@ class CubicStateBlockData(StateBlockData):
                     rule=rule_enthalpy_flow_terms
                 )
             except AttributeError:
-                self.del_component(enthalpy_flow_terms)
+                self.del_component(self.enthalpy_flow_terms)
         return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
@@ -896,14 +910,15 @@ class CubicStateBlockData(StateBlockData):
         if not self.is_property_constructed("material_density_terms"):
             try:
                 def rule_material_density_terms(b, p, j):
-                    return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
+                    return self.dens_mol_phase[p] * \
+                        self.mole_frac_phase_comp[p, j]
                 self.material_density_terms = Expression(
                     self.params.phase_list,
                     self.params.component_list,
                     rule=rule_material_density_terms
                 )
             except AttributeError:
-                self.del_component(material_density_terms)
+                self.del_component(self.material_density_terms)
 
         if j in self.params.component_list:
             return self.material_density_terms[p, j]
@@ -921,7 +936,7 @@ class CubicStateBlockData(StateBlockData):
                     rule=rule_energy_density_terms
                 )
             except AttributeError:
-                self.del_component(energy_density_terms)
+                self.del_component(self.energy_density_terms)
         return self.energy_density_terms[p]
 
     def default_material_balance_type(self):
@@ -966,7 +981,8 @@ class CubicStateBlockData(StateBlockData):
 # Bubble and Dew Points
     def _temperature_bubble(self):
         self.temperature_bubble = Var(
-                doc="Bubble point temperature (K)")
+                doc="Bubble point temperature (K)",
+                units=pyunits.K)
 
         self._mole_frac_tbub = Var(
                 self.params.component_list,
@@ -986,7 +1002,8 @@ class CubicStateBlockData(StateBlockData):
 
     def _temperature_dew(self):
         self.temperature_dew = Var(
-                doc="Dew point temperature (K)")
+                doc="Dew point temperature (K)",
+                units=pyunits.K)
 
         self._mole_frac_tdew = Var(
                 self.params.component_list,
@@ -1007,7 +1024,8 @@ class CubicStateBlockData(StateBlockData):
     def _pressure_bubble(self):
         self.pressure_bubble = Var(
                 domain=PositiveReals,
-                doc="Bubble point pressure (Pa)")
+                doc="Bubble point pressure (Pa)",
+                units=pyunits.Pa)
 
         self._mole_frac_pbub = Var(
                 self.params.component_list,
@@ -1028,7 +1046,8 @@ class CubicStateBlockData(StateBlockData):
     def _pressure_dew(self):
         self.pressure_dew = Var(
                 domain=PositiveReals,
-                doc="Dew point pressure (Pa)")
+                doc="Dew point pressure (Pa)",
+                units=pyunits.Pa)
 
         self._mole_frac_pdew = Var(
                 self.params.component_list,
@@ -1038,7 +1057,7 @@ class CubicStateBlockData(StateBlockData):
 
         self._sum_mole_frac_pdew = Constraint(
                 expr=1 == sum(self._mole_frac_pdew[j]
-                                    for j in self.params.component_list))
+                              for j in self.params.component_list))
 
         def rule_dew_press(b, j):
             return log(b._mole_frac_pdew[j]) + log(b.dew_press_liq(j)) == \
@@ -1313,7 +1332,7 @@ class CubicStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
 # All of these equations drawn from Properties of Gases and Liquids
-# Quantities appended with _eq represent calculations at equilibrium temperature
+# Quantities appended with _eq represent calculations @ equilibrium temperature
     def common_cubic(blk):
         if hasattr(blk, "omegaA"):
             return
@@ -1347,7 +1366,8 @@ class CubicStateBlockData(StateBlockData):
                    b.params.temperature_crit[j]/b.params.pressure_crit[j]
         blk.b = Param(blk.params.component_list,
                       initialize=func_b,
-                      doc='Component b coefficient')
+                      doc='Component b coefficient',
+                      units=pyunits.m**3/pyunits.mol)
 
         def func_a(b, j):
             return (b.omegaA*((const.gas_constant *
@@ -1410,14 +1430,34 @@ class CubicStateBlockData(StateBlockData):
                     (const.gas_constant*b._teq))
         blk._B_eq = Expression(blk.params.phase_list, rule=rule_B_eq)
 
-        blk.proc_Z_liq = ExternalFunction(library=_so,
-                                          function="ceos_z_liq")
-        blk.proc_Z_vap = ExternalFunction(library=_so,
-                                          function="ceos_z_vap")
-        blk.proc_Z_liq_x = ExternalFunction(library=_so,
-                                            function="ceos_z_liq_extend")
-        blk.proc_Z_vap_x = ExternalFunction(library=_so,
-                                            function="ceos_z_vap_extend")
+        blk.proc_Z_liq = ExternalFunction(
+            library=_so,
+            function="ceos_z_liq",
+            units=pyunits.dimensionless,
+            arg_units=[pyunits.dimensionless,
+                       pyunits.dimensionless,
+                       pyunits.dimensionless])
+        blk.proc_Z_vap = ExternalFunction(
+            library=_so,
+            function="ceos_z_vap",
+            units=pyunits.dimensionless,
+            arg_units=[pyunits.dimensionless,
+                       pyunits.dimensionless,
+                       pyunits.dimensionless])
+        blk.proc_Z_liq_x = ExternalFunction(
+            library=_so,
+            function="ceos_z_liq_extend",
+            units=pyunits.dimensionless,
+            arg_units=[pyunits.dimensionless,
+                       pyunits.dimensionless,
+                       pyunits.dimensionless])
+        blk.proc_Z_vap_x = ExternalFunction(
+            library=_so,
+            function="ceos_z_vap_extend",
+            units=pyunits.dimensionless,
+            arg_units=[pyunits.dimensionless,
+                       pyunits.dimensionless,
+                       pyunits.dimensionless])
 
         def rule_delta(b, p, i):
             # See pg. 145 in Properties of Gases and Liquids
@@ -1535,7 +1575,7 @@ class CubicStateBlockData(StateBlockData):
                     (b.compress_fact_phase[p]-b.B[p]) /
                     b.compress_fact_phase[p])*b.bm[p]*b.EoS_p +
                  const.gas_constant*log(b.compress_fact_phase[p] *
-                                  b.params.pressure_ref/b.pressure) *
+                                        b.params.pressure_ref/b.pressure) *
                  b.bm[p]*b.EoS_p +
                  b.dadT[p]*log((2*b.compress_fact_phase[p] +
                                 b.B[p]*(b.EoS_u + b.EoS_p)) /
@@ -1552,23 +1592,23 @@ class CubicStateBlockData(StateBlockData):
 # Pure component properties
     def _enth_mol_comp_ig(b, j):
         return (
-            (b.params.cp_ig[j, "4"]/4) *
+            (b.params.cp_mol_ig_comp_coeff_4[j]/4) *
             (b.temperature**4-b.params.temperature_ref**4) +
-            (b.params.cp_ig[j, "3"]/3) *
+            (b.params.cp_mol_ig_comp_coeff_3[j]/3) *
             (b.temperature**3-b.params.temperature_ref**3) +
-            (b.params.cp_ig[j, "2"]/2) *
+            (b.params.cp_mol_ig_comp_coeff_2[j]/2) *
             (b.temperature**2-b.params.temperature_ref**2) +
-            b.params.cp_ig[j, "1"] *
+            b.params.cp_mol_ig_comp_coeff_1[j] *
             (b.temperature-b.params.temperature_ref))
 
     def _entr_mol_comp_ig(b, j):
-        return ((b.params.cp_ig[j, '4']/3) *
+        return ((b.params.cp_mol_ig_comp_coeff_4[j]/3) *
                 (b.temperature**3-b.params.temperature_ref**3) +
-                (b.params.cp_ig[j, '3']/2) *
+                (b.params.cp_mol_ig_comp_coeff_3[j]/2) *
                 (b.temperature**2-b.params.temperature_ref**2) +
-                b.params.cp_ig[j, '2'] *
+                b.params.cp_mol_ig_comp_coeff_2[j] *
                 (b.temperature-b.params.temperature_ref) +
-                b.params.cp_ig[j, '1'] *
+                b.params.cp_mol_ig_comp_coeff_1[j] *
                 log(b.temperature/b.params.temperature_ref))
 
     def calculate_scaling_factors(self):
@@ -1576,10 +1616,13 @@ class CubicStateBlockData(StateBlockData):
         super().calculate_scaling_factors()
 
         phases = self.params.config.valid_phase
-        is_two_phase = len(phases)==2 # only possiblly {Liq}, {Vap}, or {Liq, Vap}
-        sf_flow = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
-        sf_T = iscale.get_scaling_factor(self.temperature, default=1, warning=True)
-        sf_P = iscale.get_scaling_factor(self.pressure, default=1, warning=True)
+        is_two_phase = len(phases) == 2  # possibly {Liq}, {Vap}, or {Liq, Vap}
+        sf_flow = iscale.get_scaling_factor(
+            self.flow_mol, default=1, warning=True)
+        sf_T = iscale.get_scaling_factor(
+            self.temperature, default=1, warning=True)
+        sf_P = iscale.get_scaling_factor(
+            self.pressure, default=1, warning=True)
 
         if self.is_property_constructed("_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)
@@ -1593,10 +1636,11 @@ class CubicStateBlockData(StateBlockData):
 
         if self.is_property_constructed("_mole_frac_pdew"):
             iscale.set_scaling_factor(self._mole_frac_pdew, 1e3)
-            iscale.constraint_scaling_transform(_sum_mole_frac_pdew, 1e3)
+            iscale.constraint_scaling_transform(self._sum_mole_frac_pdew, 1e3)
 
         if self.is_property_constructed("total_flow_balance"):
-            s = iscale.get_scaling_factor(self.flow_mol, default=1, warning=True)
+            s = iscale.get_scaling_factor(
+                self.flow_mol, default=1, warning=True)
             iscale.constraint_scaling_transform(self.total_flow_balance, s)
 
         if self.is_property_constructed("component_flow_balances"):
@@ -1628,7 +1672,8 @@ class CubicStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         if self.is_property_constructed("enth_mol"):
-            sf = iscale.get_scaling_factor(self.enth_mol, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.enth_mol, default=1, warning=True)
             sf *= sf_flow
             iscale.constraint_scaling_transform(self.eq_enth_mol, sf)
 
@@ -1639,7 +1684,8 @@ class CubicStateBlockData(StateBlockData):
                 iscale.constraint_scaling_transform(c, sf)
 
         if self.is_property_constructed("entr_mol"):
-            sf = iscale.get_scaling_factor(self.entr_mol, default=1, warning=True)
+            sf = iscale.get_scaling_factor(
+                self.entr_mol, default=1, warning=True)
             sf *= sf_flow
             iscale.constraint_scaling_transform(self.eq_entr_mol, sf)
 
