@@ -6,7 +6,7 @@
 Overview
 --------
 
-Control Volumes are the center of the IDAES process modeling framework, and serve as the 
+Control Volumes are the center of the IDAES Integrated Platform, and serve as the 
 fundamental building block of all unit operations. Control Volumes represent a single, 
 well-defined volume of material over which material, energy and/or momentum balances will 
 be performed.
@@ -44,22 +44,22 @@ Setting up the time domain
 
 The first common task the Control Volume Block performs is to determine if it should be dynamic 
 or steady-state and to collect the time domain from the UnitModel. Control Volume blocks have 
-an argument ``dynamic`` which can be provided during construction which specifies if the 
-Control Volume should be dynamic (``dynamic=True``) or steady-state (``dynamic=False``). If the 
+an argument `dynamic` which can be provided during construction which specifies if the 
+Control Volume should be dynamic (`dynamic=True`) or steady-state (`dynamic=False`). If the 
 argument is not provided, the Control Volume Block will inherit this argument from its parent 
 Unit model.
 
-Finally, the Control Volume checks that the ``has_holdup`` argument is consistent with the 
-``dynamic`` argument, and raises a ``ConfigurationError`` if it is not.
+Finally, the Control Volume checks that the `has_holdup` argument is consistent with the 
+`dynamic` argument, and raises a `ConfigurationError` if it is not.
 
 Getting Property Package Information
 ------------------------------------
 
-If a reference to a property package was not provided by the ``UnitModel`` as an argument, 
-the Control Volume first checks to see if the ``UnitModel`` has a ``property_package`` argument 
+If a reference to a property package was not provided by the unit model as an argument, 
+the Control Volume first checks to see if the unit model has a `property_package` argument 
 set, and uses this if present. Otherwise, the Control Volume block begins searching up the model 
-tree looking for an argument named ``default_property_package`` and uses the first of these 
-that it finds. If no ``default_property_package`` is found, a ``ConfigurationError`` is returned.
+tree looking for an argument named `default_property_package` and uses the first of these 
+that it finds. If no `default_property_package` is found, a `ConfigurationError` is returned.
 
 Collecting Indexing Sets for Property Package
 ---------------------------------------------
@@ -68,8 +68,8 @@ The final common step for all Control Volumes is to collect any required indexin
 
 The indexing sets the Control Volume looks for are:
 
-* ``component_list`` - used to determine what components are present, and thus what material balances are required
-* ``phase_list`` - used to determine what phases are present, and thus what balance equations are required
+* `component_list` - used to determine what components are present, and thus what material balances are required
+* `phase_list` - used to determine what phases are present, and thus what balance equations are required
 
 ControlVolume and ControlVolumeBlockData Classes
 ------------------------------------------------
@@ -78,12 +78,12 @@ A key purpose of Control Volumes is to automate as much of the task of writing a
 possible. For this purpose, Control Volumes support a number of methods for common tasks model 
 developers may want to perform. The specifics of these methods will be different between 
 different types of Control Volumes, and certain methods may not be applicable to some types of 
-Control Volumes (in which case a ``NotImplementedError`` will be returned). A full list of 
+Control Volumes (in which case a `NotImplementedError` will be returned). A full list of 
 potential methods is provided here, however users should check the documentation for the 
 specific Control Volume they are using for more details on what methods are supported in that 
 specific Control Volume.
 
-A key feature of the IDAES modeling framework is the use of Control Volume Blocks. Control 
+A key feature of the IDAES platform is the use of ControlVolumeBlocks. Control 
 Volumes represent a volume of material over which material, energy and/or momentum balances 
 can be performed. Control Volume Blocks contain methods to automate the task of writing common 
 forms of these balance equations. Control Volume Blocks can also automate the creation of 

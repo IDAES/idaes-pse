@@ -1,13 +1,13 @@
 Phase Object
 ============
 
-Phase objects are used in the IDAES Process Modeling Framework to identify the thermodynamic 
+Phase objects are used in the IDAES Integrated Platform to identify the thermodynamic 
 phases of interest in a property package and to contain information describing the behavior of 
 that phase (for example the equation of state which describes that phase). Additional 
 information on the :ref:`Phase Class<technical_specs/core/phase:Phase Class>` is 
 provided in the technical specifications.
 
-The IDAES Process Modeling Framework currently supports the following types of phases, along 
+The IDAES platform currently supports the following types of phases, along 
 with a generic Phase object:
 
 * `LiquidPhase`

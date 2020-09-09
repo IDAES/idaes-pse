@@ -2,7 +2,7 @@
 ==========
 
 The purpose of this section of the documentation is to provide a general introduction to the top
-level components of the IDAES Computational Platform. Each component is described in greater 
+level components of the IDAES Integrated Platform. Each component is described in greater 
 detail with a link in their description.
 
 .. note::
@@ -23,7 +23,7 @@ detail with a link in their description.
 .. rubric:: Flowsheet
 
 :ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>`
-are the top level of the IDAES modeling framework. Flowsheet models represent 
+are the top level of the IDAES platform. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 
@@ -41,5 +41,5 @@ represent individual pieces of equipment and their processes on the IDAES platfo
 .. rubric:: Data Management Framework
 
 The :ref:`Data Management Framework <user_guide/components/dmf/index:Data Management Framework>`
-is used to manage all the data needed by the IDAES framework, including flowsheets, models, 
+is used to manage all the data needed by the IDAES platform, including flowsheets, models, 
 and results. It stores metadata and data in persistent storage.
