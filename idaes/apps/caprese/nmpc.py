@@ -1742,6 +1742,8 @@ class NMPCSim(DynamicBase):
                 )
         self.k_aug = SolverFactory('k_aug', executable='k_aug')
         self.k_aug.set_options({"dsdp_mode": ""})
+        self.dot_driver = SolverFactory('dot_sens', executable='dot_sens')
+        # TODO: Do I need to set any dot_driver options?
         for var in block.input_vars:
             # Populate k_aug suffix for dof vars.
             # (Which are actually the dependent vars from 
@@ -1769,9 +1771,9 @@ class NMPCSim(DynamicBase):
         for i in self.advanced_step_manager.block.wrt_set:
             # Populate k_aug suffix for measurement discrepancy.
             con = self.advanced_step_manager.block.wrt_constraint[i]
-#            controller.npdp[con] = offset[i]
-            controller.dcdp[con] = offset[i]
-        # Now: How to get derivatives wrt dof_vars via k_aug?
+            controller.dcdp[con] = i+1 # offset[i]
+            # Value of this suffix will be the column of this parameter
+            # in the RHS matrix.
         with self.advanced_step_manager as as_manager:
             self.solve_control_problem(**kwargs)
             controller.ipopt_zL_in.update(controller.ipopt_zL_out)
@@ -1780,6 +1782,23 @@ class NMPCSim(DynamicBase):
                     controller,
                     tee=True,
                     symbolic_solver_labels=False,
+                    )
+
+    def perform_sensitivity_update(self, measured_state, **kwargs):
+        """
+        TODO
+        """
+        controller = self.controller
+        namespace = getattr(controller, self.namespace_name)
+        time = namespace.get_time()
+        offset = get_measurement_offset(measured_state)
+        for i in self.advanced_step_manager.block.wrt_set:
+            con = self.advanced_step_manager.block.wrt_constraint[i]
+            controller.npdp[con] = offset[i]
+        with self.advanced_step_manager as as_manager:
+            results = self.dot_driver.solve(
+                    controller,
+                    tee=True,
                     )
 
     def simulate_controller_sample(self, t_start, **kwargs):
