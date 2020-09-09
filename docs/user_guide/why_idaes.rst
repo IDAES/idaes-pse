@@ -59,7 +59,7 @@ models to suit their needs.
 Flexible Form
 ^^^^^^^^^^^^^
 
-No single model form is best suited to all applications, thus the IDAES PSE framework
+No single model form is best suited to all applications, thus the IDAES Integrated Platform
 is built to provide users with access to a range of different model forms. This allows 
 users to easily pick-and-choose from the available model forms to find the one best suited to 
 their particular application.

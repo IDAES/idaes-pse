@@ -113,8 +113,8 @@ add_properties metadata in the property packages ParameterBlock, which indicates
 this property is called for, the associated method should be run.
 
 The add_properties metadata can also indicate that a property should always be present 
-(i.e. constructed in the BlockData's build method) by setting the method to None, or that it is 
-not supported by setting the method to False.
+(i.e. constructed in the BlockData's build method) by setting the method to `None`, or that it is 
+not supported by setting the method to `False`.
 
 Generic Property Package Framework
 ----------------------------------

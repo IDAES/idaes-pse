@@ -54,7 +54,7 @@ Model Libraries
 To provide a starting point for modelers in using the process modeling tools, the IDAES Integrated
 Platform contains a library of models for common unit operations and thermophysical
 properties. Modelers can use these out-of-the-box models to represent their process applications or
-can use them as building blocks for developing their own models. All models within IDAES are
+as building blocks for developing their own models. All models within IDAES are
 designed to be fully open and extensible, allowing users to inspect and modify them to suit
 their needs. Documentation of the available model libraries can be found
 :ref:`here<user_guide/model_libraries/index:IDAES Model Libraries>`.

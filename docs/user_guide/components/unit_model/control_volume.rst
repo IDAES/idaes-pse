@@ -85,8 +85,8 @@ specific Control Volume.
 
 A key feature of the IDAES platform is the use of ControlVolumeBlocks. Control 
 Volumes represent a volume of material over which material, energy and/or momentum balances 
-can be performed. Control Volume Blocks contain methods to automate the task of writing common 
-forms of these balance equations. Control Volume Blocks can also automate the creation of 
+can be performed. ControlVolumeBlocks contain methods to automate the task of writing common 
+forms of these balance equations. ControlVolumeBlocks can also automate the creation of 
 StateBlocks and ReactionBlocks associated with the control volume.
 
 
