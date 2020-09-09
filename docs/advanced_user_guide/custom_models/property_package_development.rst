@@ -1,5 +1,5 @@
-Custom Physical Property Package Development
-============================================
+﻿Custom Property Packages
+========================
 
 .. contents:: :local:
 
@@ -245,4 +245,4 @@ More details on writing initialization methods will be provided elsewhere in the
 Tutorials
 ---------
 
-Tutorials demonstrating how to create custom property models can be found :ref:`here<tutorials_examples:Tutorials and Examples>`.
+Tutorials demonstrating how to create custom property packages are being developed, but once created they will be found :ref:`here<tutorials_examples:Tutorials and Examples>`.

@@ -1,4 +1,4 @@
-Custom Reaction Packages
+﻿Custom Reaction Packages
 ========================
 
 .. contents:: :local:
@@ -7,7 +7,7 @@ Custom Reaction Packages
 
 Chemical reactions are a fundamental part of most processes, and models for these come in a wide range of different forms. Much like thermophysical property packages, the ability for users to define custom reaction formulations is a key aspect of the IDAES modeling paradigm.
 
-Reaction packages within IDAES share many similarities with thermophysical property packages, both in form and content. Rather than repeat much of that documentation here, users should start by reading the :ref:`thermophysical property package documentation<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`, as this document will focus on the content of the reaction package.
+Reaction packages within IDAES share many similarities with thermophysical property packages, both in form and content. Rather than repeat much of that documentation here, users should start by reading the :ref:`thermophysical property package documentation<advanced_user_guide/custom_models/property_package_development:Custom Property Packages>`, as this document will focus on the content of the reaction package.
 
 What Belongs in a Reaction Package?
 -----------------------------------
@@ -230,5 +230,5 @@ However, Reaction Blocks also tend to be much simpler than State Blocks, involvi
 Tutorials
 ---------
 
-Tutorials demonstrating how to create custom property models can be found :ref:`here<tutorials_examples:Tutorials and Examples>`.
+Tutorials demonstrating how to create custom reaction packages are being developed, but once created they will be found :ref:`here<tutorials_examples:Tutorials and Examples>`.
 
