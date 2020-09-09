@@ -354,8 +354,8 @@ class DynamicBase(object):
         # Iterate over initial vardata, popping from dae map when an input,
         # derivative, or differential var is found.
         for var0 in t0_vardata:
-            if var0 in updated_input_set:
-                input_set.remove(var0)
+            if var0 in input_set:
+                updated_input_set.remove(var0)
                 time_slice = dae_map.pop(var0)
                 input_vars.append(time_slice)
 
@@ -404,7 +404,7 @@ class DynamicBase(object):
                 deriv_vars.append(deriv_slice)
                 diff_vars.append(state_slice)
 
-        if not updated_input_set:
+        if updated_input_set:
             raise RuntimeError('Not all inputs could be found')
         assert len(deriv_vars) == len(diff_vars)
 
