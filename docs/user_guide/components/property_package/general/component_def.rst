@@ -71,6 +71,7 @@ As a starting point for users, the IDAES Generic Property Package Framework cont
     pure/NIST
     pure/Perrys
     pure/RPP
+    pure/RPP3
 
 Phase Equilibrium Formulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

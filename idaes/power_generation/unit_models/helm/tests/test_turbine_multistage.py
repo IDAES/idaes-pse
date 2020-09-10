@@ -25,6 +25,8 @@ from idaes.power_generation.unit_models.helm import HelmTurbineMultistage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
     degrees_of_freedom, activated_equalities_generator)
+import idaes.core.util.scaling as iscale
+
 
 prop_available = iapws95.iapws95_available()
 
@@ -107,8 +109,13 @@ def test_initialize():
 
     # Congiure with reheater for a full test
     turb.ip_stages[1].inlet.fix()
+    for i in turb.throttle_valve:
+        turb.throttle_valve[i].Cv.fix()
+        turb.throttle_valve[i].valve_opening.fix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
+
+    iscale.calculate_scaling_factors(m)
     turb.initialize(outlvl=1)
     turb.ip_stages[1].inlet.unfix()
 
@@ -189,6 +196,9 @@ def test_initialize_calc_cf():
     turb.inlet_mix.use_equal_pressure_constraint()
     for i in m.fs.turb.inlet_stage:
         m.fs.turb.inlet_stage[i].ratioP[0] = 0.6
+        turb.throttle_valve[i].Cv.fix()
+        turb.throttle_valve[i].valve_opening.fix()
+    iscale.calculate_scaling_factors(m)
     turb.initialize(outlvl=1, calculate_inlet_cf=True, calculate_outlet_cf=True)
     turb.ip_stages[1].inlet.unfix()
 

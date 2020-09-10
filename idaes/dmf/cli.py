@@ -34,6 +34,7 @@ import click
 
 # package
 from idaes.dmf import DMF, DMFConfig, resource, workspace
+from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
@@ -364,7 +365,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     "--type",
     "-t",
     "resource_type",
-    type=click.Choice(tuple(resource.RESOURCE_TYPES)),
+    type=click.Choice(tuple(resource.ResourceTypes.all())),
     help="Resource type (default=determined from file)",
 )
 @click.option(
@@ -471,10 +472,10 @@ def register(
     # process relations
     _log.debug("add relations")
     rel_to_add = {  # translate into standard relation names
-        resource.PR_CONTAINS: contained,
-        resource.PR_DERIVED: derived,
-        resource.PR_USES: used,
-        resource.PR_VERSION: prev,
+        Predicates.contains: contained,
+        Predicates.derived: derived,
+        Predicates.uses: used,
+        Predicates.version: prev,
     }
     target_resources = {}  # keep target resources in dict, update at end
     for rel_name, rel_ids in rel_to_add.items():

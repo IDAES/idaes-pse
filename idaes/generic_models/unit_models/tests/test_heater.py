@@ -20,7 +20,10 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
-                           value)
+                           value,
+                           units as pyunits)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -33,13 +36,15 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
 from idaes.generic_models.properties import iapws95
 from idaes.generic_models.properties.examples.saponification_thermo import \
     SaponificationParameterBlock
+from idaes.generic_models.properties.core.examples.BT_PR import \
+    configuration
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
@@ -121,6 +126,14 @@ class TestBTX(object):
         assert number_variables(btx) == 24
         assert number_total_constraints(btx) == 17
         assert number_unused_variables(btx) == 0
+
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(btx.fs.unit.heat_duty[0], pyunits.J/pyunits.s)
+        assert_units_equivalent(btx.fs.unit.deltaP[0], pyunits.Pa)
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -221,6 +234,17 @@ class TestIAPWS(object):
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
+    @pytest.mark.integration
+    def test_units(self, iapws):
+        # TODO: Add these checks once IAPWS package has units
+        # assert_units_equivalent(iapws.fs.unit.control_volume.heat,
+        #                         pyunits.J/pyunits.s)
+        # assert_units_equivalent(iapws.fs.unit.heat_duty[0],
+        #                         pyunits.J/pyunits.s)
+        # assert_units_equivalent(iapws.fs.unit.deltaP[0],
+        #                         pyunits.Pa)
+        assert_units_consistent(iapws)
+
     @pytest.mark.unit
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
@@ -279,30 +303,25 @@ class TestIAPWS(object):
         # Test the heater model against known test cases
         # Test cases from Aspen Plus 10 with iapws-95
         cases = {
-            "F": (1000, 1000, 1000, 1000), # mol/s
-            "Tin": (300, 300, 300, 800), # K
-            "Pin": (1000, 1000, 1000, 1000), # kPa
-            "xin": (0, 0, 0, 1), # vapor fraction
-            "Tout": (400, 400, 453.028, 300), # K
-            "Pout": (1000, 100, 1000, 1000), # kPa
-            "xout": (0, 1, 0.228898, 0), # vapor fraction
-            "duty": (7566.19, 47145, 20000, -61684.4), # kW
+            "F": (1000, 1000, 1000, 1000),  # mol/s
+            "Tin": (300, 300, 300, 800),  # K
+            "Pin": (1000, 1000, 1000, 1000),  # kPa
+            "xin": (0, 0, 0, 1),  # vapor fraction
+            "Tout": (400, 400, 453.028, 300),  # K
+            "Pout": (1000, 100, 1000, 1000),  # kPa
+            "xout": (0, 1, 0.228898, 0),  # vapor fraction
+            "duty": (7566.19, 47145, 20000, -61684.4),  # kW
         }
 
         for i in [0, 1, 2, 3]:
             F = cases["F"][i]
             Tin = cases["Tin"][i]
             Pin = cases["Pin"][i]*1000
-            xin = cases["xin"][i]
             hin = iapws95.htpx(T=Tin, P=Pin)
             Tout = cases["Tout"][i]
             Pout = cases["Pout"][i]*1000
             xout = cases["xout"][i]
             duty = cases["duty"][i]*1000
-            if xout != 0 and xout != 1:
-                hout = iapws95.htpx(T=Tout, x=xout)
-            else:
-                hout = iapws95.htpx(T=Tout, P=Pout)
             prop_in = iapws.fs.unit.control_volume.properties_in[0]
             prop_out = iapws.fs.unit.control_volume.properties_out[0]
 
@@ -324,8 +343,6 @@ class TestIAPWS(object):
             assert xout == pytest.approx(value(prop_out.vapor_frac), rel=1e-3)
 
 
-
-
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
     @pytest.fixture(scope="class")
@@ -336,7 +353,7 @@ class TestSaponification(object):
         m.fs.properties = SaponificationParameterBlock()
 
         m.fs.unit = Heater(default={"property_package": m.fs.properties})
-        
+
         m.fs.unit.inlet.flow_vol[0].fix(1e-3)
         m.fs.unit.inlet.temperature[0].fix(320)
         m.fs.unit.inlet.pressure[0].fix(101325)
@@ -370,6 +387,14 @@ class TestSaponification(object):
         assert number_variables(sapon) == 17
         assert number_total_constraints(sapon) == 8
         assert number_unused_variables(sapon) == 0
+
+    @pytest.mark.integration
+    def test_units(self, sapon):
+        assert_units_equivalent(sapon.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(sapon.fs.unit.heat_duty[0],
+                                pyunits.J/pyunits.s)
+        assert_units_consistent(sapon)
 
     @pytest.mark.unit
     def test_dof(self, sapon):
@@ -434,3 +459,111 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+
+# -----------------------------------------------------------------------------
+class TestBT_Generic(object):
+    @pytest.fixture(scope="class")
+    def btg(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = GenericParameterBlock(default=configuration)
+
+        m.fs.unit = Heater(default={"property_package": m.fs.properties,
+                                    "has_pressure_change": True})
+
+        m.fs.unit.inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.unit.inlet.temperature[0].fix(365)  # K
+        m.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.heat_duty.fix(-5000)
+        m.fs.unit.deltaP.fix(0)
+
+        return m
+
+    @pytest.mark.build
+    @pytest.mark.unit
+    def test_build(self, btg):
+        assert hasattr(btg.fs.unit, "inlet")
+        assert len(btg.fs.unit.inlet.vars) == 4
+        assert hasattr(btg.fs.unit.inlet, "flow_mol")
+        assert hasattr(btg.fs.unit.inlet, "mole_frac_comp")
+        assert hasattr(btg.fs.unit.inlet, "temperature")
+        assert hasattr(btg.fs.unit.inlet, "pressure")
+
+        assert hasattr(btg.fs.unit, "outlet")
+        assert len(btg.fs.unit.outlet.vars) == 4
+        assert hasattr(btg.fs.unit.outlet, "flow_mol")
+        assert hasattr(btg.fs.unit.outlet, "mole_frac_comp")
+        assert hasattr(btg.fs.unit.outlet, "temperature")
+        assert hasattr(btg.fs.unit.outlet, "pressure")
+
+        assert hasattr(btg.fs.unit, "heat_duty")
+        assert hasattr(btg.fs.unit, "deltaP")
+
+        assert number_variables(btg) == 74
+        assert number_total_constraints(btg) == 37
+        # Unused vars are density parameters
+        assert number_unused_variables(btg) == 10
+
+    @pytest.mark.integration
+    def test_units(self, btg):
+        assert_units_equivalent(btg.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(btg.fs.unit.heat_duty[0], pyunits.J/pyunits.s)
+        assert_units_equivalent(btg.fs.unit.deltaP[0], pyunits.Pa)
+        assert_units_consistent(btg)
+
+    @pytest.mark.unit
+    def test_dof(self, btg):
+        assert degrees_of_freedom(btg) == 0
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, btg):
+        initialization_tester(btg)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, btg):
+        results = solver.solve(btg)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btg):
+        assert (pytest.approx(5, abs=1e-3) ==
+                value(btg.fs.unit.outlet.flow_mol[0]))
+        assert (pytest.approx(358.6, abs=1e-1) ==
+                value(btg.fs.unit.outlet.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btg.fs.unit.outlet.pressure[0]))
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_conservation(self, btg):
+        assert abs(value(btg.fs.unit.inlet.flow_mol[0] -
+                         btg.fs.unit.outlet.flow_mol[0])) <= 1e-6
+
+        assert abs(value(
+            btg.fs.unit.inlet.flow_mol[0] *
+            btg.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
+            btg.fs.unit.outlet.flow_mol[0] *
+            btg.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
+            + btg.fs.unit.heat_duty[0]) <= 1e-6
+
+    @pytest.mark.ui
+    @pytest.mark.unit
+    def test_report(self, btg):
+        btg.fs.unit.report()

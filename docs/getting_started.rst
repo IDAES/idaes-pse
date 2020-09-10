@@ -8,7 +8,7 @@ appropriate for your needs and operating system. If you get stuck, please contac
 `idaes-support@idaes.org <idaes-support@idaes.org>`_.
 
 After installing and testing IDAES, it is strongly recommended to do the IDAES tutorials
-located on the `IDAES examples site <https://examples-pse.readthedocs.io/en/stable/tutorials/index.html>`_.
+located on the |examples-site|.
 
 If you expect to develop custom models, we recommend following the
 :ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
@@ -131,18 +131,6 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
                 conda-forge ipopt`` though this will not have all the features
                 of our extentions package.
 
-   .. note:: If you are installing on Linux, you can specify a specific platform.
-             While most Linux builds are interchangeable, specifying a build can
-             make managing dependencies considerably easier. By default Linux
-             will use the CentOS 7 build.  To specify a build use the command
-             ``idaes get-extensions --platform <platform>``.  Supported Linux
-             platforms are: rhel6, rhel7, rhel8, cetos6, centos7, centos8,
-             ubuntu1804, ubuntu1910, and ubuntu2004.  If you are not using a
-             supported platform, everything should still work, just choose the
-             platform that best matches your Linux distribution.  You can also
-             use the ``idaes get-extensions-platforms`` command to see a list of
-             supported platforms.
-
 3. Run the :doc:`idaes get-examples command <user_guide/commands/get_examples>` to download
    and install the example files::
 
@@ -172,5 +160,5 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 5. You should see the tests run and all should pass to ensure the installation worked. You
    may see some "Error" level log messages, but they are okay, and produced by tests for
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
-   output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
+   output. You can report problems on the |github-issues|
    (Please try to be specific about the command and the offending output.)

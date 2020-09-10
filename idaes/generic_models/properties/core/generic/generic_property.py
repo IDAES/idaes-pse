@@ -318,10 +318,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     "your property parameter definition to include this."
                     .format(self.name))
 
-        base_units = self.get_metadata().default_units
-        p_units = (base_units["mass"] *
-                   base_units["length"]**-1 *
-                   base_units["time"]**-2)
+        units = self.get_metadata().derived_units
 
         # Validate reference state and create Params
         if self.config.pressure_ref is None:
@@ -333,8 +330,8 @@ class GenericParameterData(PhysicalParameterBlock):
         else:
             self.pressure_ref = Param(
                 mutable=True,
-                units=p_units)
-            set_param_value(self, "pressure_ref", p_units)
+                units=units["pressure"])
+            set_param_value(self, "pressure_ref", units["pressure"])
 
         if self.config.temperature_ref is None:
             raise ConfigurationError(
@@ -345,8 +342,8 @@ class GenericParameterData(PhysicalParameterBlock):
         else:
             self.temperature_ref = Param(
                 mutable=True,
-                units=base_units["temperature"])
-            set_param_value(self, "temperature_ref", base_units["temperature"])
+                units=units["temperature"])
+            set_param_value(self, "temperature_ref", units["temperature"])
 
         # Validate equations of state
         for p in self.phase_list:
@@ -686,11 +683,12 @@ class _GenericStateBlock(StateBlock):
 
                     for j in valid_comps:
                         blk[k]._mole_frac_tbub[pp, j].value = value(
-                                blk[k].mole_frac_comp[j]*blk[k].pressure /
+                                blk[k].mole_frac_comp[j] *
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
-                                           Tbub0*T_units))
+                                           Tbub0*T_units) /
+                                blk[k].pressure)
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
@@ -1086,16 +1084,14 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_bubble")
 
-        units_meta = b.params.get_metadata().default_units["temperature"]
-        p_units = (units_meta["mass"] *
-                   units_meta["length"]**-1 *
-                   units_meta["time"]**-2)
+        units_meta = b.params.get_metadata().derived_units
+
         try:
             b.pressure_bubble = Var(
                     b.params._pe_pairs,
                     doc="Bubble point pressure",
                     bounds=(b.pressure.lb, b.pressure.ub),
-                    units=p_units)
+                    units=units_meta["pressure"])
 
             b._mole_frac_pbub = Var(
                     b.params._pe_pairs,
@@ -1115,16 +1111,14 @@ class GenericStateBlockData(StateBlockData):
         if b.params.config.bubble_dew_method is None:
             raise GenericPropertyPackageError(b, "pressure_dew")
 
-        units_meta = b.params.get_metadata().default_units["temperature"]
-        p_units = (units_meta["mass"] *
-                   units_meta["length"]**-1 *
-                   units_meta["time"]**-2)
+        units_meta = b.params.get_metadata().derived_units
+
         try:
             b.pressure_dew = Var(
                     b.params._pe_pairs,
                     doc="Dew point pressure",
                     bounds=(b.pressure.lb, b.pressure.ub),
-                    units=p_units)
+                    units=units_meta["pressure"])
 
             b._mole_frac_pdew = Var(
                     b.params._pe_pairs,

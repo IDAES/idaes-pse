@@ -20,7 +20,6 @@ import os
 from pathlib import Path
 from shutil import rmtree
 import subprocess
-import time
 from typing import Union
 import uuid
 
@@ -35,7 +34,10 @@ from . import create_module_scratch, rmtree_scratch
 
 __author__ = "Dan Gunter"
 
+
 _log = logging.getLogger(__name__)
+if os.environ.get("IDAES_TEST_DEBUG", False):
+    _log.setLevel(logging.DEBUG)
 
 
 @pytest.fixture(scope="module")
@@ -86,12 +88,37 @@ def test_examples_cli_list(runner):
     assert result.exit_code == 0
 
 
+def can_write(path):
+    """Test ability to write a file in 'path'.
+    Assume the path is a temporary directory, so don't bother cleaning up.
+    """
+    if not path.exists():
+        _log.debug(f"can_write: Creating parent directory '{path}'")
+        try:
+            path.mkdir()
+        except Exception as err:
+            _log.warning(f"Failed to create temporary directory '{path}': {err}")
+            return False
+    test_file = path / "test_file.txt"
+    _log.debug(f"can_write: Creating file '{test_file}'")
+    try:
+        fp = test_file.open("w")
+        fp.write("hello")
+        fp.close()
+    except Exception as err:
+        _log.warning(f"Failed to write sample file '{test_file}': {err}")
+        return False
+
+
 @pytest.mark.integration()
 def test_examples_cli_download(runner, tempdir):
     # failure with existing dir
     result = runner.invoke(examples.get_examples, ["-d", str(tempdir), "-I"])
     assert result.exit_code == -1
-    # pick subdir, should be ok; use old version we know exists
+
+
+@pytest.mark.integration()
+def test_examples_cli_default_version(runner, tempdir):
     dirname = str(tempdir / "examples")
     result = runner.invoke(examples.get_examples, ["-d", dirname, "-I", "-V", "1.5.0"])
     assert result.exit_code == 0
@@ -106,10 +133,11 @@ def test_examples_cli_default_version(runner, tempdir):
 
 @pytest.mark.integration()
 def test_examples_cli_download_unstable(runner, tempdir):
-    dirname = str(tempdir / "examples")
-    # unstable version but no --unstable flag
-    result = runner.invoke(examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"])
-    assert result.exit_code == -1
+    if can_write(tempdir):
+        dirname = str(tempdir / "examples")
+        # unstable version but no --unstable flag
+        result = runner.invoke(examples.get_examples, ["-d", dirname, "-V", "1.2.3-beta"])
+        assert result.exit_code == -1
 
 
 @pytest.mark.integration()
@@ -217,13 +245,15 @@ def test_examples_check_github_response():
     )
 
 
+@pytest.mark.nowin32
 @pytest.mark.integration
-def test_examples_install_src(tempdir):
+def test_examples_install_src():
+    tempdir = create_module_scratch("examples_install_src")
     # monkey patch a random install package name so as not to have
     # any weird side-effects on other tests
     orig_install_pkg = examples.INSTALL_PKG
     examples.INSTALL_PKG = "i" + str(uuid.uuid4()).replace("-", "_")
-    # print(f"1. curdir={os.curdir}")
+    _log.debug(f"install_src: curdir={os.curdir}")
     # create fake package
     src_dir = tempdir / "src"
     src_dir.mkdir()
@@ -324,35 +354,6 @@ def test_examples_cleanup_nodist_noegg(tempdir):
     examples.clean_up_temporary_files()
     # Check that everything is removed
     assert not tempsubdir.exists()
-
-
-@pytest.mark.unit
-def test_examples_cleanup_nothing(tempdir):
-    tempdir = tempdir
-    # nothing to remove, should still be ok
-    os.chdir(tempdir)
-    examples.clean_up_temporary_files()
-    # if we set some globals to bogus values, still OK
-    examples.g_egg = Path("no-such-file.egg-info")
-    examples.g_tempdir = Path("no-such-file-tempdir")
-    examples.clean_up_temporary_files()
-    # if we create files and set perms to 000, still OK
-    eggy = Path("egg")
-    eggy.mkdir()
-    eggy.chmod(0)
-    examples.g_egg = eggy
-    subdir = Path("subdirinho")
-    subdir.mkdir()
-    subdir.chmod(0)
-    examples.g_tempdir = subdir
-    dist = Path("dist")
-    dist.mkdir()
-    # dist.chmod(0) -- no, this messes up Windows
-    examples.clean_up_temporary_files()
-    # tempdir will clean up these files:
-    # dist.chmod(700) - removed with .rmdir() which works regardless!
-    eggy.chmod(0o777)
-    subdir.chmod(0o777)
 
 
 @pytest.mark.unit
@@ -521,4 +522,3 @@ def test_strip_test_cells(remove_cells_notebooks):
                     if examples.REMOVE_CELL_TAG in tags:
                         n += 1
                 assert n > 0  # tag still there
-

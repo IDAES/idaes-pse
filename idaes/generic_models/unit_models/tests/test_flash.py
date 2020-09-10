@@ -18,7 +18,10 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
@@ -29,8 +32,6 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -125,6 +126,12 @@ class TestBTXIdeal(object):
         assert number_variables(btx) == 48
         assert number_total_constraints(btx) == 41
         assert number_unused_variables(btx) == 0
+
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
+        assert_units_equivalent(btx.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(btx.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -237,6 +244,13 @@ class TestIAPWS(object):
         assert number_variables(iapws) == 18
         assert number_total_constraints(iapws) == 13
         assert number_unused_variables(iapws) == 0
+
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
+        # TODO :Add these checks in once the IAPWS package has units added
+        # assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
+        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, iapws):

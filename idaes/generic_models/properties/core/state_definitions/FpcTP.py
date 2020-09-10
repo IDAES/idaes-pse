@@ -33,23 +33,14 @@ def define_state(b):
     # calculations re not always needed
     b.always_flash = False
 
-    base_units = b.params.get_metadata().default_units
+    units = b.params.get_metadata().derived_units
     # Get bounds and initial values from config args
     f_bounds, f_init = get_bounds_from_config(
-        b, "flow_mol_phase_comp", base_units["amount"]/base_units["time"])
+        b, "flow_mol_phase_comp", units["flow_mole"])
     t_bounds, t_init = get_bounds_from_config(
-        b, "temperature", base_units["temperature"])
+        b, "temperature", units["temperature"])
     p_bounds, p_init = get_bounds_from_config(
-        b,
-        "pressure",
-        base_units["mass"]/base_units["length"]/base_units["time"]**2)
-
-    # Get units metadata
-    units_meta = b.params.get_metadata().default_units
-    flow_units = units_meta["amount"]/units_meta["time"]
-    press_units = (units_meta["mass"] *
-                   units_meta["length"]**-1 *
-                   units_meta["time"]**-2)
+        b, "pressure", units["pressure"])
 
     # Add state variables
     b.flow_mol_phase_comp = Var(b.params._phase_component_set,
@@ -57,17 +48,17 @@ def define_state(b):
                                 domain=NonNegativeReals,
                                 bounds=f_bounds,
                                 doc='Phase-component molar flowrate',
-                                units=flow_units)
+                                units=units["flow_mole"])
     b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
                      doc='State pressure',
-                     units=press_units)
+                     units=units["pressure"])
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
                         doc='State temperature',
-                        units=units_meta["temperature"])
+                        units=units["temperature"])
 
     # Add supporting variables
     b.flow_mol = Expression(
