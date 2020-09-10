@@ -14,11 +14,12 @@
 Standard IDAES StateJunction model.
 """
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import (declare_process_block_class,
+                        UnitModelBlockData,
+                        useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 
@@ -62,8 +63,8 @@ this must be False.""",
             default=useDefault,
             domain=is_physical_parameter_block,
             description="Property package to use in StateJunction",
-            doc="""Property parameter object used to define property state block,
-**default** - useDefault.
+            doc="""Property parameter object used to define property state
+block, **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
@@ -74,8 +75,8 @@ this must be False.""",
         ConfigBlock(
             implicit=True,
             description="Arguments to use for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these,
+            doc="""A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -104,11 +105,16 @@ see property package for documentation.}""",
         )
 
         # Add Ports
-        self.add_inlet_port(name="inlet", block=self.properties, doc="Inlet block")
-        self.add_outlet_port(name="outlet", block=self.properties, doc="Outlet block")
+        self.add_inlet_port(name="inlet",
+                            block=self.properties,
+                            doc="Inlet block")
+        self.add_outlet_port(name="outlet",
+                             block=self.properties,
+                             doc="Outlet block")
 
     def initialize(
-        blk, state_args={}, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}
+        blk, state_args={}, outlvl=idaeslog.NOTSET,
+        solver="ipopt", optarg={"tol": 1e-6}
     ):
         """
         This method initializes the StateJunction block by calling the
