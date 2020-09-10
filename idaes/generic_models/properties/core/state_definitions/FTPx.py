@@ -20,7 +20,7 @@ from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
-    get_bounds_from_config
+    get_bounds_from_config, get_method, GenericPropertyPackageError
 
 
 def set_metadata(b):
@@ -286,8 +286,35 @@ def state_initialization(b):
                             b.mole_frac_comp[j].value
             else:
                 # Two-phase
-                # TODO : Try to find some better guesses than default
-                pass
+                # Thanks to Rahul Ghandi for the method
+                if tbub is None:
+                    tb = 0
+                else:
+                    tb = tbub
+
+                if tdew is None:
+                    td = 0
+                else:
+                    td = tdew
+
+                vapRatio = value((b.temperature-tb) / (td-tb))
+
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
+
+                try:
+                    for j in b.params.component_list:
+                        psat_j = value(get_method(
+                            b, "pressure_sat_comp", j)(
+                                b,
+                                b.params.get_component(j),
+                                b.temperature))
+                        kfact = value(psat_j / b.pressure)
+
+                        b.mole_frac_phase_comp["Liq", j].value = value(
+                            b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
 
         elif pobj.is_vapor_phase():
             # Look for a VLE pair with this phase - will go with 1st found
@@ -335,8 +362,35 @@ def state_initialization(b):
                             b._mole_frac_tbub[pp, j].value
             else:
                 # Two-phase
-                # TODO : Try to find some better guesses than default
-                pass
+                # Thanks to Rahul Ghandi for the method
+                if tbub is None:
+                    tb = 0
+                else:
+                    tb = tbub
+
+                if tdew is None:
+                    td = 0
+                else:
+                    td = tdew
+
+                vapRatio = value((b.temperature-tb) / (td-tb))
+
+                b.flow_mol_phase["Vap"].value = value(vapRatio*b.flow_mol)
+
+                try:
+                    for j in b.params.component_list:
+                        psat_j = value(get_method(
+                            b, "pressure_sat_comp", j)(
+                                b,
+                                b.params.get_component(j),
+                                b.temperature))
+                        kfact = value(psat_j / b.pressure)
+
+                        b.mole_frac_phase_comp["Vap", j].value = value(
+                            b.mole_frac_comp[j]/(1+vapRatio*(kfact-1))*kfact)
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
 
 
 do_not_initialize = ["sum_mole_frac_out"]
