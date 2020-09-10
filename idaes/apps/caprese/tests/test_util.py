@@ -21,7 +21,7 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            TransformationFactory, TerminationCondition,
                            Reference)
 from pyomo.network import Arc
-from pyomo.kernel import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae.flatten import flatten_dae_components
 
