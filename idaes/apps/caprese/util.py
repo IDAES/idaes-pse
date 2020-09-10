@@ -20,7 +20,7 @@ from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         TransformationFactory)
 from pyomo.kernel import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.set_utils import is_in_block_indexed_by
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
@@ -479,7 +479,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
 
     #dae_vars = kwargs.pop('dae_vars', [])
     if not dae_vars:
-        scalar_vars, dae_vars = flatten_dae_variables(model, time)
+        scalar_vars, dae_vars = flatten_dae_components(model, time, Var)
         for var in scalar_vars:
             var.fix()
         deactivate_constraints_unindexed_by(model, time)
