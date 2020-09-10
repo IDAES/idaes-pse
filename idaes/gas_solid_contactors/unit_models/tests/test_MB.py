@@ -148,6 +148,7 @@ class TestIronOC(object):
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.975)
 
         m.fs.unit.solid_inlet.flow_mass[0].fix(591.4)  # kg/s
+        m.fs.unit.solid_inlet.particle_porosity[0].fix(0.27)  # (-)
         m.fs.unit.solid_inlet.temperature[0].fix(1183.15)  # K
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
@@ -166,8 +167,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_inlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_inlet")
-        assert len(iron_oc.fs.unit.solid_inlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_inlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_inlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_inlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.temperature, Var)
 
@@ -179,8 +181,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_outlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_outlet")
-        assert len(iron_oc.fs.unit.solid_outlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_outlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_outlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_outlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
@@ -200,8 +203,8 @@ class TestIronOC(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
 
-        assert number_variables(iron_oc) == 799
-        assert number_total_constraints(iron_oc) == 765
+        assert number_variables(iron_oc) == 809
+        assert number_total_constraints(iron_oc) == 775
         assert number_unused_variables(iron_oc) == 12
 
     @pytest.mark.unit
@@ -352,8 +355,9 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.gas_inlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_inlet")
-        assert len(iron_oc.fs.unit.solid_inlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_inlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_inlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_inlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.temperature, Var)
 
@@ -365,16 +369,17 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.gas_outlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_outlet")
-        assert len(iron_oc.fs.unit.solid_outlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_outlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_outlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_outlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
         assert isinstance(iron_oc.fs.unit.isothermal_gas_phase, Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_solid_phase, Constraint)
 
-        assert number_variables(iron_oc) == 579
-        assert number_total_constraints(iron_oc) == 503
+        assert number_variables(iron_oc) == 589
+        assert number_total_constraints(iron_oc) == 513
         assert number_unused_variables(iron_oc) == 55
         print(unused_variables_set(iron_oc))
 
@@ -394,6 +399,7 @@ class TestIronOC_EnergyBalanceType(object):
 
         iron_oc.fs.unit.solid_inlet.flow_mass[0].fix(591.4)  # kg/s
         iron_oc.fs.unit.solid_inlet.temperature[0].fix(1183.15)  # K
+        iron_oc.fs.unit.solid_inlet.particle_porosity[0].fix(0.27)  # (-)
         iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
         iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
         iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
