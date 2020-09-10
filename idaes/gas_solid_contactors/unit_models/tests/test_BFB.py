@@ -76,7 +76,7 @@ def test_config():
                      }})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 14
     assert isinstance(m.fs.unit.config.gas_phase_config, ConfigBlock)
     assert isinstance(m.fs.unit.config.solid_phase_config, ConfigBlock)
 
