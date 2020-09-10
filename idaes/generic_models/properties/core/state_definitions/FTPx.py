@@ -287,15 +287,8 @@ def state_initialization(b):
             else:
                 # Two-phase
                 # Thanks to Rahul Ghandi for the method
-                if tbub is None:
-                    tb = 0
-                else:
-                    tb = tbub
-
-                if tdew is None:
-                    td = 0
-                else:
-                    td = tdew
+                tb = 0 if tbub is None else tbub
+                td = 0 if tdew is None else tdew
 
                 vapRatio = value((b.temperature-tb) / (td-tb))
 
@@ -363,15 +356,8 @@ def state_initialization(b):
             else:
                 # Two-phase
                 # Thanks to Rahul Ghandi for the method
-                if tbub is None:
-                    tb = 0
-                else:
-                    tb = tbub
-
-                if tdew is None:
-                    td = 0
-                else:
-                    td = tdew
+                tb = 0 if tbub is None else tbub
+                td = 0 if tdew is None else tdew
 
                 vapRatio = value((b.temperature-tb) / (td-tb))
 
