@@ -14,7 +14,7 @@
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var
+from pyomo.environ import Constraint, Var, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -263,26 +263,23 @@ domain,
                     b.control_volume.area)
 
         # Set references to balance terms at unit level
-        add_object_reference(self,
-                             "length",
-                             self.control_volume.length)
-        add_object_reference(self,
-                             "area",
-                             self.control_volume.area)
+        add_object_reference(self, "length", self.control_volume.length)
+        add_object_reference(self, "area", self.control_volume.area)
 
         # Add volume variable for full reactor
-        # TODO : Need to add units
+        units = self.config.property_package.get_metadata()
         self.volume = Var(initialize=1,
-                          doc="Reactor Volume")
+                          doc="Reactor Volume",
+                          units=units.get_derived_units("volume"))
 
         self.geometry = Constraint(expr=self.volume == self.area*self.length)
 
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                self.config.energy_balance_type != EnergyBalanceType.none):
+            self.heat_duty = Reference(self.control_volume.heat[...])
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            self.deltaP = Reference(self.control_volume.deltaP[...])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume}

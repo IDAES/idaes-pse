@@ -19,7 +19,7 @@ estimation problem if the VLE data is available.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.environ import Param, NonNegativeReals, Set, units as pyunits
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
@@ -74,10 +74,12 @@ class BTXParameterData(ActivityCoeffParameterData):
         # Thermodynamic reference state
         self.pressure_reference = Param(mutable=True,
                                         default=101325,
-                                        doc='Reference pressure [Pa]')
+                                        doc='Reference pressure [Pa]',
+                                        units=pyunits.Pa)
         self.temperature_reference = Param(mutable=True,
                                            default=298.15,
-                                           doc='Reference temperature [K]')
+                                           doc='Reference temperature [K]',
+                                           units=pyunits.K)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -91,7 +93,8 @@ class BTXParameterData(ActivityCoeffParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(pressure_critical_data),
-            doc='Critical pressure [Pa]')
+            doc='Critical pressure [Pa]',
+            units=pyunits.Pa)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -105,7 +108,8 @@ class BTXParameterData(ActivityCoeffParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(temperature_critical_data),
-            doc='Critical temperature [K]')
+            doc='Critical temperature [K]',
+            units=pyunits.K)
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -116,49 +120,105 @@ class BTXParameterData(ActivityCoeffParameterData):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=extract_data(mw_comp_data),
-                             doc="molecular weight Kg/mol")
+                             doc="molecular weight kg/mol",
+                             units=pyunits.kg/pyunits.mol)
 
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
         #         4th edition, Chemical Engineering Series - Robert C. Reid
         #         Perry's Chemical Engineers Handbook
         #         - Robert H. Perry (Cp_liq)
-        CpIG_data = {('Liq', 'benzene', 'A'): 1.29E5,
-                     ('Liq', 'benzene', 'B'): -1.7E2,
-                     ('Liq', 'benzene', 'C'): 6.48E-1,
-                     ('Liq', 'benzene', 'D'): 0,
-                     ('Liq', 'benzene', 'E'): 0,
-                     ('Vap', 'benzene', 'A'): -3.392E1,
-                     ('Vap', 'benzene', 'B'): 4.739E-1,
-                     ('Vap', 'benzene', 'C'): -3.017E-4,
-                     ('Vap', 'benzene', 'D'): 7.130E-8,
-                     ('Vap', 'benzene', 'E'): 0,
-                     ('Liq', 'toluene', 'A'): 1.40E5,
-                     ('Liq', 'toluene', 'B'): -1.52E2,
-                     ('Liq', 'toluene', 'C'): 6.95E-1,
-                     ('Liq', 'toluene', 'D'): 0,
-                     ('Liq', 'toluene', 'E'): 0,
-                     ('Vap', 'toluene', 'A'): -2.435E1,
-                     ('Vap', 'toluene', 'B'): 5.125E-1,
-                     ('Vap', 'toluene', 'C'): -2.765E-4,
-                     ('Vap', 'toluene', 'D'): 4.911E-8,
-                     ('Vap', 'toluene', 'E'): 0,
-                     ('Liq', 'o-xylene', 'A'): 3.65e4,
-                     ('Liq', 'o-xylene', 'B'): 1.0175e3,
-                     ('Liq', 'o-xylene', 'C'): -2.63,
-                     ('Liq', 'o-xylene', 'D'): 3.02e-3,
-                     ('Liq', 'o-xylene', 'E'): 0,
-                     ('Vap', 'o-xylene', 'A'): -1.585e-1,
-                     ('Vap', 'o-xylene', 'B'): 5.962e-1,
-                     ('Vap', 'o-xylene', 'C'): -3.443e-4,
-                     ('Vap', 'o-xylene', 'D'): 7.528E-8,
-                     ('Vap', 'o-xylene', 'E'): 0}
+        Cp_Liq_A_data = {('benzene'): 1.29E5,
+                         ('toluene'): 1.40E5,
+                         ('o-xylene'): 3.65e4}
+        Cp_Liq_B_data = {('benzene'): -1.7E2,
+                         ('toluene'): -1.52E2,
+                         ('o-xylene'): 1.0175e3}
+        Cp_Liq_C_data = {('benzene'): 6.48E-1,
+                         ('toluene'): 6.95E-1,
+                         ('o-xylene'): -2.63}
+        Cp_Liq_D_data = {('benzene'): 0,
+                         ('toluene'): 0,
+                         ('o-xylene'): 3.02e-3}
+        Cp_Liq_E_data = {('benzene'): 0,
+                         ('toluene'): 0,
+                         ('o-xylene'): 0}
 
-        self.CpIG = Param(self.phase_list, self.component_list,
-                          ['A', 'B', 'C', 'D', 'E'],
-                          mutable=False,
-                          initialize=extract_data(CpIG_data),
-                          doc="parameters to compute Cp_comp")
+        self.cp_mol_liq_comp_coeff_A = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.kmol/pyunits.K,
+            doc="Liquid phase Cp parameter A",
+            initialize=extract_data(Cp_Liq_A_data))
+
+        self.cp_mol_liq_comp_coeff_B = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.kmol/pyunits.K**2,
+            doc="Liquid phase Cp parameter B",
+            initialize=extract_data(Cp_Liq_B_data))
+
+        self.cp_mol_liq_comp_coeff_C = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.kmol/pyunits.K**3,
+            doc="Liquid phase Cp parameter C",
+            initialize=extract_data(Cp_Liq_C_data))
+
+        self.cp_mol_liq_comp_coeff_D = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.kmol/pyunits.K**4,
+            doc="Liquid phase Cp parameter D",
+            initialize=extract_data(Cp_Liq_D_data))
+
+        self.cp_mol_liq_comp_coeff_E = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.kmol/pyunits.K**5,
+            doc="Liquid phase Cp parameter E",
+            initialize=extract_data(Cp_Liq_E_data))
+
+        Cp_Vap_A_data = {('benzene'): -3.392E1,
+                         ('toluene'): -2.435E1,
+                         ('o-xylene'): -1.585e-1}
+        Cp_Vap_B_data = {('benzene'): 4.739E-1,
+                         ('toluene'): 5.125E-1,
+                         ('o-xylene'): 5.962e-1}
+        Cp_Vap_C_data = {('benzene'): -3.017E-4,
+                         ('toluene'): -2.765E-4,
+                         ('o-xylene'): -3.443e-4}
+        Cp_Vap_D_data = {('benzene'): 7.130E-8,
+                         ('toluene'): 4.911E-8,
+                         ('o-xylene'): 7.528E-8}
+        Cp_Vap_E_data = {('benzene'): 0,
+                         ('toluene'): 0,
+                         ('o-xylene'): 0}
+
+        self.cp_mol_vap_comp_coeff_A = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K,
+            doc="Vapor phase Cp parameter A",
+            initialize=extract_data(Cp_Vap_A_data))
+
+        self.cp_mol_vap_comp_coeff_B = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**2,
+            doc="Vapor phase Cp parameter B",
+            initialize=extract_data(Cp_Vap_B_data))
+
+        self.cp_mol_vap_comp_coeff_C = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**3,
+            doc="Vapor phase Cp parameter C",
+            initialize=extract_data(Cp_Vap_C_data))
+
+        self.cp_mol_vap_comp_coeff_D = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**4,
+            doc="Vapor phase Cp parameter D",
+            initialize=extract_data(Cp_Vap_D_data))
+
+        self.cp_mol_vap_comp_coeff_E = Param(
+            self.component_list,
+            units=pyunits.J/pyunits.mol/pyunits.K**5,
+            doc="Vapor phase Cp parameter E",
+            initialize=extract_data(Cp_Vap_E_data))
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -180,7 +240,7 @@ class BTXParameterData(ActivityCoeffParameterData):
             ['A', 'B', 'C', 'D'],
             mutable=False,
             initialize=extract_data(pressure_sat_coeff_data),
-            doc="parameters to compute Cp_comp")
+            doc="parameters to compute P_sat")
 
         # Standard heats of formation
         # Source: NIST Webbook, https://webbook.nist.gov
@@ -196,7 +256,8 @@ class BTXParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(dh_form_data),
-                             doc="Standard heats of formation [J/mol]")
+                             doc="Standard heats of formation [J/mol]",
+                             units=pyunits.J/pyunits.mol)
 
         # Standard entropy of formation
         # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
@@ -213,4 +274,5 @@ class BTXParameterData(ActivityCoeffParameterData):
                              self.component_list,
                              mutable=False,
                              initialize=extract_data(ds_form_data),
-                             doc="Standard entropy of formation [J/mol.K]")
+                             doc="Standard entropy of formation [J/mol.K]",
+                             units=pyunits.J/pyunits.mol/pyunits.K)
