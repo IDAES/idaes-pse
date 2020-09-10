@@ -646,8 +646,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             outlvl: logging level default is NOTSET, which inherits from the
                 parent logger
             solver: the NL solver, default is "ipopt"
-            flow_iterate: If not calculating flow coefficents, this is the
-                number of times to update the flow and repeat initializtion
+            flow_iterate: If not calculating flow coefficients, this is the
+                number of times to update the flow and repeat initialization
                 (1 to 5 where 1 does not update the flow guess)
             optarg: solver arguments, default is {"tol": 1e-6, "max_iter": 35}
             copy_disconneted_flow: Copy the flow through the disconnected stages
