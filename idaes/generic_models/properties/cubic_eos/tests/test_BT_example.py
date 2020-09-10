@@ -22,8 +22,11 @@ from pyomo.environ import (ConcreteModel,
                            SolverFactory,
                            TerminationCondition,
                            value)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
-from idaes.generic_models.properties.tests.test_harness import PropertyTestHarness
+from idaes.generic_models.properties.tests.test_harness import \
+    PropertyTestHarness
 from idaes.core.util.testing import get_default_solver
 
 
@@ -73,6 +76,20 @@ class TestBasicV(PropertyTestHarness):
 @pytest.mark.skipif(not prop_available,
                     reason="Cubic root finder not available")
 class TestBTExample(object):
+    @pytest.mark.component
+    def test_units(self):
+        m = ConcreteModel()
+
+        m.fs = FlowsheetBlock(default={'dynamic': False})
+
+        m.fs.props = BT_PR.BTParameterBlock(
+                default={'valid_phase': ('Vap', 'Liq')})
+
+        m.fs.state = m.fs.props.build_state_block(
+            default={"defined_state": True})
+
+        assert_units_consistent(m)
+
     @pytest.mark.integration
     def test_T_sweep(self):
         m = ConcreteModel()
