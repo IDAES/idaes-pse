@@ -35,10 +35,10 @@ def _rule_default(b, *args):
     """
     try:
         b.build()
-    except Exception as e:
+    except Exception:
         logging.getLogger(__name__).exception(
             "Failure in build: {}".format(b))
-        raise e
+        raise
 
 _process_block_docstring = """
     Args:
