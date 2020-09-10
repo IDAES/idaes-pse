@@ -93,6 +93,13 @@ def main():
     m.fs.BFB.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
 
     m.fs.BFB.solid_inlet.flow_mass[0].fix(1230)  # kg/s
+    # Particle porosity:
+    # The porosity of the OC particle at the inlet is calculated from the
+    # known bulk density of the fresh OC particle (3251.75 kg/m3), and the
+    # skeletal density of the fresh OC particle (calculated from the known
+    # composition of the fresh particle, and the skeletal density of its
+    # components [see the solids property package])
+    m.fs.BFB.solid_inlet.particle_porosity[0].fix(0.27)
     m.fs.BFB.solid_inlet.temperature[0].fix(1186)  # K
     m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
     m.fs.BFB.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
@@ -117,6 +124,7 @@ def main():
                 'H2O': blk.gas_inlet.mole_frac_comp[0, 'H2O'].value}}
     solid_phase_state_args = {
             'flow_mass': blk.solid_inlet.flow_mass[0].value,
+            'particle_porosity': blk.solid_inlet.particle_porosity[0].value,
             'temperature': blk.solid_inlet.temperature[0].value,
             'mass_frac': {
                     'Fe2O3': blk.solid_inlet.mass_frac_comp[0, 'Fe2O3'].value,
