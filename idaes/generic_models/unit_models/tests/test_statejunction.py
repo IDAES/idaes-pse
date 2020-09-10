@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            SolverStatus,
                            TerminationCondition,
                            value)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.statejunction import StateJunction
@@ -34,8 +35,6 @@ from idaes.generic_models.properties.examples.saponification_thermo import \
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -112,6 +111,10 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 0
         assert number_unused_variables(sapon) == 8
 
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
@@ -172,6 +175,10 @@ class TestBTX(object):
         assert number_variables(btx) == 8
         assert number_total_constraints(btx) == 3
         assert number_unused_variables(btx) == 2
+
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -251,6 +258,10 @@ class TestIAPWS(object):
         assert number_variables(iapws) == 3
         assert number_total_constraints(iapws) == 0
         assert number_unused_variables(iapws) == 3
+
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
