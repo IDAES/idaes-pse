@@ -112,28 +112,6 @@ user specified temperature.}"""))
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -197,10 +175,6 @@ see property package for documentation.}"""))
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
 
-        self.control_volume.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
-
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
         _liquid_list = []
@@ -248,9 +222,8 @@ see property package for documentation.}"""))
         # Reference to the heat duty
         add_object_reference(self, "heat_duty", self.control_volume.heat)
 
-        # Reference to the pressure drop (if set to True)
-        if self.config.has_pressure_change:
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+        add_object_reference(self, "condenser_pressure",
+                             self.control_volume.properties_out[:].pressure)
 
     def _make_ports(self):
 
