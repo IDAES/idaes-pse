@@ -230,5 +230,5 @@ However, Reaction Blocks also tend to be much simpler than State Blocks, involvi
 Tutorials
 ---------
 
-Tutorials demonstrating how to create custom reaction packages are being developed, but once created they will be found :ref:`here<tutorials_examples:Tutorials and Examples>`.
+Tutorials demonstrating how to create custom reaction packages are being developed. Once they are created, they will be found :ref:`here<tutorials_examples:Tutorials and Examples>`.
 
