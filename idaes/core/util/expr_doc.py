@@ -25,7 +25,7 @@ from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import (ExternalFunctionExpression,
                                           ExpressionBase)
 from pyomo.core.expr import current as EXPR, native_types
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 
 import sympy
 from IPython.display import display, Markdown

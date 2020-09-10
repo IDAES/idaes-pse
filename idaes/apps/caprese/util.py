@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -18,7 +18,7 @@ A module of helper functions for working with flattened DAE models.
 from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
         SolverFactory, Objective, NonNegativeReals, Reals, 
         TransformationFactory)
-from pyomo.kernel import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.set_utils import is_in_block_indexed_by

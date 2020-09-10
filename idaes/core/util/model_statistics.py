@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -23,7 +23,7 @@ import sys
 from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
-from pyomo.core.kernel.component_set import ComponentSet
+from pyomo.common.collections import ComponentSet
 
 
 # -------------------------------------------------------------------------
