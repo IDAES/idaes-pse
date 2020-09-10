@@ -178,8 +178,8 @@ class TestBTX(object):
             btx.fs.unit.inlet.flow_mol[0] *
             btx.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
             btx.fs.unit.outlet.flow_mol[0] *
-            btx.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
-            + btx.fs.unit.heat_duty[0]) <= 1e-6
+            btx.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"]
+            + btx.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -558,10 +558,10 @@ class TestBT_Generic(object):
 
         assert abs(value(
             btg.fs.unit.inlet.flow_mol[0] *
-            btg.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
+            btg.fs.unit.control_volume.properties_in[0].enth_mol -
             btg.fs.unit.outlet.flow_mol[0] *
-            btg.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
-            + btg.fs.unit.heat_duty[0]) <= 1e-6
+            btg.fs.unit.control_volume.properties_out[0].enth_mol
+            + btg.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
