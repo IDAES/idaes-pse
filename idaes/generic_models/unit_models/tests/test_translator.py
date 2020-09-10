@@ -18,6 +18,7 @@ Authors: Andrew Lee
 import pytest
 
 from pyomo.environ import ConcreteModel
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.translator import Translator
@@ -30,8 +31,6 @@ from idaes.generic_models.properties.examples.saponification_thermo import \
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -112,6 +111,10 @@ class TestTranslate(object):
         assert number_variables(trans) == 25
         assert number_total_constraints(trans) == 12
         assert number_unused_variables(trans) == 8
+
+    @pytest.mark.component
+    def test_units(self, trans):
+        assert_units_consistent(trans)
 
     @pytest.mark.unit
     def test_dof(self, trans):

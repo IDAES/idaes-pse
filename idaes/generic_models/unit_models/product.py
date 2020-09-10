@@ -19,7 +19,9 @@ from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import (declare_process_block_class,
+                        UnitModelBlockData,
+                        useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
@@ -64,8 +66,8 @@ False.""",
             default=useDefault,
             domain=is_physical_parameter_block,
             description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations,
-**default** - useDefault.
+            doc="""Property parameter object used to define property
+calculations, **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
@@ -76,8 +78,8 @@ False.""",
         ConfigBlock(
             implicit=True,
             description="Arguments to use for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these,
+            doc="""A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -127,7 +129,8 @@ see property package for documentation.}""",
         self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
 
     def initialize(
-        blk, state_args={}, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}
+        blk, state_args={}, outlvl=idaeslog.NOTSET,
+        solver="ipopt", optarg={"tol": 1e-6}
     ):
         """
         This method calls the initialization method of the state block.
