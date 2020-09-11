@@ -498,7 +498,7 @@ class _CubicStateBlock(StateBlock):
                 else:
                     # Two-phase
                     # Estimate vapor fraction from distance from Tbub and Tdew
-                    # Thanks to Rahul Ghandi for the method
+                    # Thanks to Rahul Gandhi for the method
                     vapRatio = value((blk[k].temperature -
                                       blk[k].temperature_bubble) /
                                      (blk[k].temperature_dew -

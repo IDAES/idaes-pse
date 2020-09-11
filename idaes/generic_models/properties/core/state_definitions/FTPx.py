@@ -286,25 +286,30 @@ def state_initialization(b):
                             b.mole_frac_comp[j].value
             else:
                 # Two-phase
-                # Thanks to Rahul Ghandi for the method
-                tb = 0 if tbub is None else tbub
-                td = 0 if tdew is None else tdew
-
-                vapRatio = value((b.temperature-tb) / (td-tb))
+                # Thanks to Rahul Gandhi for the method
+                # For systems with only one of Tbub or Tdew, assume that most
+                # of the phase transitions will occured within 100 T units
+                if tbub is None:
+                    vapRatio = value((tdew - b.temperature) / 100)
+                elif tdew is None:
+                    vapRatio = value((tbub - b.temperature) / 100)
+                else:
+                    vapRatio = value((b.temperature-tbub) / (tdew-tbub))
 
                 b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
 
                 try:
-                    for j in b.params.component_list:
-                        psat_j = value(get_method(
-                            b, "pressure_sat_comp", j)(
-                                b,
-                                b.params.get_component(j),
-                                b.temperature))
-                        kfact = value(psat_j / b.pressure)
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
 
-                        b.mole_frac_phase_comp["Liq", j].value = value(
-                            b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
+                            b.mole_frac_phase_comp["Liq", j].value = value(
+                                b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
                 except GenericPropertyPackageError:
                     # No method for calculating Psat, use default values
                     pass
@@ -355,25 +360,31 @@ def state_initialization(b):
                             b._mole_frac_tbub[pp, j].value
             else:
                 # Two-phase
-                # Thanks to Rahul Ghandi for the method
-                tb = 0 if tbub is None else tbub
-                td = 0 if tdew is None else tdew
-
-                vapRatio = value((b.temperature-tb) / (td-tb))
+                # Thanks to Rahul Gandhi for the method
+                # For systems with only one of Tbub or Tdew, assume that most
+                # of the phase transitions will occured within 100 T units
+                if tbub is None:
+                    vapRatio = value((tdew - b.temperature) / 100)
+                elif tdew is None:
+                    vapRatio = value((tbub - b.temperature) / 100)
+                else:
+                    vapRatio = value((b.temperature-tbub) / (tdew-tbub))
 
                 b.flow_mol_phase["Vap"].value = value(vapRatio*b.flow_mol)
 
                 try:
-                    for j in b.params.component_list:
-                        psat_j = value(get_method(
-                            b, "pressure_sat_comp", j)(
-                                b,
-                                b.params.get_component(j),
-                                b.temperature))
-                        kfact = value(psat_j / b.pressure)
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
 
-                        b.mole_frac_phase_comp["Vap", j].value = value(
-                            b.mole_frac_comp[j]/(1+vapRatio*(kfact-1))*kfact)
+                            b.mole_frac_phase_comp["Vap", j].value = value(
+                                b.mole_frac_comp[j] /
+                                (1+vapRatio*(kfact-1))*kfact)
                 except GenericPropertyPackageError:
                     # No method for calculating Psat, use default values
                     pass
