@@ -23,7 +23,7 @@ from pyomo.environ import (Block, ConcreteModel, Constraint, Expression,
                            exp)
 from pyomo.network import Arc, Port
 from pyomo.dae import DerivativeVar
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 
 from idaes.core import (FlowsheetBlock, 
                         MaterialBalanceType, 

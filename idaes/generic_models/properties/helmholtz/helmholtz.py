@@ -32,7 +32,7 @@ from pyomo.environ import (
     Suffix,
 )
 from pyomo.environ import ExternalFunction as EF
-from pyomo.core.kernel.component_set import ComponentSet
+from pyomo.common.collections import ComponentSet
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES

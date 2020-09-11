@@ -19,7 +19,7 @@ Unless otherwise noted, parameters are from:
 McGraw-Hill, 1987
 """
 # Import Pyomo libraries
-from pyomo.environ import Reals, Param, NonNegativeReals, Set
+from pyomo.environ import Reals, Param, NonNegativeReals, Set, units as pyunits
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, Component
@@ -59,10 +59,12 @@ class BTParameterData(CubicParameterData):
         # Thermodynamic reference state
         self.pressure_ref = Param(mutable=True,
                                   default=101325,
-                                  doc='Reference pressure [Pa]')
+                                  doc='Reference pressure [Pa]',
+                                  units=pyunits.Pa)
         self.temperature_ref = Param(mutable=True,
                                      default=298.15,
-                                     doc='Reference temperature [K]')
+                                     doc='Reference temperature [K]',
+                                     units=pyunits.K)
 
         # Critical Properties
         pressure_crit_data = {'benzene': 48.9e5,
@@ -73,7 +75,8 @@ class BTParameterData(CubicParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(pressure_crit_data),
-            doc='Critical pressure [Pa]')
+            doc='Critical pressure [Pa]',
+            units=pyunits.Pa)
 
         temperature_crit_data = {'benzene': 562.2,
                                  'toluene': 591.8}
@@ -83,7 +86,8 @@ class BTParameterData(CubicParameterData):
             within=NonNegativeReals,
             mutable=False,
             initialize=extract_data(temperature_crit_data),
-            doc='Critical temperature [K]')
+            doc='Critical temperature [K]',
+            units=pyunits.K)
 
         # Pitzer acentricity factor
         omega_data = {'benzene': 0.212,
@@ -116,23 +120,41 @@ class BTParameterData(CubicParameterData):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=extract_data(mw_comp_data),
-                             doc="molecular weight kg/mol")
+                             doc="molecular weight kg/mol",
+                             units=pyunits.kg/pyunits.mol)
 
         # Constants for specific heat capacity, enthalpy and entropy
-        cp_ig_data = {('benzene', '1'): -3.392E1,
-                      ('benzene', '2'): 4.739E-1,
-                      ('benzene', '3'): -3.017E-4,
-                      ('benzene', '4'): 7.130E-8,
-                      ('toluene', '1'): -2.435E1,
-                      ('toluene', '2'): 5.125E-1,
-                      ('toluene', '3'): -2.765E-4,
-                      ('toluene', '4'): 4.911E-8}
+        self.cp_mol_ig_comp_coeff_1 = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': -3.392E1,
+                        'toluene': -2.435E1},
+            doc="Parameter 1 to compute cp_mol_comp",
+            units=pyunits.J/pyunits.mol/pyunits.K)
 
-        self.cp_ig = Param(self.component_list,
-                           ['1', '2', '3', '4'],
-                           mutable=False,
-                           initialize=extract_data(cp_ig_data),
-                           doc="Parameters to compute cp_comp")
+        self.cp_mol_ig_comp_coeff_2 = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': 4.739E-1,
+                        'toluene': 5.125E-1},
+            doc="Parameter 2 to compute cp_mol_comp",
+            units=pyunits.J/pyunits.mol/pyunits.K**2)
+
+        self.cp_mol_ig_comp_coeff_3 = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': -3.017E-4,
+                        'toluene': -2.765E-4},
+            doc="Parameter 3 to compute cp_mol_comp",
+            units=pyunits.J/pyunits.mol/pyunits.K**3)
+
+        self.cp_mol_ig_comp_coeff_4 = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': 7.130E-8,
+                        'toluene': 4.911E-8},
+            doc="Parameter 4 to compute cp_mol_comp",
+            units=pyunits.J/pyunits.mol/pyunits.K**4)
 
         # Standard heats of formation
         # Source: NIST Webbook, https://webbook.nist.gov
@@ -143,7 +165,8 @@ class BTParameterData(CubicParameterData):
         self.enth_mol_form_ref = Param(self.component_list,
                                        mutable=False,
                                        initialize=extract_data(dh_form_data),
-                                       doc="Standard heats of formation")
+                                       doc="Standard heats of formation",
+                                       units=pyunits.J/pyunits.mol)
 
         # Standard entropy of formation
         # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
@@ -154,19 +177,31 @@ class BTParameterData(CubicParameterData):
         self.entr_mol_form_ref = Param(self.component_list,
                                        mutable=False,
                                        initialize=extract_data(ds_form_data),
-                                       doc="Standard entropy of formation")
+                                       doc="Standard entropy of formation",
+                                       units=pyunits.J/pyunits.mol/pyunits.K)
 
         # Antoine coefficients for ideal vapour (units: bar, K)
         # This is needed for initial guesses of bubble and dew points
-        antoine_data = {('benzene', '1'): 4.202,
-                        ('benzene', '2'): 1322,
-                        ('benzene', '3'): -38.56,
-                        ('toluene', '1'): 4.216,
-                        ('toluene', '2'): 1435,
-                        ('toluene', '3'): -43.33}
+        self.antoine_coeff_A = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': 4.202,
+                        'toluene': 4.216},
+            doc="Antoine A Parameter to calculate pressure_sat",
+            units=pyunits.dimensionless)
 
-        self.antoine = Param(self.component_list,
-                             ['1', '2', '3'],
-                             mutable=False,
-                             initialize=extract_data(antoine_data),
-                             doc="Antoine Parameters to pressure_sat")
+        self.antoine_coeff_B = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': 1322,
+                        'toluene': 1435},
+            doc="Antoine B Parameter to calculate pressure_sat",
+            units=pyunits.K)
+
+        self.antoine_coeff_C = Param(
+            self.component_list,
+            mutable=False,
+            initialize={'benzene': -38.56,
+                        'toluene': -43.33},
+            doc="Antoine C Parameter to calculate pressure_sat",
+            units=pyunits.K)

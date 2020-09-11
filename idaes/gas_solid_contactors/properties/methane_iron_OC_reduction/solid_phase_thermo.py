@@ -159,17 +159,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 doc='Diameter of solid particles [m]')
         self.particle_dia.fix()
 
-        # Particle porosity:
-        # The porosity of the OC particle is assumed to be a known parameter,
-        # and it is calculated from the known bulk density of the fresh OC
-        # particle (3251.75 kg/m3), and the known skeletal density of the
-        # fresh OC particle (calculated from the known composition of the
-        # fresh particle, and the skeletal density of its components)
-        self.particle_porosity = Var(domain=Reals,
-                                     initialize=1.5e-3,
-                                     doc='Porosity of oxygen carrier [-]')
-        self.particle_porosity.fix()
-
         # TODO -provide reference
         # Minimum fluidization velocity - EPAT value used for Davidson model
         self.velocity_mf = Var(domain=Reals,
@@ -195,6 +184,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         obj.add_properties({
                 'flow_mass': {'method': None, 'units': 'kg/s'},
+                'particle_porosity': {'method': None, 'units': None},
                 'temperature': {'method': None, 'units': 'K'},
                 'mass_frac_comp': {'method': None, 'units': None},
                 'dens_mass_skeletal': {'method': '_dens_mass_skeletal',
@@ -382,6 +372,9 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         self.flow_mass = Var(initialize=1.0,
                              domain=Reals,
                              doc='Component mass flowrate [kg/s]')
+        self.particle_porosity = Var(domain=Reals,
+                                     initialize=0.27,
+                                     doc='Porosity of oxygen carrier [-]')
         self.mass_frac_comp = Var(
             self._params.component_list,
             initialize=1 / len(self._params.component_list),
@@ -429,7 +422,7 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
                                       '[kg/m3]')
 
         def density_particle_constraint(b):
-            return (b.dens_mass_particle == (1 - b._params.particle_porosity) *
+            return (b.dens_mass_particle == (1 - b.particle_porosity) *
                     b.dens_mass_skeletal)
         try:
             # Try to build constraint
@@ -546,6 +539,7 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
 
     def define_state_vars(b):
         return {"flow_mass": b.flow_mass,
+                'particle_porosity': b.particle_porosity,
                 "temperature": b.temperature,
                 "mass_frac_comp": b.mass_frac_comp}
 

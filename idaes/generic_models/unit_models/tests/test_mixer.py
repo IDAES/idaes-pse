@@ -652,7 +652,7 @@ class TestMixer(object):
         assert m.fs.mix.mixed_state[0].check is True
 
     @pytest.mark.initialization
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -691,7 +691,7 @@ class TestMixer(object):
         assert m.fs.sb[0].hold_state is False
 
     @pytest.mark.ui
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_report(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})

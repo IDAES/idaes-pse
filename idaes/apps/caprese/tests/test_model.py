@@ -18,7 +18,6 @@ from pytest import approx
 import pyomo.environ as aml
 import pyomo.dae as dae
 import pyomo.network as pyn
-import pyomo.kernel as pyk
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.util.model_statistics import degrees_of_freedom

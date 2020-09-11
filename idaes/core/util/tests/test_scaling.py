@@ -16,8 +16,8 @@ This module contains tests for scaling.
 
 import pytest
 import pyomo.environ as pyo
-import pyomo.kernel as pyk
 import pyomo.dae as dae
+from pyomo.common.collections import ComponentSet
 from pyomo.network import Port, Arc
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import number_activated_objectives
@@ -740,7 +740,7 @@ class TestCacheVars():
         m.v2 = pyo.Var(initialize=val2)
 
         varlist = [m.v1, m.v2]
-        varset = pyk.ComponentSet(varlist)
+        varset = ComponentSet(varlist)
 
         with sc.CacheVars(varlist) as cache:
             assert cache.cache == [1,2]
