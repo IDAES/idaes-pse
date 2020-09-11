@@ -90,28 +90,6 @@ constructed,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -161,10 +139,6 @@ see property package for documentation.}"""))
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
-
-        self.control_volume.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
 
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
@@ -228,9 +202,6 @@ see property package for documentation.}"""))
         # Add object reference to variables of the control volume
         # Reference to the heat duty
         add_object_reference(self, "heat_duty", self.control_volume.heat)
-        # Reference to the pressure drop (if set to True)
-        if self.config.has_pressure_change:
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
     def _make_ports(self):
 
@@ -550,9 +521,6 @@ see property package for documentation.}"""))
     def initialize(self, state_args=None, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
-        # TODO: Fix the inlets to the reboiler to the vapor flow from
-        # the top tray or take it as an argument to this method.
-
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
@@ -583,6 +551,57 @@ see property package for documentation.}"""))
                                                outlvl=outlvl,
                                                hold_state=True)
 
+        self.eq_boilup_ratio.deactivate()
+
+        if not self.control_volume.properties_out[0].temperature.fixed:
+
+            # Estimating a good guess for the reboiler temperature based on
+            # given boil up ratio (typically, fixed), bubble and dew
+            # point. This helps with initializing the system within the two phase
+            # envelope before activating the boilup ratio constraint.
+
+            alpha = self.boilup_ratio.value * (
+                self.control_volume.properties_in[0].temperature_dew.value -
+                self.control_volume.properties_in[0].
+                temperature_bubble.value) + \
+                self.control_volume.properties_in[0].temperature_bubble.value
+
+            self.control_volume.properties_out[0].temperature.fix(alpha)
+
+            if degrees_of_freedom(self) == 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = solver.solve(self, tee=slc.tee)
+                init_log.info(
+                    "Initialization Step 1 Complete, {}.".
+                    format(idaeslog.condition(res))
+                )
+            else:
+                raise Exception("State vars fixed but degrees of freedom "
+                                "for reboiler is not zero during "
+                                "initialization.")
+
+            self.control_volume.properties_out[0].temperature.unfix()
+            self.eq_boilup_ratio.activate()
+        else:
+            # In this case, outlet temperature has already been fixed by user
+            # and boil up ratio is assumed not to be fixed, otherwise the
+            # system is over specified.
+
+            self.eq_boilup_ratio.deactivate()
+            if degrees_of_freedom(self) == 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = solver.solve(self, tee=slc.tee)
+                init_log.info(
+                    "Initialization Step 1 Complete, {}.".
+                    format(idaeslog.condition(res))
+                )
+            else:
+                raise Exception("State vars fixed but degrees of freedom "
+                                "for reboiler is not zero during "
+                                "initialization.")
+
+            self.eq_boilup_ratio.activate()
+
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
@@ -600,8 +619,6 @@ see property package for documentation.}"""))
         var_dict = {}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
-        if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
 
