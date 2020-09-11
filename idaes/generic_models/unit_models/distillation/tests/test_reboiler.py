@@ -26,8 +26,7 @@ from idaes.generic_models.unit_models.distillation import Reboiler
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+    number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
 
@@ -45,16 +44,13 @@ def test_config():
 
     m.fs.unit = Reboiler(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.config) == 9
+    assert len(m.fs.unit.config) == 7
 
     assert not m.fs.unit.config.has_boilup_ratio
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
         EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_pressure_change
     assert hasattr(m.fs.unit, "heat_duty")
 
 
@@ -71,8 +67,7 @@ class TestBTXIdeal():
 
         m.fs.unit = Reboiler(
             default={"property_package": m.fs.properties,
-                     "has_boilup_ratio": True,
-                     "has_pressure_change": True})
+                     "has_boilup_ratio": True})
 
         return m
 
@@ -89,8 +84,7 @@ class TestBTXIdeal():
 
         m.fs.unit = Reboiler(
             default={"property_package": m.fs.properties,
-                     "has_boilup_ratio": True,
-                     "has_pressure_change": True})
+                     "has_boilup_ratio": True})
 
         return m
 
@@ -119,8 +113,8 @@ class TestBTXIdeal():
         assert hasattr(btx_ftpz.fs.unit.vapor_reboil, "temperature")
         assert hasattr(btx_ftpz.fs.unit.vapor_reboil, "pressure")
 
-        assert number_variables(btx_ftpz.fs.unit) == 49
-        assert number_total_constraints(btx_ftpz.fs.unit) == 42
+        assert number_variables(btx_ftpz.fs.unit) == 48
+        assert number_total_constraints(btx_ftpz.fs.unit) == 41
         assert number_unused_variables(btx_ftpz) == 0
 
         assert hasattr(btx_fctp.fs.unit, "boilup_ratio")
@@ -141,8 +135,8 @@ class TestBTXIdeal():
         assert hasattr(btx_fctp.fs.unit.vapor_reboil, "temperature")
         assert hasattr(btx_fctp.fs.unit.vapor_reboil, "pressure")
 
-        assert number_variables(btx_fctp.fs.unit) == 51
-        assert number_total_constraints(btx_fctp.fs.unit) == 45
+        assert number_variables(btx_fctp.fs.unit) == 50
+        assert number_total_constraints(btx_fctp.fs.unit) == 44
         assert number_unused_variables(btx_fctp) == 0
 
     @pytest.mark.unit
@@ -150,7 +144,7 @@ class TestBTXIdeal():
 
         # Fix the reboiler variables
         btx_ftpz.fs.unit.boilup_ratio.fix(1)
-        btx_ftpz.fs.unit.deltaP.fix(0)
+        btx_ftpz.fs.unit.control_volume.properties_out[0].pressure.fix(101325)
 
         # Fix the inputs (typically this will be the outlet liquid from the
         # bottom tray)
@@ -164,7 +158,7 @@ class TestBTXIdeal():
 
         # Fix the reboiler variables
         btx_fctp.fs.unit.boilup_ratio.fix(1)
-        btx_fctp.fs.unit.deltaP.fix(0)
+        btx_fctp.fs.unit.control_volume.properties_out[0].pressure.fix(101325)
 
         # Fix the inputs (typically this will be the outlet liquid from the
         # bottom tray)
@@ -257,7 +251,7 @@ class TestBTXIdeal():
                 value(btx_fctp.fs.unit.vapor_reboil.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(16926.370, abs=1e-3) ==
+        assert (pytest.approx(16926.526, abs=1e-3) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize
