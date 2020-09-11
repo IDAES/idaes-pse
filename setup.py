@@ -61,7 +61,7 @@ kwargs = dict(
         "psutil",
         "pyutilib",
         "pyomo>=5.7.0",
-        "pytest",
+        "pytest>=6.0.0",
         "pyyaml",
         "requests",  # for ui/fsvis
         "python-slugify", # for ui/fsvis
