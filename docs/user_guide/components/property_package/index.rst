@@ -14,18 +14,17 @@ Overview
     */index
 
 Property packages provide the relationships and parameters necessary to determine the 
-properties of process streams. Property packages may be general in purpose, such as ideal gas 
-equations, or specific to a certain application. The IDAES platform divides property 
-packages into two parts:
+properties of process streams. They may be general in purpose, such as ideal gas 
+equations, or specific to a certain application. Property packages are separated into two categories:
 
 * physical and transport properties
 * chemical reaction properties
 
-While the IDAES platform provides several standard property packages, many process
+While several standard property packages are provided in the IDAES model libraries, many process
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
 :ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`.
-Since the effort to develop a custom property package is substantial, the IDAES platform provides a 
+Since the effort to develop a custom property package is substantial, the IDAES Integrated Platform provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
 and :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
@@ -102,7 +101,7 @@ these are required in every unit operation. Calculating additional properties th
 required is undesirable, as it leads to larger problem sizes and unnecessary complexity of the 
 resulting model.
 
-To address this, the IDAES platform supports "as needed" construction of properties, 
+To address this, the IDAES Integrated Platform supports "as needed" construction of properties, 
 where the variables and constraints required to calculate a given quantity are not added to a 
 model unless the model calls for this quantity. To designate a property as an "as needed" 
 quantity, a method can be declared in the associated property BlockData class (StateBlockData or 
@@ -122,17 +121,16 @@ Generic Property Package Framework
 Property packages represent the core of any process model, and having a suitable property 
 package is key to successfully modeling any process system. However, developing property 
 packages is a significant challenge even for experienced modelers as they involve large numbers 
-of tightly coupled constraints and parameters. The IDAES platform provides a 
+of tightly coupled constraints and parameters. The
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
-to asisst users in building property packages for common types of systems by calling upon libraries 
-of modular sub-models to build up complex property calculations with the least effort possible.
+was designed to help users build property packages with the least effort possible by levarging libraries 
+of modular sub-models that include common types of property calculations.
 
 
 Generic Reaction Package Framework
 ----------------------------------
 
-The IDAES platform provides a 
+Similar to the Generic Property Package Framework, the
 :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
-to help the user create reaction property packages for common systems, similar to the Generic 
-Property Package Framework.
+helps users create reaction property packages for common systems.
 

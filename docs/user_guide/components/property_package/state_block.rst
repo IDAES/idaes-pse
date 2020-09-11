@@ -1,7 +1,7 @@
 ﻿State Block
 ===========
 
-StateBlocks are used within all IDAES unit models (generally within ControlVolumeBlocks) in 
+StateBlocks are used within all IDAES UnitModels (generally within ControlVolumeBlocks) in 
 order to calculate physical properties given the state of the material. StateBlocks are 
 notably different to other types of Blocks within IDAES as they are always indexed by time 
 (and possibly space as well). StateBlocks consist of two parts:

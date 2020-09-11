@@ -6,7 +6,7 @@
 Overview
 --------
 
-Control Volumes are the center of the IDAES Integrated Platform, and serve as the 
+Control Volumes are the center of the IDAES Core Modeling Framework, and serve as the 
 fundamental building block of all unit operations. Control Volumes represent a single, 
 well-defined volume of material over which material, energy and/or momentum balances will 
 be performed.
@@ -55,7 +55,7 @@ Finally, the Control Volume checks that the `has_holdup` argument is consistent 
 Getting Property Package Information
 ------------------------------------
 
-If a reference to a property package was not provided by the unit model as an argument, 
+If a reference to a property package was not provided by the UnitModel as an argument, 
 the Control Volume first checks to see if the unit model has a `property_package` argument 
 set, and uses this if present. Otherwise, the Control Volume block begins searching up the model 
 tree looking for an argument named `default_property_package` and uses the first of these 
@@ -83,7 +83,7 @@ potential methods is provided here, however users should check the documentation
 specific Control Volume they are using for more details on what methods are supported in that 
 specific Control Volume.
 
-A key feature of the IDAES platform is the use of ControlVolumeBlocks. Control 
+A key feature of the IDAES Core Modeling Framework is the use of ControlVolumeBlocks. Control 
 Volumes represent a volume of material over which material, energy and/or momentum balances 
 can be performed. ControlVolumeBlocks contain methods to automate the task of writing common 
 forms of these balance equations. ControlVolumeBlocks can also automate the creation of 

@@ -61,7 +61,7 @@ their needs. Documentation of the available model libraries can be found
 
 Modeling Extensions
 --------------------
-The IDAES toolset also provides users with access to a number of cutting edge tools not
+The IDAES Integrated Platform also provides users with access to a number of cutting edge tools not
 directly related to process modeling. These tools are collected under the heading of Modeling
 Extensions, and information on them can be found
 :ref:`here<user_guide/modeling_extensions/index:Modeling Extensions>`.

@@ -7,8 +7,8 @@ detail with a link in their description.
 
 .. note::
     IDAES is based on python-based algebraic modeling language, Pyomo. The documentation for 
-    its components (i.e. Sets, Parameters, Variables, Objectives, Constraints, Expressions, and 
-    Suffixes) are provided in the 
+    its components (i.e. sets, parameters, variables, objectives, constraints, expressions, and 
+    suffixes) are provided in the 
     `Pyomo documentation <https://pyomo.readthedocs.io/en/stable/pyomo_modeling_components/index.html>`_.
 
 .. toctree::
@@ -23,7 +23,7 @@ detail with a link in their description.
 .. rubric:: Flowsheet
 
 :ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>`
-are the top level of the IDAES platform. Flowsheet models represent 
+are the top level of the IDAES Core Modeling Framework. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 
@@ -31,15 +31,15 @@ flow network and the property packages.
 
 :ref:`Property packages<user_guide/components/property_package/index:Property Package>` are a 
 collection of related models that represent the physical, thermodynamic, and reactive 
-properties of the process streams on the IDAES platform.
+properties of the process streams.
 
 .. rubric:: Unit Model
 
 :ref:`Unit models<user_guide/components/unit_model/index:Unit Model>` 
-represent individual pieces of equipment and their processes on the IDAES platform.
+represent individual pieces of equipment and their processes.
 
 .. rubric:: Data Management Framework
 
 The :ref:`Data Management Framework <user_guide/components/dmf/index:Data Management Framework>`
-is used to manage all the data needed by the IDAES platform, including flowsheets, models, 
+is used to manage all the data needed by the platform, including flowsheets, models, 
 and results. It stores metadata and data in persistent storage.

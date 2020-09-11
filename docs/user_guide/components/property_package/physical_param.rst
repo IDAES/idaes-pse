@@ -5,13 +5,13 @@ PhysicalParameterBlocks serve as a central location for linking to a property pa
 contain all the parameters and indexing sets used by a given property package.
 
 The role of the :ref:`PhysicalParameterBlock Class<technical_specs/core/physical_property_class:PhysicalParameterBlock Class>` 
-is to set up the references required by the rest of the IDAES platform for constructing 
+is to set up the references required by the rest of the IDAES Core Modeling Framework for constructing 
 instances of :ref:`StateBlocks<user_guide/components/property_package/state_block:State Block>` 
 and attaching these to the PhysicalParameterBlock for ease of use. This allows other models to 
 be pointed to the PhysicalParameterBlock in order to collect the necessary information and to 
 construct the necessary StateBlocks without the need for the user to do this manually.
 
-The IDAES platform looks for a number of attributes in the PhysicalParameterBlock to 
+Several attributes in the PhysicalParameterBlock are used to 
 inform the construction of other components. These attributes include:
 
 * `state_block_class` - a pointer to the associated class that should be called when constructing StateBlocks. This should only be set by the property package developer.

@@ -1,7 +1,7 @@
 ﻿Reaction Block
 ==============
 
-ReactionBlocks are used within IDAES unit models (generally within ControlVolumeBlocks) in 
+ReactionBlocks are used within IDAES UnitModels (generally within ControlVolumeBlocks) in 
 order to calculate reaction properties given the state of the material (provided by an 
 associated StateBlock). ReactionBlocks are notably different to other types of Blocks within 
 IDAES as they are always indexed by time (and possibly space as well), and are also not fully 

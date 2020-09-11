@@ -1,13 +1,13 @@
 Component Object
 ================
 
-Component objects are used in the IDAES Integrated Platform to identify the chemical 
+Component objects are used to identify the chemical 
 species of interest in a property package and to contain information describing the behavior 
 of that component (such as properties of that component). Additional information on the 
 :ref:`Component Class<technical_specs/core/comp:Component Class>` is provided in the technical
 specifications.
 
-The IDAES platform currently supports the following types of components.
+The following types of components are currently supported.
 
 * `Component` - general purpose object for representing chemical species.
 * `Solute` - component object for representing species which should be treated as a solute in a `LiquidPhase`.
