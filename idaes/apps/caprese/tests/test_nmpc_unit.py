@@ -17,7 +17,7 @@ Test for Caprese's module for NMPC.
 import pyomo.environ as aml
 import pyomo.dae as dae
 import pyomo.network as pyn
-import pyomo.kernel as pyk
+from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -322,7 +322,7 @@ class TestNMPCSim(object):
         categories = [VariableCategory.DIFFERENTIAL]
         nmpc.add_setpoint_to_controller(objective_state_categories=categories)
         assert hasattr(namespace, 'tracking_objective')
-        obj_variables = pyk.ComponentSet(
+        obj_variables = ComponentSet(
                 identify_variables(namespace.tracking_objective.expr))
 
         n_samples = len(namespace.sample_points) - 1
@@ -539,7 +539,7 @@ class TestNMPCSim(object):
                 if t in sample_point_set:
                     continue
                 t_next = time.next(t)
-                incident_vars = pyk.ComponentSet(
+                incident_vars = ComponentSet(
                         identify_variables(con[t].expr))
                 assert var[t] in incident_vars
                 assert var[t_next] in incident_vars

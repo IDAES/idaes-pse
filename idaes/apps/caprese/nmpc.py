@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -29,7 +29,7 @@ from pyomo.environ import (
         value,
         )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentMap
+from pyomo.common.collections import ComponentMap
 from pyomo.dae.initialization import (
         solve_consistent_initial_conditions,
         get_inconsistent_initial_conditions,

@@ -357,12 +357,12 @@ class TestIronOC_EnergyBalanceType(object):
                          "reaction_package": m.fs.hetero_reactions
                          }})
 
-        # Fix geometry variables
+        # # Fix geometry variables
         m.fs.unit.number_orifice.fix(2500)  # [-]
         m.fs.unit.bed_diameter.fix(6.5)  # m
         m.fs.unit.bed_height.fix(5)  # m
 
-        # Fix inlet port variables for gas and solid
+        # # Fix inlet port variables for gas and solid
         m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
         m.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
         m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
@@ -370,7 +370,8 @@ class TestIronOC_EnergyBalanceType(object):
         m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
 
-        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
+        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/
+        m.fs.unit.solid_inlet.particle_porosity.fix(0.27)  # (-)
         m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
@@ -423,26 +424,6 @@ class TestIronOC_EnergyBalanceType(object):
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
-        # Fix geometry variables
-        iron_oc.fs.unit.number_orifice.fix(2500)  # [-]
-        iron_oc.fs.unit.bed_diameter.fix(6.5)  # m
-        iron_oc.fs.unit.bed_height.fix(5)  # m
-
-        # Fix inlet port variables for gas and solid
-        iron_oc.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
-        iron_oc.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
-        iron_oc.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
-
-        iron_oc.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/
-        iron_oc.fs.unit.solid_inlet.particle_porosity.fix(0.27)  # (-)
-        iron_oc.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
-
         assert degrees_of_freedom(iron_oc) == 0
 
     @pytest.mark.solver
