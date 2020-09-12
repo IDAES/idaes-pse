@@ -34,6 +34,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
+from pyomo.util.check_units import assert_units_consistent
 
 
 # -----------------------------------------------------------------------------
@@ -104,6 +105,10 @@ class TestBTXIdeal(object):
         assert number_variables(btx) == 34
         assert number_total_constraints(btx) == 29
         assert number_unused_variables(btx) == 0
+
+    @pytest.mark.component
+    def test_units(self, btx):
+        assert_units_consistent(btx)
 
     @pytest.mark.unit
     def test_dof(self, btx):
@@ -185,6 +190,10 @@ class TestIAPWS(object):
         assert number_variables(iapws) == 6
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
+
+    @pytest.mark.component
+    def test_units(self, iapws):
+        assert_units_consistent(iapws)
 
     @pytest.mark.unit
     def test_dof(self, iapws):

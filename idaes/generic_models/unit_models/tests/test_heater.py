@@ -127,6 +127,14 @@ class TestBTX(object):
         assert number_total_constraints(btx) == 17
         assert number_unused_variables(btx) == 0
 
+    @pytest.mark.integration
+    def test_units(self, btx):
+        assert_units_equivalent(btx.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(btx.fs.unit.heat_duty[0], pyunits.J/pyunits.s)
+        assert_units_equivalent(btx.fs.unit.deltaP[0], pyunits.Pa)
+        assert_units_consistent(btx)
+
     @pytest.mark.unit
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
@@ -170,8 +178,8 @@ class TestBTX(object):
             btx.fs.unit.inlet.flow_mol[0] *
             btx.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
             btx.fs.unit.outlet.flow_mol[0] *
-            btx.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
-            + btx.fs.unit.heat_duty[0]) <= 1e-6
+            btx.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"]
+            + btx.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -225,6 +233,17 @@ class TestIAPWS(object):
         assert number_variables(iapws) == 8
         assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
+
+    @pytest.mark.integration
+    def test_units(self, iapws):
+        # TODO: Add these checks once IAPWS package has units
+        # assert_units_equivalent(iapws.fs.unit.control_volume.heat,
+        #                         pyunits.J/pyunits.s)
+        # assert_units_equivalent(iapws.fs.unit.heat_duty[0],
+        #                         pyunits.J/pyunits.s)
+        # assert_units_equivalent(iapws.fs.unit.deltaP[0],
+        #                         pyunits.Pa)
+        assert_units_consistent(iapws)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -369,6 +388,14 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 8
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.integration
+    def test_units(self, sapon):
+        assert_units_equivalent(sapon.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(sapon.fs.unit.heat_duty[0],
+                                pyunits.J/pyunits.s)
+        assert_units_consistent(sapon)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
@@ -486,9 +513,8 @@ class TestBT_Generic(object):
     def test_units(self, btg):
         assert_units_equivalent(btg.fs.unit.control_volume.heat,
                                 pyunits.J/pyunits.s)
-        # Referecnes don;t have units at the moment, so these tests fail
-        # assert_units_equivalent(btg.fs.unit.heat_duty, pyunits.J/pyunits.s)
-        # assert_units_equivalent(btg.fs.unit.deltaP, pyunits.Pa)
+        assert_units_equivalent(btg.fs.unit.heat_duty[0], pyunits.J/pyunits.s)
+        assert_units_equivalent(btg.fs.unit.deltaP[0], pyunits.Pa)
         assert_units_consistent(btg)
 
     @pytest.mark.unit
@@ -532,10 +558,10 @@ class TestBT_Generic(object):
 
         assert abs(value(
             btg.fs.unit.inlet.flow_mol[0] *
-            btg.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
+            btg.fs.unit.control_volume.properties_in[0].enth_mol -
             btg.fs.unit.outlet.flow_mol[0] *
-            btg.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
-            + btg.fs.unit.heat_duty[0]) <= 1e-6
+            btg.fs.unit.control_volume.properties_out[0].enth_mol
+            + btg.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit

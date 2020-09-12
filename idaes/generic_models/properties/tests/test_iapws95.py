@@ -13,7 +13,7 @@
 
 import pytest
 from pyomo.environ import ConcreteModel, value, Var
-from pyomo.core.kernel.component_set import ComponentSet
+from pyomo.common.collections import ComponentSet
 from pyomo.common.fileutils import this_file_dir
 from idaes.generic_models.properties import iapws95
 import csv
