@@ -21,28 +21,19 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Arc
-from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition, value, Integers, RangeSet, TransformationFactory
+from pyomo.environ import value, Integers, RangeSet, TransformationFactory
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
     Reboiler
 from idaes.generic_models.unit_models.distillation.condenser \
     import CondenserType, TemperatureSpec
-from idaes.core import (ControlVolume0DBlock,
-                        declare_process_block_class,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
-                        MaterialBalanceType,
+from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError, \
-    PropertyPackageError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.initialization import propagate_state, \
-    solve_indexed_blocks
 
 _log = idaeslog.getLogger(__name__)
 
@@ -93,6 +84,18 @@ Must be integer number.}"""))
 to all liquid,
 **CondenserType.partialCondenser** - Incoming vapor from top tray is
 partially condensed to a vapor and liquid stream.}"""))
+    CONFIG.declare("condenser_temperature_spec", ConfigValue(
+        default=None,
+        domain=In(TemperatureSpec),
+        description="Temperature spec for the condenser",
+        doc="""Temperature specification for the condenser,
+**default** - TemperatureSpec.none
+**Valid values:** {
+**TemperatureSpec.none** - No spec is selected,
+**TemperatureSpec.atBubblePoint** - Condenser temperature set at
+bubble point i.e. total condenser,
+**TemperatureSpec.customTemperature** - Condenser temperature at
+user specified temperature.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -112,6 +115,24 @@ constructed,
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("has_liquid_side_draw", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="liquid side draw construction flag.",
+        doc="""indicates if there is a liquid side draw from all trays,
+**default** - False.
+**Valid values:** {
+**True** - include a liquid side draw for all trays,
+**False** - exclude a liquid side draw for all trays.}"""))
+    CONFIG.declare("has_vapor_side_draw", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="vapor side draw construction flag.",
+        doc="""indicates if there is a vapor side draw from all trays,
+**default** - False.
+**Valid values:** {
+**True** - include a vapor side draw for all trays,
+**False** - exclude a vapor side draw for all trays.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -145,74 +166,58 @@ see property package for documentation.}"""))
         self.tray_index = RangeSet(1, self.config.number_of_trays)
 
         # Add trays
+
+        # TODO:
+        # 1. Add support for multiple feed tray locations
+        # 2. Add support for specifying which trays have side draws
         self.tray = Tray(self.tray_index,
-                         default={"property_package":
-                                  self.config.property_package,
+                         default={"has_liquid_side_draw":
+                                  self.config.has_liquid_side_draw,
+                                  "has_vapor_side_draw":
+                                  self.config.has_vapor_side_draw,
                                   "has_heat_transfer":
-                                      self.config.has_heat_transfer,
+                                  self.config.has_heat_transfer,
                                   "has_pressure_change":
-                                      self.config.has_pressure_change},
+                                  self.config.has_pressure_change,
+                                  "property_package":
+                                  self.config.property_package,
+                                  "property_package_args":
+                                  self.config.property_package_args},
                          initialize={self.config.feed_tray_location:
-                                     {"property_package":
-                                         self.config.property_package,
-                                      "is_feed_tray": True,
+                                     {"is_feed_tray": True,
+                                      "has_liquid_side_draw":
+                                      self.config.has_liquid_side_draw,
+                                      "has_vapor_side_draw":
+                                      self.config.has_vapor_side_draw,
                                       "has_heat_transfer":
-                                          self.config.has_heat_transfer,
+                                      self.config.has_heat_transfer,
                                       "has_pressure_change":
-                                          self.config.has_pressure_change}})
+                                      self.config.has_pressure_change,
+                                      "property_package":
+                                      self.config.property_package,
+                                      "property_package_args":
+                                      self.config.property_package_args}})
 
         # Add condenser
         self.condenser = Condenser(
-            default={"property_package": self.config.property_package,
+            default={"condenser_type": self.config.condenser_type,
+                     "temperature_spec":
+                         self.config.condenser_temperature_spec,
+                     "property_package": self.config.property_package,
                      "property_package_args":
-                     self.config.property_package_args,
-                     "condenser_type": self.config.condenser_type,
-                     "temperature_spec": TemperatureSpec.atBubblePoint,
-                     "has_pressure_change": self.config.has_pressure_change})
+                     self.config.property_package_args})
 
         # Add reboiler
         self.reboiler = Reboiler(
-            default={"property_package": self.config.property_package,
+            default={"has_boilup_ratio": True,
+                     "has_pressure_change": self.config.has_pressure_change,
+                     "property_package": self.config.property_package,
                      "property_package_args":
-                     self.config.property_package_args,
-                     "has_boilup_ratio": True,
-                     "has_pressure_change":
-                     self.config.has_pressure_change})
+                     self.config.property_package_args})
 
-        self._make_pressure_balance()
-
+        # Construct arcs between trays, condenser, and reboiler
         self._make_arcs()
         TransformationFactory("network.expand_arcs").apply_to(self)
-
-    def _make_pressure_balance(self):
-        if self.config.has_pressure_change:
-            self.deltaP = Var(self.flowsheet().config.time,
-                              self.tray_index,
-                              initialize=0,
-                              doc="pressure drop across tray")
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.tray_index,
-                         doc="pressure balance for tray")
-        def pressure_drop_equation(self, t, i):
-            if self.config.has_pressure_change:
-                if i == 1:
-                    return self.tray[i].properties_out[t].pressure == \
-                        self.condenser.control_volume.properties_out[t].\
-                        pressure + self.deltaP[t, i]
-                else:
-                    return self.tray[i].properties_out[t].pressure == \
-                        self.tray[i - 1].properties_out[t].\
-                        pressure + self.deltaP[t, i]
-            else:
-                if i == 1:
-                    return self.tray[i].properties_out[t].pressure == \
-                        self.condenser.control_volume.properties_out[t].\
-                        pressure
-                else:
-                    return self.tray[i].properties_out[t].pressure == \
-                        self.tray[i - 1].properties_out[t].\
-                        pressure            
 
     def _make_arcs(self):
         # make arcs
@@ -306,73 +311,8 @@ see property package for documentation.}"""))
                     destination=self.tray[i].vap_in)
                 self.tray[i].initialize()
 
-        # self.reboiler.control_volume.properties_in[0].flow_mol.fix(100)
-        # self.reboiler.control_volume.properties_in[0].temperature.fix(368)
-        # self.reboiler.control_volume.properties_in[0].pressure.fix(101325)
-        # self.reboiler.control_volume.properties_in[0].mole_frac_comp["benzene"].fix(0.5)
-        # self.reboiler.control_volume.properties_in[0].mole_frac_comp["toluene"].fix(0.5)
-
-        # self.vap_stream.display()
-        print(degrees_of_freedom(self))
-
-        self.vap_stream[self.config.number_of_trays + 1].deactivate()
-        # self.vap_stream[1].deactivate()
-
-        # self.liq_stream[0].deactivate()
-        self.liq_stream[3].deactivate()
-
-        self.reboiler.deactivate()
-        # self.condenser.deactivate()
-
-        # self.tray[1].properties_in_liq[0].flow_mol.fix()
-        # self.tray[1].properties_in_liq[0].temperature.fix()
-        # self.tray[1].properties_in_liq[0].pressure.fix()
-        # self.tray[1].properties_in_liq[0].mole_frac_comp["benzene"].fix()
-        # self.tray[1].properties_in_liq[0].mole_frac_comp["toluene"].fix()
-
-        self.tray[3].properties_in_vap[0].flow_mol.fix()
-        self.tray[3].properties_in_vap[0].temperature.fix()
-        self.tray[3].properties_in_vap[0].pressure.fix()
-        self.tray[3].properties_in_vap[0].mole_frac_comp["benzene"].fix()
-        self.tray[3].properties_in_vap[0].mole_frac_comp["toluene"].fix()
-
-
-        # raise Exception(degrees_of_freedom(self))
-
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         init_log.info_high(
             "Column initialization status {}.".format(idaeslog.condition(res))
         )
-
-        print(res)
-
-        # self.tray[3].properties_in_vap[0].pressure.unfix()
-        # self.eq_pressure = Constraint(
-        #     expr=self.reboiler.control_volume.properties_out[0].pressure ==
-        #     self.tray[3].properties_in_vap[0].pressure)
-
-        # self.tray[3].properties_in_vap[0].temperature.unfix()
-        # self.eq_temperature = Constraint(
-        #     expr=self.reboiler.control_volume.properties_out[0].temperature ==
-        #     self.tray[3].properties_in_vap[0].temperature)
-
-
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     res = solver.solve(self, tee=slc.tee)
-        # init_log.info_high(
-        #     "Column initialization status {}.".format(idaeslog.condition(res))
-        # )
-
-        for i in self.tray_index:
-            self.tray[i].liq_in.display()
-            self.tray[i].vap_in.display()
-
-            self.tray[i].liq_out.display()
-            self.tray[i].vap_out.display()
-
-        self.reboiler.report()
-        self.condenser.report()
-        # self.tray[3].properties_in_vap[0].display()
-        # self.reboiler.control_volume.properties_out[0].display()
-        raise Exception(res)
