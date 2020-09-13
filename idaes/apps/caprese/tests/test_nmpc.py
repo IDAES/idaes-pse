@@ -19,7 +19,7 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            Set, SolverFactory, Var, value, Objective,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc
-from pyomo.kernel import ComponentSet
+from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,

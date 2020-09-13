@@ -39,7 +39,6 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
@@ -220,10 +219,10 @@ see property package for documentation.}"""))
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
-        add_object_reference(self, "heat_duty", self.control_volume.heat)
+        self.heat_duty = Reference(self.control_volume.heat[:])
 
-        add_object_reference(self, "condenser_pressure",
-                             self.control_volume.properties_out[:].pressure)
+        self.condenser_pressure = Reference(
+            self.control_volume.properties_out[:].pressure)
 
     def _make_ports(self):
 
@@ -242,8 +241,8 @@ see property package for documentation.}"""))
                                      doc="Vapor outlet port from a "
                                      "partial condenser")
         # Add codnenser specific variables
-        self.reflux_ratio = Var(initialize=1, doc="reflux ratio for "
-                                "the condenser")
+        self.reflux_ratio = Var(initialize=1,
+                                doc="Reflux ratio for the condenser")
 
     def _make_splits_total_condenser(self):
 

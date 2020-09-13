@@ -477,7 +477,7 @@ class ReactionBlockData(ReactionBlockDataBase):
         def rate_rule(b, r):
             return b.reaction_rate[r]*1e4 == b._params._scale_factor_rxn*1e4*(
                 b.solid_state_ref.mass_frac_comp['Fe2O3'] *
-                (1 - b.solid_state_ref._params.particle_porosity) *
+                (1 - b.solid_state_ref.particle_porosity) *
                 b.solid_state_ref.dens_mass_skeletal *
                 (b._params.a_vol /
                  (b.solid_state_ref._params.mw_comp['Fe2O3'])) *

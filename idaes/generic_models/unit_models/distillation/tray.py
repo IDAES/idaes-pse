@@ -223,8 +223,11 @@ see property package for documentation.}"""))
         """Method to construct the energy balance equation."""
 
         if self.config.has_heat_transfer:
-            self.heat_duty = Var(self.flowsheet().config.time, initialize=0,
-                                 doc="heat duty for the tray")
+            units_meta = self.config.property_package.get_metadata()
+            self.heat_duty = Var(self.flowsheet().config.time,
+                                 initialize=0,
+                                 doc="Heat duty for the tray",
+                                 units=units_meta.get_derived_units("power"))
 
         @self.Constraint(self.flowsheet().config.time, doc="energy balance")
         def enthalpy_mixing_equations(b, t):
@@ -286,8 +289,11 @@ see property package for documentation.}"""))
     def _add_pressure_balance(self):
         """Method to construct the pressure balance."""
         if self.config.has_pressure_change:
-            self.deltaP = Var(self.flowsheet().config.time, initialize=0,
-                              doc="pressure drop across tray")
+            units_meta = self.config.property_package.get_metadata()
+            self.deltaP = Var(self.flowsheet().config.time,
+                              initialize=0,
+                              doc="Pressure drop across tray",
+                              units=units_meta.get_derived_units("pressure"))
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="pressure balance for tray")

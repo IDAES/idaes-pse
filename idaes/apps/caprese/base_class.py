@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -16,10 +16,10 @@ Base class for dynamic simulation objects.
 """
 from pyutilib.misc.config import ConfigDict, ConfigValue
 from pyomo.core.base.block import Block
+from pyomo.core.base.var import Var
 from pyomo.dae import DerivativeVar
-from pyomo.dae.flatten import flatten_dae_variables
-from pyomo.core.kernel.component_set import ComponentSet
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.dae.flatten import flatten_dae_components
+from pyomo.common.collections import ComponentSet, ComponentMap
 from idaes.apps.caprese.common import config as dyn_config
 from idaes.apps.caprese.common.config import (VariableCategory)
 from idaes.apps.caprese.util import NMPCVarGroup, NMPCVarLocator
@@ -279,7 +279,7 @@ class DynamicBase(object):
 
         # Create list of time-only-slices of time indexed variables
         # (And list of VarData objects for scalar variables)
-        scalar_vars, dae_vars = flatten_dae_variables(model, time)
+        scalar_vars, dae_vars = flatten_dae_components(model, time, Var)
 
         dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
         t0_vardata = list(dae_map.keys())
