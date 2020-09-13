@@ -90,6 +90,28 @@ constructed,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+    CONFIG.declare("momentum_balance_type", ConfigValue(
+        default=MomentumBalanceType.pressureTotal,
+        domain=In(MomentumBalanceType),
+        description="Momentum balance construction flag",
+        doc="""Indicates what type of momentum balance should be constructed,
+**default** - MomentumBalanceType.pressureTotal.
+**Valid values:** {
+**MomentumBalanceType.none** - exclude momentum balances,
+**MomentumBalanceType.pressureTotal** - single pressure balance for material,
+**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+**MomentumBalanceType.momentumTotal** - single momentum balance for material,
+**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -139,6 +161,10 @@ see property package for documentation.}"""))
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
+
+        self.control_volume.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=self.config.has_pressure_change)
 
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
@@ -551,21 +577,20 @@ see property package for documentation.}"""))
                                                outlvl=outlvl,
                                                hold_state=True)
 
-        self.eq_boilup_ratio.deactivate()
-
         if not self.control_volume.properties_out[0].temperature.fixed:
 
             # Estimating a good guess for the reboiler temperature based on
-            # given boil up ratio (typically, fixed), bubble and dew
-            # point. This helps with initializing the system within the two phase
-            # envelope before activating the boilup ratio constraint.
+            # a vapor fraction of 0.5, bubble and dew
+            # point. This helps with initializing the system within the two
+            # phase envelope before activating the boilup ratio constraint.
 
-            alpha = self.boilup_ratio.value * (
+            alpha = 0.5 * (
                 self.control_volume.properties_in[0].temperature_dew.value -
                 self.control_volume.properties_in[0].
                 temperature_bubble.value) + \
                 self.control_volume.properties_in[0].temperature_bubble.value
 
+            self.eq_boilup_ratio.deactivate()
             self.control_volume.properties_out[0].temperature.fix(alpha)
 
             if degrees_of_freedom(self) == 0:
