@@ -230,7 +230,8 @@ see property package for documentation.}"""))
         add_object_reference(self, "heat_duty", self.control_volume.heat)
 
         # Reference to the deltaP
-        add_object_reference(self, "deltaP", self.control_volume.deltaP)
+        if self.config.has_pressure_change:
+            add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
     def _make_ports(self):
 
