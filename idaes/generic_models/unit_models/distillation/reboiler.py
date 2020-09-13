@@ -229,6 +229,9 @@ see property package for documentation.}"""))
         # Reference to the heat duty
         add_object_reference(self, "heat_duty", self.control_volume.heat)
 
+        # Reference to the deltaP
+        add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
     def _make_ports(self):
 
         # Add Ports for the reboiler
