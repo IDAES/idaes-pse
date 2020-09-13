@@ -617,6 +617,7 @@ see property package for documentation.}"""))
             # system is over specified.
 
             self.eq_boilup_ratio.deactivate()
+
             if degrees_of_freedom(self) == 0:
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = solver.solve(self, tee=slc.tee)
