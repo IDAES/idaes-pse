@@ -16,7 +16,6 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            Set,
                            Var,
-                           Param,
                            Constraint)
 
 from idaes.core import (ControlVolume0DBlock,

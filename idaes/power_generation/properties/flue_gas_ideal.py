@@ -601,6 +601,9 @@ class FlueGasStateBlockData(StateBlockData):
             self.del_component(self.entropy_correlation)
 
     def _therm_cond(self):
+        # TODO: Units in these correlations appear to be inconsistent
+        # Someone needs to look through these carefully, possibly refering
+        # to the original source
         comps = self.params.component_list
         self.therm_cond_comp = Var(
             comps,
