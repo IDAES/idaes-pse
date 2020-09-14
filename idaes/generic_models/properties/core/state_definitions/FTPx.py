@@ -284,17 +284,10 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b.mole_frac_comp[j].value
-            else:
-                # Two-phase
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
                 # Thanks to Rahul Gandhi for the method
-                # For systems with only one of Tbub or Tdew, assume that most
-                # of the phase transitions will occured within 100 T units
-                if tbub is None:
-                    vapRatio = value((tdew - b.temperature) / 100)
-                elif tdew is None:
-                    vapRatio = value((tbub - b.temperature) / 100)
-                else:
-                    vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
 
                 b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
 
@@ -313,6 +306,9 @@ def state_initialization(b):
                 except GenericPropertyPackageError:
                     # No method for calculating Psat, use default values
                     pass
+            else:
+                # Two-phase, but with non-vaporizables and/or non-condensables
+                pass
 
         elif pobj.is_vapor_phase():
             # Look for a VLE pair with this phase - will go with 1st found
@@ -358,19 +354,12 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b._mole_frac_tbub[pp, j].value
-            else:
-                # Two-phase
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
                 # Thanks to Rahul Gandhi for the method
-                # For systems with only one of Tbub or Tdew, assume that most
-                # of the phase transitions will occured within 100 T units
-                if tbub is None:
-                    vapRatio = value((tdew - b.temperature) / 100)
-                elif tdew is None:
-                    vapRatio = value((tbub - b.temperature) / 100)
-                else:
-                    vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
 
-                b.flow_mol_phase["Vap"].value = value(vapRatio*b.flow_mol)
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
 
                 try:
                     for p2, j in b.params._phase_component_set:
@@ -388,6 +377,9 @@ def state_initialization(b):
                 except GenericPropertyPackageError:
                     # No method for calculating Psat, use default values
                     pass
+            else:
+                # Two-phase, but with non-vaporizables and/or non-condensables
+                pass
 
 
 do_not_initialize = ["sum_mole_frac_out"]
