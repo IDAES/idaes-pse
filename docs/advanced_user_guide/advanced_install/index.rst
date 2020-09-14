@@ -1,7 +1,7 @@
 ﻿Advanced User Installation
 ==========================
 
-Advanced users who plan to develop their own models or tools are encouraged to install IDAES using Git and GitHub as described in this section, rather than using the instructions in the `getting started<getting_started: Getting Started>` section. These advanced users will greatly benefit from improved version control and code integration capabilities.
+Advanced users who plan to develop their own models or tools are encouraged to install IDAES using Git and GitHub as described in this section, rather than using the instructions in the :ref:`getting started<getting_started:Getting Started>` section. These advanced users will greatly benefit from improved version control and code integration capabilities.
 
 .. contents:: :local:
 
@@ -36,7 +36,7 @@ Fork the Repository
 ^^^^^^^^^^^^^^^^^^^
 You use a "fork" of a repository (or "repo" for short) to create a space where you have complete control and can make changes without directly affecting the main repository.
 
-.. figure:: ../../_images/github-fork-repo.png
+.. figure:: ../../_images/github-fork-repo_pse.png
     :align: right
     :width: 500px
     
