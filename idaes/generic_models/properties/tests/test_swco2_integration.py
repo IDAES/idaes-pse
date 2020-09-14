@@ -14,14 +14,10 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, Var, SolverFactory
-from pyomo.common.fileutils import this_file_dir
+from pyomo.environ import ConcreteModel, value, SolverFactory
 import idaes.generic_models.properties.swco2 as swco2
-from idaes.generic_models.properties.swco2 import swco2_available
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
-import csv
-import os
 import idaes
 
 if SolverFactory('ipopt').available():
@@ -30,7 +26,9 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-@pytest.mark.skipif(not swco2.swco2_available(), reason="Library not available")
+
+@pytest.mark.skipif(not swco2.swco2_available(),
+                    reason="Library not available")
 class TestIntegration(object):
     @pytest.fixture(scope="class")
     def compressor_model(self):
@@ -49,17 +47,17 @@ class TestIntegration(object):
 
         # Case Data (90% isentropic efficency)
         cases = {
-            "F": (1000, 1000), # mol/s
-            "Tin": (500, 300), # K
-            "Pin": (10, 100), # kPa
-            "W": (3414.29266, 2796.30966), # kW
-            "Tout": (574.744119, 372.6675676), # K
-            "Pout": (20, 250), # kPa
-            "xout": (1.0, 1.0), # vapor fraction
+            "F": (1000, 1000),  # mol/s
+            "Tin": (500, 300),  # K
+            "Pin": (10, 100),  # kPa
+            "W": (3414.29266, 2796.30966),  # kW
+            "Tout": (574.744119, 372.6675676),  # K
+            "Pout": (20, 250),  # kPa
+            "xout": (1.0, 1.0),  # vapor fraction
             "Tisen": (567.418852, 365.7680891),
         }
 
-        for i , F in enumerate(cases["F"]):
+        for i, F in enumerate(cases["F"]):
             Tin = cases["Tin"][i]
             Tout = cases["Tout"][i]
             Pin = cases["Pin"][i]*1000
@@ -75,7 +73,7 @@ class TestIntegration(object):
             model.fs.unit.deltaP.fix(Pout - Pin)
             model.fs.unit.efficiency_isentropic.fix(0.9)
             model.fs.unit.initialize(optarg={'tol': 1e-6})
-            results = solver.solve(model)
+            solver.solve(model)
 
             Tout = pytest.approx(cases["Tout"][i], rel=1e-2)
             Pout = pytest.approx(cases["Pout"][i]*1000, rel=1e-2)

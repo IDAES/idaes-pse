@@ -14,13 +14,10 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, Var, SolverFactory
+from pyomo.environ import ConcreteModel, value, SolverFactory
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.swco2 as swco2
-from idaes.generic_models.properties.swco2 import swco2_available as prop_available
-from idaes.generic_models.unit_models import Compressor
-from idaes.core import FlowsheetBlock
 import csv
 import os
 import idaes
@@ -36,19 +33,20 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 def read_data(fname, mw):
     dfile = os.path.join(this_file_dir(), fname)
     data = {
-        "T": [], # T in K col 0
-        "P": [], # P in kPa col 1
-        "rho": [], # density kg/m3 col 2
-        "U": [], # internal energy kJ/kg col 4
-        "H": [], # enthalpy kJ/kg col 5
-        "S": [], # entropy kJ/kg/K col 6
+        "T": [],  # T in K col 0
+        "P": [],  # P in kPa col 1
+        "rho": [],  # density kg/m3 col 2
+        "U": [],  # internal energy kJ/kg col 4
+        "H": [],  # enthalpy kJ/kg col 5
+        "S": [],  # entropy kJ/kg/K col 6
         "cv": [],
         "cp": [],
         "w": [],
-        "phase": [], # liquid, vapor, or supercritical col 13
+        "phase": [],  # liquid, vapor, or supercritical col 13
         "visc": [],
         "tc": [],
     }
@@ -56,14 +54,17 @@ def read_data(fname, mw):
     with open(dfile, 'r') as csvfile:
         dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
         for i in range(7):
-            next(dat) # skip header
+            next(dat)  # skip header
         for row in dat:
             data["T"].append(float(row[0]))
             data["P"].append(float(row[1])*1e6)
             data["rho"].append(float(row[2]))
-            data["U"].append((float(row[4])-506.7791289)*mw*1000) # differnt reference state
-            data["H"].append((float(row[5])*mw*1000) + -22303.24810876697) #different reference state
-            data["S"].append((float(row[6])-2.739003)*mw*1000) #differnt reference state
+
+            # Different references states
+            data["U"].append((float(row[4])-506.7791289)*mw*1000)
+            data["H"].append((float(row[5])*mw*1000) + -22303.24810876697)
+            data["S"].append((float(row[6])-2.739003)*mw*1000)
+
             data["cv"].append(float(row[7]))
             data["cp"].append(float(row[8]))
             data["w"].append(float(row[9]))
@@ -72,18 +73,19 @@ def read_data(fname, mw):
             data["phase"].append(row[13])
     return data
 
+
 def read_sat_data(fname, mw):
     dfile = os.path.join(this_file_dir(), fname)
     data = {}
-    data["T"] = [] # T in K col 0
-    data["P"] = [] # P in kPa col 1
-    data["rhol"] = [] # density kg/m3 col 2
-    data["rhov"] = [] # density kg/m3 col 15
+    data["T"] = []  # T in K col 0
+    data["P"] = []  # P in kPa col 1
+    data["rhol"] = []  # density kg/m3 col 2
+    data["rhov"] = []  # density kg/m3 col 15
 
     with open(dfile, 'r') as csvfile:
         dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
         for i in range(7):
-            next(dat) # skip header
+            next(dat)  # skip header
         for row in dat:
             data["T"].append(float(row[0]))
             data["P"].append(float(row[1])*1e6)
@@ -114,23 +116,25 @@ def unary_derivative_test(f, x0, d=1e-5, tol=0.02):
     hfdf = (gf[0] - g[0])/d
     hfdb = -(gb[0] - g[0])/d
 
-    zero_cut = 1e-9 # how close to zero before maybe it is zero?
+    zero_cut = 1e-9  # how close to zero before maybe it is zero?
 
     # check that the forward and backward FD approximations are close enough
     # that the accuracy is good enough for the test and that the detivative
     # is not ~ zero.  I know this rough but what can you do?
     if abs(g[0]) > zero_cut:
         assert (abs((gfdf - g[0])/g[0]) < tol or
-               abs((gfdb - g[0])/g[0]) < tol or
-               between(g[0], gfdf, gfdb))
+                abs((gfdb - g[0])/g[0]) < tol or
+                between(g[0], gfdf, gfdb))
 
     if abs(h[0]) > zero_cut:
         assert (abs((hfdf - h[0])/h[0]) < tol or
-               abs((hfdb - h[0])/h[0]) < tol or
-               between(h[0], hfdf, hfdb))
+                abs((hfdb - h[0])/h[0]) < tol or
+                between(h[0], hfdf, hfdb))
+
 
 def binary_derivative_test(f, x0, x1, d0=1e-5, d1=1e-5, tol=0.02):
-    """Test derivatives for function f(x0, x1) against f.d. approx (with assert)
+    """
+    Test derivatives for function f(x0, x1) against f.d. approx (with assert)
 
     Args:
         f: ExternalFunction to test
@@ -151,46 +155,47 @@ def binary_derivative_test(f, x0, x1, d0=1e-5, d1=1e-5, tol=0.02):
     hf = [(gf0[0] - g[0])/d0, (gf0[1] - g[1])/d0, (gf1[1] - g[1])/d1]
     hb = [-(gb0[0] - g[0])/d0, -(gb0[1] - g[1])/d0, -(gb1[1] - g[1])/d1]
 
-    zero_cut = 1e-9 # how close to zero before maybe it is zero?
+    zero_cut = 1e-9  # how close to zero before maybe it is zero?
     # check that the forward and backward FD approximations are close enough
     # that the accuracy is good enough for the test and that the detivative
     # is not ~ zero.  I know this rough but what can you do?
 
-    if abs(g[0]) > zero_cut: # derivative is not 0
+    if abs(g[0]) > zero_cut:  # derivative is not 0
         assert(abs((gf[0] - g[0])/g[0]) < tol or
                abs((gb[0] - g[0])/g[0]) < tol or
                between(g[0], gf[0], gb[0]))
 
     if abs(g[1]) > zero_cut and abs((gf[1] - gb[1])/g[1]) < tol:
         assert (abs((gf[1] - g[1])/g[1]) < tol or
-               abs((gb[1] - g[1])/g[1]) < tol or
-               between(g[1], gf[1], gb[1]))
+                abs((gb[1] - g[1])/g[1]) < tol or
+                between(g[1], gf[1], gb[1]))
 
     if abs(h[0]) > zero_cut and abs((hf[0] - hb[0])/h[0]) < tol:
         assert (abs((hf[0] - h[0])/h[0]) < tol or
-               abs((hb[0] - h[0])/h[0]) < tol or
-               between(h[0], hf[0], hb[0]))
+                abs((hb[0] - h[0])/h[0]) < tol or
+                between(h[0], hf[0], hb[0]))
 
     if abs(h[1]) > zero_cut and abs((hf[1] - hb[1])/h[1]) < tol:
         assert (abs((hf[1] - h[1])/h[1]) < tol or
-               abs((hb[1] - h[1])/h[1]) < tol or
-               between(h[1], hf[1], hb[1]))
+                abs((hb[1] - h[1])/h[1]) < tol or
+                between(h[1], hf[1], hb[1]))
 
     if abs(h[2]) > zero_cut and abs((hf[2] - hb[2])/h[2]) < tol:
         assert (abs((hf[2] - h[2])/h[2]) < tol or
-               abs((hb[2] - h[2])/h[2]) < tol or
-               between(h[2], hf[2], hb[2]))
+                abs((hb[2] - h[2])/h[2]) < tol or
+                between(h[2], hf[2], hb[2]))
 
 
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
+@pytest.mark.skipif(not swco2.swco2_available(),
+                    reason="Property lib not available")
 class TestHelm(object):
     mw = 0.0440098
-    Tc = 304.128 #
-    Pc = 7377300 # Pa
-    rhoc = 467.6 # kg/m3
-    Pmin = 1000 # Pa
-    Pmax = 100*Pc # Pa
-    Tmax = 800 # K
+    Tc = 304.128
+    Pc = 7377300  # Pa
+    rhoc = 467.6  # kg/m3
+    Pmin = 1000  # Pa
+    Pmax = 100*Pc  # Pa
+    Tmax = 800  # K
     Tmin = 270
     pparam = swco2
     pparam_construct = swco2.SWCO2ParameterBlock
@@ -201,7 +206,8 @@ class TestHelm(object):
     def model(self):
         model = ConcreteModel()
         model.prop = self.pparam_construct()
-        model.te = self.pparam.HelmholtzThermoExpressions(model, parameters=model.prop)
+        model.te = self.pparam.HelmholtzThermoExpressions(
+            model, parameters=model.prop)
         return model
 
     def tst_hs_state(self, model):
@@ -214,7 +220,6 @@ class TestHelm(object):
             ]
         )
 
-
         from scipy.optimize import fsolve
 
         data = read_data(self.pdata, self.mw)
@@ -222,12 +227,7 @@ class TestHelm(object):
             p = data["P"][i]
             h = data["H"][i]
             s = data["S"][i]
-            u = data["U"][i]
             rho = data["rho"][i]
-            if data["phase"][i] == "vapor":
-                x = 1
-            else:
-                x = 0
 
             if p < self.Pmin or p > self.Pmax:
                 continue
@@ -248,15 +248,15 @@ class TestHelm(object):
             print(xs)
             print(f(xs))
             print("T = {}, {}".format(self.Tc/xs[1], T))
-            #assert sum(map(abs, f)) < 1e-5
+            # assert sum(map(abs, f)) < 1e-5
         assert False
 
     def test_external_memo(self, model):
         """ This tests the memoization in the external functions.  There is a
         special set of functions that return the memoized value of a function.
         This test should catch things like functions that aren't memoized, or
-        function with the wrong lookup tag getting or setting the wrong value."""
-        te = model.te
+        function with the wrong lookup tag getting or setting the wrong value.
+        """
         mw = self.mw
         Tc = self.Tc
 
@@ -278,14 +278,13 @@ class TestHelm(object):
         for i in [il, ig]:
             T = data["T"][i]
             p = data["P"][i]
-            u = data["U"][i]
-            s = data["S"][i]
             h = data["H"][i]
             phase = data["phase"][i]
 
             assert (value(model.memo_test_tau(h/mw/1000, p/1000)) ==
-                pytest.approx(Tc/T, rel=0.10))
-            binary_derivative_test(f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
+                    pytest.approx(Tc/T, rel=0.10))
+            binary_derivative_test(
+                f=model.memo_test_tau, x0=h/mw/1000, x1=p/1000)
 
     def test_thermo_expression_writter(self, model):
         te = model.te
@@ -327,8 +326,10 @@ class TestHelm(object):
             # test the deriviatives that are critical to the thermo expressions
             binary_derivative_test(f=model.func_p_stau, x0=s/mw/1000, x1=Tc/T)
             binary_derivative_test(f=model.func_tau, x0=h/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_tau_sp, x0=s/mw/1000, x1=p/1000)
-            binary_derivative_test(f=model.func_tau_up, x0=u/mw/1000, x1=p/1000)
+            binary_derivative_test(
+                f=model.func_tau_sp, x0=s/mw/1000, x1=p/1000)
+            binary_derivative_test(
+                f=model.func_tau_up, x0=u/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vf, x0=h/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vfs, x0=s/mw/1000, x1=p/1000)
             binary_derivative_test(f=model.func_vfu, x0=u/mw/1000, x1=p/1000)
@@ -341,7 +342,8 @@ class TestHelm(object):
         te = model.te
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
-            if data["phase"][i] == "vapor" or data["phase"][i] == "supercritical":
+            if (data["phase"][i] == "vapor" or
+                    data["phase"][i] == "supercritical"):
                 rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
@@ -353,7 +355,8 @@ class TestHelm(object):
         te = model.te
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
-            if data["phase"][i] == "liquid" or data["phase"][i] == "supercritical":
+            if (data["phase"][i] == "liquid" or
+                    data["phase"][i] == "supercritical"):
                 rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
@@ -368,9 +371,9 @@ class TestHelm(object):
         data = read_sat_data(self.pdata_sat, self.mw)
         for i, T in enumerate(data["T"]):
             if T > 304.128:
-                # if this goes over the critical temperature this makes no sense
-                # while we're looking at the two phase region. (not sure how it
-                # got in the data)
+                # if this goes over the critical temperature this makes no
+                # sense while we're looking at the two phase region. (not sure
+                # how it got in the data)
                 pass
             else:
                 tol = 1e-2
@@ -387,7 +390,7 @@ class TestHelm(object):
 
             # Ignore the phase equilibrium and use T,P data to calc densities
             if T > 296:
-                tol = 1e-1 # data needs more sig fig
+                tol = 1e-1  # data needs more sig fig
             rhol = value(te.rho_liq(p=data["P"][i], T=T, x=0))
             rhov = value(te.rho_vap(p=data["P"][i], T=T, x=1))
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
@@ -400,6 +403,7 @@ class TestHelm(object):
         """
         def tau(_T):
             return self.Tc/_T
+
         def delta(_rho):
             return _rho/self.rhoc
 
@@ -432,8 +436,6 @@ class TestHelm(object):
             cv = data["cv"][i]
             w = data["w"][i]
             rho = data["rho"][i]
-
-            #print("offset {}".format(value(model.func_h(delta(rho), tau(T)) - h)*1000*mw))
 
             check(T, rho, func=model.func_p, val=p, rel=1e-2)
             check(T, rho, func=model.func_u, val=u, rel=1e-2)
