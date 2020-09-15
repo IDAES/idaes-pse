@@ -28,6 +28,7 @@ from pyomo.environ import (
     value,
     Var,
     ConcreteModel,
+    units as pyunits
 )
 from pyomo.environ import ExternalFunction as EF
 from pyomo.common.collections import ComponentSet
@@ -65,34 +66,72 @@ def _available(shared_lib):
 # python external function object name to ASL user function name
 _external_function_map = {
     "func_p": {"fname": "p", "units": None, "arg_units": [None, None]},
-    "func_u": {"fname": "u", "units": None, "arg_units": [None, None]},
-    "func_s": {"fname": "s", "units": None, "arg_units": [None, None]},
-    "func_h": {"fname": "h", "units": None, "arg_units": [None, None]},
-    "func_hvpt": {"fname": "hvpt", "units": None, "arg_units": [None, None]},
-    "func_hlpt": {"fname": "hlpt", "units": None, "arg_units": [None, None]},
+    "func_u": {"fname": "u",
+               "units": pyunits.kJ/pyunits.kg,
+               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_s": {"fname": "s",
+               "units": pyunits.kJ/pyunits.kg/pyunits.K,
+               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_h": {"fname": "h",
+               "units": pyunits.kJ/pyunits.kg,
+               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_hvpt": {"fname": "hvpt",
+                  "units": pyunits.kJ/pyunits.kg,
+                  "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_hlpt": {"fname": "hlpt",
+                  "units": pyunits.kJ/pyunits.kg,
+                  "arg_units": [pyunits.kPa, pyunits.dimensionless]},
     "func_svpt": {"fname": "svpt", "units": None, "arg_units": [None, None]},
     "func_slpt": {"fname": "slpt", "units": None, "arg_units": [None, None]},
     "func_uvpt": {"fname": "uvpt", "units": None, "arg_units": [None, None]},
     "func_ulpt": {"fname": "ulpt", "units": None, "arg_units": [None, None]},
-    "func_tau": {"fname": "tau", "units": None, "arg_units": [None, None]},
+    "func_tau": {"fname": "tau",
+                 "units": pyunits.dimensionless,
+                 "arg_units": [pyunits.kJ/pyunits.kg, pyunits.Pa]},
     "memo_test_tau": {"fname": "memo_test_tau", "units": None, "arg_units": [None, None]},
-    "func_tau_sp": {"fname": "tau_sp", "units": None, "arg_units": [None, None]},
-    "func_tau_up": {"fname": "tau_up", "units": None, "arg_units": [None, None]},
-    "func_p_stau": {"fname": "p_stau", "units": None, "arg_units": [None, None]},
-    "func_vf": {"fname": "vf", "units": None, "arg_units": [None, None]},
-    "func_vfs": {"fname": "vfs", "units": None, "arg_units": [None, None]},
-    "func_vfu": {"fname": "vfu", "units": None, "arg_units": [None, None]},
-    "func_g": {"fname": "g", "units": None, "arg_units": [None, None]},
-    "func_f": {"fname": "f", "units": None, "arg_units": [None, None]},
+    "func_tau_sp": {"fname": "tau_sp",
+                    "units": pyunits.dimensionless,
+                    "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K,
+                                  pyunits.Pa]},
+    "func_tau_up": {"fname": "tau_up",
+                    "units": pyunits.dimensionless,
+                    "arg_units": [pyunits.kJ/pyunits.kg, pyunits.Pa]},
+    "func_p_stau": {"fname": "p_stau",
+                    "units": pyunits.dimensionless,
+                    "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K,
+                                  pyunits.dimensionless]},
+    "func_vf": {"fname": "vf",
+                "units": pyunits.dimensionless,
+                "arg_units": [pyunits.kJ/pyunits.kg, pyunits.Pa]},
+    "func_vfs": {"fname": "vfs",
+                 "units": pyunits.dimensionless,
+                 "arg_units": [pyunits.kJ/pyunits.kg, pyunits.Pa]},
+    "func_vfu": {"fname": "vfu",
+                 "units": pyunits.dimensionless,
+                 "arg_units": [pyunits.kJ/pyunits.kg, pyunits.Pa]},
+    "func_g": {"fname": "g",
+               "units": pyunits.kJ/pyunits.kg,
+               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_f": {"fname": "f",
+               "units": pyunits.kJ/pyunits.kg,
+               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
     "func_cv": {"fname": "cv", "units": None, "arg_units": [None, None]},
     "func_cp": {"fname": "cp", "units": None, "arg_units": [None, None]},
     "func_w": {"fname": "w", "units": None, "arg_units": [None, None]},
-    "func_delta_liq": {"fname": "delta_liq", "units": None, "arg_units": [None, None]},
-    "func_delta_vap": {"fname": "delta_vap", "units": None, "arg_units": [None, None]},
+    "func_delta_liq": {"fname": "delta_liq",
+                       "units": pyunits.dimensionless,
+                       "arg_units": [pyunits.kPa, None]},
+    "func_delta_vap": {"fname": "delta_vap",
+                       "units": pyunits.dimensionless,
+                       "arg_units": [pyunits.kPa, None]},
     "func_delta_sat_l": {"fname": "delta_sat_l", "units": None, "arg_units": [None, None]},
     "func_delta_sat_v": {"fname": "delta_sat_v", "units": None, "arg_units": [None, None]},
-    "func_p_sat": {"fname": "p_sat", "units": None, "arg_units": [None, None]},
-    "func_tau_sat": {"fname": "tau_sat", "units": None, "arg_units": [None, None]},
+    "func_p_sat": {"fname": "p_sat",
+                   "units": pyunits.kPa,
+                   "arg_units": [pyunits.dimensionless]},
+    "func_tau_sat": {"fname": "tau_sat",
+                     "units": pyunits.dimensionless,
+                     "arg_units": [pyunits.kPa]},
     "func_phi0": {"fname": "phi0", "units": None, "arg_units": [None, None]},
     "func_phi0_delta": {"fname": "phi0_delta", "units": None, "arg_units": [None, None]},
     "func_phi0_delta2": {"fname": "phi0_delta2", "units": None, "arg_units": [None, None]},
@@ -147,7 +186,8 @@ class PhaseType(enum.Enum):
     G = 4  # Assume only vapor is pressent
 
 
-def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
+def _htpx(T, prop=None, P=None, x=None,
+          Tmin=200, Tmax=1200, Pmin=1e-3, Pmax=1e6):
     """
     Convenience function to calculate enthalpy from temperature and either
     pressure or vapor fraction. This function can be used for inlet streams and
@@ -156,13 +196,13 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
     User must provide values for one (and only one) of arguments P and x.
 
     Args:
-        T: Temperature [K] (between Tmin and Tmax)
-        Tmin: Lower bound on allowed temperatures
-        Tmax: Upper bound on allowed temperatures
-        Pmin: Lower bound on allowed pressures
-        PmaxL Upper bound on allowed pressures
+        T: Temperature (between Tmin and Tmax)
+        Tmin: Lower bound on allowed temperatures [K]
+        Tmax: Upper bound on allowed temperatures [K]
+        Pmin: Lower bound on allowed pressures [kPa]
+        PmaxL Upper bound on allowed pressures [kPa]
         prop: Property block to use for the enthalpy calcuations
-        P: Pressure [Pa] (between Pmin and Pmax), None if saturated
+        P: Pressure (between Pmin and Pmax), None if saturated
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
@@ -170,13 +210,18 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
         Total molar enthalpy [J/mol].
     """
     if not (P is None) ^ (x is None):
-        raise ConfigurationError(
-            "htpx must be provided with one (and only one) of arguments P and x."
-        )
-    if not Tmin <= T <= Tmax:
-        raise ConfigurationError("T = {}, ({} <= T <= {})".format(T, Tmin, Tmax))
-    if P is not None and not Pmin <= P <= Pmax:
-        raise ConfigurationError("P = {}, ({} <= P <= {})".format(P, Pmin, Pmax))
+        raise ConfigurationError("htpx must be provided with one (and only "
+                                 "one) of arguments P and x.")
+
+    T = pyunits.convert(T, to_units=pyunits.K)
+    if not Tmin <= value(T) <= Tmax:
+        raise ConfigurationError("T = {}, ({} <= T <= {} [K])"
+                                 .format(value(T), Tmin, Tmax))
+    if P is not None:
+        P = pyunits.convert(P, to_units=pyunits.kPa)
+        if not (Pmin <= value(P) <= Pmax):
+            raise ConfigurationError("P = {}, ({} <= P <= {} [kPa])"
+                                     .format(value(P), Pmin, Pmax))
     if x is not None and not 0 <= x <= 1:
         raise ConfigurationError("x = {}, (0 <= x <= 1)".format(x))
 
@@ -187,17 +232,20 @@ def _htpx(T, prop=None, P=None, x=None, Tmin=200, Tmax=1200, Pmin=1, Pmax=1e9):
     Pc = model.param.pressure_crit
 
     if x is None:
-        Tsat = Tc / value(prop.func_tau_sat(P / 1000))
-        if value(T) < Tsat or value(P) > Pc:  # liquid
-            return value(prop.func_hlpt(P / 1000, Tc / T) * prop.mw * 1000.0)
+        Tsat = Tc / prop.func_tau_sat(P)
+        if value(T) < value(Tsat) or value(P) > value(Pc):  # liquid
+            return value(pyunits.convert(prop.func_hlpt(P, Tc/T) * prop.mw,
+                                         to_units=pyunits.J/pyunits.mol))
         else:  # vapor
-            return value(prop.func_hvpt(P / 1000, Tc / T) * prop.mw * 1000.0)
+            return value(pyunits.convert(prop.func_hvpt(P, Tc/T) * prop.mw,
+                                         to_units=pyunits.J/pyunits.mol))
     if P is None:
-        Psat = value(prop.func_p_sat(Tc / T))  # kPa
+        Psat = prop.func_p_sat(Tc/T)  # kPa
         return (
-            value(prop.func_hlpt(Psat, Tc / T) * prop.mw * 1000.0) * (1 - x)
-            + value(prop.func_hvpt(Psat, Tc / T) * prop.mw * 1000.0) * x
-        )
+            value(pyunits.convert(
+                prop.func_hlpt(Psat, Tc/T) * prop.mw * (1 - x) +
+                prop.func_hvpt(Psat, Tc/T) * prop.mw * x,
+                to_units=pyunits.J/pyunits.mol)))
 
 
 class HelmholtzThermoExpressions(object):
@@ -207,11 +255,13 @@ class HelmholtzThermoExpressions(object):
     This works by converting the given state varaibles and writing expressions
     for liquid and vapor density, vapor fraction, and temerature.  Then those
     can be used to calculate any other property.  You can specify an integer
-    value 1 or 0 for x with any state varaibles to get liquid or vapor properies.
+    value 1 or 0 for x with any state varaibles to get liquid or vapor
+    properies.
     """
+
     def __init__(self, blk, parameters):
         self.param = parameters
-        self.blk=blk
+        self.blk = blk
 
     @staticmethod
     def _sv_str(**kwargs):
@@ -226,22 +276,24 @@ class HelmholtzThermoExpressions(object):
             names=names
         )
 
-    def basic_calculations(self, h=None, s=None, p=None, T=None, u=None, x=None):
-        """This function is called as this basis for most thermo expression writer
-        functions.  It takes the given state variables and returns expressions for
-        liqid density, vapor density, vapor fraction and temperature, which can be
-        used to write an expression for any thermo quantity.
+    def basic_calculations(
+            self, h=None, s=None, p=None, T=None, u=None, x=None):
+        """This function is called as this basis for most thermo expression
+        writer functions.  It takes the given state variables and returns
+        expressions for liqid density, vapor density, vapor fraction and
+        temperature, which can be used to write an expression for any thermo
+        quantity.
         """
         mw = self.param.mw
         # 1.) convert units to those expected by external functions
         if h is not None:
-            h = h/mw/1000 # J/mol -> kJ/kg
+            h = pyunits.convert(h/mw, to_units=pyunits.kJ/pyunits.kg)
         if u is not None:
-            u = u/mw/1000 # J/mol -> kJ/kg
+            u = pyunits.convert(u/mw, to_units=pyunits.kJ/pyunits.kg)
         if s is not None:
-            s = s/mw/1000 # J/mol/K -> kJ/kg/K
+            s = pyunits.convert(s/mw, to_units=pyunits.kJ/pyunits.kg/pyunits.K)
         if p is not None:
-            p = p/1000 # Pa -> kPa
+            p = pyunits.convert(p, to_units=pyunits.kPa)
         if T is not None:
             tau = self.param.temperature_crit/T
 
@@ -286,9 +338,8 @@ class HelmholtzThermoExpressions(object):
             self.add_funcs(names=["func_p_sat"])
             p = blk.func_p_sat(tau)
         else:
-            m = "This choice of state variables ({}) are not yet supported.".format(
-                self._sv_str(h=h, s=s, p=p, T=T, u=u, x=x, y=y)
-            )
+            m = ("This choice of state variables ({}) is not yet supported."
+                 .format(self._sv_str(h=h, s=s, p=p, T=T, u=u, x=x)))
             _log.error(m)
             raise NotImplementedError(m)
 
@@ -304,35 +355,40 @@ class HelmholtzThermoExpressions(object):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_s"])
         s = blk.func_s(delta_liq, tau)*(1-x) + blk.func_s(delta_vap, tau)*x
-        s = s*self.param.mw*1000 # kJ/kg/K -> J/mol/K
+        s = pyunits.convert(s*self.param.mw,
+                            to_units=pyunits.J/pyunits.mol/pyunits.K)
         return s
 
     def h(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_h"])
         h = blk.func_h(delta_liq, tau)*(1-x) + blk.func_h(delta_vap, tau)*x
-        h = h*self.param.mw*1000 # kJ/kg -> J/mol
+        h = pyunits.convert(h*self.param.mw,
+                            to_units=pyunits.J/pyunits.mol)
         return h
 
     def u(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_u"])
         u = blk.func_u(delta_liq, tau)*(1-x) + blk.func_u(delta_vap, tau)*x
-        u = u*self.param.mw*1000 # kJ/kg -> J/mol
+        u = pyunits.convert(u*self.param.mw,
+                            to_units=pyunits.J/pyunits.mol)
         return u
 
     def g(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_g"])
         g = blk.func_g(delta_liq, tau)*(1-x) + blk.func_g(delta_vap, tau)*x
-        g = g*self.param.mw*1000 # kJ/kg -> J/mol
+        g = pyunits.convert(g*self.param.mw,
+                            to_units=pyunits.J/pyunits.mol)
         return g
 
     def f(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_f"])
         f = blk.func_f(delta_liq, tau)*(1-x) + blk.func_f(delta_vap, tau)*x
-        f = f*self.param.mw*1000 # kJ/kg -> J/mol
+        f = pyunits.convert(f*self.param.mw,
+                            to_units=pyunits.J/pyunits.mol)
         return f
 
     def p(self, **kwargs):
@@ -601,13 +657,11 @@ change.
 
         obj.add_default_units(
             {
-                "time": "s",
-                "length": "m",
-                "mass": "kg",
-                "amount": "mol",
-                "temperature": "K",
-                "energy": "J",
-                "holdup": "mol",
+                "time": pyunits.s,
+                "length": pyunits.m,
+                "mass": pyunits.kg,
+                "amount": pyunits.mol,
+                "temperature": pyunits.K,
             }
         )
 
@@ -1008,9 +1062,11 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Enthalpy
         def rule_enth_mol_sat_phase(b, p):
             if p == "Liq":
-                return 1000 * mw * self.func_hlpt(P, self.tau_sat)
+                return pyunits.convert(mw * self.func_hlpt(P, self.tau_sat),
+                                       to_units=pyunits.J/pyunits.mol)
             elif p == "Vap":
-                return 1000 * mw * self.func_hvpt(P, self.tau_sat)
+                return pyunits.convert(mw * self.func_hvpt(P, self.tau_sat),
+                                       to_units=pyunits.J/pyunits.mol)
 
         self.enth_mol_sat_phase = Expression(
             phlist,

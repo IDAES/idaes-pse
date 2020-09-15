@@ -53,14 +53,12 @@ from pyomo.environ import (
     Set,
     exp,
     sqrt,
+    units as pyunits
 )
 
 # Import IDAES
-from idaes.core import (
-    declare_process_block_class,
-    StateBlock,
-    StateBlockData,
-)
+from idaes.core import declare_process_block_class
+
 import idaes
 import idaes.logger as idaeslog
 from idaes.generic_models.properties.helmholtz.helmholtz import (
@@ -104,7 +102,8 @@ def htpx(T, P=None, x=None):
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
-    return _htpx(T=T, P=P, x=x, prop=prop, Tmin=270, Tmax=3e3, Pmin=0.1, Pmax=1e9)
+    return _htpx(T=T, P=P, x=x, prop=prop,
+                 Tmin=270, Tmax=3e3, Pmin=1e-4, Pmax=1e6)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -119,13 +118,19 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
-            mw=Param(initialize=0.01801528, doc="Molecular weight [kg/mol]"),
+            mw=Param(initialize=0.01801528,
+                     doc="Molecular weight [kg/mol]",
+                     units=pyunits.kg/pyunits.mol),
             temperature_crit=Param(
                 initialize=647.096,
                 doc="Critical temperature [K]",
+                units=pyunits.K,
             ),
-            pressure_crit=Param(initialize=2.2064e7, doc="Critical pressure [Pa]"),
-            dens_mass_crit=Param(initialize=322, doc="Critical density [kg/m3]"),
+            pressure_crit=Param(initialize=2.2064e7,
+                                doc="Critical pressure [Pa]",
+                                units=pyunits.Pa),
+            dens_mass_crit=Param(initialize=322,
+                                 doc="Critical density [kg/m3]"),
             specific_gas_constant=Param(
                 initialize=461.51805,
                 doc="Water Specific Gas Constant [J/kg/K]",
@@ -274,7 +279,6 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
         tau = self.tau
         delta = self.dens_phase_red  # this shorter name is from IAPWS
 
-
         # Phase Thermal conductiviy
         def rule_tc(b, p):
             L0 = self.config.parameters.tc_L0
@@ -287,7 +291,8 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
                     delta[p]
                     * sum(
                         (tau - 1) ** i
-                        * sum(L1[i, j] * (delta[p] - 1) ** j for j in range(0, 6))
+                        * sum(L1[i, j] * (delta[p] - 1) ** j
+                              for j in range(0, 6))
                         for i in range(0, 5)
                     )
                 )
@@ -309,7 +314,8 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
                     delta[p]
                     * sum(
                         (tau - 1) ** i
-                        * sum(H1[i, j] * (delta[p] - 1) ** j for j in range(0, 7))
+                        * sum(H1[i, j] * (delta[p] - 1) ** j
+                              for j in range(0, 7))
                         for i in range(0, 6)
                     )
                 )

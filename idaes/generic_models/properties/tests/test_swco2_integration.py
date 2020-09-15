@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory
+from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
@@ -62,7 +62,7 @@ class TestIntegration(object):
             Tout = cases["Tout"][i]
             Pin = cases["Pin"][i]*1000
             Pout = cases["Pout"][i]*1000
-            hin = swco2.htpx(T=Tin, P=Pin)
+            hin = swco2.htpx(T=Tin*pyunits.K, P=Pin*pyunits.Pa)
             W = cases["W"][i]*1000
             Tis = cases["Tisen"][i]
             xout = cases["xout"][i]
