@@ -69,7 +69,7 @@ whether the model will be steady-state or dynamic, and to define the time domain
 
 .. note::
 
-    The IDAES Integrated Platform supports nested flowsheets to allow complex processes 
+    IDAES supports nested flowsheets to allow complex processes 
     to be broken down into smaller sub-processes.
 
 2.3 Add Property Packages to Flowsheet
@@ -138,7 +138,7 @@ the user wishes to use in analyzing or visualizing the results.
 
 .. note::
 
-    The IDAES Scaling tools are currently under development.
+    The IDAES scaling tools are currently under development.
 
 Ensuring that a model is well scaled is important for increasing the efficiency and reliability 
 of solvers, and users should consider model scaling as an integral part of the modeling process. 
@@ -190,8 +190,8 @@ methods that can be called using `model.initialize()` which can be expected to t
 from its initial state to a feasible solution for a set of initial guesses (within the models 
 expected operating range).
 
-The IDAES Integrated Platform generally uses a sequential-modular approach to 
-initializing flowsheets, where unit models are initialized sequentially, passing the outlet 
+IDEAS workflows generally use a sequential-modular approach to 
+initialize flowsheets, where unit models are initialized sequentially, passing the outlet 
 state from one unit as the initial state for the next. An automated sequential-modular tool is 
 available through Pyomo and demonstrated in the tutorials.
 

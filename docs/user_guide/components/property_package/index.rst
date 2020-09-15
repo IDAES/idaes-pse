@@ -24,7 +24,7 @@ While several standard property packages are provided in the IDAES model librari
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
 :ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`.
-Since the effort to develop a custom property package is substantial, the IDAES Integrated Platform provides a 
+Since the effort to develop a custom property package is substantial, IDAES provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
 and :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
@@ -49,7 +49,7 @@ properties required by each unit.
 
 Within IDAES, this is handled by StateBlock objects – these are self-contained submodels 
 containing the calculations for all necessary thermophysical properties for a given material 
-at a given point in space and time. IDAES Unit models create instances of these StateBlocks 
+at a given point in space and time. IDAES UnitModels create instances of these StateBlocks 
 wherever they need to calculate physical properties and link to variables within the 
 StateBlock within the unit model constraints.
 
@@ -62,8 +62,8 @@ parameters.
 
 In summary, physical property packages consist of two parts:
 
-* :ref:`Physical Parameter Blocks<user_guide/components/property_package/physical_param:Physical Parameter Block>`, which contain a set of parameters associated with the specific material(s) being modeled
-* :ref:`State Blocks<user_guide/components/property_package/state_block:State Block>`, which contain the actual calculations of the state variables and functions
+* :ref:`PhysicalParameterBlocks<user_guide/components/property_package/physical_param:Physical Parameter Block>`, which contain a set of parameters associated with the specific material(s) being modeled
+* :ref:`StateBlocks<user_guide/components/property_package/state_block:State Block>`, which contain the actual calculations of the state variables and functions
 
 Reaction properties
 -------------------
@@ -75,8 +75,8 @@ necessary state and physical property information.
 
 Reaction property packages consist of two parts:
 
-* :ref:`Reaction Parameter Blocks<user_guide/components/property_package/reaction_param:Reaction Parameter Block>`, which contain a set of parameters associated with the specific reaction(s) being modeled, and
-* :ref:`Reaction Blocks<user_guide/components/property_package/reaction_block:Reaction Block>`, which contain the actual calculations of the reaction behavior.
+* :ref:`ReactionParameterBlocks<user_guide/components/property_package/reaction_param:Reaction Parameter Block>`, which contain a set of parameters associated with the specific reaction(s) being modeled, and
+* :ref:`ReactionBlocks<user_guide/components/property_package/reaction_block:Reaction Block>`, which contain the actual calculations of the reaction behavior.
 
 Component and Phase Objects
 ---------------------------
@@ -101,7 +101,7 @@ these are required in every unit operation. Calculating additional properties th
 required is undesirable, as it leads to larger problem sizes and unnecessary complexity of the 
 resulting model.
 
-To address this, the IDAES Integrated Platform supports "as needed" construction of properties, 
+To address this, IDAES supports "as needed" construction of properties, 
 where the variables and constraints required to calculate a given quantity are not added to a 
 model unless the model calls for this quantity. To designate a property as an "as needed" 
 quantity, a method can be declared in the associated property BlockData class (StateBlockData or 

@@ -18,7 +18,7 @@ inform the construction of other components. These attributes include:
 * `phase_list` - a Pyomo Set object defining the valid phases of the mixture of interest.
 * `component_list` - a Pyomo Set defining the names of the chemical species present in the mixture.
 * `element_list` - (optional) a Pyomo Set defining the names of the chemical elements that make up the species within the mixture. This is used when doing elemental material balances.
-* `element_comp` - (optional) a dict-like object which defines the elemental composition of each species in component_list. Form: component: {element_1: value, element_2: value, ...}.
-* `supported properties metadata` - a list of supported physical properties that the property package supports, along with instruction to construct the associated variables and constraints, and the units of measurement used for the property. This information is set using the add_properties attribute of the define_metadata class method.
+* `element_comp` - (optional) a dictionary-like object which defines the elemental composition of each species in component_list. Form: component: {element_1: value, element_2: value, ...}.
+* supported properties metadata - a dictionary of supported physical properties that the property package supports, along with instruction to construct the associated variables and constraints, and the units of measurement used for the property. This information is set using the `add_properties` attribute of the `define_metadata` class method.
 
 

@@ -20,9 +20,9 @@ Standard Variable Names
 -----------------------
 In order for different models to communicate information effectively, it is necessary to have 
 a standard naming convention for any variable that may need to be shared between different 
-models. Within the IDAES Core Modeling Framework, this occurs most frequently when information 
-regarding the state and properties of the material within the system, which is calculated 
-in specialized property blocks, is used in others parts of the model.
+models. Within IDAES, this occurs most frequently when information 
+regarding the state and properties of the material, which is calculated 
+in specialized PropertyBlocks, is used in others parts of the model.
 
 Standard Naming Format
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -132,7 +132,7 @@ Acceleration due to gravity, gravitational constant and electron mass are source
 
 Thermophysical and Transport Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Below is a list of all the thermophysical properties which have a standardized names.
+Below is a list of all the thermophysical properties which have standardized names.
 
 =============================== =====================
 Variable                        Standard Name
@@ -179,7 +179,7 @@ Volume Fraction                 vol_frac
 
 Reaction Properties
 ^^^^^^^^^^^^^^^^^^^
-Below is a list of all the reaction properties which have a standardized names.
+Below is a list of all the reaction properties which have standardized names.
 
 ======================= =================
 Variable                Standard Name
@@ -196,7 +196,7 @@ Solubility Constant     k_sol
 
 Solid Properties
 ^^^^^^^^^^^^^^^^
-Below is a list of all the properties of solid materials which have a standardized names.
+Below is a list of all the properties of solid materials which have standardized names.
 
 ============================ =================
 Variable                     Standard Name

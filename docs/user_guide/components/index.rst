@@ -23,7 +23,7 @@ detail with a link in their description.
 .. rubric:: Flowsheet
 
 :ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>`
-are the top level of the IDAES Core Modeling Framework. Flowsheet models represent 
+are the top level of the modeling heirachy. Flowsheet models represent 
 traditional process flowsheets, containing a number of unit models connected together into a 
 flow network and the property packages.
 
