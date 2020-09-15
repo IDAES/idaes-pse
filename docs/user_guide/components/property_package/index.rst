@@ -23,8 +23,10 @@ equations, or specific to a certain application. Property packages are separated
 While several standard property packages are provided in the IDAES model libraries, many process
 modeling applications will require specific property packages. Information on developing custom
 property packages is provided in the 
-:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Physical Property Package Development>`.
-Since the effort to develop a custom property package is substantial, IDAES provides a 
+:ref:`advanced user guide<advanced_user_guide/custom_models/property_package_development:Custom Property Packages>`.
+
+Since the effort to develop a custom property package is substantial, the IDAES modeling
+framework provides a 
 :ref:`Generic Property Package Framework<user_guide/components/property_package/general/index:Generic Property Package Framework>` 
 and :ref:`Generic Reaction Package Framework<user_guide/components/property_package/general_reactions/index:Generic Reaction Package Framework>`
 to make it easier to create a package for common property and reaction models.
