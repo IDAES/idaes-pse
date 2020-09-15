@@ -17,6 +17,7 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            Var,
                            Constraint)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (ControlVolume0DBlock,
                         FlowsheetBlock,
@@ -241,6 +242,10 @@ class PropertyTestHarness(object):
                 raise TypeError(
                     "Invlaid entry in define_state_Vars, {}. All members must "
                     "be Pyomo Vars.".format(v))
+
+    def test_unit_consistency(self, frame):
+        assert_units_consistent(frame)
+
 
     @pytest.mark.initialize
     @pytest.mark.solver

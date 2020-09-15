@@ -27,9 +27,7 @@ from pyomo.environ import (
     Set,
     value,
     Var,
-    NonNegativeReals,
     ConcreteModel,
-    Suffix,
 )
 from pyomo.environ import ExternalFunction as EF
 from pyomo.common.collections import ComponentSet
@@ -63,56 +61,50 @@ def _available(shared_lib):
     """
     return os.path.isfile(shared_lib)
 
-#python external function object name to ASL user function name
+
+# python external function object name to ASL user function name
 _external_function_map = {
-    "func_p": "p",
-    "func_u": "u",
-    "func_s": "s",
-    "func_h": "h",
-    "func_hvpt": "hvpt",
-    "func_hlpt": "hlpt",
-    "func_svpt": "svpt",
-    "func_slpt": "slpt",
-    "func_uvpt": "uvpt",
-    "func_ulpt": "ulpt",
-    "func_tau": "tau",
-    "memo_test_tau": "memo_test_tau",
-    "func_tau_sp": "tau_sp",
-    "func_tau_up": "tau_up",
-    "func_p_stau": "p_stau",
-    "func_vf": "vf",
-    "func_vfs": "vfs",
-    "func_vfu": "vfu",
-    "func_g": "g",
-    "func_f": "f",
-    "func_cv": "cv",
-    "func_cp": "cp",
-    "func_w": "w",
-    "func_delta_liq": "delta_liq",
-    "func_delta_vap": "delta_vap",
-    "func_delta_sat_l": "delta_sat_l",
-    "func_delta_sat_v": "delta_sat_v",
-    "func_p_sat": "p_sat",
-    "func_tau_sat": "tau_sat",
-    "func_phi0": "phi0",
-    "func_phi0_delta": "phi0_delta",
-    "func_phi0_delta2": "phi0_delta2",
-    "func_phi0_tau": "phi0_tau",
-    "func_phi0_tau2": "phi0_tau2",
-    "func_phir": "phir",
-    "func_phir_delta": "phir_delta",
-    "func_phir_delta2": "phir_delta2",
-    "func_phir_tau": "phir_tau",
-    "func_phir_tau2": "phir_tau2",
-    "func_phir_delta_tau": "phir_delta_tau",
+    "func_p": {"fname": "p", "units": None, "arg_units": [None, None]},
+    "func_u": {"fname": "u", "units": None, "arg_units": [None, None]},
+    "func_s": {"fname": "s", "units": None, "arg_units": [None, None]},
+    "func_h": {"fname": "h", "units": None, "arg_units": [None, None]},
+    "func_hvpt": {"fname": "hvpt", "units": None, "arg_units": [None, None]},
+    "func_hlpt": {"fname": "hlpt", "units": None, "arg_units": [None, None]},
+    "func_svpt": {"fname": "svpt", "units": None, "arg_units": [None, None]},
+    "func_slpt": {"fname": "slpt", "units": None, "arg_units": [None, None]},
+    "func_uvpt": {"fname": "uvpt", "units": None, "arg_units": [None, None]},
+    "func_ulpt": {"fname": "ulpt", "units": None, "arg_units": [None, None]},
+    "func_tau": {"fname": "tau", "units": None, "arg_units": [None, None]},
+    "memo_test_tau": {"fname": "memo_test_tau", "units": None, "arg_units": [None, None]},
+    "func_tau_sp": {"fname": "tau_sp", "units": None, "arg_units": [None, None]},
+    "func_tau_up": {"fname": "tau_up", "units": None, "arg_units": [None, None]},
+    "func_p_stau": {"fname": "p_stau", "units": None, "arg_units": [None, None]},
+    "func_vf": {"fname": "vf", "units": None, "arg_units": [None, None]},
+    "func_vfs": {"fname": "vfs", "units": None, "arg_units": [None, None]},
+    "func_vfu": {"fname": "vfu", "units": None, "arg_units": [None, None]},
+    "func_g": {"fname": "g", "units": None, "arg_units": [None, None]},
+    "func_f": {"fname": "f", "units": None, "arg_units": [None, None]},
+    "func_cv": {"fname": "cv", "units": None, "arg_units": [None, None]},
+    "func_cp": {"fname": "cp", "units": None, "arg_units": [None, None]},
+    "func_w": {"fname": "w", "units": None, "arg_units": [None, None]},
+    "func_delta_liq": {"fname": "delta_liq", "units": None, "arg_units": [None, None]},
+    "func_delta_vap": {"fname": "delta_vap", "units": None, "arg_units": [None, None]},
+    "func_delta_sat_l": {"fname": "delta_sat_l", "units": None, "arg_units": [None, None]},
+    "func_delta_sat_v": {"fname": "delta_sat_v", "units": None, "arg_units": [None, None]},
+    "func_p_sat": {"fname": "p_sat", "units": None, "arg_units": [None, None]},
+    "func_tau_sat": {"fname": "tau_sat", "units": None, "arg_units": [None, None]},
+    "func_phi0": {"fname": "phi0", "units": None, "arg_units": [None, None]},
+    "func_phi0_delta": {"fname": "phi0_delta", "units": None, "arg_units": [None, None]},
+    "func_phi0_delta2": {"fname": "phi0_delta2", "units": None, "arg_units": [None, None]},
+    "func_phi0_tau": {"fname": "phi0_tau", "units": None, "arg_units": [None, None]},
+    "func_phi0_tau2": {"fname": "phi0_tau2", "units": None, "arg_units": [None, None]},
+    "func_phir": {"fname": "phir", "units": None, "arg_units": [None, None]},
+    "func_phir_delta": {"fname": "phir_delta", "units": None, "arg_units": [None, None]},
+    "func_phir_delta2": {"fname": "phir_delta2", "units": None, "arg_units": [None, None]},
+    "func_phir_tau": {"fname": "phir_tau", "units": None, "arg_units": [None, None]},
+    "func_phir_tau2": {"fname": "phir_tau2", "units": None, "arg_units": [None, None]},
+    "func_phir_delta_tau": {"fname": "phir_delta_tau", "units": None, "arg_units": [None, None]},
 }
-
-
-def _available(shared_lib):
-    """Make sure the compiled library functions are available. Yes, in Windows
-    the .so extension is still used.
-    """
-    return os.path.isfile(shared_lib)
 
 
 def _add_external_functions(blk, eos_tag, shared_lib, names=None):
@@ -128,7 +120,10 @@ def _add_external_functions(blk, eos_tag, shared_lib, names=None):
         setattr(
             blk,
             name,
-            EF(library=shared_lib, function=_fnc(_external_function_map[name]))
+            EF(library=shared_lib,
+               function=_fnc(_external_function_map[name]["fname"]),
+               units=_external_function_map[name]["units"],
+               arg_units=_external_function_map[name]["arg_units"])
         )
 
 
