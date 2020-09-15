@@ -1,5 +1,5 @@
-﻿Developing Custom Unit Models
-=============================
+﻿Custom Unit Models
+==================
 
 .. contents:: :local:
 
@@ -32,20 +32,20 @@ In general, a unit model is not written with a specific flowsheet or set of ther
 
 .. code-block:: python
 
-@declare_process_block_class("NewUnit")
-class NewUnitDataData(UnitModelBlockData):
+    @declare_process_block_class("NewUnit")
+    class NewUnitDataData(UnitModelBlockData):
 
-    CONFIG = UnitModelBlockData.CONFIG()
+        CONFIG = UnitModelBlockData.CONFIG()
 
-    CONFIG.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations."""))
-    CONFIG.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s) and used when constructing these."""))
+        CONFIG.declare("property_package", ConfigValue(
+            default=useDefault,
+            domain=is_physical_parameter_block,
+            description="Property package to use for control volume",
+            doc="""Property parameter object used to define property calculations."""))
+        CONFIG.declare("property_package_args", ConfigBlock(
+            implicit=True,
+            description="Arguments to use for constructing property packages",
+            doc="""A ConfigBlock with arguments to be passed to a property block(s) and used when constructing these."""))
 
 For unit models involving multiple property packages, or those that include reaction packages, additional pairs of configuration arguments are required for each of these. Model developers must provide unique names for each configuration argument, and are encourage to use meaningful names to assist end-users in understanding what package should be linked to each argument.
 
