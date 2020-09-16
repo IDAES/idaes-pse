@@ -158,6 +158,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         self._state_block_class = TestStateBlock
 
+        self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
         self.set_default_scaling("flow_mol_phase_comp", 102)
         self.set_default_scaling("test_var", 103)
