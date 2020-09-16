@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory
+from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.iapws95 as iapws95
@@ -209,16 +209,16 @@ class TestHelm(object):
 
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
-            p = data["P"][i]
-            h = data["H"][i]
-            s = data["S"][i]
-            u = data["U"][i]
+            p = data["P"][i]*pyunits.Pa
+            h = data["H"][i]*pyunits.J/pyunits.mol
+            s = data["S"][i]*pyunits.J/pyunits.mol/pyunits.K
+            u = data["U"][i]*pyunits.J/pyunits.mol
             if data["phase"][i] == "vapor":
                 x = 1
             else:
                 x = 0
 
-            if p < self.Pmin or p > self.Pmax:
+            if value(p) < self.Pmin or value(p) > self.Pmax:
                 continue
             if T < self.Tmin or T > self.Tmax:
                 continue
@@ -226,16 +226,21 @@ class TestHelm(object):
                 continue
 
             # Test state variable with P in the set, these are pretty reliable
-            assert value(te.s(h=h, p=p)) == pytest.approx(s, rel=0.05)
-            assert value(te.h(u=u, p=p)) == pytest.approx(h, rel=0.05)
-            assert value(te.h(T=T, p=p, x=x)) == pytest.approx(h, rel=0.05)
-            assert value(te.h(s=s, p=p)) == pytest.approx(h, rel=0.05)
-            if p < 2e6 or T < 290:
+            assert value(te.s(h=h, p=p)) == pytest.approx(
+                value(s), rel=0.05)
+            assert value(te.h(u=u, p=p)) == pytest.approx(
+                value(h), rel=0.05)
+            assert value(te.h(T=T*pyunits.K, p=p, x=x)) == pytest.approx(
+                value(h), rel=0.05)
+            assert value(te.h(s=s, p=p)) == pytest.approx(
+                value(h), rel=0.05)
+            if value(p) < 2e6 or T < 290:
                 # need data with more significant figure to test here
                 # generally p(s, T) prbably isn't that useful for liquids
                 # so I'll come back to it later with high precision data.
                 continue
-            assert value(te.p(s=s, T=T)) == pytest.approx(p, rel=0.1)
+            assert value(te.p(s=s, T=T*pyunits.K)) == pytest.approx(
+                value(p), rel=0.1)
 
             # Commenting out the deriative test for now.  The derivatives are
             # tested in the CO2 tests and are the same for all Helmholtz EOSs
@@ -260,8 +265,9 @@ class TestHelm(object):
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "vapor":
-                rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
-                assert rho == pytest.approx(data["rho"][i], rel=1e-2)
+                rho = value(te.rho_vap(
+                    p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=1))
+                assert rho == pytest.approx(value(data["rho"][i]), rel=1e-2)
 
     def test_solve_liquid_density(self, model):
         """ The density calculations should be tested by the thermo expression
@@ -272,10 +278,11 @@ class TestHelm(object):
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "liquid":
-                rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
+                rho = value(te.rho_liq(
+                    p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
                 print("T {}, P {}, rho dat {}, rho {}".format(
                     T, data["P"][i], data["rho"][i], rho))
-                assert rho == pytest.approx(data["rho"][i], rel=1e-1)
+                assert rho == pytest.approx(value(data["rho"][i]), rel=1e-1)
 
     def test_solve_supercritical_density(self, model):
         """ The density calculations should be tested by the thermo expression
@@ -286,10 +293,12 @@ class TestHelm(object):
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
             if data["phase"][i] == "supercritical":
-                rhol = value(te.rho_liq(p=data["P"][i], T=T, x=0))
-                rhov = value(te.rho_vap(p=data["P"][i], T=T, x=0))
-                assert rhol == pytest.approx(data["rho"][i], rel=0.5e-1)
-                assert rhov == pytest.approx(data["rho"][i], rel=0.5e-1)
+                rhol = value(
+                    te.rho_liq(p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
+                rhov = value(
+                    te.rho_vap(p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
+                assert rhol == pytest.approx(value(data["rho"][i]), rel=0.5e-1)
+                assert rhov == pytest.approx(value(data["rho"][i]), rel=0.5e-1)
 
     def test_solve_sat_density(self, model):
         """ The density calculations should be tested by the thermo expression
@@ -310,23 +319,27 @@ class TestHelm(object):
             else:
                 tol = 1e-2
                 # test p, x spec
-                rhol = value(te.rho_liq(p=data["P"][i], x=0))
-                rhov = value(te.rho_vap(p=data["P"][i], x=1))
-                assert rhol == pytest.approx(data["rhol"][i], rel=tol)
-                assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+                rhol = value(te.rho_liq(
+                    p=data["P"][i]*pyunits.Pa, x=0))
+                rhov = value(te.rho_vap(
+                    p=data["P"][i]*pyunits.Pa, x=1))
+                assert rhol == pytest.approx(value(data["rhol"][i]), rel=tol)
+                assert rhov == pytest.approx(value(data["rhov"][i]), rel=tol)
                 # test t, x spec
-                rhol = value(te.rho_liq(T=T, x=0))
-                rhov = value(te.rho_vap(T=T, x=1))
-                assert rhol == pytest.approx(data["rhol"][i], rel=tol)
-                assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+                rhol = value(te.rho_liq(T=T*pyunits.K, x=0))
+                rhov = value(te.rho_vap(T=T*pyunits.K, x=1))
+                assert rhol == pytest.approx(value(data["rhol"][i]), rel=tol)
+                assert rhov == pytest.approx(value(data["rhov"][i]), rel=tol)
 
             # Ignore the phase equilibrium and use T,P data to calc densities
             if T > 296:
                 tol = 1e-1  # data needs more sig fig
-            rhol = value(te.rho_liq(p=data["P"][i], T=T, x=0))
-            rhov = value(te.rho_vap(p=data["P"][i], T=T, x=1))
-            assert rhol == pytest.approx(data["rhol"][i], rel=tol)
-            assert rhov == pytest.approx(data["rhov"][i], rel=tol)
+            rhol = value(
+                te.rho_liq(p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
+            rhov = value(
+                te.rho_vap(p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=1))
+            assert rhol == pytest.approx(value(data["rhol"][i]), rel=tol)
+            assert rhov == pytest.approx(value(data["rhov"][i]), rel=tol)
 
     def test_functions_of_delta_and_tau(self, model):
         """
