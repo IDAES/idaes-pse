@@ -20,7 +20,7 @@ from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
-    get_bounds_from_config
+    get_bounds_from_config, get_method, GenericPropertyPackageError
 
 
 def set_metadata(b):
@@ -284,9 +284,30 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b.mole_frac_comp[j].value
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
+                # Thanks to Rahul Gandhi for the method
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
+
+                try:
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
+
+                            b.mole_frac_phase_comp["Liq", j].value = value(
+                                b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
             else:
-                # Two-phase
-                # TODO : Try to find some better guesses than default
+                # Two-phase, but with non-vaporizables and/or non-condensables
                 pass
 
         elif pobj.is_vapor_phase():
@@ -333,9 +354,31 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b._mole_frac_tbub[pp, j].value
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
+                # Thanks to Rahul Gandhi for the method
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
+
+                try:
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
+
+                            b.mole_frac_phase_comp["Vap", j].value = value(
+                                b.mole_frac_comp[j] /
+                                (1+vapRatio*(kfact-1))*kfact)
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
             else:
-                # Two-phase
-                # TODO : Try to find some better guesses than default
+                # Two-phase, but with non-vaporizables and/or non-condensables
                 pass
 
 
