@@ -41,6 +41,7 @@ from idaes.core import (
     PhysicalParameterBlock,
     MaterialBalanceType,
     EnergyBalanceType,
+    MaterialFlowBasis,
     LiquidPhase,
     VaporPhase,
     Phase,
@@ -1352,6 +1353,9 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def default_energy_balance_type(self):
         return EnergyBalanceType.enthalpyTotal
+
+    def get_material_flow_basis(b):
+        return MaterialFlowBasis.molar
 
     def define_state_vars(self):
         return self._state_vars_dict

@@ -317,7 +317,7 @@ class TestIAPWS(object):
             F = cases["F"][i]
             Tin = cases["Tin"][i]
             Pin = cases["Pin"][i]*1000
-            hin = iapws95.htpx(T=Tin, P=Pin)
+            hin = iapws95.htpx(T=Tin*pyunits.K, P=Pin*pyunits.Pa)
             Tout = cases["Tout"][i]
             Pout = cases["Pout"][i]*1000
             xout = cases["xout"][i]
