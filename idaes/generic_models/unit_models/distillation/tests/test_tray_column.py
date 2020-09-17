@@ -84,3 +84,9 @@ def test_config():
     assert degrees_of_freedom(m) == 0
 
     m.fs.unit.initialize()
+
+    results = solver.solve(m, tee=False)
+
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
