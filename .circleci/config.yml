@@ -49,7 +49,7 @@ commands:
           name: Run pytest
           command: |
               source activate idaes
-              pytest -c pytest.ini --durations=0 idaes -m "<<parameters.tags>>"
+              pytest -c pytest.ini idaes -m "<<parameters.tags>>"
   pytest_cov:
     description: Run tests with pytest
     parameters:
