@@ -310,6 +310,9 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
+        self.set_default_scaling("reaction_rate", 101, 'r1')
+        self.set_default_scaling("reaction_rate", 102, 'r2')
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': units.s,
