@@ -1588,7 +1588,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.energy_holdup[i], default=1, warning=True)
                 iscale.set_scaling_factor(v, sf)
 
-        # additional terms
+        # Additional balance terms
         if hasattr(self, "deltaP"):
             for t, v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -1612,6 +1612,31 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
                      for p in self.config.property_package.phase_list])
                 iscale.set_scaling_factor(v, sf)
+
+        # Additional reaction terms
+        if hasattr(self, "rate_reaction_generation"):
+            for (t, p, j), v in self.rate_reaction_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties_in[t].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "rate_reaction_extent"):
+            for (t, r), v in self.rate_reaction_extent.items():
+                # extent of reaction typically between 0.1 and 1
+                iscale.set_scaling_factor(v, 10)
+
+        if hasattr(self, "equilibrium_reaction_generation"):
+            for (t, p, j), v in self.equilibrium_reaction_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties_in[t].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "equilibrium_reaction_extent"):
+            for (t, r), v in self.equilibrium_reaction_extent.items():
+                # extent of reaction typically between 0.1 and 1
+                iscale.set_scaling_factor(v, 10)
 
         # Material Balance Constraints
         if hasattr(self, "material_balances"):
