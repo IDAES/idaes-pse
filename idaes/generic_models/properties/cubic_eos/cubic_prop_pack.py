@@ -497,17 +497,27 @@ class _CubicStateBlock(StateBlock):
                             blk[k].mole_frac_comp[j].value
                 else:
                     # Two-phase
-                    # TODO : Try to find some better guesses than this
-                    blk[k].flow_mol_phase["Vap"].value = \
-                        0.5*blk[k].flow_mol.value
-                    blk[k].flow_mol_phase["Liq"].value = \
-                        0.5*blk[k].flow_mol.value
+                    # Estimate vapor fraction from distance from Tbub and Tdew
+                    # Thanks to Rahul Gandhi for the method
+                    vapRatio = value((blk[k].temperature -
+                                      blk[k].temperature_bubble) /
+                                     (blk[k].temperature_dew -
+                                      blk[k].temperature_bubble))
 
+                    blk[k].flow_mol_phase["Vap"].value = value(
+                        vapRatio*blk[k].flow_mol)
+                    blk[k].flow_mol_phase["Liq"].value = value(
+                        (1-vapRatio)*blk[k].flow_mol)
+
+                    # Initialize compositions using Rachford-Rice equation
                     for j in blk[k].params.component_list:
-                        blk[k].mole_frac_phase_comp['Vap', j].value = \
-                            blk[k].mole_frac_comp[j].value
-                        blk[k].mole_frac_phase_comp['Liq', j].value = \
-                            blk[k].mole_frac_comp[j].value
+                        kfact = value(
+                            antoine_P(blk[k], j, blk[k].temperature.value) /
+                            blk[k].pressure)
+                        blk[k].mole_frac_phase_comp["Liq", j].value = value(
+                            blk[k].mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
+                        blk[k].mole_frac_phase_comp["Vap", j].value = value(
+                            blk[k].mole_frac_phase_comp["Liq", j]*kfact)
 
         # ---------------------------------------------------------------------
         # Solve phase equilibrium constraints
