@@ -64,7 +64,7 @@ def test_base_build():
     iscale.set_scaling_factor(m.fs.cv.heat, 11)
     iscale.set_scaling_factor(m.fs.cv.work, 12)
     iscale.calculate_scaling_factors(m)
-    # Make sure the heat and work scaling factors are set and not overwitten
+    # Make sure the heat and work scaling factors are set and not overwritten
     # by the defaults in calculate_scaling_factors
     assert iscale.get_scaling_factor(m.fs.cv.heat) == 11
     assert iscale.get_scaling_factor(m.fs.cv.work) == 12
@@ -76,11 +76,52 @@ def test_base_build():
 
     # check scaling on mass, energy, and pressure balances.
     for c in m.fs.cv.material_balances.values():
-        # this uses the minmum material flow term scale
+        # this uses the minimum material flow term scale
         assert iscale.get_constraint_transform_applied_scaling_factor(c) == 112
     for c in m.fs.cv.enthalpy_balances.values():
-        # this uses the minmum enthalpy flow term scale
+        # this uses the minimum enthalpy flow term scale
         assert iscale.get_constraint_transform_applied_scaling_factor(c) == 110
     for c in m.fs.cv.pressure_balance.values():
         # This uses the inlet pressure scale
         assert iscale.get_constraint_transform_applied_scaling_factor(c) == 104
+
+
+@pytest.mark.unit
+def test_1():  # TODO rename
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(default={
+        "property_package": m.fs.pp,
+        "reaction_package": m.fs.rp})
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    # m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentTotal,
+        has_rate_reactions=False,
+        has_equilibrium_reactions=False,
+        has_phase_equilibrium=True,
+        has_mass_transfer=True)
+
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal,
+        has_heat_of_reaction=False,
+        has_heat_transfer=True,
+        has_work_transfer=True,
+        has_enthalpy_transfer=True)
+
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal,
+        has_pressure_change=True)
+
+    iscale.calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    assert len(unscaled_var_list) == 0
+    # check that all constraints have been scaled
+    unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
+    assert len(unscaled_constraint_list) == 0
