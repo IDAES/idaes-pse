@@ -18,7 +18,7 @@ Author: John Eslick
 import pytest
 
 from pyomo.environ import (ConcreteModel, SolverFactory, TransformationFactory,
-                           Constraint, value)
+                           Constraint, value, units as pyunits)
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
@@ -75,7 +75,7 @@ def test_initialize():
 
     # Set the inlet of the turbine
     p = 2.4233e7
-    hin = iapws95.htpx(T=880, P=p)
+    hin = value(iapws95.htpx(T=880*pyunits.K, P=p*pyunits.Pa))
     m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
     m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
     m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
@@ -83,7 +83,7 @@ def test_initialize():
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
     p = 7.802e+06
-    hin = iapws95.htpx(T=880, P=p)
+    hin = value(iapws95.htpx(T=880*pyunits.K, P=p*pyunits.Pa))
     m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
     m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
     m.fs.turb.ip_stages[1].inlet.pressure[0].value = p

@@ -21,7 +21,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           SolverFactory)
+                           SolverFactory,
+                           units as pyunits)
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
@@ -100,7 +101,7 @@ def test_boiler_hx():
         "has_radiation": True})
 
     #   Set inputs
-    h = iapws95.htpx(773.15, 2.5449e7)
+    h = value(iapws95.htpx(773.15*pyunits.K, 2.5449e7*pyunits.Pa))
     print(h)
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol

@@ -61,6 +61,7 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
 def create_model(
     steady_state=True,
     time_set=[0, 3],
+    time_units=pyo.units.s,
     nfe=5,
     calc_integ=True,
     form=PIDForm.standard
@@ -71,6 +72,7 @@ def create_model(
         steady_state (bool): If True, create a steady state model, otherwise
             create a dynamic model
         time_set (list): The begining and end point of the time domain
+        time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.
         calc_integ (bool): If True, calculate in the initial condition for
@@ -87,7 +89,8 @@ def create_model(
         fs_cfg = {"dynamic": False}
         model_name = "Steam Tank, Steady State"
     else:
-        fs_cfg = {"dynamic": True, "time_set": time_set}
+        fs_cfg = {
+            "dynamic": True, "time_set": time_set, "time_units": time_units}
         model_name = "Steam Tank, Dynamic"
 
     m = pyo.ConcreteModel(name=model_name)

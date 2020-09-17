@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory
+from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.swco2 as swco2
@@ -145,11 +145,11 @@ def binary_derivative_test(f, x0, x1, d0=1e-5, d1=1e-5, tol=0.02):
         tol: assert derivitive value tolerance
     """
     assert(isinstance(f, AMPLExternalFunction))
-    y, g, h = f.evaluate_fgh(args=(x0, x1))
-    yf0, gf0, hf0 = f.evaluate_fgh(args=(x0 + d0, x1))
-    yb0, gb0, hb0 = f.evaluate_fgh(args=(x0 - d0, x1))
-    yf1, gf1, hf1 = f.evaluate_fgh(args=(x0, x1 + d1))
-    yb1, gb1, hb1 = f.evaluate_fgh(args=(x0, x1 - d1))
+    y, g, h = f.evaluate_fgh(args=(value(x0), value(x1)))
+    yf0, gf0, hf0 = f.evaluate_fgh(args=(value(x0 + d0), value(x1)))
+    yb0, gb0, hb0 = f.evaluate_fgh(args=(value(x0 - d0), value(x1)))
+    yf1, gf1, hf1 = f.evaluate_fgh(args=(value(x0), value(x1 + d1)))
+    yb1, gb1, hb1 = f.evaluate_fgh(args=(value(x0), value(x1 - d1)))
     gf = [(yf0 - y)/d0, (yf1 - y)/d1]
     gb = [-(yb0 - y)/d0, -(yb1 - y)/d1]
     hf = [(gf0[0] - g[0])/d0, (gf0[1] - g[1])/d0, (gf1[1] - g[1])/d1]
@@ -299,16 +299,16 @@ class TestHelm(object):
 
         data = read_data(self.pdata, self.mw)
         for i, T in enumerate(data["T"]):
-            p = data["P"][i]
-            h = data["H"][i]
-            s = data["S"][i]
-            u = data["U"][i]
+            p = data["P"][i]*pyunits.Pa
+            h = data["H"][i]*pyunits.J/pyunits.mol
+            s = data["S"][i]*pyunits.J/pyunits.mol/pyunits.K
+            u = data["U"][i]*pyunits.J/pyunits.mol
             if data["phase"][i] == "vapor":
                 x = 1
             else:
                 x = 0
 
-            if p < self.Pmin or p > self.Pmax:
+            if value(p) < self.Pmin or value(p) > self.Pmax:
                 continue
             if T < self.Tmin or T > self.Tmax:
                 continue
@@ -317,11 +317,16 @@ class TestHelm(object):
             print("T = {}, P = {}".format(T, p))
 
             # Test state variable with P in the set, these are pretty reliable
-            assert value(te.s(h=h, p=p)) == pytest.approx(s, rel=0.05)
-            assert value(te.s(u=u, p=p)) == pytest.approx(s, rel=0.05)
-            assert value(te.h(T=T, p=p, x=x)) == pytest.approx(h, rel=0.05)
-            assert value(te.h(s=s, p=p)) == pytest.approx(h, rel=0.05)
-            assert value(te.p(s=s, T=T)) == pytest.approx(p, rel=0.05)
+            assert value(te.s(h=h, p=p)) == pytest.approx(
+                value(s), rel=0.05)
+            assert value(te.s(u=u, p=p)) == pytest.approx(
+                value(s), rel=0.05)
+            assert value(te.h(T=T*pyunits.K, p=p, x=x)) == pytest.approx(
+                value(h), rel=0.05)
+            assert value(te.h(s=s, p=p)) == pytest.approx(
+                value(h), rel=0.05)
+            assert value(te.p(s=s, T=T*pyunits.K)) == pytest.approx(
+                value(p), rel=0.05)
 
             # test the deriviatives that are critical to the thermo expressions
             binary_derivative_test(f=model.func_p_stau, x0=s/mw/1000, x1=Tc/T)
@@ -344,7 +349,8 @@ class TestHelm(object):
         for i, T in enumerate(data["T"]):
             if (data["phase"][i] == "vapor" or
                     data["phase"][i] == "supercritical"):
-                rho = value(te.rho_vap(p=data["P"][i], T=T, x=1))
+                rho = value(te.rho_vap(
+                    p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=1))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_solve_liquid_density(self, model):
@@ -357,7 +363,8 @@ class TestHelm(object):
         for i, T in enumerate(data["T"]):
             if (data["phase"][i] == "liquid" or
                     data["phase"][i] == "supercritical"):
-                rho = value(te.rho_liq(p=data["P"][i], T=T, x=0))
+                rho = value(te.rho_liq(
+                    p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
                 assert rho == pytest.approx(data["rho"][i], rel=1e-2)
 
     def test_solve_sat_density(self, model):
@@ -378,21 +385,25 @@ class TestHelm(object):
             else:
                 tol = 1e-2
                 # test p, x spec
-                rhol = value(te.rho_liq(p=data["P"][i], x=0))
-                rhov = value(te.rho_vap(p=data["P"][i], x=1))
+                rhol = value(
+                    te.rho_liq(p=data["P"][i]*pyunits.Pa, x=0))
+                rhov = value(
+                    te.rho_vap(p=data["P"][i]*pyunits.Pa, x=1))
                 assert rhol == pytest.approx(data["rhol"][i], rel=tol)
                 assert rhov == pytest.approx(data["rhov"][i], rel=tol)
                 # test t, x spec
-                rhol = value(te.rho_liq(T=T, x=0))
-                rhov = value(te.rho_vap(T=T, x=1))
+                rhol = value(te.rho_liq(T=T*pyunits.K, x=0))
+                rhov = value(te.rho_vap(T=T*pyunits.K, x=1))
                 assert rhol == pytest.approx(data["rhol"][i], rel=tol)
                 assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 
             # Ignore the phase equilibrium and use T,P data to calc densities
             if T > 296:
                 tol = 1e-1  # data needs more sig fig
-            rhol = value(te.rho_liq(p=data["P"][i], T=T, x=0))
-            rhov = value(te.rho_vap(p=data["P"][i], T=T, x=1))
+            rhol = value(te.rho_liq(
+                p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=0))
+            rhov = value(te.rho_vap(
+                p=data["P"][i]*pyunits.Pa, T=T*pyunits.K, x=1))
             assert rhol == pytest.approx(data["rhol"][i], rel=tol)
             assert rhov == pytest.approx(data["rhov"][i], rel=tol)
 

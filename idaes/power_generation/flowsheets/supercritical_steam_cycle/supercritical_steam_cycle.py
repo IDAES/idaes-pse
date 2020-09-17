@@ -808,7 +808,8 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     # Put in a rough initial guess for the IP section inlet, since it is
     # disconnected from the HP section for the reheater.
     ip1_pin = 5.35e6
-    ip1_hin = iapws95.htpx(T=866, P=ip1_pin)
+    ip1_hin = pyo.value(iapws95.htpx(
+        T=866*pyo.units.K, P=ip1_pin*pyo.units.Pa))
     ip1_fin = pyo.value(m.fs.turb.inlet_split.inlet.flow_mol[0])
     m.fs.turb.ip_stages[1].inlet.enth_mol[:].value = ip1_hin
     m.fs.turb.ip_stages[1].inlet.flow_mol[:].value = ip1_fin

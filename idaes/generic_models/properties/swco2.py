@@ -249,8 +249,7 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
         self.therm_cond_phase = Expression(
             phlist,
             rule=rule_tc,
-            doc="Thermal conductivity [W/K/m]",
-        )
+            doc="Thermal conductivity [W/K/m]")
 
         # Phase dynamic viscosity
         def rule_mu(b, p):
@@ -259,15 +258,17 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
             Ts = T/251.196
             return 1e-6*(
                 1.00697*sqrt(T)/exp(sum(a[i]*log(Ts)**i for i in a)) +
-                d[1,1]*rho[p] +
-                d[2,1]*rho[p]**2 +
-                d[6,4]*rho[p]**6/Ts**3 +
-                d[8,1]*rho[p]**8 +
-                d[8,2]*rho[p]**8/Ts
+                d[1, 1]*rho[p] +
+                d[2, 1]*rho[p]**2 +
+                d[6, 4]*rho[p]**6/Ts**3 +
+                d[8, 1]*rho[p]**8 +
+                d[8, 2]*rho[p]**8/Ts
             )
 
         self.visc_d_phase = Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic) [Pa*s]"
+            phlist,
+            rule=rule_mu,
+            doc="Viscosity (dynamic) [Pa*s]"
         )
 
         # Phase kinimatic viscosity

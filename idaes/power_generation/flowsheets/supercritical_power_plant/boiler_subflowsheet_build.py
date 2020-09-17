@@ -50,7 +50,7 @@ __author__ = "Miguel Zamarripa"
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, SolverFactory, value, \
-    TransformationFactory
+    TransformationFactory, units as pyunits
 from pyomo.network import Arc
 from idaes.core.util.misc import svg_tag
 # Import IDAES core
@@ -254,7 +254,7 @@ def initialize(m):
 
     # --------- Primary Superheater ------------
     # Steam from water wall
-    hprsh = iapws95.htpx(773.15, 24865516.722)
+    hprsh = value(iapws95.htpx(773.15*pyunits.K, 24865516.722*pyunits.Pa))
     print(hprsh)
     m.fs.PrSH.side_1_inlet.flow_mol[0].fix(24190.26)   # mol/s
     m.fs.PrSH.side_1_inlet.enth_mol[0].fix(hprsh)      # J/mol
@@ -297,7 +297,7 @@ def initialize(m):
 
     #  ----- Finishing Superheater ----------------------
     # Steam from Platen Supeheater
-    hfsh = iapws95.htpx(823.15, 24790249.01)
+    hfsh = value(iapws95.htpx(823.15*pyunits.K, 24790249.01*pyunits.Pa))
     m.fs.FSH.side_1_inlet.flow_mol[0].fix(24194.177)    # mol/s
     m.fs.FSH.side_1_inlet.enth_mol[0].fix(hfsh)         # J/mol
     m.fs.FSH.side_1_inlet.pressure[0].fix(24790249.01)  # Pascals
@@ -379,14 +379,14 @@ def initialize(m):
     m.fs.RH.fcorrection_dp_shell.fix(1.0)
 
     #    Platen Superheater ------------------------------------------
-    hpl = iapws95.htpx(798.15, 24790249.01)
+    hpl = value(iapws95.htpx(798.15*pyunits.K, 24790249.01*pyunits.Pa))
     m.fs.PlSH.inlet[:].flow_mol.fix(24194.177)
     m.fs.PlSH.inlet[:].enth_mol.fix(hpl)
     m.fs.PlSH.inlet[:].pressure.fix(24790249.01)
     m.fs.PlSH.heat_duty[:].fix(5.5e7)
 
     #    Water wall Superheater ------------------------------------------
-    hww = iapws95.htpx(588.15, 2.5449e7)
+    hww = value(iapws95.htpx(588.15*pyunits.K, 2.5449e7*pyunits.Pa))
     m.fs.Water_wall.inlet[:].flow_mol.fix(24194.177)
     m.fs.Water_wall.inlet[:].enth_mol.fix(hww)
     m.fs.Water_wall.inlet[:].pressure.fix(24865516.722)
@@ -428,12 +428,12 @@ def initialize(m):
     m.fs.mix1.PrSH_out.temperature.fix(731.15)
 
     # Attemperator inputs
-    hatt = iapws95.htpx(875.15, 24865516.722)
+    hatt = value(iapws95.htpx(875.15*pyunits.K, 24865516.722*pyunits.Pa))
     m.fs.ATMP1.Steam.flow_mol.fix(24194.177)
     m.fs.ATMP1.Steam.enth_mol.fix(hatt)
     m.fs.ATMP1.Steam.pressure.fix(24865516.722)
     # Fixed SprayWater from FW pump splitter (splitter is needded)
-    hatt2 = iapws95.htpx(563.15, 2.5449e7)
+    hatt2 = value(iapws95.htpx(563.15*pyunits.K, 2.5449e7*pyunits.Pa))
     m.fs.ATMP1.SprayWater_state[:].flow_mol.fix(0.001)
     m.fs.ATMP1.SprayWater_state[:].pressure.fix(1.22e8)
     m.fs.ATMP1.SprayWater_state[:].enth_mol.fix(hatt2)

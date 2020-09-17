@@ -495,7 +495,7 @@ class TestIAPWS(object):
             Tout = cases["Tout"][i]
             Pin = cases["Pin"][i]*1000
             Pout = cases["Pout"][i]*1000
-            hin = iapws95.htpx(T=Tin, P=Pin)
+            hin = iapws95.htpx(T=Tin*units.K, P=Pin*units.Pa)
             W = cases["W"][i]*1000
             Tis = cases["Tisen"][i]
             xout = cases["xout"][i]
@@ -845,7 +845,7 @@ class Test_costing(object):
         Tin = 500  # K
         Pin = 1000000  # Pa
         Pout = 700000  # Pa
-        hin = iapws95.htpx(Tin, Pin)
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
         m.fs.unit.inlet.enth_mol[0].fix(hin)
         m.fs.unit.inlet.pressure[0].fix(Pin)
 

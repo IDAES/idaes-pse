@@ -17,7 +17,8 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.environ import (ConcreteModel, SolverFactory, TransformationFactory,
+                           value, units as pyunits)
 
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.unit_models import SteamValve
@@ -74,7 +75,7 @@ def test_vapor_steady_state_initialize(build_valve_vapor):
     """Initialize a turbine model"""
     m = build_valve_vapor
     # set inlet
-    hin = iapws95.htpx(T=880, P=2.4233e7)
+    hin = value(iapws95.htpx(T=880*pyunits.K, P=2.4233e7*pyunits.Pa))
     # set inlet
     m.fs.valve.inlet.enth_mol[0].value = hin
     m.fs.valve.inlet.flow_mol[0].value = 26000/4.0
