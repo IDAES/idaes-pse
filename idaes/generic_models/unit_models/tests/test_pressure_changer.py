@@ -395,9 +395,8 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_units(self, iapws):
         assert_units_consistent(iapws)
-        # TODO: Add these checks once IAPWS has units
-        # assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, iapws):

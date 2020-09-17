@@ -236,13 +236,12 @@ class TestIAPWS(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks once IAPWS package has units
-        # assert_units_equivalent(iapws.fs.unit.control_volume.heat,
-        #                         pyunits.J/pyunits.s)
-        # assert_units_equivalent(iapws.fs.unit.heat_duty[0],
-        #                         pyunits.J/pyunits.s)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0],
-        #                         pyunits.Pa)
+        assert_units_equivalent(iapws.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(iapws.fs.unit.heat_duty[0],
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0],
+                                pyunits.Pa)
         assert_units_consistent(iapws)
 
     @pytest.mark.unit
