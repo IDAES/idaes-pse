@@ -1,0 +1,4 @@
+[MASTER]
+init-hook="import sys; sys.path.append('.pylint')"
+load-plugins=idaes_transform
+ignore-patterns="test_.*"
