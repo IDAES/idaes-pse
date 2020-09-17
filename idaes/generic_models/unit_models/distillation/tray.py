@@ -150,7 +150,7 @@ see property package for documentation.}"""))
 
         # Create a dict to set up the inlet state blocks
         state_block_args = dict(**self.config.property_package_args)
-        state_block_args["has_phase_equilibrium"] = False
+        state_block_args["has_phase_equilibrium"] = True
         state_block_args["defined_state"] = True
 
         for i in inlet_list:
