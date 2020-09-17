@@ -546,6 +546,20 @@ see property package for documentation.}"""))
                         self.add_component("e_flow_" + port.local_name,
                                            expr)
                         port.add(expr, k)
+                elif "phase" in k:
+                    # when it is flow indexed by phase or indexed by both
+                    # phase and component
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the port
+                    port.add(Reference(var), k)
+                else:
+                    raise PropertyNotSupportedError(
+                        "Unrecognized flow state variable encountered "
+                        "while building ports for the tray. Please follow "
+                        "the naming convention outlined in the documentation "
+                        "for state variables.")
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
@@ -574,7 +588,6 @@ see property package for documentation.}"""))
                                        expr)
                     # add the reference and variable name to the port
                     port.add(expr, k)
-
                 elif "phase" in k:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
