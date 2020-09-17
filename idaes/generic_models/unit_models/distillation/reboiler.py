@@ -477,6 +477,18 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the
                     # distillate port
                     self.vapor_reboil.add(self.e_vap_flow, k)
+                else:
+                    # when it is flow indexed by phase or indexed by
+                    # both phase and component.
+                    var = self.control_volume.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the bottoms port
+                    self.bottoms.add(Reference(var), k)
+
+                    # add the reference and variable name to the
+                    # vapor outlet port
+                    self.vapor_reboil.add(Reference(var), k)
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
