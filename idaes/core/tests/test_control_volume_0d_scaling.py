@@ -87,7 +87,7 @@ def test_base_build():
 
 
 @pytest.mark.unit
-def test_1():  # TODO rename
+def test_all_vars_and_cons_for_static_control_volume():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -116,6 +116,50 @@ def test_1():  # TODO rename
     m.fs.cv.add_momentum_balances(
         balance_type=MomentumBalanceType.pressureTotal,
         has_pressure_change=True)
+
+    iscale.calculate_scaling_factors(m)
+
+    # check that all variables have scaling factors
+    unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    assert len(unscaled_var_list) == 0
+    # check that all constraints have been scaled
+    unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
+    assert len(unscaled_constraint_list) == 0
+
+@pytest.mark.unit
+def test_all_vars_and_cons_for_dynamic_control_volume():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyo.units.s})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "dynamic": True})
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentTotal,
+        has_rate_reactions=True,
+        has_equilibrium_reactions=True,
+        has_phase_equilibrium=True,
+        has_mass_transfer=True)
+
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal,
+        has_heat_of_reaction=True,
+        has_heat_transfer=True,
+        has_work_transfer=True,
+        has_enthalpy_transfer=True)
+
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal,
+        has_pressure_change=True)
+
+    m.discretizer = pyo.TransformationFactory('dae.finite_difference')
+    m.discretizer.apply_to(m, nfe=3, wrt=m.fs.time, scheme="BACKWARD")
 
     iscale.calculate_scaling_factors(m)
 
