@@ -153,7 +153,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
                 4: 4.096266e-4,
             },
             doc="0th order thermal conductivity parameters",
-        )
+            units=pyunits.K*pyunits.m/pyunits.mW)
 
         self.tc_L1 = Param(
             RangeSet(0, 5),
@@ -283,20 +283,13 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
         def rule_tc(b, p):
             L0 = self.config.parameters.tc_L0
             L1 = self.config.parameters.tc_L1
-            return (
-                1e-3
-                * sqrt(1.0 / tau)
-                / sum(L0[i] * tau ** i for i in L0)
-                * exp(
-                    delta[p]
-                    * sum(
-                        (tau - 1) ** i
-                        * sum(L1[i, j] * (delta[p] - 1) ** j
-                              for j in range(0, 6))
-                        for i in range(0, 5)
-                    )
-                )
-            )
+            return pyunits.convert(
+                (sqrt(1.0 / tau) / sum(L0[i] * tau ** i for i in L0) *
+                 exp(delta[p] * sum(
+                     (tau - 1)**i * sum(L1[i, j] * (delta[p] - 1)**j
+                                        for j in range(0, 6))
+                     for i in range(0, 5)))),
+                to_units=pyunits.W/pyunits.K/pyunits.m)
 
         self.therm_cond_phase = Expression(
             phlist, rule=rule_tc, doc="Thermal conductivity [W/K/m]"
@@ -306,20 +299,15 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
         def rule_mu(b, p):
             H0 = self.config.parameters.visc_H0
             H1 = self.config.parameters.visc_H1
+            # The units of this are really weird, so I am just going to append
+            # units to the expression rather than give units to the parameters
             return (
-                1e-4
-                * sqrt(1.0 / tau)
-                / sum(H0[i] * tau ** i for i in H0)
-                * exp(
-                    delta[p]
-                    * sum(
-                        (tau - 1) ** i
-                        * sum(H1[i, j] * (delta[p] - 1) ** j
-                              for j in range(0, 7))
-                        for i in range(0, 6)
-                    )
-                )
-            )
+                1e-4*sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
+                exp(delta[p] * sum((tau - 1)**i *
+                                   sum(H1[i, j] * (delta[p] - 1)**j
+                                       for j in range(0, 7))
+                                   for i in range(0, 6))) *
+                pyunits.Pa*pyunits.s)
 
         self.visc_d_phase = Expression(
             phlist, rule=rule_mu, doc="Viscosity (dynamic) [Pa*s]"

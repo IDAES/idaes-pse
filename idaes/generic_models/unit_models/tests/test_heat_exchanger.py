@@ -178,6 +178,8 @@ def test_costing():
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.cp_cost_eq)
 
+    assert_units_consistent(m.fs.unit)
+
     results = solver.solve(m)
 
     # Check for optimal solution

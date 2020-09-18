@@ -274,6 +274,10 @@ class PropertyClassMetadata(object):
                               self.default_units["time"]**-1),
                 "flow_mole": (self.default_units["amount"] *
                               self.default_units["time"]**-1),
+                "velocity": (self.default_units["length"] *
+                             self.default_units["time"]**-1),
+                "acceleration": (self.default_units["length"] *
+                                 self.default_units["time"]**-2),
                 "density_mass": (self.default_units["mass"] *
                                  self.default_units["length"]**-3),
                 "density_mole": (self.default_units["amount"] *
@@ -315,6 +319,11 @@ class PropertyClassMetadata(object):
                                        self.default_units["amount"]**-1),
                 "heat_transfer_coefficient":
                     (self.default_units["mass"] *
+                     self.default_units["time"]**-3 *
+                     self.default_units["temperature"]**-1),
+                "thermal_conductivity":
+                    (self.default_units["mass"] *
+                     self.default_units["length"] *
                      self.default_units["time"]**-3 *
                      self.default_units["temperature"]**-1),
                 "gas_constant": (self.default_units["mass"] *

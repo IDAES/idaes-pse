@@ -151,7 +151,10 @@ of shell is a saturated liquid.""",
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
-        self.enth_sub = Var(self.flowsheet().config.time, initialize=0)
+        units_meta = self.shell.config.property_package.get_metadata()
+        self.enth_sub = Var(self.flowsheet().config.time,
+                            initialize=0,
+                            units=units_meta.get_derived_units("energy_mole"))
         self.enth_sub.fix()
 
         @self.Constraint(

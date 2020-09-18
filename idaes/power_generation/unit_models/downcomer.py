@@ -20,8 +20,9 @@ Main assumptions:
 Created August 27, 2020
 """
 # Import Pyomo libraries
+from pyomo.environ import SolverFactory, value, Var, Reference, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from idaes.core.util.model_statistics import degrees_of_freedom
+
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
@@ -34,7 +35,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, value, Var, Reference
+from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -193,6 +194,8 @@ see property package for documentation.}"""))
         """
         Define the geometry of the unit as necessary
         """
+        units_meta = self.config.property_package.get_metadata()
+
         # Number of downcomers
         self.number_downcomers = Var(
                 initialize=4,
@@ -200,11 +203,13 @@ see property package for documentation.}"""))
         # Height of downcomer
         self.height = Var(
                 initialize=10.0,
-                doc="Height of downcomer")
+                doc="Height of downcomer",
+                units=units_meta.get_derived_units("length"))
         # Inside diameter of downcomer
         self.diameter = Var(
                 initialize=0.6,
-                doc="Inside diameter of downcomer")
+                doc="Inside diameter of downcomer",
+                units=units_meta.get_derived_units("length"))
         # Volume constraint
         @self.Constraint(self.flowsheet().config.time,
                          doc="Downcomer volume of all pipes")
@@ -216,12 +221,15 @@ see property package for documentation.}"""))
         """
         Define constraints which describe the behaviour of the unit model.
         """
+        units_meta = self.config.property_package.get_metadata()
+
         # Add performance variables
         # Velocity of fluid inside downcomer pipe
         self.velocity = Var(
                 self.flowsheet().config.time,
                 initialize=10.0,
-                doc='Liquid water velocity inside downcomer')
+                doc='Liquid water velocity inside downcomer',
+                units=units_meta.get_derived_units("velocity"))
 
         # Reynolds number
         self.N_Re = Var(
@@ -239,17 +247,19 @@ see property package for documentation.}"""))
         self.deltaP_friction = Var(
                 self.flowsheet().config.time,
                 initialize=-1.0,
-                doc='Pressure change due to friction')
+                doc='Pressure change due to friction',
+                units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
                 self.flowsheet().config.time,
                 initialize=100.0,
-                doc='Pressure change due to gravity')
+                doc='Pressure change due to gravity',
+                units=units_meta.get_derived_units("pressure"))
 
         # Equation for calculating velocity
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Vecolity of fluid inside downcomer")
+                         doc="Velocity of fluid inside downcomer")
         def velocity_eqn(b, t):
             return b.velocity[t]*0.25*const.pi*b.diameter**2 \
                 * b.number_downcomers \
@@ -280,12 +290,14 @@ see property package for documentation.}"""))
                 b.velocity[t]**2 * b.friction_factor_darcy[t] * b.height
 
         # Pressure change equation for gravity, density*gravity*height
+        g_units = units_meta.get_derived_units("acceleration")
         @self.Constraint(self.flowsheet().config.time,
                          doc="Pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return b.deltaP_gravity[t] == \
                 b.control_volume.properties_in[t].dens_mass_phase["Liq"] \
-                * const.acceleration_gravity * b.height
+                * pyunits.convert(const.acceleration_gravity,
+                                  to_units=g_units) * b.height
 
         # Total pressure change equation
         @self.Constraint(self.flowsheet().config.time, doc="Pressure drop")

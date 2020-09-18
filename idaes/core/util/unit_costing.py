@@ -96,7 +96,7 @@ def hx_costing(self, hx_type='U-tube',
 
     self.hx_os = Param(mutable=True, initialize=1.1,
                        doc='hx oversize factor 1.1 to 1.5',
-                       units=pyunits.ft**2)
+                       units=pyunits.ft**-2)
 
     # select length correction factor
     c_fl = {'8ft': 1.25, '12ft': 1.12, '16ft': 1.05, '20ft': 1.00}
@@ -321,7 +321,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             # H = pump head in feet of flowing (pressure rise/liquid density)
             # build Size Factor equation
             def p_s_factor_rule(self):
-                return self.size_factor == Q_gpm*(self.pump_head**0.5)
+                return self.size_factor == (
+                    Q_gpm/pyunits.get_units(Q_gpm) * (self.pump_head)**0.5)
             self.s_factor_eq = Constraint(rule=p_s_factor_rule)
 
             # Base cost and Purchase cost for centrifugal pump

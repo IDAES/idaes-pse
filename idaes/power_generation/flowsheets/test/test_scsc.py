@@ -18,6 +18,8 @@ __author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle import main
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
@@ -29,41 +31,47 @@ prop_available = iapws95.iapws95_available()
 
 
 @pytest.fixture(scope="module")
-def initialize_model():
-    return main()
+def model():
+    m, solver = main()
+    m.solver = solver
+
+    return m
 
 
 def gross_power_mw(model):
     # pyo.value(m.fs.turb.power[0]) is the power consumed in Watts
     return -pyo.value(model.fs.turb.power[0])/1e6
 
+
 @pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_init(initialize_model):
-    m, solver = initialize_model
+def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom
-    assert(degrees_of_freedom(m)==0)
-    for c in activated_equalities_generator(m):
+    assert(degrees_of_freedom(model) == 0)
+    for c in activated_equalities_generator(model):
         assert(abs(c.body() - c.lower) < 5e-4)
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_init_value(initialize_model):
-    m, solver = initialize_model
-    assert gross_power_mw(m) == pytest.approx(633.56, abs=1e-2)
+def test_unit_consistency(model):
+    assert_units_consistent(model)
 
 
 @pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_valve_change(initialize_model):
-    m, solver = initialize_model
-    m.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
-    solver.solve(m, tee=True)
-    assert gross_power_mw(m) == pytest.approx(592.87, abs=1e-2)
+def test_init_value(model):
+    assert gross_power_mw(model) == pytest.approx(633.56, abs=1e-2)
+
+
+@pytest.mark.integration
+@pytest.mark.solver
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_valve_change(model):
+    model.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
+    model.solver.solve(model, tee=True)
+    assert gross_power_mw(model) == pytest.approx(592.87, abs=1e-2)

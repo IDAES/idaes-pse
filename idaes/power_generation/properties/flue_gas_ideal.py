@@ -601,9 +601,6 @@ class FlueGasStateBlockData(StateBlockData):
             self.del_component(self.entropy_correlation)
 
     def _therm_cond(self):
-        # TODO: Units in these correlations appear to be inconsistent
-        # Someone needs to look through these carefully, possibly refering
-        # to the original source
         comps = self.params.component_list
         self.therm_cond_comp = Var(
             comps,
@@ -631,7 +628,8 @@ class FlueGasStateBlockData(StateBlockData):
                 'CO2': 3.763,
                 'H2O': 2.605,
                 'SO2': 4.29},
-            doc='collision diameter in Angstrom (10e-10 m)'
+            doc='collision diameter in Angstrom (10e-10 m)',
+            units=pyunits.angstrom
         )
         self.ep_Kappa = Param(
             comps,
@@ -643,7 +641,8 @@ class FlueGasStateBlockData(StateBlockData):
                 'H2O': 572.4,
                 'SO2': 252.0},
             doc="characteristic energy of interaction between pair of "
-                "molecules, K = Boltzmann constant in Kelvin")
+                "molecules, K = Boltzmann constant in Kelvin",
+            units=pyunits.K)
         try:
             def rule_therm_cond(b, c):
                 t = pyunits.convert(b.temperature, to_units=pyunits.kK)
@@ -744,7 +743,7 @@ class FlueGasStateBlockData(StateBlockData):
                     rule=rule_enthalpy_flow_terms
                 )
             except AttributeError:
-                self.del_component(enthalpy_flow_terms)
+                self.del_component(self.enthalpy_flow_terms)
         return self.enthalpy_flow_terms[p]
 
     def get_material_density_terms(self, p, j):
@@ -761,7 +760,7 @@ class FlueGasStateBlockData(StateBlockData):
                     rule=rule_energy_density_terms
                 )
             except AttributeError:
-                self.del_component(energy_density_terms)
+                self.del_component(self.energy_density_terms)
         return self.energy_density_terms[p]
 
     def define_state_vars(self):
@@ -778,9 +777,9 @@ class FlueGasStateBlockData(StateBlockData):
         # Check temperature bounds
         for v in self.compoent_object_data(Var, descend_into=True):
             if value(v) < v.lb:
-                _log_error(f"{v} is below lower bound in {self.name}")
+                _log.error(f"{v} is below lower bound in {self.name}")
             if value(v) > v.ub:
-                _log_error(f"{v} is above upper bound in {self.name}")
+                _log.error(f"{v} is above upper bound in {self.name}")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

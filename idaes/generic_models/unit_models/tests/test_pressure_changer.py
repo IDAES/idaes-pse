@@ -796,6 +796,8 @@ class Test_costing(object):
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.total_cost_eq)
 
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(70141.395, 1e-5)
@@ -825,6 +827,9 @@ class Test_costing(object):
         calculate_variable_from_constraint(
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
+
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
             pytest.approx(334540.7, 1e-5)
@@ -859,6 +864,9 @@ class Test_costing(object):
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
         assert degrees_of_freedom(m) == 0
+
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
             pytest.approx(213129.6059, 1e-5)

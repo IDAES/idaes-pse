@@ -23,6 +23,9 @@ main equations:
 
 """
 # Import Pyomo libraries
+from pyomo.environ import SolverFactory, value, Var, Param, \
+    asin, cos, sqrt, log10, PositiveReals, Reference, units as pyunits
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.expr.current import Expr_if
 
@@ -41,9 +44,6 @@ import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, value, Var, Param, \
-    asin, cos, sqrt, log10, PositiveReals, Reference
-from pyomo.dae import DerivativeVar
 from idaes.core.util.constants import Constants as const
 
 
@@ -224,10 +224,12 @@ constructed,
         """
         Define the geometry of the unit as necessary, and link to holdup volume
         """
+        units_meta = self.config.property_package.get_metadata()
         # Total projected wall area of waterwall section from fire-side model
         self.projected_area = Var(
                 initialize=10,
-                doc="Total projected wall area of waterwall section")
+                doc="Total projected wall area of waterwall section",
+                units=units_meta.get_derived_units("area"))
         # Number of waterwall tubes
         self.number_tubes = Var(
                 initialize=4,
@@ -235,16 +237,19 @@ constructed,
         # Height of waterwall section, given by boiler model
         self.height = Var(
                 initialize=5.0,
-                doc="Height of waterwall section")
+                doc="Height of waterwall section",
+                units=units_meta.get_derived_units("length"))
         # Length of waterwall tubes calculated based on given total area
         # and perimeter of waterwall
         self.tube_length = Var(
                 initialize=5.0,
-                doc="length waterwall tube")
+                doc="length waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Inner diameter of waterwall tubes
         self.tube_diameter = Var(
                 initialize=0.05,
-                doc="Inside diameter of waterwall tube")
+                doc="Inside diameter of waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Inside radius of waterwall tube
         @self.Expression(doc="Inside radius of waterwall tube")
         def radius_inner(b):
@@ -256,7 +261,8 @@ constructed,
         # Tube thickness
         self.tube_thickness = Var(
                 initialize=0.005,
-                doc="Thickness of waterwall tube")
+                doc="Thickness of waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Outside radius of waterwall tube
         @self.Expression(doc="Outside radius of waterwall tube")
         def radius_outer(b):
@@ -264,7 +270,8 @@ constructed,
         # Thickness of waterwall fin
         self.fin_thickness = Var(
                 initialize=0.004,
-                doc="Thickness of waterwall Fin")
+                doc="Thickness of waterwall Fin",
+                units=units_meta.get_derived_units("length"))
         # Half of the waterwall fin thickness
         @self.Expression(doc="Half of the waterwall fin thickness")
         def fin_thickness_half(b):
@@ -272,13 +279,15 @@ constructed,
         # Length of waterwall fin
         self.fin_length = Var(
                 initialize=0.005,
-                doc="Length of waterwall fin")
+                doc="Length of waterwall fin",
+                units=units_meta.get_derived_units("length"))
         # Thickness of slag layer
         self.slag_thickness = Var(
                 self.flowsheet().config.time,
                 bounds=(0.0001, 0.009),
                 initialize=0.001,
-                doc="Thickness of slag layer")
+                doc="Thickness of slag layer",
+                units=units_meta.get_derived_units("length"))
 
         @self.Expression(doc="Pitch of two neighboring tubes")
         def pitch(b):
@@ -341,6 +350,7 @@ constructed,
         """
         Define constraints which describe the behaviour of the unit model.
         """
+        units_meta = self.config.property_package.get_metadata()
         self.fcorrection_dp = Var(
                 initialize=1.2,
                 within=PositiveReals,
@@ -350,12 +360,14 @@ constructed,
         self.therm_cond_metal = Param(
                 initialize=43.0,
                 mutable=True,
-                doc='Thermal conductivity of tube metal')
+                doc='Thermal conductivity of tube metal',
+                units=units_meta.get_derived_units("thermal_conductivity"))
         # Thermal conductivity of slag
         self.therm_cond_slag = Param(
                 initialize=1.3,
                 mutable=True,
-                doc='Thermal conductivity of slag')
+                doc='Thermal conductivity of slag',
+                units=units_meta.get_derived_units("thermal_conductivity"))
         # Heat capacity of metal
         self.cp_metal = Param(
                 initialize=500.0,
