@@ -1665,6 +1665,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     c, iscale.get_scaling_factor(
                         self.material_holdup[i], default=1, warning=True))
 
+        if hasattr(self, "material_accumulation_disc_eq"):
+            for (t, p, j), c in self.material_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.material_accumulation[t, p, j], default=1, warning=True))
+
         if hasattr(self, "element_balances"):
             for (t, e), c in self.element_balances.items():
                 sf = iscale.min_scaling_factor([self.elemental_flow_in[t, p, e]
@@ -1686,6 +1692,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         for p in self.config.property_package.phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
+        if hasattr(self, "sum_of_phase_fractions"):
+            for t, c in self.sum_of_phase_fractions.items():
+                sf = 1  # sum of phase fraction adds to 1
+                iscale.constraint_scaling_transform(c, sf)
+
         # Energy Balance Constraints
         if hasattr(self, "enthalpy_balances"):
             for t, c in self.enthalpy_balances.items():
@@ -1699,6 +1710,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(
                         self.energy_holdup[i], default=1, warning=True))
+
+        if hasattr(self, "energy_accumulation_disc_eq"):
+            for (t, p), c in self.energy_accumulation_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.energy_accumulation[t, p], default=1, warning=True))
 
         # Momentum Balance Constraints
         if hasattr(self, "pressure_balance"):
