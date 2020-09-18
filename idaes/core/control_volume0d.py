@@ -1038,7 +1038,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             self.heat = Var(self.flowsheet().config.time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Heat transfered into control volume",
+                            doc="Heat transferred into control volume",
                             units=units('power'))
 
         # Work transfer
@@ -1046,7 +1046,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             self.work = Var(self.flowsheet().config.time,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Work transfered into control volume",
+                            doc="Work transferred into control volume",
                             units=units('power'))
 
         # Enthalpy transfer
@@ -1055,7 +1055,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().config.time,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transfered into control volume due to "
+                doc="Enthalpy transferred into control volume due to "
                     "mass transfer",
                 units=units('power'))
 
@@ -1637,6 +1637,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, r), v in self.equilibrium_reaction_extent.items():
                 # extent of reaction typically between 0.1 and 1
                 iscale.set_scaling_factor(v, 10)
+
+        if hasattr(self, "phase_equilibrium_generation"):
+            for (t, e), v in self.phase_equilibrium_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties_in[t].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
 
         # Material Balance Constraints
         if hasattr(self, "material_balances"):
