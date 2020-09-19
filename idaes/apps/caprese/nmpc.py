@@ -1436,7 +1436,10 @@ class NMPCSim(DynamicBase):
         # Should only do this if controller is initialized
         # from a prior solve.
         if not self.controller_solved:
-            raise RuntimeError
+            raise RuntimeError(
+                    'Cannot initialize from previous if the control '
+                    'problem has not previously been solved.'
+                    )
 
         config = self.config(kwargs)
         sample_time = config.sample_time
