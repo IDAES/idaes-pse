@@ -505,7 +505,9 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
-            raise ValueError
+            raise ValueError(
+                'Failed to solve for consisten initial conditions.'
+                )
 
         deactivated[time.first()] = deactivate_model_at(model, time, 
                 time.first(),
@@ -592,7 +594,9 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
-            raise ValueError
+            raise ValueError(
+                'Failed to solve for finite element %s' %i
+                )
 
         for t in fe:
             for comp in deactivated[t]:
