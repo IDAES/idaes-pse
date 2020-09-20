@@ -95,7 +95,7 @@ def test_init_extraignored(magics_impl):
 
 @pytest.mark.unit
 def test_init_required(magics_impl):
-    pytest.raises(DMFMagicError, magics_impl.dmf_info)
+    pytest.raises(DMFMagicError, magics_impl.dmf_status)
     pytest.raises(DMFMagicError, magics_impl.dmf_help, "anything")
 
 
@@ -150,26 +150,26 @@ def test_dmf_list(magics_impl):
 
 
 @pytest.mark.unit
-def test_dmf_info_initrequired(magics_impl):
+def test_dmf_status_initrequired(magics_impl):
     # should fail with no DMF
-    pytest.raises(DMFMagicError, magics_impl.dmf_info)
+    pytest.raises(DMFMagicError, magics_impl.dmf_status)
 
 
 @pytest.mark.unit
-def test_dmf_info_topics(magics_impl):
-    tmp_dir = scratch_path / "dmf_info_topics"
+def test_dmf_status_topics(magics_impl):
+    tmp_dir = scratch_path / "dmf_status_topics"
     # should fail with DMF, and topics (not implemented)
     magics_impl.dmf_init(str(tmp_dir), "create")
-    pytest.raises(DMFMagicError, magics_impl.dmf_info, "uptime")
+    pytest.raises(DMFMagicError, magics_impl.dmf_status, "uptime")
     # should succeed with DMF, and no topics
-    magics_impl.dmf_info()
+    magics_impl.dmf_status()
 
 
 @pytest.mark.unit
-def test_dmf_info_extra_meta(magics_impl):
-    tmp_dir = scratch_path / "dmf_info_extra_meta"
+def test_dmf_status_extra_meta(magics_impl):
+    tmp_dir = scratch_path / "dmf_status_extra_meta"
     tmp_dir.mkdir()
-    # by filling in the metadata, this will test the dmf_info code
+    # by filling in the metadata, this will test the dmf_status code
     # that prints out list and dict data structures
     (tmp_dir / DMF.WORKSPACE_CONFIG).open("w").write(
         f"""
@@ -194,7 +194,7 @@ logging:
         """
     )
     magics_impl.dmf_init(str(tmp_dir))
-    magics_impl.dmf_info()
+    magics_impl.dmf_status()
 
 
 @pytest.mark.unit

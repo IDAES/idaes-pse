@@ -19,14 +19,14 @@ three types of components:
 
 The FlowsheetBlock is also where the
 :ref:`time domain<user_guide/components/flowsheet/time_domain:Time Domain>`
-is implemented. While a time domain is important to support dynamic modeling,
-this time domain exists even for steady state models (single point in time).
+is implemented. While the time domain is essential for dynamic modeling,
+the time domain exists even for steady state models (single point in time).
 
-Flowsheet models may also contain additional constraints relating to how different Unit models 
+Flowsheet models may also contain additional constraints relating to how different unit models 
 behave and interact, such as control and operational constraints. Generally speaking, if a 
 constraint is purely internal to a single unit, and does not depend on information from other 
 units in the flowsheet, then the constraint should be placed inside the relevant unit model. 
-Otherwise, the constraint should be placed at the Flowsheet level.
+Otherwise, the constraint should be placed at the flowsheet level.
 
 
 

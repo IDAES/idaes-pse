@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -19,8 +19,7 @@ from pyomo.core.base.block import Block
 from pyomo.core.base.var import Var
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import flatten_dae_components
-from pyomo.core.kernel.component_set import ComponentSet
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentSet, ComponentMap
 from idaes.apps.caprese.common import config as dyn_config
 from idaes.apps.caprese.common.config import (
         VariableCategory,

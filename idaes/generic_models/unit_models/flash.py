@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, value, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
@@ -31,11 +31,10 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.generic_models.unit_models.separator import (Separator,
-                                         SplittingType,
-                                         EnergySplittingType)
+                                                        SplittingType,
+                                                        EnergySplittingType)
 
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -236,11 +235,11 @@ see property package for documentation.}"""))
 
         # Add references
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                self.config.energy_balance_type != EnergyBalanceType.none):
+            self.heat_duty = Reference(self.control_volume.heat[:])
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

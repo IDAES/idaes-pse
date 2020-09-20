@@ -20,7 +20,7 @@ from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
-    get_bounds_from_config
+    get_bounds_from_config, get_method, GenericPropertyPackageError
 
 
 def set_metadata(b):
@@ -34,30 +34,21 @@ def define_state(b):
     # TODO: should have some checking to make sure developers implement this properly
     b.always_flash = True
 
-    base_units = b.params.get_metadata().default_units
+    units = b.params.get_metadata().derived_units
     # Get bounds and initial values from config args
     f_bounds, f_init = get_bounds_from_config(
-        b, "flow_mol", base_units["amount"]/base_units["time"])
+        b, "flow_mol", units["flow_mole"])
     t_bounds, t_init = get_bounds_from_config(
-        b, "temperature", base_units["temperature"])
+        b, "temperature", units["temperature"])
     p_bounds, p_init = get_bounds_from_config(
-        b,
-        "pressure",
-        base_units["mass"]/base_units["length"]/base_units["time"]**2)
-
-    # Get units metadata
-    units_meta = b.params.get_metadata().default_units
-    flow_units = units_meta["amount"]/units_meta["time"]
-    press_units = (units_meta["mass"] *
-                   units_meta["length"]**-1 *
-                   units_meta["time"]**-2)
+        b, "pressure", units["pressure"])
 
     # Add state variables
     b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
                      bounds=f_bounds,
                      doc=' Total molar flowrate',
-                     units=flow_units)
+                     units=units["flow_mole"])
     b.mole_frac_comp = Var(b.params.component_list,
                            bounds=(0, None),
                            initialize=1 / len(b.params.component_list),
@@ -67,12 +58,12 @@ def define_state(b):
                      domain=NonNegativeReals,
                      bounds=p_bounds,
                      doc='State pressure',
-                     units=press_units)
+                     units=units["pressure"])
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
                         doc='State temperature',
-                        units=units_meta["temperature"])
+                        units=units["temperature"])
 
     # Add supporting variables
     if f_init is None:
@@ -85,7 +76,7 @@ def define_state(b):
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates',
-                           units=flow_units)
+                           units=units["flow_mole"])
 
     b.mole_frac_phase_comp = Var(
         b.params._phase_component_set,
@@ -293,9 +284,30 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b.mole_frac_comp[j].value
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
+                # Thanks to Rahul Gandhi for the method
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
+
+                try:
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
+
+                            b.mole_frac_phase_comp["Liq", j].value = value(
+                                b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
             else:
-                # Two-phase
-                # TODO : Try to find some better guesses than default
+                # Two-phase, but with non-vaporizables and/or non-condensables
                 pass
 
         elif pobj.is_vapor_phase():
@@ -342,9 +354,31 @@ def state_initialization(b):
                     if (p, j) in b.params._phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b._mole_frac_tbub[pp, j].value
+            elif tbub is not None and tdew is not None:
+                # Two-phase with bounds two-phase region
+                # Thanks to Rahul Gandhi for the method
+                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
+
+                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
+
+                try:
+                    for p2, j in b.params._phase_component_set:
+                        if p2 == p:
+                            psat_j = value(get_method(
+                                b, "pressure_sat_comp", j)(
+                                    b,
+                                    b.params.get_component(j),
+                                    b.temperature))
+                            kfact = value(psat_j / b.pressure)
+
+                            b.mole_frac_phase_comp["Vap", j].value = value(
+                                b.mole_frac_comp[j] /
+                                (1+vapRatio*(kfact-1))*kfact)
+                except GenericPropertyPackageError:
+                    # No method for calculating Psat, use default values
+                    pass
             else:
-                # Two-phase
-                # TODO : Try to find some better guesses than default
+                # Two-phase, but with non-vaporizables and/or non-condensables
                 pass
 
 

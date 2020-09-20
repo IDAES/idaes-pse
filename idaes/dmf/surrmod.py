@@ -21,9 +21,9 @@ import numpy as np
 from pandas import DataFrame
 # package
 from idaes.dmf import resource, propdata
-# from idaes.dmf.experiment import Experiment
-# alamo
+from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
+# alamo
 from idaes.surrogate import alamopy
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
@@ -245,7 +245,7 @@ class SurrogateModel(object):
                           'error_type': 'absolute',
                           'type': 'property'})
         # create resource
-        r = resource.Resource(type_=resource.TY_PROPERTY)
+        r = resource.Resource(type_=resource.ResourceTypes.property)
         r.data = {'data': pdata,
                   'meta': metadata.as_dict() if metadata else {}}
         r.v['aliases'].append(dtype)
@@ -253,10 +253,10 @@ class SurrogateModel(object):
         # add resource to experiment
         self._exp.add(r)
         # add link between resource and the surrogate-model resource
-        self._exp.link(r, resource.PR_USES, self._rsrc)
+        self._exp.link(r, Predicates.uses, self._rsrc)
 
     def _create_resource(self):
-        r = resource.Resource(type_=resource.TY_SURRMOD)
+        r = resource.Resource(type_=resource.ResourceTypes.surrogate_model)
         r.v['desc'] = 'SurrogateModel'
         r.data = {self.PARAM_DATA_KEY: self._kwargs}
         return r

@@ -21,7 +21,7 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            TransformationFactory, TerminationCondition,
                            Reference)
 from pyomo.network import Arc
-from pyomo.kernel import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae.flatten import flatten_dae_components
 
@@ -256,6 +256,12 @@ def test_get_violated_bounds_at_time():
     violated_set = ComponentSet(violated)
     assert m.v[2,'a'] in violated_set
     assert m.v[2,'b'] in violated_set
+#    scalar_vars, dae_vars = flatten_dae_components(mod.fs, time, ctype=Var)
+#    diff_vars = [Reference(mod.fs.cstr.control_volume.energy_holdup[:, 'aq']),
+#                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'S']),
+#                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'E']),
+#                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'C']),
+#                 Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'P'])]
 
 
 @pytest.mark.unit

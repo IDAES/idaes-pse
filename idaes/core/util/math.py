@@ -16,7 +16,7 @@ This module contains utility functions for mathematical operators of use in
 equation oriented models.
 """
 
-from pyomo.environ import Param
+from pyomo.environ import Param, log, sqrt
 
 __author__ = "Andrew Lee"
 
@@ -121,3 +121,32 @@ def smooth_min(a, b, eps=1e-4):
     """
     expr = smooth_minmax(a, b, eps, sense='min')
     return expr
+
+def safe_sqrt(a, eps=1e-4):
+    """Returns the square root of max(a, 0) using the smooth_max expression.
+    This can be used to avoid transient evaluation errors when changing a model
+    from one state to another.  This can be used when a at the solution is not
+    expected to be near 0.
+
+    Args:
+        a: Pyomo expression
+        eps: epsilon parameter for smooth max
+
+    Returns:
+        approximatly sqrt(max(a, 0))
+    """
+    return sqrt(smooth_max(a, 0, eps))
+
+def safe_log(a, eps=1e-4):
+    """Returns the log of max(a, eps) using the smooth_max expression.
+    This can be used to avoid transient evaluation errors when changing a model
+    from one state to another.  This can be used when at the solution, a >> eps. 
+
+    Args:
+        a: Pyomo expression
+        eps: epsilon parameter for smooth max
+
+    Returns:
+        approximatly log(max(a, eps))
+    """
+    return log(smooth_max(a, eps, eps=eps))

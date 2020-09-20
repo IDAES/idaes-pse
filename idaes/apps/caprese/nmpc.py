@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -30,7 +30,7 @@ from pyomo.environ import (
         Suffix,
         )
 from pyomo.core.base.range import remainder
-from pyomo.kernel import ComponentMap
+from pyomo.common.collections import ComponentMap
 from pyomo.dae.initialization import (
         solve_consistent_initial_conditions,
         get_inconsistent_initial_conditions,
@@ -1628,7 +1628,10 @@ class NMPCSim(DynamicBase):
         # Should only do this if controller is initialized
         # from a prior solve.
         if not self.controller_solved:
-            raise RuntimeError
+            raise RuntimeError(
+                    'Cannot initialize from previous if the control '
+                    'problem has not previously been solved.'
+                    )
 
         config = self.config(kwargs)
         sample_time = config.sample_time

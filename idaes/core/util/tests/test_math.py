@@ -17,7 +17,7 @@ Tests for math util methods.
 import pytest
 from pyomo.environ import ConcreteModel, Param, Var, value
 from idaes.core.util.math import (smooth_abs, smooth_minmax,
-                                  smooth_min, smooth_max)
+                                  smooth_min, smooth_max, safe_sqrt, safe_log)
 
 __author__ = "Andrew Lee"
 
@@ -176,3 +176,21 @@ def test_smooth_min(simple_model):
     assert value(smooth_min(simple_model.a,
                             simple_model.b,
                             simple_model.e)) == pytest.approx(-4.0, abs=1e-4)
+
+@pytest.mark.unit
+def test_smooth_min(simple_model):
+    # Test that smooth_min gives correct values
+    assert safe_sqrt(4) == pytest.approx(2.0, abs=1e-4)
+    assert safe_sqrt(0, eps=1e-6) == pytest.approx(0.0, abs=1e-3)
+    assert safe_sqrt(-4) == pytest.approx(0.0, abs=1e-4)
+    assert value(safe_sqrt(simple_model.a, simple_model.e)) == \
+        pytest.approx(2.0, abs=1e-4)
+
+@pytest.mark.unit
+def test_smooth_min(simple_model):
+    # Test that smooth_min gives correct values
+    assert safe_log(4) == pytest.approx(1.386294, abs=1e-4)
+    assert safe_log(0) < -5
+    assert safe_log(-4) < -5
+    assert value(safe_log(simple_model.a, simple_model.e)) == \
+        pytest.approx(1.386294, abs=1e-4)

@@ -27,8 +27,11 @@ export class Paper {
             cursor: 'grab'
         });
 
+        // We need to save this to a variable so that we can access it later
         self = this;
 
+        // The container of the paperscroller needs to be a fixed size or the paperScroller
+        // will explode in the y direction when you drag an unit model off of the paper
         $('#idaes-canvas').css({ width: 800, height: 800 });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 

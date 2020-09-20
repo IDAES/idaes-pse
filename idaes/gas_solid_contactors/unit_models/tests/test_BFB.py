@@ -148,6 +148,7 @@ class TestIronOC(object):
         m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
 
         m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
+        m.fs.unit.solid_inlet.particle_porosity[0].fix(0.27)  # (-)
         m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
         m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
@@ -166,8 +167,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_inlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_inlet")
-        assert len(iron_oc.fs.unit.solid_inlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_inlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_inlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_inlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.temperature, Var)
 
@@ -179,8 +181,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.gas_outlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_outlet")
-        assert len(iron_oc.fs.unit.solid_outlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_outlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_outlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_outlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
@@ -207,9 +210,9 @@ class TestIronOC(object):
         assert isinstance(iron_oc.fs.unit.solid_emulsion_heat_transfer,
                           Constraint)
 
-        assert number_variables(iron_oc) == 1412
-        assert number_total_constraints(iron_oc) == 1371
-        assert number_unused_variables(iron_oc) == 15
+        assert number_variables(iron_oc) == 1424
+        assert number_total_constraints(iron_oc) == 1382
+        assert number_unused_variables(iron_oc) == 16
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -245,21 +248,21 @@ class TestIronOC(object):
     def test_solution(self, iron_oc):
         assert (pytest.approx(0.14, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.252, abs=1e-2) ==
+        assert (pytest.approx(1.052, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.015, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.094, abs=1e-2) ==
+        assert (pytest.approx(1.04, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 1].value)
         assert (pytest.approx(0.375, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.541, abs=1e-2) ==
+        assert (pytest.approx(3.290, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 1].value)
         assert (pytest.approx(0.267, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 0].value)
-        assert (pytest.approx(0.342, abs=1e-2) ==
+        assert (pytest.approx(0.307, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 1].value)
-        assert (pytest.approx(1.048, abs=1e-2) ==
+        assert (pytest.approx(1.24, abs=1e-2) ==
                 iron_oc.fs.unit.gas_outlet.pressure[0].value)
         # Check that pressure drop occurs across the bed
         assert value(
@@ -354,6 +357,26 @@ class TestIronOC_EnergyBalanceType(object):
                          "reaction_package": m.fs.hetero_reactions
                          }})
 
+        # # Fix geometry variables
+        m.fs.unit.number_orifice.fix(2500)  # [-]
+        m.fs.unit.bed_diameter.fix(6.5)  # m
+        m.fs.unit.bed_height.fix(5)  # m
+
+        # # Fix inlet port variables for gas and solid
+        m.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
+        m.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
+        m.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
+        m.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
+
+        m.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/
+        m.fs.unit.solid_inlet.particle_porosity.fix(0.27)  # (-)
+        m.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
+        m.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
+
         return m
 
     @pytest.mark.build
@@ -367,8 +390,9 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.gas_inlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_inlet")
-        assert len(iron_oc.fs.unit.solid_inlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_inlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_inlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_inlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_inlet.temperature, Var)
 
@@ -380,8 +404,9 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.gas_outlet.pressure, Var)
 
         assert hasattr(iron_oc.fs.unit, "solid_outlet")
-        assert len(iron_oc.fs.unit.solid_outlet.vars) == 3
+        assert len(iron_oc.fs.unit.solid_outlet.vars) == 4
         assert isinstance(iron_oc.fs.unit.solid_outlet.flow_mass, Var)
+        assert isinstance(iron_oc.fs.unit.solid_outlet.particle_porosity, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.mass_frac_comp, Var)
         assert isinstance(iron_oc.fs.unit.solid_outlet.temperature, Var)
 
@@ -392,32 +417,13 @@ class TestIronOC_EnergyBalanceType(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
 
-        assert number_variables(iron_oc) == 1132
-        assert number_total_constraints(iron_oc) == 1028
-        assert number_unused_variables(iron_oc) == 79
+        assert number_variables(iron_oc) == 1144
+        assert number_total_constraints(iron_oc) == 1039
+        assert number_unused_variables(iron_oc) == 80
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
-        # Fix geometry variables
-        iron_oc.fs.unit.number_orifice.fix(2500)  # [-]
-        iron_oc.fs.unit.bed_diameter.fix(6.5)  # m
-        iron_oc.fs.unit.bed_height.fix(5)  # m
-
-        # Fix inlet port variables for gas and solid
-        iron_oc.fs.unit.gas_inlet.flow_mol[0].fix(272.81)  # mol/s
-        iron_oc.fs.unit.gas_inlet.temperature[0].fix(1186)  # K
-        iron_oc.fs.unit.gas_inlet.pressure[0].fix(1.86)  # bar
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CO2"].fix(0.4772)
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "H2O"].fix(0.0646)
-        iron_oc.fs.unit.gas_inlet.mole_frac_comp[0, "CH4"].fix(0.4582)
-
-        iron_oc.fs.unit.solid_inlet.flow_mass[0].fix(1422)  # kg/s
-        iron_oc.fs.unit.solid_inlet.temperature[0].fix(1186)  # K
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe2O3"].fix(0.45)
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Fe3O4"].fix(1e-9)
-        iron_oc.fs.unit.solid_inlet.mass_frac_comp[0, "Al2O3"].fix(0.55)
-
         assert degrees_of_freedom(iron_oc) == 0
 
     @pytest.mark.solver
@@ -450,19 +456,19 @@ class TestIronOC_EnergyBalanceType(object):
     def test_solution(self, iron_oc):
         assert (pytest.approx(0.44, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 0].value)
-        assert (pytest.approx(1.26, abs=1e-2) ==
+        assert (pytest.approx(1.05, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_superficial_gas[0, 1].value)
         assert (pytest.approx(0.03, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 0].value)
-        assert (pytest.approx(1.10, abs=1e-2) ==
+        assert (pytest.approx(1.05, abs=1e-2) ==
                 iron_oc.fs.unit.bubble_diameter[0, 1].value)
         assert (pytest.approx(0.77, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 0].value)
-        assert (pytest.approx(3.55, abs=1e-2) ==
+        assert (pytest.approx(3.30, abs=1e-2) ==
                 iron_oc.fs.unit.velocity_bubble[0, 1].value)
         assert (pytest.approx(0.53, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 0].value)
-        assert (pytest.approx(0.34, abs=1e-2) ==
+        assert (pytest.approx(0.307, abs=1e-2) ==
                 iron_oc.fs.unit.delta[0, 1].value)
 
     @pytest.mark.solver

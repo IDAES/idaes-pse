@@ -605,11 +605,15 @@ see reaction package for documentation.}"""))
 
         # Solid superficial velocity
         @self.Constraint(self.flowsheet().config.time,
+                         self.length_domain,
                          doc="Solid superficial velocity")
-        def solid_super_vel(b, t):
+        # This equation uses inlet values to compute the constant solid
+        # superficial velocity, and then computes the solid particle density
+        # through the rest of the bed.
+        def solid_super_vel(b, t, x):
             return (b.velocity_superficial_solid[t] * b.bed_area *
-                    b.solid_phase.properties[t, 1].dens_mass_particle ==
-                    b.solid_phase.properties[t, 1].flow_mass)
+                    b.solid_phase.properties[t, x].dens_mass_particle ==
+                    b.solid_phase.properties[t, x].flow_mass)
 
         # Gas side pressure drop calculation
         if (self.config.has_pressure_change and
@@ -870,18 +874,14 @@ see reaction package for documentation.}"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
-        # Initialize hydrodynamics (velocities)
+        # Initialize hydrodynamics (gas velocity)
         for t in blk.flowsheet().config.time:
-            calculate_variable_from_constraint(
-                blk.velocity_superficial_solid[t],
-                blk.solid_super_vel[t])
             for x in blk.length_domain:
                 calculate_variable_from_constraint(
                     blk.velocity_superficial_gas[t, x],
                     blk.gas_super_vel[t, x])
 
         blk.gas_super_vel.activate()
-        blk.solid_super_vel.activate()
 
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -899,7 +899,8 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize mass balance - no reaction and no pressure drop
 
-        # Unfix material balance state variables but keep other states fixed
+        # Unfix material balance state variables (including particle porosity)
+        # but keep other states fixed
         blk.gas_phase.properties.release_state(
                 gas_phase_flags)
         blk.solid_phase.properties.release_state(
@@ -921,6 +922,7 @@ see reaction package for documentation.}"""))
                             (gas_rxn_gen[t, x, p, j].fix(0.0))
 
         blk.solid_phase.material_balances.activate()
+        blk.solid_super_vel.activate()
 
         if solid_phase.reaction_package is not None:
             for t in blk.flowsheet().config.time:

@@ -15,6 +15,7 @@ Standard IDAES STOICHIOMETRIC reactor model
 """
 
 # Import Pyomo libraries
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -27,7 +28,6 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "Chinedu Okoli, Andrew Lee"
 
@@ -187,17 +187,16 @@ see reaction package for documentation.}"""))
         self.add_outlet_port()
 
         # Add performance equations
-        add_object_reference(self,
-                             "rate_reaction_extent",
-                             self.control_volume.rate_reaction_extent)
+        self.rate_reaction_extent = Reference(
+            self.control_volume.rate_reaction_extent[...])
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                self.config.energy_balance_type != EnergyBalanceType.none):
+            self.heat_duty = Reference(self.control_volume.heat[:])
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
