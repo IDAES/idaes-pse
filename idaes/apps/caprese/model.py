@@ -1,4 +1,5 @@
 from idaes.apps.caprese.base_class import DynamicBase
+from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         VariableCategory,
         ControlPenaltyType,
