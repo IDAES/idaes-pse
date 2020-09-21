@@ -37,17 +37,61 @@ import idaes.logger as idaeslog
 # -----------------------------------------------------------------------------
 # Basic tests
 @pytest.mark.unit
-def test_base_build():
+def test_basic_scaling():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.cv = ControlVolume1DBlock(default={
-            "property_package": m.fs.pp,
-            "transformation_method": "dae.finite_difference",
-            "transformation_scheme": "BACKWARD",
-            "finite_elements": 10,
-        }
-    )
+        "property_package": m.fs.pp,
+        "transformation_method": "dae.finite_difference",
+        "transformation_scheme": "BACKWARD",
+        "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    m.fs.cv.add_material_balances(
+        balance_type=MaterialBalanceType.componentTotal,
+        has_phase_equilibrium=False)
+
+    m.fs.cv.add_energy_balances(
+        balance_type=EnergyBalanceType.enthalpyTotal)
+
+    m.fs.cv.add_momentum_balances(
+        balance_type=MomentumBalanceType.pressureTotal,
+        has_pressure_change=True)
+
+    iscale.calculate_scaling_factors(m)
+
+    # check scaling on select variables
+    assert iscale.get_scaling_factor(m.fs.cv.area) == 1
+    for (t, x), v in m.fs.cv.deltaP.items():
+        assert iscale.get_scaling_factor(v) == 1040  # 10x the properties pressure scaling factor
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            assert iscale.get_scaling_factor(m.fs.cv.properties[t, x].flow_vol) == 100
+
+    # check scaling on mass, energy, and pressure balances.
+    for c in m.fs.cv.material_balances.values():
+        # this uses the minimum material flow term scale
+        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 112
+    for c in m.fs.cv.enthalpy_balances.values():
+        # this uses the minimum enthalpy flow term scale
+        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 110
+    for c in m.fs.cv.pressure_balance.values():
+        # This uses the inlet pressure scale
+        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 104
+
+@pytest.mark.unit
+def test_user_set_scaling():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.cv = ControlVolume1DBlock(default={
+        "property_package": m.fs.pp,
+        "transformation_method": "dae.finite_difference",
+        "transformation_scheme": "BACKWARD",
+        "finite_elements": 10})
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_material_balances(
@@ -62,32 +106,23 @@ def test_base_build():
         balance_type=MomentumBalanceType.pressureTotal,
         has_pressure_change=True)
 
-    m.fs.cv.apply_transformation()
-
     # The scaling factors used for this test were selected to be easy values to
     # test, they do not represent typical scaling factors.
     iscale.set_scaling_factor(m.fs.cv.heat, 11)
     iscale.set_scaling_factor(m.fs.cv.work, 12)
+    iscale.set_scaling_factor(m.fs.cv.heat[0, 0], 17)
     iscale.calculate_scaling_factors(m)
-    # Make sure the heat and work scaling factors are set and not overwitten
+    # Make sure the heat and work scaling factors are set and not overwritten
     # by the defaults in calculate_scaling_factors
-    for (t,x), v in m.fs.cv.heat.items():
-        assert iscale.get_scaling_factor(v) == 11
-    for (t,x), v in m.fs.cv.work.items():
-        assert iscale.get_scaling_factor(v) == 12
+    assert iscale.get_scaling_factor(m.fs.cv.heat) == 11
+    assert iscale.get_scaling_factor(m.fs.cv.work) == 12
+    # Make sure scaling factor is propagated but does not overwrite index specific factor
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            if t == 0 and x == 0:
+                assert iscale.get_scaling_factor(m.fs.cv.heat[t, x]) == 17
+            else:
+                assert iscale.get_scaling_factor(m.fs.cv.heat[t, x]) == 11
+            assert iscale.get_scaling_factor(m.fs.cv.work[t, x]) == 12
 
-    # Didn't specify a deltaP scaling factor, so by default pressure in scaling
-    # factor * 10 is used.
-    for v in m.fs.cv.deltaP.values(): #deltaP is time indexed
-        assert iscale.get_scaling_factor(v) == 1040
 
-    # check scaling on mass, energy, and pressure balances.
-    for c in m.fs.cv.material_balances.values():
-        # this uses the minmum material flow term scale
-        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 112
-    for c in m.fs.cv.enthalpy_balances.values():
-        # this uses the minmum enthalpy flow term scale
-        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 110
-    for c in m.fs.cv.pressure_balance.values():
-        # This uses the inlet pressure scale
-        assert iscale.get_constraint_transform_applied_scaling_factor(c) == 104

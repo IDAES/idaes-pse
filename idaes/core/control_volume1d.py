@@ -1932,6 +1932,7 @@ argument)."""))
                     c, iscale.get_scaling_factor(
                         self.elemental_flow_dx[i], default=1, warning=True))
 
+        # TODO: fix below, t, x, and s are not specified, conv_factor is not defined
         if hasattr(self, "elemental_flow_constraint"):
             for i, c in self.elemental_flow_constraint.items():
                 sf = conv_factor(self, *i)
