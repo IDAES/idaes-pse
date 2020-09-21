@@ -1527,7 +1527,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
 
     def calculate_scaling_factors(self):
-        # TODO: Elemental scaling is not fully implemented
+        # TODO: Scaling for element basis is not fully implemented
         super().calculate_scaling_factors()
         # If the paraent component of an indexed component has a scale factor, but
         # some of the data objects don't, propogate the indexed component scale
