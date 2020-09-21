@@ -525,7 +525,7 @@ class FlattenedScalingAssignment(object):
             nominal_index = self.nominal_index
             return obj[nominal_index]
 
-    def calculate_variable_scaling_factor(self, var):
+    def calculate_variable_scaling_factor(self, var, include_fixed=False):
         """
         Calculates the scaling factor of a variable based on the
         constraint assigned to it. Loads each variable in that constraint
@@ -537,7 +537,7 @@ class FlattenedScalingAssignment(object):
         condata = self.var2con[vardata]
         scaling_factor = self.scaling_factor
 
-        in_constraint = list(identify_variables(condata.expr))
+        in_constraint = list(identify_variables(condata.expr, include_fixed=include_fixed))
         source_vars = [v for v in in_constraint if v is not vardata]
         nominal_source = [1/scaling_factor[var] for var in source_vars]
 
