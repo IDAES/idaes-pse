@@ -1527,6 +1527,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
 
     def calculate_scaling_factors(self):
+        # TODO: Elemental scaling is not fully implemented
         super().calculate_scaling_factors()
         # If the paraent component of an indexed component has a scale factor, but
         # some of the data objects don't, propogate the indexed component scale
@@ -1575,6 +1576,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     default=1,
                     warning=True)
                 iscale.set_scaling_factor(v, sf)
+
+        # TODO: scaling for element_holdup
 
         if hasattr(self, "material_accumulation"):
             for i, v in self.material_accumulation.items():
