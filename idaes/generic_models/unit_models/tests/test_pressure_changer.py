@@ -800,7 +800,7 @@ class Test_costing(object):
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(70141.395, 1e-5)
+            pytest.approx(70115.0, 1e-5)
 
     @pytest.mark.component
     def test_compressor(self):
@@ -832,7 +832,7 @@ class Test_costing(object):
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334540.7, 1e-5)
+            pytest.approx(334648, 1e-5)
 
     @pytest.mark.component
     def test_turbine(self):
@@ -869,4 +869,4 @@ class Test_costing(object):
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
-            pytest.approx(213129.6059, 1e-5)
+            pytest.approx(213199, 1e-5)

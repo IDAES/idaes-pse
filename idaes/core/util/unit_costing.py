@@ -271,15 +271,16 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                                                flowsheet().config.time.first()]
 
             # new variables only used by pump costing
-            self.pump_head = Var(initialize=10,
-                                 domain=NonNegativeReals,
-                                 doc='Pump Head in feet of fluid '
-                                 'flowing (Pressure rise/dens)')
+            self.pump_head = Var(
+                initialize=10,
+                domain=NonNegativeReals,
+                doc='Pump Head in feet of fluid flowing (Pressure rise/dens)',
+                units=pyunits.pound_force*pyunits.foot/pyunits.pound)
 
-            self.size_factor = Var(initialize=10000,
-                                   domain=NonNegativeReals,
-                                   doc='pump size factor,'
-                                   'f(Q,pump_head) in gpm*ft^0.5')
+            self.size_factor = Var(
+                initialize=10000,
+                domain=NonNegativeReals,
+                doc='Pump size factor, f(Q,pump_head)')
 
             self.motor_base_cost = Var(initialize=10000,
                                        domain=NonNegativeReals,
@@ -322,7 +323,9 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             # build Size Factor equation
             def p_s_factor_rule(self):
                 return self.size_factor == (
-                    Q_gpm/pyunits.get_units(Q_gpm) * (self.pump_head)**0.5)
+                    Q_gpm*pyunits.minute/pyunits.gallon *
+                    (self.pump_head *
+                     pyunits.pound/pyunits.pound_force/pyunits.foot)**0.5)
             self.s_factor_eq = Constraint(rule=p_s_factor_rule)
 
             # Base cost and Purchase cost for centrifugal pump
@@ -405,9 +408,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                                   doc='motor type factor')
 
             # pump fractional efficiency
-            np = -0.316 + 0.24015*log(Q_gpm) - 0.01199*log(Q_gpm)**2
+            np = (-0.316 + 0.24015*log(Q_gpm*pyunits.minute/pyunits.gallon) -
+                  0.01199*log(Q_gpm*pyunits.minute/pyunits.gallon)**2)
             # fractional efficiency of the electric motor
-            nm = 0.80 + 0.0319*log(work_hp) - 0.00182*log(work_hp)**2
+            nm = (0.80 + 0.0319*log(work_hp/pyunits.hp) -
+                  0.00182*log(work_hp/pyunits.hp)**2)
 
             # power consumption in horsepower
             @self.Expression()
@@ -416,11 +421,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         * dens_mass_lb_ft3/7.48052)/(33000*np*nm)
 
             def base_motor_cost_rule(self):
-                return self.motor_base_cost == \
-                    exp(5.8259 + 0.13141*log(self.power_consumption_hp)
-                        + 0.053255*log(self.power_consumption_hp)**2
-                        + 0.028628*log(self.power_consumption_hp)**3
-                        - 0.0035549*log(self.power_consumption_hp)**4)
+                pc_hp = (self.power_consumption_hp /
+                         pyunits.get_units(self.power_consumption_hp))
+                return self.motor_base_cost == exp(
+                    5.8259 + 0.13141*log(pc_hp) + 0.053255*log(pc_hp)**2 +
+                    0.028628*log(pc_hp)**3 - 0.0035549*log(pc_hp)**4)
             self.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
 
             def CP_motor_rule(self):
@@ -478,7 +483,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                 def CB_rule(self):
                     return self.base_cost == \
                         exp(c_alf1[compressor_type]
-                            + c_alf2[compressor_type]*log(work_hp))
+                            + c_alf2[compressor_type]*log(work_hp/pyunits.hp))
                 self.cb_cost_eq = Constraint(rule=CB_rule)
 
                 def CP_rule(self):
