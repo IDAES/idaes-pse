@@ -8,7 +8,7 @@ import functools
 import logging
 
 import astroid
-from astroid.builder import extract_node
+from astroid.builder import extract_node, parse
 
 
 _logger = logging.getLogger('pylint.ideas_plugin')
@@ -78,7 +78,10 @@ def create_declared_class_node(decorated_cls_node: astroid.ClassDef):
 
 
 def is_idaes_module(mod_node: astroid.Module):
-    return 'idaes' in mod_node.name
+    mod_name = mod_node.name
+    if mod_name:
+        _display(f'analyzing module: {mod_name}')
+    return 'idaes' in mod_name
 
 
 def register_process_block_class(decorated_cls_node: astroid.ClassDef):
@@ -101,6 +104,35 @@ def register_process_block_classes(mod_node: astroid.Module):
         _display(f'{decorated_cls_node.name} -> {decl_cls_node.name}')
 
 
+def is_base_pyomo_var_class(node):
+    try:
+        _display(f'node.qname()={node.qname()}')
+        return 'pyomo.core.base.var.Var' in node.qname()
+    except AttributeError:
+        pass
+    return False
+
+
+def get_concrete_pyomo_var_class(node: astroid.ClassDef, context=None) -> astroid.ClassDef:
+    # node_from_import = extract_node('from pyomo.core.base.var import SimpleVar; SimpleVar')
+    # simple_var_cls_node = astroid.helpers.safe_infer(node_from_import)
+    clsdef_code = """
+    from pyomo.base.var import SimpleVar, IndexedVar
+    class ConcreteVar(SimpleVar, IndexedVar):
+        pass
+"""
+    simple_var_cls_node = extract_node(clsdef_code)
+    print(simple_var_cls_node)
+    return simple_var_cls_node
+
+
+def infer_concrete_var_instance(node: astroid.ClassDef, context=None):
+    _display(f'abstract var class: {node}')
+    concrete_cls_node = get_concrete_pyomo_var_class(node, context=context)
+    _display(f'concrete var class: {concrete_cls_node}')
+    return iter([concrete_cls_node.instantiate_class()])
+
+
 def register(linter):
     "This function needs to be defined for the plugin to be picked up by Pylint"
 
@@ -110,4 +142,8 @@ astroid.MANAGER.register_transform(
     # but it doesn't seem to be the case at this point
     # astroid.ClassDef, register_process_block_class, has_declare_block_class_decorator
     astroid.Module, register_process_block_classes, is_idaes_module,
+)
+
+astroid.MANAGER.register_transform(
+    astroid.ClassDef, astroid.inference_tip(infer_concrete_var_instance), is_base_pyomo_var_class
 )
