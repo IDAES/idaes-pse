@@ -372,22 +372,26 @@ constructed,
         self.cp_metal = Param(
                 initialize=500.0,
                 mutable=True,
-                doc='Heat capacity of tube metal')
+                doc='Heat capacity of tube metal',
+                units=units_meta.get_derived_units("heat_capacity_mass"))
         # Heat Capacity of slag
         self.cp_slag = Param(
                 initialize=250,
                 mutable=True,
-                doc='Heat capacity of slag')
+                doc='Heat capacity of slag',
+                units=units_meta.get_derived_units("heat_capacity_mass"))
         # Density of metal
         self.dens_metal = Param(
                 initialize=7800.0,
                 mutable=True,
-                doc='Density of tube metal')
+                doc='Density of tube metal',
+                units=units_meta.get_derived_units("density_mass"))
         # Density of slag
         self.dens_slag = Param(
                 initialize=2550,
                 mutable=True,
-                doc='Density of slag')
+                doc='Density of slag',
+                units=units_meta.get_derived_units("density_mass"))
         # Shape factor of tube metal conduction resistance
         # based on projected area
         self.fshape_metal = Param(
@@ -427,39 +431,48 @@ constructed,
         self.heat_fireside = Var(
                 self.flowsheet().config.time,
                 initialize=1e7,
-                doc='total heat from fire side model for the section')
+                doc='total heat from fire side model for the section',
+                units=units_meta.get_derived_units("power"))
         # Tube boundary wall temperature
         self.temp_tube_boundary = Var(
                 self.flowsheet().config.time,
                 initialize=400.0,
-                doc='Temperature of tube boundary wall')
+                doc='Temperature of tube boundary wall',
+                units=units_meta.get_derived_units("temperature"))
         # Tube center point wall temperature
         self.temp_tube_center = Var(
                 self.flowsheet().config.time,
                 initialize=450.0,
-                doc='Temperature of tube center wall')
+                doc='Temperature of tube center wall',
+                units=units_meta.get_derived_units("temperature"))
         # Slag boundary wall temperature
         self.temp_slag_boundary = Var(
                 self.flowsheet().config.time,
                 initialize=600.0,
-                doc='Temperature of slag boundary wall')
+                doc='Temperature of slag boundary wall',
+                units=units_meta.get_derived_units("temperature"))
         # Slag center point wall temperature
         self.temp_slag_center = Var(
                 self.flowsheet().config.time,
                 initialize=500.0,
-                doc='Temperature of slag layer center point')
+                doc='Temperature of slag layer center point',
+                units=units_meta.get_derived_units("temperature"))
 
         # Energy holdup for slag layer
         self.energy_holdup_slag = Var(
                 self.flowsheet().config.time,
                 initialize=1e4,
-                doc='Energy holdup of slag layer')
+                doc='Energy holdup of slag layer',
+                units=(units_meta.get_derived_units("energy") *
+                       units_meta.get_derived_units("length")**-1))
 
         # Energy holdup for metal (tube + fin)
         self.energy_holdup_metal = Var(
                 self.flowsheet().config.time,
                 initialize=1e6,
-                doc='Energy holdup of metal')
+                doc='Energy holdup of metal',
+                units=(units_meta.get_derived_units("energy") *
+                       units_meta.get_derived_units("length")**-1))
 
         # Energy accumulation for slag and metal
         if self.config.dynamic is True:
@@ -482,7 +495,8 @@ constructed,
         self.velocity_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=3.0,
-                doc='Velocity of liquid only')
+                doc='Velocity of liquid only',
+                units=units_meta.get_derived_units("velocity"))
 
         # Reynolds number based on liquid only flow
         self.N_Re = Var(
@@ -545,7 +559,8 @@ constructed,
         self.mass_flux = Var(
                 self.flowsheet().config.time,
                 initialize=1000.0,
-                doc='mass flux')
+                doc='mass flux',
+                units=units_meta.get_derived_units("flux_mass"))
 
         # Reduced pressure
         self.reduced_pressure = Var(
@@ -564,20 +579,26 @@ constructed,
         self.hconv = Var(
                 self.flowsheet().config.time,
                 initialize=30000.0,
-                doc='Convective heat transfer coefficient')
+                doc='Convective heat transfer coefficient',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Convective heat transfer coefficient for liquid only,
         # typically in range (1000.0, 1e5)
         self.hconv_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=20000.0,
-                doc='Convective heat transfer coefficient of liquid only')
+                doc='Convective heat transfer coefficient of liquid only',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Pool boiling heat transfer coefficient, typically in range (1e4, 5e5)
         self.hpool = Var(
                 self.flowsheet().config.time,
                 initialize=1e5,
-                doc='Pool boiling heat transfer coefficient')
+                doc='Pool boiling heat transfer coefficient',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Boiling number, typical range in (1e-7, 5e-4) in original formula.
         # we define here as boiling_number_scaled == 1e6*boiling_number
@@ -602,25 +623,29 @@ constructed,
         self.heat_flux_conv = Var(
                 self.flowsheet().config.time,
                 initialize=7e4,
-                doc='Convective heat flux to fluid')
+                doc='Convective heat flux to fluid',
+                units=units_meta.get_derived_units("flux_energy"))
 
         # Slag-tube interface heat flux
         self.heat_flux_interface = Var(
                 self.flowsheet().config.time,
                 initialize=100000.0,
-                doc='Slag-tube interface heat flux')
+                doc='Slag-tube interface heat flux',
+                units=units_meta.get_derived_units("flux_energy"))
 
         # Pressure change due to friction
         self.deltaP_friction = Var(
                 self.flowsheet().config.time,
                 initialize=-1000.0,
-                doc='Pressure change due to friction')
+                doc='Pressure change due to friction',
+                units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
                 self.flowsheet().config.time,
                 initialize=-1000.0,
-                doc='Pressure change due to gravity')
+                doc='Pressure change due to gravity',
+                units=units_meta.get_derived_units("pressure"))
 
         # Equation to calculate heat flux to slag boundary
         @self.Expression(self.flowsheet().config.time,
@@ -746,8 +771,9 @@ constructed,
         # n-exponent equation for inlet
         @self.Constraint(self.flowsheet().config.time, doc="n-exponent")
         def n_exp_eqn(b, t):
-            return 0.001*(0.8294 - b.n_exp[t]) \
-                * b.control_volume.properties_in[t].pressure == 8.0478
+            return (0.001*(0.8294 - b.n_exp[t]) *
+                    b.control_volume.properties_in[t].pressure ==
+                    8.0478*units_meta.get_derived_units("pressure"))
 
         # Gamma equation for inlet
         @self.Constraint(self.flowsheet().config.time, doc="Gamma at inlet")
@@ -848,10 +874,12 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="pool boiling heat transfer coefficient")
         def hpool_eqn(b, t):
-            return 1e-4*b.hpool[t] \
-                * sqrt(b.control_volume.properties_in[0].mw*1000.0) * \
-                (-log10(b.reduced_pressure[t]))**(0.55) == 1e-4 * \
-                55.0 * b.reduced_pressure[t]**0.12 * b.heat_flux_conv[t]**0.67
+            return (1e-4*b.hpool[t]*sqrt(pyunits.convert(
+                        b.control_volume.properties_in[0].mw,
+                        to_units=pyunits.g/pyunits.mol)) *
+                    (-log10(b.reduced_pressure[t]))**(0.55) ==
+                    1e-4*55.0*b.reduced_pressure[t]**0.12 *
+                    b.heat_flux_conv[t]**0.67)
 
         # Boiling number scaled by a factor of 1e6
         @self.Constraint(self.flowsheet().config.time, doc="boiling number")

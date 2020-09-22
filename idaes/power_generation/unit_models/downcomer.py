@@ -20,7 +20,8 @@ Main assumptions:
 Created August 27, 2020
 """
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var, Reference, units as pyunits
+from pyomo.environ import (
+    SolverFactory, value, Var, Reference, units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores

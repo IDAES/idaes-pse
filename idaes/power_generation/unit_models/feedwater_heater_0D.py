@@ -16,9 +16,9 @@ steady state calculations. For dynamic modeling 1D models are required. There
 are two models included here.
 
 1) FWHCondensing0D: this is a regular 0D heat exchanger model with a constraint
-   added to ensure all the steam fed to the feedwater heater is condensed at the
-   outlet. At the shell outlet the molar enthalpy is equal to the the staurated
-   liquid molar enthalpy.
+   added to ensure all the steam fed to the feedwater heater is condensed at
+   the outlet. At the shell outlet the molar enthalpy is equal to the the
+   saturated liquid molar enthalpy.
 2) FWH0D is a feedwater heater model with three sections and a mixer for
    combining another feedwater heater's drain outlet with steam extracted from
    the turbine.  The drain mixer, desuperheat, and drain cooling sections are
@@ -29,7 +29,6 @@ __author__ = "John Eslick"
 
 from pyomo.common.config import ConfigValue, In, ConfigBlock
 from pyomo.environ import SolverFactory, TransformationFactory, Var, value
-from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
 
 from idaes.core import (
@@ -38,7 +37,8 @@ from idaes.core import (
     MaterialBalanceType,
 )
 from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
-from idaes.generic_models.unit_models import Mixer, MomentumMixingType, HeatExchanger
+from idaes.generic_models.unit_models import (
+    Mixer, MomentumMixingType, HeatExchanger)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
@@ -135,10 +135,12 @@ def _set_prop_pack(hxcfg, fwhcfg):
     # will override this.  I think this behavior is fine, and what we'd want.
     if hxcfg.hot_side_config.property_package == useDefault:
         hxcfg.hot_side_config.property_package = fwhcfg.property_package
-        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
+        hxcfg.hot_side_config.property_package_args = \
+            fwhcfg.property_package_args
     if hxcfg.cold_side_config.property_package == useDefault:
         hxcfg.cold_side_config.property_package = fwhcfg.property_package
-        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
+        hxcfg.cold_side_config.property_package_args = \
+            fwhcfg.property_package_args
 
 
 @declare_process_block_class(
@@ -267,14 +269,17 @@ class FWH0DData(UnitModelBlockData):
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1, destination=self.drain_mix.steam
+                    source=self.desuperheat.outlet_1,
+                    destination=self.drain_mix.steam
                 )
             else:
                 self.SDS = Arc(
-                    source=self.desuperheat.outlet_1, destination=self.condense.inlet_1
+                    source=self.desuperheat.outlet_1,
+                    destination=self.condense.inlet_1
                 )
             self.FW2 = Arc(
-                source=self.condense.outlet_2, destination=self.desuperheat.inlet_2
+                source=self.condense.outlet_2,
+                destination=self.desuperheat.inlet_2
             )
 
         # Add a drain cooling section after the condensing section
@@ -303,11 +308,12 @@ class FWH0DData(UnitModelBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        # the initialization here isn't straight forward since the heat exchanger
-        # may have 3 stages and they are countercurrent.  For simplicity each
-        # stage in initialized with the same cooling water inlet conditions then
-        # the whole feedwater heater is solved together.  There are more robust
-        # approaches which can be implimented if the need arises.
+        # the initialization here isn't straight forward since the heat
+        # exchanger may have 3 stages and they are countercurrent.  For
+        # simplicity each stage in initialized with the same cooling water
+        # inlet conditions then the whole feedwater heater is solved together.
+        # There are more robust approaches which can be implimented if the
+        # need arises.
 
         # initialize desuperheat if include
         if config.has_desuperheat:

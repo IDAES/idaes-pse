@@ -215,6 +215,38 @@ class FlueGasParameterData(PhysicalParameterBlock):
             doc='Constants for spec. heat capacity for ideal gas',
             units=pyunits.kJ/pyunits.mol)
 
+        # Viscosity and thermal conductivity parameters
+        self.ce_param = Param(
+            initialize=2.6693e-5,
+            units=(pyunits.g**0.5*pyunits.mol**0.5*pyunits.angstrom**2 *
+                   pyunits.K**-0.5*pyunits.cm**-1*pyunits.s**-1),
+            doc="Parameter for the Chapman-Enskog viscosity correlation")
+
+        self.sigma = Param(
+            self.component_list,
+            initialize={
+                'O2': 3.458,
+                'N2': 3.621,
+                'NO': 3.47,
+                'CO2': 3.763,
+                'H2O': 2.605,
+                'SO2': 4.29},
+            doc='collision diameter in Angstrom (10e-10 m)',
+            units=pyunits.angstrom
+        )
+        self.ep_Kappa = Param(
+            self.component_list,
+            initialize={
+                'O2': 107.4,
+                'N2': 97.53,
+                'NO': 119.0,
+                'CO2': 244.0,
+                'H2O': 572.4,
+                'SO2': 252.0},
+            doc="characteristic energy of interaction between pair of "
+                "molecules, K = Boltzmann constant in Kelvin",
+            units=pyunits.K)
+
         self.set_default_scaling("flow_mol", 1e-4)
         self.set_default_scaling("flow_mass", 1e-3)
         self.set_default_scaling("flow_vol", 1e-3)
@@ -619,30 +651,7 @@ class FlueGasStateBlockData(StateBlockData):
         self.visc_d = Var(
             initialize=2e-5, doc='viscosity of gas mixture kg/m-s',
             units=pyunits.kg/pyunits.m/pyunits.s)
-        self.sigma = Param(
-            comps,
-            initialize={
-                'O2': 3.458,
-                'N2': 3.621,
-                'NO': 3.47,
-                'CO2': 3.763,
-                'H2O': 2.605,
-                'SO2': 4.29},
-            doc='collision diameter in Angstrom (10e-10 m)',
-            units=pyunits.angstrom
-        )
-        self.ep_Kappa = Param(
-            comps,
-            initialize={
-                'O2': 107.4,
-                'N2': 97.53,
-                'NO': 119.0,
-                'CO2': 244.0,
-                'H2O': 572.4,
-                'SO2': 252.0},
-            doc="characteristic energy of interaction between pair of "
-                "molecules, K = Boltzmann constant in Kelvin",
-            units=pyunits.K)
+
         try:
             def rule_therm_cond(b, c):
                 t = pyunits.convert(b.temperature, to_units=pyunits.kK)
@@ -659,7 +668,7 @@ class FlueGasStateBlockData(StateBlockData):
             self.therm_cond_con = Constraint(comps, rule=rule_therm_cond)
 
             def rule_theta(b, c):
-                return b.temperature / b.ep_Kappa[c]
+                return b.temperature / b.params.ep_Kappa[c]
             self.theta = Expression(comps, rule=rule_theta)
 
             def rule_omega(b, c):
@@ -670,19 +679,25 @@ class FlueGasStateBlockData(StateBlockData):
                         - 0.0347045 * log(b.theta[c])**3)
             self.omega = Expression(comps, rule=rule_omega)
 
-            # Pure gas viscocity
+            # Pure gas viscocity - from Chapman-Enskog theory
             def rule_visc_d(b, c):
-                return (b.visc_d_comp[c] * b.sigma[c]**2 * b.omega[c] ==
-                        2.6693e-6 * sqrt
-                        (b.params.mw_comp[c] * 1000 * b.temperature))
+                return (pyunits.convert(
+                    b.visc_d_comp[c],
+                    to_units=pyunits.g/pyunits.cm/pyunits.s) *
+                    b.params.sigma[c]**2 * b.omega[c] ==
+                    b.params.ce_param * sqrt(
+                        pyunits.convert(b.params.mw_comp[c],
+                                        to_units=pyunits.g/pyunits.mol) *
+                        b.temperature))
             self.visc_d_con = Constraint(comps, rule=rule_visc_d)
 
             # section to calculate viscosity of gas mixture
             def rule_phi(b, i, j):
-                return (1 / 2.8284
-                        * (1 + (b.params.mw_comp[i] / b.params.mw_comp[j]))**(-0.5)
-                        * (1 + sqrt(b.visc_d_comp[i] / b.visc_d_comp[j])
-                            * (b.params.mw_comp[j] / b.params.mw_comp[i])**0.25)**2)
+                return (
+                    1/2.8284 *
+                    (1 + (b.params.mw_comp[i] / b.params.mw_comp[j]))**(-0.5) *
+                    (1 + sqrt(b.visc_d_comp[i] / b.visc_d_comp[j]) *
+                     (b.params.mw_comp[j] / b.params.mw_comp[i])**0.25)**2)
             self.phi_ij = Expression(
                 comps,
                 comps,

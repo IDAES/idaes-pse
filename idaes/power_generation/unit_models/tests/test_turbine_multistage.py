@@ -20,11 +20,11 @@ import pytest
 from pyomo.environ import (ConcreteModel, SolverFactory, TransformationFactory,
                            Constraint, value, units as pyunits)
 from pyomo.network import Arc
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Heater
-from idaes.power_generation.unit_models import (
-    TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
+from idaes.power_generation.unit_models import TurbineMultistage
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
@@ -39,7 +39,9 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-def build_turbine_for_run_test():
+
+@pytest.fixture(scope="module")
+def model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
@@ -49,11 +51,11 @@ def build_turbine_for_run_test():
         "num_hp": 7,
         "num_ip": 14,
         "num_lp": 11,
-        "hp_split_locations": [4,7],
+        "hp_split_locations": [4, 7],
         "ip_split_locations": [5, 14],
-        "lp_split_locations": [4,7,9,11],
+        "lp_split_locations": [4, 7, 9, 11],
         "hp_disconnect": [7],
-        "ip_split_num_outlets": {14:3}})
+        "ip_split_num_outlets": {14: 3}})
 
     # Add reheater
     m.fs.reheat = Heater(default={"property_package": m.fs.properties})
@@ -65,28 +67,32 @@ def build_turbine_for_run_test():
     return m
 
 
+@pytest.mark.integration
+def test_unit_consistency(model):
+    assert_units_consistent(model)
+
+
 @pytest.mark.component
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize():
+def test_initialize(model):
     """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_turbine_for_run_test()
-    turb = m.fs.turb
+    turb = model.fs.turb
 
     # Set the inlet of the turbine
     p = 2.4233e7
     hin = value(iapws95.htpx(T=880*pyunits.K, P=p*pyunits.Pa))
-    m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
-    m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
-    m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
+    model.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
+    model.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
+    model.fs.turb.inlet_split.inlet.pressure[0].fix(p)
 
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
     p = 7.802e+06
     hin = value(iapws95.htpx(T=880*pyunits.K, P=p*pyunits.Pa))
-    m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
-    m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
-    m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
+    model.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
+    model.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
+    model.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
         s.ratioP[:] = 0.88
@@ -98,15 +104,15 @@ def test_initialize():
         s.ratioP[:] = 0.82
         s.efficiency_isentropic[:] = 0.9
 
-    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.03)
-    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.15)
-    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.04)
-    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.hp_split[4].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.hp_split[7].split_fraction[0, "outlet_2"].fix(0.03)
+    turb.ip_split[5].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0, "outlet_3"].fix(0.15)
+    turb.lp_split[4].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[7].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[9].split_fraction[0, "outlet_2"].fix(0.04)
+    turb.lp_split[11].split_fraction[0, "outlet_2"].fix(0.04)
 
     # Congiure with reheater for a full test
     turb.ip_stages[1].inlet.fix()
@@ -115,29 +121,27 @@ def test_initialize():
     turb.initialize(outlvl=1)
     turb.ip_stages[1].inlet.unfix()
 
-
-    for t in m.fs.time:
-        m.fs.reheat.inlet.flow_mol[t].value = \
+    for t in model.fs.time:
+        model.fs.reheat.inlet.flow_mol[t].value = \
             value(turb.hp_split[7].outlet_1_state[t].flow_mol)
-        m.fs.reheat.inlet.enth_mol[t].value = \
+        model.fs.reheat.inlet.enth_mol[t].value = \
             value(turb.hp_split[7].outlet_1_state[t].enth_mol)
-        m.fs.reheat.inlet.pressure[t].value = \
+        model.fs.reheat.inlet.pressure[t].value = \
             value(turb.hp_split[7].outlet_1_state[t].pressure)
-    m.fs.reheat.initialize(outlvl=4)
+    model.fs.reheat.initialize(outlvl=4)
+
     def reheat_T_rule(b, t):
-        return m.fs.reheat.control_volume.properties_out[t].temperature == 880
-    m.fs.reheat.temperature_out_equation = Constraint(
-            m.fs.reheat.flowsheet().config.time,
+        return model.fs.reheat.control_volume.properties_out[t].temperature == 880
+    model.fs.reheat.temperature_out_equation = Constraint(
+            model.fs.reheat.flowsheet().config.time,
             rule=reheat_T_rule)
 
-    TransformationFactory("network.expand_arcs").apply_to(m)
-    m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
+    TransformationFactory("network.expand_arcs").apply_to(model)
+    model.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
-    assert(degrees_of_freedom(m)==0)
-    solver.solve(m, tee=True)
+    assert degrees_of_freedom(model) == 0
+    solver.solve(model, tee=True)
 
-    eq_cons = activated_equalities_generator(m)
+    eq_cons = activated_equalities_generator(model)
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
-
-    return m
