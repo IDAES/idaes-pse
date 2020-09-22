@@ -99,7 +99,7 @@ by the Pyomo TransformationFactory."""))
         default=None,
         domain=is_transformation_scheme,
         description="DAE transformation scheme",
-        doc="""Scheme to use when transformating domain. See Pyomo
+        doc="""Scheme to use when transforming domain. See Pyomo
 documentation for supported schemes."""))
     CONFIG.declare("finite_elements", ConfigValue(
         default=None,
@@ -1165,7 +1165,7 @@ argument)."""))
                     included in enthalpy balances
             has_enthalpy_transfer - whether terms for enthalpy transfer due to
                     mass transfer should be included in enthalpy balance. This
-                    should generally be the same as the has_mas_trasnfer
+                    should generally be the same as the has_mass_transfer
                     argument in the material balance methods
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
@@ -1223,7 +1223,7 @@ argument)."""))
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          self.config.property_package.phase_list,
-                         doc="Enthapy flow linking constraints")
+                         doc="Enthalpy flow linking constraints")
         def enthalpy_flow_linking_constraint(b, t, x, p):
             return b._enthalpy_flow[t, x, p] == \
                     b.properties[t, x].get_enthalpy_flow_terms(p)
@@ -1259,7 +1259,7 @@ argument)."""))
                             self.length_domain,
                             domain=Reals,
                             initialize=0.0,
-                            doc="Heat transfered per unit length",
+                            doc="Heat transferred per unit length",
                             units=power_l_units)
 
         # Work transfer
@@ -1278,7 +1278,7 @@ argument)."""))
                 self.length_domain,
                 domain=Reals,
                 initialize=0.0,
-                doc="Enthalpy transfered due to mass transfer per unit length",
+                doc="Enthalpy transferred due to mass transfer per unit length",
                 units=power_l_units)
 
         # Heat of Reaction
@@ -1525,7 +1525,7 @@ argument)."""))
                 ncp=self.config.collocation_points,
                 scheme=self.config.transformation_scheme)
         else:
-            raise ConfigurationError("{} unrecognised transfromation_method, "
+            raise ConfigurationError("{} unrecognised transformation_method, "
                                      "must match one of the Transformations "
                                      "supported by Pyomo's "
                                      "TransformationFactory."
@@ -1576,7 +1576,7 @@ argument)."""))
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
@@ -1846,21 +1846,21 @@ argument)."""))
 
         # Dynamic variables
         if hasattr(self, "material_holdup"):
-            for (t, x, p, i), v in self.material_holdup.items():
+            for (t, x, p, j), v in self.material_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(
                         self._area_func(t, x), default=1, warning=True)
                     sf *= iscale.get_scaling_factor(
-                        self.properties[t, x].get_material_density_terms(p, i),
+                        self.properties[t, x].get_material_density_terms(p, j),
                         default=1,
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "material_accumulation"):
-            for i, v in self.material_accumulation.items():
+            for (t, x, p, j), v in self.material_accumulation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = 100*iscale.get_scaling_factor(
-                        self.material_holdup[i], default=1, warning=True)
+                        self.material_holdup[t, x, p, j], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "energy_holdup"):
@@ -1874,10 +1874,10 @@ argument)."""))
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "energy_accumulation"):
-            for i, v in self.energy_accumulation.items():
+            for (t, x, p), v in self.energy_accumulation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = 100*iscale.get_scaling_factor(
-                        self.energy_holdup[i], default=1, warning=True)
+                        self.energy_holdup[t, x, p], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf)
 
         # Additional balance variables
@@ -1908,9 +1908,8 @@ argument)."""))
         if hasattr(self, "rate_reaction_generation"):
             for (t, x, p, j), v in self.rate_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.min_scaling_factor(
-                        [self.properties[t, x].get_material_flow_terms(p, j)
-                         for p in self.config.property_package.phase_list])
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].get_material_flow_terms(p, j))
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "rate_reaction_extent"):
@@ -1922,9 +1921,8 @@ argument)."""))
         if hasattr(self, "equilibrium_reaction_generation"):
             for (t, x, p, j), v in self.equilibrium_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.min_scaling_factor(
-                        [self.properties[t, x].get_material_flow_terms(p, j)
-                         for p in self.config.property_package.phase_list])
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].get_material_flow_terms(p, j))
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "equilibrium_reaction_extent"):
@@ -1955,7 +1953,7 @@ argument)."""))
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
-                        [self.properties[t,x].get_material_flow_terms(p, j)
+                        [self.properties[t, x].get_material_flow_terms(p, j)
                             for p in self.config.property_package.phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
@@ -1992,9 +1990,9 @@ argument)."""))
 
         # Energy balance constraints
         if hasattr(self, "enthalpy_balances"):
-            for i, c in self.enthalpy_balances.items():
+            for (t, x), c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
-                    [self.properties[i].get_enthalpy_flow_terms(p)
+                    [self.properties[t, x].get_enthalpy_flow_terms(p)
                         for p in self.config.property_package.phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
