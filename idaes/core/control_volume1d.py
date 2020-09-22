@@ -1231,7 +1231,7 @@ argument)."""))
         self.enthalpy_flow_dx = DerivativeVar(self._enthalpy_flow,
                                               wrt=self.length_domain,
                                               doc="Partial derivative of "
-                                              "enthalpy flow wrt normlaized "
+                                              "enthalpy flow wrt normalized "
                                               "length",
                                               units=units('power'))
 
@@ -1771,10 +1771,11 @@ argument)."""))
                 the report method.""")
 
     def calculate_scaling_factors(self):
+        # TODO: Scaling for element basis is not fully implemented
         super().calculate_scaling_factors()
         # Default scale factors
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
+        # If the parent component of an indexed component has a scale factor, but
+        # some of the data objects don't, propagate the indexed component scale
         # factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
 
@@ -1803,7 +1804,7 @@ argument)."""))
         if hasattr(self, "energy_holdup"):
             for (t, x, p), v in self.energy_holdup.items():
                 sf = iscale.get_scaling_factor(
-                    self._area_func(t,x), default=1, warning=True)
+                    self._area_func(t, x), default=1, warning=True)
                 sf *= iscale.get_scaling_factor(
                     self.properties[t, x].get_energy_density_terms(p),
                     default=1,
@@ -1820,6 +1821,8 @@ argument)."""))
                     warning=True)
                 iscale.set_scaling_factor(v, sf)
 
+        # TODO: scaling for element_holdup
+
         if hasattr(self, "material_accumulation"):
             for i, v in self.material_accumulation.items():
                 sf = 100*iscale.get_scaling_factor(
@@ -1832,12 +1835,115 @@ argument)."""))
                     self.energy_holdup[i], default=1, warning=True)
                 iscale.set_scaling_factor(v, sf)
 
+        # Additional balance terms
         if hasattr(self, "deltaP"):
             for (t, x), v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
                     s = iscale.get_scaling_factor(
                         self.properties[t, x].pressure, default=1, warning=True)
                     iscale.set_scaling_factor(v, 10*s)
+
+        if hasattr(self, "mass_transfer_term"):
+            for (t, x, p, j), v in self.mass_transfer_term.items():
+                sf = iscale.get_scaling_factor(
+                    self.properties[t, x].get_material_flow_terms(p, j),
+                    default=1,
+                    warning=True)
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "enthalpy_transfer"):
+            for (t, x), v in self.enthalpy_transfer.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties[t, x].get_enthalpy_flow_terms(p)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        # Additional reaction terms
+        if hasattr(self, "rate_reaction_generation"):
+            for (t, x, p, j), v in self.rate_reaction_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties[t, x].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "rate_reaction_extent"):
+            for (t, x, r), v in self.rate_reaction_extent.items():
+                # extent of reaction typically between 0.1 and 1
+                iscale.set_scaling_factor(v, 10)
+
+        if hasattr(self, "equilibrium_reaction_generation"):
+            for (t, x, p, j), v in self.equilibrium_reaction_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties[t, x].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "equilibrium_reaction_extent"):
+            for (t, x, r), v in self.equilibrium_reaction_extent.items():
+                # extent of reaction typically between 0.1 and 1
+                iscale.set_scaling_factor(v, 10)
+
+        if hasattr(self, "phase_equilibrium_generation"):
+            for (t, x, e), v in self.phase_equilibrium_generation.items():
+                sf = iscale.min_scaling_factor(
+                    [self.properties[t, x].get_material_flow_terms(p, j)
+                     for p in self.config.property_package.phase_list])
+                iscale.set_scaling_factor(v, sf)
+
+        # Material, energy, momentum variables and constraints
+        if hasattr(self, "_flow_terms"):
+            for (t, x, p, j), v in self._flow_terms.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].get_material_flow_terms(p, j),
+                        default=1, warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "material_flow_linking_constraints"):
+            for (t, x, p, j), c in self.material_flow_linking_constraints.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self._flow_terms[t, x, p, j], default=1, warning=True))
+
+        if hasattr(self, "material_flow_dx"):
+            for (t, x, p, j), v in self.material_flow_dx.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self._flow_terms[t, x, p, j], default=1, warning=True)
+                    iscale.set_scaling_factor(v, sf*100)
+
+        if hasattr(self, "material_flow_dx_disc_eq"):
+            for (t, x, p, j), c in self.material_flow_dx_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.material_flow_dx[t, x, p, j], default=1, warning=True))
+
+        if hasattr(self, "_enthalpy_flow"):
+            for (t, x, p), v in self._enthalpy_flow.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].get_enthalpy_flow_terms(p),
+                        default=1, warning=True)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "enthalpy_flow_linking_constraint"):
+            for (t, x, p), c in self.enthalpy_flow_linking_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self._enthalpy_flow[t, x, p], default=1, warning=True))
+
+        if hasattr(self, "enthalpy_flow_dx"):
+            for (t, x, p), v in self.enthalpy_flow_dx.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self._enthalpy_flow[t, x, p], default=1, warning=True)
+                    iscale.set_scaling_factor(v, sf*100)
+
+        if hasattr(self, "enthalpy_flow_dx_disc_eq"):
+            for (t, x, p), c in self.enthalpy_flow_dx_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.enthalpy_flow_dx[t, x, p], default=1, warning=True))
 
         if hasattr(self, "pressure_dx"):
             for (t, x), v in self.pressure_dx.items():
@@ -1846,28 +1952,11 @@ argument)."""))
                         self.properties[t, x].pressure, default=1, warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
-        # Enthalpy flow variable and constraint
-        if hasattr(self, "_enthalpy_flow"):
-            for (t,x,p), v in self._enthalpy_flow.items():
-                sf = iscale.get_scaling_factor(
-                    self.properties[t, x].get_enthalpy_flow_terms(p),
-                    default=1,
-                    warning=True)
-                iscale.set_scaling_factor(v, sf)
-                iscale.set_scaling_factor(self.enthalpy_flow_dx[t,x,p], sf*100)
-                c = self.enthalpy_flow_linking_constraint[t,x,p]
-                iscale.constraint_scaling_transform(c, sf)
-
-        if hasattr(self, "_flow_terms"):
-            for (t,x,p,j), v in self._flow_terms.items():
-                sf = iscale.get_scaling_factor(
-                    self.properties[t, x].get_material_flow_terms(p, j),
-                    default=1,
-                    warning=True)
-                iscale.set_scaling_factor(v, sf)
-                iscale.set_scaling_factor(self.material_flow_dx[t,x,p,j], sf*100)
-                c = self.material_flow_linking_constraints[t,x,p,j]
-                iscale.constraint_scaling_transform(c, sf)
+        if hasattr(self, "pressure_dx_disc_eq"):
+            for (t, x), c in self.pressure_dx_disc_eq.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.pressure_dx[t, x], default=1, warning=True))
 
         # Material Holdup Constraints
         if hasattr(self, "material_holdup_calculation"):
@@ -1898,7 +1987,7 @@ argument)."""))
                             for p in self.config.property_package.phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
-                _log.warning(f"Unknow material balance type {mb_type}")
+                _log.warning(f"Unknown material balance type {mb_type}")
 
         # Energy Balance Constraints
         if hasattr(self, "enthalpy_balances"):
@@ -1932,7 +2021,7 @@ argument)."""))
                     c, iscale.get_scaling_factor(
                         self.elemental_flow_dx[i], default=1, warning=True))
 
-        # TODO: fix below, t, x, and s are not specified, conv_factor is not defined
+        # TODO: fix below: t, x, and s are not specified, conv_factor is not defined
         if hasattr(self, "elemental_flow_constraint"):
             for i, c in self.elemental_flow_constraint.items():
                 sf = conv_factor(self, *i)
