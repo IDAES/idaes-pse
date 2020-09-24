@@ -7,7 +7,7 @@
 Units of Measurement and Reference States
 -----------------------------------------
 
-Due to the flexibility provided by the IDAES modeling framework, there is no standard set of units of measurement or standard reference state that should be used in models. Units of measurement are defined by the modeler for the 7 base quantities (time, length, mass, amount, temperature, current and luminous intensity) in each property package, and the framework makes use of this and Pyomo's Units container to automatically determine the units of all variables and expressions within a model. Thus, all components within a model using a given property package must use units based on the units chosen for the base quantities (to ensure consistency of units). However, flowsheets may contain property packages which use different sets of base units, however users should be careful to ensure units are converted correctly where property packages interact. For more detail on defining units of measurement see :ref:`Defining Units of Measurement<user_guide/components/property_package/uom:Defining Units of Measurement>`.
+Due to the flexibility provided by the IDAES Integrated Platform, there is no standard set of units of measurement or standard reference state that should be used in models. Units of measurement are defined by the modeler for the 7 base quantities (time, length, mass, amount, temperature, current and luminous intensity) in each property package, and the platform makes use of this and Pyomo's Units container to automatically determine the units of all variables and expressions within a model. Thus, all components within a model using a given property package must use units based on the units chosen for the base quantities (to ensure consistency of units). However, flowsheets may contain property packages which use different sets of base units, however users should be careful to ensure units are converted correctly where property packages interact. For more detail on defining units of measurement see :ref:`Defining Units of Measurement<user_guide/components/property_package/uom:Defining Units of Measurement>`.
 
 Pyomo also provides convenient tools for converting between different units of measurement and checking for unit consistency, of which a few are highlighted below:
 
@@ -20,11 +20,9 @@ Standard Variable Names
 -----------------------
 In order for different models to communicate information effectively, it is necessary to have 
 a standard naming convention for any variable that may need to be shared between different 
-models. Within the IDAES modeling framework, this occurs most frequently with information 
-regarding the state and properties of the material within the system, which is calculated 
-in specialized property blocks, and then used in others parts of the model. This section of 
-the documentation discusses the standard naming conventions used within the IDAES modeling 
-framework.
+models. Within IDAES, this occurs most frequently when information 
+regarding the state and properties of the material, which is calculated 
+in specialized PropertyBlocks, is used in others parts of the model.
 
 Standard Naming Format
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -134,8 +132,7 @@ Acceleration due to gravity, gravitational constant and electron mass are source
 
 Thermophysical and Transport Properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Below is a list of all the thermophysical properties which currently have a standard name 
-associated with them in the IDAES framework.
+Below is a list of all the thermophysical properties which have standardized names.
 
 =============================== =====================
 Variable                        Standard Name
@@ -182,8 +179,7 @@ Volume Fraction                 vol_frac
 
 Reaction Properties
 ^^^^^^^^^^^^^^^^^^^
-Below is a list of all the reaction properties which currently have a standard name associated 
-with them in the IDAES framework.
+Below is a list of all the reaction properties which have standardized names.
 
 ======================= =================
 Variable                Standard Name
@@ -200,8 +196,7 @@ Solubility Constant     k_sol
 
 Solid Properties
 ^^^^^^^^^^^^^^^^
-Below is a list of all the properties of solid materials which currently have a standard name 
-associated with them in the IDAES framework.
+Below is a list of all the properties of solid materials which have standardized names.
 
 ============================ =================
 Variable                     Standard Name

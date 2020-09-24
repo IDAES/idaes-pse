@@ -36,9 +36,12 @@ def almpywriter_help(data, mod_res, output_name):
     """
     model = mod_res.split('=')[1]
     model = model + ' '
-    tlist = ('sin', 'cos', 'log', 'exp')
+    tlist = ('sin', 'cos', 'log', 'exp', 'ln')
     for tok in tlist:
-        model = model.replace(tok, 'np.' + tok)
+        if tok == 'ln':
+            model = model.replace(tok, 'np.log')
+        else:
+            model = model.replace(tok, 'np.' + tok)
     model = model.replace('^', '**')
 
     with open(output_name + '.py', 'w') as r:

@@ -32,8 +32,6 @@ class GeneralSurrogate(Surrogate):
     CONFIG.declare('logexp', ConfigValue(default=None, domain=bool))
     CONFIG.declare('sincos', ConfigValue(default=None, domain=bool))
     CONFIG.declare('ratio', ConfigValue(default=False, domain=bool))
-    CONFIG.declare('kriging', ConfigValue(default=False, domain=bool))
-    CONFIG.declare('rbf', ConfigValue(default=False, domain=bool))
     CONFIG.declare('alamo_modeler', ConfigValue(default=1, domain=int))
     CONFIG.declare('convpen', ConfigValue(default=0, domain=int))
     CONFIG.declare('basis_function', ConfigValue(default=None, domain=str))
@@ -42,6 +40,13 @@ class GeneralSurrogate(Surrogate):
     CONFIG.declare('additional_features_list', ConfigValue(default=None, domain=list))
     CONFIG.declare('overwrite', ConfigValue(default=True, domain=bool))
     CONFIG.declare('fname', ConfigValue(default=None, domain=str))
+
+    CONFIG.declare('alamopy', ConfigValue(default=True, domain=bool))
+    CONFIG.declare('alamopy_rbf', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('pysmo_kriging', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('pysmo_rbf', ConfigValue(default=False, domain=bool))
+    CONFIG.declare('pysmo_polyregression', ConfigValue(default=True, domain=bool))
+
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -57,37 +62,39 @@ class GeneralSurrogate(Surrogate):
         super().build_model()
 
         self.parse_config()
-        models = []
+        # models = []
 
         modeler_krig = Pysmo_kriging(**self._pysmo_krg_settings)
         modeler_krig.regressed_data(self._rdata_in, self._rdata_out)
-        modeler_krig.build_model()
-        if self.config['kriging']:
+        if self.config['pysmo_kriging']:
+            modeler_krig.build_model()
             self._models.append(modeler_krig)
 
         modeler_rbf = Pysmo_rbf(**self._pysmo_rbf_settings)
         modeler_rbf.regressed_data(self._rdata_in, self._rdata_out)
-        modeler_rbf.build_model()
-        if self.config['rbf']:
+        if self.config['pysmo_rbf']:
+            modeler_rbf.build_model()
             self._models.append(modeler_rbf)
 
         modeler_pr = Pysmo_polyregression(**self._pysmo_pr_settings)
         modeler_pr.regressed_data(self._rdata_in, self._rdata_out)
-        modeler_pr.build_model()
-        self._models.append(modeler_pr)
+        if self.config['pysmo_polyregression']:
+            modeler_pr.build_model()
+            self._models.append(modeler_pr)
 
         modeler_alamo = Alamopy(**self._alamo_settings)
         modeler_alamo.regressed_data(self._rdata_in, self._rdata_out)
-        has_alamo_flag = alamopy.multos.has_alamo()
-        if has_alamo_flag:
-            modeler_alamo.build_model()
-            self._models.append(modeler_alamo)
-        else:
-            print("ALAMO is not installed, and wasn't used for the General Surrogate.")
+        if self.config['alamopy']:
+            has_alamo_flag = alamopy.multos.has_alamo()
+            if has_alamo_flag:
+                modeler_alamo.build_model()
+                self._models.append(modeler_alamo)
+            else:
+                print("ALAMO is not installed, and wasn't used for the General Surrogate.")
 
         _alamo_settings_rbf = self._alamo_settings
-        if self.config['rbf']:
-            _alamo_settings_rbf['grbfcns'] = self.config['rbf']
+        if self.config['alamopy_rbf']:
+            _alamo_settings_rbf['grbfcns'] = self.config['alamopy_rbf']
             modeler_alamo_rbf = Alamopy(**_alamo_settings_rbf)
             modeler_alamo_rbf.regressed_data(self._rdata_in, self._rdata_out)
             if has_alamo_flag:
@@ -105,11 +112,11 @@ class GeneralSurrogate(Surrogate):
                 self._results = m.get_results()
                 self._model = m.get_model()
 
-        if not self.config['kriging']:
-            self._models.append(modeler_krig)
-
-        if not self.config['rbf']:
+        if not self.config['pysmo_rbf']:
             self._models.append(modeler_rbf)
+
+        if not self.config['pysmo_kriging']:
+            self._models.append(modeler_krig)
 
         self.pkl_info['Run settings'] = best_config
         self.pkl_info['Results'] = self._results
@@ -187,6 +194,7 @@ class Alamopy(Surrogate):
     CONFIG.declare('convpen', ConfigValue(default=None, domain=float))
     CONFIG.declare('screener', ConfigValue(default=None, domain=int))  # not sure
     CONFIG.declare('almname', ConfigValue(default=None, domain=str))
+    CONFIG.declare('showalm', ConfigValue(default=False, domain=bool))
     CONFIG.declare('savescratch', ConfigValue(default=None, domain=str))
     CONFIG.declare('savetrace', ConfigValue(default=None, domain=str))
     CONFIG.declare('expandoutput', ConfigValue(default=True, domain=bool))
@@ -216,18 +224,25 @@ class Alamopy(Surrogate):
         self.pkl_info['Results'] = self._results
         self.pkl_info['Expression'] = self._model
 
-    # JSON
-    # self.pkl_info['Expression'] = self.alamopy_results['model']
-
     def handle_results(self, res):
         # sympy to pyomo converter
 
-        self._results[Metrics.RMSE] = self.alamopy_results['rmse']
-        self._results[Metrics.SSE] = self.alamopy_results['ssr']
-        self._results[Metrics.Time] = self.alamopy_results['totaltime']
-        self._results[Metrics.MSE] = float(self.alamopy_results['rmse']) ** 2
-        self._results[Metrics.Order] = self.alamopy_results['nbas']
-        self._results[Metrics.R2] = self.alamopy_results['R2']
+        self._results = {}
+        if type(self.alamopy_results[Metrics.R2]) is dict:
+            label = self.alamopy_results['zlabels'][0]
+            self._results[Metrics.RMSE] = self.alamopy_results['rmse'][label]
+            self._results[Metrics.SSE] = self.alamopy_results['ssr'][label]
+            self._results[Metrics.Time] = self.alamopy_results['totaltime'][label]
+            self._results[Metrics.MSE] = float(self.alamopy_results['rmse'][label]) ** 2
+            self._results[Metrics.Order] = self.alamopy_results['nbas'][label]
+            self._results[Metrics.R2] = self.alamopy_results['R2'][label]
+        else:
+            self._results[Metrics.RMSE] = self.alamopy_results['rmse']
+            self._results[Metrics.SSE] = self.alamopy_results['ssr']
+            self._results[Metrics.Time] = self.alamopy_results['totaltime']
+            self._results[Metrics.MSE] = float(self.alamopy_results['rmse']) ** 2
+            self._results[Metrics.Order] = self.alamopy_results['nbas']
+            self._results[Metrics.R2] = self.alamopy_results['R2']
 
         # Generate pyomo expression
         m = pyo.ConcreteModel()

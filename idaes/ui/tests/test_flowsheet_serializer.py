@@ -69,7 +69,7 @@ def test_serialize_flowsheet():
     # _set_numerical_details(m)
 
     fss = FlowsheetSerializer()
-    fss.serialize_flowsheet(m.fs)
+    fss.serialize(m.fs, 'myflowsheet')
 
     unit_models = fss.get_unit_models()
     unit_model_names_types = []
@@ -87,10 +87,10 @@ def test_serialize_flowsheet():
                                     {'name': 'pre_boiler', 'type': 'heater'},
                                     {'name': 'HTR_pseudo_tube', 'type': 'heater'},
                                     {'name': 'LTR_pseudo_tube', 'type': 'heater'},
-                                    {'name': 'split', 'type': 'separator'}]
+                                    ]
 
     # TODO: Examine whether these are in fact appropriate
-    inlet_names = {'inlet', 'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 9)})
+    inlet_names = {'inlet', 'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 8)})
     outlet_names = {'outlet', 'vap_outlet', 'liq_outlet'}.union({f'outlet_{n}' for n in range(1, 8)})
     feed_and_outlet_names_type_truth = [{'name': name, 'type': 'feed'} for name in inlet_names] + \
                                        [{'name': name, 'type': 'product'} for name in outlet_names]
@@ -143,17 +143,17 @@ def test_serialize_flowsheet():
     # TODO: as obove, examine whether this is appropriate treatment for arcs connected to inlets/outlets
     # In particular, note that numbered inlet/outlet names are somewhat arbitrary;
     # they're only deterministic due to sorting upon automatic generation.
-    in_out_edges_truth = {'s_inlet': {'dest': 'split', 'source': 'inlet'},
-           's_inlet_1': {'dest': 'FG_cooler', 'source': 'inlet_1'},
+    in_out_edges_truth = {
+           's_inlet': {'dest': 'FG_cooler', 'source': 'inlet'},
            's_inlet_1_1': {'dest': 'M01', 'source': 'inlet_1_1'},
-           's_inlet_2': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_2'},
+           's_inlet_1': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_1'},
            's_inlet_2_1': {'dest': 'M01', 'source': 'inlet_2_1'},
-           's_inlet_3': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_3'},
-           's_inlet_4': {'dest': 'boiler', 'source': 'inlet_4'},
-           's_inlet_5': {'dest': 'bypass_compressor', 'source': 'inlet_5'},
-           's_inlet_6': {'dest': 'main_compressor', 'source': 'inlet_6'},
-           's_inlet_7': {'dest': 'pre_boiler', 'source': 'inlet_7'},
-           's_inlet_8': {'dest': 'turbine', 'source': 'inlet_8'},
+           's_inlet_2': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_2'},
+           's_inlet_3': {'dest': 'boiler', 'source': 'inlet_3'},
+           's_inlet_4': {'dest': 'bypass_compressor', 'source': 'inlet_4'},
+           's_inlet_5': {'dest': 'main_compressor', 'source': 'inlet_5'},
+           's_inlet_6': {'dest': 'pre_boiler', 'source': 'inlet_6'},
+           's_inlet_7': {'dest': 'turbine', 'source': 'inlet_7'},
            's_liq_outlet': {'dest': 'liq_outlet', 'source': 'F03'},
            's_outlet': {'dest': 'outlet', 'source': 'FG_cooler'},
            's_outlet_1': {'dest': 'outlet_1', 'source': 'HTR_pseudo_tube'},
