@@ -27,9 +27,9 @@ import the components from the appropriate model libraries. The necessary compon
 libraries will vary from application to application, and were discussed earlier in this User 
 Guide, however some common components users will need include:
 
-* Pyomo environment components (e.g. ConcreteModel, SolverFactory, TransformationFactory, Var, Constraint, objective) imported from ``pyomo.environ``
-* Pyomo network components (e.g. Arc, expand_arcs) from ``pyomo.network``
-* IDAES Flowsheet block, ``from idaes.core import FlowsheetBlock``
+* Pyomo environment components (e.g. ConcreteModel, SolverFactory, TransformationFactory, Var, Constraint, objective) imported from `pyomo.environ`
+* Pyomo network components (e.g. Arc, expand_arcs) from `pyomo.network`
+* IDAES FlowsheetBlock, from `idaes.core`
 * :ref:`Property packages<user_guide/components/property_package/index:Property Package>` for materials of interest
 * Unit models for process equipment, drawn from either the IDAES model libraries and/or user-defined models
 * Data visualization and analysis tools. Common tools include degrees of freedom and scaling, a full list is provided :ref:`here<technical_specs/core/util/index:Utility Methods>`.
@@ -45,7 +45,7 @@ general procedure is as follows:
 2.1 Create a Model Object
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The foundation of any model in IDAES is a Pyomo ``ConcreteModel`` object, which is created as 
+The foundation of any model in IDAES is a Pyomo `ConcreteModel` object, which is created as 
 follows:
 
 .. code-block:: python
@@ -54,13 +54,13 @@ follows:
 
 .. note::
 
-    IDAES does not support the use of Pyomo ``AbstractModels``
+    IDAES does not support the use of Pyomo `AbstractModels`
 
 2.2 Add a Flowsheet to the Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The foundation of a process model within IDAES is the ``FlowsheetBlock``, which forms the canvas 
-upon which the process will be constructed. A key aspect of the ``FlowsheetBlock`` is to define 
+The foundation of a process model within IDAES is the `FlowsheetBlock`, which forms the canvas 
+upon which the process will be constructed. A key aspect of the `FlowsheetBlock` is to define 
 whether the model will be steady-state or dynamic, and to define the time domain as appropriate.
 
 .. code-block:: python
@@ -69,7 +69,7 @@ whether the model will be steady-state or dynamic, and to define the time domain
 
 .. note::
 
-    The IDAES Process Modeling Framework supports nested flowsheets to allow complex processes 
+    IDAES supports nested flowsheets to allow complex processes 
     to be broken down into smaller sub-processes.
 
 2.3 Add Property Packages to Flowsheet
@@ -101,7 +101,7 @@ process.
 2.5 Define Unit Model Connectivity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to describe the flow of material between unit operations, users must declare ``Arcs``
+In order to describe the flow of material between unit operations, users must declare `Arcs`
 (or streams) which connect the outlet of each unit operation to the inlet of the next.
 
 .. code-block:: python
@@ -111,10 +111,10 @@ In order to describe the flow of material between unit operations, users must de
 2.6 Expand Arcs
 ^^^^^^^^^^^^^^^
 
-It is important to note that ``Arcs`` only define the connectivity between unit operations, but 
-do not create the actual model constraints needed to describe this. Once all ``Arcs`` in a 
-flowsheet have been defined, it is necessary to expand these ``Arcs`` using the Pyomo 
-``TransformationFactory``.
+It is important to note that `Arcs` only define the connectivity between unit operations, but 
+do not create the actual model constraints needed to describe this. Once all `Arcs` in a 
+flowsheet have been defined, it is necessary to expand these `Arcs` using the Pyomo 
+`TransformationFactory`.
 
 .. code-block:: python
     
@@ -123,7 +123,7 @@ flowsheet have been defined, it is necessary to expand these ``Arcs`` using the 
 .. note::
 
     Pyomo provides a number of other Transformations and tools that may be useful to the user 
-    depending on the application. Examples include the ``gdp`` and ``dae`` transformations.
+    depending on the application. Examples include the `gdp` and `dae` transformations.
 
 2.7 Add Variables, Constraints and Objectives
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -138,7 +138,7 @@ the user wishes to use in analyzing or visualizing the results.
 
 .. note::
 
-    The IDAES Scaling tools are currently under development.
+    The IDAES scaling tools are currently under development.
 
 Ensuring that a model is well scaled is important for increasing the efficiency and reliability 
 of solvers, and users should consider model scaling as an integral part of the modeling process. 
@@ -154,7 +154,7 @@ these can be found :ref:`here<technical_specs/core/util/scaling:Scaling Methods>
     of measurement when fixing and displaying values.
 
 The next step is to specify the model by fixing variables. which can be done using the form 
-``variable_name.fix(value)``. The variables that need to be fixed are application dependent, 
+`variable_name.fix(value)`. The variables that need to be fixed are application dependent, 
 but commonly include the feed state variables.
 
 In order to prepare the model for initialization, it is necessary to fully specify the model, 
@@ -186,12 +186,12 @@ the degrees of freedom in any model (or sub-model/block):
 -------------------------
 
 The next step is to initialize the model. All IDAES models have established initialization 
-methods that can be called using ``model.initialize()`` which can be expected to take a model 
+methods that can be called using `model.initialize()` which can be expected to take a model 
 from its initial state to a feasible solution for a set of initial guesses (within the models 
 expected operating range).
 
-The IDAES Process Modeling Framework generally uses a sequential-modular approach to 
-initializing flowsheets, where unit models are initialized sequentially, passing the outlet 
+IDEAS workflows generally use a sequential-modular approach to 
+initialize flowsheets, where unit models are initialized sequentially, passing the outlet 
 state from one unit as the initial state for the next. An automated sequential-modular tool is 
 available through Pyomo and demonstrated in the tutorials.
 
@@ -232,9 +232,9 @@ IPOPT, which can be downloaded using the ``idaes get-extensions`` command line.
 Once an initial solution has been found, users can proceed to solving the optimization problem 
 of interest. This procedure will vary by application but generally involves the following steps:
 
-7.1) Unfix some degrees of freedom to provide the problem with decision variables, ``variable_name.unfix()``.
+7.1) Unfix some degrees of freedom to provide the problem with decision variables, `variable_name.unfix()`.
 
-7.2) Add bounds to variables and inequality constraints to constrain solution space, ``variable_name.setlb(value)`` and ``var_name.setub(value)``
+7.2) Add bounds to variables and inequality constraints to constrain solution space, `variable_name.setlb(value)` and `var_name.setub(value)`
 
 7.3) Call a solver and check the termination conditions, see step 6 Solving the Model.
 
@@ -247,7 +247,7 @@ of interest. This procedure will vary by application but generally involves the 
 8. Analyzing and Visualizing the Results
 ----------------------------------------
 
-One of the benefits of the IDAES modeling framework is that it operates in a fully featured 
+One of the benefits of the IDAES Integrated Platform is that it operates in a fully featured 
 programming language, which provides users a high degree of flexibility in analyzing their 
 models. For example, users can automate the simulation of the model across multiple objectives 
 or a range of parameters, store and save results from one or multiple solutions. Users also have 

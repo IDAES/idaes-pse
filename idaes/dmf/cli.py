@@ -230,16 +230,12 @@ def init(path, create, name, desc, html):
             name = click.prompt("New workspace name")
         if not desc:
             desc = click.prompt("New workspace description")
-        if html is None:
-            # guess html path
-            # XXX: don't try to verify the guess
-            errfile = pathlib.Path(errors.__file__)
-            docsdir = errfile.parent.parent.parent / 'docs'
-            hpath = [str(docsdir / 'build')]
-        else:
-            hpath = [html]
+        # Note: default HTML paths, and all other default values, are included
+        # in the JSON schema at `idaes.dmf.workspace.CONFIG_SCHEMA`
+        hpath = [html] if html else None
         try:
-            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath)
+            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath,
+                    add_defaults=True)
         except errors.WorkspaceError as err:
             click.echo(f"Cannot create workspace: {err}")
             sys.exit(Code.DMF_OPER.value)

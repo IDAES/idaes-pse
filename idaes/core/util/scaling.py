@@ -34,7 +34,7 @@ from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
-from pyomo.kernel import ComponentMap
+from pyomo.common.collections import ComponentMap
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog

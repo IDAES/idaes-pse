@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -19,7 +19,7 @@ from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.set_utils import (is_explicitly_indexed_by,
         is_in_block_indexed_by, get_index_set_except)
-from pyomo.kernel import ComponentSet
+from pyomo.common.collections import ComponentSet
 
 from idaes.core import FlowsheetBlock
 from collections import Counter
