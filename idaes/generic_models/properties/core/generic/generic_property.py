@@ -34,7 +34,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.components import Component, __all_components__
-from idaes.core.phases import Phase, __all_phases__
+from idaes.core.phases import Phase, AqueousPhase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -186,32 +186,14 @@ class GenericParameterData(PhysicalParameterBlock):
         # Build core components
         self._state_block_class = GenericStateBlock
 
-        # Add Component objects
-        if self.config.components is None:
-            raise ConfigurationError(
-                "{} was not provided with a components argument."
-                .format(self.name))
-
-        for c, d in self.config.components.items():
-            ctype = d.pop("type", None)
-
-            if ctype is None:
-                _log.warning("{} component {} was not assigned a type. "
-                             "Using generic Component object."
-                             .format(self.name, c))
-                ctype = Component
-            elif ctype not in __all_components__:
-                raise TypeError(
-                    "{} component {} was assigned unrecognised type {}."
-                    .format(self.name, c, str(ctype)))
-
-            self.add_component(c, ctype(default=d))
-
         # Add Phase objects
         if self.config.phases is None:
             raise ConfigurationError(
                 "{} was not provided with a phases argument."
                 .format(self.name))
+
+        # Add a flag indicating whether this is an electrolyte system or not
+        self._electrolyte = False
 
         for p, d in self.config.phases.items():
             ptype = d.pop("type", None)
@@ -225,8 +207,98 @@ class GenericParameterData(PhysicalParameterBlock):
                 raise TypeError(
                     "{} phase {} was assigned unrecognised type {}."
                     .format(self.name, p, str(ptype)))
+            elif ptype is AqueousPhase:
+                # If there is an aqueous phase, set _electrolyte = True
+                self._electrolyte = True
 
             self.add_component(str(p), ptype(default=d))
+
+        # Check if we need to create electrolyte component lists
+        if self._electrolyte:
+            self.add_component(
+                "anion_set",
+                Set(ordered=True,
+                    doc="Set of anions present in aqueous phase"))
+            self.add_component(
+                "cation_set",
+                Set(ordered=True,
+                    doc="Set of cations present in aqueous phase"))
+            self.add_component(
+                "solvent_set",
+                Set(ordered=True,
+                    doc="Set of solvent species in aqueous phase"))
+            self.add_component(
+                "solute_set",
+                Set(ordered=True,
+                    doc="Set of molecular solutes in aqueous phase"))
+            self.add_component(
+                "_apparent_set",
+                Set(ordered=True,
+                    doc="Set of apparent-only species in aqueous phase"))
+            self.add_component(
+                "_non_aqueous_set",
+                Set(ordered=True,
+                    doc="Set of components not present in aqueous phase"))
+
+        # Add Component objects
+        if self.config.components is None:
+            raise ConfigurationError(
+                "{} was not provided with a components argument."
+                .format(self.name))
+
+        for c, d in self.config.components.items():
+            ctype = d.pop("type", None)
+            d["_electrolyte"] = self._electrolyte
+
+            if ctype is None:
+                _log.warning("{} component {} was not assigned a type. "
+                             "Using generic Component object."
+                             .format(self.name, c))
+                ctype = Component
+            elif ctype not in __all_components__:
+                raise TypeError(
+                    "{} component {} was assigned unrecognised type {}."
+                    .format(self.name, c, str(ctype)))
+
+            self.add_component(c, ctype(default=d))
+
+        # If this is an electrolyte system, we now need ot build the actual
+        # component lists
+        if self._electrolyte:
+            true_species = []
+            apparent_species = []
+
+            for j in self.anion_set:
+                true_species.append(j)
+            for j in self.cation_set:
+                true_species.append(j)
+            for j in self.solvent_set:
+                true_species.append(j)
+                apparent_species.append(j)
+            for j in self.solute_set:
+                true_species.append(j)
+                apparent_species.append(j)
+            for j in self._apparent_set:
+                apparent_species.append(j)
+            for j in self._non_aqueous_set:
+                true_species.append(j)
+                apparent_species.append(j)
+
+            self.add_component(
+                "true_species_set",
+                Set(initialize=true_species,
+                    ordered=True,
+                    doc="Set of true components in mixture"))
+            self.add_component(
+                "apparent_species_set",
+                Set(initialize=apparent_species,
+                    ordered=True,
+                    doc="Set of apparent components in mixture"))
+
+            # TODO: Need to work out how to allow switching between true and
+            # apparent components
+            # For now, just use apparent species
+            self.component_list = Set(initialize=apparent_species)
 
         # Validate phase-component lists, and build _phase_component_set
         pc_set = []
