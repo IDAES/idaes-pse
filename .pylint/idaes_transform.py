@@ -133,6 +133,28 @@ def infer_concrete_var_instance(node: astroid.ClassDef, context=None):
     return iter([concrete_cls_node.instantiate_class()])
 
 
+def is_config_block_class(node: astroid.ClassDef):
+    # NOTE might be necessary to use node.qname() instead, but that's more prone to breaking
+    # if the internal package structure is changed
+    return 'ConfigDict' in node.name
+
+
+def disable_attr_checks_on_slots(node: astroid.ClassDef):
+    # ConfigDict/ConfigBlock defines __slots__, which trigger a pylint error
+    # whenever a value is set on a non-slot attribute
+    # in reality, ConfigDict/ConfigBlock objects do support setting attributes at runtime
+    # via their __setattr__() method
+    # a quick fix for this false positive is to remove __slots__ from the ClassDef scope,
+    # which has the same effect as though __slots__ were not defined in the first place
+    # Although this is arguably mostly a shortcut to get rid of the pylint false positive,
+    # it is nonetheless consistent with the general behavior of this class,
+    # considering how the "loose" behavior of its __setattr__() method
+    # overrides the "strict" semantics of having __slots__ defined
+    # NOTE to be extra defensive, we should probably make sure that there are
+    # no __slots__ defined throughout the complete class hierarchy as well
+    del node.locals['__slots__']
+
+
 def register(linter):
     "This function needs to be defined for the plugin to be picked up by Pylint"
 
@@ -146,4 +168,8 @@ astroid.MANAGER.register_transform(
 
 astroid.MANAGER.register_transform(
     astroid.ClassDef, astroid.inference_tip(infer_concrete_var_instance), is_base_pyomo_var_class
+)
+
+astroid.MANAGER.register_transform(
+    astroid.ClassDef, disable_attr_checks_on_slots, is_config_block_class
 )
