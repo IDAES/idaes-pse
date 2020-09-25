@@ -31,6 +31,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
+from idaes.core.util.math import safe_log
 from .eos_base import EoSBase
 from idaes import bin_directory
 import idaes.logger as idaeslog
@@ -325,7 +326,8 @@ class Cubic(EoSBase):
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((blk.temperature*dadT - am) *
-                 log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6) +
                  Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "enth_mol_ig_comp", j)(
@@ -350,7 +352,8 @@ class Cubic(EoSBase):
 
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((blk.temperature*dadT - am) *
-                 log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p))) +
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6) +
                  Cubic.gas_constant(blk)*blk.temperature*(Z-1)*bm*EoS_p) /
                 (bm*EoS_p) + get_method(blk, "enth_mol_ig_comp", j)(
                                         blk, cobj(blk, j), blk.temperature))
@@ -371,12 +374,13 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # See pg. 102 in Properties of Gases and Liquids
-        return ((Cubic.gas_constant(blk)*log(
-                    (Z-B)/Z)*bm*EoS_p +
+        return ((Cubic.gas_constant(blk)*safe_log((Z-B)/Z, eps=1e-6)*bm*EoS_p +
                  Cubic.gas_constant(blk) *
-                 log(Z*blk.params.pressure_ref/blk.pressure)*bm*EoS_p +
-                 dadT*log((2*Z + B*(EoS_u + EoS_p)) /
-                          (2*Z + B*(EoS_u - EoS_p)))) /
+                 safe_log(Z*blk.params.pressure_ref/blk.pressure, eps=1e-6) *
+                 bm*EoS_p +
+                 dadT*safe_log((2*Z + B*(EoS_u + EoS_p)) /
+                               (2*Z + B*(EoS_u - EoS_p)),
+                               eps=1e-6)) /
                 (bm*EoS_p) + sum(blk.mole_frac_phase_comp[p, j] *
                                  get_method(blk, "entr_mol_ig_comp", j)(
                                      blk, cobj(blk, j), blk.temperature)
@@ -398,12 +402,16 @@ class Cubic(EoSBase):
         EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
 
         # See pg. 102 in Properties of Gases and Liquids
-        return (((Cubic.gas_constant(blk)*log((Z-B)/Z)*bm*EoS_p +
+        return (((Cubic.gas_constant(blk)*safe_log((Z-B)/Z, eps=1e-6) *
+                  bm*EoS_p +
                   Cubic.gas_constant(blk) *
-                  log(Z*blk.params.pressure_ref /
-                      (blk.mole_frac_phase_comp[p, j]*blk.pressure))*bm*EoS_p +
-                  dadT*log((2*Z + B*(EoS_u + EoS_p)) /
-                           (2*Z + B*(EoS_u - EoS_p)))) /
+                  safe_log(Z*blk.params.pressure_ref /
+                           (blk.mole_frac_phase_comp[p, j]*blk.pressure),
+                           eps=1e-6) *
+                  bm*EoS_p +
+                  dadT*safe_log((2*Z + B*(EoS_u + EoS_p)) /
+                                (2*Z + B*(EoS_u - EoS_p)),
+                                eps=1e-6)) /
                 (bm*EoS_p)) + get_method(blk, "entr_mol_ig_comp", j)(
                                       blk, cobj(blk, j), blk.temperature))
 
@@ -692,6 +700,7 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
     w = EoS_param[cubic_type]['w']
     p = sqrt(u**2 - 4*w)
 
-    return ((b/bm*(Z-1)*(B*p) - log(Z-B)*(B*p) +
-             A*(b/bm - delta)*log((2*Z + B*(u + p))/(2*Z + B*(u - p)))) /
+    return ((b/bm*(Z-1)*(B*p) - safe_log(Z-B, eps=1e-6)*(B*p) +
+             A*(b/bm - delta)*safe_log((2*Z + B*(u + p))/(2*Z + B*(u - p)),
+                                       eps=1e-6)) /
             (B*p))
