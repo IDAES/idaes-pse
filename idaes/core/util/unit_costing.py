@@ -674,38 +674,43 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
 
 def vessel_costing(self, alignment='horizontal',
-                # material of construction of the vessel
-                Mat_factor='carbon_steel',
-                # option 1: 1000 to 920,000 lb; option2: 4200 to 1M lb
-                weight_limit='option1',
-                # for vertical vessels only
-                # option1: 3 < D < 21 ft; 12 < L < 40 ft
-                # option2: 3 < D < 24 ft; 27 < L < 170 ft
-                L_D_range='option1',
-                # True to add platforms and ladders cost
-                PL=True,
-                # True for plates cost (for distillation column)
-                plates=False,
-                # if tray cost is True, provide tray material of construction
-                tray_mat_factor='carbon_steel',
-                # if tray cost is True, provide type of the trays
-                tray_type='sieve'):
+                   # material of construction of the vessel
+                   Mat_factor='carbon_steel',
+                   # option 1: 1000 to 920,000 lb; option2: 4200 to 1M lb
+                   weight_limit='option1',
+                   # for vertical vessels only
+                   # option1: 3 < D < 21 ft; 12 < L < 40 ft
+                   # option2: 3 < D < 24 ft; 27 < L < 170 ft
+                   L_D_range='option1',
+                   # True to add platforms and ladders cost
+                   PL=True,
+                   # True for plates cost (for distillation column)
+                   plates=False,
+                   # if tray cost is True, material of construction type needed
+                   tray_mat_factor='carbon_steel',
+                   # if tray cost is True, provide type of the trays
+                   tray_type='sieve',
+                   number_tray=10,
+                   ref_parameter_diameter=None,
+                   ref_parameter_lenght=None):
 
     # (base cost, purchase cost)
     _make_vars(self)
-
-    # checking units of self.parent_block().diameter
-    if (self.parent_block().config.property_package.get_metadata().
-            default_units['length']) == 'm':
-        D = self.parent_block().diameter*3.28084  # converting to ft
-        L = self.parent_block().lenght*3.28084
-    elif (self.parent_block().config.property_package.get_metadata().
-            default_units['length']) == 'ft':
-        D = self.parent_block().diameter  # ft
-        L = self.parent_block().lenght
+    if ref_parameter_diameter is None:
+        # checking units of self.parent_block().diameter
+        if (self.parent_block().config.property_package.get_metadata().
+                default_units['length']) == 'm':
+            D = self.parent_block().diameter*3.28084  # converting to ft
+            L = self.parent_block().lenght*3.28084
+        elif (self.parent_block().config.property_package.get_metadata().
+                default_units['length']) == 'ft':
+            D = self.parent_block().diameter  # ft
+            L = self.parent_block().lenght
+        else:
+            raise Exception('area units not supported contact developers')
     else:
-        raise Exception('area units not supported contact developers')
-
+        D = ref_parameter_diameter
+        L = ref_parameter_lenght
     # new variables and parameters
     self.weight = Var(initialize=1000,
                       domain=NonNegativeReals,
@@ -718,9 +723,10 @@ def vessel_costing(self, alignment='horizontal',
     self.purchase_cost_trays = Var(initialize=1e6,
                                    domain=NonNegativeReals,
                                    doc='purchase cost of trays in $')
-    self.CPL = Var(initialize=1000,
-                   domain=NonNegativeReals,
-                   doc='base cost of platforms and ladders in $')
+    self.base_cost_platf_ladders = Var(initialize=1000,
+                                       domain=NonNegativeReals,
+                                       doc='base cost of'
+                                       ' platforms and ladders in $')
     self.shell_thickness = Param(mutable=True,
                                  initialize=1.25,
                                  doc='shell thickness in in')
@@ -794,22 +800,24 @@ def vessel_costing(self, alignment='horizontal',
 
     # True if platform and ladder costs are incuded
     if PL is True:
-        platforms_ladders(self, alignment=alignment, L_D_range=L_D_range)
+        platforms_ladders(self, alignment=alignment, L_D_range=L_D_range,
+                          D=D, L=L)
     else:
-        self.CPL.fix(0)
+        self.base_cost_platf_ladders.fix(0)
 
     # purchase cost of vessel and platforms and ladders
     def CP_vessel_rule(self):
         return self.vessel_purchase_cost == \
-            (self.parent_block().flowsheet().costing.CE_index/500) \
-            * (self.material_factor*self.base_cost + self.CPL)
+            (self.parent_block().parent_block().costing.CE_index/500) \
+            * (self.material_factor*self.base_cost
+               + self.base_cost_platf_ladders)
     self.cp_vessel_eq = Constraint(rule=CP_vessel_rule)
 
     # True if platform and ladder costs are incuded
     if plates is True:
         plates_cost(self,
                     tray_mat_factor=tray_mat_factor,
-                    tray_type=tray_type)
+                    tray_type=tray_type, D=D, number_tray=number_tray)
     else:
         self.purchase_cost_trays.fix(0)
 
@@ -819,43 +827,44 @@ def vessel_costing(self, alignment='horizontal',
     self.cp_cost_eq = Constraint(rule=CP_cost_rule)
 
 
-def platforms_ladders(self, alignment='horizontal', L_D_range='option1'):
-    # checking units of self.parent_block().diameter
-    if (self.parent_block().config.property_package.get_metadata().
-            default_units['length']) == 'm':
-        D = self.parent_block().diameter*3.28084  # converting to ft
-        L = self.parent_block().lenght*3.28084
-    elif (self.parent_block().config.property_package.get_metadata().
-            default_units['length']) == 'ft':
-        D = self.parent_block().diameter  # ft
-        L = self.parent_block().lenght
-    else:
-        raise Exception('area units not supported contact developers')
+def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
+                      D=10, L=20):
+    # # checking units of self.parent_block().diameter
+    # if (self.parent_block().config.property_package.get_metadata().
+    #         default_units['length']) == 'm':
+    #     D = self.parent_block().diameter*3.28084  # converting to ft
+    #     L = self.parent_block().lenght*3.28084
+    # elif (self.parent_block().config.property_package.get_metadata().
+    #         default_units['length']) == 'ft':
+    #     D = self.parent_block().diameter  # ft
+    #     L = self.parent_block().lenght
+    # else:
+    #     raise Exception('area units not supported contact developers')
 
     if alignment == 'horizontal':
         def CPL_rule(self):
-            return self.CPL == D*0.20294
+            return self.base_cost_platf_ladders == D*0.20294
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     elif alignment == 'vertical':
         def CPL_rule(self):
             if L_D_range == 'option1':
-                return self.CPL == 361.8*((D)**0.73960) \
+                return self.base_cost_platf_ladders == 361.8*((D)**0.73960) \
                     * (L)**0.70684
             elif L_D_range == 'option2':
-                return self.CPL == 309.9*(D**0.63316) \
+                return self.base_cost_platf_ladders == 309.9*(D**0.63316) \
                     * (L**0.80161)
             else:
                 raise Exception('L_D_range option not supported')
         self.CPL_eq = Constraint(rule=CPL_rule)
-        
+
     else:
         raise Exception('alignment not supported')
 
 
 def plates_cost(self,
                 tray_mat_factor='carbon_steel',
-                tray_type='sieve'):
+                tray_type='sieve', D=10, number_tray=10):
 
     self.base_cost_trays = Var(initialize=1e4,
                                domain=NonNegativeReals,
@@ -867,14 +876,14 @@ def plates_cost(self,
                                     doc='number of trays factor')
     self.number_trays = Param(mutable=True, initialize=15.0,
                               doc='tray type factor')
-    self.tray_material_factor = Param(mutable=True, initialize=1.0,
-                                      doc='FTM material of construction'
-                                      ' factor')
+    self.tray_material_factor = Var(initialize=1.0,
+                                    doc='FTM material of construction'
+                                    ' factor')
     # calc number tray factor
-    if self.number_trays > 20:
+    if number_tray > 20:
         self.number_tray_factor = 1.0
     else:
-        self.number_tray_factor = 2.25/(1.0414**self.number_trays)
+        self.number_tray_factor = 2.25/(1.0414**number_tray)
 
     type_tray_dic = {'sieve': 1,
                      'valve': 1.18,
@@ -893,20 +902,23 @@ def plates_cost(self,
               'stain_steel_316': 0.0724,
               'carpenter_20CB-3': 0.0788,
               'monel': 0.1120}
+
     # recalculating tray factor value (assuming diameter is fixed)
     # Column diameter in ft, eq. valid for 2 to 16 ft
-    self.tray_material_factor = t_alf1[tray_mat_factor] \
-        + t_alf2[tray_mat_factor]*D
+    def mt_factor_rule(self):
+        return self.tray_material_factor == t_alf1[tray_mat_factor] \
+            + t_alf2[tray_mat_factor]*D
+    self.mt_factor_eq = Constraint(rule=mt_factor_rule)
 
     # base cost for trays
     def bc_tray_rule(self):
-        return self.self.base_cost_trays == 486*exp(0.1739*D)
+        return self.base_cost_trays == 468.00*exp(0.1739*D)
     self.bc_tray_eq = Constraint(rule=bc_tray_rule)
 
     # purchase cost calculation for trays
     def CP_tray_rule(self):
         return self.purchase_cost_trays == \
-            (self.parent_block().flowsheet().costing.CE_index/500) \
+            (self.parent_block().parent_block().costing.CE_index/500) \
             * self.number_trays \
             * self.number_tray_factor \
             * self.type_tray_factor \
