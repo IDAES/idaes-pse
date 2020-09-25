@@ -10,22 +10,25 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from collections import defaultdict
 import json
 import os
 import re
+
+import idaes.logger
+
+from collections import defaultdict
+from pandas import DataFrame
 
 from idaes.core import UnitModelBlockData
 from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
-import idaes.logger
-
-from pyomo.environ import Block, value
-from pyomo.network.port import Port
-from pyomo.network import Arc
-from pyomo.core.base.var import Var
 from pyomo.core.base.expression import Expression
+from pyomo.core.base.var import Var
+from pyomo.environ import Block, value
+from pyomo.network import Arc
+from pyomo.network.port import Port
+
 
 class FileBaseNameExistsError(Exception):
     pass
@@ -45,6 +48,7 @@ class FlowsheetSerializer:
         self.orphaned_ports = {}
         self.labels = {}
         self.out_json = {"model": {}}
+        self.serialized_contents = defaultdict(dict)
         self.name = ""
         self.flowsheet = None
         self._used_ports = set()
@@ -121,8 +125,9 @@ class FlowsheetSerializer:
                         if isinstance(item, UnitModelBlockData):
                             if any((item == arc.source.parent_block() or item == arc.dest.parent_block()) for arc in self.arcs.values()):
                                 self._add_unit_model_with_ports(item)
-                                print(f'sub-indexed: {item.getname()}')
   
+        # We might have this information from generating self.serialized_components but I (Makayla) don't
+        # know how that connects to the stream names so this will be left alone for now
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
             for var, var_value in stream_value.define_display_vars().items():
@@ -137,12 +142,10 @@ class FlowsheetSerializer:
             self.labels[stream_name] = label[:-2]
 
         used_ports = set()
-        self.edges = {}  # TODO: necessary? do the attributes need clearing?
         for name, arc in self.arcs.items():
             try:  # this is currently(?) necessary because for internally-nested arcs we may not record ports?
                 self.edges[name] = {"source": self.ports[arc.source], 
                                     "dest": self.ports[arc.dest]}
-                self._logger.info(f'source: {arc.source}; val: {self.ports[arc.source]}')
                 used_ports.add(arc.source)
                 used_ports.add(arc.dest)
             except KeyError as error:
@@ -155,8 +158,8 @@ class FlowsheetSerializer:
     def _identify_implicit_inlets_and_outlets(self, untouched_ports):
         for port in sorted(untouched_ports, key=lambda port: str(port)):  # TODO: sorting required for determinism; better way?
             portname = str(port).split('.')[-1]
-            unitname = self._unique_unit_name(portname)  # this becomes the I/O's ID and label
-            edgename = f's_{unitname}'
+            unit_name = self._unique_unit_name(portname)  # this becomes the I/O's ID and label
+            edgename = f's_{unit_name}'
             # identify ports per INLET_REGEX/OUTLET_REGEX
             # then pretend they're unit models
             # then add their edges
@@ -164,8 +167,8 @@ class FlowsheetSerializer:
             if inlet_match:
                 # print(f"  ^ inlet found; parent: {str(self.ports[port])}")
                 # name the feed "unit model" and its connecting edge with the name of the port itself
-                feedport = self._PseudoUnit('Feed', unitname)
-                self._used_unit_names.add(unitname)
+                feedport = self._PseudoUnit('Feed', unit_name)
+                self._used_unit_names.add(unit_name)
                 self.unit_models[feedport] = {
                     "name": feedport.getname(),
                     "type": "feed"
@@ -180,8 +183,8 @@ class FlowsheetSerializer:
             outlet_match = self.OUTLET_REGEX.search(portname)
             if outlet_match:
                 # print(f"  ^ outlet found; parent: {str(self.ports[port])}")
-                prodport = self._PseudoUnit('Product', unitname)
-                self._used_unit_names.add(unitname)
+                prodport = self._PseudoUnit('Product', unit_name)
+                self._used_unit_names.add(unit_name)
                 self.unit_models[prodport] = {
                     "name": prodport.getname(),
                     "type": "product"
@@ -196,7 +199,7 @@ class FlowsheetSerializer:
             # TODO: deal with remaining loose ports here?
 
     def _unique_unit_name(self, base_name):
-        '''Prevent name collisions by simply appending a number'''
+        # Prevent name collisions by simply appending a number
         name = base_name
         increment = 0
         while name in self._used_unit_names:
@@ -309,7 +312,7 @@ class FlowsheetSerializer:
                     link_position_mapping[unit_attrs["type"]]
                 )
             except KeyError as e:
-                print(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
+                _logger.info(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
                                                y_pos, 
@@ -351,16 +354,32 @@ class FlowsheetSerializer:
             )
 
     def _add_unit_model_with_ports(self, unit):
-        unitname = unit.getname()
+        unit_name = unit.getname()
         if unit.parent_block() == self.flowsheet:
             # The unit is top-level and therefore should be displayed.
             self.unit_models[unit] = {
-                    "name": unitname,
+                    "name": unit_name,
                     "type": self._get_unit_model_type(unit)
                 }
-            self._used_unit_names.add(unitname)
+
+            self._used_unit_names.add(unit_name)
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
+
+            performance_contents, stream_df = unit.serialize_contents()
+
+            if not stream_df.empty:
+                # If there is a stream dataframe then we need to reset the index so we can get the variable names
+                stream_df = stream_df.reset_index().rename(columns={"index": "Variable"})
+                self.serialized_contents[unit_name]["stream"] = stream_df
+
+            if performance_contents:
+                # If performance contents is not empty or None then stick it into a dataframe and convert the
+                # GeneralVars to actual values
+                performance_df = DataFrame(performance_contents["vars"].items(), columns=["Variable", "Value"])
+                performance_df['Value'] = performance_df['Value'].map(lambda v: value(v))
+                self.serialized_contents[unit_name]["performance"] = performance_df
+
         elif unit in self._known_endpoints:
             # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
             # Find the top-level parent unit and assign the serialized link to the parent.
