@@ -29,7 +29,7 @@ from pyomo.environ import Expression
 
 
 @pytest.mark.component
-def test_serialize_flowsheet():
+def test_serialize():
     # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
     m = build_flowsheet()
     m.fs.properties = SWCO2ParameterBlock()
@@ -66,7 +66,7 @@ def test_serialize_flowsheet():
                                        'property_package': m.fs.properties,
                                        'has_pressure_change': True})
 
-    # _set_numerical_details(m)
+    _set_numerical_details(m)
 
     fss = FlowsheetSerializer()
     fss.serialize(m.fs, 'myflowsheet')
@@ -276,7 +276,7 @@ def test_create_image_jointjs_json():
                 ]}
 
   fss = FlowsheetSerializer()
-  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
+  fss._create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
   assert out_json == {'cells':
                         [{
                             'type': 'standard.Image',
@@ -338,7 +338,7 @@ def test_create_link_jointjs_json():
     label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
+    fss._create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
     assert out_json == {'cells': [{
                             'type': 'standard.Link',
                             'source': {
