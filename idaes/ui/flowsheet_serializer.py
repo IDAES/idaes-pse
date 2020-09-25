@@ -312,7 +312,7 @@ class FlowsheetSerializer:
                     link_position_mapping[unit_attrs["type"]]
                 )
             except KeyError as e:
-                _logger.info(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
+                self._logger.info(f'Unable to find icon for {unit_attrs["type"]}. Using default icon')
                 self.create_image_jointjs_json(self.out_json, 
                                                x_pos, 
                                                y_pos, 
