@@ -13,7 +13,7 @@
 # =============================================================================
 
 from pyomo.environ import (Constraint, Var, Param, exp, log,
-                           NonNegativeReals, Reference)
+                           NonNegativeReals)
 from idaes.core.util.constants import Constants as const
 
 # Some more information about this module
@@ -694,7 +694,7 @@ def vessel_costing(self, alignment='horizontal',
                    ref_parameter_diameter=None,
                    ref_parameter_lenght=None):
 
-    # (base cost, purchase cost)
+    # make vars (base cost, purchase cost)
     _make_vars(self)
     if ref_parameter_diameter is None:
         # checking units of self.parent_block().diameter
@@ -727,13 +727,13 @@ def vessel_costing(self, alignment='horizontal',
                                        domain=NonNegativeReals,
                                        doc='base cost of'
                                        ' platforms and ladders in $')
+    # we recommend users to calculate the pressure design based shell thickness
+    # shell thickness here already considers the pressure design
     self.shell_thickness = Param(mutable=True,
                                  initialize=1.25,
                                  doc='shell thickness in in')
     self.material_factor = Param(mutable=True, initialize=3,
                                  doc='construction material correction factor')
-    # we recommend users to calculate the pressure design based shell thickness
-    # shell thickness here considers users already computed pressure design
     self.material_density = Param(mutable=True, initialize=0.284,
                                   doc='density of the metal in lb/in^3')
 
@@ -770,16 +770,16 @@ def vessel_costing(self, alignment='horizontal',
 
     self.material_factor = material_factor_dic[Mat_factor]
     # metal densities in lb/in^3
-    material_dens_dic = {'carbon_steel': 0.284,  # 490 lb/ft3
+    material_dens_dic = {'carbon_steel': 0.284,  # lb/in3 = 490 lb/ft3
                          'low_alloy_steel': 0.271,  # 0.271 - 0.292 lb/in³
                          'stain_steel_304': 0.270,  # 467 - 499 lb/ft3
                          'stain_steel_316': 0.276,  # 467 - 499 lb/ft3
-                         'carpenter_20CB-3': 0.292,  # 503 lb/ft3
-                         'nickel_200': 0.3216,  # 556 lb/ft3
-                         'monel_400': 0.319,  # 522 - 552 lb/ft3
-                         'inconel_600': 0.3071,  # 530 lb/ft3
-                         'incoloy_825': 0.2903,  # 501 lb/ft3
-                         'titanium': 0.1628}  # 281 lb/ft3
+                         'carpenter_20CB-3': 0.292,  # lb/in3 = 503 lb/ft3
+                         'nickel_200': 0.3216,  # lb/in3 = 556 lb/ft3
+                         'monel_400': 0.319,  # lb/in3 = 522 - 552 lb/ft3
+                         'inconel_600': 0.3071,  # lb/in3 = 530 lb/ft3
+                         'incoloy_825': 0.2903,  # lb/in3 = 501 lb/ft3
+                         'titanium': 0.1628}  # lb/in3 = 281 lb/ft3
 
     self.material_density = material_dens_dic[Mat_factor]
 
@@ -843,7 +843,7 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
 
     if alignment == 'horizontal':
         def CPL_rule(self):
-            return self.base_cost_platf_ladders == D*0.20294
+            return self.base_cost_platf_ladders == 2005*D**0.20294
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     elif alignment == 'vertical':
@@ -903,7 +903,7 @@ def plates_cost(self,
               'carpenter_20CB-3': 0.0788,
               'monel': 0.1120}
 
-    # recalculating tray factor value (assuming diameter is fixed)
+    # recalculating tray factor value
     # Column diameter in ft, eq. valid for 2 to 16 ft
     def mt_factor_rule(self):
         return self.tray_material_factor == t_alf1[tray_mat_factor] \
