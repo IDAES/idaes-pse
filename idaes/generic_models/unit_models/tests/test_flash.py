@@ -19,7 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           units)
+                           units,
+                           Var)
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
@@ -318,3 +319,20 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_report(self, iapws):
         iapws.fs.unit.report()
+
+
+    @pytest.mark.component
+    def test_costing(self, iapws):
+        iapws.fs.unit.get_costing()
+        assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
+        iapws.fs.unit.diameter.fix(2)
+        iapws.fs.unit.length.fix(4)
+        results = solver.solve(iapws)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+        assert (pytest.approx(63787.06525, abs=1e3) ==
+                value(iapws.fs.unit.costing.base_cost))
+        assert (pytest.approx(97660.6169, abs=1e3) ==
+                value(iapws.fs.unit.costing.purchase_cost))

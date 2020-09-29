@@ -101,66 +101,6 @@ def test_costing_FH_solve():
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_costing_flash():
-    m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95.Iapws95ParameterBlock(default={
-        "phase_presentation": iapws95.PhaseType.LG})
-    m.fs.unit = Flash(default={"property_package": m.fs.properties,
-                               "ideal_separation": False,
-                               "energy_split_basis":
-                                   EnergySplittingType.enthalpy_split})
-    m.fs.unit.inlet.flow_mol.fix(10000)
-    m.fs.unit.inlet.enth_mol.fix(24000)
-    m.fs.unit.inlet.pressure.fix(101325)
-    m.fs.unit.heat_duty.fix(0)
-    m.fs.unit.deltaP.fix(0)
-    # calculate flash diameter based on heuristics for process vessels
-    # Analysis, Synthesis, and Design of Chemical Processes
-    # Table 11.6 Heuristics for Process Vessels
-    # as a function of density, mass flowrate, and gas velocity
-    # dens mass phase = kg/m3, flow_mass in kg/s
-    # gas velocity, u = k(rhoL/rhoVap - 1)^0.5 in m/s
-    m.fs.get_costing()  # create CE_index in costing global parameters
-    # create variables to calculate vessel cost
-    m.fs.unit.diameter = pyo.Var(initialize=10,
-                                 domain=pyo.NonNegativeReals,
-                                 doc='unit diameter in m')
-    m.fs.unit.length = pyo.Var(initialize=10,
-                               domain=pyo.NonNegativeReals,
-                               doc='unit length in m')
-
-    m.fs.unit.diameter.fix(0.155238)  # in ft
-    m.fs.unit.length.fix(0.388095)   # in ft
-
-    m.fs.unit.costing = pyo.Block()
-    cs.vessel_costing(m.fs.unit.costing,
-                      alignment='vertical',
-                      weight_limit='option1',
-                      L_D_range='option1',
-                      PL=True,
-                      plates=False)
-
-    assert degrees_of_freedom(m) == 0
-    # Check unit config arguments
-    assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
-    assert not hasattr(m.fs.unit.costing, "purchase_cost_trays")
-
-    results = solver.solve(m, tee=False)
-    # Check for optimal solution
-    assert results.solver.termination_condition == \
-        pyo.TerminationCondition.optimal
-    assert results.solver.status == pyo.SolverStatus.ok
-    assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost_platf_ladders, pyo.Var)
-    assert not hasattr(m.fs.unit.costing, "purchase_cost_trays")
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
-
-
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.component
 def test_costing_distillation_solve():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
