@@ -16,7 +16,7 @@ Standard IDAES CSTR model.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.environ import Reference
+from pyomo.environ import Reference, Block, Var, Constraint
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -28,6 +28,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
+import idaes.core.util.unit_costing as costing
 
 __author__ = "Andrew Lee, Vibhav Dabadghao"
 
@@ -239,3 +240,26 @@ see reaction package for documentation.}"""))
             var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
+
+
+    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True,
+                    year=None, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year, module=module)
+
+        self.costing = Block()
+        units_meta = self.config.property_package.get_metadata().get_derived_units
+        self.length = Var(initialize=1,
+                          units=units_meta('length'),
+                          doc='vessel length')
+        self.diameter = Var(initialize=1,
+                            units=units_meta('length'),
+                            doc='vessel diameter')
+        time = self.flowsheet().config.time.first()
+        self.volume_eq = Constraint(expr=self.volume[time] == self.length*self.diameter)
+        module.cstr_costing(self.costing, alignment=alignment,
+                            Mat_factor=Mat_factor,
+                            weight_limit=weight_limit,
+                            L_D_range=L_D_range,
+                            PL=PL)

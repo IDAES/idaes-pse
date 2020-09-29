@@ -126,12 +126,12 @@ def test_costing_flash():
     m.fs.unit.diameter = pyo.Var(initialize=10,
                                  domain=pyo.NonNegativeReals,
                                  doc='unit diameter in m')
-    m.fs.unit.lenght = pyo.Var(initialize=10,
+    m.fs.unit.length = pyo.Var(initialize=10,
                                domain=pyo.NonNegativeReals,
-                               doc='unit lenght in m')
+                               doc='unit length in m')
 
     m.fs.unit.diameter.fix(0.155238)  # in ft
-    m.fs.unit.lenght.fix(0.388095)   # in ft
+    m.fs.unit.length.fix(0.388095)   # in ft
 
     m.fs.unit.costing = pyo.Block()
     cs.vessel_costing(m.fs.unit.costing,
@@ -145,6 +145,7 @@ def test_costing_flash():
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
     assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
+    assert not hasattr(m.fs.unit.costing, "purchase_cost_trays")
 
     results = solver.solve(m, tee=False)
     # Check for optimal solution
@@ -154,7 +155,7 @@ def test_costing_flash():
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
     assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
     assert isinstance(m.fs.unit.costing.base_cost_platf_ladders, pyo.Var)
-    assert isinstance(m.fs.unit.costing.purchase_cost_trays, pyo.Var)
+    assert not hasattr(m.fs.unit.costing, "purchase_cost_trays")
     assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
 
 
@@ -172,9 +173,9 @@ def test_costing_distillation_solve():
     m.fs.unit.diameter = pyo.Var(initialize=10,
                                  domain=pyo.NonNegativeReals,
                                  doc='unit diameter in m')
-    m.fs.unit.lenght = pyo.Var(initialize=10,
+    m.fs.unit.length = pyo.Var(initialize=10,
                                domain=pyo.NonNegativeReals,
-                               doc='unit lenght in m')
+                               doc='unit length in m')
     # create costing block
     m.fs.unit.costing = pyo.Block()
 
@@ -186,7 +187,7 @@ def test_costing_distillation_solve():
                       plates=True,
                       number_tray=100,
                       ref_parameter_diameter=m.fs.unit.diameter,
-                      ref_parameter_lenght=m.fs.unit.lenght)
+                      ref_parameter_length=m.fs.unit.length)
     # pressure design and shell thickness from Example 22.13 Product and
     # Process Design Principless
     m.fs.unit.heat_duty.fix(18390000)  # Btu/hr
@@ -199,7 +200,7 @@ def test_costing_distillation_solve():
     # 1.152 in, therefore steel plate thickness is 1.250 (ts)
     m.fs.unit.costing.shell_thickness = 1.250  # inches
     m.fs.unit.diameter.fix(10)  # ft
-    m.fs.unit.lenght.fix(212)   # ft
+    m.fs.unit.length.fix(212)   # ft
     m.fs.unit.costing.number_trays = 100
 
     assert degrees_of_freedom(m) == 0
@@ -222,6 +223,8 @@ def test_costing_distillation_solve():
                           abs=1e-2) == 1100958.9396)  # Example 22.13 Ref Book
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
 def test_blower_build_and_solve():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -274,6 +277,8 @@ def test_blower_build_and_solve():
                           abs=1e-2) == 272595.280)
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
 def test_compressor_fan():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

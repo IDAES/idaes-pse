@@ -143,7 +143,7 @@ where:
 * CE_index - is a global parameter for Chemical Enginering cost index for years 2010-2019
 * hx_os - heat exchanger oversize factor (default = 1)
 
-The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube lenght factor.
+The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube length factor.
 
 * hx_type : 'floating_head', 'fixed_head', 'U-tube'\*, 'Kettle_vap'
 * material factor (Mat_factor): 'stain_steel'\*, 'carb_steel'
@@ -574,19 +574,19 @@ We recommend using this method to cost reactors (CSTR or PFR), flash tanks, vess
 * alignment = 'horizontal', 'vertical'
 * Mat_factor = 'carbon_steel'
 * weight_limit = 'option1', 'option2' (option 1: 1000 to 920,000 lb, option 2: 9000 to 2.5M lb only for vertical vessels)
-* L_D_range = 'option1', 'option2' (option 1: 3 < D < 21, 12 < L < 40; option 2: 3 < D < 24, 27 < L < 170; all in ft D: diameter, L: lenght) only for vertical vessels
+* L_D_range = 'option1', 'option2' (option 1: 3 < D < 21, 12 < L < 40; option 2: 3 < D < 24, 27 < L < 170; all in ft D: diameter, L: length) only for vertical vessels
 * PL='True', 'False': to build platforms and ladders cost
 * plates = 'True', 'False': to build tray cost for distillation columns
 * tray_mat_factor = 'carbon_steel' see table 18
 * tray_type = 'sieve'
 * number_tray = 10
 * ref_parameter_diameter=None
-* ref_parameter_lenght=None
+* ref_parameter_length=None
 
 
 By adding reference parameter, the method can be constructed in any pyomo costing block.
 Since the generic models do not include the variables required to cost these type of units, the user must create the blocks and variables.
-For example: m.fs.unit = Block(), m.fs.unit.diameter = Var(), m.fs.unit.lenght = Var(). Then m.fs.unit.costing = pyo.Block() and call vessel_costing method = vessel_costing(m.fs.unit.costing, args).
+For example: m.fs.unit = Block(), m.fs.unit.diameter = Var(), m.fs.unit.length = Var(). Then m.fs.unit.costing = pyo.Block() and call vessel_costing method = vessel_costing(m.fs.unit.costing, args).
 
 Table 17. Materials of construction factor and material density
 
@@ -608,7 +608,7 @@ titanium           7.7    0.1628
 Vessel Cost
 """""""""""
 
-The weight of the unit is calculated based on the methal density, Lenght, Diameter, and shell thickness. `shel_thickness` is a parameter initialized to 1.25, 
+The weight of the unit is calculated based on the methal density, length, Diameter, and shell thickness. `shel_thickness` is a parameter initialized to 1.25, 
 however, the user must calculate the shell wall minimum thickness computd from the ASME pressure vessel code (tp) add the average vessel thickness, the necessary wall thickness (tE), and select the appropriate shell_thickness.
 
 .. math:: self.weight == \pi * ((D*12) + self.shell\_thickness) * ((L*12)+(0.8*D*12))*self.shell\_thickness*self.material\_density
@@ -641,7 +641,7 @@ note that if plates='False', the cost of trays is fixed to 0.
 
 Base Cost of Platforms and ladders
 """"""""""""""""""""""""""""""""""
-The cost of platforms and ladders is based on the diamter and lenght in ft.
+The cost of platforms and ladders is based on the diamter and length in ft.
 Horizontal vessels (option1: 3 < D < 12 ft):
 
 .. math:: self.base\_cost\_platf\_ladders = 20059*D^{0.20294}

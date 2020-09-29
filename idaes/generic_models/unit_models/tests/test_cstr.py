@@ -20,7 +20,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            units,
-                           value)
+                           value,
+                           Var)
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -211,3 +212,9 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+
+    @pytest.mark.unit
+    def test_costing(self, sapon):
+        sapon.fs.unit.get_costing()
+        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)

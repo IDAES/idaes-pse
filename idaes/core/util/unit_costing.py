@@ -13,8 +13,9 @@
 # =============================================================================
 
 from pyomo.environ import (Constraint, Var, Param, exp, log,
-                           NonNegativeReals)
+                           NonNegativeReals, units)
 from idaes.core.util.constants import Constants as const
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
@@ -692,25 +693,44 @@ def vessel_costing(self, alignment='horizontal',
                    tray_type='sieve',
                    number_tray=10,
                    ref_parameter_diameter=None,
-                   ref_parameter_lenght=None):
+                   ref_parameter_length=None):
 
     # make vars (base cost, purchase cost)
     _make_vars(self)
-    if ref_parameter_diameter is None:
-        # checking units of self.parent_block().diameter
-        if (self.parent_block().config.property_package.get_metadata().
+
+    if ref_parameter_diameter is None and ref_parameter_length is None:
+    # checking units of self.parent_block().diameter
+        try:
+            D = self.parent_block().diameter
+        except AttributeError:
+            raise ConfigurationError('diameter does not exist in unit model')
+        try:
+            L = self.parent_block().length
+        except AttributeError:
+            raise ConfigurationError('length variable does not exist in '
+                                     'the unit model')
+        if isinstance(self.parent_block().config.property_package.get_metadata().
+                default_units['length'], _PyomoUnit):
+            D = units.convert(D, to_units = units.foot)
+            L = units.convert(L, to_units = units.foot)
+        elif (self.parent_block().config.property_package.get_metadata().
                 default_units['length']) == 'm':
-            D = self.parent_block().diameter*3.28084  # converting to ft
-            L = self.parent_block().lenght*3.28084
+            D = D*3.28084  # converting to ft
+            L = L*3.28084
         elif (self.parent_block().config.property_package.get_metadata().
                 default_units['length']) == 'ft':
-            D = self.parent_block().diameter  # ft
-            L = self.parent_block().lenght
+            pass
         else:
             raise Exception('area units not supported contact developers')
-    else:
+
+    elif ref_parameter_diameter is not None and ref_parameter_length is not None:
         D = ref_parameter_diameter
-        L = ref_parameter_lenght
+        L = ref_parameter_length
+
+    else:
+        raise ConfigurationError('provide both ref_parameter_diameter'
+                                 'and ref_parameter_length')
+
     # new variables and parameters
     self.weight = Var(initialize=1000,
                       domain=NonNegativeReals,
@@ -720,13 +740,6 @@ def vessel_costing(self, alignment='horizontal',
                                     domain=NonNegativeReals,
                                     doc='vessel cost in $')
 
-    self.purchase_cost_trays = Var(initialize=1e6,
-                                   domain=NonNegativeReals,
-                                   doc='purchase cost of trays in $')
-    self.base_cost_platf_ladders = Var(initialize=1000,
-                                       domain=NonNegativeReals,
-                                       doc='base cost of'
-                                       ' platforms and ladders in $')
     # we recommend users to calculate the pressure design based shell thickness
     # shell thickness here already considers the pressure design
     self.shell_thickness = Param(mutable=True,
@@ -800,47 +813,38 @@ def vessel_costing(self, alignment='horizontal',
 
     # True if platform and ladder costs are incuded
     if PL is True:
+        self.base_cost_platf_ladders = Var(initialize=1000,
+                                           domain=NonNegativeReals,
+                                           doc='base cost of'
+                                           ' platforms and ladders in $')
         platforms_ladders(self, alignment=alignment, L_D_range=L_D_range,
                           D=D, L=L)
-    else:
-        self.base_cost_platf_ladders.fix(0)
 
     # purchase cost of vessel and platforms and ladders
     def CP_vessel_rule(self):
         return self.vessel_purchase_cost == \
             (self.parent_block().parent_block().costing.CE_index/500) \
             * (self.material_factor*self.base_cost
-               + self.base_cost_platf_ladders)
+               + (self.base_cost_platf_ladders if PL else 0))
     self.cp_vessel_eq = Constraint(rule=CP_vessel_rule)
 
     # True if platform and ladder costs are incuded
     if plates is True:
+        self.purchase_cost_trays = Var(initialize=1e6,
+                                       domain=NonNegativeReals,
+                                       doc='purchase cost of trays in $')
         plates_cost(self,
                     tray_mat_factor=tray_mat_factor,
                     tray_type=tray_type, D=D, number_tray=number_tray)
-    else:
-        self.purchase_cost_trays.fix(0)
 
     def CP_cost_rule(self):
         return self.purchase_cost == self.vessel_purchase_cost \
-            + self.purchase_cost_trays  # + self.purchase_cost_packing
+            + (self.purchase_cost_trays if plates else 0)
     self.cp_cost_eq = Constraint(rule=CP_cost_rule)
 
 
 def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                       D=10, L=20):
-    # # checking units of self.parent_block().diameter
-    # if (self.parent_block().config.property_package.get_metadata().
-    #         default_units['length']) == 'm':
-    #     D = self.parent_block().diameter*3.28084  # converting to ft
-    #     L = self.parent_block().lenght*3.28084
-    # elif (self.parent_block().config.property_package.get_metadata().
-    #         default_units['length']) == 'ft':
-    #     D = self.parent_block().diameter  # ft
-    #     L = self.parent_block().lenght
-    # else:
-    #     raise Exception('area units not supported contact developers')
-
     if alignment == 'horizontal':
         def CPL_rule(self):
             return self.base_cost_platf_ladders == 2005*D**0.20294
@@ -1030,3 +1034,12 @@ def fired_heater_costing(self,
             * (self.parent_block().parent_block().costing.CE_index/500) \
             * self.pressure_factor * self.base_cost
     self.cp_eq = Constraint(rule=CP_rule)
+
+
+def cstr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)
+    
