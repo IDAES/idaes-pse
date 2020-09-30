@@ -1,0 +1,105 @@
+from pyomo.environ import (
+        Reference,
+        )
+from pyomo.dae import DerivativeVar
+from pyomo.common.collections import ComponentSet, ComponentMap
+
+from idaes.apps.caprese.nmpc_var import NmpcVar
+from idaes.apps.caprese.common.config import VariableCategory
+
+def categorize_dae_variables(dae_vars, time, inputs):
+    t0 = time.first()
+    t1 = time.get_finite_elements()[1]
+    deriv_vars = []
+    diff_vars = []
+    input_vars = []
+    alg_vars = []
+    fixed_vars = []
+
+    # TODO: give user ability to specify measurements and disturbances
+    measured_vars = []
+
+    dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
+    t0_vardata = list(dae_map.keys())
+
+    if inputs is None:
+        inputs = []
+    input_set = ComponentSet(inputs)
+    updated_input_set = ComponentSet(inputs)
+
+    for var0 in t0_vardata:
+        if var0 in updated_input_set:
+            input_set.remove(var0)
+            time_slice = dae_map.pop(var0)
+            input_vars.append(time_slice)
+
+        parent = var0.parent_component()
+        if not isinstance(parent, DerivativeVar):
+            continue
+        if not time in ComponentSet(parent.get_continuousset_list()):
+            continue
+        index0 = var0.index()
+        var1 = dae_map[var0][t1]
+        index1 = var1.index()
+        state = parent.get_state_var()
+
+        if state[index1].fixed:
+            # Assume state var is fixed everywhere, so derivative
+            # 'isn't really' a derivative.
+            # Should be safe to remove state from dae_map here
+            state_slice = dae_map.pop(state[index0])
+            fixed_vars.append(state_slice)
+            continue
+        if state[index0] in input_set:
+            # If differential variable is an input, then this DerivativeVar
+            # is 'not really a derivative'
+            continue
+
+        deriv_slice = dae_map.pop(var0)
+
+        if var1.fixed:
+            # Assume derivative has been fixed everywhere.
+            # Add to list of fixed variables, and don't remove its state variable.
+            fixed_vars.append(deriv_slice)
+        elif var0.fixed:
+            # In this case the derivative has been used as an initial condition. 
+            # Still want to include it in the list of derivatives.
+            measured_vars.append(deriv_slice)
+            state_slice = dae_map.pop(state[index0])
+            if state[index0].fixed:
+                measured_vars.append(state_slice)
+            deriv_vars.append(deriv_slice)
+            diff_vars.append(state_slice)
+        else:
+            # Neither is fixed. This should be the most common case.
+            state_slice = dae_map.pop(state[index0])
+            if state[index0].fixed:
+                measured_vars.append(state_slice)
+            deriv_vars.append(deriv_slice)
+            diff_vars.append(state_slice)
+
+    if not updated_input_set:
+        raise RuntimeError('Not all inputs could be found')
+    assert len(deriv_vars) == len(diff_vars)
+
+    for var0, time_slice in dae_map.items():
+        var1 = time_slice[t1]
+        # If the variable is still in the list of time-indexed vars,
+        # it must either be fixed (not a var) or be an algebraic var
+        if var1.fixed:
+            fixed_vars.append(time_slice)
+        else:
+            if var0.fixed:
+                measured_vars.append(time_slice)
+            alg_vars.append(time_slice)
+
+    category_dict = {
+            VariableCategory.DERIVATIVE: deriv_vars,
+            VariableCategory.DIFFERENTIAL: diff_vars,
+            VariableCategory.ALGEBRAIC: alg_vars,
+            VariableCategory.INPUT: input_vars,
+            VariableCategory.FIXED: fixed_vars,
+            VariableCategory.MEASUREMENT: measured_vars,
+            }
+    return category_dict
+

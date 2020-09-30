@@ -27,7 +27,6 @@ from pyomo.environ import (
         TransformationFactory, 
         Reference, 
         value,
-        Suffix,
         )
 from pyomo.core.base.range import remainder
 from pyomo.common.collections import ComponentMap
@@ -35,7 +34,6 @@ from pyomo.dae.initialization import (
         solve_consistent_initial_conditions,
         get_inconsistent_initial_conditions,
         )
-from pyomo.dae.set_utils import deactivate_model_at
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
@@ -44,6 +42,7 @@ from idaes.core.util.model_statistics import (
         activated_equalities_generator,
         )
 from idaes.core.util.dyn_utils import (
+        deactivate_model_at,
         path_from_block, 
         find_comp_in_block, 
         find_comp_in_block_at_time,
@@ -53,9 +52,10 @@ from idaes.apps.caprese.common.config import (
         ElementInitializationInputOption,
         TimeResolutionOption,
         ControlPenaltyType,
-        VariableCategory,
-        NoiseBoundOption,
-        PlantHorizonType,
+        VariableCategory)
+from idaes.apps.caprese.model import (
+        DynamicModelHelper,
+        ControllerHelper,
         )
 from idaes.apps.caprese.util import (
         initialize_by_element_in_range,
@@ -63,33 +63,25 @@ from idaes.apps.caprese.util import (
         NMPCVarGroup, 
         NMPCVarLocator, 
         copy_values_at_time, 
+        add_noise_at_time,
         validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, 
         validate_solver,
-        get_violated_bounds_at_time,
-        cuid_from_timeslice,
-        apply_noise_at_time_points,
-        )
-from idaes.apps.caprese.rolling import TimeList, VectorSeries
-from idaes.apps.caprese.advanced_step import (
-        AdvancedStepManager,
-        K_AUG_SUFFIXES,
-        )
+        find_point_in_continuousset,
+        get_violated_bounds_at_time)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
-
-from collections import OrderedDict
 
 __author__ = "Robert Parker and David Thierry"
 
 
 class NMPCSim(DynamicBase):
-    # TODO: A better name might be NMPCManager
     """
     Main class for NMPC simulations of Pyomo models.
     """
     # pyomo.common.config.add_docstring_list
-    CONFIG = DynamicBase.CONFIG
+#    CONFIG = DynamicBase.CONFIG
+    CONFIG = ConfigDict()
 
     # TODO: How to document config values?
     CONFIG.declare(
@@ -103,7 +95,7 @@ class NMPCSim(DynamicBase):
     CONFIG.declare(
             'element_initialization_input_option',
             ConfigValue(
-                default=ElementInitializationInputOption.SETPOINT,
+                default=ElementInitializationInputOption.SET_POINT,
                 domain=ElementInitializationInputOption.from_enum_or_string,
                 doc=('Option for how to fix inputs when initializing '
                     'by time element')
@@ -270,15 +262,6 @@ class NMPCSim(DynamicBase):
                 )
             )
 
-    namespace_name = '_NMPC_NAMESPACE'
-
-    namespace_name = '_NMPC_NAMESPACE'
-    
-    @classmethod
-    def get_namespace_name(cls):
-        return cls.namespace_name
-    
-
     def __init__(self, plant_model=None, plant_time_set=None, 
         controller_model=None, controller_time_set=None, inputs_at_t0=None,
         sample_time=None, **kwargs):
@@ -318,232 +301,51 @@ class NMPCSim(DynamicBase):
 
         """
         self.config = self.CONFIG(kwargs)
-        super(NMPCSim, self).__init__(plant_model, plant_time_set,
-                controller_model, controller_time_set, inputs_at_t0,
-                **kwargs)
 
-        # Should I provide solver and outlvl as explicit args here?
-        self.config.sample_time = sample_time
-        self.config.inputs_at_t0 = inputs_at_t0
-        # Maybe include a kwarg for require_steady - if False, set-point is not
-        # forced to be a steady state
+        self.plant = DynamicModelHelper(
+                plant_model,
+                plant_time_set,
+                inputs_at_t0,
+                )
 
-        init_log = idaeslog.getInitLogger('nmpc', level=self.config.outlvl)
+        init_controller_inputs = [
+                find_comp_in_block(controller_model, plant_model, comp)
+                for comp in inputs_at_t0
+                ]
+        self.controller = ControllerHelper(
+                controller_model,
+                controller_time_set,
+                init_controller_inputs,
+                )
 
-        # Only need to manipulate bounds of controller model. Assume the 
-        # bounds in the plant model should remain in place for simulation.
-        # (Should probably raise a warning if bounds are present...)
-        for categ, vargroup in self.controller._NMPC_NAMESPACE.category_dict.items():
-            self.set_bounds_from_initial(vargroup)
-        # ^ This may be removed in favor of strip_bounds transformation
+        controller_measurements = self.controller.measured_vars
+        plant_measurements = self.plant.find_components(
+                self.controller.model,
+                controller_measurements,
+                self.controller.time,
+                )
 
-        # Validate inputs in the plant model and initial conditions
-        # in the control model.
-        # TODO: allow user to specify this if names don't match
-        self.plant._NMPC_NAMESPACE.controller_ic_vars = find_slices_in_model(
-                self.plant, self.plant_time,
-                self.controller, self.controller_time,
-                self.plant._NMPC_NAMESPACE.var_locator,
-                self.controller._NMPC_NAMESPACE.ic_vars)
-        self.controller._NMPC_NAMESPACE.plant_input_vars = find_slices_in_model(
-                self.controller, self.controller_time,
-                self.plant, self.plant_time,
-                self.controller._NMPC_NAMESPACE.var_locator,
-                self.plant._NMPC_NAMESPACE.input_vars.varlist)
+        plant_inputs = self.plant.category_dict[VariableCategory.INPUT]
+        controller_inputs = self.controller.find_components(
+                self.plant.model,
+                plant_inputs,
+                self.plant.time,
+                )
 
-        self.validate_fixedness(self.plant, self.controller)
+        self.controller_measurement_map = ComponentMap(
+                zip(plant_measurements, controller_measurements))
 
-        self.sample_time = self.config.sample_time
+        self.plant_input_map = ComponentMap(
+                zip(controller_inputs, plant_inputs))
 
-        plant_type = self.config.plant_horizon_type
-        if plant_type == PlantHorizonType.FULL:
-            self.validate_sample_time(self.sample_time, 
-                    self.controller, self.plant)
-        elif plant_type == PlantHorizonType.ROLLING:
-            self.validate_sample_time(self.sample_time, self.controller)
-            self.validate_rolling_horizon_plant()
-        else:
-            raise ValueError(
-                'Plant horizon type %s not recognized' % plant_type)
+        self.controller.validate_sample_time(sample_time)
+        self.plant.validate_sample_time(sample_time)
+        self.sample_time = sample_time
 
-        # Flag for whether controller has been initialized
-        # by a previous solve
-        self.controller_solved = False
+        # NOTE: This is probably unnecessary:
+#        self.validate_fixedness(self.plant, self.controller)
 
-        # Maps sample times in plant model to the normalized state error
-        # This error will be defined by:
-        # <(x_pred-x_meas), Q(x_pred-x_meas)>
-        # where Q is the positive semi-definite matrix defining the norm
-        # used in the objective function.
-        #
-        # Currently only diagonal matrices Q are supported, and values of None
-        # are interpreted as zeros
-        self.state_error = {}
-        # Should I set state_error[0] = 0? Probably not, in case there is for
-        # instance some measurement noise. 
-        # Remember: Need to calculate weight matrices before populating this. 
-
-        self.previous_plant_time = None
         self.current_plant_time = 0
-
-    @classmethod
-    def add_namespace_to(cls, model, time):
-        """Adds the _NMPC_NAMESPACE block a model with a given time set.
-        All necessary model-specific attributes, including constraints
-        and objectives, will be added to this block.
-
-        Args:
-            model : Model to which to add the namespace
-            time : Set to treat as time in the given model
-
-        """
-        name = '_NMPC_NAMESPACE'
-        # Not _CAPRESE_NAMESPACE as I might want to add a similar 
-        # namespace for MHE
-        if hasattr(model, name):
-            raise ValueError('%s already exists on model. Please fix this.'
-                             % name)
-        model.add_component(name, Block())
-        super(NMPCSim, cls).add_namespace_to(model, time)
-        # TODO: Should this method call _populate_namespace?
-        # Otherwise this namespace doesn't have access to the get_time function.
-        # Don't want to require that a model is categorized just to get_time,
-        # which is what I'm doing right now, unless I call get_time on the base
-        # namespace.
-
-    def validate_sample_time(self, sample_time, *models, **kwargs):
-        """Makes sure sample points, or integer multiple of sample time-offsets
-        from time.first(), lie on finite element boundaries, and that the 
-        horizon of each model is an integer multiple of sample time. Assembles 
-        a list of sample points and a dictionary mapping sample points to the 
-        number of finite elements in the preceding sampling period, and adds 
-        them as attributes to _NMPC_NAMESPACE.
-
-        Args:
-            sample_time: Sample time to check
-            models: List of flowsheet models to check
-
-        """
-        config = self.config(kwargs)
-        tolerance = config.continuous_set_tolerance
-        for model in models:
-            time = model._NMPC_NAMESPACE.get_time()
-            horizon_length = time.last() - time.first()
-
-            # TODO: This should probably be a DAE utility
-            min_spacing = horizon_length
-            for t in time:
-                if t == time.first():
-                    continue
-                prev = time.prev(t)
-                if t - prev < min_spacing:
-                    min_spacing = t - prev
-            # Sanity check:
-            assert min_spacing > 0
-            # Required so only one point can satisfy equality to tolerance
-            if tolerance >= min_spacing/2:
-                raise ValueError(
-                    'ContinuousSet tolerance is larger than half the minimum '
-                    'spacing. An element of this set will not necessarily be '
-                    'unique within this tolerance.')
-
-            off_by = abs(remainder(horizon_length, sample_time))
-            if off_by > tolerance:
-                raise ValueError(
-                    'Sampling time must be an integer divider of '
-                    'horizon length within tolerance %f' % tolerance)
-            n_samples = round(horizon_length/sample_time)
-            model._NMPC_NAMESPACE.samples_per_horizon = n_samples
-
-            finite_elements = time.get_finite_elements()
-
-            sample_points = [time.first()]
-            sample_no = 1
-            fe_per = 0
-            fe_per_sample_dict = {}
-            for t in finite_elements:
-                if t == time.first():
-                    continue
-                fe_per += 1
-                time_since = t - time.first()
-                sp = sample_no*sample_time
-                diff = abs(sp-time_since)
-                if diff < tolerance:
-                    sample_points.append(t)
-                    sample_no += 1
-                    fe_per_sample_dict[sample_no] = fe_per
-                    fe_per = 0
-                if time_since > sp:
-                    raise ValueError(
-                            'Could not find a time point for the %ith '
-                            'sample point' % sample_no)
-            assert len(sample_points) == n_samples + 1
-            model._NMPC_NAMESPACE.fe_per_sample = fe_per_sample_dict
-            model._NMPC_NAMESPACE.sample_points = sample_points
-
-
-    def validate_rolling_horizon_plant(self, **kwargs):
-        config = self.config(kwargs)
-        continuous_set_tolerance = config.continuous_set_tolerance
-        plant = self.plant
-        plant_time = self.plant_time
-        namespace = getattr(plant, self.get_namespace_name())
-        sample_time = self.sample_time
-        t0 = plant_time.first()
-        ts = t0 + sample_time
-        s_index = plant_time.find_nearest_index(ts, continuous_set_tolerance)
-        ts_plant = plant_time[s_index]
-        if ts_plant is None:
-            raise RuntimeError(
-                'Could not find sample point %s in the plant' % ts)
-        sample_points = [t0, ts_plant]
-        namespace.sample_points = sample_points
-
-
-    def validate_slices(self, tgt_model, src_model, src_time, src_slices):
-        """
-        Given list of time-only slices in a source model, attempts to find
-        each of them in the target model and returns a list of the found 
-        slices in the same order.
-        Expects to find a var_locator ComponentMap attribute in the 
-        _NMPC_NAMESPACE of the target model.
-
-        Args:
-            tgt_model : Model to search for time-slices
-            src_model : Model containing the slices to search for
-            src_slices : List of time-only slices of variables in the source
-                         model
-
-        Returns:
-            List of time-only slices to same-named variables in the target 
-            model
-        """
-        t0 = src_time.first()
-        tgt_slices = []
-        namespace = getattr(tgt_model, self.namespace_name)
-        locator = namespace.var_locator
-        for _slice in src_slices:
-            init_vardata = _slice[t0]
-            # FIXME
-            # This assumes that t0 is a valid time point for the target
-            # model, even it is taken from the source.
-            # Should use find_comp_in_block_at_time, which essentially
-            # does the work of constructing a CUID with wildcard, but
-            # here is tied to the target model's time set.
-            # A better validation method might be:
-            #     src_comp -> cuid w/ wildcard -> target_comp...
-            # this would still be the same amount of work/code in this
-            # method. Would be nice to go straight from the source
-            # Reference to the CUID, and from the CUID to the/a ref-
-            # to-slice. cuid.to_reference() would be nice.
-            tgt_vardata = find_comp_in_block(tgt_model, 
-                                             src_model, 
-                                             init_vardata)
-            tgt_container = locator[tgt_vardata].group.varlist
-            location = locator[tgt_vardata].location
-            tgt_slices.append(tgt_container[location])
-        return tgt_slices
-
 
     def validate_fixedness(self, *models):
         """
@@ -589,7 +391,6 @@ class NMPCSim(DynamicBase):
                     if t == t0:
                         continue
                     assert var[t].fixed
-                    
 
     def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
         """Transfers values of the initial condition variables at a specified
@@ -604,151 +405,52 @@ class NMPCSim(DynamicBase):
         # probably be done with config blocks somehow.
         # TODO: allow specification of noise args
         config = self.config(kwargs)
-        noise_sigma_0 = config.noise_sigma_0
-        namespace = getattr(self.controller, self.get_namespace_name())
 
         time = self.controller_time
         t0 = time.first()
 
-        measured_state = self.get_measured_plant_state(
-                t_plant=t_plant, 
-                base_noise_param=noise_sigma_0,
-                **kwargs)
+        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
+                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
+                            t0,
+                            t_plant)
 
-        for val, var in zip(measured_state, namespace.ic_vars):
-            var[t0].set_value(val)
+        # Apply noise to new initial conditions
+        add_noise = config.add_plant_noise
 
-    def validate_plant_start_time(self, t_plant, **kwargs):
-        config = self.config(kwargs)
-        plant_type = config.plant_horizon_type
-        if t_plant is None and plant_type == PlantHorizonType.FULL:
-            raise ValueError(
-                    'Plant time point must be specified if a full-horizon '
-                    'plant model is used.')
-        if plant_type == PlantHorizonType.ROLLING:
-            t_plant = self.plant_time.first()
-        return t_plant
+        noise_weights = config.noise_weights
+        noise_sig_0 = config.noise_sigma_0
+        noise_args = config.noise_arguments
+        max_noise_weight = config.max_noise_weight
 
+        locator = self.controller._NMPC_NAMESPACE.var_locator
+        if add_noise:
+            if not noise_weights:
+                noise_weights = []
+                for var in self.controller._NMPC_NAMESPACE.ic_vars:
+                    info = locator[var[t0]]
+                    loc = info.location
+                    obj_weight = info.group.weights[loc]
 
-    def get_measured_plant_state(self, t_plant=None, apply_noise=False,
-            base_noise_param=0.05,
-            **kwargs):
-        """
-        """
-        # grab values out of plant's controller_ic_vars at specified time
-        # ^ Could also access these values from a History-like data structure
-        #   Or could get them from an MHE model
-        # If specified, apply noise to these values
-        # Return list of these values
-        #
-        # Want to apply noise independent of any model.
-        config = self.config(kwargs)
-        sample_time = self.sample_time
-        noise_function = config.measurement_noise_function
-        noise_bound_option = config.noise_bound_option
-        max_number_discards = config.max_noise_bound_violations
-        noise_bound_push = config.noise_bound_push
-        cs_tolerance = config.continuous_set_tolerance
-        plant_namespace = getattr(self.plant, self.get_namespace_name())
-        controller_namespace = getattr(self.controller, 
-                self.get_namespace_name())
-        locator = controller_namespace.var_locator
-        plant_time = plant_namespace.get_time()
-        controller_time = controller_namespace.get_time()
-        if t_plant is None:
-            t_plant = plant_time.first() + sample_time
-            plant_idx = plant_time.find_nearest_index(t_plant, cs_tolerance)
-            t_plant = plant_time[plant_idx]
+                    if obj_weight is not None and obj_weight != 0:
+                        noise_weights.append(min(1/obj_weight, 
+                                                 max_noise_weight))
+                    else:
+                        noise_weights.append(None)
 
-        if not apply_noise:
-            return [var[t_plant].value for var in 
-                    plant_namespace.controller_ic_vars]
+            add_noise_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
+                              t0,
+                              weights=noise_weights,
+                              sigma_0=noise_sig_0,
+                              **noise_args)
 
-        measured_state = []
-        t0 = controller_time.first()
-        for p_var, c_var in zip(plant_namespace.controller_ic_vars,
-                controller_namespace.ic_vars):
-            c_var0 = c_var[t0]
-            info = locator[c_var0]
-            group = info.group
-            location = info.location
-            bounds = (group.lb[location], group.ub[location])
-            # TODO: This leaves no option for the user to override weights
-            # with their own variance.
-            weight = group.weights[location]
-            noise_params = (base_noise_param/weight,)
-            newval, = apply_noise_at_time_points(
-                    p_var,
-                    t_plant,
-                    noise_params,
-                    noise_function,
-                    bounds=bounds,
-                    bound_option=noise_bound_option,
-                    max_number_discards=max_number_discards,
-                    bound_push=noise_bound_push,
-                    )
-            measured_state.append(newval)
-        return measured_state
+    def inject_inputs_into_plant(self):
+        time = self.controller.time
+        ts = time.first() + self.sample_time
+        for p_var, c_var in self.plant_input_map.items():
+            # TODO: Could apply noise here, or could do it elsewhere
+            p_var[:].fix(c_var[ts].value)
 
-
-    def shift_controller_initial_conditions(self, t_target=None, shift=None, 
-            categories=[
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.FIXED,
-                VariableCategory.INPUT,
-                ],
-            **kwargs):
-        """
-        """
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        namespace = getattr(self.controller, self.get_namespace_name())
-        category_dict = namespace.category_dict
-        time = namespace.get_time()
-        sample_time = self.sample_time
-        if t_target is None:
-            t_target = time.first()
-        if shift is None:
-            shift = sample_time
-        t_source = t_target + shift
-        source_idx = time.find_nearest_index(t_source, cs_tolerance)
-        t_source = time[source_idx]
-
-        for categ in categories:
-            varlist = category_dict[categ].varlist
-            copy_values_at_time(varlist, varlist, t_target, t_source)
-
-
-    def inject_inputs_into(self, source, model, t_source, t_target, **kwargs):
-        """
-        Args:
-            source: Inputs to copy. Should be a list of time-indexed Vars
-            model: Model into which to copy inputs
-            t_source: Time point at which to access inputs to copy
-            t_target: Time point in model where inputs will be copied
-        """
-        # If source is a varlist:
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        namespace = getattr(model, self.get_namespace_name())
-        time = namespace.get_time()
-        sample_time = self.sample_time
-        sample_end = t_target + sample_time
-        end_idx = time.find_nearest_index(sample_end, cs_tolerance)
-        sample_end = time[end_idx]
-        sample = [t for t in time if t > t_target and t <= sample_end]
-        
-        copy_values_at_time(namespace.input_vars.varlist,
-                source,
-                sample,
-                t_source)
-
-
-    def inject_control_inputs_into_plant(self, t_plant=None,
-            base_noise_param=0.05,
-            **kwargs):
+    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
         """Injects input variables from the first sampling time in the 
         controller model to the sampling period in the plant model that
         starts at the specified time, adding noise if desired.
@@ -758,81 +460,75 @@ class NMPCSim(DynamicBase):
                       applied.
             
         """
+        # config args for control_input_noise
         config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
+        tolerance = config.continuous_set_tolerance
         sample_time = self.config.sample_time
-        plant_type = config.plant_horizon_type
-        t_plant = self.validate_plant_start_time(t_plant,
-                plant_horizon_type=plant_type)
-        controller_namespace = getattr(self.controller, 
-                self.get_namespace_name())
-        c_time = controller_namespace.get_time()
-        tc0 = c_time.first()
-        c_locator = controller_namespace.var_locator
-        plant_namespace = getattr(self.plant, self.get_namespace_name())
-        p_time = plant_namespace.get_time()
-        add_noise = config.add_input_noise
 
         # Send inputs to plant that were calculated for the end
         # of the first sample
-        c_target = tc0 + sample_time
-        c_index = c_time.find_nearest_index(c_target, cs_tolerance)
-        t_controller = c_time[c_index]
-        assert t_controller in c_time
+        t_controller = find_point_in_continuousset(
+                self.controller_time.first() + sample_time, 
+                self.controller_time, tolerance)
+        assert t_controller in self.controller_time
 
-        self.inject_inputs_into(controller_namespace.plant_input_vars, 
-                self.plant, 
-                t_controller, 
-                t_plant, 
-                **kwargs)
-
-        if not add_noise:
-            return
-        # TODO: The following could be moved into an apply_noise
-        # method that wraps apply_noise_at_time_points.
-
-        noise_function = config.input_noise_function
-        noise_bound_option = config.noise_bound_option
-        max_number_discards = config.max_noise_bound_violations
-        noise_bound_push = config.noise_bound_push
-        # NOTE: here I have no option for user to override "noise weight"
-        # with a variance. User should be able to provide an absolute
-        # variance for each variable. These should /probably/ override the
-        # objective weights
-
-        # NOTE: This repeats some work done in inject_inputs_into
-        #       I'll let it slide for now.
-        p_target = t_plant + sample_time
-        p_index = p_time.find_nearest_index(p_target, cs_tolerance)
-        plant_sample_end = p_time[p_index]
-        sample = [t for t in p_time if t > t_plant and t <= plant_sample_end]
-        assert plant_sample_end in sample
+        time = self.plant_time
+        plant_sample_end = find_point_in_continuousset(
+                t_plant + sample_time, 
+                time, tolerance)
+        assert plant_sample_end in time
+        plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
+        assert plant_sample_end in plant_sample
         # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
         # sample_time is passed in
 
-        for p_var, c_var in zip(plant_namespace.input_vars,
-                controller_namespace.plant_input_vars):
-            # Access the controller var's group and location
-            c_vardata = c_var[t_controller]
-            info = c_locator[c_vardata]
-            group = info.group
-            location = info.location
-            bounds = (group.lb[location], group.ub[location])
-            weight = group.weights[location]
-            noise_params = (base_noise_param/weight,)
-            newval, = apply_noise_at_time_points(
-                    p_var,
-                    t_plant,
-                    noise_params,
-                    noise_function,
-                    bounds=bounds,
-                    bound_option=noise_bound_option,
-                    max_number_discards=max_number_discards,
-                    bound_push=noise_bound_push,
-                    )
-            for t in sample:
-                p_var[t].set_value(newval)
+        add_noise = config.add_input_noise
+        noise_weights = config.noise_weights
+        noise_sig_0 = config.noise_sigma_0
+        noise_args = config.noise_arguments
+        max_noise_weight = config.max_noise_weight
 
+        # Need to get proper weights for plant's input vars
+        locator = self.controller._NMPC_NAMESPACE.var_locator
+        if add_noise:
+            if not noise_weights:
+                noise_weights = []
+                for var in self.controller._NMPC_NAMESPACE.plant_input_vars:
+                    info = locator[var[t_controller]]
+                    loc = info.location
+                    obj_weight = info.group.weights[loc]
+                    if obj_weight is not None and obj_weight != 0:
+                        noise_weights.append(min(1/obj_weight, max_noise_weight))
+                    else:
+                        # By default, if state is not penalized in objective,
+                        # noise will not be applied to it here.
+                        # This may be incorrect, but user will have to override,
+                        # by providing their own weights, as I don't see a good
+                        # way of calculating a weight
+                        noise_weights.append(None)
+
+            add_noise_at_time(self.controller._NMPC_NAMESPACE.plant_input_vars,
+                              t_controller,
+                              weights=noise_weights,
+                              sigma_0=noise_sig_0,
+                              **noise_args)
+            #add_noise_at_time(self.plant.input_vars,
+            #                  t_plant+sample_time,
+            #                  weights=noise_weights,
+            #                  sigma_0=noise_sig_0,
+            #                  **noise_args)
+            # Slight bug in logic here: noise is applied to plant variables,
+            # but only controller variables have bounds.
+            # Alternatives: add bounds to plant variables (undesirable)  
+            #               apply noise to controller variables (maybe okay...)
+            #                ^ can always record nominal values, then revert
+            #                  noise after it's copied into plant...
+            # Right now I apply noise to controller model, and don't revert
+
+        copy_values_at_time(self.plant._NMPC_NAMESPACE.input_vars.varlist,
+                            self.controller._NMPC_NAMESPACE.plant_input_vars,
+                            plant_sample,
+                            t_controller)
 
     def has_consistent_initial_conditions(self, model, **kwargs):
         """
@@ -1379,7 +1075,7 @@ class NMPCSim(DynamicBase):
             model : Model whose variables will be checked for bounds.
 
         """
-        # TODO: This should probably be a method of NMPCVarGroup
+
         varlist = vargroup.varlist
         if not vargroup.is_scalar:
             t0 = vargroup.index_set.first()
@@ -1450,8 +1146,6 @@ class NMPCSim(DynamicBase):
         pwc_constraint_list = [Reference(pwc_constraint[:, i])
                            for i in input_indices]
         model._NMPC_NAMESPACE.pwc_constraint_list = pwc_constraint_list
-        # TODO: at this point, make sure inputs are unfixed so that the model
-        # is not over-constrained
 
 
     def initialize_control_problem(self, **kwargs):
@@ -1482,53 +1176,14 @@ class NMPCSim(DynamicBase):
 
         elif strategy == ControlInitOption.FROM_INITIAL_CONDITIONS:
             self.initialize_from_initial_conditions(self.controller, **kwargs)
-
-        elif strategy == ControlInitOption.SETPOINT:
-            self.initialize_to_setpoint(self.controller, **kwargs)
         
         # Add check that initialization did not violate bounds/equalities?
 
         self.controller_solved = False
 
 
-    def initialize_to_setpoint(self, 
-            model, 
-            categories=[
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.INPUT,
-                ],
-            **kwargs):
-        """ Initializes controller at non-initial time points to the 
-        setpoint values of the unfixed, time-indexed variables.
-
-        Args:
-            model : Model to initialize
-            categories : list of VariableCategory enum items that
-                         will be initialized.
-        """
-        # TODO: test
-        namespace = getattr(model, self.namespace_name)
-        time = namespace.get_time()
-        t0 = time.first()
-        cat_dict = namespace.category_dict
-        for cat in categories:
-            group = cat_dict[cat]
-            for _slice, sp in zip(group, group.setpoint):
-                for t in time:
-                    # This could be made more compact if I had slices
-                    # with start and stop values...
-                    if t == t0:
-                        continue
-                    # This will fail if sp is None.
-                    # ~Shouldn't~ be the case for any of these variables
-                    # though.
-                    _slice[t].set_value(sp)
-
-
     def initialize_by_solving_elements(self, model, time,
-            input_type=ElementInitializationInputOption.SETPOINT,
+            input_type=ElementInitializationInputOption.SET_POINT,
             objective_name='tracking_objective',
             **kwargs):
         """Initializes the controller model by solving (a square simulation
@@ -1554,7 +1209,7 @@ class NMPCSim(DynamicBase):
         strip_controller_bounds.apply_to(model, reversible=True)
 
         input_vars = model._NMPC_NAMESPACE.input_vars
-        if input_type == ElementInitializationInputOption.SETPOINT:
+        if input_type == ElementInitializationInputOption.SET_POINT:
             for i, _slice in enumerate(input_vars.varlist):
                 for t in time:
                     if t != time.first():
@@ -1642,6 +1297,8 @@ class NMPCSim(DynamicBase):
 
         time = model._NMPC_NAMESPACE.get_time()
         category_dict = model._NMPC_NAMESPACE.category_dict
+        # TODO: have some attribute for steady time 
+        # Or better yet, don't use a steady_model at all
 
         for categ in categories:
             varlist = category_dict[categ].varlist
@@ -1649,9 +1306,9 @@ class NMPCSim(DynamicBase):
                 for t in time:
                     # If not in last sample:
                     if (time.last() - t) >= sample_time:
-                        target = t + sample_time
-                        next_idx = time.find_nearest_index(target, tolerance)
-                        t_next = time[next_idx]
+                        t_next = find_point_in_continuousset(
+                                t + sample_time,
+                                time, tolerance=tolerance)
                         _slice[t].set_value(_slice[t_next].value)
                     else:
                         _slice[t].set_value(category_dict[categ].setpoint[i])
@@ -1713,177 +1370,11 @@ class NMPCSim(DynamicBase):
             init_log.info('Successfully solved optimal control problem')
             self.controller_solved = True
         else:
-            msg = 'Failed to solve optimal control problem'
-            init_log.error(msg)
-            raise ValueError(msg)
-
-    def add_k_aug_suffixes(self):
-        controller = self.controller
-        for name, direction in K_AUG_SUFFIXES:
-            # TODO: any reason not to add these to the namespace?
-            if not hasattr(controller, name):
-                suffix = Suffix(direction=direction)
-                controller.add_component(name, suffix)
-
-    def prepare_advanced_step_controller(self):
-        """
-        TODO
-        """
-        # What are the "dof vars?" They are the measurements.
-        # These should be defined and known by the controller,
-        # but for now I will use the controller_ic_vars.
-        controller = self.controller
-        block = getattr(controller, self.namespace_name)
-        time = block.get_time()
-        index = time.first()
-        wrt_vars = block.ic_vars
-        self.add_k_aug_suffixes()
-        self.advanced_step_manager = AdvancedStepManager(
-                block,
-                wrt_vars,
-                index,
-                )
-        self.k_aug = SolverFactory('k_aug', executable='k_aug')
-        self.k_aug.set_options({"dsdp_mode": ""})
-        self.dot_driver = SolverFactory('dot_sens', executable='dot_sens')
-        # TODO: Do I need to set any dot_driver options?
-        for var in block.input_vars:
-            # Populate k_aug suffix for dof vars.
-            # (Which are actually the dependent vars from 
-            # the perspective of the advanced step update.)
-            controller.dof_v[var[index]] = 1
-
-    def get_measurement_offset(self, measured_state):
-        controller = self.controller
-        namespace = getattr(controller, self.namespace_name)
-        time = namespace.get_time()
-        t0 = time.first()
-        offset = [value(var[t0]) - measured_state[i] 
-                for i, var in enumerate(namespace.ic_vars)]
-        return offset
-
-    def solve_advanced_step_control_problem(self, measured_state, **kwargs):
-        """
-        TODO
-        """
-        controller = self.controller
-        namespace = getattr(controller, self.namespace_name)
-        time = namespace.get_time()
-        t0 = time.first()
-        offset = self.get_measurement_offset(measured_state)
-        for i in self.advanced_step_manager.block.wrt_set:
-            # Populate k_aug suffix for measurement discrepancy.
-            con = self.advanced_step_manager.block.wrt_constraint[i]
-            controller.dcdp[con] = i+1 # offset[i]
-            # Value of this suffix will be the column of this parameter
-            # in the RHS matrix.
-        with self.advanced_step_manager as as_manager:
-            self.solve_control_problem(**kwargs)
-            controller.ipopt_zL_in.update(controller.ipopt_zL_out)
-            controller.ipopt_zU_in.update(controller.ipopt_zU_out)
-            results = self.k_aug.solve(
-                    controller,
-                    tee=True,
-                    symbolic_solver_labels=False,
-                    )
-
-    def perform_sensitivity_update(self, measured_state, **kwargs):
-        """
-        TODO
-        """
-        controller = self.controller
-        namespace = getattr(controller, self.namespace_name)
-        time = namespace.get_time()
-        offset = get_measurement_offset(measured_state)
-        for i in self.advanced_step_manager.block.wrt_set:
-            con = self.advanced_step_manager.block.wrt_constraint[i]
-            controller.npdp[con] = offset[i]
-        with self.advanced_step_manager as as_manager:
-            results = self.dot_driver.solve(
-                    controller,
-                    tee=True,
-                    )
-
-    def simulate_controller_sample(self, t_start, **kwargs):
-        """
-        """
-        # get time points within sample
-        # fix inputs at those values
-        # apply strip bounds
-        # deactivate pwc constraints
-        # deactivate objective
-        # simulate_over_range
-        # activate objective
-        # reactivate pwc constraints
-        # revert strip bounds
-        # unfix inputs
-        # TODO: would be nice to have context managers for these things
-        config = self.config(kwargs)
-        sample_time = self.sample_time
-        tolerance = config.tolerance
-        cs_tolerance = config.continuous_set_tolerance
-        solver = config.solver
-        outlvl = config.outlvl
-        objective_name = config.full_state_objective_name
-        controller = self.controller
-        time = self.controller_time
-        namespace = getattr(controller, self.get_namespace_name())
-        # TODO: allow multiple objectives to exist, have mechanism for telling
-        # which should be active
-        objective = getattr(namespace, objective_name)
-        sample_points = namespace.sample_points
-        sample_point_set = set(sample_points)
-        sample_point_set.add(time.first())
-        # ^ Should sample_points include time.first()?
-
-        t_end = t_start + sample_time
-        end_idx = time.find_nearest_index(t_end, cs_tolerance)
-        t_end = time[end_idx]
-        if (t_start not in sample_point_set or 
-                t_end not in sample_point_set):
-            raise ValueError(
-                'Start and end of controller simulation must be sample points')
-        sample = [t for t in time if t_start <= t and t <= t_end]
-
-        for i, _slice in enumerate(namespace.input_vars):
-            for t in sample:
-                _slice[t].fix()
-                if t not in sample_point_set:
-                    namespace.pwc_constraint[t, i].deactivate()
-        objective.deactivate()
-        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
-        strip_bounds.apply_to(controller, reversible=True)
-
-        time_linking_vars = (namespace.diff_vars.varlist + 
-                             namespace.deriv_vars.varlist)
-        time_indexed_vars = namespace.dae_vars
-        initialize_by_element_in_range(
-                controller,
-                time,
-                t_start,
-                t_end,
-                time_linking_vars=time_linking_vars,
-                dae_vars=time_indexed_vars,
-                solver=solver,
-                outlvl=outlvl)
-
-        strip_bounds.revert(controller)
-        objective.activate()
-        for group in [namespace.diff_vars, namespace.alg_vars]:
-            violated = get_violated_bounds_at_time(group, sample, tolerance)
-            if violated:
-                raise ValueError(
-                    'Bounds violated after solving elements: %s'
-                    % str(violated))
-            
-        for i, _slice in enumerate(namespace.input_vars):
-            for t in sample:
-                _slice[t].unfix()
-                if t not in sample_point_set:
-                    namespace.pwc_constraint[t, i].activate()
+            init_log.error('Failed to solve optimal control problem')
+            raise ValueError
 
 
-    def simulate_plant(self, t_start=None, **kwargs):
+    def simulate_plant(self, t_start, **kwargs):
         """Function for simulating plant model for one sampling period after
         inputs have been assigned from solve of controller model.
 
@@ -1892,9 +1383,6 @@ class NMPCSim(DynamicBase):
 
         """
         config = self.config(kwargs)
-        plant_type = config.plant_horizon_type
-        t_start = self.validate_plant_start_time(t_start, 
-                plant_horizon_type=plant_type)
 
         sample_time = self.config.sample_time
         # ^ Use self.config here, as I don't want user to override sample_time
@@ -1904,12 +1392,10 @@ class NMPCSim(DynamicBase):
         outlvl = config.outlvl
         init_log = idaeslog.getInitLogger('nmpc', level=outlvl)
         tol = config.continuous_set_tolerance
-        plant_time = self.plant_time
 
         t_end = t_start + sample_time 
         assert t_start in self.plant_time
-        end_idx = self.plant_time.find_nearest_index(t_end, tol)
-        t_end = plant_time[end_idx]
+        t_end = find_point_in_continuousset(t_end, self.plant_time, tol)
         assert t_end in self.plant_time
 
         initialize_by_element_in_range(self.plant, self.plant_time, t_start, t_end, 
@@ -1917,10 +1403,7 @@ class NMPCSim(DynamicBase):
                 time_linking_vars=self.plant._NMPC_NAMESPACE.diff_vars,
                 outlvl=outlvl)
 
-        # Store previous to help with construction of data series from plant.
-        self.previous_plant_time = self.current_plant_time
-        # This will have round off error. Should not use as an index.
-        self.current_plant_time = self.current_plant_time + sample_time
+        self.current_plant_time = t_end
 
         msg = ('Successfully simulated plant over the sampling period '
                 'through ' + str(self.current_plant_time))
@@ -1929,222 +1412,9 @@ class NMPCSim(DynamicBase):
         tc1 = self.controller_time.first() + sample_time
 
         if self.controller_solved and calculate_error:
-            # This only works if plant and controller share differential 
-            # variables
-            # TODO: better way to calculate error when this is not the case
             self.state_error[t_end] = self.calculate_error_between_states(
                     self.controller, self.plant, tc1, t_end)
 
-        # For each variable of interest to the user, save the value of the 
-        # variable just simulated
-        # Separate function append_history_from_plant?
-
-
-    def cycle_plant(self, t_start=None, t_end=None, 
-            categories=[
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.INPUT,
-                ],
-            **kwargs):
-        """
-        Sets the values of plant variables at t_start to those at t_end.
-        """
-        # By default, copy fixed variables
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        plant = self.plant
-        plant_time = self.plant_time
-        namespace = getattr(plant, self.get_namespace_name())
-        category_dict = namespace.category_dict
-        sample_set = set(namespace.sample_points)
-        sample_time = self.sample_time
-
-        if t_start is None:
-            t_start = plant_time.first()
-        if t_end is None:
-            t_end = t_start + sample_time
-            end_idx = plant_time.find_nearest_index(t_end, cs_tolerance)
-            t_end = plant_time[end_idx]
-        for t in [t_start, t_end]:
-            if t not in sample_set:
-                raise ValueError(
-                    'Can only cycle plant between sample points')
-
-        for categ in categories:
-            varlist = category_dict[categ].varlist
-            copy_values_at_time(varlist, varlist, t_start, t_end)
-            
-
-    def extend_history_from_plant(self, history, t_start=None, t_end=None,
-            **kwargs):
-        config = self.config(kwargs)
-        plant_type = config.plant_horizon_type
-        cs_tolerance = config.continuous_set_tolerance
-        t_start = self.validate_plant_start_time(t_start,
-                plant_horizon_type=plant_type)
-        plant = self.plant
-        plant_time = self.plant_time
-        t0 = plant_time.first()
-        t_prev = self.previous_plant_time
-        sample_time = self.sample_time
-
-        t_start, t_end = self.validate_time_bounds(plant_time, t_start, t_end)
-        time_list = [t for t in plant_time if t_start <= t and t <= t_end]
-        real_time = [t_prev + (t - t_start) for t in time_list]
-        # TODO: real time should probably just be offset from last time point
-        # in the history, unless somebody really needs a "gap"
-
-        data_list = []
-        for cuid in history:
-            for comp in cuid.list_components(plant.model()):
-                break
-            _slice = self.get_slice(plant, comp)
-            data = [_slice[t].value for t in time_list]
-            data_list.append(data)
-
-        history.extend(real_time, data_list)
-        return history
-
-
-    def validate_time_bounds(self, time, t_start, t_end):
-        cs_tolerance = self.config.continuous_set_tolerance
-        sample_time = self.config.sample_time
-        if t_start is None:
-            t_start = time.first()
-        else:
-            start_idx = time.find_nearest_index(t_start, cs_tolerance)
-            t_start = time[start_idx]
-        if t_end is None:
-            t_end = t_start + sample_time
-        end_idx = time.find_nearest_index(t_end, cs_tolerance)
-        t_end = time[end_idx]
-        return t_start, t_end
-
-
-    def get_slice(self, model, vardata):
-        # Awkward that this method needs a model as an input
-        # Should probably make it a method of some model container
-        # class.
-        namespace = getattr(model, self.namespace_name)
-        var_locator = namespace.var_locator
-        info = var_locator[vardata]
-        group = info.group
-        location = info.location
-        _slice = group[location]
-        return _slice
-
-
-    def initialize_history_from_plant(self, t_start=None, t_end=None, 
-            variables=[VariableCategory.DIFFERENTIAL, VariableCategory.INPUT],
-            name=None,
-            **kwargs):
-        # TODO: case for None
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        time = self.plant_time
-        t_prev = self.previous_plant_time
-        t0 = time.first()
-        namespace = getattr(self.plant, self.get_namespace_name())
-        category_dict = namespace.category_dict
-
-        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
-        # Time points are added to history as offsets from time.first().
-        # If t_start != time.first(), it is not obvious that this is correct.
-        # If this were a method of some model container, that container would
-        # need to know the model's current_time.
-        time_list = [t for t in time if t_start <= t and t <= t_end]
-        real_time = [t_prev + (t - t_start) for t in time_list]
-
-        data = OrderedDict()
-        for var in variables:
-            if var in VariableCategory:
-                category = var
-                group = category_dict[category]
-                # Extend the queue
-                variables.extend(var[t0] for var in group)
-                continue
-            _slice = self.get_slice(self.plant, var)
-            cuid = cuid_from_timeslice(_slice, time)
-            data[cuid] = [_slice[t].value for t in time_list]
-
-        history = VectorSeries(
-                data=data,
-                time=real_time,
-                name=name,
-                tolerance=cs_tolerance,
-                )
-        return history
-
-
-    def initialize_input_history_from(self, model, t_start=None, t_end=None, 
-            t_real=None,
-            name=None,
-            **kwargs):
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        namespace = getattr(model, self.namespace_name)
-        time = namespace.get_time()
-        t0 = time.first()
-        sample_points = namespace.sample_points
-
-        if t_real is None:
-            t_real = self.previous_plant_time
-
-        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
-        if t0 not in sample_points:
-            # TODO: Need to decide whether I want to include t0 in sample points.
-            #       Probably should, but this is not the current behavior.
-            sample_points = [t0] + sample_points
-        time_list = [t for t in sample_points if t_start <= t and t <= t_end]
-        real_time = [t_real + (t - t_start) for t in time_list]
-
-        data = OrderedDict()
-        # TODO: What if "input_vars" in plant and controller are not the same?
-        for _slice in namespace.input_vars:
-            cuid = cuid_from_timeslice(_slice, time)
-            data[cuid] = [_slice[t].value for t in time_list]
-
-        history = VectorSeries(
-                data=data,
-                time=real_time,
-                name=name,
-                tolerance=cs_tolerance,
-                )
-        return history
-
-
-    def extend_input_history_from(self, history, model, t_start=None, 
-            t_end=None,
-            name=None,
-            **kwargs):
-        config = self.config(kwargs)
-        cs_tolerance = config.continuous_set_tolerance
-        namespace = getattr(model, self.namespace_name)
-        time = namespace.get_time()
-        t0 = time.first()
-        sample_points = namespace.sample_points
-
-        # Just offset from last existing time point.
-        # Can relax this (allowing gaps) if there is demand.
-        t_real = history.time[-1]
-
-        t_start, t_end = self.validate_time_bounds(time, t_start, t_end)
-        if t0 not in sample_points:
-            sample_points = [t0] + sample_points
-        time_list = [t for t in sample_points if t_start <= t and t <= t_end]
-        real_time = [t_real + (t - t_start) for t in time_list]
-
-        data_list = []
-        for cuid in history:
-            for comp in cuid.list_components(model.model()):
-                break
-            _slice = self.get_slice(model, comp)
-            data = [_slice[t].value for t in time_list]
-            data_list.append(data)
-        history.extend(real_time, data_list)
-        return history
 
     def calculate_error_between_states(self, mod1, mod2, t1, t2, 
             Q_matrix=[],
