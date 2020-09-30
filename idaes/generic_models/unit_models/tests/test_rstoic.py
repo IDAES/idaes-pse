@@ -217,13 +217,15 @@ class TestSaponification(object):
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_costing(self, sapon):
         sapon.fs.unit.get_costing()
         assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
         sapon.fs.unit.diameter.fix(2)
         sapon.fs.unit.length.fix(3)
-        results = solver.solve(sapon, tee=True)
+        results = solver.solve(sapon)
         # Check for optimal solution
         assert results.solver.termination_condition == \
             TerminationCondition.optimal

@@ -1059,3 +1059,11 @@ def rstoic_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
                    weight_limit=weight_limit,
                    L_D_range=L_D_range,
                    PL=PL)
+
+
+def pfr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)

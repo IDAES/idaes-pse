@@ -213,6 +213,8 @@ class TestSaponification(object):
     def test_report(self, sapon):
         sapon.fs.unit.report()
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_costing(self, sapon):
         sapon.fs.unit.get_costing()
