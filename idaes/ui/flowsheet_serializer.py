@@ -81,7 +81,20 @@ class FlowsheetSerializer:
                 "unit_models": {
                     "M101": {
                         "image": "mixer.svg", 
-                        "type": "mixer"
+                        "type": "mixer",
+                        "performance_contents": {
+                            "0": {
+                                "Variable": "Heat Duty", 
+                                "Value": "0.0"
+                            }
+                        },
+                        "stream_contents": {
+                            "0": {
+                                "Variable": "temperature", 
+                                "Inlet": ".01", 
+                                "Outlet": "12"
+                            }
+                        }
                     }
                 },
                 "arcs": {
@@ -195,7 +208,7 @@ class FlowsheetSerializer:
                 # If there is a stream dataframe then we need to reset the index so we can get the variable names
                 # and then rename the "index" 
                 stream_df = stream_df.reset_index().rename(columns={"index": "Variable"})
-            self.serialized_contents[unit_name]["stream"] = stream_df
+            self.serialized_contents[unit_name]["stream_contents"] = stream_df
 
             performance_df = DataFrame()
             if performance_contents:
@@ -203,7 +216,7 @@ class FlowsheetSerializer:
                 # GeneralVars to actual values
                 performance_df = DataFrame(performance_contents["vars"].items(), columns=["Variable", "Value"])
                 performance_df['Value'] = performance_df['Value'].map(lambda v: value(v))
-            self.serialized_contents[unit_name]["performance"] = performance_df
+            self.serialized_contents[unit_name]["performance_contents"] = performance_df
             print(unit_name)
             
 
@@ -229,6 +242,7 @@ class FlowsheetSerializer:
             pass
 
     def _get_unit_model_type(self, unit):
+        # Get the unit models type
         return unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
 
     def _identify_implicit_inlets_and_outlets(self, untouched_ports):
@@ -317,6 +331,8 @@ class FlowsheetSerializer:
 
     def _construct_jointjs_json(self):
         self.out_json["cells"] = []
+
+        # Start out in the top left corner until we get a better inital layout
         x_pos = 10
         y_pos = 10
         y_starting_pos = 10
@@ -341,6 +357,8 @@ class FlowsheetSerializer:
                                                icon_mapping("default"), 
                                                unit_attrs["type"],
                                                link_position_mapping["default"])
+
+            # If x_pos it greater than 700 then start another diagonal line
             if x_pos >= 700:
                 x_pos = 100
                 y_pos = y_starting_pos
@@ -349,13 +367,12 @@ class FlowsheetSerializer:
                 x_pos += 100
                 y_pos += 100
 
-        id_counter = 0
         for name, ports_dict in self.edges.items():
             umst = self.unit_models[ports_dict["source"]]["type"]  # alias
             dest = ports_dict["dest"]
             if hasattr(ports_dict["source"], "vap_outlet"):
                 # TODO Figure out how to denote different outlet types. Need to
-                #  deal with multiple input/output offsets
+                # deal with multiple input/output offsets
                 for arc in list(self.arcs.values()):
                     if (self.ports[arc.dest] == dest and arc.source == ports_dict["source"].vap_outlet):
                         source_anchor = "top"
@@ -364,10 +381,14 @@ class FlowsheetSerializer:
             else:
                 source_anchor = "out"
 
+            # The source_port and dest_port should be replaced by actual names in case there are multiple 
+            # inlets and outlets between the same two unit models
+            source_port = "out"
+            dest_port = "in"
             self._create_link_jointjs_json(
                 self.out_json, 
-                "out", 
-                "in", 
+                source_port, 
+                dest_port, 
                 ports_dict["source"].getname(), 
                 dest.getname(), 
                 name,
@@ -378,14 +399,19 @@ class FlowsheetSerializer:
         # Create the jointjs for a given image
         entry = {}
         entry["type"] = "standard.Image"
-        # for now, just tile the positions diagonally
-        # TODO Make the default positioning better
         entry["position"] = {"x": x_pos, "y": y_pos}
-        # TODO Set the width and height depending on the icon rather than default
-        entry["size"] = {"width": 50, "height": 50}
-        entry["angle"] = 0
+        # The icon width and height default to 50x50 making all icons a square. This will need to be changed
+        # when we have more unit models that should not be square. Probaly add it to the icon mapping
+        icon_width = 50
+        icon_height = 50
+        entry["size"] = {"width": icon_width, "height": icon_height}
+        # We want the icons to not be at an angle initially
+        angle = 0
+        entry["angle"] = angle
         entry["id"] = name
-        entry["z"] = (1,)
+        # This defines what layer the icon is on
+        z = (1,)
+        entry["z"] = z
         entry["ports"] = port_groups
         entry["attrs"] = {
             "image": {"xlinkHref": "/images/icons/" + image},
@@ -399,11 +425,17 @@ class FlowsheetSerializer:
     def _create_link_jointjs_json(self, out_json, source_port, dest_port, 
                                  source_id, dest_id, name, label):  
         # Create the joint js for a link
+        # Set the padding to 10. Makayla saw it in a jointjs example
+        padding = 10
+        # Set the initial offset position for the link labels. Makayla saw these numbers in a jointjs example
+        position_distance = 0.66
+        position_offset = -40
+        z = 2
         entry = {
             "type": "standard.Link",
             "source": {"id": source_id, "port": source_port},
             "target": {"id": dest_id, "port": dest_port},
-            "router": {"name": "orthogonal", "padding": 10},
+            "router": {"name": "orthogonal", "padding": padding},
             "connector": {"name": "normal", 
                           "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
@@ -420,8 +452,8 @@ class FlowsheetSerializer:
                     },
                 },
                 "position": {
-                    "distance": 0.66,
-                    "offset": -40
+                    "distance": position_distance,
+                    "offset": position_offset
                 }},
                 {"attrs": {
                     "text": {
@@ -429,7 +461,7 @@ class FlowsheetSerializer:
                     }
                 }}
             ],
-            "z": 2
+            "z": z
         }
         out_json["cells"].append(entry)
 

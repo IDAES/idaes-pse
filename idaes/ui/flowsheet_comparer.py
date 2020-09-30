@@ -37,13 +37,13 @@ def compare_models(existing_model, new_model, keep_old_model=False):
                     "M101": {
                         "image": "mixer.svg", 
                         "type": "mixer"
-                        "performance contents": {
+                        "performance_contents": {
                             "0": {
                                 "Variable": "Heat Duty", 
                                 "Value": "0.0"
                             }
                         },
-                        "stream contents": {
+                        "stream_contents": {
                             "0": {
                                 "Variable": "temperature", 
                                 "Inlet": ".01", 
