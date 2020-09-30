@@ -54,15 +54,6 @@ class FlowsheetSerializer:
         self._used_unit_names = set()
         self._logger = idaes.logger.getLogger(__name__)
 
-    def get_edges(self):
-        return self.edges
-
-    def get_ports(self):
-        return self.ports
-
-    def get_unit_models(self):
-        return self.unit_models
-
     def serialize(self, flowsheet, name):
         """
         Serializes the flowsheet into one dict with two sections.

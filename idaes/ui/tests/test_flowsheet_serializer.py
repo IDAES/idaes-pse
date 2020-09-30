@@ -71,7 +71,7 @@ def test_serialize():
     fss = FlowsheetSerializer()
     fss.serialize(m.fs, 'myflowsheet')
 
-    unit_models = fss.get_unit_models()
+    unit_models = fss.unit_models
     unit_model_names_types = []
     for unit_model in unit_models:
         unit_model_names_types.append(unit_models[unit_model])
@@ -103,7 +103,7 @@ def test_serialize():
     assert len(difference) == 0
 
     # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
-    # ports = fss.get_ports()
+    # ports = fss.ports
     # assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
     #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
     #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
@@ -132,7 +132,7 @@ def test_serialize():
     #                  }
 
     named_edges_results = {}
-    edges = fss.get_edges()
+    edges = fss.edges
 
     for name, end_points in edges.items():
       named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
