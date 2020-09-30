@@ -966,7 +966,7 @@ def fired_heater_costing(self,
             raise Exception('Pressure units not supported contact developers')
     else:
         P = ref_parameter_pressure
-    print(P)
+
     if ref_parameter_heat_duty is None:
         # Q in BTU/hr
         Q_in = self.parent_block().heat_duty[0]
