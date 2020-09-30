@@ -25,7 +25,7 @@ from pyomo.environ import (Constraint,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigValue
+from pyomo.common.config import ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
@@ -613,6 +613,22 @@ class _GenericStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
+    def _return_component_list(self):
+        # Overlaod the _return_component_list method to handle electrolyte
+        # systems where we have two component lists to choose from
+        params = self._block_data_config_default["parameters"]
+        if not params._electrolyte:
+            return params.component_list
+        elif self._block_data_config_default["species_basis"] == "true":
+            return params.true_species_set
+        elif self._block_data_config_default["species_basis"] == "apparent":
+            return params.apparent_species_set
+        else:
+            raise BurntToast(
+                "{} unrecognized value for configuration argument "
+                "'species_basis'; this should never happen. Please contact "
+                "the IDAES developers with this bug.".format(self.name))
+
     def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):
@@ -1036,6 +1052,15 @@ class _GenericStateBlock(StateBlock):
 @declare_process_block_class("GenericStateBlock",
                              block_class=_GenericStateBlock)
 class GenericStateBlockData(StateBlockData):
+    CONFIG = StateBlockData.CONFIG()
+
+    CONFIG.declare("species_basis", ConfigValue(
+        default="true",
+        domain=In(["true", "apparent"]),
+        doc="True or apparent component basis",
+        description="Argument idicating whetehr the true or apparent species "
+        "set should be used for indexing components"))
+
     def build(self):
         super(GenericStateBlockData, self).build()
 

@@ -362,6 +362,28 @@ class StateBlock(ProcessBlock):
         multiple StateBlockData objects simultaneously.
     """
 
+    @property
+    def component_list(self):
+        return self._return_component_list()
+
+    def _return_component_list(self):
+        return self._block_data_config_default["parameters"].component_list
+
+    @property
+    def phase_list(self):
+        return self._return_phase_list()
+
+    def _return_phase_list(self):
+        return self._block_data_config_default["parameters"].phase_list
+
+    @property
+    def phase_component_set(self):
+        return self._return_phase_component_set()
+
+    def _return_phase_component_set(self):
+        return self._block_data_config_default[
+            "parameters"].get_phase_component_set()
+
     def initialize(self, *args, **kwargs):
         """
         This is a default initialization routine for StateBlocks to ensure
@@ -531,6 +553,14 @@ should be constructed in this state block,
         """
         with self.lock_attribute_creation_context():
             return hasattr(self, attr)
+
+    @property
+    def component_list(self):
+        return self.parent_component().component_list
+
+    @property
+    def phase_list(self):
+        return self.parent_component().phase_list
 
     def build(self):
         """
