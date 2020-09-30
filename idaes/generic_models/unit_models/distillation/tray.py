@@ -378,29 +378,33 @@ see property package for documentation.}"""))
         """Method to split and populate the outlet ports with corresponding
            phase values from the mixed stream outlet block."""
 
-        member_list = self.properties_out[0].define_port_members()
+        member_list = self.properties_out[0].define_port_members().values()
 
         for k in member_list:
+
+            local_name = k.local_name
+
             # Create references and populate the intensive variables
-            if "flow" not in k and "frac" not in k and "enth" not in k:
-                if not member_list[k].is_indexed():
+            if "flow" not in local_name and "frac" not in local_name \
+                    and "enth" not in local_name:
+                if not k.is_indexed():
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)
+                        component(local_name)
                 else:
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                 # add the reference and variable name to the port
-                port.add(Reference(var), k)
+                port.add(Reference(var), local_name)
 
-            elif "frac" in k:
+            elif "frac" in local_name:
 
                 # Mole/mass frac is typically indexed
-                index_set = member_list[k].index_set()
+                index_set = k.index_set()
 
                 # if state var is not mole/mass frac by phase
-                if "phase" not in k:
-                    if "mole" in k:  # check mole basis/mass basis
+                if "phase" not in local_name:
+                    if "mole" in local_name:  # check mole basis/mass basis
 
                         # The following conditionals are required when a
                         # mole frac or mass frac is a state var i.e. will be
@@ -427,7 +431,7 @@ see property package for documentation.}"""))
                                 "No mole_frac_phase_comp or flow_mol_phase or"
                                 " flow_mol_phase_comp variables encountered "
                                 "while building ports for the condenser. ")
-                    elif "mass" in k:
+                    elif "mass" in local_name:
                         if hasattr(self.properties_out[0],
                                    "mass_frac_phase_comp") and \
                             hasattr(self.properties_out[0],
@@ -485,19 +489,19 @@ see property package for documentation.}"""))
                                       rule=rule_mole_frac)
                     self.add_component("e_mole_frac_" + port.local_name,
                                        expr)
-                    port.add(expr, k)
+                    port.add(expr, local_name)
                 else:
 
                     # Assumes mole_frac_phase or mass_frac_phase exist as
                     # state vars in the port and therefore access directly
                     # from the state block.
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                     # add the reference and variable name to the port
-                    port.add(Reference(var), k)
-            elif "flow" in k:
-                if "phase" not in k:
+                    port.add(Reference(var), local_name)
+            elif "flow" in local_name:
+                if "phase" not in local_name:
 
                     # Assumes that here the var is total flow or component
                     # flow. However, need to extract the flow by phase from
@@ -506,16 +510,15 @@ see property package for documentation.}"""))
 
                     # Check if it is not indexed by component list and this
                     # is total flow
-                    if not member_list[k].is_indexed():
+                    if not k.is_indexed():
                         # if state var is not flow_mol/flow_mass
                         # by phase
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_flow = local_name + "_phase"
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t):
                             return sum(self.properties_out[t].
-                                       component(local_name)[p]
+                                       component(local_name_flow)[p]
                                        for p in phase) * (side_sf)
 
                         # add the reference and variable name to the port
@@ -523,38 +526,36 @@ see property package for documentation.}"""))
                                           rule=rule_flow)
                         self.add_component("e_flow_" + port.local_name,
                                            expr)
-                        port.add(expr, k)
+                        port.add(expr, local_name)
                     else:
                         # when it is flow comp indexed by component list
-                        str_split = \
-                            str(member_list[k].local_name).split("_")
+                        str_split = local_name.split("_")
                         if len(str_split) == 3 and str_split[-1] == "comp":
-                            local_name = str_split[0] + "_" + \
+                            local_name_flow = str_split[0] + "_" + \
                                 str_split[1] + "_phase_" + "comp"
 
                         # Get the indexing set i.e. component list
-                        index_set = member_list[k].index_set()
+                        index_set = k.index_set()
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t, i):
                             return sum(self.properties_out[t].
-                                       component(local_name)[p, i]
+                                       component(local_name_flow)[p, i]
                                        for p in phase) * (side_sf)
                         expr = Expression(self.flowsheet().time,
                                           index_set,
                                           rule=rule_flow)
                         self.add_component("e_flow_" + port.local_name,
                                            expr)
-                        port.add(expr, k)
+                        port.add(expr, local_name)
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
-                    if not member_list[k].is_indexed():
+                    if not k.is_indexed():
                         # if state var is not enth_mol/enth_mass
                         # by phase, add _phase string to extract the right
                         # value from the state block
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_phase = local_name + "_phase"
                     else:
                         raise PropertyPackageError(
                             "Enthalpy is indexed but the variable "
@@ -565,7 +566,7 @@ see property package for documentation.}"""))
                     # Rule to link the phase enthalpy to the port.
                     def rule_enth(self, t):
                         return sum(self.properties_out[t].
-                                   component(local_name)[p]
+                                   component(local_name_phase)[p]
                                    for p in phase)
 
                     expr = Expression(self.flowsheet().time,
@@ -573,23 +574,23 @@ see property package for documentation.}"""))
                     self.add_component("e_enth_" + port.local_name,
                                        expr)
                     # add the reference and variable name to the port
-                    port.add(expr, k)
+                    port.add(expr, local_name)
 
-                elif "phase" in k:
+                elif "phase" in local_name:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
                     # reference irrespective of the reflux, distillate and
                     # vap_outlet
 
-                    if not member_list[k].is_indexed():
+                    if not k.is_indexed():
                         var = self.properties_out[:].\
-                            component(member_list[k].local_name)
+                            component(local_name)
                     else:
                         var = self.properties_out[:].\
-                            component(member_list[k].local_name)[...]
+                            component(local_name)[...]
 
                     # add the reference and variable name to the port
-                    port.add(Reference(var), k)
+                    port.add(Reference(var), local_name)
                 else:
                     raise PropertyNotSupportedError(
                         "Unrecognized enthalpy state variable encountered "
