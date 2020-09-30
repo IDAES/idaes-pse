@@ -216,9 +216,7 @@ class FlowsheetSerializer:
                 # GeneralVars to actual values
                 performance_df = DataFrame(performance_contents["vars"].items(), columns=["Variable", "Value"])
                 performance_df['Value'] = performance_df['Value'].map(lambda v: value(v))
-            self.serialized_contents[unit_name]["performance_contents"] = performance_df
-            print(unit_name)
-            
+            self.serialized_contents[unit_name]["performance_contents"] = performance_df            
 
         elif unit in self._known_endpoints:
             # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
@@ -313,14 +311,14 @@ class FlowsheetSerializer:
             performance_contents = {}
             stream_contents = {}
             if unit_name in self.serialized_contents:
-                performance_contents = self.serialized_contents[unit_name]["performance"].to_dict('index')
-                stream_contents = self.serialized_contents[unit_name]["stream"].to_dict('index')
+                performance_contents = self.serialized_contents[unit_name]["performance_contents"].to_dict('index')
+                stream_contents = self.serialized_contents[unit_name]["stream_contents"].to_dict('index')
 
             self.out_json["model"]["unit_models"][unit_name] = {
                 "type": unit_type,
                 "image": "/images/icons/" + icon_mapping(unit_type),
-                "performance contents": performance_contents,
-                "stream contents": stream_contents
+                "performance_contents": performance_contents,
+                "stream_contents": stream_contents
             }
 
         for edge, edge_info in self.edges.items():
