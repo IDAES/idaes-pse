@@ -547,13 +547,38 @@ see property package for documentation.}"""))
                                            expr)
                         port.add(expr, k)
                 elif "phase" in k:
-                    # when it is flow indexed by phase or indexed by both
-                    # phase and component
-                    var = self.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                    # flow is indexed by phase and comp
+                    # Get the indexing sets i.e. component list and phase list
+                    component_set = self.config.\
+                        property_package.component_list
 
-                    # add the reference and variable name to the port
-                    port.add(Reference(var), k)
+                    phase_set = self.config.\
+                        property_package.phase_list
+
+                    def rule_flow(self, t, p, i):
+                        if (phase is self._liquid_set and
+                                p in self._liquid_set) or \
+                                (phase is self._vapor_set and
+                                 p in self._vapor_set) :
+                            # pass appropriate phase flow values to port
+                            return (self.properties_out[t].
+                                    component(k)[p, i]) * (side_sf)
+                        else:
+                            # return small number for phase that should not
+                            # be in the appropriate port. For example,
+                            # the state vars will be flow_mol_phase_comp
+                            # which will include all phases. The liq port
+                            # should have the correct references to the liq
+                            # phase flow but the vapor phase flow should be 0.
+                            return 1e-8
+
+                    expr = Expression(self.flowsheet().time,
+                                      phase_set,
+                                      component_set,
+                                      rule=rule_flow)
+                    self.add_component("e_" + k + port.local_name,
+                                       expr)
+                    port.add(expr, k)
                 else:
                     raise PropertyNotSupportedError(
                         "Unrecognized flow state variable encountered "
