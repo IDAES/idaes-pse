@@ -615,14 +615,16 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
     else:
         return None
 
-def _read_component(sd, o, wts, lookup={}, suffixes={}, oname=None):
+def _read_component(sd, o, wts, lookup={}, suffixes={}, root_name=None):
     """
     Read a component dictionary into a model
     """
     alist, ff = wts.get_class_attr_list(o)
     if alist is None: return
-    if oname is None:
+    if root_name is None:
         oname = o.getname(fully_qualified=False)
+    else:
+        oname = root_name
     try:
         odict = sd[oname]
     except KeyError as e:
@@ -822,7 +824,8 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     lookup = {} # A dict to use for a lookup tables
     suffixes={} # A list of suffixes delayed to end so lookup is complete
     # Read toplevel componet (is recursive)
-    _read_component(sd, o, wts, lookup=lookup, suffixes=suffixes, oname=root_name)
+    _read_component(
+        sd, o, wts, lookup=lookup, suffixes=suffixes, root_name=root_name)
     read_time = time.time() # to calc time to read model state minus suffixes
     # Now read in the suffixes
     _read_suffixes(lookup, suffixes)
