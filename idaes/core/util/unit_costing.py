@@ -699,7 +699,6 @@ def vessel_costing(self, alignment='horizontal',
     _make_vars(self)
 
     if ref_parameter_diameter is None and ref_parameter_length is None:
-    # checking units of self.parent_block().diameter
         try:
             D = self.parent_block().diameter
         except AttributeError:
@@ -709,10 +708,11 @@ def vessel_costing(self, alignment='horizontal',
         except AttributeError:
             raise ConfigurationError('length variable does not exist in '
                                      'the unit model')
-        if isinstance(self.parent_block().config.property_package.get_metadata().
-                default_units['length'], _PyomoUnit):
-            D = units.convert(D, to_units = units.foot)
-            L = units.convert(L, to_units = units.foot)
+        # checking units of self.parent_block().diameter
+        if isinstance(self.parent_block().config.property_package.
+                      get_metadata().default_units['length'], _PyomoUnit):
+            D = units.convert(D, to_units=units.foot)
+            L = units.convert(L, to_units=units.foot)
         elif (self.parent_block().config.property_package.get_metadata().
                 default_units['length']) == 'm':
             D = D*3.28084  # converting to ft
@@ -723,7 +723,8 @@ def vessel_costing(self, alignment='horizontal',
         else:
             raise Exception('area units not supported contact developers')
 
-    elif ref_parameter_diameter is not None and ref_parameter_length is not None:
+    elif (ref_parameter_diameter is not None
+          and ref_parameter_length is not None):
         D = ref_parameter_diameter
         L = ref_parameter_length
 
@@ -1043,7 +1044,16 @@ def cstr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
                    L_D_range=L_D_range,
                    PL=PL)
 
+
 def flash_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)
+
+
+def rstoic_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
     vessel_costing(self, alignment=alignment,
                    Mat_factor=Mat_factor,
                    weight_limit=weight_limit,

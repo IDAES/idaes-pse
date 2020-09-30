@@ -241,7 +241,6 @@ see reaction package for documentation.}"""))
 
         return {"vars": var_dict}
 
-
     def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
                     weight_limit='option1', L_D_range='option1', PL=True,
                     year=None, module=costing):
@@ -249,7 +248,8 @@ see reaction package for documentation.}"""))
             self.flowsheet().get_costing(year=year, module=module)
 
         self.costing = Block()
-        units_meta = self.config.property_package.get_metadata().get_derived_units
+        units_meta = (self.config.property_package.get_metadata().
+                      get_derived_units)
         self.length = Var(initialize=1,
                           units=units_meta('length'),
                           doc='vessel length')
@@ -257,7 +257,8 @@ see reaction package for documentation.}"""))
                             units=units_meta('length'),
                             doc='vessel diameter')
         time = self.flowsheet().config.time.first()
-        self.volume_eq = Constraint(expr=self.volume[time] == self.length*self.diameter)
+        self.volume_eq = Constraint(expr=self.volume[time]
+                                    == self.length*self.diameter)
         module.cstr_costing(self.costing, alignment=alignment,
                             Mat_factor=Mat_factor,
                             weight_limit=weight_limit,

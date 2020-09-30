@@ -320,7 +320,6 @@ class TestIAPWS(object):
     def test_report(self, iapws):
         iapws.fs.unit.report()
 
-
     @pytest.mark.component
     def test_costing(self, iapws):
         iapws.fs.unit.get_costing()
