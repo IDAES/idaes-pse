@@ -225,11 +225,8 @@ see reaction package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             units=units_meta('length'),
                             doc='vessel diameter')
-        # time = self.flowsheet().config.time.first()
-        # self.volume_eq = Constraint(expr=self.volume[time]
-        #                             == self.length*self.diameter)
         module.rstoic_costing(self.costing, alignment=alignment,
-                            Mat_factor=Mat_factor,
-                            weight_limit=weight_limit,
-                            L_D_range=L_D_range,
-                            PL=PL)
+                              Mat_factor=Mat_factor,
+                              weight_limit=weight_limit,
+                              L_D_range=L_D_range,
+                              PL=PL)

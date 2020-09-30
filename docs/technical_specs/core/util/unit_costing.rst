@@ -494,7 +494,7 @@ Additional arguments are required to estimate the blower cost such as mover_type
 * blower_type = 'centrifugal', 'rotary'
 * Mat_factor = 'carbon_steel', 'aluminum', 'fiberglass', 'stain_steel', 'nickel_alloy'
 
-where the material factors given in table 15 for the fans can be used. In addition, centrifugal blowers are available with ast aluminum blades with Mat_factor = 0.60.
+where the material factors given in table 15 for the fans can be used. In addition, centrifugal blowers are available with cast aluminum blades with Mat_factor = 0.60.
 
 The purchase cost is given by the material factor and base cost. While, the base cost is given by the power consumption in horsepower (Pc). 
 
