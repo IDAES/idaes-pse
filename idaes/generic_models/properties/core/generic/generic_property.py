@@ -414,7 +414,7 @@ class GenericParameterData(PhysicalParameterBlock):
             # Add elemental composition components
             self.element_list = Set(ordered=True)
 
-            # Iterate through all componets and collectcomposing elements
+            # Iterate through all componets and collect composing elements
             # Add these to element_list
             for ec in element_comp.values():
                 for e in ec.keys():
