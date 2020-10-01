@@ -248,17 +248,17 @@ see property package for documentation.}"""))
     def _make_splits_reboiler(self):
         # Get dict of Port members and names
         member_list = self.control_volume.\
-            properties_out[0].define_port_members().values()
+            properties_out[0].define_port_members()
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
 
-            local_name = k.local_name
+            local_name = member_list[k].local_name
 
             # Create references and populate the intensive variables
             if "flow" not in local_name and "frac" not in local_name \
                     and "enth" not in local_name:
-                if not k.is_indexed():
+                if not member_list[k].is_indexed():
                     var = self.control_volume.properties_out[:].\
                         component(local_name)
                 else:
@@ -266,16 +266,16 @@ see property package for documentation.}"""))
                         component(local_name)[...]
 
                 # add the reference and variable name to the reflux port
-                self.bottoms.add(Reference(var), local_name)
+                self.bottoms.add(Reference(var), k)
 
                 # add the reference and variable name to the
                 # vapor outlet port
-                self.vapor_reboil.add(Reference(var), local_name)
+                self.vapor_reboil.add(Reference(var), k)
 
             elif "frac" in local_name:
 
                 # Mole/mass frac is typically indexed
-                index_set = k.index_set()
+                index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
                 if "phase" not in local_name:
@@ -392,11 +392,11 @@ see property package for documentation.}"""))
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.bottoms.add(self.e_liq_frac, local_name)
+                    self.bottoms.add(self.e_liq_frac, k)
 
                     # add the reference and variable name to the
                     # vapor port
-                    self.vapor_reboil.add(self.e_vap_frac, local_name)
+                    self.vapor_reboil.add(self.e_vap_frac, k)
                 else:
                     # Assumes mole_frac_phase or mass_frac_phase exist as
                     # state vars in the port and therefore access directly
@@ -405,10 +405,10 @@ see property package for documentation.}"""))
                         component(local_name)[...]
 
                     # add the reference and variable name to the distillate port
-                    self.bottoms.add(Reference(var), local_name)
+                    self.bottoms.add(Reference(var), k)
 
                     # add the reference and variable name to the boil up port
-                    self.vapor_reboil.add(Reference(var), local_name)
+                    self.vapor_reboil.add(Reference(var), k)
             elif "flow" in local_name:
                 if "phase" not in local_name:
 
@@ -419,7 +419,7 @@ see property package for documentation.}"""))
 
                     # Check if it is not indexed by component list and this
                     # is total flow
-                    if not k.is_indexed():
+                    if not member_list[k].is_indexed():
                         # if state var is not flow_mol/flow_mass
                         # by phase
                         local_name_flow = local_name + "_phase"
@@ -452,7 +452,7 @@ see property package for documentation.}"""))
                                 str_split[1] + "_phase_" + "comp"
 
                         # Get the indexing set i.e. component list
-                        index_set = k.index_set()
+                        index_set = member_list[k].index_set()
 
                         # Rule for vap phase flow to the vapor outlet
                         def rule_vap_flow(self, t, i):
@@ -474,11 +474,11 @@ see property package for documentation.}"""))
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.bottoms.add(self.e_bottoms_flow, local_name)
+                    self.bottoms.add(self.e_bottoms_flow, k)
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.vapor_reboil.add(self.e_vap_flow, local_name)
+                    self.vapor_reboil.add(self.e_vap_flow, k)
                 else:
                     # when it is flow indexed by phase or indexed by
                     # both phase and component.
@@ -486,15 +486,15 @@ see property package for documentation.}"""))
                         component(local_name)[...]
 
                     # add the reference and variable name to the bottoms port
-                    self.bottoms.add(Reference(var), local_name)
+                    self.bottoms.add(Reference(var), k)
 
                     # add the reference and variable name to the
                     # vapor outlet port
-                    self.vapor_reboil.add(Reference(var), local_name)
+                    self.vapor_reboil.add(Reference(var), k)
             elif "enth" in local_name:
                 if "phase" not in local_name:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
-                    if not k.is_indexed():
+                    if not member_list[k].is_indexed():
                         # if state var is not enth_mol/enth_mass
                         # by phase, add _phase string to extract the right
                         # value from the state block
@@ -529,11 +529,11 @@ see property package for documentation.}"""))
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.bottoms.add(self.e_bottoms_enth, local_name)
+                    self.bottoms.add(self.e_bottoms_enth, k)
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.vapor_reboil.add(self.e_vap_enth, local_name)
+                    self.vapor_reboil.add(self.e_vap_enth, k)
                 elif "phase" in local_name:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
@@ -549,11 +549,11 @@ see property package for documentation.}"""))
                             component(local_name)[...]
 
                     # add the reference and variable name to the distillate port
-                    self.bottoms.add(Reference(var), local_name)
+                    self.bottoms.add(Reference(var), k)
 
                     # add the reference and variable name to the
                     # vapor outlet port
-                    self.vapor_reboil.add(Reference(var), local_name)
+                    self.vapor_reboil.add(Reference(var), k)
                 else:
                     raise PropertyNotSupportedError(
                         "Unrecognized enthalpy state variable encountered "
