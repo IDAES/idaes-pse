@@ -668,7 +668,7 @@ class _GenericStateBlock(StateBlock):
     def _return_component_list(self):
         # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from
-        params = self._block_data_config_default["parameters"]
+        params = self._get_parameter_block()
         if not params._electrolyte:
             return params.component_list
         elif self._block_data_config_default["species_basis"] == "true":
@@ -684,7 +684,7 @@ class _GenericStateBlock(StateBlock):
     def _return_phase_component_set(self):
         # Overload the _return_phase_component_set method to handle electrolyte
         # systems where we have two component lists to choose from
-        params = self._block_data_config_default["parameters"]
+        params = self._get_parameter_block()
         if not params._electrolyte:
             return params._phase_component_set
         elif self._block_data_config_default["species_basis"] == "true":

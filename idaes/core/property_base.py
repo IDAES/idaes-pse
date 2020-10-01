@@ -32,6 +32,7 @@ from idaes.core.phases import Phase, PhaseData
 from idaes.core.components import Component, ComponentData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
@@ -367,22 +368,40 @@ class StateBlock(ProcessBlock):
         return self._return_component_list()
 
     def _return_component_list(self):
-        return self._block_data_config_default["parameters"].component_list
+        return self._get_parameter_block().component_list
 
     @property
     def phase_list(self):
         return self._return_phase_list()
 
     def _return_phase_list(self):
-        return self._block_data_config_default["parameters"].phase_list
+        return self._get_parameter_block().phase_list
 
     @property
     def phase_component_set(self):
         return self._return_phase_component_set()
 
     def _return_phase_component_set(self):
-        return self._block_data_config_default[
-            "parameters"].get_phase_component_set()
+        return self._get_parameter_block().get_phase_component_set()
+
+    def _get_parameter_block(self):
+        try:
+            return self._block_data_config_default["parameters"]
+        except KeyError:
+            # Need to get parameters from initialize dict
+            # We will also confirm these are all the same whilst we are at it
+            param = None
+            for v in self._block_data_config_initialize.values():
+                if param is None:
+                    param = v["parameters"]
+                elif param is not v["parameters"]:
+                    raise ConfigurationError(
+                        "{} StateBlock must use the same parameter block for "
+                        "elements. When using the initialize argument, please "
+                        "ensure that the same value is used for all parameter "
+                        "keys.".format(self.name))
+            self._block_data_config_default["parameters"] = param
+        return param
 
     def initialize(self, *args, **kwargs):
         """
