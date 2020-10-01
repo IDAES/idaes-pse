@@ -562,6 +562,10 @@ should be constructed in this state block,
     def phase_list(self):
         return self.parent_component().phase_list
 
+    @property
+    def phase_component_set(self):
+        return self.parent_component().phase_component_set
+
     def build(self):
         """
         General build method for StateBlockDatas.

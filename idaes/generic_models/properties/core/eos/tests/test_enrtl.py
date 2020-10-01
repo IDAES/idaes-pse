@@ -129,6 +129,19 @@ def test_component_lists():
         "HCO3-", "K+", "H2O", "CO2", "N2"]
     assert m.fs.props.apparent_species_set == [
         "H2O", "CO2", "KHCO3", "N2"]
+    assert m.fs.props.component_list == [
+        "HCO3-", "K+", "H2O", "CO2", "KHCO3", "N2"]
+
+    assert m.fs.props.true_phase_component_set == [
+        ("Liq", "HCO3-"),  ("Liq", "K+"),  ("Liq", "H2O"),
+        ("Liq", "CO2"),  ("Liq", "N2")]
+    assert m.fs.props.apparent_phase_component_set == [
+        ("Liq", "H2O"), ("Liq", "CO2"),  ("Liq", "KHCO3"),  ("Liq", "N2")]
 
     assert m.fs.state_1[1].component_list is m.fs.props.true_species_set
     assert m.fs.state_2[1].component_list is m.fs.props.apparent_species_set
+
+    assert m.fs.state_1[1].phase_component_set is \
+        m.fs.props.true_phase_component_set
+    assert m.fs.state_2[1].phase_component_set is \
+        m.fs.props.apparent_phase_component_set

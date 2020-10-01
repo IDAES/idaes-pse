@@ -262,28 +262,40 @@ class GenericParameterData(PhysicalParameterBlock):
 
             self.add_component(c, ctype(default=d))
 
-        # If this is an electrolyte system, we now need ot build the actual
+        # If this is an electrolyte system, we now need to build the actual
         # component lists
         if self._electrolyte:
             true_species = []
             apparent_species = []
+            all_species = []
 
             for j in self.anion_set:
                 true_species.append(j)
+                all_species.append(j)
             for j in self.cation_set:
                 true_species.append(j)
+                all_species.append(j)
             for j in self.solvent_set:
                 true_species.append(j)
                 apparent_species.append(j)
+                all_species.append(j)
             for j in self.solute_set:
                 true_species.append(j)
                 apparent_species.append(j)
+                all_species.append(j)
             for j in self._apparent_set:
                 apparent_species.append(j)
+                all_species.append(j)
             for j in self._non_aqueous_set:
                 true_species.append(j)
                 apparent_species.append(j)
+                all_species.append(j)
 
+            self.add_component(
+                "component_list",
+                Set(initialize=all_species,
+                    ordered=True,
+                    doc="Master set of all components in mixture"))
             self.add_component(
                 "true_species_set",
                 Set(initialize=true_species,
@@ -295,41 +307,81 @@ class GenericParameterData(PhysicalParameterBlock):
                     ordered=True,
                     doc="Set of apparent components in mixture"))
 
-            # TODO: Need to work out how to allow switching between true and
-            # apparent components
-            # For now, just use apparent species
-            self.component_list = Set(initialize=apparent_species)
-
         # Validate phase-component lists, and build _phase_component_set
-        pc_set = []
-        for p in self.phase_list:
-            pobj = self.get_phase(p)
-            pc_list = self.get_phase(p).config.component_list
-            if pc_list is None:
-                # No phase-component list, look at components to determine
-                # which are valid in current phase
-                for j in self.component_list:
-                    if self.get_component(j)._is_phase_valid(pobj):
-                        # If compoennt says phase is valid, add to set
+        if not self._electrolyte:
+            pc_set = []
+            for p in self.phase_list:
+                pobj = self.get_phase(p)
+                pc_list = self.get_phase(p).config.component_list
+                if pc_list is None:
+                    # No phase-component list, look at components to determine
+                    # which are valid in current phase
+                    for j in self.component_list:
+                        if self.get_component(j)._is_phase_valid(pobj):
+                            # If compoennt says phase is valid, add to set
+                            pc_set.append((p, j))
+                else:
+                    # Validate that component names are valid and add to pc_set
+                    for j in pc_list:
+                        if j not in self.component_list:
+                            # Unrecognised component
+                            raise ConfigurationError(
+                                "{} phase-component list for phase {} "
+                                "contained component {} which is not in the "
+                                "master component list"
+                                .format(self.name, p, j))
+                        # Check that phase is valid for component
+                        if not self.get_component(j)._is_phase_valid(pobj):
+                            raise ConfigurationError(
+                                "{} phase-component list for phase {} "
+                                "contained component {}, however this "
+                                "component is not valid for the given "
+                                "PhaseType".format(self.name, p, j))
                         pc_set.append((p, j))
-            else:
-                # Validate that component names are valid and add to pc_set
-                for j in pc_list:
-                    if j not in self.component_list:
-                        # Unrecognised component
-                        raise ConfigurationError(
-                            "{} phase-component list for phase {} contained "
-                            "component {} which is not in the master "
-                            "component list".format(self.name, p, j))
-                    # Check that phase is valid for component
-                    if not self.get_component(j)._is_phase_valid(pobj):
-                        raise ConfigurationError(
-                            "{} phase-component list for phase {} contained "
-                            "component {}, however this component is not "
-                            "valid for the given PhaseType"
-                            .format(self.name, p, j))
-                    pc_set.append((p, j))
-        self._phase_component_set = Set(initialize=pc_set, ordered=True)
+            self._phase_component_set = Set(initialize=pc_set, ordered=True)
+        else:
+            pc_set_appr = []
+            pc_set_true = []
+            for p in self.phase_list:
+                pobj = self.get_phase(p)
+                pc_list = self.get_phase(p).config.component_list
+                if pc_list is None:
+                    # No phase-component list, look at components to determine
+                    # which are valid in current phase
+                    for j in self.true_species_set:
+                        if self.get_component(j)._is_phase_valid(pobj):
+                            # If compoennt says phase is valid, add to set
+                            pc_set_true.append((p, j))
+                    for j in self.apparent_species_set:
+                        if self.get_component(j)._is_phase_valid(pobj):
+                            # If compoennt says phase is valid, add to set
+                            pc_set_appr.append((p, j))
+                else:
+                    # Validate that component names are valid and add to pc_set
+                    for j in pc_list:
+                        if (j not in self.true_species_set and
+                                j not in self.true_species_set):
+                            # Unrecognised component
+                            raise ConfigurationError(
+                                "{} phase-component list for phase {} "
+                                "contained component {} which is not in the "
+                                "master component list"
+                                .format(self.name, p, j))
+                        # Check that phase is valid for component
+                        if not self.get_component(j)._is_phase_valid(pobj):
+                            raise ConfigurationError(
+                                "{} phase-component list for phase {} "
+                                "contained component {}, however this "
+                                "component is not valid for the given "
+                                "PhaseType".format(self.name, p, j))
+                        if j not in self.true_species_set:
+                            pc_set_true.append((p, j))
+                        if j not in self.apparent_species_set:
+                            pc_set_appr.append((p, j))
+            self.true_phase_component_set = Set(initialize=pc_set_true,
+                                                ordered=True)
+            self.apparent_phase_component_set = Set(initialize=pc_set_appr,
+                                                    ordered=True)
 
         # Validate and construct elemental composition objects as appropriate
         element_comp = {}
@@ -614,7 +666,7 @@ class _GenericStateBlock(StateBlock):
     """
 
     def _return_component_list(self):
-        # Overlaod the _return_component_list method to handle electrolyte
+        # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from
         params = self._block_data_config_default["parameters"]
         if not params._electrolyte:
@@ -623,6 +675,22 @@ class _GenericStateBlock(StateBlock):
             return params.true_species_set
         elif self._block_data_config_default["species_basis"] == "apparent":
             return params.apparent_species_set
+        else:
+            raise BurntToast(
+                "{} unrecognized value for configuration argument "
+                "'species_basis'; this should never happen. Please contact "
+                "the IDAES developers with this bug.".format(self.name))
+
+    def _return_phase_component_set(self):
+        # Overload the _return_phase_component_set method to handle electrolyte
+        # systems where we have two component lists to choose from
+        params = self._block_data_config_default["parameters"]
+        if not params._electrolyte:
+            return params._phase_component_set
+        elif self._block_data_config_default["species_basis"] == "true":
+            return params.true_phase_component_set
+        elif self._block_data_config_default["species_basis"] == "apparent":
+            return params.apparent_phase_component_set
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
