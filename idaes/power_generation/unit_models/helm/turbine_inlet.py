@@ -103,7 +103,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
-            return flow ** 2 * mw ** 2 * (Tin - 273.15) == (
+            return flow ** 2 * mw ** 2 * Tin == (
                 cf ** 2 * Pin ** 2 * g / (g - 1)
                     * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g)))
 
@@ -181,8 +181,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 Pratio = self.ratioP[t]
                 self.flow_coeff[t].value = value(
                     flow * mw * sqrt(
-                        (Tin - 273.15)/
-                        (g/(g - 1) *(Pratio**(2.0/g) - Pratio**((g + 1)/g)))
+                        Tin/(g/(g - 1) *(Pratio**(2.0/g) - Pratio**((g + 1)/g)))
                     )/Pin
                 )
 

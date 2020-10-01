@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, value, Reference
+from pyomo.environ import Constraint, value, Reference, Var, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
@@ -35,6 +35,8 @@ from idaes.generic_models.unit_models.separator import (Separator,
                                                         EnergySplittingType)
 
 from idaes.core.util.config import is_physical_parameter_block
+import idaes.core.util.unit_costing as costing
+
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -274,3 +276,20 @@ see property package for documentation.}"""))
                             value(port_obj.vars[k][time_point, i[1:]])
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
+
+    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True,
+                    year=None, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year, module=module)
+
+        self.costing = Block()
+        self.length = Var(initialize=1,
+                          doc='vessel length')
+        self.diameter = Var(initialize=1,
+                            doc='vessel diameter')
+        module.flash_costing(self.costing, alignment=alignment,
+                             Mat_factor=Mat_factor,
+                             weight_limit=weight_limit,
+                             L_D_range=L_D_range,
+                             PL=PL)
