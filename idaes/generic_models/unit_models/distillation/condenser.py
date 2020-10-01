@@ -275,72 +275,73 @@ see property package for documentation.}"""))
 
         # Get dict of Port members and names
         member_list = self.control_volume.\
-            properties_out[0].define_port_members()
+            properties_out[0].define_port_members().values()
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
+
+            local_name = k.local_name
             # Create references and populate the intensive variables
-            if "flow" not in k:
-                if not member_list[k].is_indexed():
+            if "flow" not in local_name:
+                if not k.is_indexed():
                     var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)
+                        component(local_name)
                 else:
                     var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                 # add the reference and variable name to the reflux port
-                self.reflux.add(Reference(var), k)
+                self.reflux.add(Reference(var), local_name)
 
                 # add the reference and variable name to the distillate port
-                self.distillate.add(Reference(var), k)
+                self.distillate.add(Reference(var), local_name)
 
-            elif "flow" in k:
+            elif "flow" in local_name:
                 # Create references and populate the extensive variables
                 # This is for vars that are not indexed
-                if not member_list[k].is_indexed():
+                if not k.is_indexed():
                     # Expression for reflux flow and relation to the
                     # reflux_ratio variable
 
                     def rule_reflux_flow(self, t):
                         return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name) * \
+                            component(local_name) * \
                             (self.reflux_ratio / (1 + self.reflux_ratio))
                     self.e_reflux_flow = Expression(self.flowsheet().time,
                                                     rule=rule_reflux_flow)
-                    self.reflux.add(self.e_reflux_flow, k)
+                    self.reflux.add(self.e_reflux_flow, local_name)
 
                     # Expression for distillate flow and relation to the
                     # reflux_ratio variable
                     def rule_distillate_flow(self, t):
                         return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name) / \
+                            component(local_name) / \
                             (1 + self.reflux_ratio)
                     self.e_distillate_flow = Expression(
                         self.flowsheet().time, rule=rule_distillate_flow)
-                    self.distillate.add(self.e_distillate_flow, k)
+                    self.distillate.add(self.e_distillate_flow, local_name)
                 else:
                     # Create references and populate the extensive variables
                     # This is for vars that are indexed by phase, comp or both.
-                    index_set = member_list[k].index_set()
+                    index_set = k.index_set()
 
                     def rule_reflux_flow(self, t, *args):
                         return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name)[args] * \
+                            component(local_name)[args] * \
                             (self.reflux_ratio / (1 + self.reflux_ratio))
                     self.e_reflux_flow = Expression(self.flowsheet().time,
                                                     index_set,
                                                     rule=rule_reflux_flow)
-                    self.reflux.add(self.e_reflux_flow, k)
+                    self.reflux.add(self.e_reflux_flow, local_name)
 
                     def rule_distillate_flow(self, t, *args):
                         return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name)[args] / \
+                            component(local_name)[args] / \
                             (1 + self.reflux_ratio)
                     self.e_distillate_flow = Expression(
                         self.flowsheet().time, index_set,
                         rule=rule_distillate_flow)
-                    self.distillate.add(self.e_distillate_flow, k)
-
+                    self.distillate.add(self.e_distillate_flow, local_name)
             else:
                 raise PropertyNotSupportedError(
                     "Unrecognized names for flow variables encountered while "
@@ -349,7 +350,7 @@ see property package for documentation.}"""))
     def _make_splits_partial_condenser(self):
         # Get dict of Port members and names
         member_list = self.control_volume.\
-            properties_out[0].define_port_members()
+            properties_out[0].define_port_members().values()
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
