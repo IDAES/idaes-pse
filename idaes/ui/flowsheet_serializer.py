@@ -249,7 +249,6 @@ class FlowsheetSerializer:
             if inlet_match:
                 # name the feed "unit model" and its connecting edge with the name of the port itself
                 feed_port = self._PseudoUnit('Feed', unit_name)
-                self._used_unit_names[unit_name] += 1
                 self.unit_models[feed_port] = {
                     "name": feed_port.getname(),
                     "type": "feed"
@@ -265,7 +264,6 @@ class FlowsheetSerializer:
             outlet_match = self.OUTLET_REGEX.search(port_name)
             if outlet_match:
                 prod_port = self._PseudoUnit('Product', unit_name)
-                self._used_unit_names[unit_name] += 1
                 self.unit_models[prod_port] = {
                     "name": prod_port.getname(),
                     "type": "product"
