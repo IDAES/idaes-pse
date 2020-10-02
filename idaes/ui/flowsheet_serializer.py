@@ -283,12 +283,12 @@ class FlowsheetSerializer:
                 self._logger.warning(f"Disconnected port found: {port_name} parent unit model: {self.ports[port].getname()}")
 
     def _unique_unit_name(self, base_name):
-        # Prevent name collisions by simply appending a number
-        suffix = self._used_unit_names[base_name]
-        if suffix <= 1:
+        # Prevent name collisions by simply appending a number if there is multiple instances of a 
+        self._used_unit_names[base_name] += 1
+        if self._used_unit_names[base_name] == 1:
             return base_name
         else:
-            return f"{base_name}_{suffix}"
+            return f"{base_name}_{self._used_unit_names[base_name]}"
 
     def _construct_output_json(self):
         self._construct_model_json()

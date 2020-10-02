@@ -227,14 +227,13 @@ def test_in_out_regex_matching():
 @pytest.mark.unit
 def test__unique_unit_name():
     fss = FlowsheetSerializer()
-    fss._used_unit_names = defaultdict(int, {'inlet': 3, 'outlet': 2, 'toluene_prod': 1})
     assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in'
     assert fss._unique_unit_name('toluene_prod') == 'toluene_prod'
-    # The check to make sure if you call it twice it doesn't change as _used_unit_names hasn't changed
-    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod'
-    assert fss._unique_unit_name('outlet') == 'outlet_2'
-    assert fss._unique_unit_name('inlet') == 'inlet_3'
-    assert fss._unique_unit_name('prod') == 'prod'
+    assert fss._unique_unit_name('feed') == "feed"
+    # _used_unit_names is incremented by _unique_unit_name so this should have a suffix
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod_2'
+    assert fss._unique_unit_name('feed') == "feed_2"
+    assert fss._unique_unit_name('feed') == "feed_3"
 
 @pytest.mark.unit
 def test_create_image_jointjs_json():
