@@ -387,10 +387,12 @@ class StateBlock(ProcessBlock):
     def _get_parameter_block(self):
         try:
             return self._block_data_config_default["parameters"]
-        except KeyError:
+        except (KeyError, TypeError):
             # Need to get parameters from initialize dict
             # We will also confirm these are all the same whilst we are at it
             param = None
+            if self._block_data_config_default is None:
+                self._block_data_config_default = {}
             for v in self._block_data_config_initialize.values():
                 if param is None:
                     param = v["parameters"]
