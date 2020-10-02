@@ -34,9 +34,9 @@ class FileBaseNameExistsError(Exception):
 
 class FlowsheetSerializer:
     #: Regular expression identifying inlets by last component of ports' name
-    INLET_REGEX = re.compile(r'^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$') # TODO case insensitivity
+    INLET_REGEX = re.compile(r'^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$', re.IGNORECASE)
     #: Regular expression identifying outlets by last component of ports' name
-    OUTLET_REGEX = re.compile(r'^out_|^prod_|^outlet_|^out$|^prod$|^outlet$|_out$|_prod$|_outlet$')
+    OUTLET_REGEX = re.compile(r'^out_|^prod_|^outlet_|^out$|^prod$|^outlet$|_out$|_prod$|_outlet$', re.IGNORECASE)
 
     def __init__(self):
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
@@ -51,7 +51,7 @@ class FlowsheetSerializer:
         self.flowsheet = None
         self._used_ports = set()
         self._known_endpoints = set()
-        self._used_unit_names = set()
+        self._used_unit_names = default_dict(int)
         self._logger = idaes.logger.getLogger(__name__)
 
     def serialize(self, flowsheet, name):
@@ -136,7 +136,6 @@ class FlowsheetSerializer:
     def _identify_unit_models(self):
         # Identify the unit models and ports and store them
         for component in self.flowsheet.component_objects(Block, descend_into=True):
-            # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
                 self._add_unit_model_with_ports(component)
             else:
@@ -169,7 +168,7 @@ class FlowsheetSerializer:
         # Map the arcs to the ports to construct the edges
         used_ports = set()
         for name, arc in self.arcs.items():
-            try:  # this is currently(?) necessary because for internally-nested arcs we may not record ports?
+            try:  # This is necessary because for internally-nested arcs we may not record ports
                 self.edges[name] = {"source": self.ports[arc.source], 
                                     "dest": self.ports[arc.dest]}
                 used_ports.add(arc.source)
@@ -177,7 +176,7 @@ class FlowsheetSerializer:
             except KeyError as error:
                 self._logger.error(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
 
-        # note we're only using the keys from self.ports, {port: parentcomponent}
+        # Note we're only using the keys from self.ports, {port: parentcomponent}
         return set(self.ports) - used_ports
 
     def _add_unit_model_with_ports(self, unit):
@@ -232,59 +231,66 @@ class FlowsheetSerializer:
 
     def _get_unit_model_type(self, unit):
         # Get the unit models type
-        return unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
+        return unit.base_class_module().split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
 
     def _identify_implicit_inlets_and_outlets(self, untouched_ports):
         # Identify feeds and products not explicitly defined by the user by examining the names of ports 
         # not connected to arcs 
-        for port in sorted(untouched_ports, key=lambda port: str(port)):  # TODO: sorting required for determinism; better way?
-            portname = str(port).split('.')[-1]
-            unit_name = self._unique_unit_name(portname)  # this becomes the I/O's ID and label
-            edgename = f's_{unit_name}'
+        # This is intended for use on ports of top level unit models. It is unclear if it works with nested 
+        # unit models (probably not)
+        for port in sorted(untouched_ports, key=lambda port: str(port)):  # Sorting for determinism
+            port_name = str(port).split('.')[-1]
+            unit_name = self._unique_unit_name(port_name)  # this becomes the I/O's ID and label
+            edge_name = f's_{unit_name}'
             # identify ports per INLET_REGEX/OUTLET_REGEX
             # then pretend they're unit models
             # then add their edges
-            inlet_match = self.INLET_REGEX.search(portname)
+            inlet_match = self.INLET_REGEX.search(port_name)
             if inlet_match:
                 # name the feed "unit model" and its connecting edge with the name of the port itself
-                feedport = self._PseudoUnit('Feed', unit_name)
+                feed_port = self._PseudoUnit('Feed', unit_name)
                 self._used_unit_names.add(unit_name)
-                self.unit_models[feedport] = {
-                    "name": feedport.getname(),
+                self.unit_models[feed_port] = {
+                    "name": feed_port.getname(),
                     "type": "feed"
                 }
-                self.edges[edgename] = {
-                    "source": feedport,
-                    "dest": self.ports[port]  # TODO ensure this works on nested unit models
+                self.edges[edge_name] = {
+                    "source": feed_port,
+                    "dest": self.ports[port]
                 }
-                self.labels[edgename] = "inlet info"  # TODO - fetch the actual information
+                arc_label = "inlet info"
+                self.labels[edge_name] = arc_label  # We want the arc label to look identical to that of a user defined feed
                 continue
 
-            outlet_match = self.OUTLET_REGEX.search(portname)
+            outlet_match = self.OUTLET_REGEX.search(port_name)
             if outlet_match:
-                prodport = self._PseudoUnit('Product', unit_name)
+                prod_port = self._PseudoUnit('Product', unit_name)
                 self._used_unit_names.add(unit_name)
-                self.unit_models[prodport] = {
-                    "name": prodport.getname(),
+                self.unit_models[prod_port] = {
+                    "name": prod_port.getname(),
                     "type": "product"
                 }
-                self.edges[edgename] = {
-                    "source": self.ports[port],  # TODO see above
-                    "dest": prodport
+                self.edges[edge_name] = {
+                    "source": self.ports[port],
+                    "dest": prod_port
                 }
-                self.labels[edgename] = "outlet info"  # TODO - fetch the actual information
+                arc_label = "outlet info"
+                self.labels[edge_name] = arc_label  # We want the arc label to look identical to that of a user defined product
                 continue
 
-            # TODO: deal with remaining loose ports here?
+            if not inlet_match and not outlet_match:
+                # Just in case there is a disconnected port that doesn't match the regexes display a warning
+                self._logger.warning(f"Disconnected port found: {port_name} parent unit model: {self.ports[port].getname()}")
 
     def _unique_unit_name(self, base_name):
         # Prevent name collisions by simply appending a number
-        name = base_name
-        increment = 0
-        while name in self._used_unit_names:
-            increment += 1
-            name = f'{base_name}_{increment}'
-        return name
+        suffix = self._used_unit_names[base_name]
+        if suffix == 0:
+            return base_name
+        else:
+            suffix += 1
+            self._used_unit_names[base_name] = suffix
+            return f"{base_name}_{suffix}"
 
     def _construct_output_json(self):
         self._construct_model_json()
