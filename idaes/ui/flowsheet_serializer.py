@@ -124,7 +124,7 @@ class FlowsheetSerializer:
         self._identify_unit_models()
         self._construct_stream_labels()
         untouched_ports = self._map_edges()
-        self._identify_implicit_inlets_and_outlets(untouched_ports)
+        self._identify_implicit_feeds_and_products(untouched_ports)
 
     def _identify_arcs(self):
         # Identify the arcs and known endpoints and store them
@@ -233,7 +233,7 @@ class FlowsheetSerializer:
         # Get the unit models type
         return unit.base_class_module().split(".")[-1]  # TODO look for/create equivalent getter, as getname() above
 
-    def _identify_implicit_inlets_and_outlets(self, untouched_ports):
+    def _identify_implicit_feeds_and_products(self, untouched_ports):
         # Identify feeds and products not explicitly defined by the user by examining the names of ports 
         # not connected to arcs 
         # This is intended for use on ports of top level unit models. It is unclear if it works with nested 
@@ -245,8 +245,8 @@ class FlowsheetSerializer:
             # identify ports per INLET_REGEX/OUTLET_REGEX
             # then pretend they're unit models
             # then add their edges
-            inlet_match = self.INLET_REGEX.search(port_name)
-            if inlet_match:
+            feed_match = self.INLET_REGEX.search(port_name)
+            if feed_match:
                 # name the feed "unit model" and its connecting edge with the name of the port itself
                 feed_port = self._PseudoUnit('Feed', unit_name)
                 self.unit_models[feed_port] = {
@@ -257,12 +257,12 @@ class FlowsheetSerializer:
                     "source": feed_port,
                     "dest": self.ports[port]
                 }
-                arc_label = "inlet info"
+                arc_label = "feed info"
                 self.labels[edge_name] = arc_label  # We want the arc label to look identical to that of a user defined feed
                 continue
 
-            outlet_match = self.OUTLET_REGEX.search(port_name)
-            if outlet_match:
+            product_match = self.OUTLET_REGEX.search(port_name)
+            if product_match:
                 prod_port = self._PseudoUnit('Product', unit_name)
                 self.unit_models[prod_port] = {
                     "name": prod_port.getname(),
@@ -272,11 +272,11 @@ class FlowsheetSerializer:
                     "source": self.ports[port],
                     "dest": prod_port
                 }
-                arc_label = "outlet info"
+                arc_label = "product info"
                 self.labels[edge_name] = arc_label  # We want the arc label to look identical to that of a user defined product
                 continue
 
-            if not inlet_match and not outlet_match:
+            if not feed_match and not product_match:
                 # Just in case there is a disconnected port that doesn't match the regexes display a warning
                 self._logger.warning(f"Disconnected port found: {port_name} parent unit model: {self.ports[port].getname()}")
 
