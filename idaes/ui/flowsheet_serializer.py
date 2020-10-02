@@ -51,7 +51,7 @@ class FlowsheetSerializer:
         self.flowsheet = None
         self._used_ports = set()
         self._known_endpoints = set()
-        self._used_unit_names = default_dict(int)
+        self._used_unit_names = defaultdict(lambda: 0)
         self._logger = idaes.logger.getLogger(__name__)
 
     def serialize(self, flowsheet, name):
@@ -188,7 +188,7 @@ class FlowsheetSerializer:
                     "type": self._get_unit_model_type(unit)
                 }
 
-            self._used_unit_names.add(unit_name)
+            self._used_unit_names[unit_name] += 1
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
 
@@ -249,7 +249,7 @@ class FlowsheetSerializer:
             if inlet_match:
                 # name the feed "unit model" and its connecting edge with the name of the port itself
                 feed_port = self._PseudoUnit('Feed', unit_name)
-                self._used_unit_names.add(unit_name)
+                self._used_unit_names[unit_name] += 1
                 self.unit_models[feed_port] = {
                     "name": feed_port.getname(),
                     "type": "feed"
@@ -265,7 +265,7 @@ class FlowsheetSerializer:
             outlet_match = self.OUTLET_REGEX.search(port_name)
             if outlet_match:
                 prod_port = self._PseudoUnit('Product', unit_name)
-                self._used_unit_names.add(unit_name)
+                self._used_unit_names[unit_name] += 1
                 self.unit_models[prod_port] = {
                     "name": prod_port.getname(),
                     "type": "product"
@@ -285,11 +285,9 @@ class FlowsheetSerializer:
     def _unique_unit_name(self, base_name):
         # Prevent name collisions by simply appending a number
         suffix = self._used_unit_names[base_name]
-        if suffix == 0:
+        if suffix <= 1:
             return base_name
         else:
-            suffix += 1
-            self._used_unit_names[base_name] = suffix
             return f"{base_name}_{suffix}"
 
     def _construct_output_json(self):

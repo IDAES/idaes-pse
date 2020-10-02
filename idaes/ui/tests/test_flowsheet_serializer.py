@@ -11,9 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import pytest
-from operator import itemgetter
-
 import re
+
+from collections import defaultdict
+from operator import itemgetter
 
 from idaes.generic_models.flowsheets.demo_flowsheet import (
     build_flowsheet, set_dof, initialize_flowsheet, solve_flowsheet)
@@ -226,11 +227,13 @@ def test_in_out_regex_matching():
 @pytest.mark.unit
 def test__unique_unit_name():
     fss = FlowsheetSerializer()
-    fss._used_unit_names = {'inlet', 'inlet_1', 'outlet', 'toluene_prod'}
+    fss._used_unit_names = defaultdict(int, {'inlet': 3, 'outlet': 2, 'toluene_prod': 1})
     assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in'
-    assert fss._unique_unit_name('toluene') == 'toluene'
-    assert fss._unique_unit_name('outlet') == 'outlet_1'
-    assert fss._unique_unit_name('inlet') == 'inlet_2'
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod'
+    # The check to make sure if you call it twice it doesn't change as _used_unit_names hasn't changed
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod'
+    assert fss._unique_unit_name('outlet') == 'outlet_2'
+    assert fss._unique_unit_name('inlet') == 'inlet_3'
     assert fss._unique_unit_name('prod') == 'prod'
 
 @pytest.mark.unit
