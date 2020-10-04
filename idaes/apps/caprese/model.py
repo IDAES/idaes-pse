@@ -1,9 +1,12 @@
 import time as time_module
+from collections import OrderedDict
+
 import idaes.logger as idaeslog
 from idaes.apps.caprese.base_class import DynamicBase
 from idaes.apps.caprese.util import (
         initialize_by_element_in_range,
         NMPCVarLocator,
+        cuid_from_timeslice,
         )
 from idaes.apps.caprese.common.config import (
         VariableCategory,
@@ -138,7 +141,7 @@ class DynamicModelHelper(object):
             tgt_comps.append(self.vardata_map[tgt_vardata])
         return tgt_comps
 
-    def set_sample_time(sample_time, tolerance=1e-8):
+    def set_sample_time(self, sample_time, tolerance=1e-8):
         self.validate_sample_time(sample_time, tolerance)
         self.sample_time = sample_time
 
@@ -282,6 +285,7 @@ class DynamicModelHelper(object):
         if fix_inputs:
             input_vars = self.input_vars
             for var in input_vars[:]:
+                sp = var.setpoint
                 # Would like:
                 # var[t1:].fix(sp)
                 for t in time:
@@ -301,7 +305,7 @@ class DynamicModelHelper(object):
                 time.first(),
                 time.last(),
                 dae_vars=self.dae_vars,
-                time_linking_variables=list(self.diff_vars[:]),
+                time_linking_vars=list(self.diff_vars[:]),
                 outlvl=idaeslog.DEBUG,
                 solver=solver,
                 )
@@ -320,6 +324,59 @@ class DynamicModelHelper(object):
 
         strip_bounds.revert(model)
         # TODO: Can check for violated bounds if I'm really worried about it.
+        # Should have a general method to deal with violated bounds that I
+        # can use for noise as well.
+
+    def initialize_sample_by_element(self, solver, ts, fix_inputs=False):
+        namespace = self.namespace
+        time = self.time
+        model = self.model
+        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
+        strip_bounds.apply_to(model, reversible=True)
+
+        t0 = ts - self.sample_time
+        idx_0 = time.find_nearest_index(t0)
+        t0 = time[idx_0]
+        idx_s = time.find_nearest_index(ts)
+
+        if fix_inputs:
+            input_vars = self.input_vars
+            for var in input_vars[:]:
+                sp = var.setpoint
+                # Would like:
+                # var[t1:].fix(sp)
+                for i in range(idx_0+1, idx_s+1):
+                    t = time[i]
+                    var[t].fix(sp)
+        
+        if hasattr(namespace, 'tracking_objective'):
+            namespace.tracking_objective.deactivate()
+        if hasattr(namespace, 'pwc_constraint'):
+            namespace.pwc_constraint.deactivate()
+
+        initialize_by_element_in_range(
+                model,
+                time,
+                t0,
+                ts,
+                dae_vars=self.dae_vars,
+                time_linking_vars=list(self.diff_vars[:]),
+                outlvl=idaeslog.DEBUG,
+                solver=solver,
+                )
+
+        if hasattr(namespace, 'tracking_objective'):
+            namespace.tracking_objective.activate()
+        if hasattr(namespace, 'pwc_constraint'):
+            namespace.pwc_constraint.activate()
+
+        if fix_inputs:
+            for var in self.input_vars[:]:
+                for i in range(idx_0+1, idx_s+1):
+                    t = time[i]
+                    var[t].unfix()
+
+        strip_bounds.revert(model)
 
     def generate_inputs_at_time(self, t):
         for val in self.input_vars[:][t].value:
@@ -330,6 +387,8 @@ class DynamicModelHelper(object):
             yield var[t].value
 
     def inject_inputs(self, inputs):
+        # To simulate computational delay, this function would 
+        # need an argument for the start time of inputs.
         for var, val in zip(self.input_vars[:], inputs):
             # Would like:
             # self.input_vars.fix(inputs)
@@ -340,7 +399,8 @@ class DynamicModelHelper(object):
         for var, val in zip(self.measured_vars, measured):
             var[t0].fix(val)
 
-    def cycle(self, 
+    def cycle_by(self,
+            t_cycle,
             categories=(
                 VariableCategory.DIFFERENTIAL,
                 VariableCategory.DERIVATIVE,
@@ -348,17 +408,84 @@ class DynamicModelHelper(object):
                 VariableCategory.INPUT,
                 VariableCategory.FIXED,
                 ),
+            tolerance=1e-8,
             ):
-        t0 = self.time.first()
-        ts = self.sample_points[1]
-
+        time = self.time
         category_dict = self.category_dict
-        for categ in categories:
-            varlist = category_dict[categ]
-            for var in varlist:
+        for t in time:
+            ts = t + t_cycle
+            idx = time.find_nearest_index(ts, tolerance)
+            if idx is None:
+                # t + sample_time is outside the model's "horizon"
+                continue
+            ts = time[idx]
+            for categ in categories:
                 # Would like:
-                # var[:, t0].set_value(var[:, ts].value)
-                var[t0].set_value(var[ts].value)
+                # for var in component_objects(categories):
+                for var in category_dict[categ]:
+                    var[t].set_value(var[ts].value)
+
+    def cycle(self,
+            categories=(
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.DERIVATIVE,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.INPUT,
+                VariableCategory.FIXED,
+                ),
+            tolerance=1e-8,
+            ):
+        #horizon = self.time.last() - self.time.last()
+        sample_time = self.sample_time
+        self.cycle_by(
+                sample_time,
+                categories=categories,
+                tolerance=tolerance,
+                )
+
+    def generate_time_in_sample(self,
+            ts,
+            t0=None,
+            tolerance=1e-8,
+            ):
+        time = self.time
+        idx_s = time.find_nearest_index(ts, tolerance=tolerance)
+        ts = time[idx_s]
+        if t0 is None:
+            t0 = ts - self.sample_time
+        idx_0 = time.find_nearest_index(t0, tolerance=tolerance)
+        for i in range(idx_0+1, idx_s+1):
+            # Don't want to include first point in sample
+            yield time[i]
+
+    def get_data(self,
+            ts,
+            variables=(
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.INPUT,
+                ),
+            tolerance=1e-8,
+            ):
+        time = self.time
+        sample_time = self.sample_time
+        category_dict = self.category_dict
+        vardata_map = self.vardata_map
+
+        data = OrderedDict()
+        queue = list(variables)
+        for var in queue:
+            if var in VariableCategory:
+                category = var
+                varlist = category_dict[category]
+                queue.extend(var[ts] for var in varlist)
+                continue
+            _slice = vardata_map[var]
+            cuid = cuid_from_timeslice(_slice, time)
+            data[cuid] = [_slice[t].value for t in
+                    self.generate_time_in_sample(ts, tolerance=tolerance)]
+
+        return data
+
 
 class ControllerHelper(DynamicModelHelper):
 
@@ -561,3 +688,34 @@ class ControllerHelper(DynamicModelHelper):
 
         namespace.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
 
+    def initialize_last_sample(self,
+            categories=(
+                VariableCategory.DIFFERENTIAL,
+                VariableCategory.DERIVATIVE,
+                VariableCategory.ALGEBRAIC,
+                VariableCategory.INPUT,
+                VariableCategory.FIXED,
+                ),
+            # TODO: include option for how to initialize
+            # In particular, how should a known disturbance be initialized?
+            tolerance=1e-8,
+            ):
+        time = self.time
+        sample_time = self.sample_time
+        t = time.last() - sample_time
+        idx = time.find_nearest_index(t, tolerance)
+        n = len(time)
+        category_dict = self.category_dict
+        if type(categories) is VariableCategory:
+            categories = (categories,)
+        for categ in categories:
+            # Would be nice to use component_objects here
+            for v in category_dict[categ]:
+                for i in range(idx+1, n+1):
+                    # Do not initialize the first point in this sample
+                    # I do not consider it to be "in the sample"
+                    t = time[i]
+                    # All variables should have a setpoint attribute,
+                    # regardless of category. May not be meaningful
+                    # for fixed variables.
+                    v[t].set_value(v.setpoint)
