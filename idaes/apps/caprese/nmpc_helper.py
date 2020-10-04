@@ -95,7 +95,7 @@ class NMPCSim(DynamicBase):
     CONFIG.declare(
             'element_initialization_input_option',
             ConfigValue(
-                default=ElementInitializationInputOption.SET_POINT,
+                default=ElementInitializationInputOption.SETPOINT,
                 domain=ElementInitializationInputOption.from_enum_or_string,
                 doc=('Option for how to fix inputs when initializing '
                     'by time element')
@@ -338,8 +338,8 @@ class NMPCSim(DynamicBase):
         self.plant_input_map = ComponentMap(
                 zip(controller_inputs, plant_inputs))
 
-        self.controller.validate_sample_time(sample_time)
-        self.plant.validate_sample_time(sample_time)
+        self.controller.set_sample_time(sample_time)
+        self.plant.set_sample_time(sample_time)
         self.sample_time = sample_time
 
         # NOTE: This is probably unnecessary:
@@ -1183,7 +1183,7 @@ class NMPCSim(DynamicBase):
 
 
     def initialize_by_solving_elements(self, model, time,
-            input_type=ElementInitializationInputOption.SET_POINT,
+            input_type=ElementInitializationInputOption.SETPOINT,
             objective_name='tracking_objective',
             **kwargs):
         """Initializes the controller model by solving (a square simulation
@@ -1209,7 +1209,7 @@ class NMPCSim(DynamicBase):
         strip_controller_bounds.apply_to(model, reversible=True)
 
         input_vars = model._NMPC_NAMESPACE.input_vars
-        if input_type == ElementInitializationInputOption.SET_POINT:
+        if input_type == ElementInitializationInputOption.SETPOINT:
             for i, _slice in enumerate(input_vars.varlist):
                 for t in time:
                     if t != time.first():
