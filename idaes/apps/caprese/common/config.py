@@ -53,6 +53,8 @@ class VariableCategory(ConfigEnum):
     INPUT = 54
     FIXED = 55
     SCALAR = 56
+    
+    MEASUREMENT = 57
 
 
 class NoiseBoundOption(ConfigEnum):
